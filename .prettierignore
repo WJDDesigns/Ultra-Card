@@ -1,0 +1,10 @@
+# Build output
+dist/
+node_modules/
+*.min.js
+*.min.css
+
+# Other files to ignore
+.git/
+package-lock.json
+yarn.lock 
