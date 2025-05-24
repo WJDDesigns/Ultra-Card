@@ -6411,10 +6411,10 @@ export class UltraVehicleCard extends LitElement {
             `
           : ''}
         <div style="min-width: 0; overflow: hidden;">
-          ${showName && entity.name
+          ${showName
             ? html`
                 <div style="font-size: ${nameSize}; color: ${nameColor}; margin-bottom: 2px;">
-                  ${entity.name}
+                  ${entity.name || this._getFriendlyName(entity.entity)}
                 </div>
               `
             : ''}
