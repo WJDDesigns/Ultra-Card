@@ -6337,7 +6337,7 @@ export class UltraVehicleCard extends LitElement {
 
     const stateObj = this.hass.states[entity.entity];
     const showIcon = entity.show_icon !== false;
-    const showName = entity.show_name !== false;
+    const showName = entity.show_name !== false; // Restore original behavior: show by default unless explicitly false
 
     // Get formatted value
     let displayValue = '';
