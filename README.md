@@ -12,13 +12,6 @@ A powerful modular card builder for Home Assistant that lets you create custom l
 - **Flexible Row & Column System** - Create complex layouts with multiple columns and responsive design
 - **Professional Module Types** - Text, separators, images, info entities, progress bars, icons, and layout containers
 
-### 🎨 **WPBakery-Style Interface**
-
-- **3-Tab Settings** - General, Logic, and Design tabs for every element
-- **Professional Spacing Controls** - Margin and padding with visual controls
-- **Conditional Display Logic** - Show/hide elements based on entity states, templates, time ranges, and more
-- **Real-time Preview** - See changes instantly as you build
-
 ### 🔧 **Module Types**
 
 - **Text Module** - Custom text with full typography controls
@@ -45,7 +38,7 @@ A powerful modular card builder for Home Assistant that lets you create custom l
 1. Open HACS in Home Assistant
 2. Go to "Frontend"
 3. Click the menu (three dots) and select "Custom repositories"
-4. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Lovelace" repository
+4. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Dashboard" repository
 5. Install "Ultra Card"
 6. Restart Home Assistant
 
