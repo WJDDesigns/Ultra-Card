@@ -1,0 +1,45 @@
+import { TemplateResult } from 'lit';
+import { HomeAssistant } from 'custom-card-helpers';
+import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { CardModule, CameraModule } from '../types';
+export declare class UltraCameraModule extends BaseUltraModule {
+    metadata: ModuleMetadata;
+    private clickTimeout;
+    private holdTimeout;
+    private isHolding;
+    createDefault(id?: string): CameraModule;
+    renderGeneralTab(module: CardModule, hass: HomeAssistant, config: any, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+    validate(module: CardModule): {
+        valid: boolean;
+        errors: string[];
+    };
+    private handleClick;
+    private handleDoubleClick;
+    private handleMouseDown;
+    private handleMouseUp;
+    private handleMouseLeave;
+    private handleTouchStart;
+    private handleTouchEnd;
+    private handleTapAction;
+    private handleHoldAction;
+    private handleDoubleAction;
+    private hasActiveLink;
+    private refreshCamera;
+    private getCameraImageUrl;
+    private getCameraImageBlob;
+    private getCameraImageViaWebSocket;
+    private getAspectRatioStyle;
+    private handleImageError;
+    protected renderConditionalFieldsGroup(title: string, content: TemplateResult): TemplateResult;
+    private styleObjectToCss;
+    private camelToKebab;
+    private addPixelUnit;
+    private getPaddingCSS;
+    private getMarginCSS;
+    private getBackgroundCSS;
+    private getBackgroundImageCSS;
+    private getBorderCSS;
+    private validateAction;
+    getStyles(): string;
+}

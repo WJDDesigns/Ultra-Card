@@ -1,0 +1,7 @@
+{
+  "name": "Ultra Card",
+  "render_readme": true,
+  "filename": "ultra-card.js",
+  "content_in_root": false,
+  "iot_class": "Local Polling"
+}
