@@ -38,7 +38,7 @@ A powerful modular card builder for Home Assistant that lets you create custom l
 1. Open HACS in Home Assistant
 2. Go to "Frontend"
 3. Click the menu (three dots) and select "Custom repositories"
-4. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Lovelace" repository
+4. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Dashboard" repository
 5. Install "Ultra Card"
 6. Restart Home Assistant
 
