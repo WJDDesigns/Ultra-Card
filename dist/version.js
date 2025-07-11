@@ -1,5 +1,5 @@
 /**
- * Ultra Card Version
+ * Ultra Vehicle Card Version
  * v1.0.0-alpha1
  * 
  * This file is auto-generated from src/version.ts
