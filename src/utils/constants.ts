@@ -1,5 +1,5 @@
 // Path constants
-export const DEFAULT_VEHICLE_IMAGE = '/hacsfiles/Ultra-Vehicle-Card/assets/default-car.png';
+export const DEFAULT_VEHICLE_IMAGE = '/hacsfiles/Ultra-Card/assets/default-car.png';
 
 // Default configuration values and utilities can be added here
 export const DEFAULT_CONFIG = {

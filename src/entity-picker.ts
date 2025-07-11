@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 
-@customElement('ultra-entity-picker')
+@customElement('ultra-card-entity-picker')
 export class UltraEntityPicker extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public label!: string;
@@ -32,16 +32,12 @@ export class UltraEntityPicker extends LitElement {
     `;
   }
 
-  private _valueChanged(ev: CustomEvent) {
+  private _valueChanged(ev) {
+    ev.stopPropagation();
     const value = ev.detail.value;
-    
-    // Log for debugging
-    console.log(`Entity selected: ${value}`);
-    
-    this.dispatchEvent(new CustomEvent('value-changed', {
-      detail: { value },
-      bubbles: true,
-      composed: true,
-    }));
+    if (value !== this.value) {
+      this.value = value;
+      fireEvent(this, 'value-changed', { value });
+    }
   }
-} 
+}

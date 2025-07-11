@@ -1,5 +1,7 @@
 {
-  "name": "Ultra Vehicle Card",
+  "name": "Ultra Card",
   "render_readme": true,
-  "filename": "ultra-vehicle-card.js"
+  "filename": "ultra-card.js",
+  "content_in_root": false,
+  "iot_class": "Local Polling"
 }

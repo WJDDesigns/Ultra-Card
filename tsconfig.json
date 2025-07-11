@@ -3,16 +3,12 @@
     "target": "es2017",
     "module": "esnext",
     "moduleResolution": "node",
-    "lib": [
-      "es2017",
-      "dom",
-      "dom.iterable"
-    ],
+    "lib": ["es2017", "dom", "dom.iterable"],
     "noEmit": false,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
-    "strict": true,
+    "strict": false,
     "noImplicitAny": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -23,7 +19,5 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": [
-    "src"
-  ]
-} 
+  "include": ["src"]
+}

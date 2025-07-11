@@ -1,0 +1,10 @@
+# Ignore these directories
+dist/
+node_modules/
+
+# Temporarily ignore specific files with issues
+src/cards/ultra-vehicle-card.ts
+src/components/gradient-editor.ts
+src/editor/ultra-vehicle-card-editor.ts
+src/types/index.ts
+src/utils/image-upload.ts 

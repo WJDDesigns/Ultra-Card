@@ -1,0 +1,3439 @@
+import { LitElement, html, css, TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
+import '../components/ultra-color-picker';
+import { uploadImage } from '../utils/image-upload';
+
+export interface DesignProperties {
+  color?: string;
+  text_align?: 'left' | 'center' | 'right' | 'justify';
+  font_size?: string;
+  line_height?: string;
+  letter_spacing?: string;
+  font_family?: string;
+  font_weight?: string;
+  text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  font_style?: 'normal' | 'italic' | 'oblique';
+  background_color?: string;
+  background_image?: string;
+  background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+  background_image_entity?: string;
+  backdrop_filter?: string;
+  width?: string;
+  height?: string;
+  max_width?: string;
+  max_height?: string;
+  min_width?: string;
+  min_height?: string;
+  margin_top?: string;
+  margin_bottom?: string;
+  margin_left?: string;
+  margin_right?: string;
+  padding_top?: string;
+  padding_bottom?: string;
+  padding_left?: string;
+  padding_right?: string;
+  border_radius?: string;
+  border_style?: 'none' | 'solid' | 'dashed' | 'dotted' | 'double';
+  border_width?: string;
+  border_color?: string;
+  position?: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+  z_index?: string;
+  text_shadow_h?: string;
+  text_shadow_v?: string;
+  text_shadow_blur?: string;
+  text_shadow_color?: string;
+  box_shadow_h?: string;
+  box_shadow_v?: string;
+  box_shadow_blur?: string;
+  box_shadow_spread?: string;
+  box_shadow_color?: string;
+  overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
+  clip_path?: string;
+  animation_type?:
+    | 'none'
+    | 'pulse'
+    | 'vibrate'
+    | 'rotate-left'
+    | 'rotate-right'
+    | 'hover'
+    | 'fade'
+    | 'scale'
+    | 'bounce'
+    | 'shake'
+    | 'tada';
+  animation_entity?: string;
+  animation_trigger_type?: 'state' | 'attribute';
+  animation_attribute?: string;
+  animation_state?: string;
+  // Intro/Outro Animations
+  intro_animation?:
+    | 'none'
+    | 'fadeIn'
+    | 'slideInUp'
+    | 'slideInDown'
+    | 'slideInLeft'
+    | 'slideInRight'
+    | 'zoomIn'
+    | 'bounceIn'
+    | 'flipInX'
+    | 'flipInY'
+    | 'rotateIn';
+  outro_animation?:
+    | 'none'
+    | 'fadeOut'
+    | 'slideOutUp'
+    | 'slideOutDown'
+    | 'slideOutLeft'
+    | 'slideOutRight'
+    | 'zoomOut'
+    | 'bounceOut'
+    | 'flipOutX'
+    | 'flipOutY'
+    | 'rotateOut';
+  animation_duration?: string;
+  animation_delay?: string;
+  animation_timing?:
+    | 'ease'
+    | 'linear'
+    | 'ease-in'
+    | 'ease-out'
+    | 'ease-in-out'
+    | 'cubic-bezier(0.25,0.1,0.25,1)';
+}
+
+@customElement('ultra-global-design-tab')
+export class GlobalDesignTab extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public designProperties: DesignProperties = {};
+  @property({ type: Function }) public onUpdate?: (properties: Partial<DesignProperties>) => void;
+
+  @state() private _expandedSections: Set<string> = new Set();
+  @state() private _marginLocked: boolean = false;
+  @state() private _paddingLocked: boolean = false;
+  @state() private _clipboardProperties: DesignProperties | null = null;
+
+  // localStorage key for cross-card clipboard functionality
+  private static readonly CLIPBOARD_KEY = 'ultra-card-design-clipboard';
+
+  // Static property to track animation trigger type across renders
+  private static _lastAnimationTriggerType: 'state' | 'attribute' | null = null;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    // Load clipboard state from localStorage when component initializes
+    this._loadClipboardFromStorage();
+
+    // Listen for storage events to sync clipboard across different card instances
+    this._storageEventListener = this._handleStorageEvent.bind(this);
+    window.addEventListener('storage', this._storageEventListener);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    // Clean up storage event listener
+    if (this._storageEventListener) {
+      window.removeEventListener('storage', this._storageEventListener);
+    }
+
+    // Clean up any session storage if needed
+    // Uncomment this if you want to clear on component removal
+    // try {
+    //   sessionStorage.removeItem(GlobalDesignTab.ANIMATION_TRIGGER_TYPE_KEY);
+    // } catch (e) {
+    //   console.warn('Failed to clear animation trigger type from session storage:', e);
+    // }
+  }
+
+  private _storageEventListener?: (event: StorageEvent) => void;
+
+  private _handleStorageEvent(event: StorageEvent): void {
+    // Only react to changes to our specific clipboard key
+    if (event.key === GlobalDesignTab.CLIPBOARD_KEY) {
+      // Reload clipboard state when another card instance updates it
+      this._loadClipboardFromStorage();
+    }
+  }
+
+  private _loadClipboardFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(GlobalDesignTab.CLIPBOARD_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Validate that it's a valid DesignProperties object
+        if (parsed && typeof parsed === 'object') {
+          this._clipboardProperties = parsed;
+          this.requestUpdate();
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load design clipboard from localStorage:', error);
+      this._clipboardProperties = null;
+    }
+  }
+
+  private _saveClipboardToStorage(properties: DesignProperties): void {
+    try {
+      localStorage.setItem(GlobalDesignTab.CLIPBOARD_KEY, JSON.stringify(properties));
+    } catch (error) {
+      console.warn('Failed to save design clipboard to localStorage:', error);
+    }
+  }
+
+  private _clearClipboardFromStorage(): void {
+    try {
+      localStorage.removeItem(GlobalDesignTab.CLIPBOARD_KEY);
+    } catch (error) {
+      console.warn('Failed to clear design clipboard from localStorage:', error);
+    }
+  }
+
+  private _toggleSection(section: string): void {
+    if (this._expandedSections.has(section)) {
+      this._expandedSections.delete(section);
+    } else {
+      // Close all other sections and open this one (exclusive behavior)
+      this._expandedSections.clear();
+      this._expandedSections.add(section);
+    }
+    this.requestUpdate();
+  }
+
+  private _updateProperty(property: keyof DesignProperties, value: string): void {
+    const updates = { [property]: value };
+
+    console.log(`🔧 GlobalDesignTab: Updating property ${property} =`, value);
+    console.log(`🔧 GlobalDesignTab: onUpdate callback exists:`, !!this.onUpdate);
+
+    // Use callback if provided (module integration), otherwise use event (row/column integration)
+    if (this.onUpdate) {
+      console.log(`🔧 GlobalDesignTab: Using callback approach for property update`);
+      this.onUpdate(updates);
+    } else {
+      console.log(`🔧 GlobalDesignTab: Using event approach for property update`);
+      // Dispatch event for event-listener based integrations
+      const event = new CustomEvent('design-changed', {
+        detail: updates,
+        bubbles: true,
+        composed: true,
+      });
+      console.log(`🔧 GlobalDesignTab: Dispatching design-changed event:`, event);
+      this.dispatchEvent(event);
+    }
+
+    console.log(`🔧 GlobalDesignTab: Property update complete for ${property}`);
+  }
+
+  private _updateSpacing(
+    type: 'margin' | 'padding',
+    side: 'top' | 'bottom' | 'left' | 'right',
+    value: string
+  ): void {
+    const isLocked = type === 'margin' ? this._marginLocked : this._paddingLocked;
+
+    let updates: Partial<DesignProperties>;
+    if (isLocked) {
+      // Apply to all sides when locked
+      updates = {
+        [`${type}_top`]: value,
+        [`${type}_bottom`]: value,
+        [`${type}_left`]: value,
+        [`${type}_right`]: value,
+      };
+    } else {
+      // Apply to specific side only
+      updates = { [`${type}_${side}`]: value };
+    }
+
+    console.log(
+      `🔧 GlobalDesignTab: Updating spacing ${type}-${side} =`,
+      value,
+      `(locked: ${isLocked})`
+    );
+    console.log(`🔧 GlobalDesignTab: Spacing updates:`, updates);
+    console.log(`🔧 GlobalDesignTab: onUpdate callback exists:`, !!this.onUpdate);
+
+    // Use callback if provided (module integration), otherwise use event (row/column integration)
+    if (this.onUpdate) {
+      console.log(`🔧 GlobalDesignTab: Using callback approach for spacing update`);
+      this.onUpdate(updates);
+    } else {
+      console.log(`🔧 GlobalDesignTab: Using event approach for spacing update`);
+      // Dispatch event for event-listener based integrations
+      const event = new CustomEvent('design-changed', {
+        detail: updates,
+        bubbles: true,
+        composed: true,
+      });
+      console.log(`🔧 GlobalDesignTab: Dispatching spacing design-changed event:`, event);
+      this.dispatchEvent(event);
+    }
+  }
+
+  private _handleNumericKeydown(
+    event: KeyboardEvent,
+    currentValue: string,
+    updateCallback: (newValue: string) => void
+  ): void {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+
+    event.preventDefault();
+
+    // Parse current value to extract number and unit
+    const match = currentValue.match(/^(-?\d*\.?\d*)(.*)$/);
+    if (!match) return;
+
+    const numStr = match[1];
+    const unit = match[2].trim() || 'px';
+    let num = parseFloat(numStr) || 0;
+
+    // Determine step size based on unit
+    let step = 1;
+    if (unit === 'rem' || unit === 'em') {
+      step = 0.1;
+    } else if (unit === '%') {
+      step = 5;
+    } else if (unit === 'px') {
+      step = 1;
+    }
+
+    // Hold Shift for larger steps, Hold Alt/Option for smaller steps
+    if (event.shiftKey) {
+      step *= 10;
+    } else if (event.altKey) {
+      step /= 10;
+    }
+
+    // Increment or decrement
+    if (event.key === 'ArrowUp') {
+      num += step;
+    } else {
+      num -= step;
+    }
+
+    // Round to appropriate decimal places
+    let decimalPlaces = 0;
+    if (unit === 'rem' || unit === 'em') {
+      decimalPlaces = event.altKey ? 3 : 1;
+    } else if (unit === '%' && event.altKey) {
+      decimalPlaces = 1;
+    }
+
+    const roundedNum = parseFloat(num.toFixed(decimalPlaces));
+    const newValue = `${roundedNum}${unit}`;
+
+    updateCallback(newValue);
+  }
+
+  private _toggleSpacingLock(type: 'margin' | 'padding'): void {
+    if (type === 'margin') {
+      this._marginLocked = !this._marginLocked;
+    } else {
+      this._paddingLocked = !this._paddingLocked;
+    }
+    this.requestUpdate();
+  }
+
+  private _resetSection(section: string): void {
+    // Add debugging to help track reset actions
+    console.log(`🔄 GlobalDesignTab: RESET SECTION CALLED for: ${section}`);
+    console.log(`🔄 GlobalDesignTab: Current designProperties:`, this.designProperties);
+    console.log(`🔄 GlobalDesignTab: onUpdate callback exists:`, !!this.onUpdate);
+
+    // Create a reset object that explicitly removes properties
+    const resetProperties: Record<string, undefined> = {};
+
+    switch (section) {
+      case 'text':
+        resetProperties.color = undefined;
+        resetProperties.text_align = undefined;
+        resetProperties.font_size = undefined;
+        resetProperties.line_height = undefined;
+        resetProperties.letter_spacing = undefined;
+        resetProperties.font_family = undefined;
+        resetProperties.font_weight = undefined;
+        resetProperties.text_transform = undefined;
+        resetProperties.font_style = undefined;
+        break;
+      case 'background':
+        resetProperties.background_color = undefined;
+        resetProperties.background_image = undefined;
+        resetProperties.background_image_type = undefined;
+        resetProperties.background_image_entity = undefined;
+        resetProperties.backdrop_filter = undefined;
+        break;
+      case 'sizes':
+        resetProperties.width = undefined;
+        resetProperties.height = undefined;
+        resetProperties.max_width = undefined;
+        resetProperties.max_height = undefined;
+        resetProperties.min_width = undefined;
+        resetProperties.min_height = undefined;
+        break;
+      case 'spacing':
+        resetProperties.margin_top = undefined;
+        resetProperties.margin_bottom = undefined;
+        resetProperties.margin_left = undefined;
+        resetProperties.margin_right = undefined;
+        resetProperties.padding_top = undefined;
+        resetProperties.padding_bottom = undefined;
+        resetProperties.padding_left = undefined;
+        resetProperties.padding_right = undefined;
+        break;
+      case 'border':
+        resetProperties.border_radius = undefined;
+        resetProperties.border_style = undefined;
+        resetProperties.border_width = undefined;
+        resetProperties.border_color = undefined;
+        break;
+      case 'position':
+        resetProperties.position = undefined;
+        resetProperties.top = undefined;
+        resetProperties.bottom = undefined;
+        resetProperties.left = undefined;
+        resetProperties.right = undefined;
+        resetProperties.z_index = undefined;
+        break;
+      case 'text-shadow':
+        resetProperties.text_shadow_h = undefined;
+        resetProperties.text_shadow_v = undefined;
+        resetProperties.text_shadow_blur = undefined;
+        resetProperties.text_shadow_color = undefined;
+        break;
+      case 'box-shadow':
+        resetProperties.box_shadow_h = undefined;
+        resetProperties.box_shadow_v = undefined;
+        resetProperties.box_shadow_blur = undefined;
+        resetProperties.box_shadow_spread = undefined;
+        resetProperties.box_shadow_color = undefined;
+        break;
+      case 'overflow':
+        resetProperties.overflow = undefined;
+        resetProperties.clip_path = undefined;
+        break;
+      case 'animations':
+        resetProperties.animation_type = undefined;
+        resetProperties.animation_entity = undefined;
+        resetProperties.animation_trigger_type = undefined;
+        resetProperties.animation_attribute = undefined;
+        resetProperties.animation_state = undefined;
+        resetProperties.intro_animation = undefined;
+        resetProperties.outro_animation = undefined;
+        resetProperties.animation_duration = undefined;
+        resetProperties.animation_delay = undefined;
+        resetProperties.animation_timing = undefined;
+        break;
+    }
+
+    console.log(`🔄 GlobalDesignTab: Reset properties for ${section}:`, resetProperties);
+
+    // Use callback if provided (module integration), otherwise use event (row/column integration)
+    if (this.onUpdate) {
+      console.log(`🔄 GlobalDesignTab: Using callback approach for section reset`);
+      try {
+        this.onUpdate(resetProperties);
+        console.log(`🔄 GlobalDesignTab: Callback executed successfully for ${section}`);
+      } catch (error) {
+        console.error(`🔄 GlobalDesignTab: Callback error for ${section}:`, error);
+      }
+    } else {
+      console.log(`🔄 GlobalDesignTab: Using event approach for section reset`);
+      // Dispatch event for event-listener based integrations
+      const event = new CustomEvent('design-changed', {
+        detail: resetProperties,
+        bubbles: true,
+        composed: true,
+      });
+      console.log(`🔄 GlobalDesignTab: Dispatching reset design-changed event:`, event);
+      const dispatched = this.dispatchEvent(event);
+      console.log(`🔄 GlobalDesignTab: Event dispatched successfully:`, dispatched);
+    }
+
+    // Force component re-render to update UI indicators after a small delay
+    console.log(`🔄 GlobalDesignTab: Requesting update for section ${section}`);
+    this.requestUpdate();
+
+    // Schedule another update to ensure UI indicators refresh after parent updates designProperties
+    setTimeout(() => {
+      console.log(`🔄 GlobalDesignTab: Delayed update for section ${section} UI indicators`);
+      this.requestUpdate();
+    }, 50);
+
+    console.log(`✅ GlobalDesignTab: Reset complete for ${section}`);
+  }
+
+  private _copyDesign(): void {
+    // Copy all current design properties to clipboard (both local state and localStorage)
+    this._clipboardProperties = { ...this.designProperties };
+    this._saveClipboardToStorage(this._clipboardProperties);
+
+    // Count non-empty properties for better feedback
+    const propertyCount = Object.keys(this._clipboardProperties).filter(
+      key => this._clipboardProperties![key as keyof DesignProperties]
+    ).length;
+
+    // Show feedback to user
+    console.log(`Design properties copied to cross-card clipboard (${propertyCount} properties)`);
+
+    // Trigger a visual feedback
+    this.requestUpdate();
+  }
+
+  private _pasteDesign(): void {
+    // First try local state, then reload from localStorage if needed
+    if (!this._clipboardProperties) {
+      this._loadClipboardFromStorage();
+    }
+
+    if (this._clipboardProperties) {
+      // Use callback if provided (module integration), otherwise use event (row/column integration)
+      if (this.onUpdate) {
+        this.onUpdate(this._clipboardProperties);
+      } else {
+        // Dispatch event for event-listener based integrations
+        this.dispatchEvent(
+          new CustomEvent('design-changed', {
+            detail: this._clipboardProperties,
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
+
+      console.log('Design properties pasted from cross-card clipboard');
+    } else {
+      console.log('No design properties in cross-card clipboard');
+    }
+  }
+
+  private _resetAllDesign(): void {
+    // Reset all design properties to undefined values
+    console.log('🔄 GlobalDesignTab: RESET ALL DESIGN CALLED');
+    console.log('🔄 GlobalDesignTab: Current designProperties:', this.designProperties);
+    console.log('🔄 GlobalDesignTab: onUpdate callback exists:', !!this.onUpdate);
+
+    const resetProperties: Record<string, undefined> = {
+      // Text properties
+      color: undefined,
+      text_align: undefined,
+      font_size: undefined,
+      line_height: undefined,
+      letter_spacing: undefined,
+      font_family: undefined,
+      font_weight: undefined,
+      text_transform: undefined,
+      font_style: undefined,
+      // Background properties
+      background_color: undefined,
+      background_image: undefined,
+      background_image_type: undefined,
+      background_image_entity: undefined,
+      backdrop_filter: undefined,
+      // Size properties
+      width: undefined,
+      height: undefined,
+      max_width: undefined,
+      max_height: undefined,
+      min_width: undefined,
+      min_height: undefined,
+      // Spacing properties
+      margin_top: undefined,
+      margin_bottom: undefined,
+      margin_left: undefined,
+      margin_right: undefined,
+      padding_top: undefined,
+      padding_bottom: undefined,
+      padding_left: undefined,
+      padding_right: undefined,
+      // Border properties
+      border_radius: undefined,
+      border_style: undefined,
+      border_width: undefined,
+      border_color: undefined,
+      // Position properties
+      position: undefined,
+      top: undefined,
+      bottom: undefined,
+      left: undefined,
+      right: undefined,
+      z_index: undefined,
+      // Shadow properties
+      text_shadow_h: undefined,
+      text_shadow_v: undefined,
+      text_shadow_blur: undefined,
+      text_shadow_color: undefined,
+      box_shadow_h: undefined,
+      box_shadow_v: undefined,
+      box_shadow_blur: undefined,
+      box_shadow_spread: undefined,
+      box_shadow_color: undefined,
+      // Other properties
+      overflow: undefined,
+      clip_path: undefined,
+      // Animation properties
+      animation_type: undefined,
+      animation_entity: undefined,
+      animation_trigger_type: undefined,
+      animation_attribute: undefined,
+      animation_state: undefined,
+      intro_animation: undefined,
+      outro_animation: undefined,
+      animation_duration: undefined,
+      animation_delay: undefined,
+      animation_timing: undefined,
+    };
+
+    console.log('🔄 GlobalDesignTab: Reset properties for ALL sections:', resetProperties);
+
+    // Use callback if provided (module integration), otherwise use event (row/column integration)
+    if (this.onUpdate) {
+      console.log('🔄 GlobalDesignTab: Using callback approach for reset all');
+      try {
+        this.onUpdate(resetProperties);
+        console.log('🔄 GlobalDesignTab: Reset all callback executed successfully');
+      } catch (error) {
+        console.error('🔄 GlobalDesignTab: Reset all callback error:', error);
+      }
+    } else {
+      console.log('🔄 GlobalDesignTab: Using event approach for reset all');
+      // Dispatch event for event-listener based integrations
+      const event = new CustomEvent('design-changed', {
+        detail: resetProperties,
+        bubbles: true,
+        composed: true,
+      });
+      console.log('🔄 GlobalDesignTab: Dispatching reset all design-changed event:', event);
+      const dispatched = this.dispatchEvent(event);
+      console.log('🔄 GlobalDesignTab: Reset all event dispatched successfully:', dispatched);
+    }
+
+    // Force component re-render to update UI indicators after a small delay
+    console.log('🔄 GlobalDesignTab: Requesting update for reset all');
+    this.requestUpdate();
+
+    // Schedule another update to ensure UI indicators refresh after parent updates designProperties
+    setTimeout(() => {
+      console.log('🔄 GlobalDesignTab: Delayed update for reset all UI indicators');
+      this.requestUpdate();
+    }, 50);
+
+    console.log('✅ GlobalDesignTab: All design properties reset to default');
+  }
+
+  private _clearClipboard(): void {
+    this._clipboardProperties = null;
+    this._clearClipboardFromStorage();
+    console.log('Cross-card clipboard cleared');
+    this.requestUpdate();
+  }
+
+  private async _handleBackgroundImageUpload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.hass) return;
+
+    try {
+      const imagePath = await uploadImage(this.hass, file);
+      const updates = {
+        background_image: imagePath,
+        background_image_type: 'upload' as const,
+      };
+
+      // Use callback if provided (module integration), otherwise use event (row/column integration)
+      if (this.onUpdate) {
+        this.onUpdate(updates);
+      } else {
+        // Dispatch event for event-listener based integrations
+        this.dispatchEvent(
+          new CustomEvent('design-changed', {
+            detail: updates,
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Background image upload failed:', error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private _truncatePath(path: string): string {
+    if (!path) return '';
+    const maxLength = 30;
+    if (path.length <= maxLength) return path;
+    return '...' + path.slice(-maxLength + 3);
+  }
+
+  private _getStateValueHint(entityId: string): string {
+    if (!this.hass || !entityId) {
+      return 'Enter the state value to trigger animation';
+    }
+
+    const entity = this.hass.states[entityId];
+    if (!entity) {
+      return 'Entity not found';
+    }
+
+    if (entity.state && entity.state !== 'unknown' && entity.state !== 'unavailable') {
+      return `Current state: ${entity.state}`;
+    }
+
+    return 'Enter the state value to trigger animation';
+  }
+
+  private _getAttributeNameHint(entityId: string): string {
+    if (!this.hass || !entityId) {
+      return 'Enter the attribute name to monitor';
+    }
+
+    const entity = this.hass.states[entityId];
+    if (!entity || !entity.attributes) {
+      return 'Entity not found or has no attributes';
+    }
+
+    const availableAttributes = Object.keys(entity.attributes)
+      .filter(key => !key.startsWith('_') && typeof entity.attributes[key] !== 'object')
+      .slice(0, 3);
+
+    if (availableAttributes.length > 0) {
+      return `Available attributes: ${availableAttributes.join(', ')}${
+        Object.keys(entity.attributes).length > 3 ? ', ...' : ''
+      }`;
+    }
+
+    return 'Enter the attribute name to monitor';
+  }
+
+  private _getAttributeValueHint(entityId: string, attributeName: string): string {
+    if (!this.hass || !entityId) {
+      return 'Enter the attribute value to trigger animation';
+    }
+
+    if (!attributeName) {
+      return 'Select an attribute first';
+    }
+
+    const entity = this.hass.states[entityId];
+    if (!entity || !entity.attributes) {
+      return 'Entity not found or has no attributes';
+    }
+
+    const attributeValue = entity.attributes[attributeName];
+    if (attributeValue !== null && attributeValue !== undefined) {
+      const valueStr = String(attributeValue);
+      const displayValue = valueStr.length > 30 ? `${valueStr.slice(0, 27)}...` : valueStr;
+      return `Current value: ${displayValue}`;
+    }
+
+    return 'Attribute not found - check the attribute name';
+  }
+
+  private _hasModifiedProperties(section: string): boolean {
+    const props = this.designProperties;
+
+    // Helper function to check if a value is actually set (not undefined, null, or empty string)
+    const hasValue = (value: any): boolean => {
+      return value !== undefined && value !== null && value !== '';
+    };
+
+    switch (section) {
+      case 'text':
+        return !!(
+          hasValue(props.color) ||
+          hasValue(props.text_align) ||
+          hasValue(props.font_size) ||
+          hasValue(props.line_height) ||
+          hasValue(props.letter_spacing) ||
+          hasValue(props.font_family) ||
+          hasValue(props.font_weight) ||
+          hasValue(props.text_transform) ||
+          hasValue(props.font_style)
+        );
+      case 'background':
+        return !!(
+          hasValue(props.background_color) ||
+          hasValue(props.background_image) ||
+          hasValue(props.background_image_type) ||
+          hasValue(props.background_image_entity) ||
+          hasValue(props.backdrop_filter)
+        );
+      case 'sizes':
+        return !!(
+          hasValue(props.width) ||
+          hasValue(props.height) ||
+          hasValue(props.max_width) ||
+          hasValue(props.max_height) ||
+          hasValue(props.min_width) ||
+          hasValue(props.min_height)
+        );
+      case 'spacing':
+        return !!(
+          hasValue(props.margin_top) ||
+          hasValue(props.margin_bottom) ||
+          hasValue(props.margin_left) ||
+          hasValue(props.margin_right) ||
+          hasValue(props.padding_top) ||
+          hasValue(props.padding_bottom) ||
+          hasValue(props.padding_left) ||
+          hasValue(props.padding_right)
+        );
+      case 'border':
+        return !!(
+          hasValue(props.border_radius) ||
+          hasValue(props.border_style) ||
+          hasValue(props.border_width) ||
+          hasValue(props.border_color)
+        );
+      case 'position':
+        return !!(
+          hasValue(props.position) ||
+          hasValue(props.top) ||
+          hasValue(props.bottom) ||
+          hasValue(props.left) ||
+          hasValue(props.right) ||
+          hasValue(props.z_index)
+        );
+      case 'text-shadow':
+        return !!(
+          hasValue(props.text_shadow_h) ||
+          hasValue(props.text_shadow_v) ||
+          hasValue(props.text_shadow_blur) ||
+          hasValue(props.text_shadow_color)
+        );
+      case 'box-shadow':
+        return !!(
+          hasValue(props.box_shadow_h) ||
+          hasValue(props.box_shadow_v) ||
+          hasValue(props.box_shadow_blur) ||
+          hasValue(props.box_shadow_spread) ||
+          hasValue(props.box_shadow_color)
+        );
+      case 'overflow':
+        return !!(hasValue(props.overflow) || hasValue(props.clip_path));
+      case 'animations':
+        return !!(
+          (hasValue(props.animation_type) && props.animation_type !== 'none') ||
+          hasValue(props.animation_entity) ||
+          hasValue(props.animation_trigger_type) ||
+          hasValue(props.animation_attribute) ||
+          hasValue(props.animation_state) ||
+          (hasValue(props.intro_animation) && props.intro_animation !== 'none') ||
+          (hasValue(props.outro_animation) && props.outro_animation !== 'none') ||
+          hasValue(props.animation_duration) ||
+          hasValue(props.animation_delay) ||
+          (hasValue(props.animation_timing) && props.animation_timing !== 'ease')
+        );
+      default:
+        return false;
+    }
+  }
+
+  private _renderAccordion(
+    title: string,
+    content: TemplateResult,
+    section: string
+  ): TemplateResult {
+    const isExpanded = this._expandedSections.has(section);
+    const hasEdits = this._hasModifiedProperties(section);
+
+    return html`
+      <div class="accordion-section">
+        <div class="accordion-header ${isExpanded ? 'expanded' : ''}">
+          <button class="accordion-toggle" @click=${() => this._toggleSection(section)}>
+            <span class="accordion-title">
+              ${title} ${hasEdits ? html`<span class="edit-indicator"></span>` : ''}
+            </span>
+          </button>
+          <div class="accordion-actions">
+            ${hasEdits
+              ? html`
+                  <button
+                    class="reset-button"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._resetSection(section);
+                    }}
+                    title="Reset ${title} settings to default"
+                  >
+                    <ha-icon icon="mdi:refresh"></ha-icon>
+                  </button>
+                `
+              : ''}
+            <button class="expand-button" @click=${() => this._toggleSection(section)}>
+              <ha-icon icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"></ha-icon>
+            </button>
+          </div>
+        </div>
+        ${isExpanded ? html`<div class="accordion-content">${content}</div>` : ''}
+      </div>
+    `;
+  }
+
+  protected render(): TemplateResult {
+    return html`
+      <div class="global-design-tab">
+        <!-- Design Actions Toolbar -->
+        <div class="design-toolbar">
+          <button
+            class="toolbar-button copy-button"
+            @click=${this._copyDesign}
+            title="Copy current design settings (works across all Ultra Cards)"
+          >
+            <ha-icon icon="mdi:content-copy"></ha-icon>
+            <span>Copy</span>
+          </button>
+
+          <button
+            class="toolbar-button paste-button ${this._clipboardProperties ? 'has-content' : ''}"
+            @click=${this._pasteDesign}
+            ?disabled=${!this._clipboardProperties}
+            title="${this._clipboardProperties
+              ? 'Paste copied design settings (from cross-card clipboard)'
+              : 'No design settings in cross-card clipboard'}"
+          >
+            <ha-icon icon="mdi:content-paste"></ha-icon>
+            <span>Paste</span>
+          </button>
+
+          <button
+            class="toolbar-button reset-all-button"
+            @click=${this._resetAllDesign}
+            title="Reset all design settings to default"
+          >
+            <ha-icon icon="mdi:refresh"></ha-icon>
+            <span>Reset All</span>
+          </button>
+        </div>
+
+        ${this._renderAccordion(
+          'Text',
+          html`
+            <div class="property-group">
+              <ultra-color-picker
+                .label=${'Text Color'}
+                .value=${this.designProperties.color || ''}
+                .defaultValue=${'var(--primary-text-color)'}
+                .hass=${this.hass}
+                @value-changed=${(e: CustomEvent) => this._updateProperty('color', e.detail.value)}
+              ></ultra-color-picker>
+            </div>
+
+            <div class="property-group">
+              <label>Alignment:</label>
+              <div class="button-group">
+                ${['left', 'center', 'right', 'justify'].map(
+                  align => html`
+                    <button
+                      class="property-btn ${this.designProperties.text_align === align
+                        ? 'active'
+                        : ''}"
+                      @click=${() => this._updateProperty('text_align', align)}
+                    >
+                      <ha-icon icon="mdi:format-align-${align}"></ha-icon>
+                    </button>
+                  `
+                )}
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label>Font Size:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.font_size || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('font_size', (e.target as HTMLInputElement).value)}
+                placeholder="16px, 1.2rem, max(1rem, 1.5vw)"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Line Height:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.line_height || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('line_height', (e.target as HTMLInputElement).value)}
+                placeholder="28px, 1.7"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Letter Spacing:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.letter_spacing || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('letter_spacing', (e.target as HTMLInputElement).value)}
+                placeholder="1px, -0.04em"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Font:</label>
+              <select
+                .value=${this.designProperties.font_family || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('font_family', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">– Default –</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Helvetica, sans-serif">Helvetica</option>
+                <option value="Times New Roman, serif">Times New Roman</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+              </select>
+            </div>
+
+            <div class="property-group">
+              <label>Font Weight:</label>
+              <select
+                .value=${this.designProperties.font_weight || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">– Default –</option>
+                <option value="100">100 - Thin</option>
+                <option value="300">300 - Light</option>
+                <option value="400">400 - Normal</option>
+                <option value="500">500 - Medium</option>
+                <option value="600">600 - Semi Bold</option>
+                <option value="700">700 - Bold</option>
+                <option value="900">900 - Black</option>
+              </select>
+            </div>
+
+            <div class="property-group">
+              <label>Text Transform:</label>
+              <select
+                .value=${this.designProperties.text_transform || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">– Default –</option>
+                <option value="none">None</option>
+                <option value="uppercase">UPPERCASE</option>
+                <option value="lowercase">lowercase</option>
+                <option value="capitalize">Capitalize</option>
+              </select>
+            </div>
+
+            <div class="property-group">
+              <label>Font Style:</label>
+              <select
+                .value=${this.designProperties.font_style || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">– Default –</option>
+                <option value="normal">Normal</option>
+                <option value="italic">Italic</option>
+                <option value="oblique">Oblique</option>
+              </select>
+            </div>
+          `,
+          'text'
+        )}
+        ${this._renderAccordion(
+          'Background',
+          html`
+            <div class="property-group">
+              <ultra-color-picker
+                .label=${'Background Color'}
+                .value=${this.designProperties.background_color || ''}
+                .defaultValue=${'transparent'}
+                .hass=${this.hass}
+                @value-changed=${(e: CustomEvent) =>
+                  this._updateProperty('background_color', e.detail.value)}
+              ></ultra-color-picker>
+            </div>
+
+            <div class="property-group">
+              <label>Background Image Type:</label>
+              <select
+                .value=${this.designProperties.background_image_type || 'none'}
+                @change=${(e: Event) =>
+                  this._updateProperty(
+                    'background_image_type',
+                    (e.target as HTMLSelectElement).value
+                  )}
+                class="property-select"
+              >
+                <option value="none">None</option>
+                <option value="upload">Upload Image</option>
+                <option value="entity">Entity Image</option>
+                <option value="url">Image URL</option>
+              </select>
+            </div>
+
+            ${this.designProperties.background_image_type === 'upload'
+              ? html`
+                  <div class="property-group">
+                    <label>Upload Background Image:</label>
+                    <div class="upload-container">
+                      <div class="file-upload-row">
+                        <label class="file-upload-button">
+                          <div class="button-content">
+                            <ha-icon icon="mdi:upload"></ha-icon>
+                            <span class="button-label">Choose File</span>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            @change=${this._handleBackgroundImageUpload}
+                            style="display: none"
+                          />
+                        </label>
+                        <div class="path-display">
+                          ${this.designProperties.background_image
+                            ? html`<span
+                                class="uploaded-path"
+                                title="${this.designProperties.background_image}"
+                              >
+                                ${this._truncatePath(this.designProperties.background_image)}
+                              </span>`
+                            : html`<span class="no-file">No file chosen</span>`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `
+              : ''}
+            ${this.designProperties.background_image_type === 'entity'
+              ? html`
+                  <div class="property-group">
+                    <label>Background Image Entity:</label>
+                    <ha-entity-picker
+                      .hass=${this.hass}
+                      .value=${this.designProperties.background_image_entity || ''}
+                      @value-changed=${(e: CustomEvent) =>
+                        this._updateProperty('background_image_entity', e.detail.value)}
+                      .label=${'Select entity with image attribute'}
+                      allow-custom-entity
+                    ></ha-entity-picker>
+                  </div>
+                `
+              : ''}
+            ${this.designProperties.background_image_type === 'url'
+              ? html`
+                  <div class="property-group">
+                    <label>Background Image URL:</label>
+                    <input
+                      type="text"
+                      .value=${this.designProperties.background_image || ''}
+                      @input=${(e: Event) =>
+                        this._updateProperty(
+                          'background_image',
+                          (e.target as HTMLInputElement).value
+                        )}
+                      placeholder="https://example.com/image.jpg"
+                      class="property-input"
+                    />
+                  </div>
+                `
+              : ''}
+
+            <div class="property-group">
+              <label>Backdrop Filter:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.backdrop_filter || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('backdrop_filter', (e.target as HTMLInputElement).value)}
+                placeholder="blur(10px), grayscale(100%), invert(75%)"
+                class="property-input"
+              />
+            </div>
+          `,
+          'background'
+        )}
+        ${this._renderAccordion(
+          'Sizes',
+          html`
+            <div class="property-group">
+              <label>Width:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.width || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('width', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.width || '', value =>
+                    this._updateProperty('width', value)
+                  )}
+                placeholder="200px, 100%, 14rem, 10vw"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Height:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.height || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('height', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.height || '', value =>
+                    this._updateProperty('height', value)
+                  )}
+                placeholder="200px, 15rem, 10vh"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Max Width:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.max_width || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('max_width', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.max_width || '', value =>
+                    this._updateProperty('max_width', value)
+                  )}
+                placeholder="200px, 100%, 14rem, 10vw"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Max Height:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.max_height || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('max_height', (e.target as HTMLInputElement).value)}
+                placeholder="200px, 15rem, 10vh"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Min Width:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.min_width || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('min_width', (e.target as HTMLInputElement).value)}
+                placeholder="200px, 100%, 14rem, 10vw"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Min Height:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.min_height || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('min_height', (e.target as HTMLInputElement).value)}
+                placeholder="200px, 15rem, 10vh"
+                class="property-input"
+              />
+            </div>
+          `,
+          'sizes'
+        )}
+        ${this._renderAccordion(
+          'Spacing',
+          html`
+            <div class="spacing-group">
+              <div class="spacing-header">
+                <h4>Margin</h4>
+                <button
+                  type="button"
+                  class="lock-button ${this._marginLocked ? 'locked' : ''}"
+                  @click=${() => this._toggleSpacingLock('margin')}
+                  title="${this._marginLocked
+                    ? 'Unlock to edit sides independently'
+                    : 'Lock to edit all sides together'}"
+                >
+                  <ha-icon icon="${this._marginLocked ? 'mdi:lock' : 'mdi:lock-open'}"></ha-icon>
+                </button>
+              </div>
+              <div class="spacing-fields-desktop">
+                <div class="spacing-field">
+                  <label>Top</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.margin_top || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('margin', 'top', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(e, this.designProperties.margin_top || '', value =>
+                        this._updateSpacing('margin', 'top', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+                <div class="spacing-field">
+                  <label>Right</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.margin_right || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('margin', 'right', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.margin_right || '',
+                        value => this._updateSpacing('margin', 'right', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+                <div class="spacing-field">
+                  <label>Bottom</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.margin_bottom || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('margin', 'bottom', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.margin_bottom || '',
+                        value => this._updateSpacing('margin', 'bottom', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+                <div class="spacing-field">
+                  <label>Left</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.margin_left || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('margin', 'left', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.margin_left || '',
+                        value => this._updateSpacing('margin', 'left', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="spacing-group">
+              <div class="spacing-header">
+                <h4>Padding</h4>
+                <button
+                  type="button"
+                  class="lock-button ${this._paddingLocked ? 'locked' : ''}"
+                  @click=${() => this._toggleSpacingLock('padding')}
+                  title="${this._paddingLocked
+                    ? 'Unlock to edit sides independently'
+                    : 'Lock to edit all sides together'}"
+                >
+                  <ha-icon icon="${this._paddingLocked ? 'mdi:lock' : 'mdi:lock-open'}"></ha-icon>
+                </button>
+              </div>
+              <div class="spacing-fields-desktop">
+                <div class="spacing-field">
+                  <label>Top</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.padding_top || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('padding', 'top', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.padding_top || '',
+                        value => this._updateSpacing('padding', 'top', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+                <div class="spacing-field">
+                  <label>Right</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.padding_right || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('padding', 'right', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.padding_right || '',
+                        value => this._updateSpacing('padding', 'right', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+                <div class="spacing-field">
+                  <label>Bottom</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.padding_bottom || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing(
+                        'padding',
+                        'bottom',
+                        (e.target as HTMLInputElement).value
+                      )}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.padding_bottom || '',
+                        value => this._updateSpacing('padding', 'bottom', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+                <div class="spacing-field">
+                  <label>Left</label>
+                  <input
+                    type="text"
+                    placeholder="0px, 1rem, 5%"
+                    .value=${this.designProperties.padding_left || ''}
+                    @input=${(e: Event) =>
+                      this._updateSpacing('padding', 'left', (e.target as HTMLInputElement).value)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      this._handleNumericKeydown(
+                        e,
+                        this.designProperties.padding_left || '',
+                        value => this._updateSpacing('padding', 'left', value)
+                      )}
+                    class="spacing-input"
+                  />
+                </div>
+              </div>
+            </div>
+          `,
+          'spacing'
+        )}
+        ${this._renderAccordion(
+          'Border',
+          html`
+            <div class="property-group">
+              <label>Border Radius:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.border_radius || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('border_radius', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.border_radius || '', value =>
+                    this._updateProperty('border_radius', value)
+                  )}
+                placeholder="5px, 50%, 0.3em, 12px 0"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Border Style:</label>
+              <select
+                .value=${this.designProperties.border_style || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('border_style', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">None</option>
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="double">Double</option>
+              </select>
+            </div>
+
+            <div class="property-group">
+              <label>Border Width:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.border_width || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('border_width', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.border_width || '', value =>
+                    this._updateProperty('border_width', value)
+                  )}
+                placeholder="1px, 2px, 0.125rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <ultra-color-picker
+                .label=${'Border Color'}
+                .value=${this.designProperties.border_color || ''}
+                .defaultValue=${'var(--divider-color)'}
+                .hass=${this.hass}
+                @value-changed=${(e: CustomEvent) =>
+                  this._updateProperty('border_color', e.detail.value)}
+              ></ultra-color-picker>
+            </div>
+          `,
+          'border'
+        )}
+        ${this._renderAccordion(
+          'Position',
+          html`
+            <div class="property-group">
+              <label>Position:</label>
+              <select
+                .value=${this.designProperties.position || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('position', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">– Default –</option>
+                <option value="static">Static</option>
+                <option value="relative">Relative</option>
+                <option value="absolute">Absolute</option>
+                <option value="fixed">Fixed</option>
+                <option value="sticky">Sticky</option>
+              </select>
+            </div>
+
+            ${this.designProperties.position && this.designProperties.position !== 'static'
+              ? html`
+                  <div class="position-grid">
+                    <input
+                      type="text"
+                      placeholder="Top"
+                      .value=${this.designProperties.top || ''}
+                      @input=${(e: Event) =>
+                        this._updateProperty('top', (e.target as HTMLInputElement).value)}
+                      @keydown=${(e: KeyboardEvent) =>
+                        this._handleNumericKeydown(e, this.designProperties.top || '', value =>
+                          this._updateProperty('top', value)
+                        )}
+                    />
+                    <div class="position-row">
+                      <input
+                        type="text"
+                        placeholder="Left"
+                        .value=${this.designProperties.left || ''}
+                        @input=${(e: Event) =>
+                          this._updateProperty('left', (e.target as HTMLInputElement).value)}
+                        @keydown=${(e: KeyboardEvent) =>
+                          this._handleNumericKeydown(e, this.designProperties.left || '', value =>
+                            this._updateProperty('left', value)
+                          )}
+                      />
+                      <div class="position-center">POS</div>
+                      <input
+                        type="text"
+                        placeholder="Right"
+                        .value=${this.designProperties.right || ''}
+                        @input=${(e: Event) =>
+                          this._updateProperty('right', (e.target as HTMLInputElement).value)}
+                        @keydown=${(e: KeyboardEvent) =>
+                          this._handleNumericKeydown(e, this.designProperties.right || '', value =>
+                            this._updateProperty('right', value)
+                          )}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Bottom"
+                      .value=${this.designProperties.bottom || ''}
+                      @input=${(e: Event) =>
+                        this._updateProperty('bottom', (e.target as HTMLInputElement).value)}
+                      @keydown=${(e: KeyboardEvent) =>
+                        this._handleNumericKeydown(e, this.designProperties.bottom || '', value =>
+                          this._updateProperty('bottom', value)
+                        )}
+                    />
+                  </div>
+
+                  <div class="property-group">
+                    <label>Z-Index:</label>
+                    <input
+                      type="text"
+                      .value=${this.designProperties.z_index || ''}
+                      @input=${(e: Event) =>
+                        this._updateProperty('z_index', (e.target as HTMLInputElement).value)}
+                      @keydown=${(e: KeyboardEvent) =>
+                        this._handleNumericKeydown(e, this.designProperties.z_index || '', value =>
+                          this._updateProperty('z_index', value)
+                        )}
+                      placeholder="-1, 1, 3, 50"
+                      class="property-input"
+                    />
+                  </div>
+                `
+              : ''}
+          `,
+          'position'
+        )}
+        ${this._renderAccordion(
+          'Text Shadow',
+          html`
+            <div class="property-group">
+              <label>Horizontal Shift:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.text_shadow_h || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('text_shadow_h', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.text_shadow_h || '', value =>
+                    this._updateProperty('text_shadow_h', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Vertical Shift:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.text_shadow_v || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('text_shadow_v', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.text_shadow_v || '', value =>
+                    this._updateProperty('text_shadow_v', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Blur:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.text_shadow_blur || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('text_shadow_blur', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(
+                    e,
+                    this.designProperties.text_shadow_blur || '',
+                    value => this._updateProperty('text_shadow_blur', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <ultra-color-picker
+                .label=${'Text Shadow Color'}
+                .value=${this.designProperties.text_shadow_color || ''}
+                .defaultValue=${'rgba(0,0,0,0.5)'}
+                .hass=${this.hass}
+                @value-changed=${(e: CustomEvent) =>
+                  this._updateProperty('text_shadow_color', e.detail.value)}
+              ></ultra-color-picker>
+            </div>
+          `,
+          'text-shadow'
+        )}
+        ${this._renderAccordion(
+          'Box Shadow',
+          html`
+            <div class="property-group">
+              <label>Horizontal Shift:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.box_shadow_h || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('box_shadow_h', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.box_shadow_h || '', value =>
+                    this._updateProperty('box_shadow_h', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Vertical Shift:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.box_shadow_v || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('box_shadow_v', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(e, this.designProperties.box_shadow_v || '', value =>
+                    this._updateProperty('box_shadow_v', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Blur:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.box_shadow_blur || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('box_shadow_blur', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(
+                    e,
+                    this.designProperties.box_shadow_blur || '',
+                    value => this._updateProperty('box_shadow_blur', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label>Spread:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.box_shadow_spread || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('box_shadow_spread', (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) =>
+                  this._handleNumericKeydown(
+                    e,
+                    this.designProperties.box_shadow_spread || '',
+                    value => this._updateProperty('box_shadow_spread', value)
+                  )}
+                placeholder="0, 3px, 0.05em, 2rem"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <ultra-color-picker
+                .label=${'Box Shadow Color'}
+                .value=${this.designProperties.box_shadow_color || ''}
+                .defaultValue=${'rgba(0,0,0,0.1)'}
+                .hass=${this.hass}
+                @value-changed=${(e: CustomEvent) =>
+                  this._updateProperty('box_shadow_color', e.detail.value)}
+              ></ultra-color-picker>
+            </div>
+          `,
+          'box-shadow'
+        )}
+        ${this._renderAccordion(
+          'Overflow',
+          html`
+            <div class="property-group">
+              <label>Overflow:</label>
+              <select
+                .value=${this.designProperties.overflow || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('overflow', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">– Default –</option>
+                <option value="visible">Visible</option>
+                <option value="hidden">Hidden</option>
+                <option value="scroll">Scroll</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+
+            <div class="property-group">
+              <label>Clip-path:</label>
+              <input
+                type="text"
+                .value=${this.designProperties.clip_path || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('clip_path', (e.target as HTMLInputElement).value)}
+                placeholder="ellipse(75% 100% at bottom)"
+                class="property-input"
+              />
+              <small class="property-hint"
+                >Examples:<br />
+                ellipse(75% 100% at bottom)<br />
+                polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)<br />
+                polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%, 25% 6.7%, 75% 6.7%)
+              </small>
+            </div>
+          `,
+          'overflow'
+        )}
+        ${this._renderAccordion(
+          'Animations',
+          html`
+            <!-- State-based Animation -->
+            <div class="property-section">
+              <h5>State-based Animation</h5>
+              <div class="property-group">
+                <label>Animation Type:</label>
+                <select
+                  .value=${this.designProperties.animation_type || 'none'}
+                  @change=${(e: Event) =>
+                    this._updateProperty('animation_type', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="none">None</option>
+                  <option value="pulse">Pulse</option>
+                  <option value="vibrate">Vibrate</option>
+                  <option value="rotate-left">Rotate Left</option>
+                  <option value="rotate-right">Rotate Right</option>
+                  <option value="hover">Hover</option>
+                  <option value="fade">Fade</option>
+                  <option value="scale">Scale</option>
+                  <option value="bounce">Bounce</option>
+                  <option value="shake">Shake</option>
+                  <option value="tada">Tada</option>
+                </select>
+              </div>
+
+              <div class="property-group">
+                <label>Animation Duration:</label>
+                <input
+                  type="text"
+                  .value=${this.designProperties.animation_duration || '2s'}
+                  @input=${(e: Event) =>
+                    this._updateProperty(
+                      'animation_duration',
+                      (e.target as HTMLInputElement).value
+                    )}
+                  placeholder="2s, 500ms, 1.5s"
+                  class="property-input"
+                />
+                <small class="property-hint">
+                  Duration for the animation (e.g., 2s, 500ms, 1.5s)
+                </small>
+              </div>
+
+              ${this.designProperties.animation_type &&
+              this.designProperties.animation_type !== 'none'
+                ? html`
+                    <div class="property-group">
+                      <label>Entity to Monitor:</label>
+                      <ha-form
+                        .hass=${this.hass}
+                        .data=${{ entity: this.designProperties.animation_entity || '' }}
+                        .schema=${[
+                          {
+                            name: 'entity',
+                            selector: { entity: {} },
+                          },
+                        ]}
+                        @value-changed=${(e: CustomEvent) =>
+                          this._updateProperty('animation_entity', e.detail.value.entity)}
+                      ></ha-form>
+                    </div>
+
+                    ${this.designProperties.animation_entity
+                      ? html`
+                          <div class="property-group">
+                            <label>Animation Trigger Type:</label>
+                            <select
+                              id="animation-trigger-type-select"
+                              .value=${this.designProperties.animation_trigger_type || 'state'}
+                              @change=${(e: Event) => {
+                                const triggerType = (e.target as HTMLSelectElement).value as
+                                  | 'state'
+                                  | 'attribute';
+
+                                console.log('Animation trigger type changing to:', triggerType);
+
+                                // Create an update object
+                                const updates: Partial<DesignProperties> = {
+                                  animation_trigger_type: triggerType,
+                                  animation_state: '', // Reset state when changing type
+                                  animation_attribute: '', // Reset attribute when changing type
+                                };
+
+                                // Apply updates through parent component
+                                if (this.onUpdate) {
+                                  this.onUpdate(updates);
+                                } else {
+                                  this.dispatchEvent(
+                                    new CustomEvent('design-changed', {
+                                      detail: updates,
+                                      bubbles: true,
+                                      composed: true,
+                                    })
+                                  );
+                                }
+
+                                // Force immediate local update for responsive UI
+                                this.designProperties = {
+                                  ...this.designProperties,
+                                  ...updates,
+                                };
+
+                                // Request update
+                                this.requestUpdate();
+                              }}
+                              class="property-select ${this.designProperties
+                                .animation_trigger_type === 'attribute'
+                                ? 'attribute-mode'
+                                : 'state-mode'}"
+                            >
+                              <option value="state">Entity State</option>
+                              <option value="attribute">Entity Attribute</option>
+                            </select>
+                            <div
+                              class="trigger-type-indicator ${this.designProperties
+                                .animation_trigger_type === 'attribute'
+                                ? 'attribute-mode-indicator'
+                                : 'state-mode-indicator'}"
+                            >
+                              <ha-icon
+                                icon="${this.designProperties.animation_trigger_type === 'attribute'
+                                  ? 'mdi:format-list-checks'
+                                  : 'mdi:state-machine'}"
+                              ></ha-icon>
+                              <span
+                                >${this.designProperties.animation_trigger_type === 'attribute'
+                                  ? 'Attribute mode: select an attribute and its value to trigger the animation'
+                                  : 'State mode: enter a state value to trigger the animation'}</span
+                              >
+                            </div>
+                          </div>
+
+                          ${(() => {
+                            // SIMPLIFIED TRIGGER TYPE DETECTION:
+                            // Use component properties as the primary source of truth
+                            const currentTriggerType =
+                              this.designProperties.animation_trigger_type || 'state';
+                            const isAttributeMode = currentTriggerType === 'attribute';
+
+                            console.log('TRIGGER TYPE DETECTION:', {
+                              currentTriggerType,
+                              isAttributeMode,
+                              entitySelected: !!this.designProperties.animation_entity,
+                              attributeSelected: !!this.designProperties.animation_attribute,
+                              stateValue: this.designProperties.animation_state,
+                            });
+
+                            // Render attribute mode UI when trigger type is 'attribute'
+                            if (isAttributeMode) {
+                              console.log('🟢 RENDERING ATTRIBUTE MODE UI');
+                              console.log('Rendering attribute mode UI');
+                              return html`
+                                <div class="property-group attribute-mode-container">
+                                  <div class="property-group">
+                                    <label>
+                                      <ha-icon icon="mdi:format-list-checks"></ha-icon>
+                                      Attribute Name:
+                                    </label>
+                                    <input
+                                      type="text"
+                                      .value=${this.designProperties.animation_attribute || ''}
+                                      @input=${(e: Event) => {
+                                        const attribute = (e.target as HTMLInputElement).value;
+                                        console.log('Animation attribute changed to:', attribute);
+                                        console.log(
+                                          'Current entity:',
+                                          this.designProperties.animation_entity
+                                        );
+                                        console.log(
+                                          'Current trigger type:',
+                                          this.designProperties.animation_trigger_type
+                                        );
+
+                                        // Reference to the input element for visual feedback
+                                        const inputElement = e.target as HTMLInputElement;
+
+                                        // Visual feedback - temporarily add a success class
+                                        inputElement.classList.add('change-success');
+
+                                        // Create a batch of updates to ensure UI consistency
+                                        const updates = {
+                                          animation_attribute: attribute,
+                                          animation_state: '', // Reset the state value when changing attributes
+                                        };
+
+                                        // Apply updates using the appropriate method
+                                        if (this.onUpdate) {
+                                          this.onUpdate(updates);
+                                        } else {
+                                          this.dispatchEvent(
+                                            new CustomEvent('design-changed', {
+                                              detail: updates,
+                                              bubbles: true,
+                                              composed: true,
+                                            })
+                                          );
+                                        }
+
+                                        // Progressive UI refresh strategy with cascading timeouts
+                                        setTimeout(() => {
+                                          console.log(
+                                            'First UI refresh after attribute change (50ms)'
+                                          );
+                                          this.requestUpdate();
+                                        }, 50);
+
+                                        setTimeout(() => {
+                                          console.log(
+                                            'Second UI refresh after attribute change (150ms)'
+                                          );
+                                          this.requestUpdate();
+                                        }, 150);
+
+                                        setTimeout(() => {
+                                          console.log(
+                                            'Third UI refresh after attribute change (300ms)'
+                                          );
+                                          this.requestUpdate();
+                                        }, 300);
+
+                                        setTimeout(() => {
+                                          console.log(
+                                            'Final UI refresh after attribute change (500ms)'
+                                          );
+                                          this.requestUpdate();
+
+                                          // Remove the success class after animation completes
+                                          inputElement.classList.remove('change-success');
+                                        }, 500);
+                                      }}
+                                      placeholder="friendly_name, device_class, state, etc."
+                                      class="property-input attribute-mode-input"
+                                    />
+                                    <small class="property-hint">
+                                      Enter the attribute name manually (e.g., friendly_name,
+                                      device_class, state, battery_level)
+                                    </small>
+                                  </div>
+
+                                  <div class="property-group">
+                                    <label>
+                                      <ha-icon icon="mdi:format-text"></ha-icon>
+                                      Attribute Value:
+                                    </label>
+                                    <input
+                                      type="text"
+                                      .value=${this.designProperties.animation_state || ''}
+                                      @input=${(e: Event) =>
+                                        this._updateProperty(
+                                          'animation_state',
+                                          (e.target as HTMLInputElement).value
+                                        )}
+                                      placeholder="blue, 255, heating, on, off, etc."
+                                      class="property-input attribute-value-input"
+                                    />
+                                    <small class="property-hint">
+                                      Enter the attribute value that will trigger the animation
+                                    </small>
+                                  </div>
+                                </div>
+                              `;
+                            } else {
+                              console.log('🔵 RENDERING STATE MODE UI');
+                              return html`
+                                <div
+                                  class="property-group state-value-container"
+                                  style="display: ${String(
+                                    this.designProperties.animation_trigger_type
+                                  ) !== 'attribute'
+                                    ? 'block !important'
+                                    : 'none !important'}"
+                                  data-mode="state"
+                                >
+                                  <label>
+                                    <ha-icon icon="mdi:state-machine"></ha-icon>
+                                    State Value:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    .value=${this.designProperties.animation_state || ''}
+                                    @input=${(e: Event) =>
+                                      this._updateProperty(
+                                        'animation_state',
+                                        (e.target as HTMLInputElement).value
+                                      )}
+                                    placeholder="on, off, playing, idle, etc."
+                                    class="property-input state-value-input"
+                                  />
+                                  <small class="property-hint">
+                                    Enter the exact state value that will trigger the animation
+                                  </small>
+                                  <div class="property-hint state-value-hint">
+                                    <ha-icon icon="mdi:information-outline"></ha-icon>
+                                    <span>
+                                      ${this._getStateValueHint(
+                                        this.designProperties.animation_entity
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              `;
+                            }
+                          })()}
+                        `
+                      : html`
+                          <div class="property-group">
+                            <label>Trigger Type:</label>
+                            <select disabled class="property-select">
+                              <option>Select an entity first</option>
+                            </select>
+                            <small class="property-hint">
+                              Select an entity first to configure trigger conditions
+                            </small>
+                          </div>
+                        `}
+                  `
+                : ''}
+            </div>
+
+            <!-- Intro/Outro Animations -->
+            <div class="property-section">
+              <h5>Intro & Outro Animations</h5>
+              <div class="two-column-grid">
+                <div class="property-group">
+                  <label>Intro Animation:</label>
+                  <select
+                    .value=${this.designProperties.intro_animation || 'none'}
+                    @change=${(e: Event) =>
+                      this._updateProperty(
+                        'intro_animation',
+                        (e.target as HTMLSelectElement).value
+                      )}
+                    class="property-select"
+                  >
+                    <option value="none">None</option>
+                    <option value="fadeIn">Fade In</option>
+                    <option value="slideInUp">Slide In Up</option>
+                    <option value="slideInDown">Slide In Down</option>
+                    <option value="slideInLeft">Slide In Left</option>
+                    <option value="slideInRight">Slide In Right</option>
+                    <option value="zoomIn">Zoom In</option>
+                    <option value="bounceIn">Bounce In</option>
+                    <option value="flipInX">Flip In X</option>
+                    <option value="flipInY">Flip In Y</option>
+                    <option value="rotateIn">Rotate In</option>
+                  </select>
+                </div>
+
+                <div class="property-group">
+                  <label>Outro Animation:</label>
+                  <select
+                    .value=${this.designProperties.outro_animation || 'none'}
+                    @change=${(e: Event) =>
+                      this._updateProperty(
+                        'outro_animation',
+                        (e.target as HTMLSelectElement).value
+                      )}
+                    class="property-select"
+                  >
+                    <option value="none">None</option>
+                    <option value="fadeOut">Fade Out</option>
+                    <option value="slideOutUp">Slide Out Up</option>
+                    <option value="slideOutDown">Slide Out Down</option>
+                    <option value="slideOutLeft">Slide Out Left</option>
+                    <option value="slideOutRight">Slide Out Right</option>
+                    <option value="zoomOut">Zoom Out</option>
+                    <option value="bounceOut">Bounce Out</option>
+                    <option value="flipOutX">Flip Out X</option>
+                    <option value="flipOutY">Flip Out Y</option>
+                    <option value="rotateOut">Rotate Out</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Animation Settings -->
+              <div class="three-column-grid">
+                <div class="property-group">
+                  <label>Duration:</label>
+                  <input
+                    type="text"
+                    .value=${this.designProperties.animation_duration || ''}
+                    @input=${(e: Event) =>
+                      this._updateProperty(
+                        'animation_duration',
+                        (e.target as HTMLInputElement).value
+                      )}
+                    placeholder="0.3s, 500ms"
+                    class="property-input"
+                  />
+                </div>
+
+                <div class="property-group">
+                  <label>Delay:</label>
+                  <input
+                    type="text"
+                    .value=${this.designProperties.animation_delay || ''}
+                    @input=${(e: Event) =>
+                      this._updateProperty('animation_delay', (e.target as HTMLInputElement).value)}
+                    placeholder="0s, 100ms"
+                    class="property-input"
+                  />
+                </div>
+
+                <div class="property-group">
+                  <label>Timing:</label>
+                  <select
+                    .value=${this.designProperties.animation_timing || 'ease'}
+                    @change=${(e: Event) =>
+                      this._updateProperty(
+                        'animation_timing',
+                        (e.target as HTMLSelectElement).value
+                      )}
+                    class="property-select"
+                  >
+                    <option value="ease">Ease</option>
+                    <option value="linear">Linear</option>
+                    <option value="ease-in">Ease In</option>
+                    <option value="ease-out">Ease Out</option>
+                    <option value="ease-in-out">Ease In Out</option>
+                    <option value="cubic-bezier(0.25,0.1,0.25,1)">Custom Cubic</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          `,
+          'animations'
+        )}
+      </div>
+    `;
+  }
+
+  static get styles() {
+    return css`
+      .global-design-tab {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .design-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--secondary-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .toolbar-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+        font-weight: 500;
+        min-width: 0;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .toolbar-button:hover:not(:disabled) {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .toolbar-button:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .toolbar-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--disabled-background-color, #f5f5f5);
+        color: var(--disabled-text-color, #999);
+        border-color: var(--disabled-border-color, #ddd);
+      }
+
+      .toolbar-button ha-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .toolbar-button span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Specific button styling */
+      .copy-button:hover:not(:disabled) {
+        border-color: var(--info-color, #2196f3);
+        background: var(--info-color, #2196f3);
+      }
+
+      .paste-button.has-content {
+        border-color: var(--success-color, #4caf50);
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .paste-button.has-content:hover:not(:disabled) {
+        border-color: var(--success-color, #4caf50);
+        background: var(--success-color, #4caf50);
+        color: white;
+      }
+
+      .reset-all-button:hover:not(:disabled) {
+        border-color: var(--error-color, #f44336);
+        background: var(--error-color, #f44336);
+      }
+
+      /* Responsive design for smaller screens */
+      @media (max-width: 768px) {
+        .design-toolbar {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .toolbar-button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .toolbar-button span {
+          display: none;
+        }
+
+        .toolbar-button {
+          min-width: 44px;
+          padding: 8px;
+          justify-content: center;
+        }
+
+        .design-toolbar {
+          flex-direction: row;
+          justify-content: space-around;
+        }
+      }
+
+      .accordion-section {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      .accordion-header {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--secondary-background-color);
+        border: none;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 500;
+        color: var(--primary-text-color);
+        transition: background-color 0.2s ease;
+        box-sizing: border-box;
+      }
+
+      .accordion-header:hover {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .accordion-header.expanded {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .accordion-header:not(.expanded) {
+        border-radius: 8px;
+      }
+
+      .accordion-toggle {
+        background: none;
+        border: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        flex: 1;
+        text-align: left;
+        padding: 0;
+      }
+
+      .accordion-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .reset-button,
+      .expand-button {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s ease;
+        min-width: 24px;
+        height: 24px;
+      }
+
+      .reset-button:hover,
+      .expand-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .accordion-header:not(.expanded) .reset-button:hover,
+      .accordion-header:not(.expanded) .expand-button:hover {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .accordion-title {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .edit-indicator {
+        width: 8px;
+        height: 8px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .accordion-header.expanded .edit-indicator {
+        background: white;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      .accordion-content {
+        padding: 20px;
+        background: var(--card-background-color, #fff);
+        border-top: 1px solid var(--divider-color);
+        border-radius: 0 0 8px 8px;
+        position: relative;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .property-group {
+        margin-bottom: 16px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .property-group:last-child {
+        margin-bottom: 0;
+      }
+
+      .property-group label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: var(--primary-text-color);
+      }
+
+      .property-input,
+      .property-select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 14px;
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+
+      .property-input:focus,
+      .property-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      .property-hint {
+        display: block;
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin-top: 4px;
+        line-height: 1.3;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 4px;
+      }
+
+      .property-btn {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .property-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .property-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .spacing-group {
+        margin-bottom: 20px;
+      }
+
+      .spacing-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .spacing-group h4 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+
+      .lock-button {
+        padding: 6px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+      }
+
+      .lock-button:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .lock-button.locked {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .spacing-fields-desktop {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .spacing-field {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .spacing-field label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        text-align: center;
+      }
+
+      .spacing-input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 12px;
+        text-align: center;
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+
+      .spacing-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      @media (max-width: 768px) {
+        .spacing-fields-desktop {
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+      }
+
+      .spacing-grid,
+      .position-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: center;
+        max-width: 150px;
+        margin: 0 auto;
+      }
+
+      .spacing-row,
+      .position-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .spacing-center,
+      .position-center {
+        width: 40px;
+        height: 32px;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 11px;
+      }
+
+      .spacing-grid input,
+      .position-grid input {
+        width: 100%;
+        text-align: center;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+
+      /* Property sections */
+      .property-section {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .property-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .property-section h5 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--primary-color);
+        display: inline-block;
+      }
+
+      /* Grid layouts */
+      .two-column-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .three-column-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      @media (max-width: 768px) {
+        .two-column-grid,
+        .three-column-grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+      }
+
+      /* Animation keyframes for intro/outro animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideInUp {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutUp {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideInDown {
+        from {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutDown {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideInLeft {
+        from {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutLeft {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes zoomIn {
+        from {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes zoomOut {
+        from {
+          transform: scale(1);
+          opacity: 1;
+        }
+        to {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+      }
+
+      @keyframes bounceIn {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        70% {
+          transform: scale(0.9);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes bounceOut {
+        20% {
+          transform: scale(0.9);
+        }
+        50%,
+        55% {
+          transform: scale(1.05);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+      }
+
+      @keyframes flipInX {
+        from {
+          transform: perspective(400px) rotateX(90deg);
+          opacity: 0;
+        }
+        40% {
+          transform: perspective(400px) rotateX(-20deg);
+        }
+        60% {
+          transform: perspective(400px) rotateX(10deg);
+        }
+        80% {
+          transform: perspective(400px) rotateX(-5deg);
+        }
+        to {
+          transform: perspective(400px) rotateX(0deg);
+          opacity: 1;
+        }
+      }
+
+      @keyframes flipOutX {
+        from {
+          transform: perspective(400px) rotateX(0deg);
+          opacity: 1;
+        }
+        to {
+          transform: perspective(400px) rotateX(90deg);
+          opacity: 0;
+        }
+      }
+
+      @keyframes flipInY {
+        from {
+          transform: perspective(400px) rotateY(90deg);
+          opacity: 0;
+        }
+        40% {
+          transform: perspective(400px) rotateY(-20deg);
+        }
+        60% {
+          transform: perspective(400px) rotateY(10deg);
+        }
+        80% {
+          transform: perspective(400px) rotateY(-5deg);
+        }
+        to {
+          transform: perspective(400px) rotateY(0deg);
+          opacity: 1;
+        }
+      }
+
+      @keyframes flipOutY {
+        from {
+          transform: perspective(400px) rotateY(0deg);
+          opacity: 1;
+        }
+        to {
+          transform: perspective(400px) rotateY(90deg);
+          opacity: 0;
+        }
+      }
+
+      @keyframes rotateIn {
+        from {
+          transform: rotate(-200deg);
+          opacity: 0;
+        }
+        to {
+          transform: rotate(0deg);
+          opacity: 1;
+        }
+      }
+
+      @keyframes rotateOut {
+        from {
+          transform: rotate(0deg);
+          opacity: 1;
+        }
+        to {
+          transform: rotate(200deg);
+          opacity: 0;
+        }
+      }
+
+      /* Color picker z-index fix */
+      ultra-color-picker {
+        position: relative;
+        z-index: 1000;
+      }
+
+      /* Upload button styling */
+      .upload-container {
+        width: 100%;
+      }
+
+      .file-upload-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .file-upload-button {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-width: 120px;
+      }
+
+      .file-upload-button:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .button-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .button-label {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .path-display {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .uploaded-path {
+        color: var(--primary-text-color);
+        font-size: 12px;
+        word-break: break-all;
+      }
+
+      .no-file {
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        font-style: italic;
+      }
+
+      /* Attribute value selection styling */
+      .attribute-value-selection {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        margin-bottom: 8px;
+      }
+
+      .attribute-value-select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--primary-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 14px;
+        box-sizing: border-box;
+        appearance: menulist;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .attribute-value-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .attribute-value-select option {
+        padding: 8px;
+      }
+
+      /* Enhanced attribute mode styling */
+      .attribute-mode {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      .attribute-mode-container {
+        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
+        padding: 12px;
+        border-radius: 4px;
+        border-left: 3px solid var(--primary-color);
+        margin-bottom: 16px;
+      }
+
+      .trigger-type-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        margin: 8px 0;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      .attribute-mode-indicator {
+        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.1);
+        border-left: 3px solid var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .state-mode-indicator {
+        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
+        border-left: 3px solid var(--info-color, #03a9f4);
+        color: var(--info-color, #03a9f4);
+      }
+
+      .attribute-mode-select {
+        border-color: var(--primary-color);
+      }
+
+      .attribute-value-container {
+        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color);
+        margin-top: 16px;
+      }
+
+      .attribute-value-container label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .attribute-value-selection {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--primary-color);
+        border-radius: 4px;
+        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
+        margin-top: 8px;
+      }
+
+      .attribute-value-input {
+        border-color: var(--primary-color);
+        border-width: 2px;
+      }
+
+      .attribute-value-dropdown-container {
+        background: white;
+        padding: 12px;
+        border-radius: 4px;
+        border: 1px dashed var(--primary-color);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .attribute-value-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 4px;
+      }
+
+      .attribute-value-hint {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 8px;
+        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.05);
+        padding: 8px;
+        border-radius: 4px;
+      }
+
+      /* State mode styling */
+      .state-value-container {
+        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.05);
+        padding: 16px;
+        border-radius: 8px;
+        border-left: 3px solid var(--info-color, #03a9f4);
+        margin-top: 16px;
+      }
+
+      .state-value-container label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--info-color, #03a9f4);
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .state-value-selection {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--info-color, #03a9f4);
+        border-radius: 4px;
+        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.05);
+        margin-top: 8px;
+      }
+
+      .state-value-input {
+        border-color: var(--info-color, #03a9f4);
+        border-width: 2px;
+      }
+
+      .state-value-dropdown-container {
+        background: white;
+        padding: 12px;
+        border-radius: 4px;
+        border: 1px dashed var(--info-color, #03a9f4);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .state-value-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--info-color, #03a9f4);
+        margin-bottom: 4px;
+      }
+
+      .state-value-hint {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 8px;
+        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.05);
+        padding: 8px;
+        border-radius: 4px;
+      }
+
+      .state-value-hint ha-icon {
+        color: var(--info-color, #03a9f4);
+        flex-shrink: 0;
+      }
+
+      .attribute-value-hint ha-icon,
+      .state-value-hint ha-icon {
+        color: currentColor;
+        flex-shrink: 0;
+      }
+
+      /* Visual feedback animations */
+      @keyframes success-pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(var(--rgb-success-color, 76, 175, 80), 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(var(--rgb-success-color, 76, 175, 80), 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(var(--rgb-success-color, 76, 175, 80), 0);
+        }
+      }
+
+      .change-success {
+        animation: success-pulse 0.5s ease-in-out;
+        border-color: var(--success-color, #4caf50) !important;
+        box-shadow: 0 0 0 1px var(--success-color, #4caf50);
+        transition: all 0.3s ease;
+      }
+
+      .attribute-mode-select.change-success,
+      .state-mode-select.change-success {
+        border-width: 2px;
+      }
+
+      .select-attribute-first {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        color: var(--warning-color, #ff9800);
+        font-style: italic;
+        text-align: center;
+        background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.05);
+        border: 1px dashed var(--warning-color, #ff9800);
+        border-radius: 4px;
+      }
+
+      /* Mode switch animation */
+      @keyframes highlight-fade {
+        0% {
+          background-color: rgba(var(--rgb-success-color, 76, 175, 80), 0.2);
+        }
+        100% {
+          background-color: transparent;
+        }
+      }
+
+      .trigger-type-indicator {
+        animation: highlight-fade 1.5s ease-out;
+      }
+
+      /* Additional highlight animation for mode switches */
+      @keyframes border-pulse {
+        0% {
+          border-left-width: 3px;
+        }
+        50% {
+          border-left-width: 6px;
+        }
+        100% {
+          border-left-width: 3px;
+        }
+      }
+
+      .attribute-mode-indicator {
+        animation: border-pulse 1s ease-in-out;
+      }
+
+      .state-mode-indicator {
+        animation: border-pulse 1s ease-in-out;
+      }
+
+      /* Visual transitions for UI state changes */
+      .property-select,
+      .property-input,
+      .attribute-value-select,
+      .state-value-select {
+        transition:
+          border-color 0.3s ease,
+          box-shadow 0.3s ease,
+          background-color 0.3s ease;
+      }
+
+      /* Value selection feedback */
+      .attribute-value-select:focus,
+      .state-value-select:focus {
+        border-width: 2px;
+        transform: translateY(-1px);
+      }
+
+      /* Attribute mode specific animations */
+      .attribute-mode-select::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(var(--rgb-primary-color, 0, 140, 255), 0.1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .attribute-mode-select:focus::after {
+        opacity: 1;
+      }
+
+      /* State mode specific animations */
+      .state-value-select::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .state-value-select:focus::after {
+        opacity: 1;
+      }
+
+      /* Animation classes */
+      .fadeIn {
+        animation: fadeIn var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .fadeOut {
+        animation: fadeOut var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideInUp {
+        animation: slideInUp var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideOutUp {
+        animation: slideOutUp var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideInDown {
+        animation: slideInDown var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideOutDown {
+        animation: slideOutDown var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideInLeft {
+        animation: slideInLeft var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideOutLeft {
+        animation: slideOutLeft var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideInRight {
+        animation: slideInRight var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .slideOutRight {
+        animation: slideOutRight var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .zoomIn {
+        animation: zoomIn var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .zoomOut {
+        animation: zoomOut var(--animation-duration, 0.3s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .bounceIn {
+        animation: bounceIn var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .bounceOut {
+        animation: bounceOut var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .flipInX {
+        animation: flipInX var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .flipOutX {
+        animation: flipOutX var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .flipInY {
+        animation: flipInY var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .flipOutY {
+        animation: flipOutY var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .rotateIn {
+        animation: rotateIn var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+      .rotateOut {
+        animation: rotateOut var(--animation-duration, 0.6s) var(--animation-timing, ease)
+          var(--animation-delay, 0s) both;
+      }
+    `;
+  }
+}

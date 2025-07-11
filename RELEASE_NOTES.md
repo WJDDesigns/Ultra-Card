@@ -15,6 +15,7 @@
 - **Section Ordering**: Ability to rearrange sections in the card via drag and drop.
 - **Bar Size Options**: Choose from thin, regular, thick or "thiccc" bar sizes.
 - **Advanced Icon Customization**: Added text size control and vertical alignment options.
+- **Default Inactive States**: Automatically recognize common inactive states like 'off', 'unavailable', 'idle', etc. without requiring manual configuration.
 - **Improved Responsive Design**: Better support for various screen sizes and mobile devices.
 
 ### Bug Fixes
@@ -35,4 +36,4 @@ Please report any issues on GitHub or in our Discord community.
 
 ## Previous Versions
 
-For information about previous releases, please visit our [GitHub releases page](https://github.com/WJDDesigns/Ultra-Vehicle-Card/releases).
+For information about previous releases, please visit our [GitHub releases page](https://github.com/WJDDesigns/Ultra-Card/releases).

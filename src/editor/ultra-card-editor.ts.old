@@ -1,0 +1,753 @@
+// @ts-nocheck - Disable TypeScript checking for this file
+import { LitElement, html, css, nothing, render as litRender } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import { UltraVehicleCardConfig, ImageCropSettings, SectionStyles, GradientStop } from '../types';
+import '../components/entity-picker';
+import memoizeOne from 'memoize-one';
+import '../components/color-picker';
+import '../components/gradient-editor';
+import { createDefaultGradientStops, createStopAtLargestGap } from '../components/gradient-editor';
+import { mdiDelete } from '@mdi/js';
+import { localize } from '../localize/localize';
+import { SectionHighlightService } from '../services/section-highlight-service';
+import './tabs/settings-tab';
+import './tabs/layout-tab';
+import './tabs/about-tab';
+import { uploadImage } from '../utils/image-upload';
+import { autoMigrateConfig, shouldMigrateToModular } from '../utils/modular-migration';
+
+// Constants for SVG paths - KEEP
+const ICON_PATH_EXPAND = 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z';
+const ICON_PATH_COLLAPSE = 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z';
+const ICON_PATH_DELETE =
+  'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
+
+// Default colors - KEEP
+const DEFAULT_COLORS = {
+  bar_color: '#3498db',
+  background_color: '#e0e0e0',
+  border_color: '#cccccc',
+  left_title_color: 'var(--text-primary-color, #777777)',
+  left_text_color: 'var(--text-primary-color, #000000)',
+  right_title_color: 'var(--text-primary-color, #777777)',
+  right_text_color: 'var(--text-primary-color, #000000)',
+  limit_indicator_color: '#ff0000',
+};
+
+// Default configuration - KEEP
+const DEFAULT_CONFIG = {
+  vehicle_image_type: 'none',
+  status_image_type: 'none',
+  layout_type: 'single',
+  formatted_entities: false,
+  vehicle_image_width: 100,
+  action_image_width: 100,
+  title_size: 22,
+  show_units: true,
+  section_styles: {},
+};
+
+@customElement('ultra-vehicle-card-editor')
+export class UltraVehicleCardEditor extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property() private config!: UltraVehicleCardConfig;
+  @state() private activeTab: string = 'layout';
+
+  // Section highlighting service instance
+  private _highlightService: SectionHighlightService;
+
+  // Keep Image/Crop specific state
+  @state() private _cropperActive: boolean = false;
+  @state() private _cropperImage: string = '';
+  @state() private _cropperTargetField: string = '';
+  @state() private _vehicleCropExpanded: boolean = false;
+  @state() private _actionCropExpanded: boolean = false;
+
+  // Keep Entity Picker state
+  @state() private _showEntityList: boolean = false;
+  @state() private _activeField: string = '';
+  @state() private _entityFilter: string = '';
+  @state() private _entities: any[] = [];
+
+  // Keep Version and Timeout
+  private _editorVersion = '1.2.0-debug';
+  private _configChangedTimeout: number | undefined;
+
+  setConfig(config: UltraVehicleCardConfig) {
+    if (!config) {
+      throw new Error('Invalid configuration');
+    }
+
+    // Auto-migrate to modular layout if needed
+    const migratedConfig = autoMigrateConfig(config);
+
+    // Create a new config object with our defaults
+    this.config = {
+      // Default values
+      vehicle_image_type: 'default',
+      status_image_type: 'none',
+      layout_type: 'single',
+      formatted_entities: false,
+      show_location: true,
+      show_mileage: true,
+      show_car_state: true,
+      show_info_icons: true,
+      help_highlight: true,
+      sections_order: ['title', 'image', 'info'],
+      bars: [],
+      icon_rows: [],
+      // Override with migrated config
+      ...migratedConfig,
+    };
+
+    // If existing sections_order doesn't have info, add it after image
+    if (this.config.sections_order && !this.config.sections_order.includes('info')) {
+      // Create a new array to avoid modifying a potentially frozen array
+      const newSectionsOrder = [...this.config.sections_order];
+
+      const imageIndex = newSectionsOrder.indexOf('image');
+      if (imageIndex !== -1) {
+        // Add info after image
+        newSectionsOrder.splice(imageIndex + 1, 0, 'info');
+      } else {
+        // Add info at the beginning if image not found
+        newSectionsOrder.unshift('info');
+      }
+
+      // Update the config with the new array
+      this.config.sections_order = newSectionsOrder;
+    }
+
+    // Ensure section_styles is initialized
+    if (!this.config.section_styles) {
+      this.config.section_styles = {};
+    }
+
+    // If width values are missing, set defaults separately
+    if (this.config.vehicle_image_width === undefined) {
+      this.config.vehicle_image_width = 100;
+    }
+
+    if (this.config.action_image_width === undefined) {
+      this.config.action_image_width = 100;
+    }
+
+    // Convert existing bar and icon sections to individual sections if needed
+    this._migrateToIndividualSections();
+
+    // Migrate legacy images to new images array if needed
+    this._migrateImagesToNewFormat();
+  }
+
+  private _migrateToIndividualSections() {
+    if (!this.config.sections_order) return;
+
+    // Make a copy of the sections order to modify
+    let updatedSectionsOrder = [...this.config.sections_order];
+    let changed = false;
+
+    // Handle 'bars' section - ALWAYS migrate to individual bar sections
+    const barsIndex = updatedSectionsOrder.indexOf('bars');
+    if (barsIndex !== -1 && this.config.bars && this.config.bars.length > 0) {
+      // Replace 'bars' with individual bar sections
+      const barSections = this.config.bars.map((_, idx) => `bar_${idx}`);
+      updatedSectionsOrder.splice(barsIndex, 1, ...barSections);
+      changed = true;
+    }
+
+    // Even if no 'bars' entry exists, check if all individual bars have entries
+    if (this.config.bars && this.config.bars.length > 0) {
+      const individualBarEntries = updatedSectionsOrder.filter(section =>
+        section.startsWith('bar_')
+      );
+
+      // If we have fewer bar entries than actual bars, add the missing ones
+      if (individualBarEntries.length < this.config.bars.length) {
+        // Find existing bar indices
+        const existingIndices = individualBarEntries
+          .map(entry => parseInt(entry.substring(4)))
+          .sort((a, b) => a - b);
+
+        // Create entries for missing bars
+        const missingBars = [];
+        for (let i = 0; i < this.config.bars.length; i++) {
+          if (!existingIndices.includes(i)) {
+            missingBars.push(`bar_${i}`);
+          }
+        }
+
+        // Add missing entries after the last existing bar entry
+        if (missingBars.length > 0) {
+          // Find position for insertion - after the last existing bar or in a logical position
+          let insertPosition = -1;
+
+          if (individualBarEntries.length > 0) {
+            // Find the highest existing bar index
+            const lastBarEntry = `bar_${Math.max(...existingIndices)}`;
+            insertPosition = updatedSectionsOrder.indexOf(lastBarEntry);
+          } else {
+            // No existing bars, find a logical position based on other sections
+            const infoIndex = updatedSectionsOrder.indexOf('info');
+            const iconsIndex = updatedSectionsOrder.indexOf('icons');
+
+            if (infoIndex !== -1) {
+              insertPosition = infoIndex;
+            } else if (iconsIndex !== -1) {
+              insertPosition = iconsIndex - 1;
+            } else {
+              // Add to the end if no logical position found
+              insertPosition = updatedSectionsOrder.length - 1;
+            }
+          }
+
+          if (insertPosition !== -1) {
+            updatedSectionsOrder.splice(insertPosition + 1, 0, ...missingBars);
+            changed = true;
+          }
+        }
+      }
+    }
+
+    // Handle 'icons' section - migrate to individual icon_row_X entries
+    const iconsIndex = updatedSectionsOrder.indexOf('icons');
+    if (iconsIndex !== -1 && this.config.icon_rows && this.config.icon_rows.length > 0) {
+      // Check if there are already icon_row_X sections - if so, don't migrate
+      const hasIndividualIconSections = updatedSectionsOrder.some(section =>
+        section.startsWith('icon_row_')
+      );
+
+      if (!hasIndividualIconSections) {
+        // Replace 'icons' with individual icon row sections
+        const iconRowSections = this.config.icon_rows.map(row => `icon_row_${row.id}`);
+        updatedSectionsOrder.splice(iconsIndex, 1, ...iconRowSections);
+        changed = true;
+      }
+    }
+
+    // Update config if changes were made
+    if (changed) {
+      // Update the internal config object
+      this.config = {
+        ...this.config,
+        sections_order: updatedSectionsOrder,
+      };
+
+      // Fire the event to save the changes to YAML
+      this._fireConfigChanged();
+    }
+  }
+
+  private _migrateImagesToNewFormat() {
+    if (!this.config) return;
+
+    const hasLegacyVehicleImage =
+      this.config.vehicle_image_type && this.config.vehicle_image_type !== 'none';
+    const hasLegacyActionImages = this.config.action_images && this.config.action_images.length > 0;
+    const hasExistingImages = this.config.images && this.config.images.length > 0;
+
+    // Only migrate if there are legacy images and no existing images array
+    if ((!hasLegacyVehicleImage && !hasLegacyActionImages) || hasExistingImages) {
+      return;
+    }
+
+    const newImages: any[] = [];
+    let hasChanges = false;
+
+    // Migrate vehicle image
+    if (hasLegacyVehicleImage) {
+      const vehicleImage = {
+        id: this._generateUniqueId(),
+        name: 'Vehicle Image',
+        image_type: this.config.vehicle_image_type as any,
+        image: this.config.vehicle_image,
+        image_entity: this.config.vehicle_image_entity,
+        image_width: this.config.vehicle_image_width || 100,
+        image_crop: this.config.vehicle_image_crop,
+        priority: 0,
+      };
+      newImages.push(vehicleImage);
+      hasChanges = true;
+    }
+
+    // Migrate action images
+    if (hasLegacyActionImages) {
+      const migratedActionImages = this.config.action_images.map((actionImage, index) => {
+        return {
+          id: actionImage.id || this._generateUniqueId(),
+          name: `Action Image ${index + 1}`,
+          image_type: actionImage.image_type,
+          image: actionImage.image,
+          image_entity: actionImage.image_entity,
+          image_width: actionImage.image_width || 100,
+          image_crop: actionImage.image_crop,
+          conditional_entity: actionImage.entity,
+          conditional_state: actionImage.state,
+          conditional_type: 'show',
+          template_mode: actionImage.template_mode,
+          template: actionImage.template,
+          priority: actionImage.priority || index + 1,
+        };
+      });
+      newImages.push(...migratedActionImages);
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      // Sort by priority
+      newImages.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+
+      // Update config with migrated images
+      this.config = {
+        ...this.config,
+        images: newImages,
+      };
+
+      // Note: We don't clear legacy fields here automatically to maintain backwards compatibility
+      // Users can use the migration notice in the Images tab to complete the migration
+    }
+  }
+
+  // Add a new handler that uses the utility function
+  private async _handleFileUploadEvent(ev: CustomEvent) {
+    // Destructure file and id (or configKey if it's not an action image upload)
+    const { file, id, configKey } = ev.detail;
+
+    // Basic validation for file
+    if (!file) {
+      console.error('[UPLOAD EVENT] Missing file in event detail.', ev.detail);
+      return;
+    }
+
+    // Check for valid Hass object
+    if (
+      !this.hass ||
+      !this.hass.auth ||
+      !this.hass.auth.data ||
+      !this.hass.auth.data.access_token
+    ) {
+      console.error('[UPLOAD EVENT] Hass object appears invalid or missing auth!');
+      return;
+    }
+
+    try {
+      // Perform the upload
+      const imagePath = await uploadImage(this.hass, file);
+
+      // Check if this upload is for an action image (using the 'id' field)
+      if (id && this.config.action_images) {
+        // Find the index of the action image with the matching ID
+        const index = this.config.action_images.findIndex(img => img.id === id);
+
+        if (index !== -1) {
+          // Create a new array with the updated image path
+          const updatedActionImages = [
+            ...this.config.action_images.slice(0, index),
+            { ...this.config.action_images[index], image: imagePath },
+            ...this.config.action_images.slice(index + 1),
+          ];
+          // Update the config with the new action_images array
+          this._updateConfig({ action_images: updatedActionImages });
+        } else {
+          console.warn(`[UPLOAD EVENT] Action image with ID "${id}" not found.`);
+          // Optionally handle other uploads using configKey if needed
+          if (configKey) {
+            this._updateConfig({ [configKey]: imagePath });
+          }
+        }
+      } else if (configKey) {
+        // Handle uploads for other parts of the config (like vehicle_image)
+        this._updateConfig({ [configKey]: imagePath });
+      } else {
+        console.error('[UPLOAD EVENT] Event detail missing required ID or configKey.', ev.detail);
+      }
+    } catch (error) {
+      console.error(`[UPLOAD EVENT] Upload failed:`, error);
+      // Optionally display an error message to the user
+      // alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Keep _getCleanConfig
+  private _getCleanConfig(): UltraVehicleCardConfig {
+    const cleanConfig = { ...this.config };
+    // REMOVE icon_rows cleaning logic - will be handled by icons-tab if needed
+    /*
+    if (cleanConfig.icon_rows && cleanConfig.icon_rows.length === 0) {
+      delete cleanConfig.icon_rows;
+    }
+    */
+    // Clean up section_styles: remove empty objects and entries with only default (0) margins
+    if (cleanConfig.section_styles) {
+      Object.keys(cleanConfig.section_styles).forEach(sectionId => {
+        const styles = cleanConfig.section_styles![sectionId];
+        const marginTop = styles.marginTop || 0;
+        const marginBottom = styles.marginBottom || 0;
+        if (marginTop === 0 && marginBottom === 0) {
+          delete cleanConfig.section_styles![sectionId];
+        } else {
+          if (marginTop === 0) delete styles.marginTop;
+          if (marginBottom === 0) delete styles.marginBottom;
+        }
+      });
+      // Delete section_styles entirely if it's empty after cleanup
+      if (Object.keys(cleanConfig.section_styles).length === 0) {
+        delete cleanConfig.section_styles;
+      }
+    }
+    // Also clean sections_columns if empty
+    if (cleanConfig.sections_columns && Object.keys(cleanConfig.sections_columns).length === 0) {
+      delete cleanConfig.sections_columns;
+    }
+    // Remove sections_order if it's the default?
+    // Or keep it always present?
+
+    return cleanConfig;
+  }
+
+  // Keep _updateConfig
+  private _updateConfig(updates: Partial<UltraVehicleCardConfig>) {
+    // Merge the updates into the current config
+    if (!this.config || !updates) {
+      return;
+    }
+    this.config = { ...this.config, ...updates };
+
+    // Trigger the event to notify HA of the change
+    this._fireConfigChanged();
+  }
+
+  // Keep _updateConfigFromEvent
+  private _updateConfigFromEvent(ev: CustomEvent): void {
+    ev.stopPropagation();
+    const newConfigFromTab = ev.detail.config;
+    if (newConfigFromTab) {
+      // Use the internal update method which handles debouncing
+      // and ensures we work with the complete, latest config internally
+      this._updateConfig(newConfigFromTab);
+    }
+  }
+
+  // Keep _fireConfigChanged
+  private _fireConfigChanged() {
+    if (this._configChangedTimeout) {
+      clearTimeout(this._configChangedTimeout);
+    }
+    this._configChangedTimeout = window.setTimeout(() => {
+      const cleanConfig = this._getCleanConfig();
+      fireEvent(this, 'config-changed', { config: cleanConfig });
+    }, 50); // Keep the timeout, it might be needed for debouncing
+  }
+
+  // Keep shared helper methods
+  private _getFriendlyName(entityId: string): string {
+    // ... (Keep existing)
+  }
+
+  private _truncateText(text: string, maxLength: number = 15): string {
+    // ... (Keep existing)
+  }
+
+  private _generateUniqueId(): string {
+    // ... (Keep existing)
+  }
+
+  private _formatFieldName(name: string): string {
+    // ... (Keep existing)
+  }
+
+  // Keep Image related methods
+  private _getImageSchema(prefix: 'vehicle' | 'action') {
+    // ... (Keep existing)
+  }
+
+  private _renderCropSliders(cropProperty: string) {
+    // ... (Keep existing)
+  }
+
+  private _updateImageCrop(cropProperty: string, side: string, value: number) {
+    // ... (Keep existing)
+  }
+
+  // Keep Title reset
+  private _resetTitleSize(): void {
+    // ... (Keep existing)
+  }
+
+  // Keep localize helper
+  private _t(key: string, fallback?: string): string {
+    // ... (Keep existing)
+  }
+
+  // Keep gradient refresh event firing
+  private _fireForceGradientRefreshEvent() {
+    // Dispatch the event both from this element and document-level to ensure it propagates
+    this.dispatchEvent(
+      new CustomEvent('force-gradient-refresh', {
+        bubbles: true,
+        composed: true,
+        detail: { timestamp: Date.now() },
+      })
+    );
+    document.dispatchEvent(new CustomEvent('force-card-update', { bubbles: true, composed: true }));
+  }
+
+  // Force a save of the config after a timeout to ensure migrations are persisted
+  private _forceSaveConfig() {
+    // Use a longer timeout to ensure all initializations are complete
+    setTimeout(() => {
+      this._fireConfigChanged();
+    }, 1000);
+  }
+
+  private _handleRequestTabChange(event: CustomEvent) {
+    if (event.detail && event.detail.tab) {
+      this.activeTab = event.detail.tab;
+      // Update highlights when tab changes programmatically
+      this._highlightService.handleTabChange(
+        this.activeTab,
+        this.config || {},
+        this.config?.help_highlight !== false
+      );
+    }
+  }
+
+  render() {
+    if (!this.config || !this.hass) {
+      return nothing;
+    }
+
+    // Define language for localization
+    const lang = this.hass.locale?.language || 'en';
+
+    const tabs = [
+      {
+        id: 'layout',
+        icon: 'mdi:view-dashboard',
+        labelKey: 'editor.tabs.layout',
+        defaultLabel: 'Layout',
+      },
+      {
+        id: 'settings',
+        icon: 'mdi:cog',
+        labelKey: 'editor.tabs.settings',
+        defaultLabel: 'Settings',
+      },
+      {
+        id: 'about',
+        icon: 'mdi:help-circle-outline',
+        labelKey: 'editor.tabs.about',
+        defaultLabel: 'About',
+      },
+    ];
+
+    return html`
+      <div class="card-config">
+        <div class="tabs">
+          ${tabs.map(
+            tab => html`
+              <div
+                class="tab ${this.activeTab === tab.id ? 'active' : ''}"
+                @click=${() => {
+                  this.activeTab = tab.id;
+
+                  // Use highlighting service to handle highlights
+                  this._highlightService.handleTabChange(
+                    tab.id,
+                    this.config || {},
+                    this.config?.help_highlight !== false
+                  );
+                }}
+                title=${localize(tab.labelKey, lang, tab.defaultLabel)}
+              >
+                <ha-icon class="tab-icon" .icon=${tab.icon}></ha-icon>
+                <span class="tab-label">${localize(tab.labelKey, lang, tab.defaultLabel)}</span>
+              </div>
+            `
+          )}
+        </div>
+
+        ${this.activeTab === 'layout'
+          ? html`
+              <layout-tab
+                .hass=${this.hass}
+                .config=${this.config}
+                @config-changed=${this._updateConfigFromEvent}
+              ></layout-tab>
+            `
+          : ''}
+        ${this.activeTab === 'settings'
+          ? html`
+              <settings-tab
+                .hass=${this.hass}
+                .config=${this.config}
+                @config-changed=${this._updateConfigFromEvent}
+                @file-upload=${this._handleFileUploadEvent}
+              ></settings-tab>
+            `
+          : ''}
+        ${this.activeTab === 'about' ? html` <about-tab .hass=${this.hass}></about-tab> ` : ''}
+      </div>
+    `;
+  }
+
+  static get styles() {
+    // Remove styles specific to moved tabs, keep main layout styles
+    return css`
+      /* Base layout */
+      .card-config {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Tab navigation */
+      .tabs {
+        display: flex;
+        width: 100%;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color);
+        overflow-x: auto; /* Allow horizontal scrolling if tabs still overflow on very small screens */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        scrollbar-width: none; /* Hide scrollbar for Firefox */
+      }
+
+      /* Hide scrollbar for Chrome, Safari, and Opera */
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tab {
+        flex: 1 1 auto; /* Allow tabs to shrink but also grow if space allows */
+        min-width: 0; /* Prevent overflow issues with flex items */
+        padding: 8px 12px; /* Adjusted padding */
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px; /* Align with border */
+        color: var(--secondary-text-color);
+        transition: all 0.2s ease;
+        text-align: center;
+        display: flex; /* For aligning icon and label */
+        flex-direction: column; /* Stack icon and label vertically by default if both shown */
+        align-items: center; /* Center content horizontally */
+        justify-content: center; /* Center content vertically */
+        white-space: nowrap; /* Prevent text wrapping that could break layout */
+      }
+      .tab:hover {
+        background-color: rgba(var(--rgb-primary-color), 0.1);
+        color: var(--primary-text-color);
+      }
+      .tab.active {
+        border-bottom: 2px solid var(--primary-color);
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+
+      .tab-icon {
+        display: none; /* Hidden by default on larger screens */
+        font-size: 24px; /* Default icon size */
+        --mdc-icon-size: 24px;
+      }
+
+      .tab-label {
+        display: inline; /* Shown by default on larger screens */
+        font-size: 14px; /* Default label size */
+      }
+
+      /* Responsive styles for tabs */
+      @media (max-width: 768px) {
+        .tabs {
+          justify-content: space-around; /* Distribute icons more evenly */
+        }
+        .tab {
+          padding: 8px; /* Reduce padding for smaller screens */
+          min-width: 50px; /* Ensure tabs have a minimum width for touch targets */
+          flex-grow: 0; /* Prevent icons from growing too much */
+        }
+        .tab-icon {
+          display: inline-block; /* Show icons on smaller screens */
+        }
+        .tab-label {
+          display: none; /* Hide text labels on smaller screens */
+        }
+      }
+
+      /* Styles for content sections previously in this file */
+      /* e.g., .settings-section, .bar, .mini-bar, .section-group, etc. */
+      /* Keep styles for potential globally used elements if any */
+
+      /* Keep Cropper styles if cropper overlay is rendered here */
+      .cropper-overlay {
+        /* ... */
+      }
+      .cropper-container {
+        /* ... */
+      }
+      /* ... other cropper styles ... */
+    `;
+  }
+
+  // Keep firstUpdated, entity picker methods, Cropper methods etc.
+  firstUpdated() {
+    super.firstUpdated();
+    this.addEventListener('request-tab-change', this._handleRequestTabChange as EventListener);
+
+    // Initialize highlighting service
+    this._highlightService = SectionHighlightService.getInstance();
+
+    // Initialize entities list from hass
+    this._refreshEntityList();
+
+    // Initialize highlighted sections for the default tab
+    this._highlightService.handleTabChange(
+      this.activeTab,
+      this.config || {},
+      this.config?.help_highlight !== false
+    );
+
+    // Wait a moment to ensure editor is fully initialized
+    setTimeout(() => {
+      // Run migration on initial load
+      this._migrateToIndividualSections();
+
+      // Force a save after migration to ensure YAML is updated
+      this._forceSaveConfig();
+    }, 100);
+
+    // Add click listener to close dropdown when clicking outside
+    document.addEventListener('click', e => {
+      if (!this.shadowRoot?.contains(e.target as Node)) {
+        this._showEntityList = false;
+      }
+    });
+
+    // Load cropperjs dynamically
+    this._loadCropperJS();
+  }
+  private _refreshEntityList() {
+    // ... (Keep existing)
+  }
+  private _onEntityInputChange(ev: Event) {
+    // ... (Keep existing - needed for entity picker)
+  }
+  private _onEntityFocus(ev: Event, field: string) {
+    // ... (Keep existing - needed for entity picker)
+  }
+  private _getFilteredEntities() {
+    // ... (Keep existing - needed for entity picker)
+  }
+  private _selectEntity(field: string, entityId: string) {
+    // ... (Keep existing - needed for entity picker)
+  }
+  private async _loadCropperJS() {
+    // ... (Keep existing)
+  }
+  private _renderImageCropper() {
+    // ... (Keep existing)
+  }
+  private _applyCrop() {
+    // ... (Keep existing)
+  }
+  updated(changedProperties) {
+    // ... (Keep existing)
+  }
+}

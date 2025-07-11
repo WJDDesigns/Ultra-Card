@@ -1,7 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-@customElement('ultra-vehicle-color-picker')
+@customElement('ultra-legacy-color-picker')
 export class UltraVehicleColorPicker extends LitElement {
   @property() public value?: string;
   @property() public label?: string;
