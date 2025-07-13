@@ -20,5 +20,8 @@ export declare class UltraBarModule extends BaseUltraModule {
     private getImageUrl;
     private getBarSizeFromHeight;
     private getBarRadiusFromStyle;
+    private interpolateColor;
+    private hexToRgb;
+    private rgbToHex;
     private addPixelUnit;
 }

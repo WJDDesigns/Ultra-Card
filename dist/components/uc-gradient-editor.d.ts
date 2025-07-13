@@ -14,6 +14,9 @@ export declare class UCGradientEditor extends LitElement {
     barRadius: 'round' | 'square' | 'rounded-square';
     barStyle: string;
     private _draggedIndex;
+    private _colorPickerOpen;
+    private _colorPickerStopId;
+    private _colorPickerCurrentColor;
     static styles: import("lit").CSSResult;
     render(): TemplateResult;
     private _renderStopItem;
@@ -21,6 +24,9 @@ export declare class UCGradientEditor extends LitElement {
     private _resetStops;
     private _deleteStop;
     private _handleColorChange;
+    private _openColorPicker;
+    private _closeColorPicker;
+    private _handleColorPickerChange;
     private _handlePositionChange;
     private _validateAndSortStops;
     private _notifyChange;

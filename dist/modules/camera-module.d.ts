@@ -24,12 +24,13 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private handleTapAction;
     private handleHoldAction;
     private handleDoubleAction;
+    private _handleDimensionChange;
+    private getCameraNamePositionStyles;
     private hasActiveLink;
     private refreshCamera;
     private getCameraImageUrl;
     private getCameraImageBlob;
     private getCameraImageViaWebSocket;
-    private getAspectRatioStyle;
     private handleImageError;
     protected renderConditionalFieldsGroup(title: string, content: TemplateResult): TemplateResult;
     private styleObjectToCss;

@@ -284,7 +284,7 @@ export interface BarModule extends BaseModule {
     bar_border_color?: string;
     percentage_text_color?: string;
     use_gradient?: boolean;
-    gradient_display_mode?: 'full' | 'cropped';
+    gradient_display_mode?: 'full' | 'cropped' | 'value-based';
     gradient_stops?: Array<{
         id: string;
         position: number;
@@ -396,7 +396,6 @@ export interface HorizontalModule extends BaseModule {
     alignment?: 'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify';
     gap?: number;
     wrap?: boolean;
-    mobile_single_column?: boolean;
 }
 export interface VerticalModule extends BaseModule {
     type: 'vertical';
@@ -440,9 +439,17 @@ export interface CameraModule extends BaseModule {
     entity: string;
     camera_name?: string;
     show_name?: boolean;
-    aspect_ratio?: '16:9' | '4:3' | '1:1' | 'auto';
+    name_position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+    width?: number;
+    height?: number;
+    aspect_ratio_linked?: boolean;
+    aspect_ratio_value?: number;
     image_fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
     border_radius?: string;
+    crop_left?: number;
+    crop_top?: number;
+    crop_right?: number;
+    crop_bottom?: number;
     show_controls?: boolean;
     auto_refresh?: boolean;
     refresh_interval?: number;

@@ -1,69 +1,69 @@
 /*! For license information please see ultra-card.js.LICENSE.txt */
-(()=>{"use strict";const e=globalThis,t=e.ShadowRoot&&(void 0===e.ShadyCSS||e.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,o=Symbol(),i=new WeakMap;class n{constructor(e,t,i){if(this._$cssResult$=!0,i!==o)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o;const o=this.t;if(t&&void 0===e){const t=void 0!==o&&1===o.length;t&&(e=i.get(o)),void 0===e&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),t&&i.set(o,e))}return e}toString(){return this.cssText}}const a=(e,...t)=>{const i=1===e.length?e[0]:t.reduce(((t,o,i)=>t+(e=>{if(!0===e._$cssResult$)return e.cssText;if("number"==typeof e)return e;throw Error("Value passed to 'css' function must be a 'css' function result: "+e+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(o)+e[i+1]),e[0]);return new n(i,e,o)},r=(o,i)=>{if(t)o.adoptedStyleSheets=i.map((e=>e instanceof CSSStyleSheet?e:e.styleSheet));else for(const t of i){const i=document.createElement("style"),n=e.litNonce;void 0!==n&&i.setAttribute("nonce",n),i.textContent=t.cssText,o.appendChild(i)}},l=t?e=>e:e=>e instanceof CSSStyleSheet?(e=>{let t="";for(const o of e.cssRules)t+=o.cssText;return(e=>new n("string"==typeof e?e:e+"",void 0,o))(t)})(e):e,{is:s,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:p,getOwnPropertySymbols:u,getPrototypeOf:m}=Object,g=globalThis,h=g.trustedTypes,v=h?h.emptyScript:"",b=g.reactiveElementPolyfillSupport,f=(e,t)=>e,y={toAttribute(e,t){switch(t){case Boolean:e=e?v:null;break;case Object:case Array:e=null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){let o=e;switch(t){case Boolean:o=null!==e;break;case Number:o=null===e?null:Number(e);break;case Object:case Array:try{o=JSON.parse(e)}catch(e){o=null}}return o}},_=(e,t)=>!s(e,t),x={attribute:!0,type:String,converter:y,reflect:!1,hasChanged:_};Symbol.metadata??=Symbol("metadata"),g.litPropertyMetadata??=new WeakMap;class w extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=x){if(t.state&&(t.attribute=!1),this._$Ei(),this.elementProperties.set(e,t),!t.noAccessor){const o=Symbol(),i=this.getPropertyDescriptor(e,o,t);void 0!==i&&d(this.prototype,e,i)}}static getPropertyDescriptor(e,t,o){const{get:i,set:n}=c(this.prototype,e)??{get(){return this[t]},set(e){this[t]=e}};return{get(){return i?.call(this)},set(t){const a=i?.call(this);n.call(this,t),this.requestUpdate(e,a,o)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??x}static _$Ei(){if(this.hasOwnProperty(f("elementProperties")))return;const e=m(this);e.finalize(),void 0!==e.l&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(f("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(f("properties"))){const e=this.properties,t=[...p(e),...u(e)];for(const o of t)this.createProperty(o,e[o])}const e=this[Symbol.metadata];if(null!==e){const t=litPropertyMetadata.get(e);if(void 0!==t)for(const[e,o]of t)this.elementProperties.set(e,o)}this._$Eh=new Map;for(const[e,t]of this.elementProperties){const o=this._$Eu(e,t);void 0!==o&&this._$Eh.set(o,e)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){const t=[];if(Array.isArray(e)){const o=new Set(e.flat(1/0).reverse());for(const e of o)t.unshift(l(e))}else void 0!==e&&t.push(l(e));return t}static _$Eu(e,t){const o=t.attribute;return!1===o?void 0:"string"==typeof o?o:"string"==typeof e?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise((e=>this.enableUpdating=e)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((e=>e(this)))}addController(e){(this._$EO??=new Set).add(e),void 0!==this.renderRoot&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){const e=new Map,t=this.constructor.elementProperties;for(const o of t.keys())this.hasOwnProperty(o)&&(e.set(o,this[o]),delete this[o]);e.size>0&&(this._$Ep=e)}createRenderRoot(){const e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return r(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((e=>e.hostConnected?.()))}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach((e=>e.hostDisconnected?.()))}attributeChangedCallback(e,t,o){this._$AK(e,o)}_$EC(e,t){const o=this.constructor.elementProperties.get(e),i=this.constructor._$Eu(e,o);if(void 0!==i&&!0===o.reflect){const n=(void 0!==o.converter?.toAttribute?o.converter:y).toAttribute(t,o.type);this._$Em=e,null==n?this.removeAttribute(i):this.setAttribute(i,n),this._$Em=null}}_$AK(e,t){const o=this.constructor,i=o._$Eh.get(e);if(void 0!==i&&this._$Em!==i){const e=o.getPropertyOptions(i),n="function"==typeof e.converter?{fromAttribute:e.converter}:void 0!==e.converter?.fromAttribute?e.converter:y;this._$Em=i,this[i]=n.fromAttribute(t,e.type),this._$Em=null}}requestUpdate(e,t,o){if(void 0!==e){if(o??=this.constructor.getPropertyOptions(e),!(o.hasChanged??_)(this[e],t))return;this.P(e,t,o)}!1===this.isUpdatePending&&(this._$ES=this._$ET())}P(e,t,o){this._$AL.has(e)||this._$AL.set(e,t),!0===o.reflect&&this._$Em!==e&&(this._$Ej??=new Set).add(e)}async _$ET(){this.isUpdatePending=!0;try{await this._$ES}catch(e){Promise.reject(e)}const e=this.scheduleUpdate();return null!=e&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[e,t]of this._$Ep)this[e]=t;this._$Ep=void 0}const e=this.constructor.elementProperties;if(e.size>0)for(const[t,o]of e)!0!==o.wrapped||this._$AL.has(t)||void 0===this[t]||this.P(t,this[t],o)}let e=!1;const t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach((e=>e.hostUpdate?.())),this.update(t)):this._$EU()}catch(t){throw e=!1,this._$EU(),t}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach((e=>e.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EU(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Ej&&=this._$Ej.forEach((e=>this._$EC(e,this[e]))),this._$EU()}updated(e){}firstUpdated(e){}}w.elementStyles=[],w.shadowRootOptions={mode:"open"},w[f("elementProperties")]=new Map,w[f("finalized")]=new Map,b?.({ReactiveElement:w}),(g.reactiveElementVersions??=[]).push("2.0.4");const $=globalThis,k=$.trustedTypes,C=k?k.createPolicy("lit-html",{createHTML:e=>e}):void 0,S="$lit$",I=`lit$${Math.random().toFixed(9).slice(2)}$`,z="?"+I,T=`<${z}>`,P=document,A=()=>P.createComment(""),L=e=>null===e||"object"!=typeof e&&"function"!=typeof e,O=Array.isArray,M=e=>O(e)||"function"==typeof e?.[Symbol.iterator],D="[ \t\n\f\r]",E=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,j=/-->/g,F=/>/g,R=RegExp(`>|${D}(?:([^\\s"'>=/]+)(${D}*=${D}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),U=/'/g,N=/"/g,B=/^(?:script|style|textarea|title)$/i,H=e=>(t,...o)=>({_$litType$:e,strings:t,values:o}),V=H(1),G=(H(2),H(3),Symbol.for("lit-noChange")),W=Symbol.for("lit-nothing"),q=new WeakMap,Y=P.createTreeWalker(P,129);function X(e,t){if(!O(e)||!e.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==C?C.createHTML(t):t}const J=(e,t)=>{const o=e.length-1,i=[];let n,a=2===t?"<svg>":3===t?"<math>":"",r=E;for(let t=0;t<o;t++){const o=e[t];let l,s,d=-1,c=0;for(;c<o.length&&(r.lastIndex=c,s=r.exec(o),null!==s);)c=r.lastIndex,r===E?"!--"===s[1]?r=j:void 0!==s[1]?r=F:void 0!==s[2]?(B.test(s[2])&&(n=RegExp("</"+s[2],"g")),r=R):void 0!==s[3]&&(r=R):r===R?">"===s[0]?(r=n??E,d=-1):void 0===s[1]?d=-2:(d=r.lastIndex-s[2].length,l=s[1],r=void 0===s[3]?R:'"'===s[3]?N:U):r===N||r===U?r=R:r===j||r===F?r=E:(r=R,n=void 0);const p=r===R&&e[t+1].startsWith("/>")?" ":"";a+=r===E?o+T:d>=0?(i.push(l),o.slice(0,d)+S+o.slice(d)+I+p):o+I+(-2===d?t:p)}return[X(e,a+(e[o]||"<?>")+(2===t?"</svg>":3===t?"</math>":"")),i]};class K{constructor({strings:e,_$litType$:t},o){let i;this.parts=[];let n=0,a=0;const r=e.length-1,l=this.parts,[s,d]=J(e,t);if(this.el=K.createElement(s,o),Y.currentNode=this.el.content,2===t||3===t){const e=this.el.content.firstChild;e.replaceWith(...e.childNodes)}for(;null!==(i=Y.nextNode())&&l.length<r;){if(1===i.nodeType){if(i.hasAttributes())for(const e of i.getAttributeNames())if(e.endsWith(S)){const t=d[a++],o=i.getAttribute(e).split(I),r=/([.?@])?(.*)/.exec(t);l.push({type:1,index:n,name:r[2],strings:o,ctor:"."===r[1]?oe:"?"===r[1]?ie:"@"===r[1]?ne:te}),i.removeAttribute(e)}else e.startsWith(I)&&(l.push({type:6,index:n}),i.removeAttribute(e));if(B.test(i.tagName)){const e=i.textContent.split(I),t=e.length-1;if(t>0){i.textContent=k?k.emptyScript:"";for(let o=0;o<t;o++)i.append(e[o],A()),Y.nextNode(),l.push({type:2,index:++n});i.append(e[t],A())}}}else if(8===i.nodeType)if(i.data===z)l.push({type:2,index:n});else{let e=-1;for(;-1!==(e=i.data.indexOf(I,e+1));)l.push({type:7,index:n}),e+=I.length-1}n++}}static createElement(e,t){const o=P.createElement("template");return o.innerHTML=e,o}}function Z(e,t,o=e,i){if(t===G)return t;let n=void 0!==i?o._$Co?.[i]:o._$Cl;const a=L(t)?void 0:t._$litDirective$;return n?.constructor!==a&&(n?._$AO?.(!1),void 0===a?n=void 0:(n=new a(e),n._$AT(e,o,i)),void 0!==i?(o._$Co??=[])[i]=n:o._$Cl=n),void 0!==n&&(t=Z(e,n._$AS(e,t.values),n,i)),t}class Q{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){const{el:{content:t},parts:o}=this._$AD,i=(e?.creationScope??P).importNode(t,!0);Y.currentNode=i;let n=Y.nextNode(),a=0,r=0,l=o[0];for(;void 0!==l;){if(a===l.index){let t;2===l.type?t=new ee(n,n.nextSibling,this,e):1===l.type?t=new l.ctor(n,l.name,l.strings,this,e):6===l.type&&(t=new ae(n,this,e)),this._$AV.push(t),l=o[++r]}a!==l?.index&&(n=Y.nextNode(),a++)}return Y.currentNode=P,i}p(e){let t=0;for(const o of this._$AV)void 0!==o&&(void 0!==o.strings?(o._$AI(e,o,t),t+=o.strings.length-2):o._$AI(e[t])),t++}}class ee{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,o,i){this.type=2,this._$AH=W,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=o,this.options=i,this._$Cv=i?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode;const t=this._$AM;return void 0!==t&&11===e?.nodeType&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=Z(this,e,t),L(e)?e===W||null==e||""===e?(this._$AH!==W&&this._$AR(),this._$AH=W):e!==this._$AH&&e!==G&&this._(e):void 0!==e._$litType$?this.$(e):void 0!==e.nodeType?this.T(e):M(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==W&&L(this._$AH)?this._$AA.nextSibling.data=e:this.T(P.createTextNode(e)),this._$AH=e}$(e){const{values:t,_$litType$:o}=e,i="number"==typeof o?this._$AC(e):(void 0===o.el&&(o.el=K.createElement(X(o.h,o.h[0]),this.options)),o);if(this._$AH?._$AD===i)this._$AH.p(t);else{const e=new Q(i,this),o=e.u(this.options);e.p(t),this.T(o),this._$AH=e}}_$AC(e){let t=q.get(e.strings);return void 0===t&&q.set(e.strings,t=new K(e)),t}k(e){O(this._$AH)||(this._$AH=[],this._$AR());const t=this._$AH;let o,i=0;for(const n of e)i===t.length?t.push(o=new ee(this.O(A()),this.O(A()),this,this.options)):o=t[i],o._$AI(n),i++;i<t.length&&(this._$AR(o&&o._$AB.nextSibling,i),t.length=i)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e&&e!==this._$AB;){const t=e.nextSibling;e.remove(),e=t}}setConnected(e){void 0===this._$AM&&(this._$Cv=e,this._$AP?.(e))}}class te{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,o,i,n){this.type=1,this._$AH=W,this._$AN=void 0,this.element=e,this.name=t,this._$AM=i,this.options=n,o.length>2||""!==o[0]||""!==o[1]?(this._$AH=Array(o.length-1).fill(new String),this.strings=o):this._$AH=W}_$AI(e,t=this,o,i){const n=this.strings;let a=!1;if(void 0===n)e=Z(this,e,t,0),a=!L(e)||e!==this._$AH&&e!==G,a&&(this._$AH=e);else{const i=e;let r,l;for(e=n[0],r=0;r<n.length-1;r++)l=Z(this,i[o+r],t,r),l===G&&(l=this._$AH[r]),a||=!L(l)||l!==this._$AH[r],l===W?e=W:e!==W&&(e+=(l??"")+n[r+1]),this._$AH[r]=l}a&&!i&&this.j(e)}j(e){e===W?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}}class oe extends te{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===W?void 0:e}}class ie extends te{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==W)}}class ne extends te{constructor(e,t,o,i,n){super(e,t,o,i,n),this.type=5}_$AI(e,t=this){if((e=Z(this,e,t,0)??W)===G)return;const o=this._$AH,i=e===W&&o!==W||e.capture!==o.capture||e.once!==o.once||e.passive!==o.passive,n=e!==W&&(o===W||i);i&&this.element.removeEventListener(this.name,this,o),n&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}}class ae{constructor(e,t,o){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=o}get _$AU(){return this._$AM._$AU}_$AI(e){Z(this,e)}}const re={M:S,P:I,A:z,C:1,L:J,R:Q,D:M,V:Z,I:ee,H:te,N:ie,U:ne,B:oe,F:ae},le=$.litHtmlPolyfillSupport;le?.(K,ee),($.litHtmlVersions??=[]).push("3.2.1");class se extends w{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){const t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=((e,t,o)=>{const i=o?.renderBefore??t;let n=i._$litPart$;if(void 0===n){const e=o?.renderBefore??null;i._$litPart$=n=new ee(t.insertBefore(A(),e),e,void 0,o??{})}return n._$AI(e),n})(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return G}}se._$litElement$=!0,se.finalized=!0,globalThis.litElementHydrateSupport?.({LitElement:se});const de=globalThis.litElementPolyfillSupport;de?.({LitElement:se}),(globalThis.litElementVersions??=[]).push("4.1.1");const ce=e=>(t,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(e,t)})):customElements.define(e,t)},pe={attribute:!0,type:String,converter:y,reflect:!1,hasChanged:_},ue=(e=pe,t,o)=>{const{kind:i,metadata:n}=o;let a=globalThis.litPropertyMetadata.get(n);if(void 0===a&&globalThis.litPropertyMetadata.set(n,a=new Map),a.set(o.name,e),"accessor"===i){const{name:i}=o;return{set(o){const n=t.get.call(this);t.set.call(this,o),this.requestUpdate(i,n,e)},init(t){return void 0!==t&&this.P(i,void 0,e),t}}}if("setter"===i){const{name:i}=o;return function(o){const n=this[i];t.call(this,o),this.requestUpdate(i,n,e)}}throw Error("Unsupported decorator location: "+i)};function me(e){return(t,o)=>"object"==typeof o?ue(e,t,o):((e,t,o)=>{const i=t.hasOwnProperty(o);return t.constructor.createProperty(o,i?{...e,wrapped:!0}:e),i?Object.getOwnPropertyDescriptor(t,o):void 0})(e,t,o)}function ge(e){return me({...e,state:!0,attribute:!1})}class he{validate(e){const t=[];return e.id||t.push("Module ID is required"),e.type||t.push("Module type is required"),{valid:0===t.length,errors:t}}generateId(e){return`${e}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`}renderFormField(e,t,o){return V`
+(()=>{"use strict";const t=globalThis,e=t.ShadowRoot&&(void 0===t.ShadyCSS||t.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,o=Symbol(),i=new WeakMap;class n{constructor(t,e,i){if(this._$cssResult$=!0,i!==o)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e}get styleSheet(){let t=this.o;const o=this.t;if(e&&void 0===t){const e=void 0!==o&&1===o.length;e&&(t=i.get(o)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&i.set(o,t))}return t}toString(){return this.cssText}}const a=(t,...e)=>{const i=1===t.length?t[0]:e.reduce(((e,o,i)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(o)+t[i+1]),t[0]);return new n(i,t,o)},r=(o,i)=>{if(e)o.adoptedStyleSheets=i.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of i){const i=document.createElement("style"),n=t.litNonce;void 0!==n&&i.setAttribute("nonce",n),i.textContent=e.cssText,o.appendChild(i)}},l=e?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const o of t.cssRules)e+=o.cssText;return(t=>new n("string"==typeof t?t:t+"",void 0,o))(e)})(t):t,{is:s,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:p,getOwnPropertySymbols:u,getPrototypeOf:m}=Object,g=globalThis,h=g.trustedTypes,v=h?h.emptyScript:"",b=g.reactiveElementPolyfillSupport,f=(t,e)=>t,_={toAttribute(t,e){switch(e){case Boolean:t=t?v:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t)}return t},fromAttribute(t,e){let o=t;switch(e){case Boolean:o=null!==t;break;case Number:o=null===t?null:Number(t);break;case Object:case Array:try{o=JSON.parse(t)}catch(t){o=null}}return o}},y=(t,e)=>!s(t,e),x={attribute:!0,type:String,converter:_,reflect:!1,hasChanged:y};Symbol.metadata??=Symbol("metadata"),g.litPropertyMetadata??=new WeakMap;class w extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,e=x){if(e.state&&(e.attribute=!1),this._$Ei(),this.elementProperties.set(t,e),!e.noAccessor){const o=Symbol(),i=this.getPropertyDescriptor(t,o,e);void 0!==i&&d(this.prototype,t,i)}}static getPropertyDescriptor(t,e,o){const{get:i,set:n}=c(this.prototype,t)??{get(){return this[e]},set(t){this[e]=t}};return{get(){return i?.call(this)},set(e){const a=i?.call(this);n.call(this,e),this.requestUpdate(t,a,o)},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??x}static _$Ei(){if(this.hasOwnProperty(f("elementProperties")))return;const t=m(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties)}static finalize(){if(this.hasOwnProperty(f("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(f("properties"))){const t=this.properties,e=[...p(t),...u(t)];for(const o of e)this.createProperty(o,t[o])}const t=this[Symbol.metadata];if(null!==t){const e=litPropertyMetadata.get(t);if(void 0!==e)for(const[t,o]of e)this.elementProperties.set(t,o)}this._$Eh=new Map;for(const[t,e]of this.elementProperties){const o=this._$Eu(t,e);void 0!==o&&this._$Eh.set(o,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(t){const e=[];if(Array.isArray(t)){const o=new Set(t.flat(1/0).reverse());for(const t of o)e.unshift(l(t))}else void 0!==t&&e.push(l(t));return e}static _$Eu(t,e){const o=e.attribute;return!1===o?void 0:"string"==typeof o?o:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)))}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.()}removeController(t){this._$EO?.delete(t)}_$E_(){const t=new Map,e=this.constructor.elementProperties;for(const o of e.keys())this.hasOwnProperty(o)&&(t.set(o,this[o]),delete this[o]);t.size>0&&(this._$Ep=t)}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return r(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach((t=>t.hostConnected?.()))}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()))}attributeChangedCallback(t,e,o){this._$AK(t,o)}_$EC(t,e){const o=this.constructor.elementProperties.get(t),i=this.constructor._$Eu(t,o);if(void 0!==i&&!0===o.reflect){const n=(void 0!==o.converter?.toAttribute?o.converter:_).toAttribute(e,o.type);this._$Em=t,null==n?this.removeAttribute(i):this.setAttribute(i,n),this._$Em=null}}_$AK(t,e){const o=this.constructor,i=o._$Eh.get(t);if(void 0!==i&&this._$Em!==i){const t=o.getPropertyOptions(i),n="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:_;this._$Em=i,this[i]=n.fromAttribute(e,t.type),this._$Em=null}}requestUpdate(t,e,o){if(void 0!==t){if(o??=this.constructor.getPropertyOptions(t),!(o.hasChanged??y)(this[t],e))return;this.P(t,e,o)}!1===this.isUpdatePending&&(this._$ES=this._$ET())}P(t,e,o){this._$AL.has(t)||this._$AL.set(t,e),!0===o.reflect&&this._$Em!==t&&(this._$Ej??=new Set).add(t)}async _$ET(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,e]of this._$Ep)this[t]=e;this._$Ep=void 0}const t=this.constructor.elementProperties;if(t.size>0)for(const[e,o]of t)!0!==o.wrapped||this._$AL.has(e)||void 0===this[e]||this.P(e,this[e],o)}let t=!1;const e=this._$AL;try{t=this.shouldUpdate(e),t?(this.willUpdate(e),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(e)):this._$EU()}catch(e){throw t=!1,this._$EU(),e}t&&this._$AE(e)}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t)}_$EU(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return!0}update(t){this._$Ej&&=this._$Ej.forEach((t=>this._$EC(t,this[t]))),this._$EU()}updated(t){}firstUpdated(t){}}w.elementStyles=[],w.shadowRootOptions={mode:"open"},w[f("elementProperties")]=new Map,w[f("finalized")]=new Map,b?.({ReactiveElement:w}),(g.reactiveElementVersions??=[]).push("2.0.4");const $=globalThis,k=$.trustedTypes,C=k?k.createPolicy("lit-html",{createHTML:t=>t}):void 0,S="$lit$",I=`lit$${Math.random().toFixed(9).slice(2)}$`,z="?"+I,T=`<${z}>`,P=document,A=()=>P.createComment(""),M=t=>null===t||"object"!=typeof t&&"function"!=typeof t,O=Array.isArray,L=t=>O(t)||"function"==typeof t?.[Symbol.iterator],D="[ \t\n\f\r]",E=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,j=/-->/g,R=/>/g,U=RegExp(`>|${D}(?:([^\\s"'>=/]+)(${D}*=${D}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),F=/'/g,N=/"/g,B=/^(?:script|style|textarea|title)$/i,H=t=>(e,...o)=>({_$litType$:t,strings:e,values:o}),V=H(1),G=(H(2),H(3),Symbol.for("lit-noChange")),W=Symbol.for("lit-nothing"),q=new WeakMap,Y=P.createTreeWalker(P,129);function J(t,e){if(!O(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==C?C.createHTML(e):e}const X=(t,e)=>{const o=t.length-1,i=[];let n,a=2===e?"<svg>":3===e?"<math>":"",r=E;for(let e=0;e<o;e++){const o=t[e];let l,s,d=-1,c=0;for(;c<o.length&&(r.lastIndex=c,s=r.exec(o),null!==s);)c=r.lastIndex,r===E?"!--"===s[1]?r=j:void 0!==s[1]?r=R:void 0!==s[2]?(B.test(s[2])&&(n=RegExp("</"+s[2],"g")),r=U):void 0!==s[3]&&(r=U):r===U?">"===s[0]?(r=n??E,d=-1):void 0===s[1]?d=-2:(d=r.lastIndex-s[2].length,l=s[1],r=void 0===s[3]?U:'"'===s[3]?N:F):r===N||r===F?r=U:r===j||r===R?r=E:(r=U,n=void 0);const p=r===U&&t[e+1].startsWith("/>")?" ":"";a+=r===E?o+T:d>=0?(i.push(l),o.slice(0,d)+S+o.slice(d)+I+p):o+I+(-2===d?e:p)}return[J(t,a+(t[o]||"<?>")+(2===e?"</svg>":3===e?"</math>":"")),i]};class K{constructor({strings:t,_$litType$:e},o){let i;this.parts=[];let n=0,a=0;const r=t.length-1,l=this.parts,[s,d]=X(t,e);if(this.el=K.createElement(s,o),Y.currentNode=this.el.content,2===e||3===e){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes)}for(;null!==(i=Y.nextNode())&&l.length<r;){if(1===i.nodeType){if(i.hasAttributes())for(const t of i.getAttributeNames())if(t.endsWith(S)){const e=d[a++],o=i.getAttribute(t).split(I),r=/([.?@])?(.*)/.exec(e);l.push({type:1,index:n,name:r[2],strings:o,ctor:"."===r[1]?ot:"?"===r[1]?it:"@"===r[1]?nt:et}),i.removeAttribute(t)}else t.startsWith(I)&&(l.push({type:6,index:n}),i.removeAttribute(t));if(B.test(i.tagName)){const t=i.textContent.split(I),e=t.length-1;if(e>0){i.textContent=k?k.emptyScript:"";for(let o=0;o<e;o++)i.append(t[o],A()),Y.nextNode(),l.push({type:2,index:++n});i.append(t[e],A())}}}else if(8===i.nodeType)if(i.data===z)l.push({type:2,index:n});else{let t=-1;for(;-1!==(t=i.data.indexOf(I,t+1));)l.push({type:7,index:n}),t+=I.length-1}n++}}static createElement(t,e){const o=P.createElement("template");return o.innerHTML=t,o}}function Z(t,e,o=t,i){if(e===G)return e;let n=void 0!==i?o._$Co?.[i]:o._$Cl;const a=M(e)?void 0:e._$litDirective$;return n?.constructor!==a&&(n?._$AO?.(!1),void 0===a?n=void 0:(n=new a(t),n._$AT(t,o,i)),void 0!==i?(o._$Co??=[])[i]=n:o._$Cl=n),void 0!==n&&(e=Z(t,n._$AS(t,e.values),n,i)),e}class Q{constructor(t,e){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=e}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:e},parts:o}=this._$AD,i=(t?.creationScope??P).importNode(e,!0);Y.currentNode=i;let n=Y.nextNode(),a=0,r=0,l=o[0];for(;void 0!==l;){if(a===l.index){let e;2===l.type?e=new tt(n,n.nextSibling,this,t):1===l.type?e=new l.ctor(n,l.name,l.strings,this,t):6===l.type&&(e=new at(n,this,t)),this._$AV.push(e),l=o[++r]}a!==l?.index&&(n=Y.nextNode(),a++)}return Y.currentNode=P,i}p(t){let e=0;for(const o of this._$AV)void 0!==o&&(void 0!==o.strings?(o._$AI(t,o,e),e+=o.strings.length-2):o._$AI(t[e])),e++}}class tt{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,e,o,i){this.type=2,this._$AH=W,this._$AN=void 0,this._$AA=t,this._$AB=e,this._$AM=o,this.options=i,this._$Cv=i?.isConnected??!0}get parentNode(){let t=this._$AA.parentNode;const e=this._$AM;return void 0!==e&&11===t?.nodeType&&(t=e.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,e=this){t=Z(this,t,e),M(t)?t===W||null==t||""===t?(this._$AH!==W&&this._$AR(),this._$AH=W):t!==this._$AH&&t!==G&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):L(t)?this.k(t):this._(t)}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t))}_(t){this._$AH!==W&&M(this._$AH)?this._$AA.nextSibling.data=t:this.T(P.createTextNode(t)),this._$AH=t}$(t){const{values:e,_$litType$:o}=t,i="number"==typeof o?this._$AC(t):(void 0===o.el&&(o.el=K.createElement(J(o.h,o.h[0]),this.options)),o);if(this._$AH?._$AD===i)this._$AH.p(e);else{const t=new Q(i,this),o=t.u(this.options);t.p(e),this.T(o),this._$AH=t}}_$AC(t){let e=q.get(t.strings);return void 0===e&&q.set(t.strings,e=new K(t)),e}k(t){O(this._$AH)||(this._$AH=[],this._$AR());const e=this._$AH;let o,i=0;for(const n of t)i===e.length?e.push(o=new tt(this.O(A()),this.O(A()),this,this.options)):o=e[i],o._$AI(n),i++;i<e.length&&(this._$AR(o&&o._$AB.nextSibling,i),e.length=i)}_$AR(t=this._$AA.nextSibling,e){for(this._$AP?.(!1,!0,e);t&&t!==this._$AB;){const e=t.nextSibling;t.remove(),t=e}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t))}}class et{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,e,o,i,n){this.type=1,this._$AH=W,this._$AN=void 0,this.element=t,this.name=e,this._$AM=i,this.options=n,o.length>2||""!==o[0]||""!==o[1]?(this._$AH=Array(o.length-1).fill(new String),this.strings=o):this._$AH=W}_$AI(t,e=this,o,i){const n=this.strings;let a=!1;if(void 0===n)t=Z(this,t,e,0),a=!M(t)||t!==this._$AH&&t!==G,a&&(this._$AH=t);else{const i=t;let r,l;for(t=n[0],r=0;r<n.length-1;r++)l=Z(this,i[o+r],e,r),l===G&&(l=this._$AH[r]),a||=!M(l)||l!==this._$AH[r],l===W?t=W:t!==W&&(t+=(l??"")+n[r+1]),this._$AH[r]=l}a&&!i&&this.j(t)}j(t){t===W?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"")}}class ot extends et{constructor(){super(...arguments),this.type=3}j(t){this.element[this.name]=t===W?void 0:t}}class it extends et{constructor(){super(...arguments),this.type=4}j(t){this.element.toggleAttribute(this.name,!!t&&t!==W)}}class nt extends et{constructor(t,e,o,i,n){super(t,e,o,i,n),this.type=5}_$AI(t,e=this){if((t=Z(this,t,e,0)??W)===G)return;const o=this._$AH,i=t===W&&o!==W||t.capture!==o.capture||t.once!==o.once||t.passive!==o.passive,n=t!==W&&(o===W||i);i&&this.element.removeEventListener(this.name,this,o),n&&this.element.addEventListener(this.name,this,t),this._$AH=t}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t)}}class at{constructor(t,e,o){this.element=t,this.type=6,this._$AN=void 0,this._$AM=e,this.options=o}get _$AU(){return this._$AM._$AU}_$AI(t){Z(this,t)}}const rt={M:S,P:I,A:z,C:1,L:X,R:Q,D:L,V:Z,I:tt,H:et,N:it,U:nt,B:ot,F:at},lt=$.litHtmlPolyfillSupport;lt?.(K,tt),($.litHtmlVersions??=[]).push("3.2.1");class st extends w{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const e=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=((t,e,o)=>{const i=o?.renderBefore??e;let n=i._$litPart$;if(void 0===n){const t=o?.renderBefore??null;i._$litPart$=n=new tt(e.insertBefore(A(),t),t,void 0,o??{})}return n._$AI(t),n})(e,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return G}}st._$litElement$=!0,st.finalized=!0,globalThis.litElementHydrateSupport?.({LitElement:st});const dt=globalThis.litElementPolyfillSupport;dt?.({LitElement:st}),(globalThis.litElementVersions??=[]).push("4.1.1");const ct=t=>(e,o)=>{void 0!==o?o.addInitializer((()=>{customElements.define(t,e)})):customElements.define(t,e)},pt={attribute:!0,type:String,converter:_,reflect:!1,hasChanged:y},ut=(t=pt,e,o)=>{const{kind:i,metadata:n}=o;let a=globalThis.litPropertyMetadata.get(n);if(void 0===a&&globalThis.litPropertyMetadata.set(n,a=new Map),a.set(o.name,t),"accessor"===i){const{name:i}=o;return{set(o){const n=e.get.call(this);e.set.call(this,o),this.requestUpdate(i,n,t)},init(e){return void 0!==e&&this.P(i,void 0,t),e}}}if("setter"===i){const{name:i}=o;return function(o){const n=this[i];e.call(this,o),this.requestUpdate(i,n,t)}}throw Error("Unsupported decorator location: "+i)};function mt(t){return(e,o)=>"object"==typeof o?ut(t,e,o):((t,e,o)=>{const i=e.hasOwnProperty(o);return e.constructor.createProperty(o,i?{...t,wrapped:!0}:t),i?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}function gt(t){return mt({...t,state:!0,attribute:!1})}class ht{validate(t){const e=[];return t.id||e.push("Module ID is required"),t.type||e.push("Module type is required"),{valid:0===e.length,errors:e}}generateId(t){return`${t}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`}renderFormField(t,e,o){return V`
       <div class="form-field">
-        <label class="form-label">${e}</label>
-        ${t} ${o?V`<div class="form-description">${o}</div>`:""}
+        <label class="form-label">${t}</label>
+        ${e} ${o?V`<div class="form-description">${o}</div>`:""}
       </div>
-    `}renderColorPicker(e,t,o,i){return this.renderFormField(e,V`
+    `}renderColorPicker(t,e,o,i){return this.renderFormField(t,V`
         <input
           type="color"
-          .value=${t||"#000000"}
-          @change=${e=>o(e.target.value)}
+          .value=${e||"#000000"}
+          @change=${t=>o(t.target.value)}
         />
-      `,i)}renderNumberInput(e,t,o,i={},n){return this.renderFormField(e,V`
+      `,i)}renderNumberInput(t,e,o,i={},n){return this.renderFormField(t,V`
         <input
           type="number"
-          .value=${t||0}
+          .value=${e||0}
           min=${i.min||0}
           max=${i.max||1e3}
           step=${i.step||1}
-          @input=${e=>o(Number(e.target.value))}
+          @input=${t=>o(Number(t.target.value))}
         />
-      `,n)}renderTextInput(e,t,o,i,n){return this.renderFormField(e,V`
+      `,n)}renderTextInput(t,e,o,i,n){return this.renderFormField(t,V`
         <input
           type="text"
-          .value=${t||""}
+          .value=${e||""}
           placeholder=${i||""}
-          @input=${e=>o(e.target.value)}
+          @input=${t=>o(t.target.value)}
         />
-      `,n)}renderEntityPicker(e,t,o,i,n,a,r){return this.renderFormField("",V`
+      `,n)}renderEntityPicker(t,e,o,i,n,a,r){return this.renderFormField("",V`
         <ha-form
           .hass=${i}
-          .data=${{entity:t||""}}
-          .schema=${[{name:"entity",selector:{entity:{}},label:e,description:a||""}]}
-          .computeLabel=${e=>e.label||e.name}
-          .computeDescription=${e=>e.description||""}
-          @value-changed=${e=>o(e.detail.value.entity)}
+          .data=${{entity:e||""}}
+          .schema=${[{name:"entity",selector:{entity:{}},label:t,description:a||""}]}
+          .computeLabel=${t=>t.label||t.name}
+          .computeDescription=${t=>t.description||""}
+          @value-changed=${t=>o(t.detail.value.entity)}
         ></ha-form>
-      `,"")}renderTextArea(e,t,o,i,n){return this.renderFormField(e,V`
+      `,"")}renderTextArea(t,e,o,i,n){return this.renderFormField(t,V`
         <textarea
-          .value=${t||""}
+          .value=${e||""}
           placeholder=${i||""}
           rows="3"
-          @input=${e=>o(e.target.value)}
+          @input=${t=>o(t.target.value)}
         ></textarea>
-      `,n)}renderSelect(e,t,o,i,n){return this.renderFormField(e,V`
+      `,n)}renderSelect(t,e,o,i,n){return this.renderFormField(t,V`
         <select
-          .value=${t||""}
-          @change=${e=>i(e.target.value)}
+          .value=${e||""}
+          @change=${t=>i(t.target.value)}
         >
-          ${o.map((e=>V`<option value="${e.value}">${e.label}</option>`))}
+          ${o.map((t=>V`<option value="${t.value}">${t.label}</option>`))}
         </select>
-      `,n)}renderCheckbox(e,t,o,i){return this.renderFormField("",V`
+      `,n)}renderCheckbox(t,e,o,i){return this.renderFormField("",V`
         <label class="checkbox-wrapper">
           <input
             type="checkbox"
-            .checked=${t||!1}
-            @change=${e=>o(e.target.checked)}
+            .checked=${e||!1}
+            @change=${t=>o(t.target.checked)}
           />
-          ${e}
+          ${t}
         </label>
-      `,i)}renderConditionalFieldsGroup(e,t){return V`
+      `,i)}renderConditionalFieldsGroup(t,e){return V`
       <div class="conditional-fields-group">
-        <div class="conditional-fields-header">${e}</div>
-        <div class="conditional-fields-content">${t}</div>
+        <div class="conditional-fields-header">${t}</div>
+        <div class="conditional-fields-content">${e}</div>
       </div>
-    `}}class ve{static render(e,t,o,i="Link Configuration"){var n,a,r;return V`
+    `}}class vt{static render(t,e,o,i="Link Configuration"){var n,a,r;return V`
       <div class="ultra-link-component">
         <style>
           /* Hide redundant field labels from ha-form */
@@ -149,8 +149,8 @@
           >
             Action to perform when the element is tapped/clicked.
           </div>
-          ${ve.renderCleanForm(e,{action:(null===(n=t.tap_action)||void 0===n?void 0:n.action)||"default"},[{name:"action",selector:{select:{options:[{value:"default",label:"Default"},{value:"more-info",label:"More info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"URL"},{value:"perform-action",label:"Perform action"},{value:"assist",label:"Assist"},{value:"nothing",label:"Nothing"}],mode:"dropdown"}}}],(e=>{const i=Object.assign(Object.assign({},t.tap_action),{action:e.detail.value.action});o({tap_action:i})}))}
-          ${ve.renderActionFields(e,t.tap_action||{action:"default"},(e=>{const i=Object.assign(Object.assign({},t.tap_action),e);o({tap_action:i})}))}
+          ${vt.renderCleanForm(t,{action:(null===(n=e.tap_action)||void 0===n?void 0:n.action)||"default"},[{name:"action",selector:{select:{options:[{value:"default",label:"Default"},{value:"more-info",label:"More info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"URL"},{value:"perform-action",label:"Perform action"},{value:"assist",label:"Assist"},{value:"nothing",label:"Nothing"}],mode:"dropdown"}}}],(t=>{const i=Object.assign(Object.assign({},e.tap_action),{action:t.detail.value.action});o({tap_action:i})}))}
+          ${vt.renderActionFields(t,e.tap_action||{action:"default"},(t=>{const i=Object.assign(Object.assign({},e.tap_action),t);o({tap_action:i})}))}
         </div>
 
         <!-- Hold Behavior -->
@@ -164,8 +164,8 @@
           >
             Action to perform when the element is pressed and held.
           </div>
-          ${ve.renderCleanForm(e,{action:(null===(a=t.hold_action)||void 0===a?void 0:a.action)||"default"},[{name:"action",selector:{select:{options:[{value:"default",label:"Default"},{value:"more-info",label:"More info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"URL"},{value:"perform-action",label:"Perform action"},{value:"assist",label:"Assist"},{value:"nothing",label:"Nothing"}],mode:"dropdown"}}}],(e=>{const i=Object.assign(Object.assign({},t.hold_action),{action:e.detail.value.action});o({hold_action:i})}))}
-          ${ve.renderActionFields(e,t.hold_action||{action:"default"},(e=>{const i=Object.assign(Object.assign({},t.hold_action),e);o({hold_action:i})}))}
+          ${vt.renderCleanForm(t,{action:(null===(a=e.hold_action)||void 0===a?void 0:a.action)||"default"},[{name:"action",selector:{select:{options:[{value:"default",label:"Default"},{value:"more-info",label:"More info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"URL"},{value:"perform-action",label:"Perform action"},{value:"assist",label:"Assist"},{value:"nothing",label:"Nothing"}],mode:"dropdown"}}}],(t=>{const i=Object.assign(Object.assign({},e.hold_action),{action:t.detail.value.action});o({hold_action:i})}))}
+          ${vt.renderActionFields(t,e.hold_action||{action:"default"},(t=>{const i=Object.assign(Object.assign({},e.hold_action),t);o({hold_action:i})}))}
         </div>
 
         <!-- Double Tap Behavior -->
@@ -179,15 +179,15 @@
           >
             Action to perform when the element is double-tapped/clicked.
           </div>
-          ${ve.renderCleanForm(e,{action:(null===(r=t.double_tap_action)||void 0===r?void 0:r.action)||"default"},[{name:"action",selector:{select:{options:[{value:"default",label:"Default"},{value:"more-info",label:"More info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"URL"},{value:"perform-action",label:"Perform action"},{value:"assist",label:"Assist"},{value:"nothing",label:"Nothing"}],mode:"dropdown"}}}],(e=>{const i=Object.assign(Object.assign({},t.double_tap_action),{action:e.detail.value.action});o({double_tap_action:i})}))}
-          ${ve.renderActionFields(e,t.double_tap_action||{action:"default"},(e=>{const i=Object.assign(Object.assign({},t.double_tap_action),e);o({double_tap_action:i})}))}
+          ${vt.renderCleanForm(t,{action:(null===(r=e.double_tap_action)||void 0===r?void 0:r.action)||"default"},[{name:"action",selector:{select:{options:[{value:"default",label:"Default"},{value:"more-info",label:"More info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"URL"},{value:"perform-action",label:"Perform action"},{value:"assist",label:"Assist"},{value:"nothing",label:"Nothing"}],mode:"dropdown"}}}],(t=>{const i=Object.assign(Object.assign({},e.double_tap_action),{action:t.detail.value.action});o({double_tap_action:i})}))}
+          ${vt.renderActionFields(t,e.double_tap_action||{action:"default"},(t=>{const i=Object.assign(Object.assign({},e.double_tap_action),t);o({double_tap_action:i})}))}
         </div>
       </div>
-    `}static renderCleanForm(e,t,o,i){return V`
+    `}static renderCleanForm(t,e,o,i){return V`
       <div class="ultra-clean-form">
-        <ha-form .hass=${e} .data=${t} .schema=${o} @value-changed=${i}></ha-form>
+        <ha-form .hass=${t} .data=${e} .schema=${o} @value-changed=${i}></ha-form>
       </div>
-    `}static renderActionFields(e,t,o){switch(t.action){case"more-info":case"toggle":return V`
+    `}static renderActionFields(t,e,o){switch(e.action){case"more-info":case"toggle":return V`
           <div style="margin-top: 16px;">
             <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
               Entity
@@ -197,9 +197,9 @@
               style="font-size: 12px; font-weight: 400; margin-bottom: 8px; color: var(--secondary-text-color);"
             >
               Select the entity to
-              ${"more-info"===t.action?"show more info for":"toggle"}.
+              ${"more-info"===e.action?"show more info for":"toggle"}.
             </div>
-            ${ve.renderCleanForm(e,{entity:t.entity||""},[{name:"entity",selector:{entity:{}}}],(e=>o({entity:e.detail.value.entity})))}
+            ${vt.renderCleanForm(t,{entity:e.entity||""},[{name:"entity",selector:{entity:{}}}],(t=>o({entity:t.detail.value.entity})))}
           </div>
         `;case"navigate":return V`
           <div style="margin-top: 16px;">
@@ -212,7 +212,7 @@
             >
               Choose where to navigate or enter a custom path (e.g., /lovelace/dashboard).
             </div>
-            ${ve.renderNavigationPicker(e,t.navigation_path||"",(e=>o({navigation_path:e})))}
+            ${vt.renderNavigationPicker(t,e.navigation_path||"",(t=>o({navigation_path:t})))}
           </div>
         `;case"url":return V`
           <div style="margin-top: 16px;">
@@ -225,7 +225,7 @@
             >
               Enter the URL to navigate to (e.g., https://www.example.com).
             </div>
-            ${ve.renderCleanForm(e,{url_path:t.url_path||""},[{name:"url_path",selector:{text:{}}}],(e=>o({url_path:e.detail.value.url_path})))}
+            ${vt.renderCleanForm(t,{url_path:e.url_path||""},[{name:"url_path",selector:{text:{}}}],(t=>o({url_path:t.detail.value.url_path})))}
           </div>
         `;case"perform-action":return V`
           <div style="margin-top: 16px;">
@@ -238,7 +238,7 @@
             >
               Enter the service to call (e.g., light.turn_on).
             </div>
-            ${ve.renderCleanForm(e,{service:t.service||""},[{name:"service",selector:{text:{}}}],(e=>o({service:e.detail.value.service})))}
+            ${vt.renderCleanForm(t,{service:e.service||""},[{name:"service",selector:{text:{}}}],(t=>o({service:t.detail.value.service})))}
 
             <div style="margin-top: 12px;">
               <div
@@ -253,32 +253,32 @@
               >
                 Enter service data as YAML (e.g., entity_id: light.living_room).
               </div>
-              ${ve.renderCleanForm(e,{service_data:t.service_data?JSON.stringify(t.service_data,null,2):""},[{name:"service_data",selector:{text:{multiline:!0,type:"text"}}}],(e=>{try{const t=e.detail.value.service_data?JSON.parse(e.detail.value.service_data):void 0;o({service_data:t})}catch(e){}}))}
+              ${vt.renderCleanForm(t,{service_data:e.service_data?JSON.stringify(e.service_data,null,2):""},[{name:"service_data",selector:{text:{multiline:!0,type:"text"}}}],(t=>{try{const e=t.detail.value.service_data?JSON.parse(t.detail.value.service_data):void 0;o({service_data:e})}catch(t){}}))}
             </div>
           </div>
-        `;default:return V``}}static renderNavigationPicker(e,t,o){const i=[{value:"/lovelace",label:"Overview (/lovelace)"},{value:"/config",label:"Settings (/config)"},{value:"/config/dashboard",label:"Dashboards (/config/dashboard)"},{value:"/config/entities",label:"Entities (/config/entities)"},{value:"/config/devices",label:"Devices (/config/devices)"},{value:"/config/automations",label:"Automations (/config/automations)"},{value:"/config/scripts",label:"Scripts (/config/scripts)"},{value:"/config/scenes",label:"Scenes (/config/scenes)"},{value:"/developer-tools",label:"Developer Tools (/developer-tools)"},...Object.keys(e.panels).filter((t=>e.panels[t].url_path||"lovelace"===t)).map((t=>({value:e.panels[t].url_path||`/lovelace/${t}`,label:`${e.panels[t].title||t} (${e.panels[t].url_path||`/lovelace/${t}`})`})))];return ve.renderCleanForm(e,{navigation_path:t},[{name:"navigation_path",selector:{select:{options:[{value:"",label:"Custom path..."},...i],mode:"dropdown",custom_value:!0}}}],(e=>o(e.detail.value.navigation_path)))}static getDefaultConfig(){return{tap_action:{action:"default"},hold_action:{action:"default"},double_tap_action:{action:"default"}}}static handleAction(e,t,o){switch(e.action){case"more-info":if(e.entity){const t=new CustomEvent("hass-more-info",{bubbles:!0,composed:!0,detail:{entityId:e.entity}});null==o||o.dispatchEvent(t)}break;case"toggle":e.entity&&t.callService("homeassistant","toggle",{entity_id:e.entity});break;case"navigate":if(e.navigation_path){window.history.pushState(null,"",e.navigation_path);const t=new CustomEvent("location-changed",{bubbles:!0,composed:!0,detail:{replace:!1}});window.dispatchEvent(t)}break;case"url":e.url_path&&window.open(e.url_path,"_blank");break;case"perform-action":if(e.service){const[o,i]=e.service.split(".");o&&i&&t.callService(o,i,e.service_data||{})}break;case"assist":const i=new CustomEvent("hass-assist",{bubbles:!0,composed:!0});null==o||o.dispatchEvent(i)}}}class be{static renderCleanForm(e,t,o,i){const n=`clean-form-${Math.random().toString(36).substr(2,9)}`;return setTimeout((()=>{const e=document.getElementById(n);e&&(be.setupFormObserver(e,n),be.aggressiveCleanup(e))}),0),setTimeout((()=>{const e=document.getElementById(n);e&&be.aggressiveCleanup(e)}),100),V`
+        `;default:return V``}}static renderNavigationPicker(t,e,o){const i=[{value:"/lovelace",label:"Overview (/lovelace)"},{value:"/config",label:"Settings (/config)"},{value:"/config/dashboard",label:"Dashboards (/config/dashboard)"},{value:"/config/entities",label:"Entities (/config/entities)"},{value:"/config/devices",label:"Devices (/config/devices)"},{value:"/config/automations",label:"Automations (/config/automations)"},{value:"/config/scripts",label:"Scripts (/config/scripts)"},{value:"/config/scenes",label:"Scenes (/config/scenes)"},{value:"/developer-tools",label:"Developer Tools (/developer-tools)"},...Object.keys(t.panels).filter((e=>t.panels[e].url_path||"lovelace"===e)).map((e=>({value:t.panels[e].url_path||`/lovelace/${e}`,label:`${t.panels[e].title||e} (${t.panels[e].url_path||`/lovelace/${e}`})`})))];return vt.renderCleanForm(t,{navigation_path:e},[{name:"navigation_path",selector:{select:{options:[{value:"",label:"Custom path..."},...i],mode:"dropdown",custom_value:!0}}}],(t=>o(t.detail.value.navigation_path)))}static getDefaultConfig(){return{tap_action:{action:"default"},hold_action:{action:"default"},double_tap_action:{action:"default"}}}static handleAction(t,e,o){switch(t.action){case"more-info":if(t.entity){const e=new CustomEvent("hass-more-info",{bubbles:!0,composed:!0,detail:{entityId:t.entity}});null==o||o.dispatchEvent(e)}break;case"toggle":t.entity&&e.callService("homeassistant","toggle",{entity_id:t.entity});break;case"navigate":if(t.navigation_path){window.history.pushState(null,"",t.navigation_path);const e=new CustomEvent("location-changed",{bubbles:!0,composed:!0,detail:{replace:!1}});window.dispatchEvent(e)}break;case"url":t.url_path&&window.open(t.url_path,"_blank");break;case"perform-action":if(t.service){const[o,i]=t.service.split(".");o&&i&&e.callService(o,i,t.service_data||{})}break;case"assist":const i=new CustomEvent("hass-assist",{bubbles:!0,composed:!0});null==o||o.dispatchEvent(i)}}}class bt{static renderCleanForm(t,e,o,i){const n=`clean-form-${Math.random().toString(36).substr(2,9)}`;return setTimeout((()=>{const t=document.getElementById(n);t&&(bt.setupFormObserver(t,n),bt.aggressiveCleanup(t))}),0),setTimeout((()=>{const t=document.getElementById(n);t&&bt.aggressiveCleanup(t)}),100),V`
       <div class="ultra-clean-form" id="${n}">
         <ha-form
-          .hass=${e}
-          .data=${t}
+          .hass=${t}
+          .data=${e}
           .schema=${o}
-          @value-changed=${e=>{i(e),setTimeout((()=>{const e=document.getElementById(n);e&&be.aggressiveCleanup(e)}),0)}}
+          @value-changed=${t=>{i(t),setTimeout((()=>{const t=document.getElementById(n);t&&bt.aggressiveCleanup(t)}),0)}}
         ></ha-form>
       </div>
-    `}static setupFormObserver(e,t){var o;be.activeObservers.has(t)&&(null===(o=be.activeObservers.get(t))||void 0===o||o.disconnect());const i=new MutationObserver((o=>{let i=!1;o.forEach((e=>{"childList"===e.type&&e.addedNodes.forEach((e=>{e.nodeType===Node.ELEMENT_NODE&&(i=!0)}))})),i&&!be.cleanupQueue.has(t)&&(be.cleanupQueue.add(t),setTimeout((()=>{be.aggressiveCleanup(e),be.cleanupQueue.delete(t)}),10))}));i.observe(e,{childList:!0,subtree:!0,characterData:!0}),be.activeObservers.set(t,i),setTimeout((()=>{document.contains(e)||(i.disconnect(),be.activeObservers.delete(t))}),3e4)}static aggressiveCleanup(e){var t;if(!e)return;const o=["action","entity","template_mode","icon","name","value","text","url","path","attribute","state","condition","enabled","disabled","template","mode","type","size","color","style","width","height","radius","opacity","service","data","latitude","longitude","navigation_path","show_icon","label","button"],i=e.querySelector("ha-form");if(!i)return;const n=document.createTreeWalker(i,NodeFilter.SHOW_TEXT,null),a=[];let r;for(;r=n.nextNode();){const e=null===(t=r.textContent)||void 0===t?void 0:t.trim().toLowerCase();e&&o.includes(e)&&a.push(r)}a.forEach((e=>{var t;const o=e.parentElement;if(o){const i=o.querySelector("input, select, ha-entity-picker, ha-selector, mwc-select, mwc-textfield");e.textContent&&e.textContent.trim().length<30&&(i||(null===(t=o.parentElement)||void 0===t?void 0:t.querySelector("input, select, ha-entity-picker, ha-selector")))&&e.remove()}})),i.querySelectorAll("*").forEach((e=>{var t,i;const n=null===(t=e.textContent)||void 0===t?void 0:t.trim().toLowerCase();n&&o.includes(n)&&0===e.children.length&&(null===(i=e.parentElement)||void 0===i?void 0:i.querySelector("input, select, ha-entity-picker, ha-selector"))&&(e.style.cssText="display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;")})),['div[role="group"] > div:first-child:not([class])','div[role="group"] > span:first-child:not([class])',".mdc-form-field__label",".mdc-text-field__label",".mdc-select__label","label:not([for])","div:not([class]):not([id])","span:not([class]):not([id])"].forEach((e=>{try{i.querySelectorAll(e).forEach((e=>{var t;const i=null===(t=e.textContent)||void 0===t?void 0:t.trim().toLowerCase();i&&o.includes(i)&&(e.style.cssText="display: none !important;")}))}catch(e){}})),i.querySelectorAll('[class*="mdc-"]').forEach((e=>{var t;const i=null===(t=e.textContent)||void 0===t?void 0:t.trim().toLowerCase();i&&o.includes(i)&&0===e.children.length&&(e.classList.contains("mdc-floating-label")||e.classList.contains("mdc-form-field__label")||e.classList.contains("mdc-text-field__label"))&&(e.style.cssText="display: none !important;")})),setTimeout((()=>{var e;const t=document.createTreeWalker(i,NodeFilter.SHOW_TEXT,null),n=[];let a;for(;a=t.nextNode();){const t=null===(e=a.textContent)||void 0===e?void 0:e.trim().toLowerCase();t&&o.includes(t)&&n.push(a)}n.forEach((e=>{e.parentNode&&(e.textContent="")}))}),50)}static getCleanFormStyles(){return"\n      /* Ultra-aggressive label hiding */\n      .ultra-clean-form ha-form label,\n      .ultra-clean-form ha-form .label,\n      .ultra-clean-form ha-form .mdc-floating-label,\n      .ultra-clean-form ha-form .mdc-text-field__label,\n      .ultra-clean-form ha-form .mdc-select__label,\n      .ultra-clean-form ha-form .mdc-form-field__label,\n      .ultra-clean-form ha-form .ha-form-label,\n      .ultra-clean-form ha-form .mdc-notched-outline__leading,\n      .ultra-clean-form ha-form .mdc-notched-outline__notch,\n      .ultra-clean-form ha-form .mdc-notched-outline__trailing,\n      .ultra-clean-form ha-form .mdc-line-ripple {\n        display: none !important;\n        visibility: hidden !important;\n        opacity: 0 !important;\n        height: 0 !important;\n        width: 0 !important;\n        margin: 0 !important;\n        padding: 0 !important;\n        font-size: 0 !important;\n        line-height: 0 !important;\n      }\n\n      /* Override any existing label styles completely */\n      .ultra-clean-form label,\n      .ultra-clean-form .ultra-clean-form label *,\n      .ultra-clean-form ha-form label,\n      .ultra-clean-form ha-form label * {\n        display: none !important;\n        visibility: hidden !important;\n        opacity: 0 !important;\n        height: 0 !important;\n        width: 0 !important;\n        margin: 0 !important;\n        padding: 0 !important;\n        border: none !important;\n        outline: none !important;\n        background: none !important;\n        font-size: 0 !important;\n        line-height: 0 !important;\n        position: absolute !important;\n        left: -9999px !important;\n        top: -9999px !important;\n        z-index: -1 !important;\n        pointer-events: none !important;\n      }\n\n      /* Hide any text that could be a redundant label */\n      .ultra-clean-form ha-form div:not([class]):not([id]),\n      .ultra-clean-form ha-form span:not([class]):not([id]),\n      .ultra-clean-form ha-form p:not([class]):not([id]) {\n        font-size: 0 !important;\n        line-height: 0 !important;\n        color: transparent !important;\n        height: 0 !important;\n        overflow: hidden !important;\n      }\n\n      /* Make sure form inputs still work */\n      .ultra-clean-form ha-form input,\n      .ultra-clean-form ha-form select,\n      .ultra-clean-form ha-form textarea,\n      .ultra-clean-form ha-form ha-entity-picker,\n      .ultra-clean-form ha-form ha-icon-picker,\n      .ultra-clean-form ha-form ha-selector,\n      .ultra-clean-form ha-form .mdc-text-field,\n      .ultra-clean-form ha-form .mdc-select,\n      .ultra-clean-form ha-form .mdc-switch {\n        font-size: 14px !important;\n        line-height: normal !important;\n        color: var(--primary-text-color) !important;\n        height: auto !important;\n        width: auto !important;\n        margin-top: 0 !important;\n        border-radius: 8px !important;\n      }\n\n      /* Ensure dropdowns work */\n      .ultra-clean-form ha-form .mdc-select__selected-text,\n      .ultra-clean-form ha-form .mdc-select__dropdown-icon {\n        font-size: 14px !important;\n        color: var(--primary-text-color) !important;\n        opacity: 1 !important;\n        height: auto !important;\n        width: auto !important;\n      }\n\n      /* Style field titles and descriptions consistently */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n    "}static cleanupRedundantLabels(e){be.aggressiveCleanup(e)}static renderField(e,t,o,i,n,a){return V`
+    `}static setupFormObserver(t,e){var o;bt.activeObservers.has(e)&&(null===(o=bt.activeObservers.get(e))||void 0===o||o.disconnect());const i=new MutationObserver((o=>{let i=!1;o.forEach((t=>{"childList"===t.type&&t.addedNodes.forEach((t=>{t.nodeType===Node.ELEMENT_NODE&&(i=!0)}))})),i&&!bt.cleanupQueue.has(e)&&(bt.cleanupQueue.add(e),setTimeout((()=>{bt.aggressiveCleanup(t),bt.cleanupQueue.delete(e)}),10))}));i.observe(t,{childList:!0,subtree:!0,characterData:!0}),bt.activeObservers.set(e,i),setTimeout((()=>{document.contains(t)||(i.disconnect(),bt.activeObservers.delete(e))}),3e4)}static aggressiveCleanup(t){var e;if(!t)return;const o=["action","entity","template_mode","icon","name","value","text","url","path","attribute","state","condition","enabled","disabled","template","mode","type","size","color","style","width","height","radius","opacity","service","data","latitude","longitude","navigation_path","show_icon","label","button"],i=t.querySelector("ha-form");if(!i)return;const n=document.createTreeWalker(i,NodeFilter.SHOW_TEXT,null),a=[];let r;for(;r=n.nextNode();){const t=null===(e=r.textContent)||void 0===e?void 0:e.trim().toLowerCase();t&&o.includes(t)&&a.push(r)}a.forEach((t=>{var e;const o=t.parentElement;if(o){const i=o.querySelector("input, select, ha-entity-picker, ha-selector, mwc-select, mwc-textfield");t.textContent&&t.textContent.trim().length<30&&(i||(null===(e=o.parentElement)||void 0===e?void 0:e.querySelector("input, select, ha-entity-picker, ha-selector")))&&t.remove()}})),i.querySelectorAll("*").forEach((t=>{var e,i;const n=null===(e=t.textContent)||void 0===e?void 0:e.trim().toLowerCase();n&&o.includes(n)&&0===t.children.length&&(null===(i=t.parentElement)||void 0===i?void 0:i.querySelector("input, select, ha-entity-picker, ha-selector"))&&(t.style.cssText="display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;")})),['div[role="group"] > div:first-child:not([class])','div[role="group"] > span:first-child:not([class])',".mdc-form-field__label",".mdc-text-field__label",".mdc-select__label","label:not([for])","div:not([class]):not([id])","span:not([class]):not([id])"].forEach((t=>{try{i.querySelectorAll(t).forEach((t=>{var e;const i=null===(e=t.textContent)||void 0===e?void 0:e.trim().toLowerCase();i&&o.includes(i)&&(t.style.cssText="display: none !important;")}))}catch(t){}})),i.querySelectorAll('[class*="mdc-"]').forEach((t=>{var e;const i=null===(e=t.textContent)||void 0===e?void 0:e.trim().toLowerCase();i&&o.includes(i)&&0===t.children.length&&(t.classList.contains("mdc-floating-label")||t.classList.contains("mdc-form-field__label")||t.classList.contains("mdc-text-field__label"))&&(t.style.cssText="display: none !important;")})),setTimeout((()=>{var t;const e=document.createTreeWalker(i,NodeFilter.SHOW_TEXT,null),n=[];let a;for(;a=e.nextNode();){const e=null===(t=a.textContent)||void 0===t?void 0:t.trim().toLowerCase();e&&o.includes(e)&&n.push(a)}n.forEach((t=>{t.parentNode&&(t.textContent="")}))}),50)}static getCleanFormStyles(){return"\n      /* Ultra-aggressive label hiding */\n      .ultra-clean-form ha-form label,\n      .ultra-clean-form ha-form .label,\n      .ultra-clean-form ha-form .mdc-floating-label,\n      .ultra-clean-form ha-form .mdc-text-field__label,\n      .ultra-clean-form ha-form .mdc-select__label,\n      .ultra-clean-form ha-form .mdc-form-field__label,\n      .ultra-clean-form ha-form .ha-form-label,\n      .ultra-clean-form ha-form .mdc-notched-outline__leading,\n      .ultra-clean-form ha-form .mdc-notched-outline__notch,\n      .ultra-clean-form ha-form .mdc-notched-outline__trailing,\n      .ultra-clean-form ha-form .mdc-line-ripple {\n        display: none !important;\n        visibility: hidden !important;\n        opacity: 0 !important;\n        height: 0 !important;\n        width: 0 !important;\n        margin: 0 !important;\n        padding: 0 !important;\n        font-size: 0 !important;\n        line-height: 0 !important;\n      }\n\n      /* Override any existing label styles completely */\n      .ultra-clean-form label,\n      .ultra-clean-form .ultra-clean-form label *,\n      .ultra-clean-form ha-form label,\n      .ultra-clean-form ha-form label * {\n        display: none !important;\n        visibility: hidden !important;\n        opacity: 0 !important;\n        height: 0 !important;\n        width: 0 !important;\n        margin: 0 !important;\n        padding: 0 !important;\n        border: none !important;\n        outline: none !important;\n        background: none !important;\n        font-size: 0 !important;\n        line-height: 0 !important;\n        position: absolute !important;\n        left: -9999px !important;\n        top: -9999px !important;\n        z-index: -1 !important;\n        pointer-events: none !important;\n      }\n\n      /* Hide any text that could be a redundant label */\n      .ultra-clean-form ha-form div:not([class]):not([id]),\n      .ultra-clean-form ha-form span:not([class]):not([id]),\n      .ultra-clean-form ha-form p:not([class]):not([id]) {\n        font-size: 0 !important;\n        line-height: 0 !important;\n        color: transparent !important;\n        height: 0 !important;\n        overflow: hidden !important;\n      }\n\n      /* Make sure form inputs still work */\n      .ultra-clean-form ha-form input,\n      .ultra-clean-form ha-form select,\n      .ultra-clean-form ha-form textarea,\n      .ultra-clean-form ha-form ha-entity-picker,\n      .ultra-clean-form ha-form ha-icon-picker,\n      .ultra-clean-form ha-form ha-selector,\n      .ultra-clean-form ha-form .mdc-text-field,\n      .ultra-clean-form ha-form .mdc-select,\n      .ultra-clean-form ha-form .mdc-switch {\n        font-size: 14px !important;\n        line-height: normal !important;\n        color: var(--primary-text-color) !important;\n        height: auto !important;\n        width: auto !important;\n        margin-top: 0 !important;\n        border-radius: 8px !important;\n      }\n\n      /* Ensure dropdowns work */\n      .ultra-clean-form ha-form .mdc-select__selected-text,\n      .ultra-clean-form ha-form .mdc-select__dropdown-icon {\n        font-size: 14px !important;\n        color: var(--primary-text-color) !important;\n        opacity: 1 !important;\n        height: auto !important;\n        width: auto !important;\n      }\n\n      /* Style field titles and descriptions consistently */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n    "}static cleanupRedundantLabels(t){bt.aggressiveCleanup(t)}static renderField(t,e,o,i,n,a){return V`
       <div class="form-field-container">
         <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          ${e}
+          ${t}
         </div>
         <div
           class="field-description"
           style="font-size: 13px; font-weight: 400; margin-bottom: 12px; color: var(--secondary-text-color);"
         >
-          ${t}
+          ${e}
         </div>
-        ${be.renderCleanForm(o,i,n,a)}
+        ${bt.renderCleanForm(o,i,n,a)}
       </div>
-    `}static createSchemaItem(e,t){return{name:e,selector:t}}static renderSection(e,t,o){return V`
+    `}static createSchemaItem(t,e){return{name:t,selector:e}}static renderSection(t,e,o){return V`
       <div
         class="settings-section"
         style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
@@ -287,28 +287,28 @@
           class="section-title"
           style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
         >
-          ${e}
+          ${t}
         </div>
-        ${t?V`
+        ${e?V`
               <div
                 class="field-description"
                 style="font-size: 13px; font-weight: 400; margin-bottom: 16px; color: var(--secondary-text-color);"
               >
-                ${t}
+                ${e}
               </div>
             `:""}
-        ${o.map((e=>V`
+        ${o.map((t=>V`
             <div style="margin-bottom: 16px;">
-              ${be.renderField(e.title,e.description,e.hass,e.data,e.schema,e.onChange)}
+              ${bt.renderField(t.title,t.description,t.hass,t.data,t.schema,t.onChange)}
             </div>
           `))}
       </div>
     `}static injectCleanFormStyles(){return V`
       <style>
-        ${be.getCleanFormStyles()}
+        ${bt.getCleanFormStyles()}
       </style>
-    `}}be.activeObservers=new Map,be.cleanupQueue=new Set;class fe extends he{constructor(){super(...arguments),this.metadata={type:"text",title:"Text Module",description:"Display custom text content",author:"WJD Designs",version:"1.0.0",icon:"mdi:format-text",category:"content",tags:["text","content","typography","template"]},this.clickTimeout=null,this.holdTimeout=null,this.isHolding=!1}createDefault(e){return{id:e||this.generateId("text"),type:"text",text:"Sample Text",link:"",hide_if_no_link:!1,tap_action:{action:"default"},hold_action:{action:"default"},double_tap_action:{action:"default"},icon:"",icon_position:"before",template_mode:!1,template:""}}renderGeneralTab(e,t,o,i){const n=e;return V`
-      ${be.injectCleanFormStyles()}
+    `}}bt.activeObservers=new Map,bt.cleanupQueue=new Set;class ft extends ht{constructor(){super(...arguments),this.metadata={type:"text",title:"Text Module",description:"Display custom text content",author:"WJD Designs",version:"1.0.0",icon:"mdi:format-text",category:"content",tags:["text","content","typography","template"]},this.clickTimeout=null,this.holdTimeout=null,this.isHolding=!1}createDefault(t){return{id:t||this.generateId("text"),type:"text",text:"Sample Text",link:"",hide_if_no_link:!1,tap_action:{action:"default"},hold_action:{action:"default"},double_tap_action:{action:"default"},icon:"",icon_position:"before",template_mode:!1,template:""}}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
       <div class="module-general-settings">
         <!-- Content Configuration -->
         <div
@@ -323,7 +323,7 @@
           </div>
 
           <!-- Text Content -->
-          ${be.renderField("Text Content","Enter the text content to display in this module.",t,{text:n.text||""},[be.createSchemaItem("text",{text:{}})],(e=>i({text:e.detail.value.text})))}
+          ${bt.renderField("Text Content","Enter the text content to display in this module.",e,{text:n.text||""},[bt.createSchemaItem("text",{text:{}})],(t=>i({text:t.detail.value.text})))}
         </div>
 
         <!-- Link Configuration -->
@@ -331,7 +331,7 @@
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
-          ${ve.render(t,{tap_action:n.tap_action||{action:"default"},hold_action:n.hold_action||{action:"default"},double_tap_action:n.double_tap_action||{action:"default"}},(e=>{const t={};e.tap_action&&(t.tap_action=e.tap_action),e.hold_action&&(t.hold_action=e.hold_action),e.double_tap_action&&(t.double_tap_action=e.double_tap_action),i(t)}),"Link Configuration")}
+          ${vt.render(e,{tap_action:n.tap_action||{action:"default"},hold_action:n.hold_action||{action:"default"},double_tap_action:n.double_tap_action||{action:"default"}},(t=>{const e={};t.tap_action&&(e.tap_action=t.tap_action),t.hold_action&&(e.hold_action=t.hold_action),t.double_tap_action&&(e.double_tap_action=t.double_tap_action),i(e)}),"Link Configuration")}
         </div>
 
         <!-- Icon Configuration -->
@@ -347,7 +347,7 @@
           </div>
 
           <!-- Icon Selection -->
-          ${be.renderField("Icon","Choose an icon to display alongside the text. Leave empty for no icon.",t,{icon:n.icon||""},[be.createSchemaItem("icon",{icon:{}})],(e=>i({icon:e.detail.value.icon})))}
+          ${bt.renderField("Icon","Choose an icon to display alongside the text. Leave empty for no icon.",e,{icon:n.icon||""},[bt.createSchemaItem("icon",{icon:{}})],(t=>i({icon:t.detail.value.icon})))}
           ${n.icon&&""!==n.icon.trim()?V`
                 <div style="margin-top: 24px;">
                   ${this.renderConditionalFieldsGroup("Icon Position",V`
@@ -400,11 +400,11 @@
             >
               Template Configuration
             </div>
-            ${be.renderCleanForm(t,{template_mode:n.template_mode||!1},[be.createSchemaItem("template_mode",{boolean:{}})],(e=>i({template_mode:e.detail.value.template_mode})))}
+            ${bt.renderCleanForm(e,{template_mode:n.template_mode||!1},[bt.createSchemaItem("template_mode",{boolean:{}})],(t=>i({template_mode:t.detail.value.template_mode})))}
           </div>
 
           ${n.template_mode?this.renderConditionalFieldsGroup("Template Settings",V`
-                  ${be.renderField("Template Code","Enter the Jinja2 template code. Example: {{ states('sensor.temperature') }}°C",t,{template:n.template||""},[be.createSchemaItem("template",{text:{multiline:!0}})],(e=>i({template:e.detail.value.template})))}
+                  ${bt.renderField("Template Code","Enter the Jinja2 template code. Example: {{ states('sensor.temperature') }}°C",e,{template:n.template||""},[bt.createSchemaItem("template",{text:{multiline:!0}})],(t=>i({template:t.detail.value.template})))}
                 `):V`
                 <div
                   style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
@@ -414,23 +414,23 @@
               `}
         </div>
       </div>
-    `}renderPreview(e,t){const o=e;if(o.hide_if_no_link&&!this.hasActiveLink(o))return V`<div class="text-module-hidden">Hidden (no link)</div>`;const i=o,n={fontSize:i.font_size?`${i.font_size}px`:"16px",fontFamily:i.font_family||"Roboto",color:i.color||"var(--primary-text-color)",textAlign:i.text_align||"center",fontWeight:i.font_weight||"normal",fontStyle:i.font_style||"normal",textTransform:i.text_transform||"none",textDecoration:"none",lineHeight:i.line_height||"1.4",letterSpacing:i.letter_spacing||"normal",margin:"0",display:"flex",alignItems:"center",justifyContent:i.text_align||"center",gap:"8px",textShadow:i.text_shadow_h&&i.text_shadow_v?`${i.text_shadow_h||"0"} ${i.text_shadow_v||"0"} ${i.text_shadow_blur||"0"} ${i.text_shadow_color||"rgba(0,0,0,0.5)"}`:"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none"},a=o.icon?V`<ha-icon icon="${o.icon}"></ha-icon>`:"",r=V`<span>${o.text||"Sample Text"}</span>`;let l;l="before"!==o.icon_position&&o.icon_position?"after"===o.icon_position?V`${r}${a}`:r:V`${a}${r}`;const s=this.hasActiveLink(o)?V`<div
+    `}renderPreview(t,e){const o=t;if(o.hide_if_no_link&&!this.hasActiveLink(o))return V`<div class="text-module-hidden">Hidden (no link)</div>`;const i=o,n={fontSize:i.font_size?`${i.font_size}px`:"16px",fontFamily:i.font_family||"Roboto",color:i.color||"var(--primary-text-color)",textAlign:i.text_align||"center",fontWeight:i.font_weight||"normal",fontStyle:i.font_style||"normal",textTransform:i.text_transform||"none",textDecoration:"none",lineHeight:i.line_height||"1.4",letterSpacing:i.letter_spacing||"normal",margin:"0",display:"flex",alignItems:"center",justifyContent:i.text_align||"center",gap:"8px",textShadow:i.text_shadow_h&&i.text_shadow_v?`${i.text_shadow_h||"0"} ${i.text_shadow_v||"0"} ${i.text_shadow_blur||"0"} ${i.text_shadow_color||"rgba(0,0,0,0.5)"}`:"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none"},a=o.icon?V`<ha-icon icon="${o.icon}"></ha-icon>`:"",r=V`<span>${o.text||"Sample Text"}</span>`;let l;l="before"!==o.icon_position&&o.icon_position?"after"===o.icon_position?V`${r}${a}`:r:V`${a}${r}`;const s=this.hasActiveLink(o)?V`<div
           class="text-module-clickable"
           style="color: inherit; text-decoration: inherit; cursor: pointer;"
-          @click=${e=>this.handleClick(e,o,t)}
-          @dblclick=${e=>this.handleDoubleClick(e,o,t)}
-          @mousedown=${e=>this.handleMouseDown(e,o,t)}
-          @mouseup=${e=>this.handleMouseUp(e,o,t)}
-          @mouseleave=${e=>this.handleMouseLeave(e,o,t)}
-          @touchstart=${e=>this.handleTouchStart(e,o,t)}
-          @touchend=${e=>this.handleTouchEnd(e,o,t)}
+          @click=${t=>this.handleClick(t,o,e)}
+          @dblclick=${t=>this.handleDoubleClick(t,o,e)}
+          @mousedown=${t=>this.handleMouseDown(t,o,e)}
+          @mouseup=${t=>this.handleMouseUp(t,o,e)}
+          @mouseleave=${t=>this.handleMouseLeave(t,o,e)}
+          @touchstart=${t=>this.handleTouchStart(t,o,e)}
+          @touchend=${t=>this.handleTouchEnd(t,o,e)}
         >
           ${l}
-        </div>`:l,d={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${this.addPixelUnit(i.padding_top)||"8px"} ${this.addPixelUnit(i.padding_right)||"0px"} ${this.addPixelUnit(i.padding_bottom)||"8px"} ${this.addPixelUnit(i.padding_left)||"0px"}`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${this.addPixelUnit(i.margin_top)||"0px"} ${this.addPixelUnit(i.margin_right)||"0px"} ${this.addPixelUnit(i.margin_bottom)||"0px"} ${this.addPixelUnit(i.margin_left)||"0px"}`:"0",background:i.background_color&&"transparent"!==i.background_color?i.background_color:"transparent",backgroundImage:this.getBackgroundImageCSS(i,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"static",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"none",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
+        </div>`:l,d={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${this.addPixelUnit(i.padding_top)||"8px"} ${this.addPixelUnit(i.padding_right)||"0px"} ${this.addPixelUnit(i.padding_bottom)||"8px"} ${this.addPixelUnit(i.padding_left)||"0px"}`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${this.addPixelUnit(i.margin_top)||"0px"} ${this.addPixelUnit(i.margin_right)||"0px"} ${this.addPixelUnit(i.margin_bottom)||"0px"} ${this.addPixelUnit(i.margin_left)||"0px"}`:"0",background:i.background_color&&"transparent"!==i.background_color?i.background_color:"transparent",backgroundImage:this.getBackgroundImageCSS(i,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"static",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"none",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"hidden",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
       <div class="text-module-container" style=${this.styleObjectToCss(d)}>
         <div class="text-module-preview" style=${this.styleObjectToCss(n)}>${s}</div>
       </div>
-    `}validate(e){const t=e,o=[...super.validate(e).errors];if(t.text&&""!==t.text.trim()||o.push("Text content is required"),t.icon&&""!==t.icon.trim()&&(t.icon.includes(":")||o.push('Icon must be in format "mdi:icon-name" or "hass:icon-name"')),t.link&&""!==t.link.trim())try{new URL(t.link)}catch(e){t.link.startsWith("/")||t.link.startsWith("#")||o.push('Link must be a valid URL or start with "/" for relative paths')}return t.tap_action&&"default"!==t.tap_action.action&&"nothing"!==t.tap_action.action&&o.push(...this.validateAction(t.tap_action)),t.hold_action&&"default"!==t.hold_action.action&&"nothing"!==t.hold_action.action&&o.push(...this.validateAction(t.hold_action)),t.double_tap_action&&"default"!==t.double_tap_action.action&&"nothing"!==t.double_tap_action.action&&o.push(...this.validateAction(t.double_tap_action)),!t.template_mode||t.template&&""!==t.template.trim()||o.push("Template code is required when template mode is enabled"),{valid:0===o.length,errors:o}}hasActiveLink(e){const t=e.link&&""!==e.link.trim(),o=e.tap_action&&"default"!==e.tap_action.action&&"nothing"!==e.tap_action.action,i=e.hold_action&&"default"!==e.hold_action.action&&"nothing"!==e.hold_action.action,n=e.double_tap_action&&"default"!==e.double_tap_action.action&&"nothing"!==e.double_tap_action.action;return t||o||i||n}validateAction(e){const t=[];switch(e.action){case"more-info":case"toggle":e.entity||t.push(`Entity is required for ${e.action} action`);break;case"navigate":e.navigation_path||t.push("Navigation path is required for navigate action");break;case"url":e.url_path||t.push("URL path is required for url action");break;case"perform-action":e.service||t.push("Service is required for perform-action")}return t}handleClick(e,t,o){e.preventDefault(),this.clickTimeout&&clearTimeout(this.clickTimeout),this.clickTimeout=setTimeout((()=>{this.handleTapAction(e,t,o)}),300)}handleDoubleClick(e,t,o){e.preventDefault(),this.clickTimeout&&(clearTimeout(this.clickTimeout),this.clickTimeout=null),this.handleDoubleAction(e,t,o)}handleMouseDown(e,t,o){this.startHold(e,t,o)}handleMouseUp(e,t,o){this.endHold(e,t,o)}handleMouseLeave(e,t,o){this.endHold(e,t,o)}handleTouchStart(e,t,o){this.startHold(e,t,o)}handleTouchEnd(e,t,o){this.endHold(e,t,o)}startHold(e,t,o){this.isHolding=!1,this.holdTimeout=setTimeout((()=>{this.isHolding=!0,this.handleHoldAction(e,t,o)}),500)}endHold(e,t,o){this.holdTimeout&&(clearTimeout(this.holdTimeout),this.holdTimeout=null),this.isHolding=!1}handleTapAction(e,t,o){this.isHolding||(t.link&&""!==t.link.trim()?t.link.startsWith("http")||t.link.startsWith("https")?window.open(t.link,"_blank"):window.location.href=t.link:t.tap_action&&"default"!==t.tap_action.action&&"nothing"!==t.tap_action.action&&ve.handleAction(t.tap_action,o,e.target))}handleDoubleAction(e,t,o){t.double_tap_action&&"default"!==t.double_tap_action.action&&"nothing"!==t.double_tap_action.action&&ve.handleAction(t.double_tap_action,o,e.target)}handleHoldAction(e,t,o){t.hold_action&&"default"!==t.hold_action.action&&"nothing"!==t.hold_action.action&&ve.handleAction(t.hold_action,o,e.target)}getStyles(){return"\n      .text-module-preview {\n        min-height: 20px;\n        word-wrap: break-word;\n      }\n      \n      .text-module-hidden {\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        padding: 12px;\n        background: var(--secondary-background-color);\n        border-radius: 4px;\n      }\n      \n      /* Field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Icon picker specific styling */\n      ha-icon-picker {\n        --ha-icon-picker-width: 100%;\n        --ha-icon-picker-height: 56px;\n      }\n\n      /* Text field and select consistency */\n      ha-textfield,\n      ha-select {\n        --mdc-shape-small: 8px;\n        --mdc-theme-primary: var(--primary-color);\n      }\n\n      code {\n        background: var(--secondary-background-color);\n        padding: 2px 6px;\n        border-radius: 4px;\n        font-family: 'Courier New', monospace;\n        font-size: 0.9em;\n        color: var(--primary-color);\n      }\n    "}getBackgroundImageCSS(e,t){const o=e.background_image_type,i=e.background_image,n=e.background_image_entity;switch(o){case"upload":if(i)return i.startsWith("/api/image/serve/")?`url("${this.getImageUrl(t,i)}")`:(i.startsWith("data:image/"),`url("${i}")`);break;case"entity":if(n&&t){const e=t.states[n];if(e){const t=e.attributes.entity_picture||e.attributes.image||e.state;if(t&&"unknown"!==t&&"unavailable"!==t)return`url("${t}")`}}break;case"url":if(i)return`url("${i}")`;break;default:return"none"}return"none"}getImageUrl(e,t){if(!t)return"";if(t.startsWith("http"))return t;if(t.startsWith("data:image/"))return t;if(t.includes("/api/image/serve/")){const o=t.match(/\/api\/image\/serve\/([^\/]+)/);if(o&&o[1]){const i=o[1];try{return`${(e.hassUrl?e.hassUrl():"").replace(/\/$/,"")}/api/image/serve/${i}/original`}catch(e){return t}}return t}return t.startsWith("/")?`${(e.hassUrl?e.hassUrl():"").replace(/\/$/,"")}${t}`:t}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}camelToKebab(e){return e.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}class ye extends he{constructor(){super(...arguments),this.metadata={type:"separator",title:"Separator Module",description:"Visual dividers and spacing",author:"WJD Designs",version:"1.0.0",icon:"mdi:minus",category:"layout",tags:["separator","divider","spacing","layout"]}}createDefault(e){return{id:e||this.generateId("separator"),type:"separator",separator_style:"line",thickness:1,width_percent:100,color:"var(--divider-color)",show_title:!1,title:"",title_size:14,title_color:"var(--secondary-text-color)",title_bold:!1,title_italic:!1,title_uppercase:!1,title_strikethrough:!1,title_underline:!1}}renderGeneralTab(e,t,o,i){const n=e;return V`
+    `}validate(t){const e=t,o=[...super.validate(t).errors];if(e.text&&""!==e.text.trim()||o.push("Text content is required"),e.icon&&""!==e.icon.trim()&&(e.icon.includes(":")||o.push('Icon must be in format "mdi:icon-name" or "hass:icon-name"')),e.link&&""!==e.link.trim())try{new URL(e.link)}catch(t){e.link.startsWith("/")||e.link.startsWith("#")||o.push('Link must be a valid URL or start with "/" for relative paths')}return e.tap_action&&"default"!==e.tap_action.action&&"nothing"!==e.tap_action.action&&o.push(...this.validateAction(e.tap_action)),e.hold_action&&"default"!==e.hold_action.action&&"nothing"!==e.hold_action.action&&o.push(...this.validateAction(e.hold_action)),e.double_tap_action&&"default"!==e.double_tap_action.action&&"nothing"!==e.double_tap_action.action&&o.push(...this.validateAction(e.double_tap_action)),!e.template_mode||e.template&&""!==e.template.trim()||o.push("Template code is required when template mode is enabled"),{valid:0===o.length,errors:o}}hasActiveLink(t){const e=t.link&&""!==t.link.trim(),o=t.tap_action&&"default"!==t.tap_action.action&&"nothing"!==t.tap_action.action,i=t.hold_action&&"default"!==t.hold_action.action&&"nothing"!==t.hold_action.action,n=t.double_tap_action&&"default"!==t.double_tap_action.action&&"nothing"!==t.double_tap_action.action;return e||o||i||n}validateAction(t){const e=[];switch(t.action){case"more-info":case"toggle":t.entity||e.push(`Entity is required for ${t.action} action`);break;case"navigate":t.navigation_path||e.push("Navigation path is required for navigate action");break;case"url":t.url_path||e.push("URL path is required for url action");break;case"perform-action":t.service||e.push("Service is required for perform-action")}return e}handleClick(t,e,o){t.preventDefault(),this.clickTimeout&&clearTimeout(this.clickTimeout),this.clickTimeout=setTimeout((()=>{this.handleTapAction(t,e,o)}),300)}handleDoubleClick(t,e,o){t.preventDefault(),this.clickTimeout&&(clearTimeout(this.clickTimeout),this.clickTimeout=null),this.handleDoubleAction(t,e,o)}handleMouseDown(t,e,o){this.startHold(t,e,o)}handleMouseUp(t,e,o){this.endHold(t,e,o)}handleMouseLeave(t,e,o){this.endHold(t,e,o)}handleTouchStart(t,e,o){this.startHold(t,e,o)}handleTouchEnd(t,e,o){this.endHold(t,e,o)}startHold(t,e,o){this.isHolding=!1,this.holdTimeout=setTimeout((()=>{this.isHolding=!0,this.handleHoldAction(t,e,o)}),500)}endHold(t,e,o){this.holdTimeout&&(clearTimeout(this.holdTimeout),this.holdTimeout=null),this.isHolding=!1}handleTapAction(t,e,o){this.isHolding||(e.link&&""!==e.link.trim()?e.link.startsWith("http")||e.link.startsWith("https")?window.open(e.link,"_blank"):window.location.href=e.link:e.tap_action&&"default"!==e.tap_action.action&&"nothing"!==e.tap_action.action&&vt.handleAction(e.tap_action,o,t.target))}handleDoubleAction(t,e,o){e.double_tap_action&&"default"!==e.double_tap_action.action&&"nothing"!==e.double_tap_action.action&&vt.handleAction(e.double_tap_action,o,t.target)}handleHoldAction(t,e,o){e.hold_action&&"default"!==e.hold_action.action&&"nothing"!==e.hold_action.action&&vt.handleAction(e.hold_action,o,t.target)}getStyles(){return"\n      .text-module-preview {\n        min-height: 20px;\n        word-wrap: break-word;\n      }\n      \n      .text-module-hidden {\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        padding: 12px;\n        background: var(--secondary-background-color);\n        border-radius: 4px;\n      }\n      \n      /* Field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Icon picker specific styling */\n      ha-icon-picker {\n        --ha-icon-picker-width: 100%;\n        --ha-icon-picker-height: 56px;\n      }\n\n      /* Text field and select consistency */\n      ha-textfield,\n      ha-select {\n        --mdc-shape-small: 8px;\n        --mdc-theme-primary: var(--primary-color);\n      }\n\n      code {\n        background: var(--secondary-background-color);\n        padding: 2px 6px;\n        border-radius: 4px;\n        font-family: 'Courier New', monospace;\n        font-size: 0.9em;\n        color: var(--primary-color);\n      }\n    "}getBackgroundImageCSS(t,e){const o=t.background_image_type,i=t.background_image,n=t.background_image_entity;switch(o){case"upload":if(i)return i.startsWith("/api/image/serve/")?`url("${this.getImageUrl(e,i)}")`:(i.startsWith("data:image/"),`url("${i}")`);break;case"entity":if(n&&e){const t=e.states[n];if(t){const e=t.attributes.entity_picture||t.attributes.image||t.state;if(e&&"unknown"!==e&&"unavailable"!==e)return`url("${e}")`}}break;case"url":if(i)return`url("${i}")`;break;default:return"none"}return"none"}getImageUrl(t,e){if(!e)return"";if(e.startsWith("http"))return e;if(e.startsWith("data:image/"))return e;if(e.includes("/api/image/serve/")){const o=e.match(/\/api\/image\/serve\/([^\/]+)/);if(o&&o[1]){const i=o[1];try{return`${(t.hassUrl?t.hassUrl():"").replace(/\/$/,"")}/api/image/serve/${i}/original`}catch(t){return e}}return e}return e.startsWith("/")?`${(t.hassUrl?t.hassUrl():"").replace(/\/$/,"")}${e}`:e}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}class _t extends ht{constructor(){super(...arguments),this.metadata={type:"separator",title:"Separator Module",description:"Visual dividers and spacing",author:"WJD Designs",version:"1.0.0",icon:"mdi:minus",category:"content",tags:["separator","divider","spacing","layout"]}}createDefault(t){return{id:t||this.generateId("separator"),type:"separator",separator_style:"line",thickness:1,width_percent:100,color:"var(--divider-color)",show_title:!1,title:"",title_size:14,title_color:"var(--secondary-text-color)",title_bold:!1,title_italic:!1,title_uppercase:!1,title_strikethrough:!1,title_underline:!1}}renderGeneralTab(t,e,o,i){const n=t;return V`
       <div class="module-general-settings">
         <!-- Separator Configuration -->
         <div
@@ -455,10 +455,10 @@
             Choose the visual style of the separator line.
           </div>
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{separator_style:n.separator_style||"line"}}
             .schema=${[{name:"separator_style",selector:{select:{options:[{value:"line",label:"Solid Line"},{value:"double_line",label:"Double Line"},{value:"dotted",label:"Dotted Line"},{value:"double_dotted",label:"Double Dotted"},{value:"shadow",label:"Shadow"},{value:"blank",label:"Blank Space"}],mode:"dropdown"}},label:""}]}
-            @value-changed=${e=>i({separator_style:e.detail.value.separator_style})}
+            @value-changed=${t=>i({separator_style:t.detail.value.separator_style})}
           ></ha-form>
         </div>
 
@@ -476,47 +476,79 @@
                 </div>
 
                 <!-- Thickness -->
-                <div class="field-group" style="margin-bottom: 16px;">
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Thickness (px)</div>
+                  <div class="field-description">Thickness of the separator line.</div>
                   <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
                   >
-                    Thickness (px)
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="1"
+                      max="20"
+                      step="1"
+                      .value="${n.thickness||1}"
+                      @input=${t=>{const e=t.target,o=parseFloat(e.value);i({thickness:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="1"
+                      max="20"
+                      step="1"
+                      .value="${n.thickness||1}"
+                      @input=${t=>{const e=t.target,o=parseFloat(e.value);isNaN(o)||i({thickness:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseFloat(e.value)||1,n="ArrowUp"===t.key?1:-1,a=Math.max(1,Math.min(20,o+n));i({thickness:a})}}}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${()=>i({thickness:1})}
+                      title="Reset to default (1)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
                   </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
-                  >
-                    Thickness of the separator line.
-                  </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{thickness:n.thickness||1}}
-                    .schema=${[{name:"thickness",selector:{number:{min:1,max:20,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({thickness:e.detail.value.thickness})}
-                  ></ha-form>
                 </div>
 
                 <!-- Width -->
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                  >
-                    Width (%)
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
-                  >
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Width (%)</div>
+                  <div class="field-description">
                     Width of the separator as percentage of container.
                   </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{width_percent:n.width_percent||100}}
-                    .schema=${[{name:"width_percent",selector:{number:{min:10,max:100,step:5,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({width_percent:e.detail.value.width_percent})}
-                  ></ha-form>
+                  <div
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
+                  >
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="10"
+                      max="100"
+                      step="5"
+                      .value="${n.width_percent||100}"
+                      @input=${t=>{const e=t.target,o=parseFloat(e.value);i({width_percent:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="10"
+                      max="100"
+                      step="5"
+                      .value="${n.width_percent||100}"
+                      @input=${t=>{const e=t.target,o=parseFloat(e.value);isNaN(o)||i({width_percent:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseFloat(e.value)||100,n="ArrowUp"===t.key?5:-5,a=Math.max(10,Math.min(100,o+n));i({width_percent:a})}}}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${()=>i({width_percent:100})}
+                      title="Reset to default (100)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Color -->
@@ -537,8 +569,8 @@
                     .label=${""}
                     .value=${n.color||""}
                     .defaultValue=${"var(--divider-color)"}
-                    .hass=${t}
-                    @value-changed=${e=>{const t=e.detail.value;i({color:t})}}
+                    .hass=${e}
+                    @value-changed=${t=>{const e=t.detail.value;i({color:e})}}
                   ></ultra-color-picker>
                 </div>
               </div>
@@ -559,10 +591,10 @@
               Text in Separator
             </div>
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{show_title:n.show_title||!1}}
               .schema=${[{name:"show_title",selector:{boolean:{}},label:""}]}
-              @value-changed=${e=>i({show_title:e.detail.value.show_title})}
+              @value-changed=${t=>i({show_title:t.detail.value.show_title})}
             ></ha-form>
           </div>
           <div
@@ -588,33 +620,48 @@
                     Text to display in the middle of the separator.
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{title:n.title||""}}
                     .schema=${[{name:"title",selector:{text:{}},label:""}]}
-                    @value-changed=${e=>i({title:e.detail.value.title})}
+                    @value-changed=${t=>i({title:t.detail.value.title})}
                   ></ha-form>
                 </div>
 
                 <!-- Font Size -->
-                <div class="field-group" style="margin-bottom: 16px;">
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Font Size</div>
+                  <div class="field-description">Size of the text in pixels.</div>
                   <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
                   >
-                    Font Size
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="8"
+                      max="48"
+                      step="1"
+                      .value="${n.title_size||14}"
+                      @input=${t=>{const e=t.target,o=parseFloat(e.value);i({title_size:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="8"
+                      max="48"
+                      step="1"
+                      .value="${n.title_size||14}"
+                      @input=${t=>{const e=t.target,o=parseFloat(e.value);isNaN(o)||i({title_size:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseFloat(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(48,o+n));i({title_size:a})}}}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${()=>i({title_size:14})}
+                      title="Reset to default (14)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
                   </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
-                  >
-                    Size of the text in pixels.
-                  </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{title_size:n.title_size||14}}
-                    .schema=${[{name:"title_size",selector:{number:{min:8,max:48,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({title_size:e.detail.value.title_size})}
-                  ></ha-form>
                 </div>
 
                 <!-- Text Color -->
@@ -635,8 +682,8 @@
                     .label=${""}
                     .value=${n.title_color||""}
                     .defaultValue=${"var(--secondary-text-color)"}
-                    .hass=${t}
-                    @value-changed=${e=>{const t=e.detail.value;i({title_color:t})}}
+                    .hass=${e}
+                    @value-changed=${t=>{const e=t.detail.value;i({title_color:e})}}
                   ></ultra-color-picker>
                 </div>
 
@@ -700,7 +747,7 @@
               `:""}
         </div>
       </div>
-    `}renderPreview(e,t){const o=e,i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(i,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};if("blank"===o.separator_style)return V`
+    `}renderPreview(t,e){const o=t,i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(i,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};if("blank"===o.separator_style)return V`
         <div class="separator-module-container" style=${this.styleObjectToCss(n)}>
           <div
             class="separator-preview blank-separator"
@@ -736,7 +783,7 @@
               `:V` <div class="separator-line" style=${a}></div> `}
         </div>
       </div>
-    `}validate(e){const t=e,o=[...super.validate(e).errors];return t.thickness&&(t.thickness<1||t.thickness>50)&&o.push("Thickness must be between 1 and 50 pixels"),t.width_percent&&(t.width_percent<1||t.width_percent>100)&&o.push("Width must be between 1 and 100 percent"),!t.show_title||t.title&&""!==t.title.trim()||o.push("Title text is required when show title is enabled"),{valid:0===o.length,errors:o}}getStyles(){return"\n      .separator-preview {\n        min-height: 20px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n      \n      .blank-separator {\n        background: transparent;\n        border: 1px dashed var(--divider-color);\n        opacity: 0.5;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        min-height: 20px;\n      }\n      \n      .separator-with-title {\n        position: relative;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        width: 100%;\n      }\n      \n      .separator-title {\n        margin: 0;\n        line-height: 1.2;\n        background: var(--card-background-color);\n        padding: 0 8px;\n        position: relative;\n        z-index: 1;\n        white-space: nowrap;\n      }\n      \n      .separator-line,\n      .separator-line-left,\n      .separator-line-right {\n        display: block;\n      }\n      \n      .separator-line-left,\n      .separator-line-right {\n        flex: 1;\n      }\n      \n      /* Format button styles */\n      .format-buttons {\n        display: flex;\n        gap: 8px;\n        flex-wrap: wrap;\n      }\n      \n      .format-btn {\n        padding: 8px;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        min-width: 36px;\n        min-height: 36px;\n      }\n      \n      .format-btn:hover {\n        transform: translateY(-1px);\n        box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n      }\n      \n      .format-btn ha-icon {\n        font-size: 16px;\n      }\n      \n      /* Settings section styling */\n      .settings-section {\n        background: var(--secondary-background-color);\n        border-radius: 8px;\n        padding: 16px;\n        margin-bottom: 32px;\n      }\n      \n      .section-title {\n        font-size: 18px;\n        font-weight: 700;\n        text-transform: uppercase;\n        color: var(--primary-color);\n        margin-bottom: 16px;\n        padding-bottom: 0;\n        border-bottom: none;\n        letter-spacing: 0.5px;\n      }\n      \n      .field-title {\n        font-size: 16px;\n        font-weight: 600;\n        margin-bottom: 4px;\n      }\n      \n      .field-description {\n        font-size: 13px;\n        font-weight: 400;\n        margin-bottom: 12px;\n        color: var(--secondary-text-color);\n      }\n      \n      .field-group {\n        margin-bottom: 16px;\n      }\n    "}getSeparatorStyles(e){const t={width:`${e.width_percent||100}%`,height:`${e.thickness||1}px`,margin:"0 auto"};switch(e.separator_style){case"line":t.backgroundColor=e.color||"var(--divider-color)";break;case"double_line":t.borderTop=`${e.thickness||1}px solid ${e.color||"var(--divider-color)"}`,t.borderBottom=`${e.thickness||1}px solid ${e.color||"var(--divider-color)"}`,t.height=3*(e.thickness||1)+"px";break;case"dotted":t.borderTop=`${e.thickness||1}px dotted ${e.color||"var(--divider-color)"}`,t.height="0";break;case"double_dotted":t.borderTop=`${e.thickness||1}px dotted ${e.color||"var(--divider-color)"}`,t.borderBottom=`${e.thickness||1}px dotted ${e.color||"var(--divider-color)"}`,t.height=3*(e.thickness||1)+"px";break;case"shadow":t.boxShadow=`0 ${e.thickness||1}px ${2*(e.thickness||1)}px ${e.color||"rgba(0,0,0,0.2)"}`,t.height="0"}return Object.entries(t).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}getSeparatorLineStyles(e,t){const o={flex:"1",height:`${e.thickness||1}px`,margin:"0"};switch(e.separator_style){case"line":o.backgroundColor=e.color||"var(--divider-color)";break;case"double_line":o.borderTop=`${e.thickness||1}px solid ${e.color||"var(--divider-color)"}`,o.borderBottom=`${e.thickness||1}px solid ${e.color||"var(--divider-color)"}`,o.height=3*(e.thickness||1)+"px";break;case"dotted":o.borderTop=`${e.thickness||1}px dotted ${e.color||"var(--divider-color)"}`,o.height="0";break;case"double_dotted":o.borderTop=`${e.thickness||1}px dotted ${e.color||"var(--divider-color)"}`,o.borderBottom=`${e.thickness||1}px dotted ${e.color||"var(--divider-color)"}`,o.height=3*(e.thickness||1)+"px";break;case"shadow":o.boxShadow=`0 ${e.thickness||1}px ${2*(e.thickness||1)}px ${e.color||"rgba(0,0,0,0.2)"}`,o.height="0"}return Object.entries(o).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}getTitleStyles(e){const t={fontSize:`${e.title_size||14}px`,color:e.title_color||"var(--secondary-text-color)",fontWeight:e.title_bold?"bold":"normal",fontStyle:e.title_italic?"italic":"normal",textTransform:e.title_uppercase?"uppercase":"none",margin:"0",padding:"0 8px",backgroundColor:"var(--card-background-color)",position:"relative",zIndex:"1"},o=[];return e.title_strikethrough&&o.push("line-through"),e.title_underline&&o.push("underline"),t.textDecoration=o.length>0?o.join(" "):"none",Object.entries(t).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}camelToKebab(e){return e.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(e,t){var o,i;if(!e.background_image_type||"none"===e.background_image_type)return"none";switch(e.background_image_type){case"upload":case"url":if(e.background_image)return`url("${e.background_image}")`;break;case"entity":if(e.background_image_entity&&(null==t?void 0:t.states[e.background_image_entity])){const n=t.states[e.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${e.replace(/[A-Z]/g,(e=>`-${e.toLowerCase()}`))}: ${t}`)).join("; ")}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}var _e=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};const xe=["#000000","#333333","#666666","#999999","#CCCCCC","#FFFFFF","#FF0000","#FF3333","#FF6666","#FF9999","#FFCCCC","#FF6600","#FF8833","#FFAA66","#FFCC99","#FFE6CC","#FFFF00","#FFFF33","#FFFF66","#FFFF99","#FFFFCC","#00FF00","#33FF33","#66FF66","#99FF99","#CCFFCC","#0000FF","#3333FF","#6666FF","#9999FF","#CCCCFF","#9900FF","#AA33FF","#BB66FF","#CC99FF","#DDCCFF","var(--primary-color)","var(--accent-color)","var(--error-color)","var(--warning-color)","var(--success-color)","var(--info-color)","var(--primary-text-color)","var(--secondary-text-color)","var(--disabled-text-color)","var(--divider-color)"];let we=class extends se{constructor(){super(...arguments),this.disabled=!1,this._showPalette=!1}firstUpdated(){this._currentValue=this.value,this._textInputValue=this.value,document.addEventListener("click",this._handleDocumentClick.bind(this))}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("click",this._handleDocumentClick.bind(this))}_handleDocumentClick(e){var t;if(!this._showPalette)return;const o=e.target;(null===(t=this.shadowRoot)||void 0===t?void 0:t.contains(o))||o instanceof HTMLInputElement&&"color"===o.type||(this._showPalette=!1)}updated(e){e.has("value")&&(this._currentValue=this.value,this._textInputValue=this.value)}_togglePalette(e){e.stopPropagation(),this.disabled||(this._showPalette=!this._showPalette,console.log(`🎨 UltraColorPicker: Toggled palette to ${this._showPalette}`))}_selectColor(e,t){t.stopPropagation(),this._currentValue=e,this._showPalette=!1;const o=new CustomEvent("value-changed",{detail:{value:e},bubbles:!0,composed:!0});this.dispatchEvent(o)}_handleNativeColorChange(e){e.stopPropagation();const t=e.target.value;this._selectColor(t,e)}_handleTextInputChange(e){const t=e.target;this._textInputValue=t.value}_handleTextInputKeyDown(e){"Enter"===e.key?(e.preventDefault(),this._applyTextInputValue()):"Escape"===e.key&&(e.preventDefault(),this._textInputValue=this._currentValue,this._showPalette=!1)}_applyTextInputValue(){void 0!==this._textInputValue&&this._selectColor(this._textInputValue,new Event("change"))}_isValidColor(e){return!!e&&([/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/,/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/,/^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/,/^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/,/^var\(--[\w-]+\)$/].some((t=>t.test(e)))||["transparent","red","blue","green","yellow","orange","purple","pink","brown","black","white","gray","grey"].includes(e.toLowerCase()))}_resetToDefault(){const e=this.defaultValue||"";this._currentValue=e;const t=new CustomEvent("value-changed",{detail:{value:e},bubbles:!0,composed:!0});this.dispatchEvent(t)}_getDisplayValue(){return this._currentValue&&""!==this._currentValue?this._currentValue:this.defaultValue||""}_getColorForNativeInput(){const e=this._getDisplayValue();if(e.startsWith("var(--")){const t=document.createElement("div");t.style.color=e,document.body.appendChild(t);const o=getComputedStyle(t).color;if(document.body.removeChild(t),o&&o.startsWith("rgb")){const e=o.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);if(e){const[t,o,i,n]=e,a=e=>e.toString(16).padStart(2,"0");return`#${a(parseInt(o))}${a(parseInt(i))}${a(parseInt(n))}`}}return e.includes("--primary-color")?"#03a9f4":e.includes("--primary-text-color")?"#ffffff":"#000000"}return e.startsWith("#")?e:"#000000"}_isDefaultValue(){return!this._currentValue||""===this._currentValue||this._currentValue===this.defaultValue}render(){const e=this._getDisplayValue(),t=this._getColorForNativeInput();return V`
+    `}validate(t){const e=t,o=[...super.validate(t).errors];return e.thickness&&(e.thickness<1||e.thickness>50)&&o.push("Thickness must be between 1 and 50 pixels"),e.width_percent&&(e.width_percent<1||e.width_percent>100)&&o.push("Width must be between 1 and 100 percent"),!e.show_title||e.title&&""!==e.title.trim()||o.push("Title text is required when show title is enabled"),{valid:0===o.length,errors:o}}getStyles(){return"\n      .separator-preview {\n        min-height: 20px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n      \n      .blank-separator {\n        background: transparent;\n        border: 1px dashed var(--divider-color);\n        opacity: 0.5;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        min-height: 20px;\n      }\n      \n      .separator-with-title {\n        position: relative;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        width: 100%;\n      }\n      \n      .separator-title {\n        margin: 0;\n        line-height: 1.2;\n        background: var(--card-background-color);\n        padding: 0 8px;\n        position: relative;\n        z-index: 1;\n        white-space: nowrap;\n      }\n      \n      .separator-line,\n      .separator-line-left,\n      .separator-line-right {\n        display: block;\n      }\n      \n      .separator-line-left,\n      .separator-line-right {\n        flex: 1;\n      }\n      \n      /* Format button styles */\n      .format-buttons {\n        display: flex;\n        gap: 8px;\n        flex-wrap: wrap;\n      }\n      \n      .format-btn {\n        padding: 8px;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        min-width: 36px;\n        min-height: 36px;\n      }\n      \n      .format-btn:hover {\n        transform: translateY(-1px);\n        box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n      }\n      \n      .format-btn ha-icon {\n        font-size: 16px;\n      }\n      \n      /* Settings section styling */\n      .settings-section {\n        background: var(--secondary-background-color);\n        border-radius: 8px;\n        padding: 16px;\n        margin-bottom: 32px;\n      }\n      \n      .section-title {\n        font-size: 18px;\n        font-weight: 700;\n        text-transform: uppercase;\n        color: var(--primary-color);\n        margin-bottom: 16px;\n        padding-bottom: 0;\n        border-bottom: none;\n        letter-spacing: 0.5px;\n      }\n      \n      .field-title {\n        font-size: 16px;\n        font-weight: 600;\n        margin-bottom: 4px;\n      }\n      \n      .field-description {\n        font-size: 13px;\n        font-weight: 400;\n        margin-bottom: 12px;\n        color: var(--secondary-text-color);\n      }\n      \n      .field-group {\n        margin-bottom: 16px;\n      }\n\n      /* Gap control styles */\n      .gap-control-container {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n\n      .gap-slider {\n        flex: 1;\n        height: 6px;\n        background: var(--divider-color);\n        border-radius: 3px;\n        outline: none;\n        appearance: none;\n        -webkit-appearance: none;\n        cursor: pointer;\n        transition: all 0.2s ease;\n      }\n\n      .gap-slider::-webkit-slider-thumb {\n        appearance: none;\n        -webkit-appearance: none;\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider:hover {\n        background: var(--primary-color);\n        opacity: 0.7;\n      }\n\n      .gap-slider:hover::-webkit-slider-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-slider:hover::-moz-range-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-input {\n        width: 50px !important;\n        max-width: 50px !important;\n        min-width: 50px !important;\n        padding: 4px 6px !important;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 13px;\n        text-align: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n        box-sizing: border-box;\n      }\n\n      .gap-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);\n      }\n\n      .reset-btn {\n        width: 36px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n\n      .reset-btn:hover {\n        background: var(--primary-color);\n        color: var(--text-primary-color);\n        border-color: var(--primary-color);\n      }\n\n      .reset-btn ha-icon {\n        font-size: 16px;\n      }\n    "}getSeparatorStyles(t){const e={width:`${t.width_percent||100}%`,height:`${t.thickness||1}px`,margin:"0 auto"};switch(t.separator_style){case"line":e.backgroundColor=t.color||"var(--divider-color)";break;case"double_line":e.borderTop=`${t.thickness||1}px solid ${t.color||"var(--divider-color)"}`,e.borderBottom=`${t.thickness||1}px solid ${t.color||"var(--divider-color)"}`,e.height=3*(t.thickness||1)+"px";break;case"dotted":e.borderTop=`${t.thickness||1}px dotted ${t.color||"var(--divider-color)"}`,e.height="0";break;case"double_dotted":e.borderTop=`${t.thickness||1}px dotted ${t.color||"var(--divider-color)"}`,e.borderBottom=`${t.thickness||1}px dotted ${t.color||"var(--divider-color)"}`,e.height=3*(t.thickness||1)+"px";break;case"shadow":e.boxShadow=`0 ${t.thickness||1}px ${2*(t.thickness||1)}px ${t.color||"rgba(0,0,0,0.2)"}`,e.height="0"}return Object.entries(e).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}getSeparatorLineStyles(t,e){const o={flex:"1",height:`${t.thickness||1}px`,margin:"0"};switch(t.separator_style){case"line":o.backgroundColor=t.color||"var(--divider-color)";break;case"double_line":o.borderTop=`${t.thickness||1}px solid ${t.color||"var(--divider-color)"}`,o.borderBottom=`${t.thickness||1}px solid ${t.color||"var(--divider-color)"}`,o.height=3*(t.thickness||1)+"px";break;case"dotted":o.borderTop=`${t.thickness||1}px dotted ${t.color||"var(--divider-color)"}`,o.height="0";break;case"double_dotted":o.borderTop=`${t.thickness||1}px dotted ${t.color||"var(--divider-color)"}`,o.borderBottom=`${t.thickness||1}px dotted ${t.color||"var(--divider-color)"}`,o.height=3*(t.thickness||1)+"px";break;case"shadow":o.boxShadow=`0 ${t.thickness||1}px ${2*(t.thickness||1)}px ${t.color||"rgba(0,0,0,0.2)"}`,o.height="0"}return Object.entries(o).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}getTitleStyles(t){const e={fontSize:`${t.title_size||14}px`,color:t.title_color||"var(--secondary-text-color)",fontWeight:t.title_bold?"bold":"normal",fontStyle:t.title_italic?"italic":"normal",textTransform:t.title_uppercase?"uppercase":"none",margin:"0",padding:"0 8px",backgroundColor:"var(--card-background-color)",position:"relative",zIndex:"1"},o=[];return t.title_strikethrough&&o.push("line-through"),t.title_underline&&o.push("underline"),e.textDecoration=o.length>0?o.join(" "):"none",Object.entries(e).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(t,e){var o,i;if(!t.background_image_type||"none"===t.background_image_type)return"none";switch(t.background_image_type){case"upload":case"url":if(t.background_image)return`url("${t.background_image}")`;break;case"entity":if(t.background_image_entity&&(null==e?void 0:e.states[t.background_image_entity])){const n=e.states[t.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${t.replace(/[A-Z]/g,(t=>`-${t.toLowerCase()}`))}: ${e}`)).join("; ")}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}var yt=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};const xt=["#000000","#333333","#666666","#999999","#CCCCCC","#FFFFFF","#FF0000","#FF3333","#FF6666","#FF9999","#FFCCCC","#FF6600","#FF8833","#FFAA66","#FFCC99","#FFE6CC","#FFFF00","#FFFF33","#FFFF66","#FFFF99","#FFFFCC","#00FF00","#33FF33","#66FF66","#99FF99","#CCFFCC","#0000FF","#3333FF","#6666FF","#9999FF","#CCCCFF","#9900FF","#AA33FF","#BB66FF","#CC99FF","#DDCCFF","var(--primary-color)","var(--accent-color)","var(--error-color)","var(--warning-color)","var(--success-color)","var(--info-color)","var(--primary-text-color)","var(--secondary-text-color)","var(--disabled-text-color)","var(--divider-color)"];let wt=class extends st{constructor(){super(...arguments),this.disabled=!1,this._showPalette=!1}firstUpdated(){this._currentValue=this.value,this._textInputValue=this.value,document.addEventListener("click",this._handleDocumentClick.bind(this))}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("click",this._handleDocumentClick.bind(this))}_handleDocumentClick(t){var e;if(!this._showPalette)return;const o=t.target;(null===(e=this.shadowRoot)||void 0===e?void 0:e.contains(o))||o instanceof HTMLInputElement&&"color"===o.type||(this._showPalette=!1)}updated(t){t.has("value")&&(this._currentValue=this.value,this._textInputValue=this.value)}_togglePalette(t){t.stopPropagation(),this.disabled||(this._showPalette=!this._showPalette,console.log(`🎨 UltraColorPicker: Toggled palette to ${this._showPalette}`))}_selectColor(t,e){e.stopPropagation(),this._currentValue=t,this._showPalette=!1;const o=new CustomEvent("value-changed",{detail:{value:t},bubbles:!0,composed:!0});this.dispatchEvent(o)}_handleNativeColorChange(t){t.stopPropagation();const e=t.target.value;this._selectColor(e,t)}_handleTextInputChange(t){const e=t.target;this._textInputValue=e.value}_handleTextInputKeyDown(t){"Enter"===t.key?(t.preventDefault(),this._applyTextInputValue()):"Escape"===t.key&&(t.preventDefault(),this._textInputValue=this._currentValue,this._showPalette=!1)}_applyTextInputValue(){void 0!==this._textInputValue&&this._selectColor(this._textInputValue,new Event("change"))}_isValidColor(t){return!!t&&([/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/,/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/,/^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/,/^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/,/^var\(--[\w-]+\)$/].some((e=>e.test(t)))||["transparent","red","blue","green","yellow","orange","purple","pink","brown","black","white","gray","grey"].includes(t.toLowerCase()))}_resetToDefault(){const t=this.defaultValue||"";this._currentValue=t;const e=new CustomEvent("value-changed",{detail:{value:t},bubbles:!0,composed:!0});this.dispatchEvent(e)}_getDisplayValue(){return this._currentValue&&""!==this._currentValue?this._currentValue:this.defaultValue||""}_getColorForNativeInput(){const t=this._getDisplayValue();if(t.startsWith("var(--")){const e=document.createElement("div");e.style.color=t,document.body.appendChild(e);const o=getComputedStyle(e).color;if(document.body.removeChild(e),o&&o.startsWith("rgb")){const t=o.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);if(t){const[e,o,i,n]=t,a=t=>t.toString(16).padStart(2,"0");return`#${a(parseInt(o))}${a(parseInt(i))}${a(parseInt(n))}`}}return t.includes("--primary-color")?"#03a9f4":t.includes("--primary-text-color")?"#ffffff":"#000000"}return t.startsWith("#")?t:"#000000"}_isDefaultValue(){return!this._currentValue||""===this._currentValue||this._currentValue===this.defaultValue}render(){const t=this._getDisplayValue(),e=this._getColorForNativeInput();return V`
       <div class="ultra-color-picker-container">
         ${this.label?V`<label class="color-label">${this.label}</label>`:""}
 
@@ -748,9 +795,9 @@
             tabindex="0"
             role="button"
             aria-label="Open color palette"
-            @keydown=${e=>{"Enter"!==e.key&&" "!==e.key||(e.preventDefault(),this._togglePalette(e))}}
+            @keydown=${t=>{"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),this._togglePalette(t))}}
           >
-            <span class="color-value">${e}</span>
+            <span class="color-value">${t}</span>
             <ha-icon
               icon="mdi:chevron-${this._showPalette?"up":"down"}"
               class="dropdown-icon"
@@ -786,11 +833,11 @@
                       <input
                         id="native-color-input"
                         type="color"
-                        .value=${t}
+                        .value=${e}
                         @change=${this._handleNativeColorChange}
-                        @click=${e=>e.stopPropagation()}
-                        @focus=${e=>e.stopPropagation()}
-                        @blur=${e=>e.stopPropagation()}
+                        @click=${t=>t.stopPropagation()}
+                        @focus=${t=>t.stopPropagation()}
+                        @blur=${t=>t.stopPropagation()}
                         class="native-color-overlay"
                         title="Open native color picker"
                       />
@@ -809,7 +856,7 @@
                     />
                     <button
                       class="apply-text-btn ${this._isValidColor(this._textInputValue||"")?"":"disabled"}"
-                      @click=${e=>{e.stopPropagation(),this._applyTextInputValue()}}
+                      @click=${t=>{t.stopPropagation(),this._applyTextInputValue()}}
                       .disabled=${!this._isValidColor(this._textInputValue||"")}
                       type="button"
                       title="Apply color"
@@ -821,12 +868,12 @@
 
                 <!-- Color Palette Grid -->
                 <div class="palette-grid">
-                  ${xe.map((e=>V`
+                  ${xt.map((t=>V`
                       <div
-                        class="color-swatch ${this._currentValue===e?"selected":""}"
-                        style="background-color: ${e}"
-                        @click=${t=>this._selectColor(e,t)}
-                        title="${e}"
+                        class="color-swatch ${this._currentValue===t?"selected":""}"
+                        style="background-color: ${t}"
+                        @click=${e=>this._selectColor(t,e)}
+                        title="${t}"
                       ></div>
                     `))}
                 </div>
@@ -1197,8 +1244,8 @@
           width: 100%;
         }
       }
-    `}};_e([me({attribute:!1})],we.prototype,"hass",void 0),_e([me()],we.prototype,"value",void 0),_e([me()],we.prototype,"label",void 0),_e([me()],we.prototype,"defaultValue",void 0),_e([me({type:Boolean})],we.prototype,"disabled",void 0),_e([ge()],we.prototype,"_currentValue",void 0),_e([ge()],we.prototype,"_showPalette",void 0),_e([ge()],we.prototype,"_textInputValue",void 0),we=_e([ce("ultra-color-picker")],we);class $e extends he{constructor(){super(...arguments),this.metadata={type:"image",title:"Images",description:"Display images and photos",author:"WJD Designs",version:"1.0.0",icon:"mdi:image",category:"media",tags:["image","picture","media","photo"]}}createDefault(e){return{id:e||this.generateId("image"),type:"image",image_type:"default",image_url:"",entity:"",image_entity:"",image_attribute:"",width:100,height:200,aspect_ratio:"auto",object_fit:"cover",alignment:"center",tap_action:{action:"default"},hold_action:{action:"default"},double_tap_action:{action:"default"},filter_blur:0,filter_brightness:100,filter_contrast:100,filter_saturate:100,filter_hue_rotate:0,filter_opacity:100,border_radius:8,border_width:0,border_color:"var(--divider-color)",box_shadow:"none",hover_enabled:!1,hover_effect:"scale",hover_scale:105,hover_rotate:5,hover_opacity:90,hover_blur:0,hover_brightness:110,hover_shadow:"none",hover_translate_x:0,hover_translate_y:0,hover_transition:300}}renderGeneralTab(e,t,o,i){const n=e;return V`
-      ${be.injectCleanFormStyles()}
+    `}};yt([mt({attribute:!1})],wt.prototype,"hass",void 0),yt([mt()],wt.prototype,"value",void 0),yt([mt()],wt.prototype,"label",void 0),yt([mt()],wt.prototype,"defaultValue",void 0),yt([mt({type:Boolean})],wt.prototype,"disabled",void 0),yt([gt()],wt.prototype,"_currentValue",void 0),yt([gt()],wt.prototype,"_showPalette",void 0),yt([gt()],wt.prototype,"_textInputValue",void 0),wt=yt([ct("ultra-color-picker")],wt);class $t extends ht{constructor(){super(...arguments),this.metadata={type:"image",title:"Images",description:"Display images and photos",author:"WJD Designs",version:"1.0.0",icon:"mdi:image",category:"media",tags:["image","picture","media","photo"]}}createDefault(t){return{id:t||this.generateId("image"),type:"image",image_type:"default",image_url:"",entity:"",image_entity:"",image_attribute:"",width:100,height:200,aspect_ratio:"auto",object_fit:"cover",alignment:"center",tap_action:{action:"default"},hold_action:{action:"default"},double_tap_action:{action:"default"},filter_blur:0,filter_brightness:100,filter_contrast:100,filter_saturate:100,filter_hue_rotate:0,filter_opacity:100,border_radius:8,border_width:0,border_color:"var(--divider-color)",box_shadow:"none",hover_enabled:!1,hover_effect:"scale",hover_scale:105,hover_rotate:5,hover_opacity:90,hover_blur:0,hover_brightness:110,hover_shadow:"none",hover_translate_x:0,hover_translate_y:0,hover_transition:300}}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
       <div class="module-general-settings">
         <!-- Image Settings -->
         <div
@@ -1213,11 +1260,11 @@
           </div>
 
           <!-- Image Source Type -->
-          ${be.renderField("Image Source Type","Choose how you want to specify the image source.",t,{image_type:n.image_type||"default"},[be.createSchemaItem("image_type",{select:{options:[{value:"default",label:"Default Image"},{value:"url",label:"Image URL"},{value:"upload",label:"Upload Image"},{value:"entity",label:"Entity Image"},{value:"attribute",label:"Entity Attribute"}],mode:"dropdown"}})],(e=>i({image_type:e.detail.value.image_type})))}
+          ${bt.renderField("Image Source Type","Choose how you want to specify the image source.",e,{image_type:n.image_type||"default"},[bt.createSchemaItem("image_type",{select:{options:[{value:"default",label:"Default Image"},{value:"url",label:"Image URL"},{value:"upload",label:"Upload Image"},{value:"entity",label:"Entity Image"},{value:"attribute",label:"Entity Attribute"}],mode:"dropdown"}})],(t=>i({image_type:t.detail.value.image_type})))}
 
           <!-- URL Image Source -->
           ${"url"===n.image_type?this.renderConditionalFieldsGroup("Image URL Configuration",V`
-                  ${be.renderField("Image URL","Enter the direct URL to the image you want to display.",t,{image_url:n.image_url||""},[be.createSchemaItem("image_url",{text:{}})],(e=>i({image_url:e.detail.value.image_url})))}
+                  ${bt.renderField("Image URL","Enter the direct URL to the image you want to display.",e,{image_url:n.image_url||""},[bt.createSchemaItem("image_url",{text:{}})],(t=>i({image_url:t.detail.value.image_url})))}
                 `):""}
 
           <!-- Upload Image Source -->
@@ -1238,21 +1285,21 @@
                     type="file"
                     accept="image/*"
                     style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                    @change=${e=>this.handleFileUpload(e,i)}
+                    @change=${t=>this.handleFileUpload(t,i)}
                   />
                 `):""}
 
           <!-- Entity Image Source -->
           ${"entity"===n.image_type?this.renderConditionalFieldsGroup("Entity Image Configuration",V`
-                  ${be.renderField("Entity","Select an entity that has an image (e.g., person, camera entities).",t,{image_entity:n.image_entity||""},[be.createSchemaItem("image_entity",{entity:{}})],(e=>i({image_entity:e.detail.value.image_entity})))}
+                  ${bt.renderField("Entity","Select an entity that has an image (e.g., person, camera entities).",e,{image_entity:n.image_entity||""},[bt.createSchemaItem("image_entity",{entity:{}})],(t=>i({image_entity:t.detail.value.image_entity})))}
                 `):""}
 
           <!-- Attribute Image Source -->
           ${"attribute"===n.image_type?this.renderConditionalFieldsGroup("Entity Attribute Configuration",V`
-                  ${be.renderField("Entity","Select the entity that contains the image URL in one of its attributes.",t,{image_entity:n.image_entity||""},[be.createSchemaItem("image_entity",{entity:{}})],(e=>i({image_entity:e.detail.value.image_entity})))}
+                  ${bt.renderField("Entity","Select the entity that contains the image URL in one of its attributes.",e,{image_entity:n.image_entity||""},[bt.createSchemaItem("image_entity",{entity:{}})],(t=>i({image_entity:t.detail.value.image_entity})))}
 
                   <div style="margin-top: 16px;">
-                    ${be.renderField("Attribute Name","Enter the name of the attribute that contains the image URL.",t,{image_attribute:n.image_attribute||""},[be.createSchemaItem("image_attribute",{text:{}})],(e=>i({image_attribute:e.detail.value.image_attribute})))}
+                    ${bt.renderField("Attribute Name","Enter the name of the attribute that contains the image URL.",e,{image_attribute:n.image_attribute||""},[bt.createSchemaItem("image_attribute",{text:{}})],(t=>i({image_attribute:t.detail.value.image_attribute})))}
                   </div>
                 `):""}
         </div>
@@ -1271,7 +1318,7 @@
 
           <!-- Width -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Width (%)","Set the width as a percentage of the container.",t,{width:n.width||100},[be.createSchemaItem("width",{number:{min:10,max:100,step:5,mode:"slider"}})],(e=>i({width:e.detail.value.width})))}
+            ${bt.renderField("Width (%)","Set the width as a percentage of the container.",e,{width:n.width||100},[bt.createSchemaItem("width",{number:{min:10,max:100,step:5,mode:"slider"}})],(t=>i({width:t.detail.value.width})))}
           </div>
 
           <!-- Image Alignment (when width < 100%) -->
@@ -1322,17 +1369,17 @@
 
           <!-- Height -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Height (px)","Set the height in pixels.",t,{height:n.height||200},[be.createSchemaItem("height",{number:{min:50,max:800,step:10,mode:"slider"}})],(e=>i({height:e.detail.value.height})))}
+            ${bt.renderField("Height (px)","Set the height in pixels.",e,{height:n.height||200},[bt.createSchemaItem("height",{number:{min:50,max:800,step:10,mode:"slider"}})],(t=>i({height:t.detail.value.height})))}
           </div>
 
           <!-- Object Fit -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Crop & Fit","Control how the image fits within its container.",t,{object_fit:n.object_fit||"cover"},[be.createSchemaItem("object_fit",{select:{options:[{value:"cover",label:"Cover (crop to fill)"},{value:"contain",label:"Contain (fit entire image)"},{value:"fill",label:"Fill (stretch to fit)"},{value:"scale-down",label:"Scale Down"},{value:"none",label:"None (original size)"}],mode:"dropdown"}})],(e=>i({object_fit:e.detail.value.object_fit})))}
+            ${bt.renderField("Crop & Fit","Control how the image fits within its container.",e,{object_fit:n.object_fit||"cover"},[bt.createSchemaItem("object_fit",{select:{options:[{value:"cover",label:"Cover (crop to fill)"},{value:"contain",label:"Contain (fit entire image)"},{value:"fill",label:"Fill (stretch to fit)"},{value:"scale-down",label:"Scale Down"},{value:"none",label:"None (original size)"}],mode:"dropdown"}})],(t=>i({object_fit:t.detail.value.object_fit})))}
           </div>
 
           <!-- Border Radius -->
           <div class="field-group">
-            ${be.renderField("Border Radius","Control the rounded corners of the image.",t,{border_radius:n.border_radius||8},[be.createSchemaItem("border_radius",{number:{min:0,max:50,step:1,mode:"slider"}})],(e=>i({border_radius:e.detail.value.border_radius})))}
+            ${bt.renderField("Border Radius","Control the rounded corners of the image.",e,{border_radius:n.border_radius||8},[bt.createSchemaItem("border_radius",{number:{min:0,max:50,step:1,mode:"slider"}})],(t=>i({border_radius:t.detail.value.border_radius})))}
           </div>
         </div>
 
@@ -1341,7 +1388,7 @@
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
         >
-          ${ve.render(t,{tap_action:n.tap_action||{action:"default"},hold_action:n.hold_action||{action:"default"},double_tap_action:n.double_tap_action||{action:"default"}},(e=>{i(e)}),"Tap Actions")}
+          ${vt.render(e,{tap_action:n.tap_action||{action:"default"},hold_action:n.hold_action||{action:"default"},double_tap_action:n.double_tap_action||{action:"default"}},(t=>{i(t)}),"Tap Actions")}
         </div>
 
         <!-- CSS Filters -->
@@ -1364,22 +1411,22 @@
 
           <!-- Blur -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Blur","Apply a blur effect to your image.",t,{filter_blur:n.filter_blur||0},[be.createSchemaItem("filter_blur",{number:{min:0,max:10,step:.1,mode:"slider"}})],(e=>i({filter_blur:e.detail.value.filter_blur})))}
+            ${bt.renderField("Blur","Apply a blur effect to your image.",e,{filter_blur:n.filter_blur||0},[bt.createSchemaItem("filter_blur",{number:{min:0,max:10,step:.1,mode:"slider"}})],(t=>i({filter_blur:t.detail.value.filter_blur})))}
           </div>
 
           <!-- Brightness -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Brightness (%)","Adjust the brightness of your image.",t,{filter_brightness:n.filter_brightness||100},[be.createSchemaItem("filter_brightness",{number:{min:0,max:200,step:5,mode:"slider"}})],(e=>i({filter_brightness:e.detail.value.filter_brightness})))}
+            ${bt.renderField("Brightness (%)","Adjust the brightness of your image.",e,{filter_brightness:n.filter_brightness||100},[bt.createSchemaItem("filter_brightness",{number:{min:0,max:200,step:5,mode:"slider"}})],(t=>i({filter_brightness:t.detail.value.filter_brightness})))}
           </div>
 
           <!-- Contrast -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Contrast (%)","Modify the contrast of your image.",t,{filter_contrast:n.filter_contrast||100},[be.createSchemaItem("filter_contrast",{number:{min:0,max:200,step:5,mode:"slider"}})],(e=>i({filter_contrast:e.detail.value.filter_contrast})))}
+            ${bt.renderField("Contrast (%)","Modify the contrast of your image.",e,{filter_contrast:n.filter_contrast||100},[bt.createSchemaItem("filter_contrast",{number:{min:0,max:200,step:5,mode:"slider"}})],(t=>i({filter_contrast:t.detail.value.filter_contrast})))}
           </div>
 
           <!-- Saturation -->
           <div class="field-group">
-            ${be.renderField("Saturation (%)","Adjust the saturation of your image.",t,{filter_saturate:n.filter_saturate||100},[be.createSchemaItem("filter_saturate",{number:{min:0,max:200,step:5,mode:"slider"}})],(e=>i({filter_saturate:e.detail.value.filter_saturate})))}
+            ${bt.renderField("Saturation (%)","Adjust the saturation of your image.",e,{filter_saturate:n.filter_saturate||100},[bt.createSchemaItem("filter_saturate",{number:{min:0,max:200,step:5,mode:"slider"}})],(t=>i({filter_saturate:t.detail.value.filter_saturate})))}
           </div>
         </div>
 
@@ -1397,7 +1444,7 @@
             >
               Hover Effects
             </div>
-            ${be.renderField("Hover Effects Enabled","Enable hover effects for this image.",t,{enabled:n.hover_enabled||!1},[be.createSchemaItem("enabled",{boolean:{}})],(e=>i({hover_enabled:e.detail.value.enabled})))}
+            ${bt.renderField("Hover Effects Enabled","Enable hover effects for this image.",e,{enabled:n.hover_enabled||!1},[bt.createSchemaItem("enabled",{boolean:{}})],(t=>i({hover_enabled:t.detail.value.enabled})))}
           </div>
 
           ${n.hover_enabled?this.renderConditionalFieldsGroup("Hover Effects Configuration",V`
@@ -1409,7 +1456,7 @@
                     >
                       Effect Type
                     </div>
-                    ${be.renderField("Effect Type","Choose the type of hover effect.",t,{effect:n.hover_effect||"scale"},[be.createSchemaItem("effect",{select:{options:[{value:"scale",label:"Scale (zoom in/out)"},{value:"rotate",label:"Rotate"},{value:"fade",label:"Fade (opacity change)"},{value:"blur",label:"Blur"},{value:"brightness",label:"Brightness"},{value:"glow",label:"Glow (box shadow)"},{value:"slide",label:"Slide (translate)"}],mode:"dropdown"}})],(e=>i({hover_effect:e.detail.value.effect})))}
+                    ${bt.renderField("Effect Type","Choose the type of hover effect.",e,{effect:n.hover_effect||"scale"},[bt.createSchemaItem("effect",{select:{options:[{value:"scale",label:"Scale (zoom in/out)"},{value:"rotate",label:"Rotate"},{value:"fade",label:"Fade (opacity change)"},{value:"blur",label:"Blur"},{value:"brightness",label:"Brightness"},{value:"glow",label:"Glow (box shadow)"},{value:"slide",label:"Slide (translate)"}],mode:"dropdown"}})],(t=>i({hover_effect:t.detail.value.effect})))}
                   </div>
 
                   <!-- Scale Effect Settings -->
@@ -1421,7 +1468,7 @@
                           >
                             Scale (%)
                           </div>
-                          ${be.renderField("Scale (%)","Adjust the scale of the image on hover.",t,{scale:n.hover_scale||105},[be.createSchemaItem("scale",{number:{min:50,max:150,step:5,mode:"slider"}})],(e=>i({hover_scale:e.detail.value.scale})))}
+                          ${bt.renderField("Scale (%)","Adjust the scale of the image on hover.",e,{scale:n.hover_scale||105},[bt.createSchemaItem("scale",{number:{min:50,max:150,step:5,mode:"slider"}})],(t=>i({hover_scale:t.detail.value.scale})))}
                         </div>
                       `}
 
@@ -1434,7 +1481,7 @@
                           >
                             Rotation (°)
                           </div>
-                          ${be.renderField("Rotation (°)","Rotate the image on hover.",t,{rotate:n.hover_rotate||5},[be.createSchemaItem("rotate",{number:{min:-180,max:180,step:5,mode:"slider"}})],(e=>i({hover_rotate:e.detail.value.rotate})))}
+                          ${bt.renderField("Rotation (°)","Rotate the image on hover.",e,{rotate:n.hover_rotate||5},[bt.createSchemaItem("rotate",{number:{min:-180,max:180,step:5,mode:"slider"}})],(t=>i({hover_rotate:t.detail.value.rotate})))}
                         </div>
                       `:""}
 
@@ -1447,7 +1494,7 @@
                           >
                             Opacity (%)
                           </div>
-                          ${be.renderField("Opacity (%)","Change the opacity of the image on hover.",t,{opacity:n.hover_opacity||90},[be.createSchemaItem("opacity",{number:{min:0,max:100,step:5,mode:"slider"}})],(e=>i({hover_opacity:e.detail.value.opacity})))}
+                          ${bt.renderField("Opacity (%)","Change the opacity of the image on hover.",e,{opacity:n.hover_opacity||90},[bt.createSchemaItem("opacity",{number:{min:0,max:100,step:5,mode:"slider"}})],(t=>i({hover_opacity:t.detail.value.opacity})))}
                         </div>
                       `:""}
 
@@ -1460,7 +1507,7 @@
                           >
                             Blur (px)
                           </div>
-                          ${be.renderField("Blur (px)","Apply a blur effect to the image on hover.",t,{blur:n.hover_blur||2},[be.createSchemaItem("blur",{number:{min:0,max:10,step:.5,mode:"slider"}})],(e=>i({hover_blur:e.detail.value.blur})))}
+                          ${bt.renderField("Blur (px)","Apply a blur effect to the image on hover.",e,{blur:n.hover_blur||2},[bt.createSchemaItem("blur",{number:{min:0,max:10,step:.5,mode:"slider"}})],(t=>i({hover_blur:t.detail.value.blur})))}
                         </div>
                       `:""}
 
@@ -1473,7 +1520,7 @@
                           >
                             Brightness (%)
                           </div>
-                          ${be.renderField("Brightness (%)","Adjust the brightness of the image on hover.",t,{brightness:n.hover_brightness||110},[be.createSchemaItem("brightness",{number:{min:50,max:200,step:5,mode:"slider"}})],(e=>i({hover_brightness:e.detail.value.brightness})))}
+                          ${bt.renderField("Brightness (%)","Adjust the brightness of the image on hover.",e,{brightness:n.hover_brightness||110},[bt.createSchemaItem("brightness",{number:{min:50,max:200,step:5,mode:"slider"}})],(t=>i({hover_brightness:t.detail.value.brightness})))}
                         </div>
                       `:""}
 
@@ -1486,7 +1533,7 @@
                           >
                             Glow Intensity
                           </div>
-                          ${be.renderField("Glow Intensity","Choose the intensity of the glow effect on hover.",t,{shadow:n.hover_shadow||"medium"},[be.createSchemaItem("shadow",{select:{options:[{value:"light",label:"Light Glow"},{value:"medium",label:"Medium Glow"},{value:"heavy",label:"Heavy Glow"},{value:"custom",label:"Custom Shadow"}],mode:"dropdown"}})],(e=>i({hover_shadow:e.detail.value.shadow})))}
+                          ${bt.renderField("Glow Intensity","Choose the intensity of the glow effect on hover.",e,{shadow:n.hover_shadow||"medium"},[bt.createSchemaItem("shadow",{select:{options:[{value:"light",label:"Light Glow"},{value:"medium",label:"Medium Glow"},{value:"heavy",label:"Heavy Glow"},{value:"custom",label:"Custom Shadow"}],mode:"dropdown"}})],(t=>i({hover_shadow:t.detail.value.shadow})))}
                         </div>
                       `:""}
 
@@ -1499,7 +1546,7 @@
                           >
                             Horizontal (px)
                           </div>
-                          ${be.renderField("Horizontal (px)","Translate the image horizontally on hover.",t,{translate_x:n.hover_translate_x||0},[be.createSchemaItem("translate_x",{number:{min:-50,max:50,step:2,mode:"slider"}})],(e=>i({hover_translate_x:e.detail.value.translate_x})))}
+                          ${bt.renderField("Horizontal (px)","Translate the image horizontally on hover.",e,{translate_x:n.hover_translate_x||0},[bt.createSchemaItem("translate_x",{number:{min:-50,max:50,step:2,mode:"slider"}})],(t=>i({hover_translate_x:t.detail.value.translate_x})))}
                         </div>
 
                         <div class="field-group" style="margin-bottom: 16px;">
@@ -1509,7 +1556,7 @@
                           >
                             Vertical (px)
                           </div>
-                          ${be.renderField("Vertical (px)","Translate the image vertically on hover.",t,{translate_y:n.hover_translate_y||0},[be.createSchemaItem("translate_y",{number:{min:-50,max:50,step:2,mode:"slider"}})],(e=>i({hover_translate_y:e.detail.value.translate_y})))}
+                          ${bt.renderField("Vertical (px)","Translate the image vertically on hover.",e,{translate_y:n.hover_translate_y||0},[bt.createSchemaItem("translate_y",{number:{min:-50,max:50,step:2,mode:"slider"}})],(t=>i({hover_translate_y:t.detail.value.translate_y})))}
                         </div>
                       `:""}
 
@@ -1521,7 +1568,7 @@
                     >
                       Duration (ms)
                     </div>
-                    ${be.renderField("Duration (ms)","Set the duration for hover effects.",t,{transition:n.hover_transition||300},[be.createSchemaItem("transition",{number:{min:100,max:1e3,step:50,mode:"slider"}})],(e=>i({hover_transition:e.detail.value.transition})))}
+                    ${bt.renderField("Duration (ms)","Set the duration for hover effects.",e,{transition:n.hover_transition||300},[bt.createSchemaItem("transition",{number:{min:100,max:1e3,step:50,mode:"slider"}})],(t=>i({hover_transition:t.detail.value.transition})))}
                   </div>
                 `):V`
                 <div
@@ -1532,7 +1579,7 @@
               `}
         </div>
       </div>
-    `}renderPreview(e,t){var o,i;const n=e;let a="";switch(n.image_type){case"default":default:a="/hacsfiles/Ultra-Card/assets/Ultra.jpg";break;case"url":case"upload":a=n.image_url||"";break;case"entity":if(n.image_entity&&(null==t?void 0:t.states[n.image_entity])){const e=t.states[n.image_entity];(null===(o=e.attributes)||void 0===o?void 0:o.entity_picture)?a=e.attributes.entity_picture:e.state&&e.state.startsWith("http")&&(a=e.state)}break;case"attribute":if(n.image_entity&&n.image_attribute&&(null==t?void 0:t.states[n.image_entity])){const e=null===(i=t.states[n.image_entity].attributes)||void 0===i?void 0:i[n.image_attribute];e&&"string"==typeof e&&(a=e)}}const r=[];n.filter_blur&&n.filter_blur>0&&r.push(`blur(${n.filter_blur}px)`),n.filter_brightness&&100!==n.filter_brightness&&r.push(`brightness(${n.filter_brightness}%)`),n.filter_contrast&&100!==n.filter_contrast&&r.push(`contrast(${n.filter_contrast}%)`),n.filter_saturate&&100!==n.filter_saturate&&r.push(`saturate(${n.filter_saturate}%)`);const l=r.length>0?r.join(" "):"none";let s="";const d=n.hover_enabled?`${n.hover_transition||300}ms`:"none";if(n.hover_enabled)switch(n.hover_effect||"scale"){case"scale":const e=(n.hover_scale||105)/100;s=`transform: scale(${e});`;break;case"rotate":s=`transform: rotate(${n.hover_rotate||5}deg);`;break;case"fade":s=`opacity: ${(n.hover_opacity||90)/100};`;break;case"blur":s=`filter: blur(${n.hover_blur||2}px);`;break;case"brightness":s=`filter: brightness(${n.hover_brightness||110}%);`;break;case"glow":let t="";switch(n.hover_shadow||"medium"){case"light":t="0 0 10px rgba(var(--rgb-primary-color), 0.5)";break;case"medium":t="0 0 20px rgba(var(--rgb-primary-color), 0.7)";break;case"heavy":t="0 0 30px rgba(var(--rgb-primary-color), 1)";break;case"custom":t=n.hover_shadow||"0 0 20px rgba(var(--rgb-primary-color), 0.7)"}s=`box-shadow: ${t};`;break;case"slide":const o=n.hover_translate_x||0,i=n.hover_translate_y||0;s=`transform: translate(${o}px, ${i}px);`}const c=`\n      width: ${n.width||100}%;\n      height: ${n.height||200}px;\n      object-fit: ${n.object_fit||"cover"};\n      border-radius: ${n.border_radius||8}px;\n      filter: ${l};\n      transition: ${n.hover_enabled?`transform ${d} ease, filter ${d} ease, opacity ${d} ease, box-shadow ${d} ease`:"none"};\n      cursor: pointer;\n      display: block;\n      border: ${n.border_width?`${n.border_width}px solid ${n.border_color}`:"none"};\n    `;let p="center";switch(n.alignment){case"left":p="flex-start";break;case"center":p="center";break;case"right":p="flex-end"}const u=n,m={padding:u.padding_top||u.padding_bottom||u.padding_left||u.padding_right?`${this.addPixelUnit(u.padding_top)||"0px"} ${this.addPixelUnit(u.padding_right)||"0px"} ${this.addPixelUnit(u.padding_bottom)||"0px"} ${this.addPixelUnit(u.padding_left)||"0px"}`:"0",margin:u.margin_top||u.margin_bottom||u.margin_left||u.margin_right?`${this.addPixelUnit(u.margin_top)||"0px"} ${this.addPixelUnit(u.margin_right)||"0px"} ${this.addPixelUnit(u.margin_bottom)||"0px"} ${this.addPixelUnit(u.margin_left)||"0px"}`:"0",background:u.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(u,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:u.border_style&&"none"!==u.border_style?`${u.border_width||"1px"} ${u.border_style} ${u.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(u.border_radius)||"0",position:u.position||"relative",top:u.top||"auto",bottom:u.bottom||"auto",left:u.left||"auto",right:u.right||"auto",zIndex:u.z_index||"auto",width:u.width||"100%",height:u.height||"auto",maxWidth:u.max_width||"100%",maxHeight:u.max_height||"none",minWidth:u.min_width||"none",minHeight:u.min_height||"auto",overflow:u.overflow||"visible",clipPath:u.clip_path||"none",backdropFilter:u.backdrop_filter||"none",boxShadow:u.box_shadow_h&&u.box_shadow_v?`${u.box_shadow_h||"0"} ${u.box_shadow_v||"0"} ${u.box_shadow_blur||"0"} ${u.box_shadow_spread||"0"} ${u.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},g=V`
+    `}renderPreview(t,e){var o,i;const n=t;let a="";switch(n.image_type){case"default":default:a="/hacsfiles/Ultra-Card/assets/Ultra.jpg";break;case"url":case"upload":a=n.image_url||"";break;case"entity":if(n.image_entity&&(null==e?void 0:e.states[n.image_entity])){const t=e.states[n.image_entity];(null===(o=t.attributes)||void 0===o?void 0:o.entity_picture)?a=t.attributes.entity_picture:t.state&&t.state.startsWith("http")&&(a=t.state)}break;case"attribute":if(n.image_entity&&n.image_attribute&&(null==e?void 0:e.states[n.image_entity])){const t=null===(i=e.states[n.image_entity].attributes)||void 0===i?void 0:i[n.image_attribute];t&&"string"==typeof t&&(a=t)}}const r=[];n.filter_blur&&n.filter_blur>0&&r.push(`blur(${n.filter_blur}px)`),n.filter_brightness&&100!==n.filter_brightness&&r.push(`brightness(${n.filter_brightness}%)`),n.filter_contrast&&100!==n.filter_contrast&&r.push(`contrast(${n.filter_contrast}%)`),n.filter_saturate&&100!==n.filter_saturate&&r.push(`saturate(${n.filter_saturate}%)`);const l=r.length>0?r.join(" "):"none";let s="";const d=n.hover_enabled?`${n.hover_transition||300}ms`:"none";if(n.hover_enabled)switch(n.hover_effect||"scale"){case"scale":const t=(n.hover_scale||105)/100;s=`transform: scale(${t});`;break;case"rotate":s=`transform: rotate(${n.hover_rotate||5}deg);`;break;case"fade":s=`opacity: ${(n.hover_opacity||90)/100};`;break;case"blur":s=`filter: blur(${n.hover_blur||2}px);`;break;case"brightness":s=`filter: brightness(${n.hover_brightness||110}%);`;break;case"glow":let e="";switch(n.hover_shadow||"medium"){case"light":e="0 0 10px rgba(var(--rgb-primary-color), 0.5)";break;case"medium":e="0 0 20px rgba(var(--rgb-primary-color), 0.7)";break;case"heavy":e="0 0 30px rgba(var(--rgb-primary-color), 1)";break;case"custom":e=n.hover_shadow||"0 0 20px rgba(var(--rgb-primary-color), 0.7)"}s=`box-shadow: ${e};`;break;case"slide":const o=n.hover_translate_x||0,i=n.hover_translate_y||0;s=`transform: translate(${o}px, ${i}px);`}const c=`\n      width: ${n.width||100}%;\n      height: ${n.height||200}px;\n      object-fit: ${n.object_fit||"cover"};\n      border-radius: ${n.border_radius||8}px;\n      filter: ${l};\n      transition: ${n.hover_enabled?`transform ${d} ease, filter ${d} ease, opacity ${d} ease, box-shadow ${d} ease`:"none"};\n      cursor: pointer;\n      display: block;\n      border: ${n.border_width?`${n.border_width}px solid ${n.border_color}`:"none"};\n    `;let p="center";switch(n.alignment){case"left":p="flex-start";break;case"center":p="center";break;case"right":p="flex-end"}const u=n,m={padding:u.padding_top||u.padding_bottom||u.padding_left||u.padding_right?`${this.addPixelUnit(u.padding_top)||"0px"} ${this.addPixelUnit(u.padding_right)||"0px"} ${this.addPixelUnit(u.padding_bottom)||"0px"} ${this.addPixelUnit(u.padding_left)||"0px"}`:"0",margin:u.margin_top||u.margin_bottom||u.margin_left||u.margin_right?`${this.addPixelUnit(u.margin_top)||"0px"} ${this.addPixelUnit(u.margin_right)||"0px"} ${this.addPixelUnit(u.margin_bottom)||"0px"} ${this.addPixelUnit(u.margin_left)||"0px"}`:"0",background:u.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(u,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:u.border_style&&"none"!==u.border_style?`${u.border_width||"1px"} ${u.border_style} ${u.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(u.border_radius)||"0",position:u.position||"relative",top:u.top||"auto",bottom:u.bottom||"auto",left:u.left||"auto",right:u.right||"auto",zIndex:u.z_index||"auto",width:u.width||"100%",height:u.height||"auto",maxWidth:u.max_width||"100%",maxHeight:u.max_height||"none",minWidth:u.min_width||"none",minHeight:u.min_height||"auto",overflow:u.overflow||"hidden",clipPath:u.clip_path||"none",backdropFilter:u.backdrop_filter||"none",boxShadow:u.box_shadow_h&&u.box_shadow_v?`${u.box_shadow_h||"0"} ${u.box_shadow_v||"0"} ${u.box_shadow_blur||"0"} ${u.box_shadow_spread||"0"} ${u.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},g=V`
       <div class="image-module-container" style=${this.styleObjectToCss(m)}>
         <div class="image-module-preview">
           <!-- Image Container with Alignment -->
@@ -1542,11 +1589,11 @@
                     src="${a}"
                     alt="Image"
                     style="${c}"
-                    @mouseover=${e=>{if(n.hover_enabled&&s){const t=e.target;t.style.transition,t.style.cssText+=s}}}
-                    @mouseout=${e=>{if(n.hover_enabled){const t=e.target;t.style.transform="",t.style.opacity="",t.style.filter=l,t.style.boxShadow=""}}}
-                    @click=${e=>{const o=n.tap_action||{action:"default"};ve.handleAction(o,t,e.target)}}
-                    @contextmenu=${e=>{e.preventDefault();const o=n.hold_action||{action:"default"};ve.handleAction(o,t,e.target)}}
-                    @dblclick=${e=>{const o=n.double_tap_action||{action:"default"};ve.handleAction(o,t,e.target)}}
+                    @mouseover=${t=>{if(n.hover_enabled&&s){const e=t.target;e.style.transition,e.style.cssText+=s}}}
+                    @mouseout=${t=>{if(n.hover_enabled){const e=t.target;e.style.transform="",e.style.opacity="",e.style.filter=l,e.style.boxShadow=""}}}
+                    @click=${t=>{const o=n.tap_action||{action:"default"};vt.handleAction(o,e,t.target)}}
+                    @contextmenu=${t=>{t.preventDefault();const o=n.hold_action||{action:"default"};vt.handleAction(o,e,t.target)}}
+                    @dblclick=${t=>{const o=n.double_tap_action||{action:"default"};vt.handleAction(o,e,t.target)}}
                   />
                 `:V`
                   <div
@@ -1575,41 +1622,41 @@
           </div>
         </div>
       </div>
-    `;return g}async handleFileUpload(e,t){var o,i;const n=null===(o=e.target.files)||void 0===o?void 0:o[0];if(n)try{const e=new FormData;e.append("file",n);const o=await fetch("/api/media_source/local/upload",{method:"POST",body:e,headers:{Authorization:`Bearer ${(null===(i=window.hassTokens)||void 0===i?void 0:i.access_token)||""}`}});if(o.ok){const e=(await o.json()).media_content_id||`/media/local/${n.name}`;t({image_url:e,image_type:"upload"})}else{console.error("Upload failed:",o.statusText);const e=new FileReader;e.onload=e=>{var o;const i=null===(o=e.target)||void 0===o?void 0:o.result;t({image_url:i,image_type:"upload"})},e.readAsDataURL(n)}}catch(e){console.error("Error uploading file:",e);const o=new FileReader;o.onload=e=>{var o;const i=null===(o=e.target)||void 0===o?void 0:o.result;t({image_url:i,image_type:"upload"})},o.readAsDataURL(n)}}validate(e){const t=e,o=[...super.validate(e).errors];switch(t.image_type){case"url":t.image_url&&""!==t.image_url.trim()||o.push("Image URL is required when using URL type");break;case"upload":t.image_url&&""!==t.image_url.trim()||o.push("Uploaded image is required when using upload type");break;case"entity":t.image_entity&&""!==t.image_entity.trim()||o.push("Image entity is required when using entity type");break;case"attribute":t.image_entity&&""!==t.image_entity.trim()||o.push("Entity is required when using attribute type"),t.image_attribute&&""!==t.image_attribute.trim()||o.push("Attribute name is required when using attribute type")}return t.link_enabled&&!t.link_url&&o.push("Link URL is required when link is enabled"),t.width&&(t.width<1||t.width>100)&&o.push("Width must be between 1 and 100 percent"),t.height&&(t.height<50||t.height>800)&&o.push("Height must be between 50 and 800 pixels"),{valid:0===o.length,errors:o}}getBackgroundImageCSS(e,t){var o,i;if(!e.background_image_type||"none"===e.background_image_type)return"none";switch(e.background_image_type){case"upload":case"url":if(e.background_image)return`url("${e.background_image}")`;break;case"entity":if(e.background_image_entity&&(null==t?void 0:t.states[e.background_image_entity])){const n=t.states[e.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${e.replace(/[A-Z]/g,(e=>`-${e.toLowerCase()}`))}: ${t}`)).join("; ")}getStyles(){return"\n      .image-module-preview {\n        max-width: 100%;\n        overflow: hidden;\n        box-sizing: border-box;\n      }\n\n\n\n      .image-module-preview img {\n        max-width: 100%;\n        height: auto;\n        display: block;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Field styling - ensure vertical stacking, no columns */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n        width: 100% !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n        width: 100% !important;\n      }\n\n      .field-group {\n        display: flex !important;\n        flex-direction: column !important;\n        width: 100% !important;\n        margin-bottom: 16px !important;\n      }\n\n      .field-group ha-form {\n        width: 100% !important;\n        display: block !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n    "}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}class ke extends he{constructor(){super(...arguments),this.metadata={type:"info",title:"Info Items",description:"Show entity information values",author:"WJD Designs",version:"1.0.0",icon:"mdi:information",category:"data",tags:["info","entity","data","sensors"]}}createDefault(e){return{id:e||this.generateId("info"),type:"info",info_entities:[{id:this.generateId("entity"),entity:"",name:"Entity Name",icon:"",show_icon:!0,show_name:!0,text_size:14,name_size:12,icon_size:18,text_bold:!1,text_italic:!1,text_uppercase:!1,text_strikethrough:!1,name_bold:!1,name_italic:!1,name_uppercase:!1,name_strikethrough:!1,icon_color:"var(--primary-color)",name_color:"var(--secondary-text-color)",text_color:"var(--primary-text-color)",click_action:"more-info",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:"",icon_position:"left",icon_alignment:"center",content_alignment:"start",overall_alignment:"center",icon_gap:8}],alignment:"left",vertical_alignment:"center",columns:1,gap:12,allow_wrap:!0}}renderGeneralTab(e,t,o,i){var n,a,r;const l=e,s=l.info_entities[0]||this.createDefault().info_entities[0];return V`
+    `;return g}async handleFileUpload(t,e){var o,i;const n=null===(o=t.target.files)||void 0===o?void 0:o[0];if(n)try{const t=new FormData;t.append("file",n);const o=await fetch("/api/media_source/local/upload",{method:"POST",body:t,headers:{Authorization:`Bearer ${(null===(i=window.hassTokens)||void 0===i?void 0:i.access_token)||""}`}});if(o.ok){const t=(await o.json()).media_content_id||`/media/local/${n.name}`;e({image_url:t,image_type:"upload"})}else{console.error("Upload failed:",o.statusText);const t=new FileReader;t.onload=t=>{var o;const i=null===(o=t.target)||void 0===o?void 0:o.result;e({image_url:i,image_type:"upload"})},t.readAsDataURL(n)}}catch(t){console.error("Error uploading file:",t);const o=new FileReader;o.onload=t=>{var o;const i=null===(o=t.target)||void 0===o?void 0:o.result;e({image_url:i,image_type:"upload"})},o.readAsDataURL(n)}}validate(t){const e=t,o=[...super.validate(t).errors];switch(e.image_type){case"url":e.image_url&&""!==e.image_url.trim()||o.push("Image URL is required when using URL type");break;case"upload":e.image_url&&""!==e.image_url.trim()||o.push("Uploaded image is required when using upload type");break;case"entity":e.image_entity&&""!==e.image_entity.trim()||o.push("Image entity is required when using entity type");break;case"attribute":e.image_entity&&""!==e.image_entity.trim()||o.push("Entity is required when using attribute type"),e.image_attribute&&""!==e.image_attribute.trim()||o.push("Attribute name is required when using attribute type")}return e.link_enabled&&!e.link_url&&o.push("Link URL is required when link is enabled"),e.width&&(e.width<1||e.width>100)&&o.push("Width must be between 1 and 100 percent"),e.height&&(e.height<50||e.height>800)&&o.push("Height must be between 50 and 800 pixels"),{valid:0===o.length,errors:o}}getBackgroundImageCSS(t,e){var o,i;if(!t.background_image_type||"none"===t.background_image_type)return"none";switch(t.background_image_type){case"upload":case"url":if(t.background_image)return`url("${t.background_image}")`;break;case"entity":if(t.background_image_entity&&(null==e?void 0:e.states[t.background_image_entity])){const n=e.states[t.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${t.replace(/[A-Z]/g,(t=>`-${t.toLowerCase()}`))}: ${e}`)).join("; ")}getStyles(){return"\n      .image-module-preview {\n        max-width: 100%;\n        overflow: hidden;\n        box-sizing: border-box;\n      }\n\n\n\n      .image-module-preview img {\n        max-width: 100%;\n        height: auto;\n        display: block;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Field styling - ensure vertical stacking, no columns */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n        width: 100% !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n        width: 100% !important;\n      }\n\n      .field-group {\n        display: flex !important;\n        flex-direction: column !important;\n        width: 100% !important;\n        margin-bottom: 16px !important;\n      }\n\n      .field-group ha-form {\n        width: 100% !important;\n        display: block !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n    "}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}class kt extends ht{constructor(){super(...arguments),this.metadata={type:"info",title:"Info Items",description:"Show entity information values",author:"WJD Designs",version:"1.0.0",icon:"mdi:information",category:"data",tags:["info","entity","data","sensors"]}}createDefault(t){return{id:t||this.generateId("info"),type:"info",info_entities:[{id:this.generateId("entity"),entity:"",name:"Entity Name",icon:"",show_icon:!0,show_name:!0,text_size:14,name_size:12,icon_size:18,text_bold:!1,text_italic:!1,text_uppercase:!1,text_strikethrough:!1,name_bold:!1,name_italic:!1,name_uppercase:!1,name_strikethrough:!1,icon_color:"var(--primary-color)",name_color:"var(--secondary-text-color)",text_color:"var(--primary-text-color)",click_action:"more-info",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:"",icon_position:"left",icon_alignment:"center",content_alignment:"start",overall_alignment:"center",icon_gap:8}],alignment:"left",vertical_alignment:"center",columns:1,gap:12,allow_wrap:!0}}renderGeneralTab(t,e,o,i){var n,a,r;const l=t,s=l.info_entities[0]||this.createDefault().info_entities[0];return V`
       <div class="module-general-settings">
         <!-- Entity Configuration -->
         <div class="settings-section">
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{entity:s.entity||""}}
             .schema=${[{name:"entity",label:"Entity",description:"Select the entity to display",selector:{entity:{}}}]}
-            .computeLabel=${e=>e.label||e.name}
-            .computeDescription=${e=>e.description||""}
-            @value-changed=${e=>this._handleEntityChange(l,0,e.detail.value.entity,t,i)}
+            .computeLabel=${t=>t.label||t.name}
+            .computeDescription=${t=>t.description||""}
+            @value-changed=${t=>this._handleEntityChange(l,0,t.detail.value.entity,e,i)}
           ></ha-form>
         </div>
 
         <!-- Custom Name -->
         <div class="settings-section">
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{name:s.name||""}}
             .schema=${[{name:"name",label:"Name",description:"Custom display name for this entity",selector:{text:{}}}]}
-            .computeLabel=${e=>e.label||e.name}
-            .computeDescription=${e=>e.description||""}
-            @value-changed=${e=>this._updateEntity(l,0,{name:e.detail.value.name},i)}
+            .computeLabel=${t=>t.label||t.name}
+            .computeDescription=${t=>t.description||""}
+            @value-changed=${t=>this._updateEntity(l,0,{name:t.detail.value.name},i)}
           ></ha-form>
         </div>
 
         <!-- Show Icon -->
         <div class="settings-section">
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{show_icon:!1!==s.show_icon}}
             .schema=${[{name:"show_icon",label:"Show Icon",description:"Display an icon next to the entity value",selector:{boolean:{}}}]}
-            .computeLabel=${e=>e.label||e.name}
-            .computeDescription=${e=>e.description||""}
-            @value-changed=${e=>this._updateEntity(l,0,{show_icon:e.detail.value.show_icon},i)}
+            .computeLabel=${t=>t.label||t.name}
+            .computeDescription=${t=>t.description||""}
+            @value-changed=${t=>this._updateEntity(l,0,{show_icon:t.detail.value.show_icon},i)}
           ></ha-form>
         </div>
 
@@ -1617,12 +1664,12 @@
         ${!1!==s.show_icon?V`
               <div class="settings-section">
                 <ha-form
-                  .hass=${t}
+                  .hass=${e}
                   .data=${{icon:s.icon||""}}
                   .schema=${[{name:"icon",label:"Icon",description:"Choose an icon to display",selector:{icon:{}}}]}
-                  .computeLabel=${e=>e.label||e.name}
-                  .computeDescription=${e=>e.description||""}
-                  @value-changed=${e=>this._updateEntity(l,0,{icon:e.detail.value.icon},i)}
+                  .computeLabel=${t=>t.label||t.name}
+                  .computeDescription=${t=>t.description||""}
+                  @value-changed=${t=>this._updateEntity(l,0,{icon:t.detail.value.icon},i)}
                 ></ha-form>
               </div>
             `:""}
@@ -1630,24 +1677,24 @@
         <!-- Show Name -->
         <div class="settings-section">
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{show_name:!1!==s.show_name}}
             .schema=${[{name:"show_name",label:"Show Name",description:"Display the entity name above the value",selector:{boolean:{}}}]}
-            .computeLabel=${e=>e.label||e.name}
-            .computeDescription=${e=>e.description||""}
-            @value-changed=${e=>this._updateEntity(l,0,{show_name:e.detail.value.show_name},i)}
+            .computeLabel=${t=>t.label||t.name}
+            .computeDescription=${t=>t.description||""}
+            @value-changed=${t=>this._updateEntity(l,0,{show_name:t.detail.value.show_name},i)}
           ></ha-form>
         </div>
 
         <!-- Click Action -->
         <div class="settings-section">
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{click_action:s.click_action||"more-info"}}
             .schema=${[{name:"click_action",label:"Click Action",description:"Action to perform when clicking the entity",selector:{select:{options:[{value:"none",label:"No Action"},{value:"more-info",label:"More Info"},{value:"toggle",label:"Toggle"},{value:"navigate",label:"Navigate"},{value:"url",label:"Open URL"},{value:"service",label:"Call Service"}],mode:"dropdown"}}}]}
-            .computeLabel=${e=>e.label||e.name}
-            .computeDescription=${e=>e.description||""}
-            @value-changed=${e=>this._updateEntity(l,0,{click_action:e.detail.value.click_action},i)}
+            .computeLabel=${t=>t.label||t.name}
+            .computeDescription=${t=>t.description||""}
+            @value-changed=${t=>this._updateEntity(l,0,{click_action:t.detail.value.click_action},i)}
           ></ha-form>
         </div>
 
@@ -1663,8 +1710,8 @@
                 <ultra-color-picker
                   .value=${s.icon_color||""}
                   .defaultValue=${"var(--primary-color)"}
-                  .hass=${t}
-                  @value-changed=${e=>this._updateEntity(l,0,{icon_color:e.detail.value},i)}
+                  .hass=${e}
+                  @value-changed=${t=>this._updateEntity(l,0,{icon_color:t.detail.value},i)}
                 ></ultra-color-picker>
               </div>
             `:""}
@@ -1677,8 +1724,8 @@
           <ultra-color-picker
             .value=${s.text_color||""}
             .defaultValue=${"var(--primary-text-color)"}
-            .hass=${t}
-            @value-changed=${e=>this._updateEntity(l,0,{text_color:e.detail.value},i)}
+            .hass=${e}
+            @value-changed=${t=>this._updateEntity(l,0,{text_color:t.detail.value},i)}
           ></ultra-color-picker>
         </div>
 
@@ -1703,24 +1750,24 @@
 
           <div class="field-group" style="margin-bottom: 16px;">
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{template_mode:s.template_mode||!1}}
               .schema=${[{name:"template_mode",label:"Template Mode",description:"Use Home Assistant templating syntax to format the value",selector:{boolean:{}}}]}
-              .computeLabel=${e=>e.label||e.name}
-              .computeDescription=${e=>e.description||""}
-              @value-changed=${e=>this._updateEntity(l,0,{template_mode:e.detail.value.template_mode},i)}
+              .computeLabel=${t=>t.label||t.name}
+              .computeDescription=${t=>t.description||""}
+              @value-changed=${t=>this._updateEntity(l,0,{template_mode:t.detail.value.template_mode},i)}
             ></ha-form>
           </div>
 
           ${s.template_mode?V`
                 <div class="field-group" style="margin-bottom: 16px;">
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{template:s.template||""}}
                     .schema=${[{name:"template",label:"Value Template",description:"Template to format the entity value using Jinja2 syntax",selector:{text:{multiline:!0}}}]}
-                    .computeLabel=${e=>e.label||e.name}
-                    .computeDescription=${e=>e.description||""}
-                    @value-changed=${e=>this._updateEntity(l,0,{template:e.detail.value.template},i)}
+                    .computeLabel=${t=>t.label||t.name}
+                    .computeDescription=${t=>t.description||""}
+                    @value-changed=${t=>this._updateEntity(l,0,{template:t.detail.value.template},i)}
                   ></ha-form>
                 </div>
 
@@ -1796,51 +1843,153 @@
 
           <div style="display: flex; flex-direction: column; gap: 20px;">
             ${!1!==s.show_icon?V`
-                  <div class="field-group">
-                    <ha-form
-                      .hass=${t}
-                      .data=${{icon_size:Number(s.icon_size)||18}}
-                      .schema=${[{name:"icon_size",label:"Icon Size",description:"Size of the icon in pixels",selector:{number:{min:12,max:48,step:1,mode:"slider"}}}]}
-                      .computeLabel=${e=>e.label||e.name}
-                      .computeDescription=${e=>e.description||""}
-                      @value-changed=${e=>this._updateEntity(l,0,{icon_size:Number(e.detail.value.icon_size)},i)}
-                    ></ha-form>
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">Icon Size</div>
+                    <div class="field-description">Size of the icon in pixels</div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="12"
+                        max="48"
+                        step="1"
+                        .value="${Number(s.icon_size)||18}"
+                        @input=${t=>{const e=t.target,o=Number(e.value);this._updateEntity(l,0,{icon_size:o},i)}}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="12"
+                        max="48"
+                        step="1"
+                        .value="${Number(s.icon_size)||18}"
+                        @input=${t=>{const e=t.target,o=Number(e.value);isNaN(o)||this._updateEntity(l,0,{icon_size:o},i)}}
+                        @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=Number(e.value)||18,n="ArrowUp"===t.key?1:-1,a=Math.max(12,Math.min(48,o+n));this._updateEntity(l,0,{icon_size:a},i)}}}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${()=>this._updateEntity(l,0,{icon_size:18},i)}
+                        title="Reset to default (18)"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `:""}
             ${!1!==s.show_name?V`
-                  <div class="field-group">
-                    <ha-form
-                      .hass=${t}
-                      .data=${{name_size:s.name_size||12}}
-                      .schema=${[{name:"name_size",label:"Name Size",description:"Size of the entity name text in pixels",selector:{number:{min:8,max:32,step:1,mode:"slider"}}}]}
-                      .computeLabel=${e=>e.label||e.name}
-                      .computeDescription=${e=>e.description||""}
-                      @value-changed=${e=>this._updateEntity(l,0,{name_size:e.detail.value.name_size},i)}
-                    ></ha-form>
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">Name Size</div>
+                    <div class="field-description">Size of the entity name text in pixels</div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="8"
+                        max="32"
+                        step="1"
+                        .value="${s.name_size||12}"
+                        @input=${t=>{const e=t.target,o=Number(e.value);this._updateEntity(l,0,{name_size:o},i)}}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="8"
+                        max="32"
+                        step="1"
+                        .value="${s.name_size||12}"
+                        @input=${t=>{const e=t.target,o=Number(e.value);isNaN(o)||this._updateEntity(l,0,{name_size:o},i)}}
+                        @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=Number(e.value)||12,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));this._updateEntity(l,0,{name_size:a},i)}}}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${()=>this._updateEntity(l,0,{name_size:12},i)}
+                        title="Reset to default (12)"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `:""}
 
-            <div class="field-group">
-              <ha-form
-                .hass=${t}
-                .data=${{text_size:s.text_size||14}}
-                .schema=${[{name:"text_size",label:"Value Size",description:"Size of the entity value text in pixels",selector:{number:{min:8,max:32,step:1,mode:"slider"}}}]}
-                .computeLabel=${e=>e.label||e.name}
-                .computeDescription=${e=>e.description||""}
-                @value-changed=${e=>this._updateEntity(l,0,{text_size:e.detail.value.text_size},i)}
-              ></ha-form>
+            <div class="field-container" style="margin-bottom: 24px;">
+              <div class="field-title">Value Size</div>
+              <div class="field-description">Size of the entity value text in pixels</div>
+              <div
+                class="gap-control-container"
+                style="display: flex; align-items: center; gap: 12px;"
+              >
+                <input
+                  type="range"
+                  class="gap-slider"
+                  min="8"
+                  max="32"
+                  step="1"
+                  .value="${s.text_size||14}"
+                  @input=${t=>{const e=t.target,o=Number(e.value);this._updateEntity(l,0,{text_size:o},i)}}
+                />
+                <input
+                  type="number"
+                  class="gap-input"
+                  min="8"
+                  max="32"
+                  step="1"
+                  .value="${s.text_size||14}"
+                  @input=${t=>{const e=t.target,o=Number(e.value);isNaN(o)||this._updateEntity(l,0,{text_size:o},i)}}
+                  @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=Number(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));this._updateEntity(l,0,{text_size:a},i)}}}
+                />
+                <button
+                  class="reset-btn"
+                  @click=${()=>this._updateEntity(l,0,{text_size:14},i)}
+                  title="Reset to default (14)"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             ${!1!==s.show_icon?V`
-                  <div class="field-group">
-                    <ha-form
-                      .hass=${t}
-                      .data=${{icon_gap:s.icon_gap||8}}
-                      .schema=${[{name:"icon_gap",label:"Icon Gap",description:"Space between the icon and content in pixels",selector:{number:{min:0,max:32,step:1,mode:"slider"}}}]}
-                      .computeLabel=${e=>e.label||e.name}
-                      .computeDescription=${e=>e.description||""}
-                      @value-changed=${e=>this._updateEntity(l,0,{icon_gap:e.detail.value.icon_gap},i)}
-                    ></ha-form>
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">Icon Gap</div>
+                    <div class="field-description">
+                      Space between the icon and content in pixels
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="0"
+                        max="32"
+                        step="1"
+                        .value="${s.icon_gap||8}"
+                        @input=${t=>{const e=t.target,o=Number(e.value);this._updateEntity(l,0,{icon_gap:o},i)}}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="0"
+                        max="32"
+                        step="1"
+                        .value="${s.icon_gap||8}"
+                        @input=${t=>{const e=t.target,o=Number(e.value);isNaN(o)||this._updateEntity(l,0,{icon_gap:o},i)}}
+                        @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=Number(e.value)||8,n="ArrowUp"===t.key?1:-1,a=Math.max(0,Math.min(32,o+n));this._updateEntity(l,0,{icon_gap:a},i)}}}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${()=>this._updateEntity(l,0,{icon_gap:8},i)}
+                        title="Reset to default (8)"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `:""}
           </div>
@@ -1868,16 +2017,16 @@
             </div>
             <div
               class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0px; max-width: 240px;"
+              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 240px;"
             >
-              ${[{value:"left",icon:"mdi:format-align-left"},{value:"top",icon:"mdi:format-align-top"},{value:"right",icon:"mdi:format-align-right"},{value:"bottom",icon:"mdi:format-align-bottom"}].map((e=>V`
+              ${[{value:"left",icon:"mdi:format-align-left"},{value:"top",icon:"mdi:format-align-top"},{value:"right",icon:"mdi:format-align-right"},{value:"bottom",icon:"mdi:format-align-bottom"}].map((t=>V`
                   <button
                     type="button"
-                    class="control-btn ${(s.icon_position||"left")===e.value?"active":""}"
-                    @click=${()=>this._updateEntity(l,0,{icon_position:e.value},i)}
-                    title="${e.value.charAt(0).toUpperCase()+e.value.slice(1)}"
+                    class="control-btn ${(s.icon_position||"left")===t.value?"active":""}"
+                    @click=${()=>this._updateEntity(l,0,{icon_position:t.value},i)}
+                    title="${t.value.charAt(0).toUpperCase()+t.value.slice(1)}"
                   >
-                    <ha-icon icon="${e.icon}"></ha-icon>
+                    <ha-icon icon="${t.icon}"></ha-icon>
                   </button>
                 `))}
             </div>
@@ -1893,16 +2042,16 @@
             </div>
             <div
               class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0px; max-width: 180px;"
+              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 180px;"
             >
-              ${[{value:"left",icon:"mdi:format-align-left"},{value:"center",icon:"mdi:format-align-center"},{value:"right",icon:"mdi:format-align-right"}].map((e=>V`
+              ${[{value:"left",icon:"mdi:format-align-left"},{value:"center",icon:"mdi:format-align-center"},{value:"right",icon:"mdi:format-align-right"}].map((t=>V`
                   <button
                     type="button"
-                    class="control-btn ${(s.overall_alignment||"center")===e.value?"active":""}"
-                    @click=${()=>this._updateEntity(l,0,{overall_alignment:e.value},i)}
-                    title="${e.value.charAt(0).toUpperCase()+e.value.slice(1)}"
+                    class="control-btn ${(s.overall_alignment||"center")===t.value?"active":""}"
+                    @click=${()=>this._updateEntity(l,0,{overall_alignment:t.value},i)}
+                    title="${t.value.charAt(0).toUpperCase()+t.value.slice(1)}"
                   >
-                    <ha-icon icon="${e.icon}"></ha-icon>
+                    <ha-icon icon="${t.icon}"></ha-icon>
                   </button>
                 `))}
             </div>
@@ -1920,16 +2069,16 @@
               </div>
               <div
                 class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0px;"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
               >
-                ${[{value:"start",icon:"mdi:format-align-left"},{value:"center",icon:"mdi:format-align-center"},{value:"end",icon:"mdi:format-align-right"}].map((e=>V`
+                ${[{value:"start",icon:"mdi:format-align-left"},{value:"center",icon:"mdi:format-align-center"},{value:"end",icon:"mdi:format-align-right"}].map((t=>V`
                     <button
                       type="button"
-                      class="control-btn ${(s.icon_alignment||"center")===e.value?"active":""}"
-                      @click=${()=>this._updateEntity(l,0,{icon_alignment:e.value},i)}
-                      title="${e.value.charAt(0).toUpperCase()+e.value.slice(1)}"
+                      class="control-btn ${(s.icon_alignment||"center")===t.value?"active":""}"
+                      @click=${()=>this._updateEntity(l,0,{icon_alignment:t.value},i)}
+                      title="${t.value.charAt(0).toUpperCase()+t.value.slice(1)}"
                     >
-                      <ha-icon icon="${e.icon}"></ha-icon>
+                      <ha-icon icon="${t.icon}"></ha-icon>
                     </button>
                   `))}
               </div>
@@ -1945,16 +2094,16 @@
               </div>
               <div
                 class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0px;"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
               >
-                ${[{value:"start",icon:"mdi:format-align-left"},{value:"center",icon:"mdi:format-align-center"},{value:"end",icon:"mdi:format-align-right"}].map((e=>V`
+                ${[{value:"start",icon:"mdi:format-align-left"},{value:"center",icon:"mdi:format-align-center"},{value:"end",icon:"mdi:format-align-right"}].map((t=>V`
                     <button
                       type="button"
-                      class="control-btn ${(s.content_alignment||"start")===e.value?"active":""}"
-                      @click=${()=>this._updateEntity(l,0,{content_alignment:e.value},i)}
-                      title="${e.value.charAt(0).toUpperCase()+e.value.slice(1)}"
+                      class="control-btn ${(s.content_alignment||"start")===t.value?"active":""}"
+                      @click=${()=>this._updateEntity(l,0,{content_alignment:t.value},i)}
+                      title="${t.value.charAt(0).toUpperCase()+t.value.slice(1)}"
                     >
-                      <ha-icon icon="${e.icon}"></ha-icon>
+                      <ha-icon icon="${t.icon}"></ha-icon>
                     </button>
                   `))}
               </div>
@@ -1962,7 +2111,7 @@
           </div>
         </div>
       </div>
-    `}renderPreview(e,t){const o=e,i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(i,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
+    `}renderPreview(t,e){const o=t,i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(i,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"hidden",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
       <div class="info-module-container" style=${this.styleObjectToCss(n)}>
         <div class="info-module-preview">
           <div
@@ -1974,11 +2123,11 @@
             justify-content: ${o.alignment||"left"};
           "
           >
-            ${o.info_entities.slice(0,3).map((e=>{var o,i,n;const a=null==t?void 0:t.states[e.entity],r=a?a.state:"N/A",l=e.name||(null===(o=null==a?void 0:a.attributes)||void 0===o?void 0:o.friendly_name)||e.entity,s=e.icon||(null===(i=null==a?void 0:a.attributes)||void 0===i?void 0:i.icon)||"mdi:help-circle",d=e.icon_position||"left",c=e.icon_alignment||"center",p=e.content_alignment||"start",u=e.overall_alignment||"center",m=e.icon_gap||8,g=e.show_icon?V`
+            ${o.info_entities.slice(0,3).map((t=>{var o,i,n;const a=null==e?void 0:e.states[t.entity],r=a?a.state:"N/A",l=t.name||(null===(o=null==a?void 0:a.attributes)||void 0===o?void 0:o.friendly_name)||t.entity,s=t.icon||(null===(i=null==a?void 0:a.attributes)||void 0===i?void 0:i.icon)||"mdi:help-circle",d=t.icon_position||"left",c=t.icon_alignment||"center",p=t.content_alignment||"start",u=t.overall_alignment||"center",m=t.icon_gap||8,g=t.show_icon?V`
                     <ha-icon
                       icon="${s}"
                       class="entity-icon"
-                      style="color: ${e.icon_color||"var(--primary-color)"}; font-size: ${Number(e.icon_size)||18}px;"
+                      style="color: ${t.icon_color||"var(--primary-color)"}; font-size: ${Number(t.icon_size)||18}px;"
                     ></ha-icon>
                   `:"",h=V`
                 <div
@@ -1988,16 +2137,16 @@
                   text-align: ${"start"===p?"left":"end"===p?"right":"center"};
                 "
                 >
-                  ${e.show_name?V`
+                  ${t.show_name?V`
                         <div
                           class="entity-name"
                           style="
-                    color: ${e.name_color||"var(--secondary-text-color)"};
-                    font-size: ${e.name_size||12}px;
-                    font-weight: ${e.name_bold?"bold":"normal"};
-                    font-style: ${e.name_italic?"italic":"normal"};
-                    text-transform: ${e.name_uppercase?"uppercase":"none"};
-                    text-decoration: ${e.name_strikethrough?"line-through":"none"};
+                    color: ${t.name_color||"var(--secondary-text-color)"};
+                    font-size: ${t.name_size||12}px;
+                    font-weight: ${t.name_bold?"bold":"normal"};
+                    font-style: ${t.name_italic?"italic":"normal"};
+                    text-transform: ${t.name_uppercase?"uppercase":"none"};
+                    text-decoration: ${t.name_strikethrough?"line-through":"none"};
                   "
                         >
                           ${l}
@@ -2007,12 +2156,12 @@
                   <div
                     class="entity-value"
                     style="
-                  color: ${e.text_color||"var(--primary-text-color)"};
-                  font-size: ${e.text_size||14}px;
-                  font-weight: ${e.text_bold?"bold":"normal"};
-                  font-style: ${e.text_italic?"italic":"normal"};
-                  text-transform: ${e.text_uppercase?"uppercase":"none"};
-                  text-decoration: ${e.text_strikethrough?"line-through":"none"};
+                  color: ${t.text_color||"var(--primary-text-color)"};
+                  font-size: ${t.text_size||14}px;
+                  font-weight: ${t.text_bold?"bold":"normal"};
+                  font-style: ${t.text_italic?"italic":"normal"};
+                  text-transform: ${t.text_uppercase?"uppercase":"none"};
+                  text-decoration: ${t.text_strikethrough?"line-through":"none"};
                 "
                   >
                     ${r}${(null===(n=null==a?void 0:a.attributes)||void 0===n?void 0:n.unit_of_measurement)||""}
@@ -2040,17 +2189,7 @@
           </div>
         </div>
       </div>
-    `}validate(e){const t=e,o=[...super.validate(e).errors];return t.info_entities&&0!==t.info_entities.length||o.push("At least one info entity is required"),t.info_entities.forEach(((e,t)=>{e.entity&&""!==e.entity.trim()||o.push(`Entity ${t+1}: Entity ID is required`)})),{valid:0===o.length,errors:o}}getStyles(){return"\n      .info-module-preview {\n        padding: 8px;\n        min-height: 40px;\n      }\n      \n      .info-entities {\n        width: 100%;\n      }\n      \n      .info-entity-item {\n        min-width: 0;\n        flex: 1;\n      }\n      \n      .entity-content {\n        display: flex;\n        flex-direction: column;\n        gap: 2px;\n        min-width: 0;\n        flex: 1;\n      }\n      \n      .entity-icon {\n        flex-shrink: 0;\n      }\n      \n      .entity-name {\n        font-size: 12px;\n        line-height: 1.2;\n      }\n      \n      .entity-value {\n        font-size: 14px;\n        font-weight: 500;\n        line-height: 1.2;\n      }\n      \n      .more-entities {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 8px;\n        color: var(--secondary-text-color);\n        font-size: 12px;\n        font-style: italic;\n      }\n      \n      .info-entities-section,\n      .layout-section {\n        margin-top: 16px;\n        padding-top: 16px;\n        border-top: 1px solid var(--divider-color);\n      }\n      \n      .info-entities-section:first-child {\n        margin-top: 0;\n        padding-top: 0;\n        border-top: none;\n      }\n      \n      .info-entities-section h4,\n      .layout-section h4 {\n        margin: 0 0 12px 0;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-text-color);\n      }\n      \n      .entity-item {\n        border: 1px solid var(--divider-color);\n        border-radius: 8px;\n        padding: 12px;\n        margin-bottom: 12px;\n        background: var(--card-background-color);\n      }\n      \n      .entity-header {\n        display: flex;\n        justify-content: space-between;\n        align-items: center;\n        margin-bottom: 12px;\n        font-weight: 500;\n        font-size: 14px;\n      }\n      \n      .remove-entity-btn {\n        background: none;\n        border: none;\n        color: var(--error-color);\n        cursor: pointer;\n        padding: 4px;\n        border-radius: 4px;\n        font-size: 14px;\n      }\n      \n      .remove-entity-btn:disabled {\n        opacity: 0.3;\n        cursor: not-allowed;\n      }\n      \n      .add-entity-btn {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        gap: 8px;\n        width: 100%;\n        padding: 12px;\n        border: 2px dashed var(--primary-color);\n        border-radius: 8px;\n        background: none;\n        color: var(--primary-color);\n        cursor: pointer;\n        font-size: 14px;\n        font-weight: 500;\n      }\n      \n      .add-entity-btn:hover {\n        background: var(--primary-color);\n        color: white;\n      }\n      \n      .entity-display-options {\n        display: grid;\n        grid-template-columns: 1fr 1fr;\n        gap: 8px;\n        margin: 8px 0;\n      }\n      \n      /* Control button styles */\n      .control-btn {\n        padding: 8px 4px;\n        border: 1px solid var(--divider-color);\n        background: var(--card-background-color);\n        color: var(--primary-text-color);\n        border-radius: 4px;\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        user-select: none;\n        font-size: 10px;\n      }\n      \n      .control-btn:hover:not(.active) {\n        border-color: var(--primary-color) !important;\n        background: var(--primary-color) !important;\n        color: white !important;\n        opacity: 0.8;\n      }\n      \n      .control-btn.active {\n        border-color: var(--primary-color);\n        background: var(--primary-color);\n        color: white;\n      }\n      \n      .control-btn ha-icon {\n        font-size: 14px;\n      }\n      \n      .control-button-group {\n        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);\n        border-radius: 4px;\n        overflow: hidden;\n      }\n      \n      .control-button-group .control-btn:not(:last-child) {\n        border-right: none;\n      }\n      \n      .control-button-group .control-btn:first-child {\n        border-radius: 4px 0 0 4px;\n      }\n      \n      .control-button-group .control-btn:last-child {\n        border-radius: 0 4px 4px 0;\n      }\n      \n      .control-button-group .control-btn:only-child {\n        border-radius: 4px;\n      }\n      \n      /* Position-specific layout styles */\n      .position-left {\n        flex-direction: row;\n      }\n      \n      .position-right {\n        flex-direction: row-reverse;\n      }\n      \n      .position-top {\n        flex-direction: column;\n      }\n      \n      .position-bottom {\n        flex-direction: column-reverse;\n      }\n    "}_addEntity(e,t){const o={id:this.generateId("entity"),entity:"",name:"Entity Name",icon:"",show_icon:!0,show_name:!0,text_size:14,name_size:12,icon_size:18,text_bold:!1,text_italic:!1,text_uppercase:!1,text_strikethrough:!1,name_bold:!1,name_italic:!1,name_uppercase:!1,name_strikethrough:!1,icon_color:"var(--primary-color)",name_color:"var(--secondary-text-color)",text_color:"var(--primary-text-color)",click_action:"more-info",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:"",icon_position:"left",icon_alignment:"center",content_alignment:"start",overall_alignment:"center",icon_gap:8};t({info_entities:[...e.info_entities,o]})}_removeEntity(e,t,o){if(e.info_entities.length<=1)return;const i=e.info_entities.filter(((e,o)=>o!==t));o({info_entities:i})}_handleEntityChange(e,t,o,i,n){var a,r;const l={entity:o};if(o&&(null==i?void 0:i.states[o])){const n=(null===(a=i.states[o].attributes)||void 0===a?void 0:a.friendly_name)||o.split(".").pop()||"",s=null===(r=e.info_entities)||void 0===r?void 0:r[t];(null==s?void 0:s.name)&&"Entity Name"!==s.name&&s.name!==s.entity||(l.name=n)}this._updateEntity(e,t,l,n)}_updateEntity(e,t,o,i){if(!e.info_entities||0===e.info_entities.length){const t=this.createDefault().info_entities[0];return e.info_entities=[Object.assign(Object.assign({},t),o)],void i({info_entities:e.info_entities})}if(t>=e.info_entities.length){const o=this.createDefault().info_entities[0];for(;e.info_entities.length<=t;)e.info_entities.push(Object.assign({},o))}const n=e.info_entities.map(((e,i)=>i===t?Object.assign(Object.assign({},e),o):e));i({info_entities:n})}getBackgroundImageCSS(e,t){var o,i;if(!e.background_image_type||"none"===e.background_image_type)return"none";switch(e.background_image_type){case"upload":case"url":if(e.background_image)return`url("${e.background_image}")`;break;case"entity":if(e.background_image_entity&&(null==t?void 0:t.states[e.background_image_entity])){const n=t.states[e.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${e.replace(/[A-Z]/g,(e=>`-${e.toLowerCase()}`))}: ${t}`)).join("; ")}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}const Ce=e=>(...t)=>({_$litDirective$:e,values:t});class Se{constructor(e){}get _$AU(){return this._$AM._$AU}_$AT(e,t,o){this._$Ct=e,this._$AM=t,this._$Ci=o}_$AS(e,t){return this.update(e,t)}update(e,t){return this.render(...t)}}const{I:Ie}=re,ze=()=>document.createComment(""),Te=(e,t,o)=>{const i=e._$AA.parentNode,n=void 0===t?e._$AB:t._$AA;if(void 0===o){const t=i.insertBefore(ze(),n),a=i.insertBefore(ze(),n);o=new Ie(t,a,e,e.options)}else{const t=o._$AB.nextSibling,a=o._$AM,r=a!==e;if(r){let t;o._$AQ?.(e),o._$AM=e,void 0!==o._$AP&&(t=e._$AU)!==a._$AU&&o._$AP(t)}if(t!==n||r){let e=o._$AA;for(;e!==t;){const t=e.nextSibling;i.insertBefore(e,n),e=t}}}return o},Pe=(e,t,o=e)=>(e._$AI(t,o),e),Ae={},Le=e=>{e._$AP?.(!1,!0);let t=e._$AA;const o=e._$AB.nextSibling;for(;t!==o;){const e=t.nextSibling;t.remove(),t=e}},Oe=(e,t,o)=>{const i=new Map;for(let n=t;n<=o;n++)i.set(e[n],n);return i},Me=Ce(class extends Se{constructor(e){if(super(e),2!==e.type)throw Error("repeat() can only be used in text expressions")}dt(e,t,o){let i;void 0===o?o=t:void 0!==t&&(i=t);const n=[],a=[];let r=0;for(const t of e)n[r]=i?i(t,r):r,a[r]=o(t,r),r++;return{values:a,keys:n}}render(e,t,o){return this.dt(e,t,o).values}update(e,[t,o,i]){const n=(e=>e._$AH)(e),{values:a,keys:r}=this.dt(t,o,i);if(!Array.isArray(n))return this.ut=r,a;const l=this.ut??=[],s=[];let d,c,p=0,u=n.length-1,m=0,g=a.length-1;for(;p<=u&&m<=g;)if(null===n[p])p++;else if(null===n[u])u--;else if(l[p]===r[m])s[m]=Pe(n[p],a[m]),p++,m++;else if(l[u]===r[g])s[g]=Pe(n[u],a[g]),u--,g--;else if(l[p]===r[g])s[g]=Pe(n[p],a[g]),Te(e,s[g+1],n[p]),p++,g--;else if(l[u]===r[m])s[m]=Pe(n[u],a[m]),Te(e,n[p],n[u]),u--,m++;else if(void 0===d&&(d=Oe(r,m,g),c=Oe(l,p,u)),d.has(l[p]))if(d.has(l[u])){const t=c.get(r[m]),o=void 0!==t?n[t]:null;if(null===o){const t=Te(e,n[p]);Pe(t,a[m]),s[m]=t}else s[m]=Pe(o,a[m]),Te(e,n[p],o),n[t]=null;m++}else Le(n[u]),u--;else Le(n[p]),p++;for(;m<=g;){const t=Te(e,s[g+1]);Pe(t,a[m]),s[m++]=t}for(;p<=u;){const e=n[p++];null!==e&&Le(e)}return this.ut=r,((e,t=Ae)=>{e._$AH=t})(e,s),G}});var De=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};function Ee(e,t,o){const i=je(e),n=je(t);return i&&n?function(e,t,o){return`#${((1<<24)+(e<<16)+(t<<8)+o).toString(16).slice(1)}`}(Math.round(i.r+(n.r-i.r)*o),Math.round(i.g+(n.g-i.g)*o),Math.round(i.b+(n.b-i.b)*o)):e}function je(e){const t=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(e);return t?{r:parseInt(t[1],16),g:parseInt(t[2],16),b:parseInt(t[3],16)}:null}function Fe(e){if(!e||0===e.length)return"";const t=[...e].sort(((e,t)=>e.position-t.position));return t.map((e=>`${e.color} ${e.position}%`)).join(", ")}let Re=4,Ue=class extends se{constructor(){super(...arguments),this.stops=[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],this.barSize="regular",this.barRadius="round",this.barStyle="flat",this._draggedIndex=null}render(){const e=[...this.stops].sort(((e,t)=>e.position-t.position)),t=Fe(e);return V`
-      <!-- Gradient Preview -->
-      <div
-        class="gradient-preview bar-size-${this.barSize} bar-radius-${this.barRadius} bar-style-${this.barStyle}"
-      >
-        <div
-          class="gradient-preview-fill bar-style-${this.barStyle}"
-          style="background: linear-gradient(to right, ${t})"
-        ></div>
-      </div>
-
+    `}validate(t){const e=t,o=[...super.validate(t).errors];return e.info_entities&&0!==e.info_entities.length||o.push("At least one info entity is required"),e.info_entities.forEach(((t,e)=>{t.entity&&""!==t.entity.trim()||o.push(`Entity ${e+1}: Entity ID is required`)})),{valid:0===o.length,errors:o}}getStyles(){return"\n      .info-module-preview {\n        padding: 8px;\n        min-height: 40px;\n      }\n      \n      .info-entities {\n        width: 100%;\n      }\n      \n      .info-entity-item {\n        min-width: 0;\n        flex: 1;\n      }\n      \n      .entity-content {\n        display: flex;\n        flex-direction: column;\n        gap: 2px;\n        min-width: 0;\n        flex: 1;\n      }\n      \n      .entity-icon {\n        flex-shrink: 0;\n      }\n      \n      .entity-name {\n        font-size: 12px;\n        line-height: 1.2;\n      }\n      \n      .entity-value {\n        font-size: 14px;\n        font-weight: 500;\n        line-height: 1.2;\n      }\n      \n      .more-entities {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 8px;\n        color: var(--secondary-text-color);\n        font-size: 12px;\n        font-style: italic;\n      }\n      \n      .info-entities-section,\n      .layout-section {\n        margin-top: 16px;\n        padding-top: 16px;\n        border-top: 1px solid var(--divider-color);\n      }\n      \n      .info-entities-section:first-child {\n        margin-top: 0;\n        padding-top: 0;\n        border-top: none;\n      }\n      \n      .info-entities-section h4,\n      .layout-section h4 {\n        margin: 0 0 12px 0;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-text-color);\n      }\n      \n      .entity-item {\n        border: 1px solid var(--divider-color);\n        border-radius: 8px;\n        padding: 12px;\n        margin-bottom: 12px;\n        background: var(--card-background-color);\n      }\n      \n      .entity-header {\n        display: flex;\n        justify-content: space-between;\n        align-items: center;\n        margin-bottom: 12px;\n        font-weight: 500;\n        font-size: 14px;\n      }\n      \n      .remove-entity-btn {\n        background: none;\n        border: none;\n        color: var(--error-color);\n        cursor: pointer;\n        padding: 4px;\n        border-radius: 4px;\n        font-size: 14px;\n      }\n      \n      .remove-entity-btn:disabled {\n        opacity: 0.3;\n        cursor: not-allowed;\n      }\n      \n      .add-entity-btn {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        gap: 8px;\n        width: 100%;\n        padding: 12px;\n        border: 2px dashed var(--primary-color);\n        border-radius: 8px;\n        background: none;\n        color: var(--primary-color);\n        cursor: pointer;\n        font-size: 14px;\n        font-weight: 500;\n      }\n      \n      .add-entity-btn:hover {\n        background: var(--primary-color);\n        color: white;\n      }\n      \n      .entity-display-options {\n        display: grid;\n        grid-template-columns: 1fr 1fr;\n        gap: 8px;\n        margin: 8px 0;\n      }\n      \n      /* Control button styles */\n      .control-btn {\n        padding: 8px 4px;\n        border: 1px solid var(--divider-color);\n        background: var(--card-background-color);\n        color: var(--primary-text-color);\n        border-radius: 4px;\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        user-select: none;\n        font-size: 10px;\n      }\n      \n      .control-btn:hover:not(.active) {\n        border-color: var(--primary-color) !important;\n        background: var(--primary-color) !important;\n        color: white !important;\n        opacity: 0.8;\n      }\n      \n      .control-btn.active {\n        border-color: var(--primary-color);\n        background: var(--primary-color);\n        color: white;\n      }\n      \n      .control-btn ha-icon {\n        font-size: 14px;\n      }\n      \n      .control-button-group {\n        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);\n        border-radius: 4px;\n        overflow: hidden;\n      }\n      \n      .control-button-group .control-btn:not(:last-child) {\n        border-right: none;\n      }\n      \n      .control-button-group .control-btn:first-child {\n        border-radius: 4px 0 0 4px;\n      }\n      \n      .control-button-group .control-btn:last-child {\n        border-radius: 0 4px 4px 0;\n      }\n      \n      .control-button-group .control-btn:only-child {\n        border-radius: 4px;\n      }\n      \n      /* Position-specific layout styles */\n      .position-left {\n        flex-direction: row;\n      }\n      \n      .position-right {\n        flex-direction: row-reverse;\n      }\n      \n      .position-top {\n        flex-direction: column;\n      }\n      \n      .position-bottom {\n        flex-direction: column-reverse;\n      }\n\n      /* Gap control styles */\n      .gap-control-container {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n\n      .gap-slider {\n        flex: 1;\n        height: 6px;\n        background: var(--divider-color);\n        border-radius: 3px;\n        outline: none;\n        appearance: none;\n        -webkit-appearance: none;\n        cursor: pointer;\n        transition: all 0.2s ease;\n      }\n\n      .gap-slider::-webkit-slider-thumb {\n        appearance: none;\n        -webkit-appearance: none;\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider:hover {\n        background: var(--primary-color);\n        opacity: 0.7;\n      }\n\n      .gap-slider:hover::-webkit-slider-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-slider:hover::-moz-range-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-input {\n        width: 50px !important;\n        max-width: 50px !important;\n        min-width: 50px !important;\n        padding: 4px 6px !important;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 13px;\n        text-align: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n        box-sizing: border-box;\n      }\n\n      .gap-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);\n      }\n\n      .reset-btn {\n        width: 36px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n\n      .reset-btn:hover {\n        background: var(--primary-color);\n        color: var(--text-primary-color);\n        border-color: var(--primary-color);\n      }\n\n      .reset-btn ha-icon {\n        font-size: 16px;\n      }\n    "}_addEntity(t,e){const o={id:this.generateId("entity"),entity:"",name:"Entity Name",icon:"",show_icon:!0,show_name:!0,text_size:14,name_size:12,icon_size:18,text_bold:!1,text_italic:!1,text_uppercase:!1,text_strikethrough:!1,name_bold:!1,name_italic:!1,name_uppercase:!1,name_strikethrough:!1,icon_color:"var(--primary-color)",name_color:"var(--secondary-text-color)",text_color:"var(--primary-text-color)",click_action:"more-info",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:"",icon_position:"left",icon_alignment:"center",content_alignment:"start",overall_alignment:"center",icon_gap:8};e({info_entities:[...t.info_entities,o]})}_removeEntity(t,e,o){if(t.info_entities.length<=1)return;const i=t.info_entities.filter(((t,o)=>o!==e));o({info_entities:i})}_handleEntityChange(t,e,o,i,n){var a,r;const l={entity:o};if(o&&(null==i?void 0:i.states[o])){const n=(null===(a=i.states[o].attributes)||void 0===a?void 0:a.friendly_name)||o.split(".").pop()||"",s=null===(r=t.info_entities)||void 0===r?void 0:r[e];(null==s?void 0:s.name)&&"Entity Name"!==s.name&&s.name!==s.entity||(l.name=n)}this._updateEntity(t,e,l,n)}_updateEntity(t,e,o,i){if(!t.info_entities||0===t.info_entities.length){const e=this.createDefault().info_entities[0];return t.info_entities=[Object.assign(Object.assign({},e),o)],void i({info_entities:t.info_entities})}if(e>=t.info_entities.length){const o=this.createDefault().info_entities[0];for(;t.info_entities.length<=e;)t.info_entities.push(Object.assign({},o))}const n=t.info_entities.map(((t,i)=>i===e?Object.assign(Object.assign({},t),o):t));i({info_entities:n})}getBackgroundImageCSS(t,e){var o,i;if(!t.background_image_type||"none"===t.background_image_type)return"none";switch(t.background_image_type){case"upload":case"url":if(t.background_image)return`url("${t.background_image}")`;break;case"entity":if(t.background_image_entity&&(null==e?void 0:e.states[t.background_image_entity])){const n=e.states[t.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${t.replace(/[A-Z]/g,(t=>`-${t.toLowerCase()}`))}: ${e}`)).join("; ")}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}const Ct=t=>(...e)=>({_$litDirective$:t,values:e});class St{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,o){this._$Ct=t,this._$AM=e,this._$Ci=o}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}const{I:It}=rt,zt=()=>document.createComment(""),Tt=(t,e,o)=>{const i=t._$AA.parentNode,n=void 0===e?t._$AB:e._$AA;if(void 0===o){const e=i.insertBefore(zt(),n),a=i.insertBefore(zt(),n);o=new It(e,a,t,t.options)}else{const e=o._$AB.nextSibling,a=o._$AM,r=a!==t;if(r){let e;o._$AQ?.(t),o._$AM=t,void 0!==o._$AP&&(e=t._$AU)!==a._$AU&&o._$AP(e)}if(e!==n||r){let t=o._$AA;for(;t!==e;){const e=t.nextSibling;i.insertBefore(t,n),t=e}}}return o},Pt=(t,e,o=t)=>(t._$AI(e,o),t),At={},Mt=t=>{t._$AP?.(!1,!0);let e=t._$AA;const o=t._$AB.nextSibling;for(;e!==o;){const t=e.nextSibling;e.remove(),e=t}},Ot=(t,e,o)=>{const i=new Map;for(let n=e;n<=o;n++)i.set(t[n],n);return i},Lt=Ct(class extends St{constructor(t){if(super(t),2!==t.type)throw Error("repeat() can only be used in text expressions")}dt(t,e,o){let i;void 0===o?o=e:void 0!==e&&(i=e);const n=[],a=[];let r=0;for(const e of t)n[r]=i?i(e,r):r,a[r]=o(e,r),r++;return{values:a,keys:n}}render(t,e,o){return this.dt(t,e,o).values}update(t,[e,o,i]){const n=(t=>t._$AH)(t),{values:a,keys:r}=this.dt(e,o,i);if(!Array.isArray(n))return this.ut=r,a;const l=this.ut??=[],s=[];let d,c,p=0,u=n.length-1,m=0,g=a.length-1;for(;p<=u&&m<=g;)if(null===n[p])p++;else if(null===n[u])u--;else if(l[p]===r[m])s[m]=Pt(n[p],a[m]),p++,m++;else if(l[u]===r[g])s[g]=Pt(n[u],a[g]),u--,g--;else if(l[p]===r[g])s[g]=Pt(n[p],a[g]),Tt(t,s[g+1],n[p]),p++,g--;else if(l[u]===r[m])s[m]=Pt(n[u],a[m]),Tt(t,n[p],n[u]),u--,m++;else if(void 0===d&&(d=Ot(r,m,g),c=Ot(l,p,u)),d.has(l[p]))if(d.has(l[u])){const e=c.get(r[m]),o=void 0!==e?n[e]:null;if(null===o){const e=Tt(t,n[p]);Pt(e,a[m]),s[m]=e}else s[m]=Pt(o,a[m]),Tt(t,n[p],o),n[e]=null;m++}else Mt(n[u]),u--;else Mt(n[p]),p++;for(;m<=g;){const e=Tt(t,s[g+1]);Pt(e,a[m]),s[m++]=e}for(;p<=u;){const t=n[p++];null!==t&&Mt(t)}return this.ut=r,((t,e=At)=>{t._$AH=e})(t,s),G}});var Dt=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};function Et(t,e,o){const i=jt(t),n=jt(e);return i&&n?function(t,e,o){return`#${((1<<24)+(t<<16)+(e<<8)+o).toString(16).slice(1)}`}(Math.round(i.r+(n.r-i.r)*o),Math.round(i.g+(n.g-i.g)*o),Math.round(i.b+(n.b-i.b)*o)):t}function jt(t){const e=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(t);return e?{r:parseInt(e[1],16),g:parseInt(e[2],16),b:parseInt(e[3],16)}:null}let Rt=4,Ut=class extends st{constructor(){super(...arguments),this.stops=[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],this.barSize="regular",this.barRadius="round",this.barStyle="flat",this._draggedIndex=null,this._colorPickerOpen=!1,this._colorPickerStopId=null,this._colorPickerCurrentColor="#000000"}render(){const t=[...this.stops].sort(((t,e)=>t.position-e.position));return V`
       <!-- Action Buttons -->
       <div class="buttons-row">
         <button class="add-button" @click=${this._addStop}>
@@ -2071,16 +2210,33 @@
 
       <!-- Gradient Stops List -->
       <div class="stops-list ${null!==this._draggedIndex?"drag-active":""}">
-        ${Me(e,(e=>e.id),((t,o)=>this._renderStopItem(t,o,e.length)))}
+        ${Lt(t,(t=>t.id),((e,o)=>this._renderStopItem(e,o,t.length)))}
       </div>
-    `}_renderStopItem(e,t,o){const i=0===e.position||100===e.position,n=this._draggedIndex===t,a=o>2&&!i;return V`
+
+      <!-- Color Picker Popup -->
+      ${this._colorPickerOpen?V`
+            <div class="color-picker-overlay" @click=${this._closeColorPicker}>
+              <div class="color-picker-popup" @click=${t=>t.stopPropagation()}>
+                <div class="color-picker-header">
+                  <h3>Choose Color</h3>
+                  <button class="close-btn" @click=${this._closeColorPicker}>×</button>
+                </div>
+                <ultra-color-picker
+                  .value=${this._colorPickerCurrentColor}
+                  .defaultValue=${this._colorPickerCurrentColor}
+                  @value-changed=${this._handleColorPickerChange}
+                ></ultra-color-picker>
+              </div>
+            </div>
+          `:""}
+    `}_renderStopItem(t,e,o){const i=0===t.position||100===t.position,n=this._draggedIndex===e,a=o>2&&!i;return V`
       <div
         class="stop-item ${i?"boundary":""} ${n?"dragging":""}"
         draggable="true"
-        @dragstart=${e=>this._handleDragStart(e,t)}
+        @dragstart=${t=>this._handleDragStart(t,e)}
         @dragend=${this._handleDragEnd}
         @dragover=${this._handleDragOver}
-        @drop=${e=>this._handleDrop(e,t)}
+        @drop=${t=>this._handleDrop(t,e)}
       >
         <!-- Drag Handle -->
         <div class="drag-handle">
@@ -2092,37 +2248,33 @@
         </div>
 
         <!-- Color Preview & Picker -->
-        <div class="color-preview" style="background-color: ${e.color}">
-          <ultra-color-picker
-            .value=${e.color}
-            .defaultValue=${e.color}
-            .showResetButton=${!1}
-            style="width: 100%; height: 100%; border-radius: 50%; overflow: hidden;"
-            @value-changed=${t=>this._handleColorChange(e.id,t.detail.value)}
-          ></ultra-color-picker>
-        </div>
+        <div
+          class="color-preview color-circle"
+          style="background-color: ${t.color}; cursor: pointer;"
+          @click=${()=>this._openColorPicker(t.id,t.color)}
+        ></div>
 
         <!-- Percentage Input -->
         <input
           type="number"
           class="percentage-input"
-          .value=${e.position.toString()}
+          .value=${t.position.toString()}
           min="0"
           max="100"
-          @input=${t=>this._handlePositionChange(e.id,parseFloat(t.target.value)||0)}
+          @input=${e=>this._handlePositionChange(t.id,parseFloat(e.target.value)||0)}
           @blur=${this._validateAndSortStops}
         />
 
         <!-- Stop Info -->
         <div class="stop-info">
-          <span>${e.position}%</span>
+          <span>${t.position}%</span>
         </div>
 
         <!-- Delete Button -->
         <button
           class="delete-button"
           ?disabled=${!a}
-          @click=${()=>this._deleteStop(e.id)}
+          @click=${()=>this._deleteStop(t.id)}
           title=${a?"Delete stop":"Cannot delete boundary stops"}
         >
           <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
@@ -2132,7 +2284,7 @@
           </svg>
         </button>
       </div>
-    `}_addStop(){const e=function(e){if(!e||e.length<2)return{id:"stop-"+Re++,position:50,color:"#808080"};const t=[...e].sort(((e,t)=>e.position-t.position));let o=0,i=50,n="#808080";for(let e=0;e<t.length-1;e++){const a=t[e+1].position-t[e].position;a>o&&(o=a,i=t[e].position+a/2,n=Ee(t[e].color,t[e+1].color,.5))}return{id:"stop-"+Re++,position:Math.round(i),color:n}}(this.stops);this.stops=[...this.stops,e],this._notifyChange()}_resetStops(){this.stops=[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],Re=4,this._notifyChange(),this._dispatchResetEvent()}_deleteStop(e){if(this.stops.length<=2)return;const t=this.stops.find((t=>t.id===e));t&&0!==t.position&&100!==t.position&&(this.stops=this.stops.filter((t=>t.id!==e)),this._notifyChange())}_handleColorChange(e,t){this.stops=this.stops.map((o=>o.id===e?Object.assign(Object.assign({},o),{color:t}):o)),this._notifyChange()}_handlePositionChange(e,t){t=Math.max(0,Math.min(100,t)),this.stops=this.stops.map((o=>o.id===e?Object.assign(Object.assign({},o),{position:t}):o)),this.requestUpdate()}_validateAndSortStops(){this.stops=this.stops.map((e=>0===e.position||"1"===e.id&&e.position<50?Object.assign(Object.assign({},e),{position:0}):100===e.position||"3"===e.id&&e.position>50?Object.assign(Object.assign({},e),{position:100}):e)),this._notifyChange()}_notifyChange(){this.dispatchEvent(new CustomEvent("gradient-changed",{detail:{stops:this.stops},bubbles:!0,composed:!0}))}_dispatchResetEvent(){this.dispatchEvent(new CustomEvent("gradient-stop-reset",{bubbles:!0,composed:!0}))}_handleDragStart(e,t){this._draggedIndex=t,e.dataTransfer&&(e.dataTransfer.effectAllowed="move",e.dataTransfer.setData("text/html",t.toString()))}_handleDragEnd(){this._draggedIndex=null}_handleDragOver(e){e.preventDefault(),e.dataTransfer&&(e.dataTransfer.dropEffect="move")}_handleDrop(e,t){if(e.preventDefault(),null===this._draggedIndex||this._draggedIndex===t)return;const o=[...this.stops].sort(((e,t)=>e.position-t.position)),i=o[this._draggedIndex],n=o[t];this.stops=this.stops.map((e=>e.id===i.id?Object.assign(Object.assign({},e),{position:n.position}):e.id===n.id?Object.assign(Object.assign({},e),{position:i.position}):e)),this._draggedIndex=null,this._notifyChange()}};Ue.styles=a`
+    `}_addStop(){const t=function(t){if(!t||t.length<2)return{id:"stop-"+Rt++,position:50,color:"#808080"};const e=[...t].sort(((t,e)=>t.position-e.position));let o=0,i=50,n="#808080";for(let t=0;t<e.length-1;t++){const a=e[t+1].position-e[t].position;a>o&&(o=a,i=e[t].position+a/2,n=Et(e[t].color,e[t+1].color,.5))}return{id:"stop-"+Rt++,position:Math.round(i),color:n}}(this.stops);this.stops=[...this.stops,t],this._notifyChange()}_resetStops(){this.stops=[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],Rt=4,this._notifyChange(),this._dispatchResetEvent()}_deleteStop(t){if(this.stops.length<=2)return;const e=this.stops.find((e=>e.id===t));e&&0!==e.position&&100!==e.position&&(this.stops=this.stops.filter((e=>e.id!==t)),this._notifyChange())}_handleColorChange(t,e){this.stops=this.stops.map((o=>o.id===t?Object.assign(Object.assign({},o),{color:e}):o)),this._notifyChange()}_openColorPicker(t,e){this._colorPickerStopId=t,this._colorPickerCurrentColor=e,this._colorPickerOpen=!0}_closeColorPicker(){this._colorPickerOpen=!1,this._colorPickerStopId=null}_handleColorPickerChange(t){this._colorPickerStopId&&(this._handleColorChange(this._colorPickerStopId,t.detail.value),this._colorPickerCurrentColor=t.detail.value)}_handlePositionChange(t,e){e=Math.max(0,Math.min(100,e)),this.stops=this.stops.map((o=>o.id===t?Object.assign(Object.assign({},o),{position:e}):o)),this.requestUpdate()}_validateAndSortStops(){this.stops=this.stops.map((t=>0===t.position||"1"===t.id&&t.position<50?Object.assign(Object.assign({},t),{position:0}):100===t.position||"3"===t.id&&t.position>50?Object.assign(Object.assign({},t),{position:100}):t)),this._notifyChange()}_notifyChange(){this.dispatchEvent(new CustomEvent("gradient-changed",{detail:{stops:this.stops},bubbles:!0,composed:!0}))}_dispatchResetEvent(){this.dispatchEvent(new CustomEvent("gradient-stop-reset",{bubbles:!0,composed:!0}))}_handleDragStart(t,e){this._draggedIndex=e,t.dataTransfer&&(t.dataTransfer.effectAllowed="move",t.dataTransfer.setData("text/html",e.toString()))}_handleDragEnd(){this._draggedIndex=null}_handleDragOver(t){t.preventDefault(),t.dataTransfer&&(t.dataTransfer.dropEffect="move")}_handleDrop(t,e){if(t.preventDefault(),null===this._draggedIndex||this._draggedIndex===e)return;const o=[...this.stops].sort(((t,e)=>t.position-e.position)),i=o[this._draggedIndex],n=o[e];this.stops=this.stops.map((t=>t.id===i.id?Object.assign(Object.assign({},t),{position:n.position}):t.id===n.id?Object.assign(Object.assign({},t),{position:i.position}):t)),this._draggedIndex=null,this._notifyChange()}};Ut.styles=a`
     :host {
       display: block;
       width: 100%;
@@ -2374,8 +2526,79 @@
     .stops-list.drag-active .stop-item:not(.dragging) {
       transition: transform 0.2s ease;
     }
-  `,De([me({type:Array})],Ue.prototype,"stops",void 0),De([me({type:String})],Ue.prototype,"barSize",void 0),De([me({type:String})],Ue.prototype,"barRadius",void 0),De([me({type:String})],Ue.prototype,"barStyle",void 0),De([ge()],Ue.prototype,"_draggedIndex",void 0),Ue=De([ce("uc-gradient-editor")],Ue);class Ne extends he{constructor(){super(...arguments),this.metadata={type:"bar",title:"Bars",description:"Progress bars for values",author:"WJD Designs",version:"1.0.0",icon:"mdi:chart-bar",category:"data",tags:["bar","progress","chart","value","sensor"]}}createDefault(e){return{id:e||this.generateId("bar"),type:"bar",entity:"",name:"My First Bar",percentage_type:"entity",percentage_entity:"",percentage_attribute_entity:"",percentage_attribute_name:"",percentage_current_entity:"",percentage_total_entity:"",percentage_template:"",bar_size:"medium",bar_radius:"round",bar_style:"flat",bar_width:100,bar_alignment:"center",height:20,border_radius:10,label_alignment:"space-between",show_percentage:!0,percentage_text_size:14,show_value:!0,value_position:"inside",left_title:"",left_entity:"",left_condition_type:"none",left_condition_entity:"",left_condition_state:"",left_template_mode:!1,left_template:"",left_title_size:14,left_value_size:14,left_title_color:"var(--primary-text-color)",left_value_color:"var(--primary-text-color)",left_enabled:!1,right_title:"",right_entity:"",right_enabled:!1,right_condition_type:"none",right_condition_entity:"",right_condition_state:"",right_template_mode:!1,right_template:"",right_title_size:14,right_value_size:14,right_title_color:"var(--primary-text-color)",right_value_color:"var(--primary-text-color)",bar_color:"var(--primary-color)",bar_background_color:"var(--secondary-background-color)",bar_border_color:"var(--divider-color)",percentage_text_color:"var(--primary-text-color)",use_gradient:!1,gradient_display_mode:"cropped",gradient_stops:[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],limit_entity:"",limit_color:"var(--warning-color)",animation:!0,template_mode:!1,template:""}}renderGeneralTab(e,t,o,i){const n=e;return V`
-      ${be.injectCleanFormStyles()}
+
+    /* Color Circle Styling */
+    .color-circle {
+      border: 3px solid var(--divider-color);
+      transition: all 0.2s ease;
+    }
+
+    .color-circle:hover {
+      border-color: var(--primary-color);
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Color Picker Popup */
+    .color-picker-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(2px);
+    }
+
+    .color-picker-popup {
+      background: var(--card-background-color);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--divider-color);
+    }
+
+    .color-picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--divider-color);
+    }
+
+    .color-picker-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+      background: var(--divider-color);
+      color: var(--primary-text-color);
+    }
+  `,Dt([mt({type:Array})],Ut.prototype,"stops",void 0),Dt([mt({type:String})],Ut.prototype,"barSize",void 0),Dt([mt({type:String})],Ut.prototype,"barRadius",void 0),Dt([mt({type:String})],Ut.prototype,"barStyle",void 0),Dt([gt()],Ut.prototype,"_draggedIndex",void 0),Dt([gt()],Ut.prototype,"_colorPickerOpen",void 0),Dt([gt()],Ut.prototype,"_colorPickerStopId",void 0),Dt([gt()],Ut.prototype,"_colorPickerCurrentColor",void 0),Ut=Dt([ct("uc-gradient-editor")],Ut);class Ft extends ht{constructor(){super(...arguments),this.metadata={type:"bar",title:"Bars",description:"Progress bars for values",author:"WJD Designs",version:"1.0.0",icon:"mdi:chart-bar",category:"data",tags:["bar","progress","chart","value","sensor"]}}createDefault(t){return{id:t||this.generateId("bar"),type:"bar",entity:"",percentage_type:"entity",percentage_entity:"",percentage_attribute_entity:"",percentage_attribute_name:"",percentage_current_entity:"",percentage_total_entity:"",percentage_template:"",bar_size:"medium",bar_radius:"round",bar_style:"flat",bar_width:100,bar_alignment:"center",border_radius:10,label_alignment:"space-between",show_percentage:!0,percentage_text_size:14,show_value:!0,value_position:"inside",left_title:"",left_entity:"",left_condition_type:"none",left_condition_entity:"",left_condition_state:"",left_template_mode:!1,left_template:"",left_title_size:14,left_value_size:14,left_title_color:"",left_value_color:"",left_enabled:!1,right_title:"",right_entity:"",right_enabled:!1,right_condition_type:"none",right_condition_entity:"",right_condition_state:"",right_template_mode:!1,right_template:"",right_title_size:14,right_value_size:14,right_title_color:"",right_value_color:"",bar_color:"",bar_background_color:"transparent",bar_border_color:"",percentage_text_color:"",use_gradient:!1,gradient_display_mode:"full",gradient_stops:[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],limit_entity:"",limit_color:"",animation:!0,template_mode:!1,template:""}}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
       <div class="module-general-settings">
         <!-- Bar Settings (consolidated) -->
         <div
@@ -2389,45 +2612,42 @@
             Bar Settings
           </div>
 
-          <!-- Bar Name -->
-          ${be.renderField("Bar Name","Give this bar a custom name to make it easier to identify in the editor and arrangement views.",t,{name:n.name||""},[be.createSchemaItem("name",{text:{}})],(e=>i({name:e.detail.value.name})))}
-
           <!-- Percentage Calculation -->
           <div style="margin-top: 24px;">
-            ${be.renderField("Percentage Calculation","Configure how the bar's percentage fill level is calculated using one of the options below.",t,{percentage_type:n.percentage_type||"entity"},[be.createSchemaItem("percentage_type",{select:{options:[{value:"entity",label:"Entity (0-100)"},{value:"attribute",label:"Entity Attribute"},{value:"difference",label:"Difference"},{value:"template",label:"Template"}],mode:"dropdown"}})],(e=>i({percentage_type:e.detail.value.percentage_type})))}
+            ${bt.renderField("Percentage Calculation","Configure how the bar's percentage fill level is calculated using one of the options below.",e,{percentage_type:n.percentage_type||"entity"},[bt.createSchemaItem("percentage_type",{select:{options:[{value:"entity",label:"Entity (0-100)"},{value:"attribute",label:"Entity Attribute"},{value:"difference",label:"Difference"},{value:"template",label:"Template"}],mode:"dropdown"}})],(t=>i({percentage_type:t.detail.value.percentage_type})))}
           </div>
 
           <!-- Entity Attribute Fields -->
           ${"attribute"===n.percentage_type?this.renderConditionalFieldsGroup("Entity Attribute Configuration",V`
-                  ${be.renderField("Attribute Entity","Select the entity that contains the attribute with the percentage value.",t,{percentage_attribute_entity:n.percentage_attribute_entity||""},[be.createSchemaItem("percentage_attribute_entity",{entity:{}})],(e=>i({percentage_attribute_entity:e.detail.value.percentage_attribute_entity})))}
+                  ${bt.renderField("Attribute Entity","Select the entity that contains the attribute with the percentage value.",e,{percentage_attribute_entity:n.percentage_attribute_entity||""},[bt.createSchemaItem("percentage_attribute_entity",{entity:{}})],(t=>i({percentage_attribute_entity:t.detail.value.percentage_attribute_entity})))}
 
                   <div style="margin-top: 16px;">
-                    ${be.renderField("Attribute Name",'Enter the name of the attribute that contains the percentage value (e.g., "battery_level").',t,{percentage_attribute_name:n.percentage_attribute_name||""},[be.createSchemaItem("percentage_attribute_name",{text:{}})],(e=>i({percentage_attribute_name:e.detail.value.percentage_attribute_name})))}
+                    ${bt.renderField("Attribute Name",'Enter the name of the attribute that contains the percentage value (e.g., "battery_level").',e,{percentage_attribute_name:n.percentage_attribute_name||""},[bt.createSchemaItem("percentage_attribute_name",{text:{}})],(t=>i({percentage_attribute_name:t.detail.value.percentage_attribute_name})))}
                   </div>
                 `):""}
 
           <!-- Difference Fields -->
           ${"difference"===n.percentage_type?this.renderConditionalFieldsGroup("Difference Calculation Configuration",V`
-                  ${be.renderField("Current Value Entity","Entity representing the current/used amount (e.g., fuel used, battery consumed).",t,{percentage_current_entity:n.percentage_current_entity||""},[be.createSchemaItem("percentage_current_entity",{entity:{}})],(e=>i({percentage_current_entity:e.detail.value.percentage_current_entity})))}
+                  ${bt.renderField("Current Value Entity","Entity representing the current/used amount (e.g., fuel used, battery consumed).",e,{percentage_current_entity:n.percentage_current_entity||""},[bt.createSchemaItem("percentage_current_entity",{entity:{}})],(t=>i({percentage_current_entity:t.detail.value.percentage_current_entity})))}
 
                   <div style="margin-top: 16px;">
-                    ${be.renderField("Total Value Entity","Entity representing the total/maximum amount (e.g., fuel capacity, battery capacity).",t,{percentage_total_entity:n.percentage_total_entity||""},[be.createSchemaItem("percentage_total_entity",{entity:{}})],(e=>i({percentage_total_entity:e.detail.value.percentage_total_entity})))}
+                    ${bt.renderField("Total Value Entity","Entity representing the total/maximum amount (e.g., fuel capacity, battery capacity).",e,{percentage_total_entity:n.percentage_total_entity||""},[bt.createSchemaItem("percentage_total_entity",{entity:{}})],(t=>i({percentage_total_entity:t.detail.value.percentage_total_entity})))}
                   </div>
                 `):""}
 
           <!-- Template Field -->
           ${"template"===n.percentage_type?this.renderConditionalFieldsGroup("Template Configuration",V`
-                  ${be.renderField("Percentage Template","Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}",t,{percentage_template:n.percentage_template||""},[be.createSchemaItem("percentage_template",{text:{multiline:!0,type:"text"}})],(e=>i({percentage_template:e.detail.value.percentage_template})))}
+                  ${bt.renderField("Percentage Template","Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}",e,{percentage_template:n.percentage_template||""},[bt.createSchemaItem("percentage_template",{text:{multiline:!0,type:"text"}})],(t=>i({percentage_template:t.detail.value.percentage_template})))}
                 `):""}
 
           <!-- Bar Percentage Entity -->
           <div style="margin-top: 24px;">
-            ${be.renderField("Bar Percentage Entity","Select the entity that provides the percentage value for the bar.",t,{entity:n.entity||""},[be.createSchemaItem("entity",{entity:{}})],(e=>i({entity:e.detail.value.entity})))}
+            ${bt.renderField("Bar Percentage Entity","Select the entity that provides the percentage value for the bar.",e,{entity:n.entity||""},[bt.createSchemaItem("entity",{entity:{}})],(t=>i({entity:t.detail.value.entity})))}
           </div>
 
           <!-- Limit Value Entity -->
           <div style="margin-top: 24px;">
-            ${be.renderField("Limit Value Entity (optional)","Optional: Add a vertical indicator line on the bar (e.g. charge limit for EV battery).",t,{limit_entity:n.limit_entity||""},[be.createSchemaItem("limit_entity",{entity:{}})],(e=>i({limit_entity:e.detail.value.limit_entity})))}
+            ${bt.renderField("Limit Value Entity (optional)","Optional: Add a vertical indicator line on the bar (e.g. charge limit for EV battery).",e,{limit_entity:n.limit_entity||""},[bt.createSchemaItem("limit_entity",{entity:{}})],(t=>i({limit_entity:t.detail.value.limit_entity})))}
           </div>
         </div>
 
@@ -2444,23 +2664,122 @@
           </div>
 
           <!-- Bar Size -->
-          <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Bar Size","Adjust the thickness of the progress bar.",t,{height:n.height||20},[be.createSchemaItem("height",{number:{min:8,max:60,step:2,mode:"slider"}})],(e=>i({height:e.detail.value.height})))}
+          <div class="field-container" style="margin-bottom: 24px;">
+            <div class="field-title">Bar Size</div>
+            <div class="field-description">Adjust the thickness of the progress bar.</div>
+            <style>
+              .number-range-control {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+              }
+              .range-slider {
+                flex: 0 0 15%;
+              }
+            </style>
+            <div class="number-range-control">
+              <input
+                type="range"
+                class="range-slider"
+                min="8"
+                max="60"
+                step="2"
+                .value="${n.height||20}"
+                @input=${t=>{const e=t.target,o=parseInt(e.value);i({height:o})}}
+              />
+              <input
+                type="number"
+                class="range-input"
+                min="8"
+                max="60"
+                step="2"
+                .value="${n.height||20}"
+                @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({height:o})}}
+                @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||20,n="ArrowUp"===t.key?2:-2,a=Math.max(8,Math.min(60,o+n));i({height:a})}}}
+              />
+              <button
+                class="range-reset-btn"
+                @click=${()=>i({height:20})}
+                title="Reset to default (20)"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
           </div>
 
           <!-- Border Radius -->
-          <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Border Radius","Control the rounded corners of the bar.",t,{border_radius:n.border_radius||10},[be.createSchemaItem("border_radius",{number:{min:0,max:50,step:1,mode:"slider"}})],(e=>i({border_radius:e.detail.value.border_radius})))}
+          <div class="field-container" style="margin-bottom: 24px;">
+            <div class="field-title">Border Radius</div>
+            <div class="field-description">Control the rounded corners of the bar.</div>
+            <div class="number-range-control">
+              <input
+                type="range"
+                class="range-slider"
+                min="0"
+                max="50"
+                step="1"
+                .value="${n.border_radius||10}"
+                @input=${t=>{const e=t.target,o=parseInt(e.value);i({border_radius:o})}}
+              />
+              <input
+                type="number"
+                class="range-input"
+                min="0"
+                max="50"
+                step="1"
+                .value="${n.border_radius||10}"
+                @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({border_radius:o})}}
+                @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||10,n="ArrowUp"===t.key?1:-1,a=Math.max(0,Math.min(50,o+n));i({border_radius:a})}}}
+              />
+              <button
+                class="range-reset-btn"
+                @click=${()=>i({border_radius:10})}
+                title="Reset to default (10)"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
           </div>
 
           <!-- Bar Style -->
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Bar Style","Choose the visual style of the progress bar.",t,{bar_style:n.bar_style||"flat"},[be.createSchemaItem("bar_style",{select:{options:[{value:"flat",label:"Flat"},{value:"raised",label:"Raised"},{value:"inset",label:"Inset"}],mode:"dropdown"}})],(e=>i({bar_style:e.detail.value.bar_style})))}
+            ${bt.renderField("Bar Style","Choose the visual style of the progress bar.",e,{bar_style:n.bar_style||"flat"},[bt.createSchemaItem("bar_style",{select:{options:[{value:"flat",label:"Flat"},{value:"raised",label:"Raised"},{value:"inset",label:"Inset"}],mode:"dropdown"}})],(t=>i({bar_style:t.detail.value.bar_style})))}
           </div>
 
           <!-- Bar Width -->
-          <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Bar Width","Set the width of the bar as a percentage of the container.",t,{bar_width:n.bar_width||100},[be.createSchemaItem("bar_width",{number:{min:10,max:100,step:5,mode:"slider"}})],(e=>i({bar_width:e.detail.value.bar_width})))}
+          <div class="field-container" style="margin-bottom: 24px;">
+            <div class="field-title">Bar Width</div>
+            <div class="field-description">
+              Set the width of the bar as a percentage of the container.
+            </div>
+            <div class="number-range-control">
+              <input
+                type="range"
+                class="range-slider"
+                min="10"
+                max="100"
+                step="5"
+                .value="${n.bar_width||100}"
+                @input=${t=>{const e=t.target,o=parseInt(e.value);i({bar_width:o})}}
+              />
+              <input
+                type="number"
+                class="range-input"
+                min="10"
+                max="100"
+                step="5"
+                .value="${n.bar_width||100}"
+                @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({bar_width:o})}}
+                @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||100,n="ArrowUp"===t.key?5:-5,a=Math.max(10,Math.min(100,o+n));i({bar_width:a})}}}
+              />
+              <button
+                class="range-reset-btn"
+                @click=${()=>i({bar_width:100})}
+                title="Reset to default (100)"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
           </div>
 
           <!-- Bar Alignment with Icons -->
@@ -2522,10 +2841,10 @@
               Control how the left and right side labels are positioned.
             </div>
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{label_alignment:n.label_alignment||"space-between"}}
               .schema=${[{name:"label_alignment",selector:{select:{options:[{value:"left",label:"Left"},{value:"center",label:"Center"},{value:"right",label:"Right"},{value:"space-between",label:"Space Between"}],mode:"dropdown"}},label:""}]}
-              @value-changed=${e=>i({label_alignment:e.detail.value.label_alignment})}
+              @value-changed=${t=>i({label_alignment:t.detail.value.label_alignment})}
             ></ha-form>
           </div>
         </div>
@@ -2557,33 +2876,47 @@
               Show Percentage
             </div>
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{show_percentage:!1!==n.show_percentage}}
               .schema=${[{name:"show_percentage",selector:{boolean:{}},label:""}]}
-              @value-changed=${e=>i({show_percentage:e.detail.value.show_percentage})}
+              @value-changed=${t=>i({show_percentage:t.detail.value.show_percentage})}
             ></ha-form>
           </div>
 
           ${!1!==n.show_percentage?V`
-                <div class="field-group">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important;"
-                  >
-                    Text Size
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
-                  >
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Text Size</div>
+                  <div class="field-description">
                     Adjust the size of the percentage text displayed on the bar.
                   </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{percentage_text_size:n.percentage_text_size||14}}
-                    .schema=${[{name:"percentage_text_size",selector:{number:{min:8,max:32,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({percentage_text_size:e.detail.value.percentage_text_size})}
-                  ></ha-form>
+                  <div class="number-range-control">
+                    <input
+                      type="range"
+                      class="range-slider"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.percentage_text_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);i({percentage_text_size:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="range-input"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.percentage_text_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({percentage_text_size:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));i({percentage_text_size:a})}}}
+                    />
+                    <button
+                      class="range-reset-btn"
+                      @click=${()=>i({percentage_text_size:14})}
+                      title="Reset to default (14)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
                 </div>
               `:""}
         </div>
@@ -2603,10 +2936,10 @@
               Left Side
             </div>
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{enable_left:n.left_enabled||!1}}
               .schema=${[{name:"enable_left",selector:{boolean:{}},label:""}]}
-              @value-changed=${e=>{e.detail.value.enable_left?i({left_enabled:!0,left_title:n.left_title||"Fuel",left_entity:n.left_entity||"",left_template_mode:n.left_template_mode||!1,left_title_size:n.left_title_size||14,left_value_size:n.left_value_size||14,left_title_color:n.left_title_color||"var(--primary-text-color)",left_value_color:n.left_value_color||"var(--primary-text-color)"}):i({left_enabled:!1,left_title:"",left_entity:"",left_template_mode:!1,left_template:""})}}
+              @value-changed=${t=>{t.detail.value.enable_left?i({left_enabled:!0,left_title:n.left_title||"Fuel",left_entity:n.left_entity||"",left_template_mode:n.left_template_mode||!1,left_title_size:n.left_title_size||14,left_value_size:n.left_value_size||14,left_title_color:n.left_title_color||"var(--primary-text-color)",left_value_color:n.left_value_color||"var(--primary-text-color)"}):i({left_enabled:!1,left_title:"",left_entity:"",left_template_mode:!1,left_template:""})}}
             ></ha-form>
           </div>
 
@@ -2627,10 +2960,10 @@
                     Left Title
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{left_title:n.left_title||""}}
                     .schema=${[{name:"left_title",selector:{text:{}},label:""}]}
-                    @value-changed=${e=>i({left_title:e.detail.value.left_title})}
+                    @value-changed=${t=>i({left_title:t.detail.value.left_title})}
                   ></ha-form>
                 </div>
 
@@ -2642,10 +2975,10 @@
                     Left Entity
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{left_entity:n.left_entity||""}}
                     .schema=${[{name:"left_entity",selector:{entity:{}},label:""}]}
-                    @value-changed=${e=>i({left_entity:e.detail.value.left_entity})}
+                    @value-changed=${t=>i({left_entity:t.detail.value.left_entity})}
                   ></ha-form>
                 </div>
 
@@ -2664,41 +2997,75 @@
                     calculated values.
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{left_template_mode:n.left_template_mode||!1}}
                     .schema=${[{name:"left_template_mode",selector:{boolean:{}},label:""}]}
-                    @value-changed=${e=>i({left_template_mode:e.detail.value.left_template_mode})}
+                    @value-changed=${t=>i({left_template_mode:t.detail.value.left_template_mode})}
                   ></ha-form>
                 </div>
 
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important;"
-                  >
-                    Title Size
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Title Size</div>
+                  <div class="number-range-control">
+                    <input
+                      type="range"
+                      class="range-slider"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.left_title_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);i({left_title_size:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="range-input"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.left_title_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({left_title_size:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));i({left_title_size:a})}}}
+                    />
+                    <button
+                      class="range-reset-btn"
+                      @click=${()=>i({left_title_size:14})}
+                      title="Reset to default (14)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
                   </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{left_title_size:n.left_title_size||14}}
-                    .schema=${[{name:"left_title_size",selector:{number:{min:8,max:32,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({left_title_size:e.detail.value.left_title_size})}
-                  ></ha-form>
                 </div>
 
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important;"
-                  >
-                    Value Size
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Value Size</div>
+                  <div class="number-range-control">
+                    <input
+                      type="range"
+                      class="range-slider"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.left_value_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);i({left_value_size:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="range-input"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.left_value_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({left_value_size:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));i({left_value_size:a})}}}
+                    />
+                    <button
+                      class="range-reset-btn"
+                      @click=${()=>i({left_value_size:14})}
+                      title="Reset to default (14)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
                   </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{left_value_size:n.left_value_size||14}}
-                    .schema=${[{name:"left_value_size",selector:{number:{min:8,max:32,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({left_value_size:e.detail.value.left_value_size})}
-                  ></ha-form>
                 </div>
               `:V`
                 <div
@@ -2724,10 +3091,10 @@
               Right Side
             </div>
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{enable_right:n.right_enabled||!1}}
               .schema=${[{name:"enable_right",selector:{boolean:{}},label:""}]}
-              @value-changed=${e=>{e.detail.value.enable_right?i({right_enabled:!0,right_title:n.right_title||"Range",right_entity:n.right_entity||"",right_template_mode:n.right_template_mode||!1,right_title_size:n.right_title_size||14,right_value_size:n.right_value_size||14,right_title_color:n.right_title_color||"var(--primary-text-color)",right_value_color:n.right_value_color||"var(--primary-text-color)"}):i({right_enabled:!1,right_title:"",right_entity:"",right_template_mode:!1,right_template:""})}}
+              @value-changed=${t=>{t.detail.value.enable_right?i({right_enabled:!0,right_title:n.right_title||"Range",right_entity:n.right_entity||"",right_template_mode:n.right_template_mode||!1,right_title_size:n.right_title_size||14,right_value_size:n.right_value_size||14,right_title_color:n.right_title_color||"var(--primary-text-color)",right_value_color:n.right_value_color||"var(--primary-text-color)"}):i({right_enabled:!1,right_title:"",right_entity:"",right_template_mode:!1,right_template:""})}}
             ></ha-form>
           </div>
 
@@ -2748,10 +3115,10 @@
                     Right Title
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{right_title:n.right_title||""}}
                     .schema=${[{name:"right_title",selector:{text:{}},label:""}]}
-                    @value-changed=${e=>i({right_title:e.detail.value.right_title})}
+                    @value-changed=${t=>i({right_title:t.detail.value.right_title})}
                   ></ha-form>
                 </div>
 
@@ -2763,10 +3130,10 @@
                     Right Entity
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{right_entity:n.right_entity||""}}
                     .schema=${[{name:"right_entity",selector:{entity:{}},label:""}]}
-                    @value-changed=${e=>i({right_entity:e.detail.value.right_entity})}
+                    @value-changed=${t=>i({right_entity:t.detail.value.right_entity})}
                   ></ha-form>
                 </div>
 
@@ -2785,41 +3152,75 @@
                     calculated values.
                   </div>
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{right_template_mode:n.right_template_mode||!1}}
                     .schema=${[{name:"right_template_mode",selector:{boolean:{}},label:""}]}
-                    @value-changed=${e=>i({right_template_mode:e.detail.value.right_template_mode})}
+                    @value-changed=${t=>i({right_template_mode:t.detail.value.right_template_mode})}
                   ></ha-form>
                 </div>
 
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important;"
-                  >
-                    Title Size
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Title Size</div>
+                  <div class="number-range-control">
+                    <input
+                      type="range"
+                      class="range-slider"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.right_title_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);i({right_title_size:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="range-input"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.right_title_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({right_title_size:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));i({right_title_size:a})}}}
+                    />
+                    <button
+                      class="range-reset-btn"
+                      @click=${()=>i({right_title_size:14})}
+                      title="Reset to default (14)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
                   </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{right_title_size:n.right_title_size||14}}
-                    .schema=${[{name:"right_title_size",selector:{number:{min:8,max:32,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({right_title_size:e.detail.value.right_title_size})}
-                  ></ha-form>
                 </div>
 
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important;"
-                  >
-                    Value Size
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">Value Size</div>
+                  <div class="number-range-control">
+                    <input
+                      type="range"
+                      class="range-slider"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.right_value_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);i({right_value_size:o})}}
+                    />
+                    <input
+                      type="number"
+                      class="range-input"
+                      min="8"
+                      max="32"
+                      step="1"
+                      .value="${n.right_value_size||14}"
+                      @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({right_value_size:o})}}
+                      @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||14,n="ArrowUp"===t.key?1:-1,a=Math.max(8,Math.min(32,o+n));i({right_value_size:a})}}}
+                    />
+                    <button
+                      class="range-reset-btn"
+                      @click=${()=>i({right_value_size:14})}
+                      title="Reset to default (14)"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
                   </div>
-                  <ha-form
-                    .hass=${t}
-                    .data=${{right_value_size:n.right_value_size||14}}
-                    .schema=${[{name:"right_value_size",selector:{number:{min:8,max:32,step:1,mode:"slider"}},label:""}]}
-                    @value-changed=${e=>i({right_value_size:e.detail.value.right_value_size})}
-                  ></ha-form>
                 </div>
               `:V`
                 <div
@@ -2864,8 +3265,8 @@
                 <ultra-color-picker
                   .value=${n.bar_color||""}
                   .defaultValue=${"var(--primary-color)"}
-                  .hass=${t}
-                  @value-changed=${e=>i({bar_color:e.detail.value})}
+                  .hass=${e}
+                  @value-changed=${t=>i({bar_color:t.detail.value})}
                 ></ultra-color-picker>
               </div>
 
@@ -2879,8 +3280,8 @@
                 <ultra-color-picker
                   .value=${n.bar_background_color||""}
                   .defaultValue=${"var(--secondary-background-color)"}
-                  .hass=${t}
-                  @value-changed=${e=>i({bar_background_color:e.detail.value})}
+                  .hass=${e}
+                  @value-changed=${t=>i({bar_background_color:t.detail.value})}
                 ></ultra-color-picker>
               </div>
 
@@ -2894,8 +3295,8 @@
                 <ultra-color-picker
                   .value=${n.bar_border_color||""}
                   .defaultValue=${"var(--divider-color)"}
-                  .hass=${t}
-                  @value-changed=${e=>i({bar_border_color:e.detail.value})}
+                  .hass=${e}
+                  @value-changed=${t=>i({bar_border_color:t.detail.value})}
                 ></ultra-color-picker>
               </div>
 
@@ -2909,8 +3310,8 @@
                 <ultra-color-picker
                   .value=${n.limit_color||""}
                   .defaultValue=${"var(--warning-color)"}
-                  .hass=${t}
-                  @value-changed=${e=>i({limit_color:e.detail.value})}
+                  .hass=${e}
+                  @value-changed=${t=>i({limit_color:t.detail.value})}
                 ></ultra-color-picker>
               </div>
 
@@ -2924,8 +3325,8 @@
                 <ultra-color-picker
                   .value=${n.percentage_text_color||""}
                   .defaultValue=${"var(--primary-text-color)"}
-                  .hass=${t}
-                  @value-changed=${e=>i({percentage_text_color:e.detail.value})}
+                  .hass=${e}
+                  @value-changed=${t=>i({percentage_text_color:t.detail.value})}
                 ></ultra-color-picker>
               </div>
             </div>
@@ -2954,8 +3355,8 @@
                       <ultra-color-picker
                         .value=${n.left_title_color||""}
                         .defaultValue=${"var(--primary-text-color)"}
-                        .hass=${t}
-                        @value-changed=${e=>i({left_title_color:e.detail.value})}
+                        .hass=${e}
+                        @value-changed=${t=>i({left_title_color:t.detail.value})}
                       ></ultra-color-picker>
                     </div>
 
@@ -2969,8 +3370,8 @@
                       <ultra-color-picker
                         .value=${n.left_value_color||""}
                         .defaultValue=${"var(--primary-text-color)"}
-                        .hass=${t}
-                        @value-changed=${e=>i({left_value_color:e.detail.value})}
+                        .hass=${e}
+                        @value-changed=${t=>i({left_value_color:t.detail.value})}
                       ></ultra-color-picker>
                     </div>
                   </div>
@@ -3000,8 +3401,8 @@
                       <ultra-color-picker
                         .value=${n.right_title_color||""}
                         .defaultValue=${"var(--primary-text-color)"}
-                        .hass=${t}
-                        @value-changed=${e=>i({right_title_color:e.detail.value})}
+                        .hass=${e}
+                        @value-changed=${t=>i({right_title_color:t.detail.value})}
                       ></ultra-color-picker>
                     </div>
 
@@ -3015,8 +3416,8 @@
                       <ultra-color-picker
                         .value=${n.right_value_color||""}
                         .defaultValue=${"var(--primary-text-color)"}
-                        .hass=${t}
-                        @value-changed=${e=>i({right_value_color:e.detail.value})}
+                        .hass=${e}
+                        @value-changed=${t=>i({right_value_color:t.detail.value})}
                       ></ultra-color-picker>
                     </div>
                   </div>
@@ -3044,10 +3445,10 @@
             Use Gradient
           </div>
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{use_gradient:n.use_gradient||!1}}
             .schema=${[{name:"use_gradient",selector:{boolean:{}},label:""}]}
-            @value-changed=${e=>i({use_gradient:e.detail.value.use_gradient})}
+            @value-changed=${t=>{const e=t.detail.value.use_gradient,o={use_gradient:e};!e||n.gradient_stops&&0!==n.gradient_stops.length||(o.gradient_stops=[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],o.gradient_display_mode=n.gradient_display_mode||"full"),i(o)}}
           ></ha-form>
 
           ${n.use_gradient?V`
@@ -3057,11 +3458,19 @@
                 >
                   Gradient Display Mode
                 </div>
+                <div
+                  class="field-description"
+                  style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                >
+                  • Full: Shows complete gradient on the bar fill<br />
+                  • Cropped: Shows gradient only up to the current fill level<br />
+                  • Value-Based: Shows solid color matching the current value position
+                </div>
                 <ha-form
-                  .hass=${t}
-                  .data=${{gradient_display_mode:n.gradient_display_mode||"cropped"}}
-                  .schema=${[{name:"gradient_display_mode",selector:{select:{options:[{value:"full",label:"Full"},{value:"cropped",label:"Cropped"}],mode:"dropdown"}},label:""}]}
-                  @value-changed=${e=>i({gradient_display_mode:e.detail.value.gradient_display_mode})}
+                  .hass=${e}
+                  .data=${{gradient_display_mode:n.gradient_display_mode||"full"}}
+                  .schema=${[{name:"gradient_display_mode",selector:{select:{options:[{value:"full",label:"Full"},{value:"cropped",label:"Cropped"},{value:"value-based",label:"Value-Based"}],mode:"dropdown"}},label:""}]}
+                  @value-changed=${t=>i({gradient_display_mode:t.detail.value.gradient_display_mode})}
                 ></ha-form>
 
                 <div
@@ -3075,33 +3484,26 @@
                   .barSize=${this.getBarSizeFromHeight(n.height||20)}
                   .barRadius=${this.getBarRadiusFromStyle(n.border_radius||10)}
                   .barStyle=${n.bar_style||"flat"}
-                  @gradient-changed=${e=>{i({gradient_stops:e.detail.stops})}}
+                  @gradient-changed=${t=>{i({gradient_stops:t.detail.stops})}}
                 ></uc-gradient-editor>
               `:""}
         </div>
       </div>
-    `}renderPreview(e,t){var o,i,n,a,r,l,s,d;const c=e,p=null==t?void 0:t.states[c.entity];let u=0,m=100,g="";p&&(u=parseFloat(p.state)||0,g=(null===(o=p.attributes)||void 0===o?void 0:o.unit_of_measurement)||"",(null===(i=p.attributes)||void 0===i?void 0:i.max)?m=parseFloat(p.attributes.max):("%"===g||"battery"===(null===(n=p.attributes)||void 0===n?void 0:n.device_class))&&(m=100));const h=Math.min(Math.max(u/m*100,0),100);let v="",b="";if(c.left_entity&&(null==t?void 0:t.states[c.left_entity])){const e=t.states[c.left_entity];v=e.state,b=(null===(a=e.attributes)||void 0===a?void 0:a.unit_of_measurement)||""}let f="",y="";if(c.right_entity&&(null==t?void 0:t.states[c.right_entity])){const e=t.states[c.right_entity];f=e.state,y=(null===(r=e.attributes)||void 0===r?void 0:r.unit_of_measurement)||""}let _=0;if(c.limit_entity&&(null==t?void 0:t.states[c.limit_entity])){const e=t.states[c.limit_entity],o=parseFloat(e.state)||0;_=Math.min(Math.max(o/m*100,0),100)}const x=c,w=c.height||20,$=c.border_radius||10;let k=c.bar_color||"var(--primary-color)",C="";if(c.use_gradient&&c.gradient_stops&&c.gradient_stops.length>0){const e=Fe(c.gradient_stops);if("full"===c.gradient_display_mode)C=`linear-gradient(to right, ${e})`,k=`linear-gradient(to right, ${e})`;else{const e=[...c.gradient_stops].sort(((e,t)=>e.position-t.position)),t=e.filter((e=>e.position<=h)).map(((e,t,o)=>{const i=1===o.length?0:e.position/h*100;return`${e.color} ${Math.min(i,100)}%`}));t.length>0&&(k=`linear-gradient(to right, ${t.join(", ")})`)}}let S="",I="";switch(c.bar_style){case"flat":S="box-shadow: none;";break;case"glossy":I=`\n          background: linear-gradient(to bottom, ${k}, ${k} 50%, rgba(0,0,0,0.1) 51%, ${k});\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);\n        `;break;case"embossed":S="\n          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8);\n          border: 1px solid rgba(0,0,0,0.1);\n        ",I="\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);\n        ";break;case"inset":S="\n          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);\n          border: 1px solid rgba(0,0,0,0.2);\n        ";break;case"gradient-overlay":I=`\n          background: linear-gradient(to bottom, \n            ${k} 0%, \n            rgba(255,255,255,0) 100%\n          );\n        `;break;case"neon-glow":I=`\n          box-shadow: 0 0 10px ${k}, 0 0 20px ${k}, 0 0 30px ${k};\n          filter: brightness(1.2);\n        `,S="\n          box-shadow: inset 0 0 10px rgba(0,0,0,0.5);\n        ";break;case"outline":S=`\n          border: 2px solid ${c.bar_border_color||"var(--primary-color)"};\n          background-color: transparent !important;\n        `,I=`\n          border: 2px solid ${k};\n          background-color: transparent !important;\n        `;break;case"glass":S="\n          backdrop-filter: blur(10px);\n          background-color: rgba(255,255,255,0.1) !important;\n          border: 1px solid rgba(255,255,255,0.2);\n        ",I="\n          backdrop-filter: blur(5px);\n          background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)) !important;\n        ";break;case"metallic":I=`\n          background: linear-gradient(to bottom, \n            rgba(255,255,255,0.4) 0%, \n            ${k} 20%, \n            ${k} 80%, \n            rgba(0,0,0,0.2) 100%);\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);\n        `;break;case"neumorphic":S="\n          box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1);\n        ",I="\n          box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);\n        ";break;case"dashed":I=`\n          background-image: repeating-linear-gradient(\n            90deg,\n            ${k} 0px,\n            ${k} 8px,\n            transparent 8px,\n            transparent 12px\n          );\n        `}const z={padding:x.padding_top||x.padding_bottom||x.padding_left||x.padding_right?`${this.addPixelUnit(x.padding_top)||"16px"} ${this.addPixelUnit(x.padding_right)||"16px"} ${this.addPixelUnit(x.padding_bottom)||"16px"} ${this.addPixelUnit(x.padding_left)||"16px"}`:"16px",margin:x.margin_top||x.margin_bottom||x.margin_left||x.margin_right?`${this.addPixelUnit(x.margin_top)||"0px"} ${this.addPixelUnit(x.margin_right)||"0px"} ${this.addPixelUnit(x.margin_bottom)||"16px"} ${this.addPixelUnit(x.margin_left)||"0px"}`:"0 0 16px 0",background:x.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(x,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:x.border_style&&"none"!==x.border_style?`${x.border_width||"1px"} ${x.border_style} ${x.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(x.border_radius)||"0",position:x.position||"relative",top:x.top||"auto",bottom:x.bottom||"auto",left:x.left||"auto",right:x.right||"auto",zIndex:x.z_index||"auto",width:x.width||"100%",height:x.height||"auto",maxWidth:x.max_width||"100%",maxHeight:x.max_height||"none",minWidth:x.min_width||"none",minHeight:x.min_height||"auto",clipPath:x.clip_path||"none",backdropFilter:x.backdrop_filter||"none",boxSizing:"border-box"},T=`${c.bar_width||100}%`;let P="flex-start";switch(c.bar_alignment){case"left":P="flex-start";break;case"center":P="center";break;case"right":P="flex-end"}return V`
+    `}renderPreview(t,e){var o,i,n,a,r,l,s,d;const c=t,p=null==e?void 0:e.states[c.entity];let u=0,m=100,g="";p&&(u=parseFloat(p.state)||0,g=(null===(o=p.attributes)||void 0===o?void 0:o.unit_of_measurement)||"",(null===(i=p.attributes)||void 0===i?void 0:i.max)?m=parseFloat(p.attributes.max):("%"===g||"battery"===(null===(n=p.attributes)||void 0===n?void 0:n.device_class))&&(m=100));const h=Math.min(Math.max(u/m*100,0),100);let v="",b="";if(c.left_entity&&(null==e?void 0:e.states[c.left_entity])){const t=e.states[c.left_entity];v=t.state,b=(null===(a=t.attributes)||void 0===a?void 0:a.unit_of_measurement)||""}let f="",_="";if(c.right_entity&&(null==e?void 0:e.states[c.right_entity])){const t=e.states[c.right_entity];f=t.state,_=(null===(r=t.attributes)||void 0===r?void 0:r.unit_of_measurement)||""}let y=0;if(c.limit_entity&&(null==e?void 0:e.states[c.limit_entity])){const t=e.states[c.limit_entity],o=parseFloat(t.state)||0;y=Math.min(Math.max(o/m*100,0),100)}const x=c,w=c.height?`${c.height}px`:"auto",$=c.border_radius||10;let k=c.bar_color||x.color||"var(--primary-color)";const C=(t,e)=>{const o=[...t].sort(((t,e)=>t.position-e.position));let i=o[0],n=o[o.length-1];for(let t=0;t<o.length-1;t++)if(e>=o[t].position&&e<=o[t+1].position){i=o[t],n=o[t+1];break}if(i.position===e)return i.color;if(n.position===e)return n.color;const a=n.position-i.position,r=0===a?0:(e-i.position)/a;return this.interpolateColor(i.color,n.color,r)};if(c.use_gradient){const t=c.gradient_stops&&c.gradient_stops.length>0?c.gradient_stops:[{id:"1",position:0,color:"#ff0000"},{id:"2",position:50,color:"#ffff00"},{id:"3",position:100,color:"#00ff00"}],e=function(t){if(!t||0===t.length)return"";const e=[...t].sort(((t,e)=>t.position-e.position));return e.map((t=>`${t.color} ${t.position}%`)).join(", ")}(t);if("full"===c.gradient_display_mode)k=`linear-gradient(to right, ${e})`;else if("value-based"===c.gradient_display_mode)k=C(t,h);else{const e=[...t].sort(((t,e)=>t.position-e.position)),o=e.filter((t=>t.position<=h)).map(((t,e,o)=>{const i=1===o.length?0:t.position/h*100;return`${t.color} ${Math.min(i,100)}%`}));o.length>0&&(k=`linear-gradient(to right, ${o.join(", ")})`)}}let S="",I="";switch(c.bar_style){case"flat":S="box-shadow: none;";break;case"glossy":I=`\n          background: linear-gradient(to bottom, ${k}, ${k} 50%, rgba(0,0,0,0.1) 51%, ${k});\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);\n        `;break;case"embossed":S="\n          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8);\n          border: 1px solid rgba(0,0,0,0.1);\n        ",I="\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);\n        ";break;case"inset":S="\n          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);\n          border: 1px solid rgba(0,0,0,0.2);\n        ";break;case"gradient-overlay":I=`\n          background: linear-gradient(to bottom, \n            ${k} 0%, \n            rgba(255,255,255,0) 100%\n          );\n        `;break;case"neon-glow":I=`\n          box-shadow: 0 0 10px ${k}, 0 0 20px ${k}, 0 0 30px ${k};\n          filter: brightness(1.2);\n        `,S="\n          box-shadow: inset 0 0 10px rgba(0,0,0,0.5);\n        ";break;case"outline":S=`\n          border: 2px solid ${c.bar_border_color||"var(--primary-color)"};\n          background-color: transparent !important;\n        `,I=`\n          border: 2px solid ${k};\n          background-color: transparent !important;\n        `;break;case"glass":S="\n          backdrop-filter: blur(10px);\n          background-color: rgba(255,255,255,0.1) !important;\n          border: 1px solid rgba(255,255,255,0.2);\n        ",I="\n          backdrop-filter: blur(5px);\n          background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)) !important;\n        ";break;case"metallic":I=`\n          background: linear-gradient(to bottom, \n            rgba(255,255,255,0.4) 0%, \n            ${k} 20%, \n            ${k} 80%, \n            rgba(0,0,0,0.2) 100%);\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);\n        `;break;case"neumorphic":S="\n          box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1);\n        ",I="\n          box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);\n        ";break;case"dashed":I=`\n          background-image: repeating-linear-gradient(\n            90deg,\n            ${k} 0px,\n            ${k} 8px,\n            transparent 8px,\n            transparent 12px\n          );\n        `}const z={padding:x.padding_top||x.padding_bottom||x.padding_left||x.padding_right?`${this.addPixelUnit(x.padding_top)||"16px"} ${this.addPixelUnit(x.padding_right)||"16px"} ${this.addPixelUnit(x.padding_bottom)||"16px"} ${this.addPixelUnit(x.padding_left)||"16px"}`:"16px",margin:x.margin_top||x.margin_bottom||x.margin_left||x.margin_right?`${this.addPixelUnit(x.margin_top)||"0px"} ${this.addPixelUnit(x.margin_right)||"0px"} ${this.addPixelUnit(x.margin_bottom)||"16px"} ${this.addPixelUnit(x.margin_left)||"0px"}`:"0 0 16px 0",background:x.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(x,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:x.border_style&&"none"!==x.border_style?`${x.border_width||"1px"} ${x.border_style} ${x.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(x.border_radius)||"0",position:x.position||"relative",top:x.top||"auto",bottom:x.bottom||"auto",left:x.left||"auto",right:x.right||"auto",zIndex:x.z_index||"auto",width:x.width||"100%",height:x.height||"auto",maxWidth:x.max_width||"100%",maxHeight:x.max_height||"none",minWidth:x.min_width||"none",minHeight:x.min_height||"auto",clipPath:x.clip_path||"none",backdropFilter:x.backdrop_filter||"none",boxSizing:"border-box"},T=`${c.bar_width||100}%`;let P="flex-start";switch(c.bar_alignment){case"left":P="flex-start";break;case"center":P="center";break;case"right":P="flex-end"}return V`
       <div class="bar-module-preview" style=${this.styleObjectToCss(z)}>
-        ${c.name?V`<div
-              class="bar-name"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px; display: block;"
-            >
-              ${c.name}
-            </div>`:""}
-
         <!-- Bar Container -->
         <div style="display: flex; justify-content: ${P}; width: 100%;">
           <div
             class="bar-container"
             style="
               width: ${T}; 
-              height: ${w}px; 
-              background: ${C||c.bar_background_color||"var(--secondary-background-color)"};
+              height: ${w}; 
+              background: ${c.bar_background_color||x.background_color||"transparent"};
               border-radius: ${$}px;
               overflow: hidden;
               position: relative;
               transition: ${!1!==c.animation?"all 0.3s ease":"none"};
-              border: ${c.bar_border_color&&"outline"!==c.bar_style?`1px solid ${c.bar_border_color}`:"none"};
+              border: ${(c.bar_border_color||x.border_color)&&"outline"!==c.bar_style?`1px solid ${c.bar_border_color||x.border_color}`:"none"};
               ${S}
             "
           >
@@ -3120,20 +3522,20 @@
             ></div>
 
             <!-- Limit Indicator -->
-            ${c.limit_entity&&(null==t?void 0:t.states[c.limit_entity])&&_>=0?V`
+            ${c.limit_entity&&(null==e?void 0:e.states[c.limit_entity])&&y>=0?V`
                   <div
                     class="bar-limit-line"
                     style="
                     position: absolute; 
                     top: 0; 
                     bottom: 0; 
-                    left: ${_}%; 
+                    left: ${y}%; 
                     width: 2px; 
                     background-color: ${c.limit_color||"var(--warning-color)"}; 
                     z-index: 5; 
                     transform: translateX(-50%);
                   "
-                    title="Limit: ${(null===(l=t.states[c.limit_entity])||void 0===l?void 0:l.state)||"N/A"}${(null===(d=null===(s=t.states[c.limit_entity])||void 0===s?void 0:s.attributes)||void 0===d?void 0:d.unit_of_measurement)||""}"
+                    title="Limit: ${(null===(l=e.states[c.limit_entity])||void 0===l?void 0:l.state)||"N/A"}${(null===(d=null===(s=e.states[c.limit_entity])||void 0===s?void 0:s.attributes)||void 0===d?void 0:d.unit_of_measurement)||""}"
                   ></div>
                 `:""}
 
@@ -3147,7 +3549,7 @@
                     left: 50%;
                     transform: translate(-50%, -50%);
                     font-size: ${c.percentage_text_size||14}px;
-                    color: ${c.percentage_text_color||"white"};
+                    color: ${c.percentage_text_color||x.color||"white"};
                     font-weight: 600;
                     z-index: 10;
                     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
@@ -3178,12 +3580,12 @@
                 ${c.left_enabled?V`
                       <div class="left-side-below" style="text-align: left;">
                         <span
-                          style="font-size: ${c.left_title_size||14}px; color: ${c.left_title_color||"var(--primary-text-color)"};"
+                          style="font-size: ${c.left_title_size||14}px; color: ${c.left_title_color||x.color||"var(--primary-text-color)"};"
                         >
                           ${c.left_title}:
                         </span>
                         <span
-                          style="font-size: ${c.left_value_size||14}px; font-weight: 600; color: ${c.left_value_color||"var(--primary-text-color)"}; margin-left: 4px;"
+                          style="font-size: ${c.left_value_size||14}px; font-weight: 600; color: ${c.left_value_color||x.color||"var(--primary-text-color)"}; margin-left: 4px;"
                         >
                           ${v}${b}
                         </span>
@@ -3192,30 +3594,30 @@
                 ${c.right_enabled?V`
                       <div class="right-side-below" style="text-align: right;">
                         <span
-                          style="font-size: ${c.right_title_size||14}px; color: ${c.right_title_color||"var(--primary-text-color)"};"
+                          style="font-size: ${c.right_title_size||14}px; color: ${c.right_title_color||x.color||"var(--primary-text-color)"};"
                         >
                           ${c.right_title}:
                         </span>
                         <span
-                          style="font-size: ${c.right_value_size||14}px; font-weight: 600; color: ${c.right_value_color||"var(--primary-text-color)"}; margin-left: 4px;"
+                          style="font-size: ${c.right_value_size||14}px; font-weight: 600; color: ${c.right_value_color||x.color||"var(--primary-text-color)"}; margin-left: 4px;"
                         >
-                          ${f}${y}
+                          ${f}${_}
                         </span>
                       </div>
                     `:V`<div></div>`}
               </div>
             `:""}
       </div>
-    `}validate(e){const t=e,o=[...super.validate(e).errors];return t.entity&&""!==t.entity.trim()||o.push("Entity ID is required"),t.height&&(t.height<5||t.height>200)&&o.push("Bar height must be between 5 and 200 pixels"),t.border_radius&&(t.border_radius<0||t.border_radius>100)&&o.push("Border radius must be between 0 and 100 pixels"),t.limit_entity&&""!==t.limit_entity.trim()&&(t.limit_entity.includes(".")||o.push("Limit entity must be a valid entity ID (e.g., sensor.battery_limit)")),{valid:0===o.length,errors:o}}getStyles(){return'\n      .bar-module-preview {\n        max-width: 100%;\n        overflow: hidden;\n        box-sizing: border-box;\n      }\n      \n      .bar-container {\n        width: 100%;\n        position: relative;\n        display: block;\n        box-sizing: border-box;\n      }\n      \n      .bar-fill {\n        position: relative;\n        z-index: 1;\n      }\n      \n      .bar-limit-line {\n        opacity: 0.9;\n        transition: opacity 0.2s ease;\n      }\n      \n      .bar-limit-line:hover {\n        opacity: 1;\n      }\n      \n      .bar-name {\n        font-size: 16px;\n        font-weight: 600;\n        color: var(--primary-text-color);\n        margin-bottom: 8px;\n        user-select: none;\n        word-wrap: break-word;\n      }\n      \n      .bar-value {\n        user-select: none;\n        text-shadow: 0 1px 2px rgba(0,0,0,0.1);\n      }\n      \n      .bar-value-outside {\n        user-select: none;\n        text-align: center;\n        font-weight: 600;\n        color: var(--primary-text-color);\n      }\n      \n      .entity-error {\n        font-size: 12px;\n        color: var(--error-color);\n        margin-top: 6px;\n        font-style: italic;\n        opacity: 0.8;\n      }\n      \n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n      \n      .settings-section * {\n        box-sizing: border-box;\n      }\n      \n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        margin-bottom: 12px !important;\n        padding-bottom: 0 !important;\n        border-bottom: none !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n      \n      .settings-section label {\n        display: block;\n        font-weight: 500;\n        margin-bottom: 4px;\n        color: var(--primary-text-color);\n      }\n      \n      .settings-section input,\n      .settings-section select {\n        width: 100%;\n        max-width: 100%;\n        padding: 8px;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--card-background-color);\n        color: var(--primary-text-color);\n        font-size: 14px;\n        box-sizing: border-box;\n      }\n      \n      .settings-section .checkbox-wrapper {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        font-weight: 500;\n      }\n      \n      .settings-section .checkbox-wrapper input[type="checkbox"] {\n        width: auto;\n        margin: 0;\n      }\n      \n      .help-text {\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        margin: 4px 0 0 0;\n        opacity: 0.8;\n        word-wrap: break-word;\n      }\n      \n      .number-input,\n      .text-input,\n      .entity-input,\n      .select-input {\n        transition: border-color 0.2s ease;\n      }\n      \n      .number-input:focus,\n      .text-input:focus,\n      .entity-input:focus,\n      .select-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 1px var(--primary-color);\n      }\n      \n      /* Fix padding overflow */\n      .module-general-settings {\n        max-width: 100%;\n        overflow: hidden;\n      }\n      \n      .module-general-settings > * {\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Proper form field arrangement: Title -> Description -> Field */\n      .settings-section ha-form {\n        --ha-form-field-margin: 8px 0;\n      }\n\n      .settings-section ha-form::part(field) {\n        margin-bottom: 8px;\n      }\n\n      .settings-section ha-form .ha-form-label {\n        font-size: 14px;\n        font-weight: 500;\n        color: var(--primary-text-color);\n        margin-bottom: 4px;\n        display: block;\n      }\n\n      .settings-section ha-form .ha-form-description {\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        margin-bottom: 8px;\n        display: block;\n        opacity: 0.8;\n        line-height: 1.4;\n      }\n\n      .settings-section ha-form mwc-formfield {\n        --mdc-typography-body2-font-size: 14px;\n      }\n\n      .settings-section ha-form ha-switch {\n        --switch-checked-color: var(--primary-color);\n        --switch-unchecked-color: var(--disabled-color);\n      }\n\n      /* Field arrangement styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        padding-bottom: 0 !important;\n        border-bottom: none !important;\n        display: block !important;\n        line-height: 1.2 !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n        font-weight: 400 !important;\n      }\n\n      /* Remove labels from ultra-color-picker when using external titles */\n      .settings-section ultra-color-picker .color-label {\n        display: none;\n      }\n\n      /* Prevent form fields from going off screen */\n      .property-input, .property-select {\n        max-width: 500px;\n      }\n\n      /* Apply max-width to ha-form elements */\n      .settings-section ha-form {\n        max-width: 500px;\n      }\n\n      /* Apply max-width to form inputs and selects */\n      .settings-section input,\n      .settings-section select,\n      .settings-section ha-textfield,\n      .settings-section ha-select {\n        max-width: 500px;\n      }\n\n      /* Fix slider and input field layouts */\n      .settings-section .field-group {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      /* Ensure slider containers don\'t get cut off */\n      .settings-section ha-form[style*="flex: 1"] {\n        min-width: 200px;\n        flex: 1 1 200px;\n      }\n\n      /* Fix input field containers */\n      .settings-section input[type="number"] {\n        min-width: 60px;\n        max-width: 80px;\n        flex-shrink: 0;\n      }\n\n      /* Ensure proper spacing for slider + input combos */\n      .settings-section div[style*="display: flex; gap: 8px"] {\n        gap: 8px !important;\n        align-items: center !important;\n        flex-wrap: nowrap !important;\n        min-width: 0;\n      }\n\n      .settings-section div[style*="display: flex; gap: 12px"] {\n        gap: 12px !important;\n        align-items: center !important;\n        flex-wrap: nowrap !important;\n        min-width: 0;\n      }\n\n      /* Prevent overflow in gradient editor */\n      .gradient-editor {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      .gradient-stop {\n        max-width: 100%;\n        overflow: visible;\n        position: relative;\n      }\n\n      /* Gradient stop drag handle styling */\n      .gradient-stop .drag-handle {\n        transition: all 0.2s ease;\n      }\n\n      .gradient-stop:hover .drag-handle {\n        color: var(--primary-color) !important;\n        transform: scale(1.1);\n      }\n\n      /* Ultra color picker sizing */\n      ultra-color-picker {\n        min-width: 40px;\n        max-width: 60px;\n        flex-shrink: 0;\n      }\n\n      /* Ensure gradient controls don\'t overflow */\n      .gradient-stops {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      /* Hide automatic value displays from ha-form sliders to prevent cut-off */\n      .settings-section ha-form ha-slider::part(value-display),\n      .settings-section ha-form mwc-slider::part(value-display),\n      .settings-section ha-form ha-slider .value-display,\n      .settings-section ha-form mwc-slider .value-display {\n        display: none !important;\n      }\n\n      /* Hide any automatic number displays that might appear next to sliders */\n      .settings-section ha-form .slider-value,\n      .settings-section ha-form .current-value,\n      .settings-section ha-form .number-display {\n        display: none !important;\n      }\n\n      /* Override any default slider value display styles */\n      .settings-section ha-form[data-field*="size"] .mdc-slider-value-indicator,\n      .settings-section ha-form[data-field*="size"] .value-indicator {\n        display: none !important;\n      }\n\n      /* More comprehensive hiding of slider value displays */\n      .settings-section ha-form ha-textfield[type="number"],\n      .settings-section ha-form mwc-textfield[type="number"],\n      .settings-section ha-form .number-input-display {\n        display: none !important;\n      }\n\n      /* Target specific Home Assistant slider value containers */\n      .settings-section ha-form .form-group .number-display,\n      .settings-section ha-form .ha-form-number .display-value,\n      .settings-section ha-form [role="slider"] + *:not(.mdc-slider-track),\n      .settings-section ha-form .mdc-slider + .value-display {\n        display: none !important;\n      }\n\n      /* Ensure sliders take full width without value displays */\n      .settings-section ha-form .mdc-slider,\n      .settings-section ha-form ha-slider {\n        width: 100% !important;\n        max-width: 100% !important;\n      }\n\n      /* Hide any text elements that might display current values */\n      .settings-section ha-form .field-wrapper > span:last-child,\n      .settings-section ha-form .form-control > span:last-child,\n      .settings-section ha-form .slider-container > span:last-child {\n        display: none !important;\n      }\n\n      /* Specifically target number displays in form groups */\n      .settings-section ha-form .form-group > *:last-child:not(ha-slider):not(.mdc-slider):not(input[type="range"]) {\n        display: none !important;\n      }\n\n      /* Conditional Fields Grouping - Reusable Pattern */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n        border-left-color: var(--primary-color);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n        margin: 0;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n        background: transparent;\n      }\n\n      /* Remove top margin from first field in conditional groups */\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      /* Ensure proper spacing within conditional field groups */\n      .conditional-fields-content .field-title {\n        color: var(--primary-text-color);\n      }\n\n      .conditional-fields-content .field-description {\n        color: var(--secondary-text-color);\n        opacity: 0.9;\n      }\n\n      /* Animation for conditional fields appearing */\n      .conditional-fields-group {\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      @keyframes slideInFromLeft {\n        from {\n          opacity: 0;\n          transform: translateX(-10px);\n        }\n        to {\n          opacity: 1;\n          transform: translateX(0);\n        }\n      }\n\n      /* Make conditional fields responsive */\n      @media (max-width: 768px) {\n        .conditional-fields-group {\n          border-left-width: 3px;\n        }\n        \n        .conditional-fields-header {\n          padding: 10px 12px;\n          font-size: 13px;\n        }\n        \n        .conditional-fields-content {\n          padding: 12px;\n        }\n      }\n    '}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}camelToKebab(e){return e.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(e,t){const o=e.background_image_type,i=e.background_image,n=e.background_image_entity;switch(o){case"upload":if(i)return i.startsWith("/api/image/serve/")?`url("${this.getImageUrl(t,i)}")`:(i.startsWith("data:image/"),`url("${i}")`);break;case"entity":if(n&&t){const e=t.states[n];if(e){const t=e.attributes.entity_picture||e.attributes.image||e.state;if(t&&"unknown"!==t&&"unavailable"!==t)return`url("${t}")`}}break;case"url":if(i)return`url("${i}")`;break;default:return"none"}return"none"}getImageUrl(e,t){if(!t)return"";if(t.startsWith("http"))return t;if(t.startsWith("data:image/"))return t;if(t.includes("/api/image/serve/")){const o=t.match(/\/api\/image\/serve\/([^\/]+)/);if(o&&o[1]){const i=o[1];try{return`${(e.hassUrl?e.hassUrl():"").replace(/\/$/,"")}/api/image/serve/${i}/original`}catch(e){return t}}return t}return t.startsWith("/")?`${(e.hassUrl?e.hassUrl():"").replace(/\/$/,"")}${t}`:t}getBarSizeFromHeight(e){return e<=12?"thin":e<=20?"regular":e<=30?"thick":"thiccc"}getBarRadiusFromStyle(e){return 0===e?"square":e<8?"rounded-square":"round"}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}class Be extends he{constructor(){super(...arguments),this.metadata={type:"icon",title:"Icons",description:"Interactive icon buttons",author:"WJD Designs",version:"1.0.0",icon:"mdi:circle",category:"interactive",tags:["icon","button","interactive","control"]}}createDefault(e){return{id:e||this.generateId("icon"),type:"icon",icons:[{id:this.generateId("icon-item"),entity:"weather.forecast_home",name:"Forecast",icon_inactive:"mdi:weather-partly-cloudy",icon_active:"mdi:weather-partly-cloudy",inactive_state:"off",active_state:"on",custom_inactive_state_text:"",custom_active_state_text:"",inactive_template_mode:!1,inactive_template:"",active_template_mode:!1,active_template:"",use_entity_color_for_icon:!1,color_inactive:"var(--secondary-text-color)",color_active:"var(--primary-color)",inactive_icon_color:"var(--secondary-text-color)",active_icon_color:"var(--primary-color)",inactive_name_color:"var(--primary-text-color)",active_name_color:"var(--primary-text-color)",inactive_state_color:"var(--secondary-text-color)",active_state_color:"var(--secondary-text-color)",show_name_when_inactive:!0,show_state_when_inactive:!0,show_icon_when_inactive:!0,show_name_when_active:!0,show_state_when_active:!0,show_icon_when_active:!0,show_state:!0,show_name:!0,show_units:!1,icon_size:24,text_size:12,icon_background:"none",use_entity_color_for_icon_background:!1,icon_background_color:"transparent",inactive_icon_animation:"none",active_icon_animation:"none",vertical_alignment:"center",container_width:void 0,container_background_shape:"none",tap_action:{action:"toggle"},hold_action:{action:"default"},double_tap_action:{action:"default"},click_action:"toggle",double_click_action:"none",hold_action_legacy:"none",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:""}],alignment:"center",vertical_alignment:"center",columns:3,gap:16}}renderGeneralTab(e,t,o,i){const n=e;return V`
-      ${be.injectCleanFormStyles()}
+    `}validate(t){const e=t,o=[...super.validate(t).errors];return e.entity&&""!==e.entity.trim()||o.push("Entity ID is required"),e.height&&(e.height<5||e.height>200)&&o.push("Bar height must be between 5 and 200 pixels"),e.border_radius&&(e.border_radius<0||e.border_radius>100)&&o.push("Border radius must be between 0 and 100 pixels"),e.limit_entity&&""!==e.limit_entity.trim()&&(e.limit_entity.includes(".")||o.push("Limit entity must be a valid entity ID (e.g., sensor.battery_limit)")),{valid:0===o.length,errors:o}}getStyles(){return'\n      .bar-module-preview {\n        max-width: 100%;\n        overflow: hidden;\n        box-sizing: border-box;\n      }\n      \n      .bar-container {\n        width: 100%;\n        position: relative;\n        display: block;\n        box-sizing: border-box;\n      }\n      \n      .bar-fill {\n        position: relative;\n        z-index: 1;\n      }\n      \n      .bar-limit-line {\n        opacity: 0.9;\n        transition: opacity 0.2s ease;\n      }\n      \n      .bar-limit-line:hover {\n        opacity: 1;\n      }\n      \n      .bar-name {\n        font-size: 16px;\n        font-weight: 600;\n        color: var(--primary-text-color);\n        margin-bottom: 8px;\n        user-select: none;\n        word-wrap: break-word;\n      }\n      \n      .bar-value {\n        user-select: none;\n        text-shadow: 0 1px 2px rgba(0,0,0,0.1);\n      }\n      \n      .bar-value-outside {\n        user-select: none;\n        text-align: center;\n        font-weight: 600;\n        color: var(--primary-text-color);\n      }\n      \n      .entity-error {\n        font-size: 12px;\n        color: var(--error-color);\n        margin-top: 6px;\n        font-style: italic;\n        opacity: 0.8;\n      }\n      \n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n      \n      .settings-section * {\n        box-sizing: border-box;\n      }\n      \n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        margin-bottom: 12px !important;\n        padding-bottom: 0 !important;\n        border-bottom: none !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n      \n      .settings-section label {\n        display: block;\n        font-weight: 500;\n        margin-bottom: 4px;\n        color: var(--primary-text-color);\n      }\n      \n      .settings-section input,\n      .settings-section select {\n        width: 100%;\n        max-width: 100%;\n        padding: 8px;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--card-background-color);\n        color: var(--primary-text-color);\n        font-size: 14px;\n        box-sizing: border-box;\n      }\n      \n      .settings-section .checkbox-wrapper {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        font-weight: 500;\n      }\n      \n      .settings-section .checkbox-wrapper input[type="checkbox"] {\n        width: auto;\n        margin: 0;\n      }\n      \n      .help-text {\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        margin: 4px 0 0 0;\n        opacity: 0.8;\n        word-wrap: break-word;\n      }\n      \n      .number-input,\n      .text-input,\n      .entity-input,\n      .select-input {\n        transition: border-color 0.2s ease;\n      }\n      \n      .number-input:focus,\n      .text-input:focus,\n      .entity-input:focus,\n      .select-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 1px var(--primary-color);\n      }\n      \n      /* Fix padding overflow */\n      .module-general-settings {\n        max-width: 100%;\n        overflow: hidden;\n      }\n      \n      .module-general-settings > * {\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Proper form field arrangement: Title -> Description -> Field */\n      .settings-section ha-form {\n        --ha-form-field-margin: 8px 0;\n      }\n\n      .settings-section ha-form::part(field) {\n        margin-bottom: 8px;\n      }\n\n      .settings-section ha-form .ha-form-label {\n        font-size: 14px;\n        font-weight: 500;\n        color: var(--primary-text-color);\n        margin-bottom: 4px;\n        display: block;\n      }\n\n      .settings-section ha-form .ha-form-description {\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        margin-bottom: 8px;\n        display: block;\n        opacity: 0.8;\n        line-height: 1.4;\n      }\n\n      .settings-section ha-form mwc-formfield {\n        --mdc-typography-body2-font-size: 14px;\n      }\n\n      .settings-section ha-form ha-switch {\n        --switch-checked-color: var(--primary-color);\n        --switch-unchecked-color: var(--disabled-color);\n      }\n\n      /* Field arrangement styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        padding-bottom: 0 !important;\n        border-bottom: none !important;\n        display: block !important;\n        line-height: 1.2 !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n        font-weight: 400 !important;\n      }\n\n      /* Remove labels from ultra-color-picker when using external titles */\n      .settings-section ultra-color-picker .color-label {\n        display: none;\n      }\n\n      /* Prevent form fields from going off screen */\n      .property-input, .property-select {\n        max-width: 500px;\n      }\n\n      /* Apply max-width to ha-form elements */\n      .settings-section ha-form {\n        max-width: 500px;\n      }\n\n      /* Apply max-width to form inputs and selects */\n      .settings-section input,\n      .settings-section select,\n      .settings-section ha-textfield,\n      .settings-section ha-select {\n        max-width: 500px;\n      }\n\n      /* Fix slider and input field layouts */\n      .settings-section .field-group {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      /* Ensure slider containers don\'t get cut off */\n      .settings-section ha-form[style*="flex: 1"] {\n        min-width: 200px;\n        flex: 1 1 200px;\n      }\n\n      /* Fix input field containers */\n      .settings-section input[type="number"] {\n        min-width: 60px;\n        max-width: 80px;\n        flex-shrink: 0;\n      }\n\n      /* Ensure proper spacing for slider + input combos */\n      .settings-section div[style*="display: flex; gap: 8px"] {\n        gap: 8px !important;\n        align-items: center !important;\n        flex-wrap: nowrap !important;\n        min-width: 0;\n      }\n\n      .settings-section div[style*="display: flex; gap: 12px"] {\n        gap: 12px !important;\n        align-items: center !important;\n        flex-wrap: nowrap !important;\n        min-width: 0;\n      }\n\n      /* Prevent overflow in gradient editor */\n      .gradient-editor {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      .gradient-stop {\n        max-width: 100%;\n        overflow: visible;\n        position: relative;\n      }\n\n      /* Gradient stop drag handle styling */\n      .gradient-stop .drag-handle {\n        transition: all 0.2s ease;\n      }\n\n      .gradient-stop:hover .drag-handle {\n        color: var(--primary-color) !important;\n        transform: scale(1.1);\n      }\n\n      /* Ultra color picker sizing */\n      ultra-color-picker {\n        min-width: 40px;\n        max-width: 60px;\n        flex-shrink: 0;\n      }\n\n      /* Ensure gradient controls don\'t overflow */\n      .gradient-stops {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      /* Hide automatic value displays from ha-form sliders to prevent cut-off */\n      .settings-section ha-form ha-slider::part(value-display),\n      .settings-section ha-form mwc-slider::part(value-display),\n      .settings-section ha-form ha-slider .value-display,\n      .settings-section ha-form mwc-slider .value-display {\n        display: none !important;\n      }\n\n      /* Hide any automatic number displays that might appear next to sliders */\n      .settings-section ha-form .slider-value,\n      .settings-section ha-form .current-value,\n      .settings-section ha-form .number-display {\n        display: none !important;\n      }\n\n      /* Override any default slider value display styles */\n      .settings-section ha-form[data-field*="size"] .mdc-slider-value-indicator,\n      .settings-section ha-form[data-field*="size"] .value-indicator {\n        display: none !important;\n      }\n\n      /* More comprehensive hiding of slider value displays */\n      .settings-section ha-form ha-textfield[type="number"],\n      .settings-section ha-form mwc-textfield[type="number"],\n      .settings-section ha-form .number-input-display {\n        display: none !important;\n      }\n\n      /* Target specific Home Assistant slider value containers */\n      .settings-section ha-form .form-group .number-display,\n      .settings-section ha-form .ha-form-number .display-value,\n      .settings-section ha-form [role="slider"] + *:not(.mdc-slider-track),\n      .settings-section ha-form .mdc-slider + .value-display {\n        display: none !important;\n      }\n\n      /* Ensure sliders take full width without value displays */\n      .settings-section ha-form .mdc-slider,\n      .settings-section ha-form ha-slider {\n        width: 100% !important;\n        max-width: 100% !important;\n      }\n\n      /* Hide any text elements that might display current values */\n      .settings-section ha-form .field-wrapper > span:last-child,\n      .settings-section ha-form .form-control > span:last-child,\n      .settings-section ha-form .slider-container > span:last-child {\n        display: none !important;\n      }\n\n      /* Specifically target number displays in form groups */\n      .settings-section ha-form .form-group > *:last-child:not(ha-slider):not(.mdc-slider):not(input[type="range"]) {\n        display: none !important;\n      }\n\n      /* Custom Slider Controls - Optimized Design */\n      .number-range-control {\n        display: flex;\n        gap: 8px;\n        align-items: center;\n      }\n\n      .range-slider {\n        flex: 0 0 70%;\n        height: 6px;\n        background: var(--divider-color);\n        border-radius: 3px;\n        outline: none;\n        appearance: none;\n        -webkit-appearance: none;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        min-width: 0;\n      }\n\n      .range-slider::-webkit-slider-thumb {\n        appearance: none;\n        -webkit-appearance: none;\n        width: 18px;\n        height: 18px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .range-slider::-moz-range-thumb {\n        width: 18px;\n        height: 18px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .range-slider:hover {\n        background: var(--primary-color);\n        opacity: 0.7;\n      }\n\n      .range-slider:hover::-webkit-slider-thumb {\n        transform: scale(1.1);\n      }\n\n      .range-slider:hover::-moz-range-thumb {\n        transform: scale(1.1);\n      }\n\n      .range-input {\n        flex: 0 0 20%;\n        padding: 6px 8px !important;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 13px;\n        text-align: center;\n        transition: all 0.2s ease;\n        box-sizing: border-box;\n      }\n\n      .range-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);\n      }\n\n      .range-reset-btn {\n        width: 32px;\n        height: 32px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n\n      .range-reset-btn:hover {\n        background: var(--primary-color);\n        color: var(--text-primary-color);\n        border-color: var(--primary-color);\n      }\n\n      .range-reset-btn ha-icon {\n        font-size: 14px;\n      }\n\n      /* Conditional Fields Grouping - Reusable Pattern */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n        border-left-color: var(--primary-color);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n        margin: 0;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n        background: transparent;\n      }\n\n      /* Remove top margin from first field in conditional groups */\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      /* Ensure proper spacing within conditional field groups */\n      .conditional-fields-content .field-title {\n        color: var(--primary-text-color);\n      }\n\n      .conditional-fields-content .field-description {\n        color: var(--secondary-text-color);\n        opacity: 0.9;\n      }\n\n      /* Animation for conditional fields appearing */\n      .conditional-fields-group {\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      @keyframes slideInFromLeft {\n        from {\n          opacity: 0;\n          transform: translateX(-10px);\n        }\n        to {\n          opacity: 1;\n          transform: translateX(0);\n        }\n      }\n\n      /* Make conditional fields responsive */\n      @media (max-width: 768px) {\n        .conditional-fields-group {\n          border-left-width: 3px;\n        }\n        \n        .conditional-fields-header {\n          padding: 10px 12px;\n          font-size: 13px;\n        }\n        \n        .conditional-fields-content {\n          padding: 12px;\n        }\n      }\n    '}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(t,e){const o=t.background_image_type,i=t.background_image,n=t.background_image_entity;switch(o){case"upload":if(i)return i.startsWith("/api/image/serve/")?`url("${this.getImageUrl(e,i)}")`:(i.startsWith("data:image/"),`url("${i}")`);break;case"entity":if(n&&e){const t=e.states[n];if(t){const e=t.attributes.entity_picture||t.attributes.image||t.state;if(e&&"unknown"!==e&&"unavailable"!==e)return`url("${e}")`}}break;case"url":if(i)return`url("${i}")`;break;default:return"none"}return"none"}getImageUrl(t,e){if(!e)return"";if(e.startsWith("http"))return e;if(e.startsWith("data:image/"))return e;if(e.includes("/api/image/serve/")){const o=e.match(/\/api\/image\/serve\/([^\/]+)/);if(o&&o[1]){const i=o[1];try{return`${(t.hassUrl?t.hassUrl():"").replace(/\/$/,"")}/api/image/serve/${i}/original`}catch(t){return e}}return e}return e.startsWith("/")?`${(t.hassUrl?t.hassUrl():"").replace(/\/$/,"")}${e}`:e}getBarSizeFromHeight(t){return t<=12?"thin":t<=20?"regular":t<=30?"thick":"thiccc"}getBarRadiusFromStyle(t){return 0===t?"square":t<8?"rounded-square":"round"}interpolateColor(t,e,o){const i=this.hexToRgb(t),n=this.hexToRgb(e);if(!i||!n)return t;const a=Math.round(i.r+(n.r-i.r)*o),r=Math.round(i.g+(n.g-i.g)*o),l=Math.round(i.b+(n.b-i.b)*o);return this.rgbToHex(a,r,l)}hexToRgb(t){if(!t.startsWith("#"))return null;const e=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(t);return e?{r:parseInt(e[1],16),g:parseInt(e[2],16),b:parseInt(e[3],16)}:null}rgbToHex(t,e,o){return`#${((1<<24)+(t<<16)+(e<<8)+o).toString(16).slice(1)}`}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}class Nt extends ht{constructor(){super(...arguments),this.metadata={type:"icon",title:"Icons",description:"Interactive icon buttons",author:"WJD Designs",version:"1.0.0",icon:"mdi:circle",category:"interactive",tags:["icon","button","interactive","control"]}}createDefault(t){return{id:t||this.generateId("icon"),type:"icon",icons:[{id:this.generateId("icon-item"),entity:"weather.forecast_home",name:"Forecast",icon_inactive:"mdi:weather-partly-cloudy",icon_active:"mdi:weather-partly-cloudy",inactive_state:"off",active_state:"on",custom_inactive_state_text:"",custom_active_state_text:"",inactive_template_mode:!1,inactive_template:"",active_template_mode:!1,active_template:"",use_entity_color_for_icon:!1,color_inactive:"var(--secondary-text-color)",color_active:"var(--primary-color)",inactive_icon_color:"var(--secondary-text-color)",active_icon_color:"var(--primary-color)",inactive_name_color:"var(--primary-text-color)",active_name_color:"var(--primary-text-color)",inactive_state_color:"var(--secondary-text-color)",active_state_color:"var(--secondary-text-color)",show_name_when_inactive:!0,show_state_when_inactive:!0,show_icon_when_inactive:!0,show_name_when_active:!0,show_state_when_active:!0,show_icon_when_active:!0,show_state:!0,show_name:!0,show_units:!1,icon_size:24,text_size:12,icon_background:"none",use_entity_color_for_icon_background:!1,icon_background_color:"transparent",inactive_icon_animation:"none",active_icon_animation:"none",vertical_alignment:"center",container_width:void 0,container_background_shape:"none",tap_action:{action:"toggle"},hold_action:{action:"default"},double_tap_action:{action:"default"},click_action:"toggle",double_click_action:"none",hold_action_legacy:"none",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:""}],alignment:"center",vertical_alignment:"center",columns:3,gap:16}}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
       <div class="module-general-settings">
-        ${n.icons.map(((e,o)=>V`
+        ${n.icons.map(((t,o)=>V`
             <div
               class="settings-section"
               style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
             >
               <!-- Entity Selection -->
-              ${be.renderField("Entity","Select the Home Assistant entity this icon will represent. Icon will auto-select from entity if available.",t,{entity:e.entity||""},[be.createSchemaItem("entity",{entity:{}})],(a=>{var r,l;const s=a.detail.value.entity,d={entity:s};if(s&&(null==t?void 0:t.states[s])){const o=t.states[s],i=null===(r=o.attributes)||void 0===r?void 0:r.icon;!i||e.icon_inactive&&"mdi:lightbulb-outline"!==e.icon_inactive&&"mdi:weather-partly-cloudy"!==e.icon_inactive||(d.icon_inactive=i,d.icon_active=i),!(null===(l=o.attributes)||void 0===l?void 0:l.friendly_name)||e.name&&"Sample Icon"!==e.name&&"Forecast"!==e.name&&"Icon"!==e.name||(d.name=o.attributes.friendly_name)}this._updateIcon(n,o,d,i)}))}
+              ${bt.renderField("Entity","Select the Home Assistant entity this icon will represent. Icon will auto-select from entity if available.",e,{entity:t.entity||""},[bt.createSchemaItem("entity",{entity:{}})],(a=>{var r,l;const s=a.detail.value.entity,d={entity:s};if(s&&(null==e?void 0:e.states[s])){const o=e.states[s],i=null===(r=o.attributes)||void 0===r?void 0:r.icon;!i||t.icon_inactive&&"mdi:lightbulb-outline"!==t.icon_inactive&&"mdi:weather-partly-cloudy"!==t.icon_inactive||(d.icon_inactive=i,d.icon_active=i),!(null===(l=o.attributes)||void 0===l?void 0:l.friendly_name)||t.name&&"Sample Icon"!==t.name&&"Forecast"!==t.name&&"Icon"!==t.name||(d.name=o.attributes.friendly_name)}this._updateIcon(n,o,d,i)}))}
 
               <!-- Active State Section -->
               <div style="margin-top: 24px;">
@@ -3231,16 +3633,16 @@
                   </summary>
                   <div style="padding: 16px;">
                     <!-- Active State Field -->
-                    ${be.renderField("Active State",'Define when this icon should be considered "active"',t,{active_state:e.active_state||"on"},[be.createSchemaItem("active_state",{text:{}})],(e=>this._updateIcon(n,o,{active_state:e.detail.value.active_state},i)))}
+                    ${bt.renderField("Active State",'Define when this icon should be considered "active"',e,{active_state:t.active_state||"on"},[bt.createSchemaItem("active_state",{text:{}})],(t=>this._updateIcon(n,o,{active_state:t.detail.value.active_state},i)))}
 
                     <!-- Active Icon Picker -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Active Icon","Icon to show when the entity is in the active state",t,{icon_active:e.icon_active||"mdi:lightbulb"},[be.createSchemaItem("icon_active",{icon:{}})],(e=>this._updateIcon(n,o,{icon_active:e.detail.value.icon_active},i)))}
+                      ${bt.renderField("Active Icon","Icon to show when the entity is in the active state",e,{icon_active:t.icon_active||"mdi:lightbulb"},[bt.createSchemaItem("icon_active",{icon:{}})],(t=>this._updateIcon(n,o,{icon_active:t.detail.value.icon_active},i)))}
                     </div>
 
                     <!-- Custom Active State Text -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Custom Active State Text","Override the displayed state text when active",t,{custom_active_state_text:e.custom_active_state_text||""},[be.createSchemaItem("custom_active_state_text",{text:{}})],(e=>this._updateIcon(n,o,{custom_active_state_text:e.detail.value.custom_active_state_text},i)))}
+                      ${bt.renderField("Custom Active State Text","Override the displayed state text when active",e,{custom_active_state_text:t.custom_active_state_text||""},[bt.createSchemaItem("custom_active_state_text",{text:{}})],(t=>this._updateIcon(n,o,{custom_active_state_text:t.detail.value.custom_active_state_text},i)))}
                     </div>
 
                     <!-- Show Toggles -->
@@ -3265,7 +3667,7 @@
                           </div>
                         </div>
                         <div style="margin-left: 16px;">
-                          ${be.renderField("","",t,{show_name_when_active:!1!==e.show_name_when_active},[be.createSchemaItem("show_name_when_active",{boolean:{}})],(e=>this._updateIcon(n,o,{show_name_when_active:e.detail.value.show_name_when_active},i)))}
+                          ${bt.renderField("","",e,{show_name_when_active:!1!==t.show_name_when_active},[bt.createSchemaItem("show_name_when_active",{boolean:{}})],(t=>this._updateIcon(n,o,{show_name_when_active:t.detail.value.show_name_when_active},i)))}
                         </div>
                       </div>
 
@@ -3287,7 +3689,7 @@
                           </div>
                         </div>
                         <div style="margin-left: 16px;">
-                          ${be.renderField("","",t,{show_state_when_active:!1!==e.show_state_when_active},[be.createSchemaItem("show_state_when_active",{boolean:{}})],(e=>this._updateIcon(n,o,{show_state_when_active:e.detail.value.show_state_when_active},i)))}
+                          ${bt.renderField("","",e,{show_state_when_active:!1!==t.show_state_when_active},[bt.createSchemaItem("show_state_when_active",{boolean:{}})],(t=>this._updateIcon(n,o,{show_state_when_active:t.detail.value.show_state_when_active},i)))}
                         </div>
                       </div>
 
@@ -3309,39 +3711,64 @@
                           </div>
                         </div>
                         <div style="margin-left: 16px;">
-                          ${be.renderField("","",t,{show_icon_when_active:!1!==e.show_icon_when_active},[be.createSchemaItem("show_icon_when_active",{boolean:{}})],(e=>this._updateIcon(n,o,{show_icon_when_active:e.detail.value.show_icon_when_active},i)))}
+                          ${bt.renderField("","",e,{show_icon_when_active:!1!==t.show_icon_when_active},[bt.createSchemaItem("show_icon_when_active",{boolean:{}})],(t=>this._updateIcon(n,o,{show_icon_when_active:t.detail.value.show_icon_when_active},i)))}
                         </div>
                       </div>
                     </div>
 
                     <!-- Icon Animation -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Icon Animation","Animation to apply to the icon when active",t,{active_icon_animation:e.active_icon_animation||"none"},[be.createSchemaItem("active_icon_animation",{select:{options:[{value:"none",label:"None"},{value:"pulse",label:"Pulse"},{value:"spin",label:"Spin"},{value:"bounce",label:"Bounce"},{value:"flash",label:"Flash"},{value:"shake",label:"Shake"},{value:"vibrate",label:"Vibrate"},{value:"rotate-left",label:"Rotate Left"},{value:"rotate-right",label:"Rotate Right"},{value:"fade",label:"Fade"},{value:"scale",label:"Scale"},{value:"tada",label:"Tada"}]}})],(e=>this._updateIcon(n,o,{active_icon_animation:e.detail.value.active_icon_animation},i)))}
+                      ${bt.renderField("Icon Animation","Animation to apply to the icon when active",e,{active_icon_animation:t.active_icon_animation||"none"},[bt.createSchemaItem("active_icon_animation",{select:{options:[{value:"none",label:"None"},{value:"pulse",label:"Pulse"},{value:"spin",label:"Spin"},{value:"bounce",label:"Bounce"},{value:"flash",label:"Flash"},{value:"shake",label:"Shake"},{value:"vibrate",label:"Vibrate"},{value:"rotate-left",label:"Rotate Left"},{value:"rotate-right",label:"Rotate Right"},{value:"fade",label:"Fade"},{value:"scale",label:"Scale"},{value:"tada",label:"Tada"}]}})],(t=>this._updateIcon(n,o,{active_icon_animation:t.detail.value.active_icon_animation},i)))}
                     </div>
 
                     <!-- Template Mode -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Template Mode","Use a template to determine when this icon should be active. Templates allow you to use Home Assistant templating syntax for complex conditions. (This disables regular state condition)",t,{active_template_mode:e.active_template_mode||!1},[be.createSchemaItem("active_template_mode",{boolean:{}})],(e=>this._updateIcon(n,o,{active_template_mode:e.detail.value.active_template_mode},i)))}
-                      ${e.active_template_mode?this.renderConditionalFieldsGroup("Active Template Settings",V`
-                              ${be.renderField("Active Template","Enter template code that returns true/false to determine active state",t,{active_template:e.active_template||""},[be.createSchemaItem("active_template",{text:{multiline:!0}})],(e=>this._updateIcon(n,o,{active_template:e.detail.value.active_template},i)))}
+                      ${bt.renderField("Template Mode","Use a template to determine when this icon should be active. Templates allow you to use Home Assistant templating syntax for complex conditions. (This disables regular state condition)",e,{active_template_mode:t.active_template_mode||!1},[bt.createSchemaItem("active_template_mode",{boolean:{}})],(t=>this._updateIcon(n,o,{active_template_mode:t.detail.value.active_template_mode},i)))}
+                      ${t.active_template_mode?this.renderConditionalFieldsGroup("Active Template Settings",V`
+                              ${bt.renderField("Active Template","Enter template code that returns true/false to determine active state",e,{active_template:t.active_template||""},[bt.createSchemaItem("active_template",{text:{multiline:!0}})],(t=>this._updateIcon(n,o,{active_template:t.detail.value.active_template},i)))}
                             `):""}
                     </div>
 
                     <!-- Icon Size -->
                     <div style="margin-top: 16px;">
-                      <div
-                        class="field-title"
-                        style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
-                      >
-                        Active Icon Size
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">Active Icon Size</div>
+                        <div class="field-description">
+                          Size of the icon when active (in pixels)
+                        </div>
+                        <div
+                          class="gap-control-container"
+                          style="display: flex; align-items: center; gap: 12px;"
+                        >
+                          <input
+                            type="range"
+                            class="gap-slider"
+                            min="12"
+                            max="72"
+                            step="2"
+                            .value="${t.active_icon_size||24}"
+                            @input=${t=>{const e=t.target,a=Number(e.value);this._updateIcon(n,o,{active_icon_size:a},i)}}
+                          />
+                          <input
+                            type="number"
+                            class="gap-input"
+                            style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
+                            min="12"
+                            max="72"
+                            step="2"
+                            .value="${t.active_icon_size||24}"
+                            @input=${t=>{const e=t.target,a=Number(e.value);isNaN(a)||this._updateIcon(n,o,{active_icon_size:a},i)}}
+                            @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,a=Number(e.value)||24,r="ArrowUp"===t.key?2:-2,l=Math.max(12,Math.min(72,a+r));this._updateIcon(n,o,{active_icon_size:l},i)}}}
+                          />
+                          <button
+                            class="reset-btn"
+                            @click=${()=>this._updateIcon(n,o,{active_icon_size:24},i)}
+                            title="Reset to default (24)"
+                          >
+                            <ha-icon icon="mdi:refresh"></ha-icon>
+                          </button>
+                        </div>
                       </div>
-                      <div
-                        class="field-description"
-                        style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                      >
-                        Size of the icon when active (in pixels)
-                      </div>
-                      ${be.renderField("","",t,{active_icon_size:e.active_icon_size||24},[be.createSchemaItem("active_icon_size",{number:{min:12,max:72,step:2,mode:"slider"}})],(e=>this._updateIcon(n,o,{active_icon_size:Number(e.detail.value.active_icon_size)},i)))}
                     </div>
 
                     <!-- Icon Background Shape -->
@@ -3358,51 +3785,51 @@
                       >
                         Shape and style of the icon background when active
                       </div>
-                      ${be.renderField("","",t,{active_icon_background:e.active_icon_background||"none"},[be.createSchemaItem("active_icon_background",{select:{options:[{value:"none",label:"None"},{value:"rounded-square",label:"Rounded Square"},{value:"circle",label:"Circle"}]}})],(e=>this._updateIcon(n,o,{active_icon_background:e.detail.value.active_icon_background},i)))}
+                      ${bt.renderField("","",e,{active_icon_background:t.active_icon_background||"none"},[bt.createSchemaItem("active_icon_background",{select:{options:[{value:"none",label:"None"},{value:"rounded-square",label:"Rounded Square"},{value:"circle",label:"Circle"}]}})],(t=>this._updateIcon(n,o,{active_icon_background:t.detail.value.active_icon_background},i)))}
                     </div>
 
                     <!-- Use Entity Color for Icon -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Use Entity Color for Icon","Use the color provided by the entity instead of custom colors",t,{use_entity_color_for_icon:e.use_entity_color_for_icon||!1},[be.createSchemaItem("use_entity_color_for_icon",{boolean:{}})],(e=>this._updateIcon(n,o,{use_entity_color_for_icon:e.detail.value.use_entity_color_for_icon},i)))}
+                      ${bt.renderField("Use Entity Color for Icon","Use the color provided by the entity instead of custom colors",e,{use_entity_color_for_icon:t.use_entity_color_for_icon||!1},[bt.createSchemaItem("use_entity_color_for_icon",{boolean:{}})],(t=>this._updateIcon(n,o,{use_entity_color_for_icon:t.detail.value.use_entity_color_for_icon},i)))}
                     </div>
 
                     <!-- Color Pickers (if not using entity color) -->
-                    ${e.use_entity_color_for_icon?"":this.renderConditionalFieldsGroup("Active Color Settings",V`
+                    ${t.use_entity_color_for_icon?"":this.renderConditionalFieldsGroup("Active Color Settings",V`
                             <div style="display: flex; flex-direction: column; gap: 16px;">
                               <ultra-color-picker
                                 .label=${"Active Icon Color"}
-                                .value=${e.active_icon_color||"var(--primary-color)"}
+                                .value=${t.active_icon_color||"var(--primary-color)"}
                                 .defaultValue=${"var(--primary-color)"}
-                                .hass=${t}
-                                @value-changed=${e=>this._updateIcon(n,o,{active_icon_color:e.detail.value},i)}
+                                .hass=${e}
+                                @value-changed=${t=>this._updateIcon(n,o,{active_icon_color:t.detail.value},i)}
                               ></ultra-color-picker>
 
                               <ultra-color-picker
                                 .label=${"Active Name Color"}
-                                .value=${e.active_name_color||"var(--primary-text-color)"}
+                                .value=${t.active_name_color||"var(--primary-text-color)"}
                                 .defaultValue=${"var(--primary-text-color)"}
-                                .hass=${t}
-                                @value-changed=${e=>this._updateIcon(n,o,{active_name_color:e.detail.value},i)}
+                                .hass=${e}
+                                @value-changed=${t=>this._updateIcon(n,o,{active_name_color:t.detail.value},i)}
                               ></ultra-color-picker>
 
                               <ultra-color-picker
                                 .label=${"Active State Color"}
-                                .value=${e.active_state_color||"var(--secondary-text-color)"}
+                                .value=${t.active_state_color||"var(--secondary-text-color)"}
                                 .defaultValue=${"var(--secondary-text-color)"}
-                                .hass=${t}
-                                @value-changed=${e=>this._updateIcon(n,o,{active_state_color:e.detail.value},i)}
+                                .hass=${e}
+                                @value-changed=${t=>this._updateIcon(n,o,{active_state_color:t.detail.value},i)}
                               ></ultra-color-picker>
                             </div>
 
                             <!-- Icon Background Color -->
-                            ${"none"!==e.active_icon_background?V`
+                            ${"none"!==t.active_icon_background?V`
                                   <div style="margin-top: 16px;">
                                     <ultra-color-picker
                                       .label=${"Active Icon Background Color"}
-                                      .value=${e.active_icon_background_color||"var(--card-background-color)"}
+                                      .value=${t.active_icon_background_color||"var(--card-background-color)"}
                                       .defaultValue=${"var(--card-background-color)"}
-                                      .hass=${t}
-                                      @value-changed=${e=>this._updateIcon(n,o,{active_icon_background_color:e.detail.value},i)}
+                                      .hass=${e}
+                                      @value-changed=${t=>this._updateIcon(n,o,{active_icon_background_color:t.detail.value},i)}
                                     ></ultra-color-picker>
                                   </div>
                                 `:""}
@@ -3424,16 +3851,16 @@
                   </summary>
                   <div style="padding: 16px;">
                     <!-- Inactive State Field -->
-                    ${be.renderField("Inactive State",'Define when this icon should be considered "inactive"',t,{inactive_state:e.inactive_state||"off"},[be.createSchemaItem("inactive_state",{text:{}})],(e=>this._updateIcon(n,o,{inactive_state:e.detail.value.inactive_state},i)))}
+                    ${bt.renderField("Inactive State",'Define when this icon should be considered "inactive"',e,{inactive_state:t.inactive_state||"off"},[bt.createSchemaItem("inactive_state",{text:{}})],(t=>this._updateIcon(n,o,{inactive_state:t.detail.value.inactive_state},i)))}
 
                     <!-- Inactive Icon Picker -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Inactive Icon","Icon to show when the entity is in the inactive state",t,{icon_inactive:e.icon_inactive||"mdi:lightbulb-outline"},[be.createSchemaItem("icon_inactive",{icon:{}})],(e=>this._updateIcon(n,o,{icon_inactive:e.detail.value.icon_inactive},i)))}
+                      ${bt.renderField("Inactive Icon","Icon to show when the entity is in the inactive state",e,{icon_inactive:t.icon_inactive||"mdi:lightbulb-outline"},[bt.createSchemaItem("icon_inactive",{icon:{}})],(t=>this._updateIcon(n,o,{icon_inactive:t.detail.value.icon_inactive},i)))}
                     </div>
 
                     <!-- Custom Inactive State Text -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Custom Inactive State Text","Override the displayed state text when inactive",t,{custom_inactive_state_text:e.custom_inactive_state_text||""},[be.createSchemaItem("custom_inactive_state_text",{text:{}})],(e=>this._updateIcon(n,o,{custom_inactive_state_text:e.detail.value.custom_inactive_state_text},i)))}
+                      ${bt.renderField("Custom Inactive State Text","Override the displayed state text when inactive",e,{custom_inactive_state_text:t.custom_inactive_state_text||""},[bt.createSchemaItem("custom_inactive_state_text",{text:{}})],(t=>this._updateIcon(n,o,{custom_inactive_state_text:t.detail.value.custom_inactive_state_text},i)))}
                     </div>
 
                     <!-- Show Toggles -->
@@ -3458,7 +3885,7 @@
                           </div>
                         </div>
                         <div style="margin-left: 16px;">
-                          ${be.renderField("","",t,{show_name_when_inactive:!1!==e.show_name_when_inactive},[be.createSchemaItem("show_name_when_inactive",{boolean:{}})],(e=>this._updateIcon(n,o,{show_name_when_inactive:e.detail.value.show_name_when_inactive},i)))}
+                          ${bt.renderField("","",e,{show_name_when_inactive:!1!==t.show_name_when_inactive},[bt.createSchemaItem("show_name_when_inactive",{boolean:{}})],(t=>this._updateIcon(n,o,{show_name_when_inactive:t.detail.value.show_name_when_inactive},i)))}
                         </div>
                       </div>
 
@@ -3480,7 +3907,7 @@
                           </div>
                         </div>
                         <div style="margin-left: 16px;">
-                          ${be.renderField("","",t,{show_state_when_inactive:!1!==e.show_state_when_inactive},[be.createSchemaItem("show_state_when_inactive",{boolean:{}})],(e=>this._updateIcon(n,o,{show_state_when_inactive:e.detail.value.show_state_when_inactive},i)))}
+                          ${bt.renderField("","",e,{show_state_when_inactive:!1!==t.show_state_when_inactive},[bt.createSchemaItem("show_state_when_inactive",{boolean:{}})],(t=>this._updateIcon(n,o,{show_state_when_inactive:t.detail.value.show_state_when_inactive},i)))}
                         </div>
                       </div>
 
@@ -3502,39 +3929,64 @@
                           </div>
                         </div>
                         <div style="margin-left: 16px;">
-                          ${be.renderField("","",t,{show_icon_when_inactive:!1!==e.show_icon_when_inactive},[be.createSchemaItem("show_icon_when_inactive",{boolean:{}})],(e=>this._updateIcon(n,o,{show_icon_when_inactive:e.detail.value.show_icon_when_inactive},i)))}
+                          ${bt.renderField("","",e,{show_icon_when_inactive:!1!==t.show_icon_when_inactive},[bt.createSchemaItem("show_icon_when_inactive",{boolean:{}})],(t=>this._updateIcon(n,o,{show_icon_when_inactive:t.detail.value.show_icon_when_inactive},i)))}
                         </div>
                       </div>
                     </div>
 
                     <!-- Icon Animation -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Icon Animation","Animation to apply to the icon when inactive",t,{inactive_icon_animation:e.inactive_icon_animation||"none"},[be.createSchemaItem("inactive_icon_animation",{select:{options:[{value:"none",label:"None"},{value:"pulse",label:"Pulse"},{value:"spin",label:"Spin"},{value:"bounce",label:"Bounce"},{value:"flash",label:"Flash"},{value:"shake",label:"Shake"},{value:"vibrate",label:"Vibrate"},{value:"rotate-left",label:"Rotate Left"},{value:"rotate-right",label:"Rotate Right"},{value:"fade",label:"Fade"},{value:"scale",label:"Scale"},{value:"tada",label:"Tada"}]}})],(e=>this._updateIcon(n,o,{inactive_icon_animation:e.detail.value.inactive_icon_animation},i)))}
+                      ${bt.renderField("Icon Animation","Animation to apply to the icon when inactive",e,{inactive_icon_animation:t.inactive_icon_animation||"none"},[bt.createSchemaItem("inactive_icon_animation",{select:{options:[{value:"none",label:"None"},{value:"pulse",label:"Pulse"},{value:"spin",label:"Spin"},{value:"bounce",label:"Bounce"},{value:"flash",label:"Flash"},{value:"shake",label:"Shake"},{value:"vibrate",label:"Vibrate"},{value:"rotate-left",label:"Rotate Left"},{value:"rotate-right",label:"Rotate Right"},{value:"fade",label:"Fade"},{value:"scale",label:"Scale"},{value:"tada",label:"Tada"}]}})],(t=>this._updateIcon(n,o,{inactive_icon_animation:t.detail.value.inactive_icon_animation},i)))}
                     </div>
 
                     <!-- Template Mode -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Template Mode","Use a template to determine when this icon should be inactive. Templates allow you to use Home Assistant templating syntax for complex conditions. (This disables regular state condition)",t,{inactive_template_mode:e.inactive_template_mode||!1},[be.createSchemaItem("inactive_template_mode",{boolean:{}})],(e=>this._updateIcon(n,o,{inactive_template_mode:e.detail.value.inactive_template_mode},i)))}
-                      ${e.inactive_template_mode?this.renderConditionalFieldsGroup("Inactive Template Settings",V`
-                              ${be.renderField("Inactive Template","Enter template code that returns true/false to determine inactive state",t,{inactive_template:e.inactive_template||""},[be.createSchemaItem("inactive_template",{text:{multiline:!0}})],(e=>this._updateIcon(n,o,{inactive_template:e.detail.value.inactive_template},i)))}
+                      ${bt.renderField("Template Mode","Use a template to determine when this icon should be inactive. Templates allow you to use Home Assistant templating syntax for complex conditions. (This disables regular state condition)",e,{inactive_template_mode:t.inactive_template_mode||!1},[bt.createSchemaItem("inactive_template_mode",{boolean:{}})],(t=>this._updateIcon(n,o,{inactive_template_mode:t.detail.value.inactive_template_mode},i)))}
+                      ${t.inactive_template_mode?this.renderConditionalFieldsGroup("Inactive Template Settings",V`
+                              ${bt.renderField("Inactive Template","Enter template code that returns true/false to determine inactive state",e,{inactive_template:t.inactive_template||""},[bt.createSchemaItem("inactive_template",{text:{multiline:!0}})],(t=>this._updateIcon(n,o,{inactive_template:t.detail.value.inactive_template},i)))}
                             `):""}
                     </div>
 
                     <!-- Icon Size -->
                     <div style="margin-top: 16px;">
-                      <div
-                        class="field-title"
-                        style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
-                      >
-                        Inactive Icon Size
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">Inactive Icon Size</div>
+                        <div class="field-description">
+                          Size of the icon when inactive (in pixels)
+                        </div>
+                        <div
+                          class="gap-control-container"
+                          style="display: flex; align-items: center; gap: 12px;"
+                        >
+                          <input
+                            type="range"
+                            class="gap-slider"
+                            min="12"
+                            max="72"
+                            step="2"
+                            .value="${t.inactive_icon_size||24}"
+                            @input=${t=>{const e=t.target,a=Number(e.value);this._updateIcon(n,o,{inactive_icon_size:a},i)}}
+                          />
+                          <input
+                            type="number"
+                            class="gap-input"
+                            style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
+                            min="12"
+                            max="72"
+                            step="2"
+                            .value="${t.inactive_icon_size||24}"
+                            @input=${t=>{const e=t.target,a=Number(e.value);isNaN(a)||this._updateIcon(n,o,{inactive_icon_size:a},i)}}
+                            @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,a=Number(e.value)||24,r="ArrowUp"===t.key?2:-2,l=Math.max(12,Math.min(72,a+r));this._updateIcon(n,o,{inactive_icon_size:l},i)}}}
+                          />
+                          <button
+                            class="reset-btn"
+                            @click=${()=>this._updateIcon(n,o,{inactive_icon_size:24},i)}
+                            title="Reset to default (24)"
+                          >
+                            <ha-icon icon="mdi:refresh"></ha-icon>
+                          </button>
+                        </div>
                       </div>
-                      <div
-                        class="field-description"
-                        style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                      >
-                        Size of the icon when inactive (in pixels)
-                      </div>
-                      ${be.renderField("","",t,{inactive_icon_size:e.inactive_icon_size||24},[be.createSchemaItem("inactive_icon_size",{number:{min:12,max:72,step:2,mode:"slider"}})],(e=>this._updateIcon(n,o,{inactive_icon_size:Number(e.detail.value.inactive_icon_size)},i)))}
                     </div>
 
                     <!-- Icon Background Shape -->
@@ -3551,51 +4003,51 @@
                       >
                         Shape and style of the icon background when inactive
                       </div>
-                      ${be.renderField("","",t,{inactive_icon_background:e.inactive_icon_background||"none"},[be.createSchemaItem("inactive_icon_background",{select:{options:[{value:"none",label:"None"},{value:"rounded-square",label:"Rounded Square"},{value:"circle",label:"Circle"}]}})],(e=>this._updateIcon(n,o,{inactive_icon_background:e.detail.value.inactive_icon_background},i)))}
+                      ${bt.renderField("","",e,{inactive_icon_background:t.inactive_icon_background||"none"},[bt.createSchemaItem("inactive_icon_background",{select:{options:[{value:"none",label:"None"},{value:"rounded-square",label:"Rounded Square"},{value:"circle",label:"Circle"}]}})],(t=>this._updateIcon(n,o,{inactive_icon_background:t.detail.value.inactive_icon_background},i)))}
                     </div>
 
                     <!-- Use Entity Color for Icon -->
                     <div style="margin-top: 16px;">
-                      ${be.renderField("Use Entity Color for Icon","Use the color provided by the entity instead of custom colors",t,{use_entity_color_for_icon:e.use_entity_color_for_icon||!1},[be.createSchemaItem("use_entity_color_for_icon",{boolean:{}})],(e=>this._updateIcon(n,o,{use_entity_color_for_icon:e.detail.value.use_entity_color_for_icon},i)))}
+                      ${bt.renderField("Use Entity Color for Icon","Use the color provided by the entity instead of custom colors",e,{use_entity_color_for_icon:t.use_entity_color_for_icon||!1},[bt.createSchemaItem("use_entity_color_for_icon",{boolean:{}})],(t=>this._updateIcon(n,o,{use_entity_color_for_icon:t.detail.value.use_entity_color_for_icon},i)))}
                     </div>
 
                     <!-- Color Pickers (if not using entity color) -->
-                    ${e.use_entity_color_for_icon?"":this.renderConditionalFieldsGroup("Inactive Color Settings",V`
+                    ${t.use_entity_color_for_icon?"":this.renderConditionalFieldsGroup("Inactive Color Settings",V`
                             <div style="display: flex; flex-direction: column; gap: 16px;">
                               <ultra-color-picker
                                 .label=${"Inactive Icon Color"}
-                                .value=${e.inactive_icon_color||"var(--secondary-text-color)"}
+                                .value=${t.inactive_icon_color||"var(--secondary-text-color)"}
                                 .defaultValue=${"var(--secondary-text-color)"}
-                                .hass=${t}
-                                @value-changed=${e=>this._updateIcon(n,o,{inactive_icon_color:e.detail.value},i)}
+                                .hass=${e}
+                                @value-changed=${t=>this._updateIcon(n,o,{inactive_icon_color:t.detail.value},i)}
                               ></ultra-color-picker>
 
                               <ultra-color-picker
                                 .label=${"Inactive Name Color"}
-                                .value=${e.inactive_name_color||"var(--primary-text-color)"}
+                                .value=${t.inactive_name_color||"var(--primary-text-color)"}
                                 .defaultValue=${"var(--primary-text-color)"}
-                                .hass=${t}
-                                @value-changed=${e=>this._updateIcon(n,o,{inactive_name_color:e.detail.value},i)}
+                                .hass=${e}
+                                @value-changed=${t=>this._updateIcon(n,o,{inactive_name_color:t.detail.value},i)}
                               ></ultra-color-picker>
 
                               <ultra-color-picker
                                 .label=${"Inactive State Color"}
-                                .value=${e.inactive_state_color||"var(--secondary-text-color)"}
+                                .value=${t.inactive_state_color||"var(--secondary-text-color)"}
                                 .defaultValue=${"var(--secondary-text-color)"}
-                                .hass=${t}
-                                @value-changed=${e=>this._updateIcon(n,o,{inactive_state_color:e.detail.value},i)}
+                                .hass=${e}
+                                @value-changed=${t=>this._updateIcon(n,o,{inactive_state_color:t.detail.value},i)}
                               ></ultra-color-picker>
                             </div>
 
                             <!-- Icon Background Color -->
-                            ${"none"!==e.inactive_icon_background?V`
+                            ${"none"!==t.inactive_icon_background?V`
                                   <div style="margin-top: 16px;">
                                     <ultra-color-picker
                                       .label=${"Inactive Icon Background Color"}
-                                      .value=${e.inactive_icon_background_color||"var(--card-background-color)"}
+                                      .value=${t.inactive_icon_background_color||"var(--card-background-color)"}
                                       .defaultValue=${"var(--card-background-color)"}
-                                      .hass=${t}
-                                      @value-changed=${e=>this._updateIcon(n,o,{inactive_icon_background_color:e.detail.value},i)}
+                                      .hass=${e}
+                                      @value-changed=${t=>this._updateIcon(n,o,{inactive_icon_background_color:t.detail.value},i)}
                                     ></ultra-color-picker>
                                   </div>
                                 `:""}
@@ -3606,21 +4058,21 @@
             </div>
           `))}
       </div>
-    `}renderActionsTab(e,t,o,i){const n=e;return V`
+    `}renderActionsTab(t,e,o,i){const n=t;return V`
       <div class="module-actions-settings">
-        ${n.icons.map(((e,o)=>V`
+        ${n.icons.map(((t,o)=>V`
             <div
               class="settings-section"
               style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
             >
-              ${ve.render(t,{tap_action:e.tap_action||{action:"default"},hold_action:e.hold_action||{action:"default"},double_tap_action:e.double_tap_action||{action:"default"}},(e=>{const t={};e.tap_action&&(t.tap_action=e.tap_action),e.hold_action&&(t.hold_action=e.hold_action),e.double_tap_action&&(t.double_tap_action=e.double_tap_action),this._updateIcon(n,o,t,i)}),"Link Configuration")}
+              ${vt.render(e,{tap_action:t.tap_action||{action:"default"},hold_action:t.hold_action||{action:"default"},double_tap_action:t.double_tap_action||{action:"default"}},(t=>{const e={};t.tap_action&&(e.tap_action=t.tap_action),t.hold_action&&(e.hold_action=t.hold_action),t.double_tap_action&&(e.double_tap_action=t.double_tap_action),this._updateIcon(n,o,e,i)}),"Link Configuration")}
             </div>
           `))}
       </div>
-    `}renderOtherTab(e,t,o,i){const n=e;return V`
-      ${be.injectCleanFormStyles()}
+    `}renderOtherTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
       <div class="module-other-settings">
-        ${n.icons.map(((e,o)=>V`
+        ${n.icons.map(((t,o)=>V`
             <div
               class="settings-section"
               style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
@@ -3639,7 +4091,7 @@
                 >
                   Display the units of measurement alongside the entity state.
                 </div>
-                ${be.renderField("","",t,{show_units:e.show_units||!1},[be.createSchemaItem("show_units",{boolean:{}})],(e=>this._updateIcon(n,o,{show_units:e.detail.value.show_units},i)))}
+                ${bt.renderField("","",e,{show_units:t.show_units||!1},[bt.createSchemaItem("show_units",{boolean:{}})],(t=>this._updateIcon(n,o,{show_units:t.detail.value.show_units},i)))}
               </div>
 
               <!-- Container Style Section -->
@@ -3668,7 +4120,7 @@
                   >
                     How to align the icon within the container
                   </div>
-                  ${be.renderField("","",t,{vertical_alignment:e.vertical_alignment||"center"},[be.createSchemaItem("vertical_alignment",{select:{options:[{value:"top",label:"Top"},{value:"center",label:"Center"},{value:"bottom",label:"Bottom"}]}})],(e=>this._updateIcon(n,o,{vertical_alignment:e.detail.value.vertical_alignment},i)))}
+                  ${bt.renderField("","",e,{vertical_alignment:t.vertical_alignment||"center"},[bt.createSchemaItem("vertical_alignment",{select:{options:[{value:"top",label:"Top"},{value:"center",label:"Center"},{value:"bottom",label:"Bottom"}]}})],(t=>this._updateIcon(n,o,{vertical_alignment:t.detail.value.vertical_alignment},i)))}
                 </div>
 
                 <!-- Container Width -->
@@ -3685,7 +4137,44 @@
                   >
                     Maximum width of the icon container in pixels
                   </div>
-                  ${be.renderField("","",t,{container_width:e.container_width||80},[be.createSchemaItem("container_width",{number:{min:40,max:200,step:5,mode:"slider"}})],(e=>this._updateIcon(n,o,{container_width:Number(e.detail.value.container_width)},i)))}
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">Container Width</div>
+                    <div class="field-description">
+                      Maximum width of the icon container in pixels
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="40"
+                        max="200"
+                        step="5"
+                        .value="${t.container_width||80}"
+                        @input=${t=>{const e=t.target,a=Number(e.value);this._updateIcon(n,o,{container_width:a},i)}}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
+                        min="40"
+                        max="200"
+                        step="5"
+                        .value="${t.container_width||80}"
+                        @input=${t=>{const e=t.target,a=Number(e.value);isNaN(a)||this._updateIcon(n,o,{container_width:a},i)}}
+                        @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,a=Number(e.value)||80,r="ArrowUp"===t.key?5:-5,l=Math.max(40,Math.min(200,a+r));this._updateIcon(n,o,{container_width:l},i)}}}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${()=>this._updateIcon(n,o,{container_width:80},i)}
+                        title="Reset to default (80)"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Container Background Shape -->
@@ -3702,7 +4191,7 @@
                   >
                     Shape of the icon container background
                   </div>
-                  ${be.renderField("","",t,{container_background_shape:e.container_background_shape||"none"},[be.createSchemaItem("container_background_shape",{select:{options:[{value:"none",label:"None"},{value:"rounded",label:"Rounded"},{value:"square",label:"Square"},{value:"circle",label:"Circle"}]}})],(e=>this._updateIcon(n,o,{container_background_shape:e.detail.value.container_background_shape},i)))}
+                  ${bt.renderField("","",e,{container_background_shape:t.container_background_shape||"none"},[bt.createSchemaItem("container_background_shape",{select:{options:[{value:"none",label:"None"},{value:"rounded",label:"Rounded"},{value:"square",label:"Square"},{value:"circle",label:"Circle"}]}})],(t=>this._updateIcon(n,o,{container_background_shape:t.detail.value.container_background_shape},i)))}
                 </div>
               </div>
 
@@ -3733,8 +4222,8 @@
                     Use a template to dynamically select the icon based on entity states or
                     conditions.
                   </div>
-                  ${be.renderField("","",t,{dynamic_icon_template_mode:e.dynamic_icon_template_mode||!1},[be.createSchemaItem("dynamic_icon_template_mode",{boolean:{}})],(e=>this._updateIcon(n,o,{dynamic_icon_template_mode:e.detail.value.dynamic_icon_template_mode},i)))}
-                  ${e.dynamic_icon_template_mode?this.renderConditionalFieldsGroup("Dynamic Icon Template Settings",V`
+                  ${bt.renderField("","",e,{dynamic_icon_template_mode:t.dynamic_icon_template_mode||!1},[bt.createSchemaItem("dynamic_icon_template_mode",{boolean:{}})],(t=>this._updateIcon(n,o,{dynamic_icon_template_mode:t.detail.value.dynamic_icon_template_mode},i)))}
+                  ${t.dynamic_icon_template_mode?this.renderConditionalFieldsGroup("Dynamic Icon Template Settings",V`
                           <div class="settings-section">
                             <div
                               class="field-title"
@@ -3749,7 +4238,7 @@
                               Enter the Jinja2 template code that returns an icon name (e.g.,
                               mdi:lightbulb).
                             </div>
-                            ${be.renderField("","",t,{dynamic_icon_template:e.dynamic_icon_template||""},[be.createSchemaItem("dynamic_icon_template",{text:{multiline:!0}})],(e=>this._updateIcon(n,o,{dynamic_icon_template:e.detail.value.dynamic_icon_template},i)))}
+                            ${bt.renderField("","",e,{dynamic_icon_template:t.dynamic_icon_template||""},[bt.createSchemaItem("dynamic_icon_template",{text:{multiline:!0}})],(t=>this._updateIcon(n,o,{dynamic_icon_template:t.detail.value.dynamic_icon_template},i)))}
                           </div>
                         `):""}
                 </div>
@@ -3769,8 +4258,8 @@
                     Use a template to dynamically set the icon color based on entity states or
                     values.
                   </div>
-                  ${be.renderField("","",t,{dynamic_color_template_mode:e.dynamic_color_template_mode||!1},[be.createSchemaItem("dynamic_color_template_mode",{boolean:{}})],(e=>this._updateIcon(n,o,{dynamic_color_template_mode:e.detail.value.dynamic_color_template_mode},i)))}
-                  ${e.dynamic_color_template_mode?this.renderConditionalFieldsGroup("Dynamic Color Template Settings",V`
+                  ${bt.renderField("","",e,{dynamic_color_template_mode:t.dynamic_color_template_mode||!1},[bt.createSchemaItem("dynamic_color_template_mode",{boolean:{}})],(t=>this._updateIcon(n,o,{dynamic_color_template_mode:t.detail.value.dynamic_color_template_mode},i)))}
+                  ${t.dynamic_color_template_mode?this.renderConditionalFieldsGroup("Dynamic Color Template Settings",V`
                           <div class="settings-section">
                             <div
                               class="field-title"
@@ -3785,7 +4274,7 @@
                               Enter the Jinja2 template code that returns a color value (e.g.,
                               #ff0000, rgb(255,0,0), var(--primary-color)).
                             </div>
-                            ${be.renderField("","",t,{dynamic_color_template:e.dynamic_color_template||""},[be.createSchemaItem("dynamic_color_template",{text:{multiline:!0}})],(e=>this._updateIcon(n,o,{dynamic_color_template:e.detail.value.dynamic_color_template},i)))}
+                            ${bt.renderField("","",e,{dynamic_color_template:t.dynamic_color_template||""},[bt.createSchemaItem("dynamic_color_template",{text:{multiline:!0}})],(t=>this._updateIcon(n,o,{dynamic_color_template:t.detail.value.dynamic_color_template},i)))}
                           </div>
                         `):""}
                 </div>
@@ -3793,7 +4282,7 @@
             </div>
           `))}
       </div>
-    `}renderPreview(e,t){const o=e,i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(i,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
+    `}renderPreview(t,e){const o=t,i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color||"transparent",backgroundImage:this.getBackgroundImageCSS(i,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"hidden",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
       <div class="icon-module-container" style=${this.styleObjectToCss(n)}>
         <div class="icon-module-preview">
           <div
@@ -3805,21 +4294,21 @@
             justify-content: ${o.alignment||"center"};
           "
           >
-            ${o.icons.slice(0,6).map((e=>{var o,i,n,a;const r=null==t?void 0:t.states[e.entity],l=(null==r?void 0:r.state)||"unknown",s=l===e.active_state,d=s?!1!==e.show_icon_when_active:!1!==e.show_icon_when_inactive,c=s?!1!==e.show_name_when_active:!1!==e.show_name_when_inactive,p=s?!1!==e.show_state_when_active:!1!==e.show_state_when_inactive;let u=s&&e.icon_active||e.icon_inactive;(null===(o=null==r?void 0:r.attributes)||void 0===o?void 0:o.icon)&&(u=r.attributes.icon);const m=e.use_entity_color_for_icon&&(null===(i=null==r?void 0:r.attributes)||void 0===i?void 0:i.rgb_color)?`rgb(${r.attributes.rgb_color.join(",")})`:s?e.active_icon_color:e.inactive_icon_color,g=s?e.active_name_color:e.inactive_name_color,h=s?e.active_state_color:e.inactive_state_color,v=e.name||(null===(n=null==r?void 0:r.attributes)||void 0===n?void 0:n.friendly_name)||e.entity,b=s?e.custom_active_state_text||l:e.custom_inactive_state_text||l,f=s?e.active_icon_background||e.icon_background:e.inactive_icon_background||e.icon_background,y=s?e.active_icon_background_color||e.icon_background_color:e.inactive_icon_background_color||e.icon_background_color,_="none"!==f?{backgroundColor:e.use_entity_color_for_icon_background&&(null===(a=null==r?void 0:r.attributes)||void 0===a?void 0:a.rgb_color)?`rgb(${r.attributes.rgb_color.join(",")})`:y,borderRadius:"circle"===f?"50%":"rounded-square"===f?"8px":"0",padding:"8px",display:"flex",alignItems:"center",justifyContent:"center"}:{},x=s?"none"!==e.active_icon_animation?`icon-animation-${e.active_icon_animation}`:"":"none"!==e.inactive_icon_animation?`icon-animation-${e.inactive_icon_animation}`:"",w={display:"flex",flexDirection:"column",alignItems:"center",justifyContent:e.vertical_alignment||"center",gap:"4px",padding:"8px",borderRadius:"circle"===e.container_background_shape?"50%":"rounded"===e.container_background_shape?"8px":"square"===e.container_background_shape?"0":"8px",background:"transparent",cursor:"pointer",transition:"all 0.2s ease",width:e.container_width?`${e.container_width}px`:"auto",minWidth:"60px"};return V`
+            ${o.icons.slice(0,6).map((t=>{var o,i,n,a;const r=null==e?void 0:e.states[t.entity],l=(null==r?void 0:r.state)||"unknown",s=l===t.active_state,d=s?!1!==t.show_icon_when_active:!1!==t.show_icon_when_inactive,c=s?!1!==t.show_name_when_active:!1!==t.show_name_when_inactive,p=s?!1!==t.show_state_when_active:!1!==t.show_state_when_inactive;let u=s&&t.icon_active||t.icon_inactive;(null===(o=null==r?void 0:r.attributes)||void 0===o?void 0:o.icon)&&(u=r.attributes.icon);const m=t.use_entity_color_for_icon&&(null===(i=null==r?void 0:r.attributes)||void 0===i?void 0:i.rgb_color)?`rgb(${r.attributes.rgb_color.join(",")})`:s?t.active_icon_color:t.inactive_icon_color,g=s?t.active_name_color:t.inactive_name_color,h=s?t.active_state_color:t.inactive_state_color,v=t.name||(null===(n=null==r?void 0:r.attributes)||void 0===n?void 0:n.friendly_name)||t.entity,b=s?t.custom_active_state_text||l:t.custom_inactive_state_text||l,f=s?t.active_icon_background||t.icon_background:t.inactive_icon_background||t.icon_background,_=s?t.active_icon_background_color||t.icon_background_color:t.inactive_icon_background_color||t.icon_background_color,y="none"!==f?{backgroundColor:t.use_entity_color_for_icon_background&&(null===(a=null==r?void 0:r.attributes)||void 0===a?void 0:a.rgb_color)?`rgb(${r.attributes.rgb_color.join(",")})`:_,borderRadius:"circle"===f?"50%":"rounded-square"===f?"8px":"0",padding:"8px",display:"flex",alignItems:"center",justifyContent:"center"}:{},x=s?"none"!==t.active_icon_animation?`icon-animation-${t.active_icon_animation}`:"":"none"!==t.inactive_icon_animation?`icon-animation-${t.inactive_icon_animation}`:"",w={display:"flex",flexDirection:"column",alignItems:"center",justifyContent:t.vertical_alignment||"center",gap:"4px",padding:"8px",borderRadius:"circle"===t.container_background_shape?"50%":"rounded"===t.container_background_shape?"8px":"square"===t.container_background_shape?"0":"8px",background:"transparent",cursor:"pointer",transition:"all 0.2s ease",width:t.container_width?`${t.container_width}px`:"auto",minWidth:"60px"};return V`
                 <div
                   class="icon-item-preview ${x}"
                   style=${this.styleObjectToCss(w)}
                 >
                   ${d?V`
-                        <div style=${this.styleObjectToCss(_)}>
+                        <div style=${this.styleObjectToCss(y)}>
                           <ha-icon
                             icon="${u||"mdi:help-circle"}"
                             style="
                       color: ${m||"var(--secondary-text-color)"};
-                      font-size: ${Number(s?e.active_icon_size||e.icon_size:e.inactive_icon_size||e.icon_size)||24}px;
-                      --mdc-icon-size: ${Number(s?e.active_icon_size||e.icon_size:e.inactive_icon_size||e.icon_size)||24}px;
-                      width: ${Number(s?e.active_icon_size||e.icon_size:e.inactive_icon_size||e.icon_size)||24}px;
-                      height: ${Number(s?e.active_icon_size||e.icon_size:e.inactive_icon_size||e.icon_size)||24}px;
+                      font-size: ${Number(s?t.active_icon_size||t.icon_size:t.inactive_icon_size||t.icon_size)||24}px;
+                      --mdc-icon-size: ${Number(s?t.active_icon_size||t.icon_size:t.inactive_icon_size||t.icon_size)||24}px;
+                      width: ${Number(s?t.active_icon_size||t.icon_size:t.inactive_icon_size||t.icon_size)||24}px;
+                      height: ${Number(s?t.active_icon_size||t.icon_size:t.inactive_icon_size||t.icon_size)||24}px;
                     "
                           ></ha-icon>
                         </div>
@@ -3828,7 +4317,7 @@
                         <div
                           class="icon-name"
                           style="
-                      font-size: ${e.text_size||12}px;
+                      font-size: ${t.text_size||12}px;
                         color: ${g||"var(--primary-text-color)"};
                       text-align: center;
                       line-height: 1.2;
@@ -3843,7 +4332,7 @@
                         <div
                           class="icon-state"
                           style="
-                      font-size: ${Math.max((e.text_size||12)-2,10)}px;
+                      font-size: ${Math.max((t.text_size||12)-2,10)}px;
                         color: ${h||"var(--secondary-text-color)"};
                       text-align: center;
                     "
@@ -3872,8 +4361,8 @@
           </div>
         </div>
       </div>
-    `}validate(e){const t=e,o=[...super.validate(e).errors];return t.icons&&0!==t.icons.length||o.push("At least one icon is required"),t.icons.forEach(((e,t)=>{e.entity&&""!==e.entity.trim()||o.push(`Icon ${t+1}: Entity ID is required`),e.icon_inactive&&""!==e.icon_inactive.trim()||o.push(`Icon ${t+1}: Inactive icon is required`)})),{valid:0===o.length,errors:o}}getStyles(){return'\n      .icon-module-preview {\n        padding: 8px;\n        min-height: 60px;\n      }\n      \n      .icon-grid {\n        width: 100%;\n      }\n      \n      .icon-item-preview:hover {\n        background: var(--primary-color) !important;\n        color: white;\n        transform: scale(1.05);\n      }\n      \n      .icon-item-preview:hover ha-icon {\n        color: white !important;\n      }\n      \n      .icon-item-preview:hover .icon-name,\n      .icon-item-preview:hover .icon-state {\n        color: white !important;\n      }\n      \n      /* Field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Expandable details styling */\n      details > summary {\n        list-style: none;\n      }\n\n      details > summary::-webkit-details-marker {\n        display: none;\n      }\n\n      details[open] > summary ha-icon {\n        transform: rotate(90deg);\n      }\n\n      details > summary:hover {\n        background: rgba(var(--rgb-primary-color), 0.1) !important;\n      }\n\n      /* Icon animations */\n      .icon-animation-pulse {\n        animation: iconPulse 2s ease-in-out infinite;\n      }\n\n      .icon-animation-spin {\n        animation: iconSpin 2s linear infinite;\n      }\n\n      .icon-animation-bounce {\n        animation: iconBounce 1s ease-in-out infinite;\n      }\n\n      .icon-animation-flash {\n        animation: iconFlash 1s ease-in-out infinite;\n      }\n\n      .icon-animation-shake {\n        animation: iconShake 0.5s ease-in-out infinite;\n      }\n\n      @keyframes iconPulse {\n        0%, 100% { opacity: 1; transform: scale(1); }\n        50% { opacity: 0.7; transform: scale(1.1); }\n      }\n\n      @keyframes iconSpin {\n        from { transform: rotate(0deg); }\n        to { transform: rotate(360deg); }\n      }\n\n      @keyframes iconBounce {\n        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }\n        40% { transform: translateY(-10px); }\n        60% { transform: translateY(-5px); }\n      }\n\n      @keyframes iconFlash {\n        0%, 50%, 100% { opacity: 1; }\n        25%, 75% { opacity: 0.3; }\n      }\n\n      @keyframes iconShake {\n        0%, 100% { transform: translateX(0); }\n        10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }\n        20%, 40%, 60%, 80% { transform: translateX(2px); }\n      }\n\n      /* Add icon button styling */\n      .add-icon-btn:hover {\n        background: var(--primary-color);\n        color: white;\n      }\n      \n      /* Remove icon button styling */\n      .remove-icon-btn:disabled {\n        opacity: 0.3;\n        cursor: not-allowed;\n      }\n\n      /* Icon picker specific styling */\n      ha-icon-picker {\n        --ha-icon-picker-width: 100%;\n        --ha-icon-picker-height: 56px;\n      }\n\n      /* Text field and select consistency */\n      ha-textfield,\n      ha-select {\n        --mdc-shape-small: 8px;\n        --mdc-theme-primary: var(--primary-color);\n      }\n\n      /* Grid styling for layout options */\n      .settings-section[style*="grid"] > div {\n        min-width: 0;\n      }\n\n      /* Responsive adjustments */\n      @media (max-width: 768px) {\n        .settings-section[style*="grid-template-columns: 1fr 1fr 1fr"] {\n          grid-template-columns: 1fr !important;\n          gap: 12px !important;\n        }\n\n        .settings-section[style*="grid-template-columns: 1fr 1fr"] {\n          grid-template-columns: 1fr !important;\n          gap: 12px !important;\n        }\n\n        .conditional-fields-group {\n          border-left-width: 3px;\n        }\n        \n        .conditional-fields-header {\n          padding: 10px 12px;\n          font-size: 13px;\n        }\n        \n        .conditional-fields-content {\n        padding: 12px;\n        }\n      }\n\n      /* Ensure form elements don\'t overflow */\n      .settings-section ha-form {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      /* Color picker adjustments */\n      .settings-section ha-form[data-field*="color"] {\n        min-height: 56px;\n      }\n\n      /* Boolean toggle adjustments */\n      .settings-section ha-form[data-field*="mode"] {\n        display: flex;\n        align-items: center;\n        min-height: auto;\n      }\n\n      /* Number slider adjustments */\n      .settings-section ha-form[data-field*="size"] .mdc-slider,\n      .settings-section ha-form[data-field*="gap"] .mdc-slider,\n      .settings-section ha-form[data-field*="columns"] .mdc-slider {\n        width: 100%;\n        max-width: 100%;\n      }\n    '}_addIcon(e,t){const o={id:this.generateId("icon-item"),entity:"weather.forecast_home",name:"Forecast",icon_inactive:"mdi:weather-partly-cloudy",icon_active:"mdi:weather-partly-cloudy",inactive_state:"off",active_state:"on",custom_inactive_state_text:"",custom_active_state_text:"",inactive_template_mode:!1,inactive_template:"",active_template_mode:!1,active_template:"",use_entity_color_for_icon:!1,color_inactive:"var(--secondary-text-color)",color_active:"var(--primary-color)",inactive_icon_color:"var(--secondary-text-color)",active_icon_color:"var(--primary-color)",inactive_name_color:"var(--primary-text-color)",active_name_color:"var(--primary-text-color)",inactive_state_color:"var(--secondary-text-color)",active_state_color:"var(--secondary-text-color)",show_name_when_inactive:!0,show_state_when_inactive:!0,show_icon_when_inactive:!0,show_name_when_active:!0,show_state_when_active:!0,show_icon_when_active:!0,show_state:!0,show_name:!0,icon_size:24,text_size:12,active_icon_size:24,inactive_icon_size:24,icon_background:"none",use_entity_color_for_icon_background:!1,icon_background_color:"transparent",active_icon_background:"none",inactive_icon_background:"none",active_icon_background_color:"transparent",inactive_icon_background_color:"transparent",inactive_icon_animation:"none",active_icon_animation:"none",show_units:!1,vertical_alignment:"center",container_width:void 0,container_background_shape:"none",tap_action:{action:"toggle"},hold_action:{action:"default"},double_tap_action:{action:"default"},click_action:"toggle",double_click_action:"none",hold_action_legacy:"none",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:""};t({icons:[...e.icons,o]})}_removeIcon(e,t,o){if(e.icons.length<=1)return;const i=e.icons.filter(((e,o)=>o!==t));o({icons:i})}_updateIcon(e,t,o,i){const n=e.icons.map(((e,i)=>i===t?Object.assign(Object.assign({},e),o):e));i({icons:n})}getBackgroundImageCSS(e,t){var o,i;if(!e.background_image_type||"none"===e.background_image_type)return"none";switch(e.background_image_type){case"upload":case"url":if(e.background_image)return`url("${e.background_image}")`;break;case"entity":if(e.background_image_entity&&(null==t?void 0:t.states[e.background_image_entity])){const n=t.states[e.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${e.replace(/[A-Z]/g,(e=>`-${e.toLowerCase()}`))}: ${t}`)).join("; ")}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}class He{static getInstance(){return He.instance||(He.instance=new He),He.instance}setHass(e){this.hass=e}async executeAction(e){if(this.hass&&e.action_type&&"none"!==e.action_type)try{if(e.confirmation&&!confirm(e.confirmation.text||"Are you sure?"))return;switch(e.action_type){case"toggle":e.entity&&await this.hass.callService("homeassistant","toggle",{entity_id:e.entity});break;case"show_more_info":if(e.entity){const t=new CustomEvent("hass-more-info",{detail:{entityId:e.entity},bubbles:!0,composed:!0});document.dispatchEvent(t)}break;case"navigate":if(e.navigation_path){history.pushState(null,"",e.navigation_path);const t=new CustomEvent("location-changed",{detail:{replace:!1},bubbles:!0,composed:!0});window.dispatchEvent(t)}break;case"url":if(e.url||e.url_path){const t=e.url||e.url_path||"";window.open(t,"_blank")}break;case"call_service":if(e.service){const[t,o]=e.service.split(".");t&&o&&await this.hass.callService(t,o,e.service_data,e.target)}break;case"perform_action":if(e.custom_action){const t=new CustomEvent("action",{detail:{action:"tap",config:e.custom_action},bubbles:!0,composed:!0});document.dispatchEvent(t)}break;case"show_map":if(e.latitude&&e.longitude){const t=`/map?latitude=${e.latitude}&longitude=${e.longitude}`;history.pushState(null,"",t);const o=new CustomEvent("location-changed",{detail:{replace:!1},bubbles:!0,composed:!0});window.dispatchEvent(o)}break;case"voice_assistant":if(!1!==e.start_listening){const e=new CustomEvent("hass-start-voice-conversation",{bubbles:!0,composed:!0});document.dispatchEvent(e)}break;case"trigger":e.entity&&await this.hass.callService("automation","trigger",{entity_id:e.entity});break;default:console.warn("Unknown action type:",e.action_type)}}catch(e){console.error("Error executing action:",e)}}getActionTypeOptions(){return[{value:"none",label:"No Action"},{value:"toggle",label:"Toggle"},{value:"show_more_info",label:"Show More Info"},{value:"navigate",label:"Navigate to Path"},{value:"url",label:"Open URL"},{value:"call_service",label:"Call Service"},{value:"perform_action",label:"Perform Action"},{value:"show_map",label:"Show Map"},{value:"voice_assistant",label:"Voice Assistant"},{value:"trigger",label:"Trigger"}]}validateAction(e){const t=[];if(!e.action_type||"none"===e.action_type)return{valid:!0,errors:[]};switch(e.action_type){case"toggle":case"show_more_info":case"trigger":e.entity||t.push("Entity is required for this action type");break;case"navigate":e.navigation_path||t.push("Navigation path is required");break;case"url":e.url||e.url_path||t.push("URL is required");break;case"call_service":e.service?e.service.includes(".")||t.push("Service must be in domain.service format"):t.push("Service is required");break;case"show_map":void 0!==e.latitude&&void 0!==e.longitude||t.push("Latitude and longitude are required for map action")}return{valid:0===t.length,errors:t}}renderActionForm(e,t,o){return{action:t,actionTypes:this.getActionTypeOptions(),onUpdate:o,validate:()=>this.validateAction(t)}}}const Ve=He.getInstance();class Ge extends he{constructor(){super(...arguments),this.metadata={type:"button",title:"Button",description:"Interactive buttons with actions",author:"WJD Designs",version:"1.0.0",icon:"mdi:gesture-tap-button",category:"interactive",tags:["button","action","click","interactive"]}}createDefault(e){return{id:e||this.generateId("button"),type:"button",label:"Click Me",action:{action_type:"none"},style:"flat",alignment:"center",icon:"",icon_position:"before",show_icon:!1,background_color:"var(--primary-color)",text_color:"white"}}getButtonStyles(){return[{value:"flat",label:"Flat (Default)"},{value:"glossy",label:"Glossy"},{value:"embossed",label:"Embossed"},{value:"inset",label:"Inset"},{value:"gradient-overlay",label:"Gradient Overlay"},{value:"neon-glow",label:"Neon Glow"},{value:"outline",label:"Outline"},{value:"glass",label:"Glass"},{value:"metallic",label:"Metallic"},{value:"neumorphic",label:"Neumorphic"},{value:"dashed",label:"Dashed"}]}getAlignmentOptions(){return[{value:"left",label:"Left"},{value:"center",label:"Center"},{value:"right",label:"Right"},{value:"justify",label:"Full Width"}]}getIconPositionOptions(){return[{value:"before",label:"Before Text"},{value:"after",label:"After Text"}]}renderGeneralTab(e,t,o,i){const n=e;return V`
-      ${be.injectCleanFormStyles()}
+    `}validate(t){const e=t,o=[...super.validate(t).errors];return e.icons&&0!==e.icons.length||o.push("At least one icon is required"),e.icons.forEach(((t,e)=>{t.entity&&""!==t.entity.trim()||o.push(`Icon ${e+1}: Entity ID is required`),t.icon_inactive&&""!==t.icon_inactive.trim()||o.push(`Icon ${e+1}: Inactive icon is required`)})),{valid:0===o.length,errors:o}}getStyles(){return'\n      .icon-module-preview {\n        padding: 8px;\n        min-height: 60px;\n      }\n      \n      .icon-grid {\n        width: 100%;\n      }\n      \n      .icon-item-preview:hover {\n        background: var(--primary-color) !important;\n        color: white;\n        transform: scale(1.05);\n      }\n      \n      .icon-item-preview:hover ha-icon {\n        color: white !important;\n      }\n      \n      .icon-item-preview:hover .icon-name,\n      .icon-item-preview:hover .icon-state {\n        color: white !important;\n      }\n      \n      /* Field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n        display: block !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        display: block !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      .settings-section {\n        margin-bottom: 16px;\n        max-width: 100%;\n        box-sizing: border-box;\n      }\n\n      /* Conditional Fields Grouping CSS */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      .conditional-fields-group:hover {\n        background: rgba(var(--rgb-primary-color), 0.12);\n      }\n\n      .conditional-fields-header {\n        background: rgba(var(--rgb-primary-color), 0.15);\n        padding: 12px 16px;\n        font-size: 14px;\n        font-weight: 600;\n        color: var(--primary-color);\n        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n      }\n\n      .conditional-fields-content {\n        padding: 16px;\n      }\n\n      .conditional-fields-content > .field-title:first-child {\n        margin-top: 0 !important;\n      }\n\n      @keyframes slideInFromLeft {\n        from { \n          opacity: 0; \n          transform: translateX(-10px); \n        }\n        to { \n          opacity: 1; \n          transform: translateX(0); \n        }\n      }\n\n      /* Expandable details styling */\n      details > summary {\n        list-style: none;\n      }\n\n      details > summary::-webkit-details-marker {\n        display: none;\n      }\n\n      details[open] > summary ha-icon {\n        transform: rotate(90deg);\n      }\n\n      details > summary:hover {\n        background: rgba(var(--rgb-primary-color), 0.1) !important;\n      }\n\n      /* Icon animations */\n      .icon-animation-pulse {\n        animation: iconPulse 2s ease-in-out infinite;\n      }\n\n      .icon-animation-spin {\n        animation: iconSpin 2s linear infinite;\n      }\n\n      .icon-animation-bounce {\n        animation: iconBounce 1s ease-in-out infinite;\n      }\n\n      .icon-animation-flash {\n        animation: iconFlash 1s ease-in-out infinite;\n      }\n\n      .icon-animation-shake {\n        animation: iconShake 0.5s ease-in-out infinite;\n      }\n\n      @keyframes iconPulse {\n        0%, 100% { opacity: 1; transform: scale(1); }\n        50% { opacity: 0.7; transform: scale(1.1); }\n      }\n\n      @keyframes iconSpin {\n        from { transform: rotate(0deg); }\n        to { transform: rotate(360deg); }\n      }\n\n      @keyframes iconBounce {\n        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }\n        40% { transform: translateY(-10px); }\n        60% { transform: translateY(-5px); }\n      }\n\n      @keyframes iconFlash {\n        0%, 50%, 100% { opacity: 1; }\n        25%, 75% { opacity: 0.3; }\n      }\n\n      @keyframes iconShake {\n        0%, 100% { transform: translateX(0); }\n        10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }\n        20%, 40%, 60%, 80% { transform: translateX(2px); }\n      }\n\n      /* Add icon button styling */\n      .add-icon-btn:hover {\n        background: var(--primary-color);\n        color: white;\n      }\n      \n      /* Remove icon button styling */\n      .remove-icon-btn:disabled {\n        opacity: 0.3;\n        cursor: not-allowed;\n      }\n\n      /* Icon picker specific styling */\n      ha-icon-picker {\n        --ha-icon-picker-width: 100%;\n        --ha-icon-picker-height: 56px;\n      }\n\n      /* Text field and select consistency */\n      ha-textfield,\n      ha-select {\n        --mdc-shape-small: 8px;\n        --mdc-theme-primary: var(--primary-color);\n      }\n\n      /* Grid styling for layout options */\n      .settings-section[style*="grid"] > div {\n        min-width: 0;\n      }\n\n      /* Responsive adjustments */\n      @media (max-width: 768px) {\n        .settings-section[style*="grid-template-columns: 1fr 1fr 1fr"] {\n          grid-template-columns: 1fr !important;\n          gap: 12px !important;\n        }\n\n        .settings-section[style*="grid-template-columns: 1fr 1fr"] {\n          grid-template-columns: 1fr !important;\n          gap: 12px !important;\n        }\n\n        .conditional-fields-group {\n          border-left-width: 3px;\n        }\n        \n        .conditional-fields-header {\n          padding: 10px 12px;\n          font-size: 13px;\n        }\n        \n        .conditional-fields-content {\n        padding: 12px;\n        }\n      }\n\n      /* Ensure form elements don\'t overflow */\n      .settings-section ha-form {\n        max-width: 100%;\n        overflow: visible;\n      }\n\n      /* Color picker adjustments */\n      .settings-section ha-form[data-field*="color"] {\n        min-height: 56px;\n      }\n\n      /* Boolean toggle adjustments */\n      .settings-section ha-form[data-field*="mode"] {\n        display: flex;\n        align-items: center;\n        min-height: auto;\n      }\n\n      /* Number slider adjustments */\n      .settings-section ha-form[data-field*="size"] .mdc-slider,\n      .settings-section ha-form[data-field*="gap"] .mdc-slider,\n      .settings-section ha-form[data-field*="columns"] .mdc-slider {\n        width: 100%;\n        max-width: 100%;\n      }\n\n      /* Gap control styles */\n      .gap-control-container {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n\n      .gap-slider {\n        flex: 1;\n        height: 6px;\n        background: var(--divider-color);\n        border-radius: 3px;\n        outline: none;\n        appearance: none;\n        -webkit-appearance: none;\n        cursor: pointer;\n        transition: all 0.2s ease;\n      }\n\n      .gap-slider::-webkit-slider-thumb {\n        appearance: none;\n        -webkit-appearance: none;\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider:hover {\n        background: var(--primary-color);\n        opacity: 0.7;\n      }\n\n      .gap-slider:hover::-webkit-slider-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-slider:hover::-moz-range-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-input {\n        width: 50px !important;\n        max-width: 50px !important;\n        min-width: 50px !important;\n        padding: 4px 6px !important;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 13px;\n        text-align: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n        box-sizing: border-box;\n      }\n\n      .gap-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);\n      }\n\n      .reset-btn {\n        width: 36px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n\n      .reset-btn:hover {\n        background: var(--primary-color);\n        color: var(--text-primary-color);\n        border-color: var(--primary-color);\n      }\n\n      .reset-btn ha-icon {\n        font-size: 16px;\n      }\n    '}_addIcon(t,e){const o={id:this.generateId("icon-item"),entity:"weather.forecast_home",name:"Forecast",icon_inactive:"mdi:weather-partly-cloudy",icon_active:"mdi:weather-partly-cloudy",inactive_state:"off",active_state:"on",custom_inactive_state_text:"",custom_active_state_text:"",inactive_template_mode:!1,inactive_template:"",active_template_mode:!1,active_template:"",use_entity_color_for_icon:!1,color_inactive:"var(--secondary-text-color)",color_active:"var(--primary-color)",inactive_icon_color:"var(--secondary-text-color)",active_icon_color:"var(--primary-color)",inactive_name_color:"var(--primary-text-color)",active_name_color:"var(--primary-text-color)",inactive_state_color:"var(--secondary-text-color)",active_state_color:"var(--secondary-text-color)",show_name_when_inactive:!0,show_state_when_inactive:!0,show_icon_when_inactive:!0,show_name_when_active:!0,show_state_when_active:!0,show_icon_when_active:!0,show_state:!0,show_name:!0,icon_size:24,text_size:12,active_icon_size:24,inactive_icon_size:24,icon_background:"none",use_entity_color_for_icon_background:!1,icon_background_color:"transparent",active_icon_background:"none",inactive_icon_background:"none",active_icon_background_color:"transparent",inactive_icon_background_color:"transparent",inactive_icon_animation:"none",active_icon_animation:"none",show_units:!1,vertical_alignment:"center",container_width:void 0,container_background_shape:"none",tap_action:{action:"toggle"},hold_action:{action:"default"},double_tap_action:{action:"default"},click_action:"toggle",double_click_action:"none",hold_action_legacy:"none",navigation_path:"",url:"",service:"",service_data:{},template_mode:!1,template:"",dynamic_icon_template_mode:!1,dynamic_icon_template:"",dynamic_color_template_mode:!1,dynamic_color_template:""};e({icons:[...t.icons,o]})}_removeIcon(t,e,o){if(t.icons.length<=1)return;const i=t.icons.filter(((t,o)=>o!==e));o({icons:i})}_updateIcon(t,e,o,i){const n=t.icons.map(((t,i)=>i===e?Object.assign(Object.assign({},t),o):t));i({icons:n})}getBackgroundImageCSS(t,e){var o,i;if(!t.background_image_type||"none"===t.background_image_type)return"none";switch(t.background_image_type){case"upload":case"url":if(t.background_image)return`url("${t.background_image}")`;break;case"entity":if(t.background_image_entity&&(null==e?void 0:e.states[t.background_image_entity])){const n=e.states[t.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${t.replace(/[A-Z]/g,(t=>`-${t.toLowerCase()}`))}: ${e}`)).join("; ")}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}class Bt{static getInstance(){return Bt.instance||(Bt.instance=new Bt),Bt.instance}setHass(t){this.hass=t}async executeAction(t){if(this.hass&&t.action_type&&"none"!==t.action_type)try{if(t.confirmation&&!confirm(t.confirmation.text||"Are you sure?"))return;switch(t.action_type){case"toggle":t.entity&&await this.hass.callService("homeassistant","toggle",{entity_id:t.entity});break;case"show_more_info":if(t.entity){const e=new CustomEvent("hass-more-info",{detail:{entityId:t.entity},bubbles:!0,composed:!0});document.dispatchEvent(e)}break;case"navigate":if(t.navigation_path){history.pushState(null,"",t.navigation_path);const e=new CustomEvent("location-changed",{detail:{replace:!1},bubbles:!0,composed:!0});window.dispatchEvent(e)}break;case"url":if(t.url||t.url_path){const e=t.url||t.url_path||"";window.open(e,"_blank")}break;case"call_service":if(t.service){const[e,o]=t.service.split(".");e&&o&&await this.hass.callService(e,o,t.service_data,t.target)}break;case"perform_action":if(t.custom_action){const e=new CustomEvent("action",{detail:{action:"tap",config:t.custom_action},bubbles:!0,composed:!0});document.dispatchEvent(e)}break;case"show_map":if(t.latitude&&t.longitude){const e=`/map?latitude=${t.latitude}&longitude=${t.longitude}`;history.pushState(null,"",e);const o=new CustomEvent("location-changed",{detail:{replace:!1},bubbles:!0,composed:!0});window.dispatchEvent(o)}break;case"voice_assistant":if(!1!==t.start_listening){const t=new CustomEvent("hass-start-voice-conversation",{bubbles:!0,composed:!0});document.dispatchEvent(t)}break;case"trigger":t.entity&&await this.hass.callService("automation","trigger",{entity_id:t.entity});break;default:console.warn("Unknown action type:",t.action_type)}}catch(t){console.error("Error executing action:",t)}}getActionTypeOptions(){return[{value:"none",label:"No Action"},{value:"toggle",label:"Toggle"},{value:"show_more_info",label:"Show More Info"},{value:"navigate",label:"Navigate to Path"},{value:"url",label:"Open URL"},{value:"call_service",label:"Call Service"},{value:"perform_action",label:"Perform Action"},{value:"show_map",label:"Show Map"},{value:"voice_assistant",label:"Voice Assistant"},{value:"trigger",label:"Trigger"}]}validateAction(t){const e=[];if(!t.action_type||"none"===t.action_type)return{valid:!0,errors:[]};switch(t.action_type){case"toggle":case"show_more_info":case"trigger":t.entity||e.push("Entity is required for this action type");break;case"navigate":t.navigation_path||e.push("Navigation path is required");break;case"url":t.url||t.url_path||e.push("URL is required");break;case"call_service":t.service?t.service.includes(".")||e.push("Service must be in domain.service format"):e.push("Service is required");break;case"show_map":void 0!==t.latitude&&void 0!==t.longitude||e.push("Latitude and longitude are required for map action")}return{valid:0===e.length,errors:e}}renderActionForm(t,e,o){return{action:e,actionTypes:this.getActionTypeOptions(),onUpdate:o,validate:()=>this.validateAction(e)}}}const Ht=Bt.getInstance();class Vt extends ht{constructor(){super(...arguments),this.metadata={type:"button",title:"Button",description:"Interactive buttons with actions",author:"WJD Designs",version:"1.0.0",icon:"mdi:gesture-tap-button",category:"interactive",tags:["button","action","click","interactive"]}}createDefault(t){return{id:t||this.generateId("button"),type:"button",label:"Click Me",action:{action_type:"none"},style:"flat",alignment:"center",icon:"",icon_position:"before",show_icon:!1,background_color:"var(--primary-color)",text_color:"white"}}getButtonStyles(){return[{value:"flat",label:"Flat (Default)"},{value:"glossy",label:"Glossy"},{value:"embossed",label:"Embossed"},{value:"inset",label:"Inset"},{value:"gradient-overlay",label:"Gradient Overlay"},{value:"neon-glow",label:"Neon Glow"},{value:"outline",label:"Outline"},{value:"glass",label:"Glass"},{value:"metallic",label:"Metallic"},{value:"neumorphic",label:"Neumorphic"},{value:"dashed",label:"Dashed"}]}getAlignmentOptions(){return[{value:"left",label:"Left"},{value:"center",label:"Center"},{value:"right",label:"Right"},{value:"justify",label:"Full Width"}]}getIconPositionOptions(){return[{value:"before",label:"Before Text"},{value:"after",label:"After Text"}]}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
       <div class="button-module-settings">
         <!-- Button Label Section -->
         <div class="settings-section" style="margin-bottom: 16px;">
@@ -3884,7 +4373,7 @@
             Button Label
           </div>
 
-          ${be.renderField("Button Text","The text displayed on the button",t,{label:n.label||"Click Me"},[be.createSchemaItem("label",{text:{}})],(e=>i({label:e.detail.value.label})))}
+          ${bt.renderField("Button Text","The text displayed on the button",e,{label:n.label||"Click Me"},[bt.createSchemaItem("label",{text:{}})],(t=>i({label:t.detail.value.label})))}
         </div>
 
         <!-- Link Action Section -->
@@ -3899,7 +4388,7 @@
             Link Action
           </div>
 
-          ${this.renderLinkActionForm(n.action||{action_type:"none"},t,(e=>i({action:e})))}
+          ${this.renderLinkActionForm(n.action||{action_type:"none"},e,(t=>i({action:t})))}
         </div>
 
         <!-- Button Style Section -->
@@ -3911,7 +4400,7 @@
             Style
           </div>
 
-          ${be.renderField("Button Style","Choose the visual style of the button",t,{style:n.style||"flat"},[be.createSchemaItem("style",{select:{options:this.getButtonStyles(),mode:"dropdown"}})],(e=>i({style:e.detail.value.style})))}
+          ${bt.renderField("Button Style","Choose the visual style of the button",e,{style:n.style||"flat"},[bt.createSchemaItem("style",{select:{options:this.getButtonStyles(),mode:"dropdown"}})],(t=>i({style:t.detail.value.style})))}
         </div>
 
         <!-- Background Color Section -->
@@ -3928,16 +4417,16 @@
               .label=${"Background Color"}
               .value=${n.background_color||"var(--primary-color)"}
               .defaultValue=${"var(--primary-color)"}
-              .hass=${t}
-              @value-changed=${e=>i({background_color:e.detail.value})}
+              .hass=${e}
+              @value-changed=${t=>i({background_color:t.detail.value})}
             ></ultra-color-picker>
 
             <ultra-color-picker
               .label=${"Text Color"}
               .value=${n.text_color||"white"}
               .defaultValue=${"white"}
-              .hass=${t}
-              @value-changed=${e=>i({text_color:e.detail.value})}
+              .hass=${e}
+              @value-changed=${t=>i({text_color:t.detail.value})}
             ></ultra-color-picker>
           </div>
 
@@ -3958,17 +4447,17 @@
           </div>
 
           <div style="display: flex; gap: 8px; justify-content: flex-start;">
-            ${this.getAlignmentOptions().map((e=>V`
+            ${this.getAlignmentOptions().map((t=>V`
                 <button
                   type="button"
-                  style="padding: 8px 12px; border: 2px solid ${(n.alignment||"center")===e.value?"var(--primary-color)":"var(--divider-color)"}; background: ${(n.alignment||"center")===e.value?"var(--primary-color)":"transparent"}; color: ${(n.alignment||"center")===e.value?"white":"var(--primary-text-color)"}; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
-                  @click=${()=>i({alignment:e.value})}
+                  style="padding: 8px 12px; border: 2px solid ${(n.alignment||"center")===t.value?"var(--primary-color)":"var(--divider-color)"}; background: ${(n.alignment||"center")===t.value?"var(--primary-color)":"transparent"}; color: ${(n.alignment||"center")===t.value?"white":"var(--primary-text-color)"}; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
+                  @click=${()=>i({alignment:t.value})}
                 >
                   <ha-icon
-                    icon="mdi:format-align-${"justify"===e.value?"center":e.value}"
+                    icon="mdi:format-align-${"justify"===t.value?"center":t.value}"
                     style="font-size: 16px;"
                   ></ha-icon>
-                  ${e.label}
+                  ${t.label}
                 </button>
               `))}
           </div>
@@ -3988,24 +4477,24 @@
             >
               Icon
             </div>
-            ${be.renderCleanForm(t,{show_icon:n.show_icon||!1},[be.createSchemaItem("show_icon",{boolean:{}})],(e=>i({show_icon:e.detail.value.show_icon})))}
+            ${bt.renderCleanForm(e,{show_icon:n.show_icon||!1},[bt.createSchemaItem("show_icon",{boolean:{}})],(t=>i({show_icon:t.detail.value.show_icon})))}
           </div>
 
           ${n.show_icon?V`
                 <div class="field-group" style="margin-bottom: 16px;">
-                  ${be.renderField("Icon","Choose an icon for the button",t,{icon:n.icon||""},[be.createSchemaItem("icon",{icon:{}})],(e=>i({icon:e.detail.value.icon})))}
+                  ${bt.renderField("Icon","Choose an icon for the button",e,{icon:n.icon||""},[bt.createSchemaItem("icon",{icon:{}})],(t=>i({icon:t.detail.value.icon})))}
                 </div>
 
                 <div class="field-group">
                   <div class="field-title" style="margin-bottom: 8px;">Icon Position</div>
                   <div style="display: flex; gap: 8px;">
-                    ${this.getIconPositionOptions().map((e=>V`
+                    ${this.getIconPositionOptions().map((t=>V`
                         <button
                           type="button"
-                          style="padding: 8px 12px; border: 2px solid ${(n.icon_position||"before")===e.value?"var(--primary-color)":"var(--divider-color)"}; background: ${(n.icon_position||"before")===e.value?"var(--primary-color)":"transparent"}; color: ${(n.icon_position||"before")===e.value?"white":"var(--primary-text-color)"}; border-radius: 6px; cursor: pointer;"
-                          @click=${()=>i({icon_position:e.value})}
+                          style="padding: 8px 12px; border: 2px solid ${(n.icon_position||"before")===t.value?"var(--primary-color)":"var(--divider-color)"}; background: ${(n.icon_position||"before")===t.value?"var(--primary-color)":"transparent"}; color: ${(n.icon_position||"before")===t.value?"white":"var(--primary-text-color)"}; border-radius: 6px; cursor: pointer;"
+                          @click=${()=>i({icon_position:t.value})}
                         >
-                          ${e.label}
+                          ${t.label}
                         </button>
                       `))}
                   </div>
@@ -4019,38 +4508,38 @@
               `}
         </div>
       </div>
-    `}renderLinkActionForm(e,t,o){const i=Ve.getActionTypeOptions();return V`
+    `}renderLinkActionForm(t,e,o){const i=Ht.getActionTypeOptions();return V`
       <div class="link-action-form">
         <!-- Action Type -->
         <div class="field-group" style="margin-bottom: 16px;">
-          ${be.renderField("Action Type","Choose what happens when the button is clicked",t,{action_type:e.action_type||"none"},[be.createSchemaItem("action_type",{select:{options:i,mode:"dropdown"}})],(t=>o(Object.assign(Object.assign({},e),{action_type:t.detail.value.action_type}))))}
+          ${bt.renderField("Action Type","Choose what happens when the button is clicked",e,{action_type:t.action_type||"none"},[bt.createSchemaItem("action_type",{select:{options:i,mode:"dropdown"}})],(e=>o(Object.assign(Object.assign({},t),{action_type:e.detail.value.action_type}))))}
         </div>
 
-        ${this.renderActionTypeSpecificFields(e,t,o)}
+        ${this.renderActionTypeSpecificFields(t,e,o)}
       </div>
-    `}renderActionTypeSpecificFields(e,t,o){switch(e.action_type){case"toggle":case"show_more_info":case"trigger":return be.renderField("Entity","Select the entity to interact with",t,{entity:e.entity||""},[be.createSchemaItem("entity",{entity:{}})],(t=>o(Object.assign(Object.assign({},e),{entity:t.detail.value.entity}))));case"navigate":return be.renderField("Navigation Path","Path to navigate to (e.g., /dashboard/energy)",t,{navigation_path:e.navigation_path||""},[be.createSchemaItem("navigation_path",{text:{}})],(t=>o(Object.assign(Object.assign({},e),{navigation_path:t.detail.value.navigation_path}))));case"url":return be.renderField("URL","URL to open (e.g., https://example.com)",t,{url:e.url||""},[be.createSchemaItem("url",{text:{}})],(t=>o(Object.assign(Object.assign({},e),{url:t.detail.value.url}))));case"call_service":return V`
+    `}renderActionTypeSpecificFields(t,e,o){switch(t.action_type){case"toggle":case"show_more_info":case"trigger":return bt.renderField("Entity","Select the entity to interact with",e,{entity:t.entity||""},[bt.createSchemaItem("entity",{entity:{}})],(e=>o(Object.assign(Object.assign({},t),{entity:e.detail.value.entity}))));case"navigate":return bt.renderField("Navigation Path","Path to navigate to (e.g., /dashboard/energy)",e,{navigation_path:t.navigation_path||""},[bt.createSchemaItem("navigation_path",{text:{}})],(e=>o(Object.assign(Object.assign({},t),{navigation_path:e.detail.value.navigation_path}))));case"url":return bt.renderField("URL","URL to open (e.g., https://example.com)",e,{url:t.url||""},[bt.createSchemaItem("url",{text:{}})],(e=>o(Object.assign(Object.assign({},t),{url:e.detail.value.url}))));case"call_service":return V`
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Service","Service to call (e.g., light.turn_on)",t,{service:e.service||""},[be.createSchemaItem("service",{text:{}})],(t=>o(Object.assign(Object.assign({},e),{service:t.detail.value.service}))))}
+            ${bt.renderField("Service","Service to call (e.g., light.turn_on)",e,{service:t.service||""},[bt.createSchemaItem("service",{text:{}})],(e=>o(Object.assign(Object.assign({},t),{service:e.detail.value.service}))))}
           </div>
 
           <div class="field-group">
-            ${be.renderField("Service Data (JSON)","Additional data for the service call in JSON format",t,{service_data:JSON.stringify(e.service_data||{},null,2)},[be.createSchemaItem("service_data",{text:{multiline:!0}})],(t=>{try{const i=JSON.parse(t.detail.value.service_data||"{}");o(Object.assign(Object.assign({},e),{service_data:i}))}catch(e){console.warn("Invalid JSON in service data")}}))}
+            ${bt.renderField("Service Data (JSON)","Additional data for the service call in JSON format",e,{service_data:JSON.stringify(t.service_data||{},null,2)},[bt.createSchemaItem("service_data",{text:{multiline:!0}})],(e=>{try{const i=JSON.parse(e.detail.value.service_data||"{}");o(Object.assign(Object.assign({},t),{service_data:i}))}catch(t){console.warn("Invalid JSON in service data")}}))}
           </div>
         `;case"show_map":return V`
           <div class="field-group" style="margin-bottom: 16px;">
-            ${be.renderField("Latitude","Latitude coordinate for the map location",t,{latitude:e.latitude||0},[be.createSchemaItem("latitude",{number:{min:-90,max:90,step:1e-6}})],(t=>o(Object.assign(Object.assign({},e),{latitude:t.detail.value.latitude}))))}
+            ${bt.renderField("Latitude","Latitude coordinate for the map location",e,{latitude:t.latitude||0},[bt.createSchemaItem("latitude",{number:{min:-90,max:90,step:1e-6}})],(e=>o(Object.assign(Object.assign({},t),{latitude:e.detail.value.latitude}))))}
           </div>
 
           <div class="field-group">
-            ${be.renderField("Longitude","Longitude coordinate for the map location",t,{longitude:e.longitude||0},[be.createSchemaItem("longitude",{number:{min:-180,max:180,step:1e-6}})],(t=>o(Object.assign(Object.assign({},e),{longitude:t.detail.value.longitude}))))}
+            ${bt.renderField("Longitude","Longitude coordinate for the map location",e,{longitude:t.longitude||0},[bt.createSchemaItem("longitude",{number:{min:-180,max:180,step:1e-6}})],(e=>o(Object.assign(Object.assign({},t),{longitude:e.detail.value.longitude}))))}
           </div>
-        `;default:return V``}}renderPreview(e,t){const o=e,i=o,n={backgroundColor:i.background_color||o.background_color||"var(--primary-color)",textColor:i.color||o.text_color||"white",fontSize:i.font_size?`${i.font_size}px`:"14px",fontFamily:i.font_family||"inherit",fontWeight:i.font_weight||"500",fontStyle:i.font_style||"normal",textTransform:i.text_transform||"none",textShadow:this.getTextShadowCSS(i)},a=this.getButtonStyleCSS(o.style||"flat",n.backgroundColor,n.textColor,n.fontSize,n.fontFamily,n.fontWeight,n.textTransform,n.fontStyle,n.textShadow),r=this.getAlignmentCSS(o.alignment||"center"),l={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"0"}px ${i.padding_right||"0"}px ${i.padding_bottom||"0"}px ${i.padding_left||"0"}px`:"0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color&&i.background_color!==n.backgroundColor?i.background_color:"transparent",backgroundImage:this.getBackgroundImageCSS(i,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
+        `;default:return V``}}renderPreview(t,e){const o=t,i=o,n={backgroundColor:i.background_color||o.background_color||"var(--primary-color)",textColor:i.color||o.text_color||"white",fontSize:i.font_size?`${i.font_size}px`:"14px",fontFamily:i.font_family||"inherit",fontWeight:i.font_weight||"500",fontStyle:i.font_style||"normal",textTransform:i.text_transform||"none",textShadow:this.getTextShadowCSS(i)},a=this.getButtonStyleCSS(o.style||"flat",n.backgroundColor,n.textColor,n.fontSize,n.fontFamily,n.fontWeight,n.textTransform,n.fontStyle,n.textShadow),r=this.getAlignmentCSS(o.alignment||"center"),l={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"0"}px ${i.padding_right||"0"}px ${i.padding_bottom||"0"}px ${i.padding_left||"0"}px`:"0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color&&i.background_color!==n.backgroundColor?i.background_color:"transparent",backgroundImage:this.getBackgroundImageCSS(i,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"relative",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"};return V`
       <div class="button-module-container" style=${this.styleObjectToCss(l)}>
         <div class="button-module-preview" style="${r}">
           <button
             class="ultra-button ${o.style||"flat"} ${"justify"===o.alignment?"justify":""}"
             style="${a} ${"justify"===o.alignment?"width: 100%;":""}"
-            @click=${()=>{o.action&&(Ve.setHass(t),Ve.executeAction(o.action))}}
+            @click=${()=>{o.action&&(Ht.setHass(e),Ht.executeAction(o.action))}}
           >
             ${o.show_icon&&o.icon&&"before"===o.icon_position?V`<ha-icon
                   icon="${o.icon}"
@@ -4064,19 +4553,19 @@
           </button>
         </div>
       </div>
-    `}getButtonStyleCSS(e,t="var(--primary-color)",o="white",i="14px",n="inherit",a="500",r="none",l="normal",s="none"){const d=`\n      padding: 12px 24px;\n      border-radius: 6px;\n      border: none;\n      cursor: pointer;\n      font-size: ${i};\n      font-family: ${n};\n      font-weight: ${a};\n      font-style: ${l};\n      text-transform: ${r};\n      text-shadow: ${s};\n      transition: all 0.2s ease;\n      display: inline-flex;\n      align-items: center;\n      justify-content: center;\n      min-height: 40px;\n      text-decoration: none;\n      background: ${t};\n      color: ${o};\n    `;let c="",p="";switch(e){case"flat":c="box-shadow: none;";break;case"glossy":p=`\n          background: linear-gradient(to bottom, ${t}, ${t} 50%, rgba(0,0,0,0.1) 51%, ${t}) !important;\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);\n        `;break;case"embossed":c="\n          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8);\n          border: 1px solid rgba(0,0,0,0.1);\n        ",p="\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);\n        ";break;case"inset":c="\n          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);\n          border: 1px solid rgba(0,0,0,0.2);\n        ";break;case"gradient-overlay":p=`\n          background: linear-gradient(to bottom, \n            ${t} 0%, \n            rgba(255,255,255,0) 100%\n          ) !important;\n        `;break;case"neon-glow":p=`\n          box-shadow: 0 0 10px ${t}, 0 0 20px ${t}, 0 0 30px ${t};\n          filter: brightness(1.2);\n        `,c="\n          box-shadow: inset 0 0 10px rgba(0,0,0,0.5);\n        ";break;case"outline":c=`\n          border: 2px solid ${t};\n          background-color: transparent !important;\n          color: ${t} !important;\n        `;break;case"glass":c="\n          backdrop-filter: blur(10px);\n          background-color: rgba(255,255,255,0.1) !important;\n          border: 1px solid rgba(255,255,255,0.2);\n        ",p="\n          backdrop-filter: blur(5px);\n          background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)) !important;\n        ";break;case"metallic":p=`\n          background: linear-gradient(to bottom, \n            rgba(255,255,255,0.4) 0%, \n            ${t} 20%, \n            ${t} 80%, \n            rgba(0,0,0,0.2) 100%) !important;\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);\n        `;break;case"neumorphic":c="\n          box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1);\n        ",p="\n          box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);\n        ";break;case"dashed":c=`\n          border: 2px dashed ${t};\n          background-color: transparent !important;\n          color: ${t} !important;\n        `}return`${d} ${c} ${p}`}getAlignmentCSS(e){switch(e){case"left":return"display: flex; justify-content: flex-start;";case"center":default:return"display: flex; justify-content: center;";case"right":return"display: flex; justify-content: flex-end;";case"justify":return"display: flex; width: 100%;"}}validate(e){const t=e,o=[...super.validate(e).errors];if(t.label&&""!==t.label.trim()||o.push("Button label is required"),t.action){const e=Ve.validateAction(t.action);o.push(...e.errors)}return{valid:0===o.length,errors:o}}getTextShadowCSS(e){return e.text_shadow_h||e.text_shadow_v||e.text_shadow_blur||e.text_shadow_color?`${e.text_shadow_h||"0px"} ${e.text_shadow_v||"0px"} ${e.text_shadow_blur||"0px"} ${e.text_shadow_color||"rgba(0,0,0,0.5)"}`:"none"}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}camelToKebab(e){return e.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(e,t){var o,i;if(!e.background_image_type||"none"===e.background_image_type)return"none";switch(e.background_image_type){case"upload":case"url":if(e.background_image)return`url("${e.background_image}")`;break;case"entity":if(e.background_image_entity&&(null==t?void 0:t.states[e.background_image_entity])){const n=t.states[e.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return`url("${a}")`}}return"none"}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}getStyles(){return"\n      .button-module-preview {\n        width: 100%;\n        box-sizing: border-box;\n      }\n      \n      .ultra-button:hover {\n        transform: translateY(-1px);\n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);\n      }\n      \n      .ultra-button:active {\n        transform: translateY(0);\n      }\n      \n      .ultra-button.justify {\n        width: 100%;\n      }\n    "}}class We extends he{constructor(){super(...arguments),this.metadata={type:"markdown",title:"Markdown Module",description:"Display rich markdown content",author:"WJD Designs",version:"1.0.0",icon:"mdi:language-markdown",category:"content",tags:["markdown","content","rich-text","formatting","template"]}}createDefault(e){return{id:e||this.generateId("markdown"),type:"markdown",markdown_content:"# Welcome to Markdown\n\nThis is a **markdown** module that supports:\n\n- *Italic* and **bold** text\n- [Links](https://example.com)\n- `inline code`\n- Lists and more!\n\n## Features\n1. Headers (H1-H6)\n2. Tables\n3. Code blocks\n4. And much more...\n\n> This is a blockquote example",link:"",hide_if_no_link:!1,template_mode:!1,template:"",enable_html:!1,enable_tables:!0,enable_code_highlighting:!0,max_height:"none",overflow_behavior:"visible"}}renderGeneralTab(e,t,o,i){const n=e;return V`
+    `}getButtonStyleCSS(t,e="var(--primary-color)",o="white",i="14px",n="inherit",a="500",r="none",l="normal",s="none"){const d=`\n      padding: 12px 24px;\n      border-radius: 6px;\n      border: none;\n      cursor: pointer;\n      font-size: ${i};\n      font-family: ${n};\n      font-weight: ${a};\n      font-style: ${l};\n      text-transform: ${r};\n      text-shadow: ${s};\n      transition: all 0.2s ease;\n      display: inline-flex;\n      align-items: center;\n      justify-content: center;\n      min-height: 40px;\n      text-decoration: none;\n      background: ${e};\n      color: ${o};\n    `;let c="",p="";switch(t){case"flat":c="box-shadow: none;";break;case"glossy":p=`\n          background: linear-gradient(to bottom, ${e}, ${e} 50%, rgba(0,0,0,0.1) 51%, ${e}) !important;\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);\n        `;break;case"embossed":c="\n          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.8);\n          border: 1px solid rgba(0,0,0,0.1);\n        ",p="\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1);\n        ";break;case"inset":c="\n          box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);\n          border: 1px solid rgba(0,0,0,0.2);\n        ";break;case"gradient-overlay":p=`\n          background: linear-gradient(to bottom, \n            ${e} 0%, \n            rgba(255,255,255,0) 100%\n          ) !important;\n        `;break;case"neon-glow":p=`\n          box-shadow: 0 0 10px ${e}, 0 0 20px ${e}, 0 0 30px ${e};\n          filter: brightness(1.2);\n        `,c="\n          box-shadow: inset 0 0 10px rgba(0,0,0,0.5);\n        ";break;case"outline":c=`\n          border: 2px solid ${e};\n          background-color: transparent !important;\n          color: ${e} !important;\n        `;break;case"glass":c="\n          backdrop-filter: blur(10px);\n          background-color: rgba(255,255,255,0.1) !important;\n          border: 1px solid rgba(255,255,255,0.2);\n        ",p="\n          backdrop-filter: blur(5px);\n          background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)) !important;\n        ";break;case"metallic":p=`\n          background: linear-gradient(to bottom, \n            rgba(255,255,255,0.4) 0%, \n            ${e} 20%, \n            ${e} 80%, \n            rgba(0,0,0,0.2) 100%) !important;\n          box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.3);\n        `;break;case"neumorphic":c="\n          box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.1);\n        ",p="\n          box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.1);\n        ";break;case"dashed":c=`\n          border: 2px dashed ${e};\n          background-color: transparent !important;\n          color: ${e} !important;\n        `}return`${d} ${c} ${p}`}getAlignmentCSS(t){switch(t){case"left":return"display: flex; justify-content: flex-start;";case"center":default:return"display: flex; justify-content: center;";case"right":return"display: flex; justify-content: flex-end;";case"justify":return"display: flex; width: 100%;"}}validate(t){const e=t,o=[...super.validate(t).errors];if(e.label&&""!==e.label.trim()||o.push("Button label is required"),e.action){const t=Ht.validateAction(e.action);o.push(...t.errors)}return{valid:0===o.length,errors:o}}getTextShadowCSS(t){return t.text_shadow_h||t.text_shadow_v||t.text_shadow_blur||t.text_shadow_color?`${t.text_shadow_h||"0px"} ${t.text_shadow_v||"0px"} ${t.text_shadow_blur||"0px"} ${t.text_shadow_color||"rgba(0,0,0,0.5)"}`:"none"}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(t,e){var o,i;if(!t.background_image_type||"none"===t.background_image_type)return"none";switch(t.background_image_type){case"upload":case"url":if(t.background_image)return`url("${t.background_image}")`;break;case"entity":if(t.background_image_entity&&(null==e?void 0:e.states[t.background_image_entity])){const n=e.states[t.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return`url("${a}")`}}return"none"}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}getStyles(){return"\n      .button-module-preview {\n        width: 100%;\n        box-sizing: border-box;\n      }\n      \n      .ultra-button:hover {\n        transform: translateY(-1px);\n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);\n      }\n      \n      .ultra-button:active {\n        transform: translateY(0);\n      }\n      \n      .ultra-button.justify {\n        width: 100%;\n      }\n    "}}class Gt extends ht{constructor(){super(...arguments),this.metadata={type:"markdown",title:"Markdown Module",description:"Display rich markdown content",author:"WJD Designs",version:"1.0.0",icon:"mdi:language-markdown",category:"content",tags:["markdown","content","rich-text","formatting","template"]}}createDefault(t){return{id:t||this.generateId("markdown"),type:"markdown",markdown_content:"# Welcome to Markdown\n\nThis is a **markdown** module that supports:\n\n- *Italic* and **bold** text\n- [Links](https://example.com)\n- `inline code`\n- Lists and more!\n\n## Features\n1. Headers (H1-H6)\n2. Tables\n3. Code blocks\n4. And much more...\n\n> This is a blockquote example",link:"",hide_if_no_link:!1,template_mode:!1,template:"",enable_html:!1,enable_tables:!0,enable_code_highlighting:!0,max_height:"none",overflow_behavior:"visible"}}renderGeneralTab(t,e,o,i){const n=t;return V`
       <div class="module-general-settings">
         <!-- Content Section -->
         <div class="wpbakery-section">
           <h4>Markdown Content</h4>
           <div class="ha-form-field">
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{markdown_content:n.markdown_content||""}}
               .schema=${[{name:"markdown_content",label:"Content",description:"Enter your markdown content with full formatting support",selector:{text:{multiline:!0}}}]}
-              .computeLabel=${e=>e.label||e.name}
-              .computeDescription=${e=>e.description||""}
-              @value-changed=${e=>i({markdown_content:e.detail.value.markdown_content})}
+              .computeLabel=${t=>t.label||t.name}
+              .computeDescription=${t=>t.description||""}
+              @value-changed=${t=>i({markdown_content:t.detail.value.markdown_content})}
             ></ha-form>
           </div>
         </div>
@@ -4087,22 +4576,22 @@
           <div class="two-column-grid">
             <div class="ha-form-field">
               <ha-form
-                .hass=${t}
+                .hass=${e}
                 .data=${{link:n.link||""}}
                 .schema=${[{name:"link",label:"Link URL",description:"Optional URL to make the markdown clickable",selector:{text:{}}}]}
-                .computeLabel=${e=>e.label||e.name}
-                .computeDescription=${e=>e.description||""}
-                @value-changed=${e=>i({link:e.detail.value.link})}
+                .computeLabel=${t=>t.label||t.name}
+                .computeDescription=${t=>t.description||""}
+                @value-changed=${t=>i({link:t.detail.value.link})}
               ></ha-form>
             </div>
             <div class="ha-form-field">
               <ha-form
-                .hass=${t}
+                .hass=${e}
                 .data=${{hide_if_no_link:n.hide_if_no_link||!1}}
                 .schema=${[{name:"hide_if_no_link",label:"Hide if No Link",description:"Hide module when no link is provided",selector:{boolean:{}}}]}
-                .computeLabel=${e=>e.label||e.name}
-                .computeDescription=${e=>e.description||""}
-                @value-changed=${e=>i({hide_if_no_link:e.detail.value.hide_if_no_link})}
+                .computeLabel=${t=>t.label||t.name}
+                .computeDescription=${t=>t.description||""}
+                @value-changed=${t=>i({hide_if_no_link:t.detail.value.hide_if_no_link})}
               ></ha-form>
             </div>
           </div>
@@ -4114,21 +4603,21 @@
           <div class="two-column-grid">
             <div class="ha-form-field">
               <ha-form
-                .hass=${t}
+                .hass=${e}
                 .data=${{max_height:n.max_height||"none"}}
                 .schema=${[{name:"max_height",label:"Max Height",description:"Maximum height (e.g., 300px, 50vh, none)",selector:{text:{}}}]}
-                .computeLabel=${e=>e.label||e.name}
-                .computeDescription=${e=>e.description||""}
-                @value-changed=${e=>i({max_height:e.detail.value.max_height})}
+                .computeLabel=${t=>t.label||t.name}
+                .computeDescription=${t=>t.description||""}
+                @value-changed=${t=>i({max_height:t.detail.value.max_height})}
               ></ha-form>
             </div>
             <div class="ha-form-field">
               <ha-form
-                .hass=${t}
+                .hass=${e}
                 .data=${{overflow_behavior:n.overflow_behavior||"visible"}}
                 .schema=${[{name:"overflow_behavior",label:"Overflow Behavior",selector:{select:{options:[{value:"visible",label:"Visible"},{value:"scroll",label:"Scroll"},{value:"hidden",label:"Hidden"}],mode:"dropdown"}}}]}
-                .computeLabel=${e=>e.label||e.name}
-                @value-changed=${e=>i({overflow_behavior:e.detail.value.overflow_behavior})}
+                .computeLabel=${t=>t.label||t.name}
+                @value-changed=${t=>i({overflow_behavior:t.detail.value.overflow_behavior})}
               ></ha-form>
             </div>
           </div>
@@ -4136,30 +4625,30 @@
           <!-- Feature Toggles -->
           <div class="three-column-grid">
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{enable_html:n.enable_html||!1}}
               .schema=${[{name:"enable_html",label:"Enable HTML",description:"Allow HTML tags in markdown",selector:{boolean:{}}}]}
-              .computeLabel=${e=>e.label||e.name}
-              .computeDescription=${e=>e.description||""}
-              @value-changed=${e=>i({enable_html:e.detail.value.enable_html})}
+              .computeLabel=${t=>t.label||t.name}
+              .computeDescription=${t=>t.description||""}
+              @value-changed=${t=>i({enable_html:t.detail.value.enable_html})}
             ></ha-form>
 
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{enable_tables:!1!==n.enable_tables}}
               .schema=${[{name:"enable_tables",label:"Enable Tables",description:"Support for markdown tables",selector:{boolean:{}}}]}
-              .computeLabel=${e=>e.label||e.name}
-              .computeDescription=${e=>e.description||""}
-              @value-changed=${e=>i({enable_tables:e.detail.value.enable_tables})}
+              .computeLabel=${t=>t.label||t.name}
+              .computeDescription=${t=>t.description||""}
+              @value-changed=${t=>i({enable_tables:t.detail.value.enable_tables})}
             ></ha-form>
 
             <ha-form
-              .hass=${t}
+              .hass=${e}
               .data=${{enable_code_highlighting:!1!==n.enable_code_highlighting}}
               .schema=${[{name:"enable_code_highlighting",label:"Code Highlighting",description:"Syntax highlighting for code blocks",selector:{boolean:{}}}]}
-              .computeLabel=${e=>e.label||e.name}
-              .computeDescription=${e=>e.description||""}
-              @value-changed=${e=>i({enable_code_highlighting:e.detail.value.enable_code_highlighting})}
+              .computeLabel=${t=>t.label||t.name}
+              .computeDescription=${t=>t.description||""}
+              @value-changed=${t=>i({enable_code_highlighting:t.detail.value.enable_code_highlighting})}
             ></ha-form>
           </div>
         </div>
@@ -4169,29 +4658,29 @@
           <h4>Template Mode</h4>
 
           <ha-form
-            .hass=${t}
+            .hass=${e}
             .data=${{template_mode:n.template_mode||!1}}
             .schema=${[{name:"template_mode",label:"Enable Template Mode",description:"Use Home Assistant Jinja2 templates for dynamic content",selector:{boolean:{}}}]}
-            .computeLabel=${e=>e.label||e.name}
-            .computeDescription=${e=>e.description||""}
-            @value-changed=${e=>i({template_mode:e.detail.value.template_mode})}
+            .computeLabel=${t=>t.label||t.name}
+            .computeDescription=${t=>t.description||""}
+            @value-changed=${t=>i({template_mode:t.detail.value.template_mode})}
           ></ha-form>
 
           ${n.template_mode?V`
                 <div style="margin-top: 16px;">
                   <ha-form
-                    .hass=${t}
+                    .hass=${e}
                     .data=${{template:n.template||""}}
                     .schema=${[{name:"template",label:"Template",description:'Jinja2 template for dynamic content (e.g., {{ states("sensor.temperature") }}°C)',selector:{text:{multiline:!0}}}]}
-                    .computeLabel=${e=>e.label||e.name}
-                    .computeDescription=${e=>e.description||""}
-                    @value-changed=${e=>i({template:e.detail.value.template})}
+                    .computeLabel=${t=>t.label||t.name}
+                    .computeDescription=${t=>t.description||""}
+                    @value-changed=${t=>i({template:t.detail.value.template})}
                   ></ha-form>
                 </div>
               `:""}
         </div>
       </div>
-    `}renderPreview(e,t){const o=e;if(o.hide_if_no_link&&(!o.link||""===o.link.trim()))return V`<div class="markdown-module-hidden">Hidden (no link)</div>`;const i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color&&"transparent"!==i.background_color?i.background_color:"transparent",backgroundImage:this.getBackgroundImageCSS(i,t),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"static",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"visible",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},a={fontSize:i.font_size?`${i.font_size}px`:`${o.font_size||14}px`,fontFamily:i.font_family||o.font_family||"Roboto",color:i.color||o.color||"var(--primary-text-color)",textAlign:i.text_align||o.alignment||"left",lineHeight:i.line_height||o.line_height||1.6,letterSpacing:i.letter_spacing||o.letter_spacing||"normal",padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",maxHeight:o.max_height&&"none"!==o.max_height?o.max_height:"none",overflow:o.max_height&&"none"!==o.max_height&&o.overflow_behavior||"visible",textShadow:i.text_shadow_h&&i.text_shadow_v?`${i.text_shadow_h||"0"} ${i.text_shadow_v||"0"} ${i.text_shadow_blur||"0"} ${i.text_shadow_color||"rgba(0,0,0,0.5)"}`:"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none"},r=o.template_mode&&o.template?`Template: ${o.template}`:(e=>{if(!e)return"";let t=e.replace(/^#{6} (.*$)/gim,"<h6>$1</h6>").replace(/^#{5} (.*$)/gim,"<h5>$1</h5>").replace(/^#{4} (.*$)/gim,"<h4>$1</h4>").replace(/^#{3} (.*$)/gim,"<h3>$1</h3>").replace(/^#{2} (.*$)/gim,"<h2>$1</h2>").replace(/^#{1} (.*$)/gim,"<h1>$1</h1>").replace(/\*\*\*(.*?)\*\*\*/g,"<strong><em>$1</em></strong>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\*(.*?)\*/g,"<em>$1</em>").replace(/`(.*?)`/g,"<code>$1</code>").replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/^> (.*$)/gim,"<blockquote>$1</blockquote>").replace(/^---$/gim,"<hr>").replace(/^\*\*\*$/gim,"<hr>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br/>");return t="<p>"+t+"</p>",t=t.replace(/<p><\/p>/g,""),t=t.replace(/<p>(<h[1-6]>.*?<\/h[1-6]>)<\/p>/g,"$1"),t=t.replace(/<p>(<blockquote>.*?<\/blockquote>)<\/p>/g,"$1"),t=t.replace(/<p>(<hr>)<\/p>/g,"$1"),t=t.replace(/^[-*+] (.*$)/gim,"<li>$1</li>"),t=t.replace(/^(\d+)\. (.*$)/gim,"<li>$2</li>"),t=t.replace(/(<li>[\s\S]*?<\/li>(?:\s*<li>[\s\S]*?<\/li>)*)/g,"<ul>$1</ul>"),t})(o.markdown_content||""),l=o.link&&""!==o.link.trim()?V`<a href="${o.link}" style="color: inherit; text-decoration: inherit;">
+    `}renderPreview(t,e){const o=t;if(o.hide_if_no_link&&(!o.link||""===o.link.trim()))return V`<div class="markdown-module-hidden">Hidden (no link)</div>`;const i=o,n={padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",margin:i.margin_top||i.margin_bottom||i.margin_left||i.margin_right?`${i.margin_top||"0"}px ${i.margin_right||"0"}px ${i.margin_bottom||"0"}px ${i.margin_left||"0"}px`:"0",background:i.background_color&&"transparent"!==i.background_color?i.background_color:"transparent",backgroundImage:this.getBackgroundImageCSS(i,e),backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat",border:i.border_style&&"none"!==i.border_style?`${i.border_width||"1px"} ${i.border_style} ${i.border_color||"var(--divider-color)"}`:"none",borderRadius:this.addPixelUnit(i.border_radius)||"0",position:i.position||"static",top:i.top||"auto",bottom:i.bottom||"auto",left:i.left||"auto",right:i.right||"auto",zIndex:i.z_index||"auto",width:i.width||"100%",height:i.height||"auto",maxWidth:i.max_width||"100%",maxHeight:i.max_height||"none",minWidth:i.min_width||"none",minHeight:i.min_height||"auto",overflow:i.overflow||"hidden",clipPath:i.clip_path||"none",backdropFilter:i.backdrop_filter||"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},a={fontSize:i.font_size?`${i.font_size}px`:`${o.font_size||14}px`,fontFamily:i.font_family||o.font_family||"Roboto",color:i.color||o.color||"var(--primary-text-color)",textAlign:i.text_align||o.alignment||"left",lineHeight:i.line_height||o.line_height||1.6,letterSpacing:i.letter_spacing||o.letter_spacing||"normal",padding:i.padding_top||i.padding_bottom||i.padding_left||i.padding_right?`${i.padding_top||"8"}px ${i.padding_right||"0"}px ${i.padding_bottom||"8"}px ${i.padding_left||"0"}px`:"8px 0",maxHeight:o.max_height&&"none"!==o.max_height?o.max_height:"none",overflow:o.max_height&&"none"!==o.max_height&&o.overflow_behavior||"visible",textShadow:i.text_shadow_h&&i.text_shadow_v?`${i.text_shadow_h||"0"} ${i.text_shadow_v||"0"} ${i.text_shadow_blur||"0"} ${i.text_shadow_color||"rgba(0,0,0,0.5)"}`:"none",boxShadow:i.box_shadow_h&&i.box_shadow_v?`${i.box_shadow_h||"0"} ${i.box_shadow_v||"0"} ${i.box_shadow_blur||"0"} ${i.box_shadow_spread||"0"} ${i.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none"},r=o.template_mode&&o.template?`Template: ${o.template}`:(t=>{if(!t)return"";let e=t.replace(/^#{6} (.*$)/gim,"<h6>$1</h6>").replace(/^#{5} (.*$)/gim,"<h5>$1</h5>").replace(/^#{4} (.*$)/gim,"<h4>$1</h4>").replace(/^#{3} (.*$)/gim,"<h3>$1</h3>").replace(/^#{2} (.*$)/gim,"<h2>$1</h2>").replace(/^#{1} (.*$)/gim,"<h1>$1</h1>").replace(/\*\*\*(.*?)\*\*\*/g,"<strong><em>$1</em></strong>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/\*(.*?)\*/g,"<em>$1</em>").replace(/`(.*?)`/g,"<code>$1</code>").replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/^> (.*$)/gim,"<blockquote>$1</blockquote>").replace(/^---$/gim,"<hr>").replace(/^\*\*\*$/gim,"<hr>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br/>");return e="<p>"+e+"</p>",e=e.replace(/<p><\/p>/g,""),e=e.replace(/<p>(<h[1-6]>.*?<\/h[1-6]>)<\/p>/g,"$1"),e=e.replace(/<p>(<blockquote>.*?<\/blockquote>)<\/p>/g,"$1"),e=e.replace(/<p>(<hr>)<\/p>/g,"$1"),e=e.replace(/^[-*+] (.*$)/gim,"<li>$1</li>"),e=e.replace(/^(\d+)\. (.*$)/gim,"<li>$2</li>"),e=e.replace(/(<li>[\s\S]*?<\/li>(?:\s*<li>[\s\S]*?<\/li>)*)/g,"<ul>$1</ul>"),e})(o.markdown_content||""),l=o.link&&""!==o.link.trim()?V`<a href="${o.link}" style="color: inherit; text-decoration: inherit;">
             <div class="markdown-content" .innerHTML=${r}></div>
           </a>`:V`<div class="markdown-content" .innerHTML=${r}></div>`;return V`
       <div class="markdown-module-container" style=${this.styleObjectToCss(n)}>
@@ -4199,71 +4688,106 @@
           ${l}
         </div>
       </div>
-    `}validate(e){const t=e,o=[...super.validate(e).errors];if(t.markdown_content&&""!==t.markdown_content.trim()||o.push("Markdown content is required"),t.font_size&&(t.font_size<1||t.font_size>200)&&o.push("Font size must be between 1 and 200 pixels"),t.link&&""!==t.link.trim())try{new URL(t.link)}catch(e){t.link.startsWith("/")||t.link.startsWith("#")||o.push('Link must be a valid URL or start with "/" for relative paths')}return{valid:0===o.length,errors:o}}getStyles(){return"\n      .markdown-module-preview {\n        min-height: 20px;\n        word-wrap: break-word;\n      }\n      \n      .markdown-module-hidden {\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        padding: 12px;\n        background: var(--secondary-background-color);\n        border-radius: 4px;\n      }\n\n      .markdown-content {\n        width: 100%;\n      }\n      \n             /* Module-specific grid layouts */\n       .two-column-grid {\n         display: grid;\n         grid-template-columns: 1fr 1fr;\n         gap: 20px;\n         margin-bottom: 20px;\n       }\n\n       .three-column-grid {\n         display: grid;\n         grid-template-columns: 1fr 1fr 1fr;\n         gap: 16px;\n         margin-bottom: 20px;\n       }\n       \n       @media (max-width: 768px) {\n         .two-column-grid,\n         .three-column-grid {\n           grid-template-columns: 1fr;\n           gap: 16px;\n         }\n       }\n\n      .markdown-content h1,\n      .markdown-content h2,\n      .markdown-content h3,\n      .markdown-content h4,\n      .markdown-content h5,\n      .markdown-content h6 {\n        margin: 16px 0 8px 0;\n        font-weight: 600;\n        line-height: 1.2;\n      }\n\n      .markdown-content h1 { font-size: 2em; }\n      .markdown-content h2 { font-size: 1.5em; }\n      .markdown-content h3 { font-size: 1.25em; }\n      .markdown-content h4 { font-size: 1.1em; }\n      .markdown-content h5 { font-size: 1em; font-weight: 700; }\n      .markdown-content h6 { font-size: 0.9em; font-weight: 700; }\n\n      .markdown-content p {\n        margin: 8px 0;\n        line-height: inherit;\n      }\n\n      .markdown-content ul,\n      .markdown-content ol {\n        margin: 8px 0;\n        padding-left: 20px;\n      }\n\n      .markdown-content li {\n        margin: 4px 0;\n        line-height: inherit;\n      }\n\n      .markdown-content code {\n        background: var(--secondary-background-color);\n        padding: 2px 4px;\n        border-radius: 3px;\n        font-family: 'Courier New', monospace;\n        font-size: 0.9em;\n      }\n\n      .markdown-content blockquote {\n        border-left: 4px solid var(--primary-color);\n        margin: 16px 0;\n        padding: 8px 16px;\n        background: var(--secondary-background-color);\n        font-style: italic;\n      }\n\n      .markdown-content a {\n        color: var(--primary-color);\n        text-decoration: none;\n      }\n\n      .markdown-content a:hover {\n        text-decoration: underline;\n      }\n\n      .markdown-content strong {\n        font-weight: 600;\n      }\n\n      .markdown-content em {\n        font-style: italic;\n      }\n\n      .markdown-content br {\n        line-height: inherit;\n      }\n      \n      .markdown-content hr {\n        border: none;\n        border-top: 1px solid var(--divider-color);\n        margin: 16px 0;\n      }\n      \n      .markdown-content table {\n        border-collapse: collapse;\n        width: 100%;\n        margin: 16px 0;\n      }\n      \n      .markdown-content th,\n      .markdown-content td {\n        border: 1px solid var(--divider-color);\n        padding: 8px 12px;\n        text-align: left;\n      }\n      \n      .markdown-content th {\n        background: var(--secondary-background-color);\n        font-weight: 600;\n      }\n    "}styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}camelToKebab(e){return e.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(e,t){var o,i;if(!e.background_image_type||"none"===e.background_image_type)return"none";switch(e.background_image_type){case"upload":case"url":if(e.background_image)return`url("${e.background_image}")`;break;case"entity":if(e.background_image_entity&&(null==t?void 0:t.states[e.background_image_entity])){const n=t.states[e.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}}class qe extends he{constructor(){super(...arguments),this.metadata={type:"horizontal",title:"Horizontal Layout",description:"Arrange modules in rows",author:"Ultra Card Team",version:"1.0.0",icon:"mdi:view-sequential",category:"layout",tags:["layout","horizontal","alignment","container"]}}createDefault(e){return{id:e||this.generateId("horizontal"),type:"horizontal",alignment:"left",gap:.7,wrap:!1,modules:[]}}renderGeneralTab(e,t,o,i){var n;const a=e;return V`
-      <div class="module-general-settings">
-        <!-- Horizontal Alignment -->
-        <div class="form-group">
-          <label class="form-label">Items Horizontal Alignment</label>
-          <div class="alignment-buttons horizontal-alignment">
-            ${[{value:"left",label:"Left"},{value:"center",label:"Center"},{value:"right",label:"Right"},{value:"space-between",label:"Space Between"},{value:"space-around",label:"Space Around"},{value:"justify",label:"Justify"}].map((e=>V`
-                <button
-                  type="button"
-                  class="alignment-button ${a.alignment===e.value?"active":""}"
-                  @click=${()=>i({alignment:e.value})}
-                  title="${e.label}"
-                >
-                  ${this.getHorizontalAlignmentIcon(e.value)}
-                </button>
-              `))}
-          </div>
-        </div>
+    `}validate(t){const e=t,o=[...super.validate(t).errors];if(e.markdown_content&&""!==e.markdown_content.trim()||o.push("Markdown content is required"),e.font_size&&(e.font_size<1||e.font_size>200)&&o.push("Font size must be between 1 and 200 pixels"),e.link&&""!==e.link.trim())try{new URL(e.link)}catch(t){e.link.startsWith("/")||e.link.startsWith("#")||o.push('Link must be a valid URL or start with "/" for relative paths')}return{valid:0===o.length,errors:o}}getStyles(){return"\n      .markdown-module-preview {\n        min-height: 20px;\n        word-wrap: break-word;\n      }\n      \n      .markdown-module-hidden {\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        padding: 12px;\n        background: var(--secondary-background-color);\n        border-radius: 4px;\n      }\n\n      .markdown-content {\n        width: 100%;\n      }\n      \n             /* Module-specific grid layouts */\n       .two-column-grid {\n         display: grid;\n         grid-template-columns: 1fr 1fr;\n         gap: 20px;\n         margin-bottom: 20px;\n       }\n\n       .three-column-grid {\n         display: grid;\n         grid-template-columns: 1fr 1fr 1fr;\n         gap: 16px;\n         margin-bottom: 20px;\n       }\n       \n       @media (max-width: 768px) {\n         .two-column-grid,\n         .three-column-grid {\n           grid-template-columns: 1fr;\n           gap: 16px;\n         }\n       }\n\n      .markdown-content h1,\n      .markdown-content h2,\n      .markdown-content h3,\n      .markdown-content h4,\n      .markdown-content h5,\n      .markdown-content h6 {\n        margin: 16px 0 8px 0;\n        font-weight: 600;\n        line-height: 1.2;\n      }\n\n      .markdown-content h1 { font-size: 2em; }\n      .markdown-content h2 { font-size: 1.5em; }\n      .markdown-content h3 { font-size: 1.25em; }\n      .markdown-content h4 { font-size: 1.1em; }\n      .markdown-content h5 { font-size: 1em; font-weight: 700; }\n      .markdown-content h6 { font-size: 0.9em; font-weight: 700; }\n\n      .markdown-content p {\n        margin: 8px 0;\n        line-height: inherit;\n      }\n\n      .markdown-content ul,\n      .markdown-content ol {\n        margin: 8px 0;\n        padding-left: 20px;\n      }\n\n      .markdown-content li {\n        margin: 4px 0;\n        line-height: inherit;\n      }\n\n      .markdown-content code {\n        background: var(--secondary-background-color);\n        padding: 2px 4px;\n        border-radius: 3px;\n        font-family: 'Courier New', monospace;\n        font-size: 0.9em;\n      }\n\n      .markdown-content blockquote {\n        border-left: 4px solid var(--primary-color);\n        margin: 16px 0;\n        padding: 8px 16px;\n        background: var(--secondary-background-color);\n        font-style: italic;\n      }\n\n      .markdown-content a {\n        color: var(--primary-color);\n        text-decoration: none;\n      }\n\n      .markdown-content a:hover {\n        text-decoration: underline;\n      }\n\n      .markdown-content strong {\n        font-weight: 600;\n      }\n\n      .markdown-content em {\n        font-style: italic;\n      }\n\n      .markdown-content br {\n        line-height: inherit;\n      }\n      \n      .markdown-content hr {\n        border: none;\n        border-top: 1px solid var(--divider-color);\n        margin: 16px 0;\n      }\n      \n      .markdown-content table {\n        border-collapse: collapse;\n        width: 100%;\n        margin: 16px 0;\n      }\n      \n      .markdown-content th,\n      .markdown-content td {\n        border: 1px solid var(--divider-color);\n        padding: 8px 12px;\n        text-align: left;\n      }\n      \n      .markdown-content th {\n        background: var(--secondary-background-color);\n        font-weight: 600;\n      }\n    "}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}getBackgroundImageCSS(t,e){var o,i;if(!t.background_image_type||"none"===t.background_image_type)return"none";switch(t.background_image_type){case"upload":case"url":if(t.background_image)return`url("${t.background_image}")`;break;case"entity":if(t.background_image_entity&&(null==e?void 0:e.states[t.background_image_entity])){const n=e.states[t.background_image_entity];let a="";if((null===(o=n.attributes)||void 0===o?void 0:o.entity_picture)?a=n.attributes.entity_picture:(null===(i=n.attributes)||void 0===i?void 0:i.image)?a=n.attributes.image:n.state&&"string"==typeof n.state&&(n.state.startsWith("/")||n.state.startsWith("http"))&&(a=n.state),a)return a.startsWith("/local/")||a.startsWith("/media/")||a.startsWith("/"),`url("${a}")`}}return"none"}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}}class Wt extends ht{constructor(){super(...arguments),this.metadata={type:"horizontal",title:"Horizontal Layout",description:"Arrange modules in rows with flexible alignment and spacing",author:"WJD Designs",version:"1.0.0",icon:"mdi:view-sequential",category:"layout",tags:["layout","horizontal","alignment","container","flexbox"]}}createDefault(t){return{id:t||this.generateId("horizontal"),type:"horizontal",alignment:"left",gap:.7,wrap:!1,modules:[]}}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
 
-        <!-- Gap between Items -->
-        <div class="form-group">
-          <label class="form-label">Gap between Items</label>
-          <div class="gap-control">
-            ${this.renderSelect("",(null===(n=a.gap)||void 0===n?void 0:n.toString())||"0.7",[{value:"0",label:"0rem"},{value:"0.2",label:"0.2rem"},{value:"0.4",label:"0.4rem"},{value:"0.6",label:"0.6rem"},{value:"0.7",label:"0.7rem"},{value:"0.8",label:"0.8rem"},{value:"1.0",label:"1.0rem"},{value:"1.2",label:"1.2rem"},{value:"1.5",label:"1.5rem"},{value:"2.0",label:"2.0rem"}],(e=>i({gap:parseFloat(e)})),"Space between horizontal items")}
-            <div class="gap-slider">
+      <div class="module-general-settings">
+        <!-- Layout Configuration Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 20px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 24px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+          >
+            Layout Configuration
+          </div>
+
+          <!-- Horizontal Alignment Field -->
+          <div style="margin-bottom: 24px;">
+            ${bt.renderField("Horizontal Alignment","Choose how items are aligned horizontally within the container.",e,{alignment:n.alignment||"left"},[bt.createSchemaItem("alignment",{select:{options:[{value:"left",label:"Left"},{value:"center",label:"Center"},{value:"right",label:"Right"},{value:"space-between",label:"Space Between"},{value:"space-around",label:"Space Around"},{value:"justify",label:"Justify"}],mode:"dropdown"}})],(t=>i({alignment:t.detail.value.alignment})))}
+          </div>
+
+          <!-- Gap Between Items Field with Slider and Reset Button -->
+          <div style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+            >
+              Gap Between Items
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+            >
+              Set the spacing between horizontal items (in rem units). Use negative values to
+              overlap items.
+            </div>
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
               <input
                 type="range"
-                min="0"
-                max="3"
+                class="gap-slider"
+                min="-5"
+                max="10"
                 step="0.1"
-                .value=${a.gap.toString()}
-                @input=${e=>{const t=e.target;i({gap:parseFloat(t.value)})}}
-                class="gap-range"
+                .value="${n.gap||.7}"
+                @input=${t=>{const e=t.target,o=parseFloat(e.value);i({gap:o})}}
               />
+              <input
+                type="number"
+                class="gap-input"
+                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
+                min="-5"
+                max="10"
+                step="0.1"
+                .value="${n.gap||.7}"
+                @input=${t=>{const e=t.target,o=parseFloat(e.value);isNaN(o)||i({gap:o})}}
+                @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseFloat(e.value)||.7,n="ArrowUp"===t.key?.1:-.1,a=Math.max(-5,Math.min(10,o+n)),r=Math.round(10*a)/10;i({gap:r})}}}
+              />
+              <button
+                class="reset-btn"
+                @click=${()=>i({gap:.7})}
+                title="Reset to default (0.7)"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Allow Wrap -->
-        ${this.renderCheckbox("Allow move items to the next line",a.wrap||!1,(e=>i({wrap:e})),"Allow items to wrap to the next line if they don't fit")}
+          <!-- Allow Wrapping Field -->
+          <div style="margin-bottom: 8px;">
+            ${bt.renderField("Allow Wrapping","Allow items to wrap to the next line when they exceed the container width.",e,{wrap:n.wrap||!1},[bt.createSchemaItem("wrap",{boolean:{}})],(t=>i({wrap:t.detail.value.wrap})))}
+          </div>
+        </div>
       </div>
-    `}renderPreview(e,t){const o=e,i=o.modules&&o.modules.length>0;return V`
+    `}renderPreview(t,e){const o=t,i=o,n=o.modules&&o.modules.length>0,a=o.gap||.7,r={padding:this.getPaddingCSS(i),margin:this.getMarginCSS(i),background:this.getBackgroundCSS(i),backgroundImage:this.getBackgroundImageCSS(i,e),border:this.getBorderCSS(i),borderRadius:this.addPixelUnit(i.border_radius)||"0",display:"flex",flexDirection:"row",justifyContent:this.getJustifyContent(o.alignment),gap:a>=0?`${a}rem`:"0",flexWrap:o.wrap?"wrap":"nowrap",alignItems:"flex-start",width:"100%",minHeight:"60px",overflow:o.wrap?"visible":"hidden",boxSizing:"border-box"};return V`
       <div class="horizontal-module-preview">
         <div
           class="horizontal-preview-content"
-          style="
-            display: flex;
-            flex-direction: row;
-            justify-content: ${this.getJustifyContent(o.alignment)};
-            gap: ${o.gap||.7}rem;
-            flex-wrap: ${o.wrap?"wrap":"nowrap"};
-            align-items: flex-start;
-            width: 100%;
-            min-height: 60px;
-            padding: 8px;
-          "
+          style=${this.styleObjectToCss(r)}
+          data-wrap=${o.wrap?"true":"false"}
         >
-          ${i?o.modules.map(((e,o)=>V`
+          ${n?o.modules.map(((t,n)=>{const r=a<0&&n>0?`0 0 0 ${a}rem`:"0",l=a<0;return V`
                   <div
-                    class="child-module-preview"
-                    style="max-width: 100%; overflow: hidden; flex-shrink: 1;"
+                    class="child-module-preview ${l?"negative-gap":""}"
+                    style="
+                          max-width: 100%; 
+                          overflow: hidden; 
+                          flex-shrink: 1; 
+                          flex-grow: ${o.wrap?"0":"1"};
+                          min-width: ${o.wrap?"auto":"0"};
+                          box-sizing: border-box;
+                          margin: ${r};
+                          ${l?"padding: 0; border: none; background: transparent;":""}
+                        "
                   >
-                    ${this._renderChildModulePreview(e,t)}
+                    ${this._renderChildModulePreview(t,e,i)}
                   </div>
-                `)):V`
+                `})):V`
                 <div class="empty-layout-message">
                   <span>No modules added yet</span>
                   <small>Add modules in the layout builder to see them here</small>
@@ -4271,61 +4795,93 @@
               `}
         </div>
       </div>
-    `}_renderChildModulePreview(e,t){const o=Ze().getModule(e.type);return o?o.renderPreview(e,t):V`
+    `}_renderChildModulePreview(t,e,o){let i=t;o&&(i=this.applyLayoutDesignToChild(t,o));const n=Kt().getModule(i.type);return n?n.renderPreview(i,e):V`
       <div class="unknown-child-module">
         <ha-icon icon="mdi:help-circle"></ha-icon>
-        <span>Unknown Module: ${e.type}</span>
+        <span>Unknown Module: ${i.type}</span>
       </div>
-    `}_getModuleTitle(e){const t=e;return t.name?t.name:t.text?t.text.length>15?`${t.text.substring(0,15)}...`:t.text:`${e.type.charAt(0).toUpperCase()+e.type.slice(1)} Module`}_getModuleIcon(e){return{text:"mdi:text",image:"mdi:image",icon:"mdi:star",bar:"mdi:chart-box",button:"mdi:gesture-tap-button",separator:"mdi:minus",info:"mdi:information",markdown:"mdi:language-markdown"}[e]||"mdi:puzzle"}validate(e){const t=e,o=[...super.validate(e).errors];if(t.gap&&(t.gap<0||t.gap>10)&&o.push("Gap must be between 0 and 10 rem"),t.modules&&t.modules.length>0)for(const e of t.modules)"vertical"===e.type&&o.push("Vertical layout modules cannot be placed inside horizontal layout modules"),"horizontal"===e.type&&o.push("Horizontal layout modules cannot be nested inside other horizontal layout modules");return{valid:0===o.length,errors:o}}getHorizontalAlignmentIcon(e){switch(e){case"left":default:return V`<ha-icon icon="mdi:format-align-left"></ha-icon>`;case"center":return V`<ha-icon icon="mdi:format-align-center"></ha-icon>`;case"right":return V`<ha-icon icon="mdi:format-align-right"></ha-icon>`;case"justify":return V`<ha-icon icon="mdi:format-align-justify"></ha-icon>`}}getJustifyContent(e){switch(e){case"left":default:return"flex-start";case"center":return"center";case"right":return"flex-end";case"justify":return"space-between"}}getAlignItems(e){switch(e){case"top":default:return"flex-start";case"center":return"center";case"bottom":return"flex-end"}}_onDragOver(e){e.preventDefault(),e.stopPropagation()}_onDragEnter(e){e.preventDefault(),e.stopPropagation()}_onDragLeave(e){e.preventDefault(),e.stopPropagation()}_onDrop(e){e.preventDefault(),e.stopPropagation(),console.log("Module dropped into horizontal layout")}_onModuleDragStart(e,t){e.stopPropagation(),console.log("Module drag started:",t)}_onDragEnd(e){e.preventDefault(),e.stopPropagation(),console.log("Drag ended")}_onAddModuleClick(e){e.preventDefault(),e.stopPropagation(),console.log("Add module clicked")}getStyles(){return"\n      /* Container Module Specific Variables */\n      .container-module {\n        --container-primary-color: #9c27b0; /* Purple for layout modules */\n        --container-secondary-color: #e1bee7; /* Light purple */\n        --container-accent-color: #7b1fa2; /* Dark purple */\n        --container-border-color: #ba68c8; /* Medium purple */\n      }\n      \n      .horizontal-module-preview.container-module {\n        border: 2px solid var(--container-border-color);\n        border-radius: 8px;\n        background: var(--card-background-color);\n        overflow: hidden;\n        position: relative;\n      }\n      \n      .container-header {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        padding: 12px 16px;\n        background: var(--container-primary-color);\n        color: white;\n        font-weight: 500;\n        border-bottom: 2px solid var(--container-primary-color);\n      }\n      \n      .container-drag-handle {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        width: 20px;\n        height: 20px;\n        color: rgba(255, 255, 255, 0.8);\n        cursor: grab;\n        transition: opacity 0.2s ease;\n        --mdc-icon-size: 16px;\n      }\n      \n      .container-drag-handle:hover {\n        color: white;\n      }\n      \n      .container-drag-handle:active {\n        cursor: grabbing;\n      }\n      \n      .container-badge {\n        background: rgba(255, 255, 255, 0.2);\n        color: white;\n        padding: 2px 8px;\n        border-radius: 12px;\n        font-size: 10px;\n        font-weight: 600;\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n        margin-left: auto;\n      }\n      \n      .container-content {\n        padding: 16px;\n        min-height: 120px;\n        display: flex;\n        border: 2px dashed var(--container-secondary-color);\n        margin: 8px;\n        border-radius: 6px;\n        background: rgba(156, 39, 176, 0.05);\n      }\n      \n      .horizontal-preview {\n        flex-direction: row;\n        width: 100%;\n      }\n      \n      .container-child-item {\n        position: relative;\n        padding: 8px;\n        background: rgba(255, 255, 255, 0.9);\n        border: 1px solid var(--container-border-color);\n        border-radius: 4px;\n        transition: all 0.2s ease;\n      }\n      \n      .container-child-item:hover {\n        background: white;\n        border-color: var(--container-primary-color);\n        transform: translateY(-1px);\n        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.2);\n      }\n      \n      .child-module-preview {\n        padding: 4px;\n      }\n      \n      .child-module-summary {\n        display: flex;\n        align-items: center;\n        gap: 6px;\n        font-size: 12px;\n      }\n      \n      .child-module-title {\n        font-weight: 500;\n        color: var(--primary-text-color);\n      }\n      \n\n      \n      .container-placeholder {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 8px;\n        color: var(--container-primary-color);\n        font-size: 14px;\n        width: 100%;\n        min-height: 80px;\n        text-align: center;\n      }\n      \n      .container-placeholder ha-icon {\n        --mdc-icon-size: 32px;\n        opacity: 0.7;\n      }\n      \n      .container-placeholder small {\n        font-size: 12px;\n        opacity: 0.8;\n        color: var(--secondary-text-color);\n      }\n      \n\n      \n      /* Form Styling */\n      .alignment-buttons {\n        display: flex;\n        gap: 4px;\n        background: var(--secondary-background-color);\n        padding: 4px;\n        border-radius: 8px;\n        border: 1px solid var(--divider-color);\n      }\n      \n      .alignment-button {\n        flex: 1;\n        padding: 8px 12px;\n        border: none;\n        background: transparent;\n        border-radius: 4px;\n        cursor: pointer;\n        color: var(--secondary-text-color);\n        transition: all 0.2s ease;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n      \n      .alignment-button:hover {\n        background: var(--card-background-color);\n        color: var(--primary-text-color);\n      }\n      \n      .alignment-button.active {\n        background: var(--container-primary-color);\n        color: white;\n      }\n      \n      .gap-control {\n        display: flex;\n        flex-direction: column;\n        gap: 12px;\n      }\n      \n      .gap-slider {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n      \n      .gap-range {\n        flex: 1;\n        height: 6px;\n        border-radius: 3px;\n        background: var(--secondary-background-color);\n        outline: none;\n        appearance: none;\n      }\n      \n      .gap-range::-webkit-slider-thumb {\n        appearance: none;\n        width: 18px;\n        height: 18px;\n        border-radius: 50%;\n        background: var(--container-primary-color);\n        cursor: pointer;\n        border: 2px solid var(--card-background-color);\n        box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n      }\n      \n      .gap-range::-moz-range-thumb {\n        width: 18px;\n        height: 18px;\n        border-radius: 50%;\n        background: var(--container-primary-color);\n        cursor: pointer;\n        border: 2px solid var(--card-background-color);\n        box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n      }\n      \n      .form-group {\n        margin-bottom: 16px;\n      }\n      \n      .form-label {\n        display: block;\n        margin-bottom: 8px;\n        font-weight: 500;\n        color: var(--primary-text-color);\n      }\n      \n      /* Layout Module Container - Styled like columns in layout builder */\n      .layout-module-container {\n        border: 2px solid var(--accent-color, var(--orange-color, #ff9800));\n        border-radius: 6px;\n        background: var(--card-background-color);\n        width: 100%;\n        box-sizing: border-box;\n        overflow: visible;\n        margin-bottom: 8px;\n      }\n      \n      .layout-module-header {\n        display: flex;\n        justify-content: space-between;\n        align-items: center;\n        font-size: 14px;\n        font-weight: 500;\n        padding: 8px 12px;\n        background: var(--accent-color, var(--orange-color, #ff9800));\n        color: white;\n        border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));\n        border-radius: 6px 6px 0px 0px;\n      }\n      \n      .layout-module-title {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n      }\n      \n      .layout-module-drag-handle {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        width: 18px;\n        height: 18px;\n        color: rgba(255, 255, 255, 0.7);\n        cursor: grab;\n        opacity: 0.8;\n        transition: opacity 0.2s ease;\n        --mdc-icon-size: 14px;\n      }\n      \n      .layout-module-drag-handle:hover {\n        opacity: 1;\n      }\n      \n      .layout-module-drag-handle:active {\n        cursor: grabbing;\n      }\n      \n      .layout-module-actions {\n        display: flex;\n        gap: 4px;\n        align-items: center;\n      }\n      \n      .layout-module-settings-btn {\n        background: none;\n        border: none;\n        color: rgba(255, 255, 255, 0.9);\n        cursor: pointer;\n        padding: 6px 8px;\n        border-radius: 4px;\n        transition: all 0.2s ease;\n        font-size: 12px;\n        min-width: 28px;\n        min-height: 28px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        --mdc-icon-size: 16px;\n      }\n      \n      .layout-module-settings-btn:hover {\n        background: rgba(255, 255, 255, 0.25);\n        color: white;\n        transform: scale(1.05);\n      }\n      \n      .layout-modules-container {\n        display: flex;\n        gap: 6px;\n        width: 100%;\n        box-sizing: border-box;\n        padding: 12px;\n        background: var(--card-background-color);\n        border: 1px solid var(--secondary-color, var(--accent-color, #ff9800));\n        border-top: none;\n        border-radius: 0px 0px 6px 6px;\n        margin-top: 0;\n        min-height: 100px;\n        position: relative;\n        overflow: visible;\n      }\n      \n      .layout-modules-container.drop-target {\n        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));\n        border-color: var(--primary-color);\n      }\n      \n      .layout-module-item {\n        position: relative;\n        background: var(--secondary-background-color);\n        border: 1px solid var(--divider-color);\n        border-radius: 6px;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n      \n      .layout-module-item:hover {\n        border-color: var(--primary-color);\n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n        transform: translateY(-1px);\n      }\n      \n      .layout-module-item.dragging {\n        opacity: 0.6;\n        transform: scale(0.95);\n      }\n      \n      .layout-module-content {\n        padding: 8px;\n      }\n      \n      .layout-module-placeholder {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 8px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n        padding: 20px;\n        border: 2px dashed var(--divider-color);\n        border-radius: 6px;\n        text-align: center;\n        flex: 1;\n        min-height: 60px;\n      }\n      \n      .layout-module-placeholder ha-icon {\n        --mdc-icon-size: 24px;\n        opacity: 0.7;\n      }\n      \n      .layout-add-module-btn {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        gap: 6px;\n        padding: 8px 12px;\n        background: none;\n        border: 2px dashed var(--divider-color);\n        border-radius: 6px;\n        cursor: pointer;\n        color: var(--secondary-text-color);\n        font-size: 12px;\n        transition: all 0.2s ease;\n        min-width: 80px;\n        min-height: 40px;\n        flex-shrink: 0;\n      }\n      \n      .layout-add-module-btn:hover {\n        border-color: var(--primary-color);\n        color: var(--primary-color);\n        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));\n      }\n      \n      .layout-add-module-btn ha-icon {\n        --mdc-icon-size: 16px;\n      }\n      \n      /* Clean Preview Styles */\n      .horizontal-module-preview {\n        width: 100%;\n        min-height: 60px;\n      }\n      \n      .horizontal-preview-content {\n        background: var(--secondary-background-color);\n        border-radius: 6px;\n        border: 1px solid var(--divider-color);\n      }\n      \n      .child-module-preview {\n        background: var(--card-background-color);\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        padding: 6px;\n        transition: all 0.2s ease;\n      }\n      \n      .child-module-preview:hover {\n        border-color: var(--primary-color);\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n      }\n      \n      .empty-layout-message {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 4px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        width: 100%;\n        padding: 20px;\n      }\n      \n      .empty-layout-message span {\n        font-size: 14px;\n        font-weight: 500;\n      }\n      \n      .empty-layout-message small {\n        font-size: 12px;\n        opacity: 0.8;\n      }\n    "}}class Ye extends he{constructor(){super(...arguments),this.metadata={type:"vertical",title:"Vertical Layout",description:"Arrange modules in columns",author:"Ultra Card Team",version:"1.0.0",icon:"mdi:view-agenda",category:"layout",tags:["layout","vertical","alignment","container"]}}createDefault(e){return{id:e||this.generateId("vertical"),type:"vertical",alignment:"top",gap:1.2,modules:[]}}renderGeneralTab(e,t,o,i){var n;const a=e;return V`
-      <div class="module-general-settings">
-        <!-- Vertical Alignment -->
-        <div class="form-group">
-          <label class="form-label">Items Vertical Alignment</label>
-          ${this.renderSelect("",a.alignment||"top",[{value:"top",label:"Top"},{value:"center",label:"Center"},{value:"bottom",label:"Bottom"},{value:"space-between",label:"Space Between"},{value:"space-around",label:"Space Around"}],(e=>i({alignment:e})),"Vertical alignment of items within the vertical container")}
-        </div>
+    `}applyLayoutDesignToChild(t,e){const o=Object.assign({},t);return e.color&&(o.color=e.color),e.font_size&&(o.font_size=e.font_size),e.font_family&&(o.font_family=e.font_family),e.font_weight&&(o.font_weight=e.font_weight),e.text_align&&(o.text_align=e.text_align),e.line_height&&(o.line_height=e.line_height),e.letter_spacing&&(o.letter_spacing=e.letter_spacing),e.text_transform&&(o.text_transform=e.text_transform),e.font_style&&(o.font_style=e.font_style),e.background_color&&(o.background_color=e.background_color),e.background_image&&(o.background_image=e.background_image),e.backdrop_filter&&(o.backdrop_filter=e.backdrop_filter),e.width&&(o.width=e.width),e.height&&(o.height=e.height),e.max_width&&(o.max_width=e.max_width),e.max_height&&(o.max_height=e.max_height),e.min_width&&(o.min_width=e.min_width),e.min_height&&(o.min_height=e.min_height),e.margin_top&&(o.margin_top=e.margin_top),e.margin_bottom&&(o.margin_bottom=e.margin_bottom),e.margin_left&&(o.margin_left=e.margin_left),e.margin_right&&(o.margin_right=e.margin_right),e.padding_top&&(o.padding_top=e.padding_top),e.padding_bottom&&(o.padding_bottom=e.padding_bottom),e.padding_left&&(o.padding_left=e.padding_left),e.padding_right&&(o.padding_right=e.padding_right),e.border_radius&&(o.border_radius=e.border_radius),e.border_style&&(o.border_style=e.border_style),e.border_width&&(o.border_width=e.border_width),e.border_color&&(o.border_color=e.border_color),e.text_shadow_h&&(o.text_shadow_h=e.text_shadow_h),e.text_shadow_v&&(o.text_shadow_v=e.text_shadow_v),e.text_shadow_blur&&(o.text_shadow_blur=e.text_shadow_blur),e.text_shadow_color&&(o.text_shadow_color=e.text_shadow_color),e.box_shadow_h&&(o.box_shadow_h=e.box_shadow_h),e.box_shadow_v&&(o.box_shadow_v=e.box_shadow_v),e.box_shadow_blur&&(o.box_shadow_blur=e.box_shadow_blur),e.box_shadow_spread&&(o.box_shadow_spread=e.box_shadow_spread),e.box_shadow_color&&(o.box_shadow_color=e.box_shadow_color),e.position&&(o.position=e.position),e.top&&(o.top=e.top),e.bottom&&(o.bottom=e.bottom),e.left&&(o.left=e.left),e.right&&(o.right=e.right),e.z_index&&(o.z_index=e.z_index),e.overflow&&(o.overflow=e.overflow),e.clip_path&&(o.clip_path=e.clip_path),e.animation_type&&(o.animation_type=e.animation_type),e.animation_entity&&(o.animation_entity=e.animation_entity),e.animation_trigger_type&&(o.animation_trigger_type=e.animation_trigger_type),e.animation_attribute&&(o.animation_attribute=e.animation_attribute),e.animation_state&&(o.animation_state=e.animation_state),e.intro_animation&&(o.intro_animation=e.intro_animation),e.outro_animation&&(o.outro_animation=e.outro_animation),e.animation_duration&&(o.animation_duration=e.animation_duration),e.animation_delay&&(o.animation_delay=e.animation_delay),e.animation_timing&&(o.animation_timing=e.animation_timing),o}validate(t){const e=t,o=[...super.validate(t).errors];if(e.gap&&(e.gap<-5||e.gap>10)&&o.push("Gap must be between -5 and 10 rem"),e.modules&&e.modules.length>0)for(const t of e.modules)"vertical"===t.type&&o.push("Vertical layout modules cannot be placed inside horizontal layout modules"),"horizontal"===t.type&&o.push("Horizontal layout modules cannot be nested inside other horizontal layout modules");return{valid:0===o.length,errors:o}}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}getPaddingCSS(t){return t.padding_top||t.padding_bottom||t.padding_left||t.padding_right?`${this.addPixelUnit(t.padding_top)||"8px"} ${this.addPixelUnit(t.padding_right)||"8px"} ${this.addPixelUnit(t.padding_bottom)||"8px"} ${this.addPixelUnit(t.padding_left)||"8px"}`:"8px"}getMarginCSS(t){return t.margin_top||t.margin_bottom||t.margin_left||t.margin_right?`${this.addPixelUnit(t.margin_top)||"0"} ${this.addPixelUnit(t.margin_right)||"0"} ${this.addPixelUnit(t.margin_bottom)||"0"} ${this.addPixelUnit(t.margin_left)||"0"}`:"0"}getBackgroundCSS(t){return t.background_color||"transparent"}getBackgroundImageCSS(t,e){return t.background_image?`url(${t.background_image})`:"none"}getBorderCSS(t){return`${this.addPixelUnit(t.border_width)||"0"} ${t.border_style||"solid"} ${t.border_color||"transparent"}`}getJustifyContent(t){switch(t){case"left":default:return"flex-start";case"center":return"center";case"right":return"flex-end";case"space-between":case"justify":return"space-between";case"space-around":return"space-around"}}getStyles(){return'\n      /* Horizontal Module Styles */\n      .horizontal-module-preview {\n        width: 100%;\n        min-height: 60px;\n      }\n\n      .horizontal-preview-content {\n        background: var(--secondary-background-color);\n        border-radius: 6px;\n        border: 1px solid var(--divider-color);\n        transition: all 0.2s ease;\n      }\n\n      .child-module-preview {\n        background: var(--card-background-color);\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        padding: 6px;\n        transition: all 0.2s ease;\n        /* Ensure modules can compress when needed */\n        min-width: 0;\n        min-height: 0;\n        overflow: hidden;\n        box-sizing: border-box;\n      }\n\n      .child-module-preview.negative-gap {\n        background: transparent !important;\n        border: none !important;\n        border-radius: 0 !important;\n        padding: 0 !important;\n      }\n\n      .child-module-preview.negative-gap:hover {\n        border: none !important;\n        box-shadow: none !important;\n      }\n\n      .child-module-preview:hover {\n        border-color: var(--primary-color);\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n      }\n\n      .empty-layout-message {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 4px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        width: 100%;\n        padding: 20px;\n      }\n\n      .empty-layout-message span {\n        font-size: 14px;\n        font-weight: 500;\n      }\n\n      .empty-layout-message small {\n        font-size: 12px;\n        opacity: 0.8;\n      }\n\n      .unknown-child-module {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        padding: 8px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n      }\n\n      /* Special handling for compressed layouts */\n      .horizontal-preview-content:not([data-wrap="true"]) .child-module-preview {\n        flex-basis: 0;\n        flex-grow: 1;\n        max-width: none;\n      }\n\n      /* Ensure icons and text compress nicely */\n      .horizontal-preview-content:not([data-wrap="true"]) .child-module-preview * {\n        max-width: 100% !important;\n        overflow: hidden !important;\n        text-overflow: ellipsis !important;\n        white-space: nowrap !important;\n      }\n\n      /* Standard field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      /* Custom Range Slider Styling */\n      input[type="range"] {\n        -webkit-appearance: none;\n        appearance: none;\n        height: 6px;\n        border-radius: 3px;\n        background: var(--disabled-color);\n        outline: none;\n        opacity: 0.7;\n        transition: opacity 0.2s;\n      }\n\n      input[type="range"]:hover {\n        opacity: 1;\n      }\n\n      input[type="range"]::-webkit-slider-thumb {\n        -webkit-appearance: none;\n        appearance: none;\n        width: 20px;\n        height: 20px;\n        border-radius: 50%;\n        background: var(--primary-color);\n        cursor: pointer;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n        transition: all 0.2s ease;\n      }\n\n      input[type="range"]::-webkit-slider-thumb:hover {\n        transform: scale(1.1);\n        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);\n      }\n\n      input[type="range"]::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        border-radius: 50%;\n        background: var(--primary-color);\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n        transition: all 0.2s ease;\n      }\n\n      input[type="range"]::-moz-range-thumb:hover {\n        transform: scale(1.1);\n        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);\n      }\n\n      input[type="range"]::-moz-range-track {\n        height: 6px;\n        border-radius: 3px;\n        background: var(--disabled-color);\n        border: none;\n      }\n\n      /* Gap control styles */\n      .gap-control-container {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n\n      .gap-slider {\n        flex: 1;\n        height: 6px;\n        background: var(--divider-color);\n        border-radius: 3px;\n        outline: none;\n        appearance: none;\n        -webkit-appearance: none;\n        cursor: pointer;\n        transition: all 0.2s ease;\n      }\n\n      .gap-slider::-webkit-slider-thumb {\n        appearance: none;\n        -webkit-appearance: none;\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider:hover {\n        background: var(--primary-color);\n        opacity: 0.7;\n      }\n\n      .gap-slider:hover::-webkit-slider-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-slider:hover::-moz-range-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-input {\n        width: 50px !important;\n        max-width: 50px !important;\n        min-width: 50px !important;\n        padding: 4px 6px !important;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 13px;\n        text-align: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n        box-sizing: border-box;\n      }\n\n      .gap-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);\n      }\n\n      .reset-btn {\n        width: 36px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n\n      .reset-btn:hover {\n        background: var(--primary-color);\n        color: var(--text-primary-color);\n        border-color: var(--primary-color);\n      }\n\n      .reset-btn ha-icon {\n        font-size: 16px;\n      }\n    '}}class qt extends ht{constructor(){super(...arguments),this.metadata={type:"vertical",title:"Vertical Layout",description:"Arrange modules in columns with flexible alignment and spacing",author:"WJD Designs",version:"1.0.0",icon:"mdi:view-agenda",category:"layout",tags:["layout","vertical","alignment","container","flexbox"]}}createDefault(t){return{id:t||this.generateId("vertical"),type:"vertical",alignment:"top",gap:1.2,modules:[]}}renderGeneralTab(t,e,o,i){const n=t;return V`
+      ${bt.injectCleanFormStyles()}
 
-        <!-- Gap between Items -->
-        <div class="form-group">
-          <label class="form-label">Gap between Items</label>
-          <div class="gap-control">
-            ${this.renderSelect("",(null===(n=a.gap)||void 0===n?void 0:n.toString())||"1.2",[{value:"0",label:"0rem"},{value:"0.2",label:"0.2rem"},{value:"0.4",label:"0.4rem"},{value:"0.6",label:"0.6rem"},{value:"0.8",label:"0.8rem"},{value:"1.0",label:"1.0rem"},{value:"1.2",label:"1.2rem"},{value:"1.5",label:"1.5rem"},{value:"2.0",label:"2.0rem"},{value:"2.5",label:"2.5rem"}],(e=>i({gap:parseFloat(e)})),"Space between vertical items")}
-            <div class="gap-slider">
+      <div class="module-general-settings">
+        <!-- Layout Configuration Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 20px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 24px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+          >
+            Layout Configuration
+          </div>
+
+          <!-- Vertical Alignment Field -->
+          <div style="margin-bottom: 24px;">
+            ${bt.renderField("Vertical Alignment","Choose how items are aligned vertically within the container.",e,{alignment:n.alignment||"top"},[bt.createSchemaItem("alignment",{select:{options:[{value:"top",label:"Top"},{value:"center",label:"Center"},{value:"bottom",label:"Bottom"},{value:"space-between",label:"Space Between"},{value:"space-around",label:"Space Around"}],mode:"dropdown"}})],(t=>i({alignment:t.detail.value.alignment})))}
+          </div>
+
+          <!-- Gap Between Items Field with Slider and Reset Button -->
+          <div style="margin-bottom: 8px;">
+            <div
+              class="field-title"
+              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+            >
+              Gap Between Items
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+            >
+              Set the spacing between vertical items (in rem units). Use negative values to overlap
+              items.
+            </div>
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
               <input
                 type="range"
-                min="0"
-                max="3"
+                class="gap-slider"
+                min="-5"
+                max="10"
                 step="0.1"
-                .value=${(a.gap||1.2).toString()}
-                @input=${e=>{const t=e.target;i({gap:parseFloat(t.value)})}}
-                class="gap-range"
+                .value="${n.gap||1.2}"
+                @input=${t=>{const e=t.target,o=parseFloat(e.value);i({gap:o})}}
               />
+              <input
+                type="number"
+                class="gap-input"
+                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
+                min="-5"
+                max="10"
+                step="0.1"
+                .value="${n.gap||1.2}"
+                @input=${t=>{const e=t.target,o=parseFloat(e.value);isNaN(o)||i({gap:o})}}
+                @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseFloat(e.value)||1.2,n="ArrowUp"===t.key?.1:-.1,a=Math.max(-5,Math.min(10,o+n)),r=Math.round(10*a)/10;i({gap:r})}}}
+              />
+              <button
+                class="reset-btn"
+                @click=${()=>i({gap:1.2})}
+                title="Reset to default (1.2)"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
             </div>
           </div>
         </div>
       </div>
-    `}renderPreview(e,t){const o=e,i=o.modules&&o.modules.length>0;return V`
+    `}renderPreview(t,e){const o=t,i=o,n=o.modules&&o.modules.length>0,a=o.gap||1.2,r={padding:this.getPaddingCSS(i),margin:this.getMarginCSS(i),background:this.getBackgroundCSS(i),backgroundImage:this.getBackgroundImageCSS(i,e),border:this.getBorderCSS(i),borderRadius:this.addPixelUnit(i.border_radius)||"0",display:"flex",flexDirection:"column",justifyContent:this.getJustifyContent(o.alignment),gap:a>=0?`${a}rem`:"0",alignItems:"flex-start",width:"100%",minHeight:"60px"};return V`
       <div class="vertical-module-preview">
-        <div
-          class="vertical-preview-content"
-          style="
-            display: flex;
-            flex-direction: column;
-            justify-content: ${this.getJustifyContent(o.alignment)};
-            gap: ${o.gap||1.2}rem;
-            align-items: flex-start;
-            width: 100%;
-            min-height: 60px;
-            padding: 8px;
-          "
-        >
-          ${i?o.modules.map(((e,o)=>V`
+        <div class="vertical-preview-content" style=${this.styleObjectToCss(r)}>
+          ${n?o.modules.map(((t,o)=>{const n=a<0;return V`
                   <div
-                    class="child-module-preview"
-                    style="max-width: 100%; overflow: hidden; width: 100%; box-sizing: border-box;"
+                    class="child-module-preview ${n?"negative-gap":""}"
+                    style="max-width: 100%; overflow: hidden; width: 100%; box-sizing: border-box; margin: ${a<0&&o>0?`${a}rem 0 0 0`:"0"}; ${n?"padding: 0; border: none; background: transparent;":""}"
                   >
-                    ${this._renderChildModulePreview(e,t)}
+                    ${this._renderChildModulePreview(t,e,i)}
                   </div>
-                `)):V`
+                `})):V`
                 <div class="empty-layout-message">
                   <span>No modules added yet</span>
                   <small>Add modules in the layout builder to see them here</small>
@@ -4333,12 +4889,12 @@
               `}
         </div>
       </div>
-    `}_renderChildModulePreview(e,t){const o=Ze().getModule(e.type);return o?o.renderPreview(e,t):V`
+    `}_renderChildModulePreview(t,e,o){let i=t;o&&(i=this.applyLayoutDesignToChild(t,o));const n=Kt().getModule(i.type);return n?n.renderPreview(i,e):V`
       <div class="unknown-child-module">
         <ha-icon icon="mdi:help-circle"></ha-icon>
-        <span>Unknown Module: ${e.type}</span>
+        <span>Unknown Module: ${i.type}</span>
       </div>
-    `}_getModuleTitle(e){const t=e;return t.name?t.name:t.text?t.text.length>15?`${t.text.substring(0,15)}...`:t.text:`${e.type.charAt(0).toUpperCase()+e.type.slice(1)} Module`}_getModuleIcon(e){return{text:"mdi:text",image:"mdi:image",icon:"mdi:star",bar:"mdi:chart-box",button:"mdi:gesture-tap-button",separator:"mdi:minus",info:"mdi:information",markdown:"mdi:language-markdown"}[e]||"mdi:puzzle"}validate(e){const t=e,o=[...super.validate(e).errors];if(t.gap&&(t.gap<0||t.gap>10)&&o.push("Gap must be between 0 and 10 rem"),t.modules&&t.modules.length>0)for(const e of t.modules)"horizontal"===e.type&&o.push("Horizontal layout modules cannot be placed inside vertical layout modules"),"vertical"===e.type&&o.push("Vertical layout modules cannot be nested inside other vertical layout modules");return{valid:0===o.length,errors:o}}getJustifyContent(e){switch(e){case"top":default:return"flex-start";case"center":return"center";case"bottom":return"flex-end";case"space-between":return"space-between";case"space-around":return"space-around"}}_onDragOver(e){e.preventDefault(),e.stopPropagation()}_onDragEnter(e){e.preventDefault(),e.stopPropagation()}_onDragLeave(e){e.preventDefault(),e.stopPropagation()}_onDrop(e){e.preventDefault(),e.stopPropagation(),console.log("Module dropped into vertical layout")}_onModuleDragStart(e,t){e.stopPropagation(),console.log("Module drag started:",t)}_onDragEnd(e){e.preventDefault(),e.stopPropagation(),console.log("Drag ended")}_onAddModuleClick(e){e.preventDefault(),e.stopPropagation(),console.log("Add module clicked")}getStyles(){return"\n      /* Container Module Specific Variables - Different color for vertical */\n      .container-module {\n        --container-primary-color: #3f51b5; /* Indigo for vertical layout modules */\n        --container-secondary-color: #c5cae9; /* Light indigo */\n        --container-accent-color: #303f9f; /* Dark indigo */\n        --container-border-color: #7986cb; /* Medium indigo */\n      }\n      \n      .vertical-module-preview.container-module {\n        border: 2px solid var(--container-border-color);\n        border-radius: 8px;\n        background: var(--card-background-color);\n        overflow: hidden;\n        position: relative;\n      }\n      \n      .container-header {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        padding: 12px 16px;\n        background: var(--container-primary-color);\n        color: white;\n        font-weight: 500;\n        border-bottom: 2px solid var(--container-primary-color);\n      }\n      \n      .container-drag-handle {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        width: 20px;\n        height: 20px;\n        color: rgba(255, 255, 255, 0.8);\n        cursor: grab;\n        transition: opacity 0.2s ease;\n        --mdc-icon-size: 16px;\n      }\n      \n      .container-drag-handle:hover {\n        color: white;\n      }\n      \n      .container-drag-handle:active {\n        cursor: grabbing;\n      }\n      \n      .container-badge {\n        background: rgba(255, 255, 255, 0.2);\n        color: white;\n        padding: 2px 8px;\n        border-radius: 12px;\n        font-size: 10px;\n        font-weight: 600;\n        text-transform: uppercase;\n        letter-spacing: 0.5px;\n        margin-left: auto;\n      }\n      \n      .container-content {\n        padding: 16px;\n        min-height: 120px;\n        display: flex;\n        border: 2px dashed var(--container-secondary-color);\n        margin: 8px;\n        border-radius: 6px;\n        background: rgba(63, 81, 181, 0.05);\n      }\n      \n      .vertical-preview {\n        flex-direction: column;\n        width: 100%;\n      }\n      \n      .container-child-item {\n        position: relative;\n        padding: 8px;\n        background: rgba(255, 255, 255, 0.9);\n        border: 1px solid var(--container-border-color);\n        border-radius: 4px;\n        transition: all 0.2s ease;\n      }\n      \n      .container-child-item:hover {\n        background: white;\n        border-color: var(--container-primary-color);\n        transform: translateY(-1px);\n        box-shadow: 0 2px 8px rgba(63, 81, 181, 0.2);\n      }\n      \n      .child-module-preview {\n        padding: 4px;\n      }\n      \n      .child-module-summary {\n        display: flex;\n        align-items: center;\n        gap: 6px;\n        font-size: 12px;\n      }\n      \n      .child-module-title {\n        font-weight: 500;\n        color: var(--primary-text-color);\n      }\n      \n\n      \n      .container-placeholder {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 8px;\n        color: var(--container-primary-color);\n        font-size: 14px;\n        width: 100%;\n        min-height: 80px;\n        text-align: center;\n      }\n      \n      .container-placeholder ha-icon {\n        --mdc-icon-size: 32px;\n        opacity: 0.7;\n      }\n      \n      .container-placeholder small {\n        font-size: 12px;\n        opacity: 0.8;\n        color: var(--secondary-text-color);\n      }\n      \n\n      \n      /* Form Styling */\n      .gap-control {\n        display: flex;\n        flex-direction: column;\n        gap: 12px;\n      }\n      \n      .gap-slider {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n      \n      .gap-range {\n        flex: 1;\n        height: 6px;\n        border-radius: 3px;\n        background: var(--secondary-background-color);\n        outline: none;\n        appearance: none;\n      }\n      \n      .gap-range::-webkit-slider-thumb {\n        appearance: none;\n        width: 18px;\n        height: 18px;\n        border-radius: 50%;\n        background: var(--container-primary-color);\n        cursor: pointer;\n        border: 2px solid var(--card-background-color);\n        box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n      }\n      \n      .gap-range::-moz-range-thumb {\n        width: 18px;\n        height: 18px;\n        border-radius: 50%;\n        background: var(--container-primary-color);\n        cursor: pointer;\n        border: 2px solid var(--card-background-color);\n        box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n      }\n      \n      .form-group {\n        margin-bottom: 16px;\n      }\n      \n      .form-label {\n        display: block;\n        margin-bottom: 8px;\n        font-weight: 500;\n        color: var(--primary-text-color);\n      }\n      \n      /* Layout Module Container - Styled like columns in layout builder */\n      .layout-module-container {\n        border: 2px solid var(--accent-color, var(--orange-color, #ff9800));\n        border-radius: 6px;\n        background: var(--card-background-color);\n        width: 100%;\n        box-sizing: border-box;\n        overflow: visible;\n        margin-bottom: 8px;\n      }\n      \n      .layout-module-header {\n        display: flex;\n        justify-content: space-between;\n        align-items: center;\n        font-size: 14px;\n        font-weight: 500;\n        padding: 8px 12px;\n        background: var(--accent-color, var(--orange-color, #ff9800));\n        color: white;\n        border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));\n        border-radius: 6px 6px 0px 0px;\n      }\n      \n      .layout-module-title {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n      }\n      \n      .layout-module-drag-handle {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        width: 18px;\n        height: 18px;\n        color: rgba(255, 255, 255, 0.7);\n        cursor: grab;\n        opacity: 0.8;\n        transition: opacity 0.2s ease;\n        --mdc-icon-size: 14px;\n      }\n      \n      .layout-module-drag-handle:hover {\n        opacity: 1;\n      }\n      \n      .layout-module-drag-handle:active {\n        cursor: grabbing;\n      }\n      \n      .layout-module-actions {\n        display: flex;\n        gap: 4px;\n        align-items: center;\n      }\n      \n      .layout-module-settings-btn {\n        background: none;\n        border: none;\n        color: rgba(255, 255, 255, 0.9);\n        cursor: pointer;\n        padding: 6px 8px;\n        border-radius: 4px;\n        transition: all 0.2s ease;\n        font-size: 12px;\n        min-width: 28px;\n        min-height: 28px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        --mdc-icon-size: 16px;\n      }\n      \n      .layout-module-settings-btn:hover {\n        background: rgba(255, 255, 255, 0.25);\n        color: white;\n        transform: scale(1.05);\n      }\n      \n      .layout-modules-container {\n        display: flex;\n        gap: 6px;\n        width: 100%;\n        box-sizing: border-box;\n        padding: 12px;\n        background: var(--card-background-color);\n        border: 1px solid var(--secondary-color, var(--accent-color, #ff9800));\n        border-top: none;\n        border-radius: 0px 0px 6px 6px;\n        margin-top: 0;\n        min-height: 100px;\n        position: relative;\n        overflow: visible;\n      }\n      \n      .layout-modules-container.drop-target {\n        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));\n        border-color: var(--primary-color);\n      }\n      \n      .layout-module-item {\n        position: relative;\n        background: var(--secondary-background-color);\n        border: 1px solid var(--divider-color);\n        border-radius: 6px;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n      \n      .layout-module-item:hover {\n        border-color: var(--primary-color);\n        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n        transform: translateY(-1px);\n      }\n      \n      .layout-module-item.dragging {\n        opacity: 0.6;\n        transform: scale(0.95);\n      }\n      \n      .layout-module-content {\n        padding: 8px;\n      }\n      \n      .layout-module-placeholder {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 8px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n        padding: 20px;\n        border: 2px dashed var(--divider-color);\n        border-radius: 6px;\n        text-align: center;\n        flex: 1;\n        min-height: 60px;\n      }\n      \n      .layout-module-placeholder ha-icon {\n        --mdc-icon-size: 24px;\n        opacity: 0.7;\n      }\n      \n      .layout-add-module-btn {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        gap: 6px;\n        padding: 8px 12px;\n        background: none;\n        border: 2px dashed var(--divider-color);\n        border-radius: 6px;\n        cursor: pointer;\n        color: var(--secondary-text-color);\n        font-size: 12px;\n        transition: all 0.2s ease;\n        min-width: 80px;\n        min-height: 40px;\n        flex-shrink: 0;\n      }\n      \n      .layout-add-module-btn:hover {\n        border-color: var(--primary-color);\n        color: var(--primary-color);\n        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));\n      }\n      \n      .layout-add-module-btn ha-icon {\n        --mdc-icon-size: 16px;\n      }\n      \n      /* Clean Preview Styles */\n      .vertical-module-preview {\n        width: 100%;\n        min-height: 60px;\n      }\n      \n      .vertical-preview-content {\n        background: var(--secondary-background-color);\n        border-radius: 6px;\n        border: 1px solid var(--divider-color);\n      }\n      \n      .child-module-preview {\n        background: var(--card-background-color);\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        padding: 6px;\n        transition: all 0.2s ease;\n        width: 100%;\n      }\n      \n      .child-module-preview:hover {\n        border-color: var(--primary-color);\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n      }\n      \n      .empty-layout-message {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 4px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        width: 100%;\n        padding: 20px;\n      }\n      \n      .empty-layout-message span {\n        font-size: 14px;\n        font-weight: 500;\n      }\n      \n      .empty-layout-message small {\n        font-size: 12px;\n        opacity: 0.8;\n      }\n    "}}class Xe{static render(e,t,o,i){return V`<div>Link Configuration (${i})</div>`}static handleAction(e,t,o){if("more-info"===e.action&&e.entity){const t=new CustomEvent("hass-more-info",{detail:{entityId:e.entity},bubbles:!0,composed:!0});o.dispatchEvent(t)}}}class Je extends he{constructor(){super(...arguments),this.metadata={type:"camera",title:"Camera Module",description:"Display live camera feeds with comprehensive control options",author:"WJD Designs",version:"1.0.0",icon:"mdi:camera",category:"content",tags:["camera","live","feed","security","surveillance"]},this.clickTimeout=null,this.holdTimeout=null,this.isHolding=!1}createDefault(e){return{id:e||this.generateId("camera"),type:"camera",entity:"",camera_name:"",show_name:!0,aspect_ratio:"16:9",image_fit:"cover",border_radius:"8",show_controls:!1,auto_refresh:!0,refresh_interval:30,image_quality:"high",live_view:!1,show_unavailable:!0,fallback_image:"",tap_action:{action:"more-info"},hold_action:{action:"default"},double_tap_action:{action:"default"},template_mode:!1,template:""}}renderGeneralTab(e,t,o,i){const n=e;return V`
+    `}applyLayoutDesignToChild(t,e){const o=Object.assign({},t);return e.color&&(o.color=e.color),e.font_size&&(o.font_size=e.font_size),e.font_family&&(o.font_family=e.font_family),e.font_weight&&(o.font_weight=e.font_weight),e.text_align&&(o.text_align=e.text_align),e.line_height&&(o.line_height=e.line_height),e.letter_spacing&&(o.letter_spacing=e.letter_spacing),e.text_transform&&(o.text_transform=e.text_transform),e.font_style&&(o.font_style=e.font_style),e.background_color&&(o.background_color=e.background_color),e.background_image&&(o.background_image=e.background_image),e.backdrop_filter&&(o.backdrop_filter=e.backdrop_filter),e.width&&(o.width=e.width),e.height&&(o.height=e.height),e.max_width&&(o.max_width=e.max_width),e.max_height&&(o.max_height=e.max_height),e.min_width&&(o.min_width=e.min_width),e.min_height&&(o.min_height=e.min_height),e.margin_top&&(o.margin_top=e.margin_top),e.margin_bottom&&(o.margin_bottom=e.margin_bottom),e.margin_left&&(o.margin_left=e.margin_left),e.margin_right&&(o.margin_right=e.margin_right),e.padding_top&&(o.padding_top=e.padding_top),e.padding_bottom&&(o.padding_bottom=e.padding_bottom),e.padding_left&&(o.padding_left=e.padding_left),e.padding_right&&(o.padding_right=e.padding_right),e.border_radius&&(o.border_radius=e.border_radius),e.border_style&&(o.border_style=e.border_style),e.border_width&&(o.border_width=e.border_width),e.border_color&&(o.border_color=e.border_color),e.text_shadow_h&&(o.text_shadow_h=e.text_shadow_h),e.text_shadow_v&&(o.text_shadow_v=e.text_shadow_v),e.text_shadow_blur&&(o.text_shadow_blur=e.text_shadow_blur),e.text_shadow_color&&(o.text_shadow_color=e.text_shadow_color),e.box_shadow_h&&(o.box_shadow_h=e.box_shadow_h),e.box_shadow_v&&(o.box_shadow_v=e.box_shadow_v),e.box_shadow_blur&&(o.box_shadow_blur=e.box_shadow_blur),e.box_shadow_spread&&(o.box_shadow_spread=e.box_shadow_spread),e.box_shadow_color&&(o.box_shadow_color=e.box_shadow_color),e.position&&(o.position=e.position),e.top&&(o.top=e.top),e.bottom&&(o.bottom=e.bottom),e.left&&(o.left=e.left),e.right&&(o.right=e.right),e.z_index&&(o.z_index=e.z_index),e.overflow&&(o.overflow=e.overflow),e.clip_path&&(o.clip_path=e.clip_path),e.animation_type&&(o.animation_type=e.animation_type),e.animation_entity&&(o.animation_entity=e.animation_entity),e.animation_trigger_type&&(o.animation_trigger_type=e.animation_trigger_type),e.animation_attribute&&(o.animation_attribute=e.animation_attribute),e.animation_state&&(o.animation_state=e.animation_state),e.intro_animation&&(o.intro_animation=e.intro_animation),e.outro_animation&&(o.outro_animation=e.outro_animation),e.animation_duration&&(o.animation_duration=e.animation_duration),e.animation_delay&&(o.animation_delay=e.animation_delay),e.animation_timing&&(o.animation_timing=e.animation_timing),o}validate(t){const e=t,o=[...super.validate(t).errors];if(e.gap&&(e.gap<-5||e.gap>10)&&o.push("Gap must be between -5 and 10 rem"),e.modules&&e.modules.length>0)for(const t of e.modules)"horizontal"===t.type&&o.push("Horizontal layout modules cannot be placed inside vertical layout modules"),"vertical"===t.type&&o.push("Vertical layout modules cannot be nested inside other vertical layout modules");return{valid:0===o.length,errors:o}}styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}getPaddingCSS(t){return t.padding_top||t.padding_bottom||t.padding_left||t.padding_right?`${this.addPixelUnit(t.padding_top)||"8px"} ${this.addPixelUnit(t.padding_right)||"8px"} ${this.addPixelUnit(t.padding_bottom)||"8px"} ${this.addPixelUnit(t.padding_left)||"8px"}`:"8px"}getMarginCSS(t){return t.margin_top||t.margin_bottom||t.margin_left||t.margin_right?`${this.addPixelUnit(t.margin_top)||"0"} ${this.addPixelUnit(t.margin_right)||"0"} ${this.addPixelUnit(t.margin_bottom)||"0"} ${this.addPixelUnit(t.margin_left)||"0"}`:"0"}getBackgroundCSS(t){return t.background_color||"transparent"}getBackgroundImageCSS(t,e){return t.background_image?`url(${t.background_image})`:"none"}getBorderCSS(t){return`${this.addPixelUnit(t.border_width)||"0"} ${t.border_style||"solid"} ${t.border_color||"transparent"}`}getJustifyContent(t){switch(t){case"top":default:return"flex-start";case"center":return"center";case"bottom":return"flex-end";case"space-between":return"space-between";case"space-around":return"space-around"}}getStyles(){return'\n      /* Vertical Module Styles */\n      .vertical-module-preview {\n        width: 100%;\n        min-height: 60px;\n      }\n\n      .vertical-preview-content {\n        background: var(--secondary-background-color);\n        border-radius: 6px;\n        border: 1px solid var(--divider-color);\n        transition: all 0.2s ease;\n      }\n\n      .child-module-preview {\n        background: var(--card-background-color);\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        padding: 6px;\n        transition: all 0.2s ease;\n        width: 100%;\n      }\n\n      .child-module-preview.negative-gap {\n        background: transparent !important;\n        border: none !important;\n        border-radius: 0 !important;\n        padding: 0 !important;\n      }\n\n      .child-module-preview.negative-gap:hover {\n        border: none !important;\n        box-shadow: none !important;\n      }\n\n      .child-module-preview:hover {\n        border-color: var(--primary-color);\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n      }\n\n      .empty-layout-message {\n        display: flex;\n        flex-direction: column;\n        align-items: center;\n        justify-content: center;\n        gap: 4px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n        text-align: center;\n        width: 100%;\n        padding: 20px;\n      }\n\n      .empty-layout-message span {\n        font-size: 14px;\n        font-weight: 500;\n      }\n\n      .empty-layout-message small {\n        font-size: 12px;\n        opacity: 0.8;\n      }\n\n      .unknown-child-module {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        padding: 8px;\n        color: var(--secondary-text-color);\n        font-style: italic;\n      }\n\n      /* Standard field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      /* Custom Range Slider Styling */\n      input[type="range"] {\n        -webkit-appearance: none;\n        appearance: none;\n        height: 6px;\n        border-radius: 3px;\n        background: var(--disabled-color);\n        outline: none;\n        opacity: 0.7;\n        transition: opacity 0.2s;\n      }\n\n      input[type="range"]:hover {\n        opacity: 1;\n      }\n\n      input[type="range"]::-webkit-slider-thumb {\n        -webkit-appearance: none;\n        appearance: none;\n        width: 20px;\n        height: 20px;\n        border-radius: 50%;\n        background: var(--primary-color);\n        cursor: pointer;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n        transition: all 0.2s ease;\n      }\n\n      input[type="range"]::-webkit-slider-thumb:hover {\n        transform: scale(1.1);\n        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);\n      }\n\n      input[type="range"]::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        border-radius: 50%;\n        background: var(--primary-color);\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n        transition: all 0.2s ease;\n      }\n\n      input[type="range"]::-moz-range-thumb:hover {\n        transform: scale(1.1);\n        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);\n      }\n\n      input[type="range"]::-moz-range-track {\n        height: 6px;\n        border-radius: 3px;\n        background: var(--disabled-color);\n        border: none;\n      }\n\n      /* Gap control styles */\n      .gap-control-container {\n        display: flex;\n        align-items: center;\n        gap: 12px;\n      }\n\n      .gap-slider {\n        flex: 1;\n        height: 6px;\n        background: var(--divider-color);\n        border-radius: 3px;\n        outline: none;\n        appearance: none;\n        -webkit-appearance: none;\n        cursor: pointer;\n        transition: all 0.2s ease;\n      }\n\n      .gap-slider::-webkit-slider-thumb {\n        appearance: none;\n        -webkit-appearance: none;\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        transition: all 0.2s ease;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider::-moz-range-thumb {\n        width: 20px;\n        height: 20px;\n        background: var(--primary-color);\n        border-radius: 50%;\n        cursor: pointer;\n        border: none;\n        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);\n      }\n\n      .gap-slider:hover {\n        background: var(--primary-color);\n        opacity: 0.7;\n      }\n\n      .gap-slider:hover::-webkit-slider-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-slider:hover::-moz-range-thumb {\n        transform: scale(1.1);\n      }\n\n      .gap-input {\n        width: 50px !important;\n        max-width: 50px !important;\n        min-width: 50px !important;\n        padding: 4px 6px !important;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 13px;\n        text-align: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n        box-sizing: border-box;\n      }\n\n      .gap-input:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);\n      }\n\n      .reset-btn {\n        width: 36px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        cursor: pointer;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        transition: all 0.2s ease;\n        flex-shrink: 0;\n      }\n\n      .reset-btn:hover {\n        background: var(--primary-color);\n        color: var(--text-primary-color);\n        border-color: var(--primary-color);\n      }\n\n      .reset-btn ha-icon {\n        font-size: 16px;\n      }\n    '}}class Yt{static render(t,e,o,i){return V`<div>Link Configuration (${i})</div>`}static handleAction(t,e,o){if("more-info"===t.action&&t.entity){const e=new CustomEvent("hass-more-info",{detail:{entityId:t.entity},bubbles:!0,composed:!0});o.dispatchEvent(e)}}}class Jt extends ht{constructor(){super(...arguments),this.metadata={type:"camera",title:"Camera Module",description:"Display live camera feeds with comprehensive control options",author:"WJD Designs",version:"1.0.0",icon:"mdi:camera",category:"content",tags:["camera","live","feed","security","surveillance"]},this.clickTimeout=null,this.holdTimeout=null,this.isHolding=!1}createDefault(t){return{id:t||this.generateId("camera"),type:"camera",entity:"",camera_name:"",show_name:!0,name_position:"top-left",width:320,height:180,aspect_ratio_linked:!0,aspect_ratio_value:1.778,image_fit:"cover",border_radius:"8",crop_left:0,crop_top:0,crop_right:0,crop_bottom:0,show_controls:!1,live_view:!0,auto_refresh:!0,refresh_interval:30,image_quality:"high",show_unavailable:!0,fallback_image:"",tap_action:{action:"more-info"},hold_action:{action:"default"},double_tap_action:{action:"default"},template_mode:!1,template:""}}renderGeneralTab(t,e,o,i){const n=t;return V`
       <div class="camera-module-settings">
         <!-- Camera Configuration Section -->
         <div
@@ -4352,13 +4908,21 @@
             Camera Configuration
           </div>
 
-          ${be.renderField("Camera Entity","Select the camera entity to display. This should be a camera or mjpeg entity from Home Assistant.",t,{entity:n.entity||""},[be.createSchemaItem("entity",{entity:{domain:["camera"]}})],(e=>i({entity:e.detail.value.entity})))}
-          ${be.renderField("Camera Name","Custom name for the camera. Leave empty to use entity name.",t,{camera_name:n.camera_name||""},[be.createSchemaItem("camera_name",{text:{}})],(e=>i({camera_name:e.detail.value.camera_name})))}
+          ${bt.renderField("Camera Entity","Select the camera entity to display. This should be a camera or mjpeg entity from Home Assistant.",e,{entity:n.entity||""},[bt.createSchemaItem("entity",{entity:{domain:["camera"]}})],(t=>i({entity:t.detail.value.entity})))}
+          ${bt.renderField("Camera Name","Custom name for the camera. Leave empty to use entity name.",e,{camera_name:n.camera_name||""},[bt.createSchemaItem("camera_name",{text:{}})],(t=>i({camera_name:t.detail.value.camera_name})))}
 
           <div style="display: flex; align-items: center; gap: 16px; margin-top: 16px;">
             <span class="field-title">Show Camera Name</span>
-            ${be.renderCleanForm(t,{show_name:!1!==n.show_name},[be.createSchemaItem("show_name",{boolean:{}})],(e=>i({show_name:e.detail.value.show_name})))}
+            ${bt.renderCleanForm(e,{show_name:!1!==n.show_name},[bt.createSchemaItem("show_name",{boolean:{}})],(t=>i({show_name:t.detail.value.show_name})))}
           </div>
+
+          ${!1!==n.show_name?V`
+                <div style="margin-top: 16px;">
+                  ${this.renderConditionalFieldsGroup("Camera Name Position",V`
+                      ${bt.renderField("Name Position","Choose where the camera name appears as an overlay on the camera image.",e,{name_position:n.name_position||"top-left"},[bt.createSchemaItem("name_position",{select:{options:[{value:"top-left",label:"Top Left"},{value:"top-right",label:"Top Right"},{value:"center",label:"Center"},{value:"bottom-left",label:"Bottom Left"},{value:"bottom-right",label:"Bottom Right"}]}})],(t=>i({name_position:t.detail.value.name_position})))}
+                    `)}
+                </div>
+              `:""}
         </div>
 
         <!-- Display Settings Section -->
@@ -4373,12 +4937,330 @@
             Display Settings
           </div>
 
-          ${be.renderField("Aspect Ratio","Set the aspect ratio for the camera display.",t,{aspect_ratio:n.aspect_ratio||"16:9"},[be.createSchemaItem("aspect_ratio",{select:{options:[{value:"16:9",label:"16:9 (Widescreen)"},{value:"4:3",label:"4:3 (Standard)"},{value:"1:1",label:"1:1 (Square)"},{value:"auto",label:"Auto (Original)"}]}})],(e=>i({aspect_ratio:e.detail.value.aspect_ratio})))}
-          ${be.renderField("Image Fit","How the camera image should fit within the container.",t,{image_fit:n.image_fit||"cover"},[be.createSchemaItem("image_fit",{select:{options:[{value:"cover",label:"Cover (Fill container, may crop)"},{value:"contain",label:"Contain (Fit entirely, may have bars)"},{value:"fill",label:"Fill (Stretch to fit)"},{value:"scale-down",label:"Scale Down (Shrink if needed)"}]}})],(e=>i({image_fit:e.detail.value.image_fit})))}
-          ${be.renderField("Border Radius (px)","Rounded corners for the camera image. 0 for sharp corners.",t,{border_radius:n.border_radius||"8"},[be.createSchemaItem("border_radius",{number:{min:0,max:50,mode:"box"}})],(e=>{var t;return i({border_radius:null===(t=e.detail.value.border_radius)||void 0===t?void 0:t.toString()})}))}
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <span class="field-title">Live View</span>
+            ${bt.renderCleanForm(e,{live_view:!1!==n.live_view},[bt.createSchemaItem("live_view",{boolean:{}})],(t=>i({live_view:t.detail.value.live_view})))}
+          </div>
+          <div
+            style="margin-bottom: 16px; color: var(--secondary-text-color); font-size: 12px; font-style: italic;"
+          >
+            Enable to show live camera stream (requires stream integration). When disabled, shows
+            still image snapshots.
+          </div>
+
+          ${!1===n.live_view?V`
+                <div style="margin-top: 24px;">
+                  ${this.renderConditionalFieldsGroup("Auto Refresh Settings",V`
+                      <div
+                        style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;"
+                      >
+                        <span class="field-title">Auto Refresh</span>
+                        ${bt.renderCleanForm(e,{auto_refresh:!1!==n.auto_refresh},[bt.createSchemaItem("auto_refresh",{boolean:{}})],(t=>i({auto_refresh:t.detail.value.auto_refresh})))}
+                      </div>
+
+                      ${!1!==n.auto_refresh?V`
+                            ${bt.renderField("Refresh Interval (seconds)","How often to refresh the camera image automatically.",e,{refresh_interval:n.refresh_interval||30},[bt.createSchemaItem("refresh_interval",{number:{min:5,max:300,mode:"box"}})],(t=>i({refresh_interval:t.detail.value.refresh_interval})))}
+                          `:""}
+                    `)}
+                </div>
+              `:""}
+
+          <!-- Dimensions Section -->
+          <div style="margin-bottom: 32px;">
+            <div
+              class="field-title"
+              style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--primary-color);"
+            >
+              Dimensions
+            </div>
+
+            <style>
+              .number-range-control {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+              }
+
+              .range-slider {
+                flex: 0 0 70%;
+                height: 6px;
+                background: var(--divider-color);
+                border-radius: 3px;
+                outline: none;
+                appearance: none;
+                -webkit-appearance: none;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-width: 0;
+              }
+
+              .range-slider::-webkit-slider-thumb {
+                appearance: none;
+                -webkit-appearance: none;
+                width: 18px;
+                height: 18px;
+                background: var(--primary-color);
+                border-radius: 50%;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              }
+
+              .range-slider::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                background: var(--primary-color);
+                border-radius: 50%;
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              }
+
+              .range-slider:hover {
+                background: var(--primary-color);
+                opacity: 0.7;
+              }
+
+              .range-slider:hover::-webkit-slider-thumb {
+                transform: scale(1.1);
+              }
+
+              .range-slider:hover::-moz-range-thumb {
+                transform: scale(1.1);
+              }
+
+              .range-input {
+                flex: 0 0 20%;
+                padding: 6px 8px !important;
+                border: 1px solid var(--divider-color);
+                border-radius: 4px;
+                background: var(--secondary-background-color);
+                color: var(--primary-text-color);
+                font-size: 13px;
+                text-align: center;
+                transition: all 0.2s ease;
+                box-sizing: border-box;
+              }
+
+              .range-input:focus {
+                outline: none;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+              }
+
+              .range-reset-btn {
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 1px solid var(--divider-color);
+                border-radius: 4px;
+                background: var(--secondary-background-color);
+                color: var(--primary-text-color);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+              }
+
+              .range-reset-btn:hover {
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+                border-color: var(--primary-color);
+              }
+
+              .range-reset-btn ha-icon {
+                font-size: 14px;
+              }
+
+              .aspect-ratio-link-btn {
+                width: 40px;
+                height: 40px;
+                padding: 0;
+                border: 2px solid var(--divider-color);
+                border-radius: 50%;
+                background: var(--secondary-background-color);
+                color: var(--primary-text-color);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                flex-shrink: 0;
+                margin: 0 auto;
+                position: relative;
+              }
+
+              .aspect-ratio-link-btn.linked {
+                border-color: var(--primary-color);
+                background: var(--primary-color);
+                color: white;
+                transform: scale(1.05);
+              }
+
+              .aspect-ratio-link-btn:hover {
+                transform: scale(1.1);
+                border-color: var(--primary-color);
+              }
+
+              .aspect-ratio-link-btn.linked:hover {
+                background: var(--primary-color);
+                opacity: 0.9;
+              }
+
+              .aspect-ratio-link-btn ha-icon {
+                font-size: 20px;
+                transition: transform 0.2s ease;
+              }
+
+              .dimensions-container {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+              }
+
+              .dimension-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              }
+            </style>
+
+            <div class="dimensions-container">
+              <div class="dimension-group">
+                <div class="field-title">Width (px)</div>
+                <div class="field-description">
+                  Set the width of the camera display. Range: 100-1000px
+                </div>
+                <div class="number-range-control">
+                  <input
+                    type="range"
+                    class="range-slider"
+                    min="100"
+                    max="1000"
+                    step="1"
+                    .value="${n.width||320}"
+                    @input=${t=>{const e=t.target,o=parseInt(e.value);this._handleDimensionChange(n,"width",o,i)}}
+                  />
+                  <input
+                    type="number"
+                    class="range-input"
+                    min="100"
+                    max="1000"
+                    step="1"
+                    .value="${n.width||320}"
+                    @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||this._handleDimensionChange(n,"width",o,i)}}
+                    @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||320,a="ArrowUp"===t.key?1:-1,r=Math.max(100,Math.min(1e3,o+a));this._handleDimensionChange(n,"width",r,i)}}}
+                  />
+                  <button
+                    class="range-reset-btn"
+                    @click=${()=>this._handleDimensionChange(n,"width",320,i)}
+                    title="Reset to default (320)"
+                  >
+                    <ha-icon icon="mdi:refresh"></ha-icon>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Link/Unlink Button -->
+              <div style="display: flex; justify-content: center; margin: 8px 0;">
+                <button
+                  class="aspect-ratio-link-btn ${!1!==n.aspect_ratio_linked?"linked":""}"
+                  @click=${()=>{const t=!n.aspect_ratio_linked,e={aspect_ratio_linked:t};if(t){const t=n.width||320,o=n.height||180;e.aspect_ratio_value=t/o}i(e)}}
+                  title="${!1!==n.aspect_ratio_linked?"Unlink aspect ratio":"Link aspect ratio"}"
+                >
+                  <ha-icon
+                    icon="${!1!==n.aspect_ratio_linked?"mdi:link-variant":"mdi:link-variant-off"}"
+                  ></ha-icon>
+                </button>
+              </div>
+
+              <div class="dimension-group">
+                <div class="field-title">Height (px)</div>
+                <div class="field-description">
+                  Set the height of the camera display. Range: 100-1000px
+                </div>
+                <div class="number-range-control">
+                  <input
+                    type="range"
+                    class="range-slider"
+                    min="100"
+                    max="1000"
+                    step="1"
+                    .value="${n.height||180}"
+                    @input=${t=>{const e=t.target,o=parseInt(e.value);this._handleDimensionChange(n,"height",o,i)}}
+                  />
+                  <input
+                    type="number"
+                    class="range-input"
+                    min="100"
+                    max="1000"
+                    step="1"
+                    .value="${n.height||180}"
+                    @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||this._handleDimensionChange(n,"height",o,i)}}
+                    @keydown=${t=>{if("ArrowUp"===t.key||"ArrowDown"===t.key){t.preventDefault();const e=t.target,o=parseInt(e.value)||180,a="ArrowUp"===t.key?1:-1,r=Math.max(100,Math.min(1e3,o+a));this._handleDimensionChange(n,"height",r,i)}}}
+                  />
+                  <button
+                    class="range-reset-btn"
+                    @click=${()=>this._handleDimensionChange(n,"height",180,i)}
+                    title="Reset to default (180)"
+                  >
+                    <ha-icon icon="mdi:refresh"></ha-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            ${!1!==n.aspect_ratio_linked?V`
+                  <div
+                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; border-left: 4px solid var(--primary-color);"
+                  >
+                    <div
+                      style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
+                    >
+                      <ha-icon
+                        icon="mdi:link-variant"
+                        style="font-size: 14px; margin-right: 6px;"
+                      ></ha-icon>
+                      Aspect Ratio Linked
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                    >
+                      Dimensions maintain
+                      ${(1*(n.aspect_ratio_value||1.778)).toFixed(2)}:1 ratio.
+                      Adjusting one dimension automatically updates the other to maintain
+                      proportions.
+                    </div>
+                  </div>
+                `:V`
+                  <div
+                    style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-secondary-text-color), 0.1); border-radius: 8px; border-left: 4px solid var(--secondary-text-color);"
+                  >
+                    <div
+                      style="font-size: 13px; color: var(--secondary-text-color); font-weight: 500; margin-bottom: 4px;"
+                    >
+                      <ha-icon
+                        icon="mdi:link-variant-off"
+                        style="font-size: 14px; margin-right: 6px;"
+                      ></ha-icon>
+                      Independent Dimensions
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                    >
+                      Width and height can be adjusted independently. Click the link button above to
+                      maintain aspect ratio.
+                    </div>
+                  </div>
+                `}
+          </div>
+
+          ${bt.renderField("Border Radius (px)","Rounded corners for the camera image. 0 for sharp corners.",e,{border_radius:n.border_radius||"8"},[bt.createSchemaItem("border_radius",{number:{min:0,max:50,mode:"box"}})],(t=>{var e;return i({border_radius:null===(e=t.detail.value.border_radius)||void 0===e?void 0:e.toString()})}))}
         </div>
 
-        <!-- Camera Controls Section -->
+        <!-- Crop & Position Section -->
         <div
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
@@ -4387,26 +5269,200 @@
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
-            Camera Controls
+            Crop & Position
+          </div>
+          <div
+            class="field-description"
+            style="margin-bottom: 20px; color: var(--secondary-text-color); font-style: italic;"
+          >
+            Adjust the crop and position of the camera view. Useful for focusing on specific areas
+            or removing unwanted edges.
           </div>
 
-          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-            <span class="field-title">Show Controls</span>
-            ${be.renderCleanForm(t,{show_controls:n.show_controls||!1},[be.createSchemaItem("show_controls",{boolean:{}})],(e=>i({show_controls:e.detail.value.show_controls})))}
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Left Crop -->
+            <div class="field-container">
+              <div class="field-title">Left Crop (%)</div>
+              <div class="field-description">
+                Crop from the left edge. Higher values show less of the left side.
+              </div>
+              <div class="number-range-control">
+                <input
+                  type="range"
+                  class="range-slider"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_left||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);i({crop_left:o})}}
+                />
+                <input
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_left||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({crop_left:o})}}
+                />
+                <button
+                  class="range-reset-btn"
+                  @click=${()=>i({crop_left:0})}
+                  title="Reset to default (0)"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Crop -->
+            <div class="field-container">
+              <div class="field-title">Right Crop (%)</div>
+              <div class="field-description">
+                Crop from the right edge. Higher values show less of the right side.
+              </div>
+              <div class="number-range-control">
+                <input
+                  type="range"
+                  class="range-slider"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_right||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);i({crop_right:o})}}
+                />
+                <input
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_right||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({crop_right:o})}}
+                />
+                <button
+                  class="range-reset-btn"
+                  @click=${()=>i({crop_right:0})}
+                  title="Reset to default (0)"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Top Crop -->
+            <div class="field-container">
+              <div class="field-title">Top Crop (%)</div>
+              <div class="field-description">
+                Crop from the top edge. Higher values show less of the top area.
+              </div>
+              <div class="number-range-control">
+                <input
+                  type="range"
+                  class="range-slider"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_top||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);i({crop_top:o})}}
+                />
+                <input
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_top||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({crop_top:o})}}
+                />
+                <button
+                  class="range-reset-btn"
+                  @click=${()=>i({crop_top:0})}
+                  title="Reset to default (0)"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bottom Crop -->
+            <div class="field-container">
+              <div class="field-title">Bottom Crop (%)</div>
+              <div class="field-description">
+                Crop from the bottom edge. Higher values show less of the bottom area.
+              </div>
+              <div class="number-range-control">
+                <input
+                  type="range"
+                  class="range-slider"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_bottom||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);i({crop_bottom:o})}}
+                />
+                <input
+                  type="number"
+                  class="range-input"
+                  min="0"
+                  max="50"
+                  step="1"
+                  .value="${n.crop_bottom||0}"
+                  @input=${t=>{const e=t.target,o=parseInt(e.value);isNaN(o)||i({crop_bottom:o})}}
+                />
+                <button
+                  class="range-reset-btn"
+                  @click=${()=>i({crop_bottom:0})}
+                  title="Reset to default (0)"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-            <span class="field-title">Auto Refresh</span>
-            ${be.renderCleanForm(t,{auto_refresh:!1!==n.auto_refresh},[be.createSchemaItem("auto_refresh",{boolean:{}})],(e=>i({auto_refresh:e.detail.value.auto_refresh})))}
-          </div>
-
-          ${!1!==n.auto_refresh?V`
-                <div style="margin-top: 16px;">
-                  ${this.renderConditionalFieldsGroup("Auto Refresh Settings",V`
-                      ${be.renderField("Refresh Interval (seconds)","How often to refresh the camera image automatically.",t,{refresh_interval:n.refresh_interval||30},[be.createSchemaItem("refresh_interval",{number:{min:5,max:300,mode:"box"}})],(e=>i({refresh_interval:e.detail.value.refresh_interval})))}
-                    `)}
+          <!-- Crop Status -->
+          ${(n.crop_left||0)+(n.crop_top||0)+(n.crop_right||0)+(n.crop_bottom||0)>0?V`
+                <div
+                  style="margin-top: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; border-left: 4px solid var(--primary-color);"
+                >
+                  <div
+                    style="font-size: 13px; color: var(--primary-color); font-weight: 500; margin-bottom: 4px;"
+                  >
+                    <ha-icon icon="mdi:crop" style="font-size: 14px; margin-right: 6px;"></ha-icon>
+                    Active Crops Applied
+                  </div>
+                  <div
+                    style="font-size: 12px; color: var(--secondary-text-color); line-height: 1.4;"
+                  >
+                    L: ${n.crop_left||0}% | T: ${n.crop_top||0}% | R:
+                    ${n.crop_right||0}% | B: ${n.crop_bottom||0}%
+                  </div>
                 </div>
               `:""}
+
+          <!-- Reset All Crops Button -->
+          <div style="margin-top: 20px; text-align: center;">
+            <button
+              style="
+                padding: 8px 16px;
+                border: 1px solid var(--primary-color);
+                border-radius: 6px;
+                background: transparent;
+                color: var(--primary-color);
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+              "
+              @click=${()=>i({crop_left:0,crop_top:0,crop_right:0,crop_bottom:0})}
+              @mouseover=${t=>{const e=t.target;e.style.background="var(--primary-color)",e.style.color="white"}}
+              @mouseout=${t=>{const e=t.target;e.style.background="transparent",e.style.color="var(--primary-color)"}}
+            >
+              <ha-icon icon="mdi:crop-free" style="margin-right: 6px; font-size: 14px;"></ha-icon>
+              Reset All Crops
+            </button>
+          </div>
         </div>
 
         <!-- Image Quality & Error Handling Section -->
@@ -4421,25 +5477,8 @@
             Image Quality & Error Handling
           </div>
 
-          ${be.renderField("Image Quality","Quality setting for the camera stream. Higher quality uses more bandwidth.",t,{image_quality:n.image_quality||"high"},[be.createSchemaItem("image_quality",{select:{options:[{value:"high",label:"High Quality"},{value:"medium",label:"Medium Quality"},{value:"low",label:"Low Quality (Faster)"}]}})],(e=>i({image_quality:e.detail.value.image_quality})))}
-
-          <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
-            <span class="field-title">Live View</span>
-            ${be.renderCleanForm(t,{live_view:n.live_view||!1},[be.createSchemaItem("live_view",{boolean:{}})],(e=>i({live_view:e.detail.value.live_view})))}
-          </div>
-          <div
-            style="margin-bottom: 16px; color: var(--secondary-text-color); font-size: 12px; font-style: italic;"
-          >
-            Enable to show live camera stream (requires stream integration). When disabled, shows
-            still image snapshots.
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
-            <span class="field-title">Show Unavailable State</span>
-            ${be.renderCleanForm(t,{show_unavailable:!1!==n.show_unavailable},[be.createSchemaItem("show_unavailable",{boolean:{}})],(e=>i({show_unavailable:e.detail.value.show_unavailable})))}
-          </div>
-
-          ${be.renderField("Fallback Image URL","Optional image to show when camera is unavailable. Can be a URL or local path.",t,{fallback_image:n.fallback_image||""},[be.createSchemaItem("fallback_image",{text:{}})],(e=>i({fallback_image:e.detail.value.fallback_image})))}
+          ${bt.renderField("Image Quality","Quality setting for the camera stream. Higher quality uses more bandwidth.",e,{image_quality:n.image_quality||"high"},[bt.createSchemaItem("image_quality",{select:{options:[{value:"high",label:"High Quality"},{value:"medium",label:"Medium Quality"},{value:"low",label:"Low Quality (Faster)"}]}})],(t=>i({image_quality:t.detail.value.image_quality})))}
+          ${bt.renderField("Fallback Image URL","Optional image to show when camera is unavailable. Can be a URL or local path.",e,{fallback_image:n.fallback_image||""},[bt.createSchemaItem("fallback_image",{text:{}})],(t=>i({fallback_image:t.detail.value.fallback_image})))}
         </div>
 
         <!-- Link Configuration Section -->
@@ -4447,7 +5486,7 @@
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
         >
-          ${Xe.render(t,{tap_action:n.tap_action||{action:"more-info"},hold_action:n.hold_action||{action:"default"},double_tap_action:n.double_tap_action||{action:"default"}},(e=>{const t={};e.tap_action&&(t.tap_action=e.tap_action),e.hold_action&&(t.hold_action=e.hold_action),e.double_tap_action&&(t.double_tap_action=e.double_tap_action),i(t)}),"Link Configuration")}
+          ${Yt.render(e,{tap_action:n.tap_action||{action:"more-info"},hold_action:n.hold_action||{action:"default"},double_tap_action:n.double_tap_action||{action:"default"}},(t=>{const e={};t.tap_action&&(e.tap_action=t.tap_action),t.hold_action&&(e.hold_action=t.hold_action),t.double_tap_action&&(e.double_tap_action=t.double_tap_action),i(e)}),"Link Configuration")}
         </div>
 
         <!-- Template Configuration Section -->
@@ -4464,11 +5503,11 @@
             >
               Template Configuration
             </div>
-            ${be.renderCleanForm(t,{template_mode:n.template_mode||!1},[be.createSchemaItem("template_mode",{boolean:{}})],(e=>i({template_mode:e.detail.value.template_mode})))}
+            ${bt.renderCleanForm(e,{template_mode:n.template_mode||!1},[bt.createSchemaItem("template_mode",{boolean:{}})],(t=>i({template_mode:t.detail.value.template_mode})))}
           </div>
 
           ${n.template_mode?this.renderConditionalFieldsGroup("Template Settings",V`
-                  ${be.renderField("Template Code",'Enter Jinja2 template code to dynamically set camera entity. Example: {{ states.camera.front_door.entity_id if is_state("input_boolean.show_front", "on") else states.camera.back_yard.entity_id }}',t,{template:n.template||""},[be.createSchemaItem("template",{text:{multiline:!0}})],(e=>i({template:e.detail.value.template})))}
+                  ${bt.renderField("Template Code",'Enter Jinja2 template code to dynamically set camera entity. Example: {{ states.camera.front_door.entity_id if is_state("input_boolean.show_front", "on") else states.camera.back_yard.entity_id }}',e,{template:n.template||""},[bt.createSchemaItem("template",{text:{multiline:!0}})],(t=>i({template:t.detail.value.template})))}
                 `):V`
                 <div
                   style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
@@ -4478,22 +5517,13 @@
               `}
         </div>
       </div>
-    `}renderPreview(e,t){const o=e,i=o;let n=o.entity;if(o.template_mode&&o.template)try{n=o.entity}catch(e){console.warn("Template evaluation failed:",e)}const a=n?t.states[n]:null,r=!a||"unavailable"===a.state,l=o.camera_name||(a?a.attributes.friendly_name||a.entity_id:"Camera"),s={padding:this.getPaddingCSS(i),margin:this.getMarginCSS(i),background:this.getBackgroundCSS(i),backgroundImage:this.getBackgroundImageCSS(i,t),border:this.getBorderCSS(i),borderRadius:this.addPixelUnit(i.border_radius)||"0px",width:"100%",maxWidth:"100%",boxSizing:"border-box"},d={borderRadius:this.addPixelUnit(o.border_radius)||"8px",objectFit:o.image_fit||"cover",width:"100%",height:"200px",display:"block"},c=this.getAspectRatioStyle(o.aspect_ratio),p=V`
+    `}renderPreview(t,e){const o=t,i=o;let n=o.entity;if(o.template_mode&&o.template)try{n=o.entity}catch(t){console.warn("Template evaluation failed:",t)}const a=n?e.states[n]:null,r=!a||"unavailable"===a.state,l=o.camera_name||(a?a.attributes.friendly_name||a.entity_id:"Camera"),s={padding:this.getPaddingCSS(i),margin:this.getMarginCSS(i),background:this.getBackgroundCSS(i),backgroundImage:this.getBackgroundImageCSS(i,e),border:this.getBorderCSS(i),borderRadius:this.addPixelUnit(i.border_radius)||"0px",width:"100%",maxWidth:"100%",boxSizing:"border-box",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"},d=o.crop_left||0,c=o.crop_right||0,p=o.crop_top||0,u=o.crop_bottom||0,m=o.width||320,g=o.height||180,h=m*(100-d-c)/100,v=g*(100-p-u)/100,b=-m*d/100,f=-g*p/100,_={borderRadius:this.addPixelUnit(o.border_radius)||"8px",objectFit:"cover",width:`${m}px`,height:`${g}px`,display:"block",position:"absolute",left:`${b}px`,top:`${f}px`,transition:"all 0.3s ease"},y={width:`${Math.max(50,h)}px`,height:`${Math.max(50,v)}px`,position:"relative",overflow:"hidden"},x=o.name_position||"top-left",w=this.getCameraNamePositionStyles(x),$=V`
       <div class="camera-module-container" style=${this.styleObjectToCss(s)}>
-        ${!1!==o.show_name?V`
-              <div
-                class="camera-name"
-                style="margin-bottom: 8px; font-weight: 500; color: var(--primary-text-color);"
-              >
-                ${l}
-              </div>
-            `:""}
-
-        <div class="camera-image-container" style=${c}>
+        <div class="camera-image-container" style=${this.styleObjectToCss(y)}>
           ${n?r?V`
                   <div
                     class="camera-unavailable"
-                    style=${this.styleObjectToCss(Object.assign(Object.assign({},d),{display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",backgroundColor:"var(--error-color, #f44336)",color:"white"}))}
+                    style=${this.styleObjectToCss(Object.assign(Object.assign({},_),{display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",backgroundColor:"var(--error-color, #f44336)",color:"white",position:"static",left:"auto",top:"auto"}))}
                   >
                     ${o.fallback_image?V`
                           <img
@@ -4512,32 +5542,37 @@
                           >
                         `}
                   </div>
+                  ${!1!==o.show_name?V`
+                        <div
+                          class="camera-name-overlay"
+                          style=${this.styleObjectToCss(w)}
+                        >
+                          ${l}
+                        </div>
+                      `:""}
                 `:V`
                   <!-- Use HA's native camera image component - same as picture-glance card -->
                   <hui-image
-                    .hass=${t}
+                    .hass=${e}
                     .cameraImage=${n}
                     .cameraView=${o.live_view?"live":"auto"}
-                    style=${this.styleObjectToCss(d)}
+                    style=${this.styleObjectToCss(_)}
                     class="camera-image"
-                    @error=${e=>console.log("🎥 HA hui-image error:",e)}
+                    @error=${t=>console.log("🎥 HA hui-image error:",t)}
                     @load=${()=>console.log("🎥 HA hui-image loaded successfully")}
                   ></hui-image>
-                  ${o.show_controls?V`
-                        <div class="camera-controls">
-                          <button
-                            class="camera-control-btn"
-                            title="Refresh Camera"
-                            @click=${()=>this.refreshCamera(n,t)}
-                          >
-                            <ha-icon icon="mdi:refresh"></ha-icon>
-                          </button>
+                  ${!1!==o.show_name?V`
+                        <div
+                          class="camera-name-overlay"
+                          style=${this.styleObjectToCss(w)}
+                        >
+                          ${l}
                         </div>
                       `:""}
                 `:V`
                 <div
                   class="camera-unavailable"
-                  style=${this.styleObjectToCss(Object.assign(Object.assign({},d),{display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",backgroundColor:"var(--warning-color, #ff9800)",color:"white"}))}
+                  style=${this.styleObjectToCss(Object.assign(Object.assign({},_),{display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",backgroundColor:"var(--warning-color, #ff9800)",color:"white",position:"static",left:"auto",top:"auto"}))}
                 >
                   <ha-icon
                     icon="mdi:camera-plus"
@@ -4548,21 +5583,29 @@
                     >Choose a camera entity below</span
                   >
                 </div>
+                ${!1!==o.show_name?V`
+                      <div
+                        class="camera-name-overlay"
+                        style=${this.styleObjectToCss(w)}
+                      >
+                        ${l}
+                      </div>
+                    `:""}
               `}
         </div>
       </div>
     `;return this.hasActiveLink(o)?V`<div
           class="camera-module-clickable"
-          @click=${e=>this.handleClick(e,o,t)}
-          @dblclick=${e=>this.handleDoubleClick(e,o,t)}
-          @mousedown=${e=>this.handleMouseDown(e,o,t)}
-          @mouseup=${e=>this.handleMouseUp(e,o,t)}
-          @mouseleave=${e=>this.handleMouseLeave(e,o,t)}
-          @touchstart=${e=>this.handleTouchStart(e,o,t)}
-          @touchend=${e=>this.handleTouchEnd(e,o,t)}
+          @click=${t=>this.handleClick(t,o,e)}
+          @dblclick=${t=>this.handleDoubleClick(t,o,e)}
+          @mousedown=${t=>this.handleMouseDown(t,o,e)}
+          @mouseup=${t=>this.handleMouseUp(t,o,e)}
+          @mouseleave=${t=>this.handleMouseLeave(t,o,e)}
+          @touchstart=${t=>this.handleTouchStart(t,o,e)}
+          @touchend=${t=>this.handleTouchEnd(t,o,e)}
         >
-          ${p}
-        </div>`:p}validate(e){const t=e,o=[...super.validate(e).errors];return t.template_mode||t.entity&&""!==t.entity.trim()||o.push("Camera entity is required when not using template mode"),!t.template_mode||t.template&&""!==t.template.trim()||o.push("Template code is required when template mode is enabled"),!1!==t.auto_refresh&&t.refresh_interval&&(t.refresh_interval<5||t.refresh_interval>300)&&o.push("Refresh interval must be between 5 and 300 seconds"),t.border_radius&&isNaN(Number(t.border_radius))&&o.push("Border radius must be a number"),t.tap_action&&t.tap_action.action&&o.push(...this.validateAction(t.tap_action)),t.hold_action&&t.hold_action.action&&o.push(...this.validateAction(t.hold_action)),t.double_tap_action&&t.double_tap_action.action&&o.push(...this.validateAction(t.double_tap_action)),{valid:0===o.length,errors:o}}handleClick(e,t,o){e.preventDefault(),this.clickTimeout&&clearTimeout(this.clickTimeout),this.clickTimeout=setTimeout((()=>{this.handleTapAction(e,t,o)}),300)}handleDoubleClick(e,t,o){e.preventDefault(),this.clickTimeout&&(clearTimeout(this.clickTimeout),this.clickTimeout=null),this.handleDoubleAction(e,t,o)}handleMouseDown(e,t,o){this.isHolding=!1,this.holdTimeout=setTimeout((()=>{this.isHolding=!0,this.handleHoldAction(e,t,o)}),500)}handleMouseUp(e,t,o){this.holdTimeout&&(clearTimeout(this.holdTimeout),this.holdTimeout=null)}handleMouseLeave(e,t,o){this.holdTimeout&&(clearTimeout(this.holdTimeout),this.holdTimeout=null),this.isHolding=!1}handleTouchStart(e,t,o){this.handleMouseDown(e,t,o)}handleTouchEnd(e,t,o){this.handleMouseUp(e,t,o)}handleTapAction(e,t,o){if(!this.isHolding)if(t.tap_action){const i="default"===t.tap_action.action?{action:"more-info",entity:t.entity}:t.tap_action;Xe.handleAction(i,o,e.target)}else t.entity&&Xe.handleAction({action:"more-info",entity:t.entity},o,e.target)}handleHoldAction(e,t,o){t.hold_action&&"nothing"!==t.hold_action.action&&Xe.handleAction(t.hold_action,o,e.target)}handleDoubleAction(e,t,o){t.double_tap_action&&"nothing"!==t.double_tap_action.action&&Xe.handleAction(t.double_tap_action,o,e.target)}hasActiveLink(e){const t=e.tap_action&&"nothing"!==e.tap_action.action,o=e.hold_action&&"nothing"!==e.hold_action.action,i=e.double_tap_action&&"nothing"!==e.double_tap_action.action;return t||o||i||!!e.entity}refreshCamera(e,t){console.log("🎥 Manual refresh triggered for camera:",e),document.querySelectorAll('hui-image[class*="camera-image"]').forEach((o=>{o.cameraImage===e&&o.hass===t&&(console.log("🎥 Refreshing hui-image component"),o.hass=Object.assign({},t),o.requestUpdate())}))}getCameraImageUrl(e,t,o){var i,n,a;if(!e||!t)return console.log("🎥 Camera URL: Missing entity or hass",{entity:e,hasHass:!!t}),"";let r;try{r=t.hassUrl?`${t.hassUrl()}/api/camera_proxy/${e}`:`/api/camera_proxy/${e}`;const o=r.includes("?")?"&":"?";r+=`${o}token=${Date.now()}`}catch(t){console.warn("🎥 Error generating camera URL:",t),r=`/api/camera_proxy/${e}?token=${Date.now()}`}return console.log("🎥 Camera URL (HA native method):",{entity:e,finalUrl:r,cameraState:null===(i=t.states[e])||void 0===i?void 0:i.state,supportedFeatures:null===(a=null===(n=t.states[e])||void 0===n?void 0:n.attributes)||void 0===a?void 0:a.supported_features}),r}async getCameraImageBlob(e,t,o){try{console.log("🎥 Trying authenticated blob approach for camera:",e);const o=`/api/camera_proxy/${e}?t=${Date.now()}`,i=await fetch(o,{method:"GET",credentials:"include",headers:{Accept:"image/*","Cache-Control":"no-cache",Pragma:"no-cache"}});if(!i.ok)return console.log(`🎥 Blob fetch failed with status ${i.status}:`,i.statusText),await this.getCameraImageViaWebSocket(e,t);const n=await i.blob(),a=URL.createObjectURL(n);return console.log("🎥 Blob URL created successfully:",{blobUrl:a,blobSize:n.size,blobType:n.type}),a}catch(o){return console.error("🎥 Blob method failed:",o),await this.getCameraImageViaWebSocket(e,t)}}async getCameraImageViaWebSocket(e,t){try{console.log("🎥 Attempting WebSocket camera image fetch");const o=t.connection;if(!o)throw new Error("No WebSocket connection available");const i=await o.sendMessagePromise({type:"camera_thumbnail",entity_id:e});if(i&&i.content){const e=atob(i.content),t=new Array(e.length);for(let o=0;o<e.length;o++)t[o]=e.charCodeAt(o);const o=new Uint8Array(t),n=new Blob([o],{type:"image/jpeg"}),a=URL.createObjectURL(n);return console.log("🎥 WebSocket camera image successful:",{blobUrl:a,blobSize:n.size}),a}throw new Error("No image content received from WebSocket")}catch(e){return console.error("🎥 WebSocket camera image failed:",e),""}}getAspectRatioStyle(e){return e&&"auto"!==e?`\n      position: relative;\n      width: 100%;\n      padding-bottom: ${{"16:9":"56.25%","4:3":"75%","1:1":"100%"}[e]||"56.25%"};\n      overflow: hidden;\n    `:"width: 100%;"}async handleImageError(e,t){var o,i,n,a,r,l,s,d,c;const p=e.target;if(console.log("🎥 Camera Image Error:",{entity:t.entity,originalSrc:p.src,error:e}),!p.dataset.triedBlob&&t.entity){p.dataset.triedBlob="true",console.log("🎥 Trying authenticated blob approach...");try{const e=(null===(o=document.querySelector("home-assistant"))||void 0===o?void 0:o.hass)||(null===(i=document.querySelector("ha-panel-lovelace"))||void 0===i?void 0:i.hass)||(null===(n=window.hassConnection)||void 0===n?void 0:n.hass);if(e){const o=await this.getCameraImageBlob(t.entity,e,t.image_quality);if(o)return console.log("🎥 Successfully got blob URL, updating image"),void(p.src=o)}else console.log("🎥 Could not find hass instance for blob approach")}catch(e){console.error("🎥 Blob approach failed:",e)}}if(t.fallback_image)console.log("🎥 Using fallback image"),p.src=t.fallback_image;else{console.log("🎥 No fallback image, showing error message"),p.style.display="none";const e=p.closest(".camera-image-container");if(e){const o=t.entity?null===(l=null===(r=null===(a=document.querySelector("home-assistant"))||void 0===a?void 0:a.hass)||void 0===r?void 0:r.states)||void 0===l?void 0:l[t.entity]:null,i=(null===(s=null==o?void 0:o.attributes)||void 0===s?void 0:s.brand)||(null===(d=null==o?void 0:o.attributes)||void 0===d?void 0:d.model)||"Unknown";if(e.innerHTML=`\n          <div style="\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            flex-direction: column;\n            background-color: var(--warning-color, #ff9800);\n            color: white;\n            padding: 20px;\n            border-radius: 8px;\n            text-align: center;\n            min-height: 150px;\n            border: 1px solid rgba(255,255,255,0.2);\n          ">\n            <ha-icon icon="mdi:camera-off" style="font-size: 48px; margin-bottom: 12px; opacity: 0.9;"></ha-icon>\n            <span style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">Camera Load Failed</span>\n            <span style="font-size: 13px; margin-bottom: 8px; opacity: 0.9;">Entity: ${t.entity}</span>\n            <span style="font-size: 12px; margin-bottom: 12px; opacity: 0.8;">Camera Type: ${i}</span>\n            <div style="font-size: 11px; opacity: 0.8; line-height: 1.4; margin-bottom: 12px;">\n              <div style="margin-bottom: 6px;">• Check camera entity is working in HA</div>\n              <div style="margin-bottom: 6px;">• Verify RTSP credentials in HA config</div>\n              <div>• Try refreshing the browser</div>\n            </div>\n            <button \n              onclick="window.retryCamera_${null===(c=t.entity)||void 0===c?void 0:c.replace(/\./g,"_")}"\n              style="\n                background: rgba(255,255,255,0.2);\n                border: 1px solid rgba(255,255,255,0.3);\n                color: white;\n                padding: 8px 16px;\n                border-radius: 4px;\n                cursor: pointer;\n                font-size: 12px;\n                transition: all 0.2s ease;\n              "\n              onmouseover="this.style.background='rgba(255,255,255,0.3)'"\n              onmouseout="this.style.background='rgba(255,255,255,0.2)'"\n            >\n              🔄 Retry Camera Load\n            </button>\n          </div>\n        `,t.entity){const o=`retryCamera_${t.entity.replace(/\./g,"_")}`;window[o]=async()=>{var o;if(console.log("🎥 Manual retry triggered for camera:",t.entity),null===(o=document.querySelector("home-assistant"))||void 0===o?void 0:o.hass)try{const o=Date.now(),i=`/api/camera_proxy/${t.entity}?t=${o}`,n=document.createElement("img");n.className="camera-image",n.style.cssText=`\n                  position: absolute;\n                  top: 0;\n                  left: 0;\n                  width: 100%;\n                  height: 100%;\n                  object-fit: ${t.image_fit||"cover"};\n                  border-radius: inherit;\n                `,n.onerror=e=>this.handleImageError(e,t),n.onload=()=>{console.log("🎥 Retry successful!"),e&&(e.innerHTML="",e.appendChild(n))},n.src=i,e&&(e.innerHTML='\n                    <div style="\n                      display: flex;\n                      align-items: center;\n                      justify-content: center;\n                      flex-direction: column;\n                      background-color: var(--primary-color);\n                      color: white;\n                      padding: 20px;\n                      border-radius: 8px;\n                      text-align: center;\n                      min-height: 150px;\n                    ">\n                      <div style="\n                        width: 32px;\n                        height: 32px;\n                        border: 3px solid rgba(255,255,255,0.3);\n                        border-top: 3px solid white;\n                        border-radius: 50%;\n                        animation: spin 1s linear infinite;\n                        margin-bottom: 12px;\n                      "></div>\n                      <span style="font-weight: 500; font-size: 14px;">Retrying Camera Load...</span>\n                      <style>\n                        @keyframes spin {\n                          0% { transform: rotate(0deg); }\n                          100% { transform: rotate(360deg); }\n                        }\n                      </style>\n                    </div>\n                  ')}catch(e){console.error("🎥 Retry failed:",e)}}}}}}renderConditionalFieldsGroup(e,t){return V`
+          ${$}
+        </div>`:$}validate(t){const e=t,o=[...super.validate(t).errors];return e.template_mode||e.entity&&""!==e.entity.trim()||o.push("Camera entity is required when not using template mode"),!e.template_mode||e.template&&""!==e.template.trim()||o.push("Template code is required when template mode is enabled"),!1!==e.auto_refresh&&e.refresh_interval&&(e.refresh_interval<5||e.refresh_interval>300)&&o.push("Refresh interval must be between 5 and 300 seconds"),e.border_radius&&isNaN(Number(e.border_radius))&&o.push("Border radius must be a number"),e.tap_action&&e.tap_action.action&&o.push(...this.validateAction(e.tap_action)),e.hold_action&&e.hold_action.action&&o.push(...this.validateAction(e.hold_action)),e.double_tap_action&&e.double_tap_action.action&&o.push(...this.validateAction(e.double_tap_action)),{valid:0===o.length,errors:o}}handleClick(t,e,o){t.preventDefault(),this.clickTimeout&&clearTimeout(this.clickTimeout),this.clickTimeout=setTimeout((()=>{this.handleTapAction(t,e,o)}),300)}handleDoubleClick(t,e,o){t.preventDefault(),this.clickTimeout&&(clearTimeout(this.clickTimeout),this.clickTimeout=null),this.handleDoubleAction(t,e,o)}handleMouseDown(t,e,o){this.isHolding=!1,this.holdTimeout=setTimeout((()=>{this.isHolding=!0,this.handleHoldAction(t,e,o)}),500)}handleMouseUp(t,e,o){this.holdTimeout&&(clearTimeout(this.holdTimeout),this.holdTimeout=null)}handleMouseLeave(t,e,o){this.holdTimeout&&(clearTimeout(this.holdTimeout),this.holdTimeout=null),this.isHolding=!1}handleTouchStart(t,e,o){this.handleMouseDown(t,e,o)}handleTouchEnd(t,e,o){this.handleMouseUp(t,e,o)}handleTapAction(t,e,o){if(!this.isHolding)if(e.tap_action){const i="default"===e.tap_action.action?{action:"more-info",entity:e.entity}:e.tap_action;Yt.handleAction(i,o,t.target)}else e.entity&&Yt.handleAction({action:"more-info",entity:e.entity},o,t.target)}handleHoldAction(t,e,o){e.hold_action&&"nothing"!==e.hold_action.action&&Yt.handleAction(e.hold_action,o,t.target)}handleDoubleAction(t,e,o){e.double_tap_action&&"nothing"!==e.double_tap_action.action&&Yt.handleAction(e.double_tap_action,o,t.target)}_handleDimensionChange(t,e,o,i){const n={};if(!1!==t.aspect_ratio_linked){const i=t.aspect_ratio_value||1.778;"width"===e?(n.width=o,n.height=Math.round(o/i)):(n.height=o,n.width=Math.round(o*i)),n.width&&(n.width<100||n.width>1e3)&&(n.width=Math.max(100,Math.min(1e3,n.width)),n.height=Math.round(n.width/i)),n.height&&(n.height<100||n.height>1e3)&&(n.height=Math.max(100,Math.min(1e3,n.height)),n.width=Math.round(n.height*i))}else n[e]=o;i(n)}getCameraNamePositionStyles(t){const e={position:"absolute",padding:"6px 12px",background:"rgba(0, 0, 0, 0.7)",color:"white",fontSize:"14px",fontWeight:"500",borderRadius:"4px",zIndex:"10",pointerEvents:"none",backdropFilter:"blur(4px)",maxWidth:"calc(100% - 20px)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};switch(t){case"top-left":default:return Object.assign(Object.assign({},e),{top:"8px",left:"8px"});case"top-right":return Object.assign(Object.assign({},e),{top:"8px",right:"8px"});case"center":return Object.assign(Object.assign({},e),{top:"50%",left:"50%",transform:"translate(-50%, -50%)",textAlign:"center"});case"bottom-left":return Object.assign(Object.assign({},e),{bottom:"8px",left:"8px"});case"bottom-right":return Object.assign(Object.assign({},e),{bottom:"8px",right:"8px"})}}hasActiveLink(t){const e=t.tap_action&&"nothing"!==t.tap_action.action,o=t.hold_action&&"nothing"!==t.hold_action.action,i=t.double_tap_action&&"nothing"!==t.double_tap_action.action;return e||o||i||!!t.entity}refreshCamera(t,e){console.log("🎥 Manual refresh triggered for camera:",t),document.querySelectorAll('hui-image[class*="camera-image"]').forEach((o=>{o.cameraImage===t&&o.hass===e&&(console.log("🎥 Refreshing hui-image component"),o.hass=Object.assign({},e),o.requestUpdate())}))}getCameraImageUrl(t,e,o){var i,n,a;if(!t||!e)return console.log("🎥 Camera URL: Missing entity or hass",{entity:t,hasHass:!!e}),"";let r;try{r=e.hassUrl?`${e.hassUrl()}/api/camera_proxy/${t}`:`/api/camera_proxy/${t}`;const o=r.includes("?")?"&":"?";r+=`${o}token=${Date.now()}`}catch(e){console.warn("🎥 Error generating camera URL:",e),r=`/api/camera_proxy/${t}?token=${Date.now()}`}return console.log("🎥 Camera URL (HA native method):",{entity:t,finalUrl:r,cameraState:null===(i=e.states[t])||void 0===i?void 0:i.state,supportedFeatures:null===(a=null===(n=e.states[t])||void 0===n?void 0:n.attributes)||void 0===a?void 0:a.supported_features}),r}async getCameraImageBlob(t,e,o){try{console.log("🎥 Trying authenticated blob approach for camera:",t);const o=`/api/camera_proxy/${t}?t=${Date.now()}`,i=await fetch(o,{method:"GET",credentials:"include",headers:{Accept:"image/*","Cache-Control":"no-cache",Pragma:"no-cache"}});if(!i.ok)return console.log(`🎥 Blob fetch failed with status ${i.status}:`,i.statusText),await this.getCameraImageViaWebSocket(t,e);const n=await i.blob(),a=URL.createObjectURL(n);return console.log("🎥 Blob URL created successfully:",{blobUrl:a,blobSize:n.size,blobType:n.type}),a}catch(o){return console.error("🎥 Blob method failed:",o),await this.getCameraImageViaWebSocket(t,e)}}async getCameraImageViaWebSocket(t,e){try{console.log("🎥 Attempting WebSocket camera image fetch");const o=e.connection;if(!o)throw new Error("No WebSocket connection available");const i=await o.sendMessagePromise({type:"camera_thumbnail",entity_id:t});if(i&&i.content){const t=atob(i.content),e=new Array(t.length);for(let o=0;o<t.length;o++)e[o]=t.charCodeAt(o);const o=new Uint8Array(e),n=new Blob([o],{type:"image/jpeg"}),a=URL.createObjectURL(n);return console.log("🎥 WebSocket camera image successful:",{blobUrl:a,blobSize:n.size}),a}throw new Error("No image content received from WebSocket")}catch(t){return console.error("🎥 WebSocket camera image failed:",t),""}}async handleImageError(t,e){var o,i,n,a,r,l,s,d,c;const p=t.target;if(console.log("🎥 Camera Image Error:",{entity:e.entity,originalSrc:p.src,error:t}),!p.dataset.triedBlob&&e.entity){p.dataset.triedBlob="true",console.log("🎥 Trying authenticated blob approach...");try{const t=(null===(o=document.querySelector("home-assistant"))||void 0===o?void 0:o.hass)||(null===(i=document.querySelector("ha-panel-lovelace"))||void 0===i?void 0:i.hass)||(null===(n=window.hassConnection)||void 0===n?void 0:n.hass);if(t){const o=await this.getCameraImageBlob(e.entity,t,e.image_quality);if(o)return console.log("🎥 Successfully got blob URL, updating image"),void(p.src=o)}else console.log("🎥 Could not find hass instance for blob approach")}catch(t){console.error("🎥 Blob approach failed:",t)}}if(e.fallback_image)console.log("🎥 Using fallback image"),p.src=e.fallback_image;else{console.log("🎥 No fallback image, showing error message"),p.style.display="none";const t=p.closest(".camera-image-container");if(t){const o=e.entity?null===(l=null===(r=null===(a=document.querySelector("home-assistant"))||void 0===a?void 0:a.hass)||void 0===r?void 0:r.states)||void 0===l?void 0:l[e.entity]:null,i=(null===(s=null==o?void 0:o.attributes)||void 0===s?void 0:s.brand)||(null===(d=null==o?void 0:o.attributes)||void 0===d?void 0:d.model)||"Unknown";if(t.innerHTML=`\n          <div style="\n            display: flex;\n            align-items: center;\n            justify-content: center;\n            flex-direction: column;\n            background-color: var(--warning-color, #ff9800);\n            color: white;\n            padding: 20px;\n            border-radius: 8px;\n            text-align: center;\n            min-height: 150px;\n            border: 1px solid rgba(255,255,255,0.2);\n          ">\n            <ha-icon icon="mdi:camera-off" style="font-size: 48px; margin-bottom: 12px; opacity: 0.9;"></ha-icon>\n            <span style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">Camera Load Failed</span>\n            <span style="font-size: 13px; margin-bottom: 8px; opacity: 0.9;">Entity: ${e.entity}</span>\n            <span style="font-size: 12px; margin-bottom: 12px; opacity: 0.8;">Camera Type: ${i}</span>\n            <div style="font-size: 11px; opacity: 0.8; line-height: 1.4; margin-bottom: 12px;">\n              <div style="margin-bottom: 6px;">• Check camera entity is working in HA</div>\n              <div style="margin-bottom: 6px;">• Verify RTSP credentials in HA config</div>\n              <div>• Try refreshing the browser</div>\n            </div>\n            <button \n              onclick="window.retryCamera_${null===(c=e.entity)||void 0===c?void 0:c.replace(/\./g,"_")}"\n              style="\n                background: rgba(255,255,255,0.2);\n                border: 1px solid rgba(255,255,255,0.3);\n                color: white;\n                padding: 8px 16px;\n                border-radius: 4px;\n                cursor: pointer;\n                font-size: 12px;\n                transition: all 0.2s ease;\n              "\n              onmouseover="this.style.background='rgba(255,255,255,0.3)'"\n              onmouseout="this.style.background='rgba(255,255,255,0.2)'"\n            >\n              🔄 Retry Camera Load\n            </button>\n          </div>\n        `,e.entity){const o=`retryCamera_${e.entity.replace(/\./g,"_")}`;window[o]=async()=>{var o;if(console.log("🎥 Manual retry triggered for camera:",e.entity),null===(o=document.querySelector("home-assistant"))||void 0===o?void 0:o.hass)try{const o=Date.now(),i=`/api/camera_proxy/${e.entity}?t=${o}`,n=document.createElement("img");n.className="camera-image",n.style.cssText=`\n                  position: absolute;\n                  top: 0;\n                  left: 0;\n                  width: 100%;\n                  height: 100%;\n                  object-fit: ${e.image_fit||"cover"};\n                  border-radius: inherit;\n                `,n.onerror=t=>{"string"!=typeof t&&this.handleImageError(t,e)},n.onload=()=>{console.log("🎥 Retry successful!"),t&&(t.innerHTML="",t.appendChild(n))},n.src=i,t&&(t.innerHTML='\n                    <div style="\n                      display: flex;\n                      align-items: center;\n                      justify-content: center;\n                      flex-direction: column;\n                      background-color: var(--primary-color);\n                      color: white;\n                      padding: 20px;\n                      border-radius: 8px;\n                      text-align: center;\n                      min-height: 150px;\n                    ">\n                      <div style="\n                        width: 32px;\n                        height: 32px;\n                        border: 3px solid rgba(255,255,255,0.3);\n                        border-top: 3px solid white;\n                        border-radius: 50%;\n                        animation: spin 1s linear infinite;\n                        margin-bottom: 12px;\n                      "></div>\n                      <span style="font-weight: 500; font-size: 14px;">Retrying Camera Load...</span>\n                      <style>\n                        @keyframes spin {\n                          0% { transform: rotate(0deg); }\n                          100% { transform: rotate(360deg); }\n                        }\n                      </style>\n                    </div>\n                  ')}catch(t){console.error("🎥 Retry failed:",t)}}}}}}renderConditionalFieldsGroup(t,e){return V`
       <div
         class="conditional-fields-group"
         style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0;"
@@ -4570,11 +5613,11 @@
         <div
           style="font-weight: 600; color: var(--primary-color); margin-bottom: 12px; font-size: 14px;"
         >
-          ${e}
+          ${t}
         </div>
-        ${t}
+        ${e}
       </div>
-    `}styleObjectToCss(e){return Object.entries(e).filter((([e,t])=>null!=t&&""!==t)).map((([e,t])=>`${this.camelToKebab(e)}: ${t}`)).join("; ")}camelToKebab(e){return e.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}addPixelUnit(e){return e&&/^\d+$/.test(e)?`${e}px`:e}getPaddingCSS(e){return e.padding_top||e.padding_bottom||e.padding_left||e.padding_right?`${this.addPixelUnit(e.padding_top)||"8px"} ${this.addPixelUnit(e.padding_right)||"12px"} ${this.addPixelUnit(e.padding_bottom)||"8px"} ${this.addPixelUnit(e.padding_left)||"12px"}`:"8px 12px"}getMarginCSS(e){return e.margin_top||e.margin_bottom||e.margin_left||e.margin_right?`${this.addPixelUnit(e.margin_top)||"0px"} ${this.addPixelUnit(e.margin_right)||"0px"} ${this.addPixelUnit(e.margin_bottom)||"0px"} ${this.addPixelUnit(e.margin_left)||"0px"}`:"0px"}getBackgroundCSS(e){return e.background_color||"transparent"}getBackgroundImageCSS(e,t){return"url"===e.background_image_type&&e.background_image?`url('${e.background_image}')`:"entity"===e.background_image_type&&e.background_image_entity&&t.states[e.background_image_entity]?`url('/api/camera_proxy/${e.background_image_entity}')`:""}getBorderCSS(e){return e.border_width&&e.border_style&&e.border_color?`${e.border_width} ${e.border_style} ${e.border_color}`:""}validateAction(e){const t=[];return"navigate"!==e.action||e.navigation_path||t.push("Navigation path is required for navigate action"),"call-service"!==e.action||e.service&&e.service_data||t.push("Service and service data are required for call-service action"),t}getStyles(){return"\n      .camera-module-container {\n        width: 100%;\n        box-sizing: border-box;\n      }\n      \n      .camera-name {\n        font-size: 16px;\n        font-weight: 500;\n        color: var(--primary-text-color);\n        margin-bottom: 8px;\n        text-align: center;\n      }\n      \n      .camera-image-container {\n        position: relative;\n        width: 100%;\n        overflow: hidden;\n      }\n      \n      .camera-image {\n        position: absolute;\n        top: 0;\n        left: 0;\n        width: 100%;\n        height: 100%;\n        object-fit: cover;\n        border-radius: inherit;\n      }\n      \n      .camera-unavailable {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        flex-direction: column;\n        background-color: var(--disabled-color, #f5f5f5);\n        color: var(--secondary-text-color);\n        min-height: 150px;\n      }\n      \n      .camera-controls {\n        position: absolute;\n        top: 8px;\n        right: 8px;\n        display: flex;\n        gap: 4px;\n      }\n      \n      .camera-control-btn {\n        background: rgba(0, 0, 0, 0.6);\n        border: none;\n        border-radius: 50%;\n        width: 32px;\n        height: 32px;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        color: white;\n        cursor: pointer;\n        transition: all 0.2s ease;\n      }\n      \n      .camera-control-btn:hover {\n        background: rgba(0, 0, 0, 0.8);\n        transform: scale(1.1);\n      }\n      \n      .camera-module-clickable {\n        cursor: pointer;\n        transition: transform 0.2s ease;\n      }\n      \n      .camera-module-clickable:hover {\n        transform: scale(1.02);\n      }\n      \n      .camera-module-clickable:active {\n        transform: scale(0.98);\n      }\n\n      /* Standard field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      /* Conditional fields grouping */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      @keyframes slideInFromLeft {\n        from {\n          opacity: 0;\n          transform: translateX(-10px);\n        }\n        to {\n          opacity: 1;\n          transform: translateX(0);\n        }\n      }\n    "}}class Ke{constructor(){this.modules=new Map,this.modulesByCategory=new Map,this.registerCoreModules()}static getInstance(){return Ke.instance||(Ke.instance=new Ke),Ke.instance}registerCoreModules(){this.registerModule(new fe),this.registerModule(new ye),this.registerModule(new $e),this.registerModule(new ke),this.registerModule(new Ne),this.registerModule(new Be),this.registerModule(new Ge),this.registerModule(new We),this.registerModule(new qe),this.registerModule(new Ye),this.registerModule(new Je)}registerModule(e){const t=e.metadata.type;this.modules.has(t)&&console.warn(`Module with type "${t}" is already registered. Overriding...`),this.modules.set(t,e),this.updateCategoryMap(e),console.log(`✅ Registered module: ${e.metadata.title} v${e.metadata.version} by ${e.metadata.author}`)}unregisterModule(e){return!!this.modules.get(e)&&(this.modules.delete(e),this.updateCategoryMaps(),console.log(`❌ Unregistered module: ${e}`),!0)}getModule(e){return this.modules.get(e)}getAllModules(){return Array.from(this.modules.values())}getModulesByCategory(e){return this.modulesByCategory.get(e)||[]}getCategories(){return Array.from(this.modulesByCategory.keys())}getAllModuleMetadata(){return this.getAllModules().map((e=>e.metadata))}searchModules(e){const t=e.toLowerCase();return this.getAllModules().filter((e=>{const o=e.metadata;return o.title.toLowerCase().includes(t)||o.description.toLowerCase().includes(t)||o.tags.some((e=>e.toLowerCase().includes(t)))||o.type.toLowerCase().includes(t)}))}createDefaultModule(e,t){console.log(`Creating default module for type: ${e}`);const o=this.getModule(e);if(!o)return console.error(`Module type "${e}" not found in registry`),console.log("Available module types:",Array.from(this.modules.keys())),null;try{const e=o.createDefault(t);return console.log("Successfully created default module:",e),e}catch(t){return console.error(`Error creating default module for type "${e}":`,t),null}}validateModule(e){const t=this.getModule(e.type);return t?t.validate(e):{valid:!1,errors:[`Unknown module type: ${e.type}`]}}getAllModuleStyles(){let e="";for(const t of this.getAllModules())t.getStyles&&(e+=`\n/* Styles for ${t.metadata.title} */\n`,e+=t.getStyles(),e+="\n");return e+=this.getCommonFormStyles(),e}isModuleRegistered(e){return this.modules.has(e)}getRegistryStats(){const e=this.getAllModules(),t={},o=new Set;return e.forEach((e=>{const i=e.metadata.category;t[i]=(t[i]||0)+1,o.add(e.metadata.author)})),{totalModules:e.length,modulesByCategory:t,authors:Array.from(o)}}updateCategoryMap(e){const t=e.metadata.category;this.modulesByCategory.has(t)||this.modulesByCategory.set(t,[]);const o=this.modulesByCategory.get(t),i=o.findIndex((t=>t.metadata.type===e.metadata.type));i>=0?o[i]=e:o.push(e)}updateCategoryMaps(){this.modulesByCategory.clear(),this.getAllModules().forEach((e=>this.updateCategoryMap(e)))}getCommonFormStyles(){return'\n      /* Common form styles for all modules */\n      .module-general-settings {\n        padding: 0;\n      }\n      \n      .form-field {\n        margin-bottom: 16px;\n      }\n      \n      .form-label {\n        display: block;\n        font-weight: 500;\n        margin-bottom: 4px;\n        font-size: 14px;\n        color: var(--primary-text-color);\n      }\n      \n      .form-description {\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        margin-top: 4px;\n        line-height: 1.3;\n      }\n\n      /* Container Module Global Styles */\n      .container-module {\n        --container-drag-handle-opacity: 0.8;\n        --container-badge-opacity: 0.9;\n      }\n\n      .container-module:hover {\n        --container-drag-handle-opacity: 1;\n        --container-badge-opacity: 1;\n      }\n\n      /* Container-specific colors that can be overridden by individual modules */\n      .horizontal-module-preview.container-module {\n        --container-primary-color: #9c27b0; /* Purple for horizontal */\n        --container-secondary-color: #e1bee7;\n        --container-accent-color: #7b1fa2;\n        --container-border-color: #ba68c8;\n      }\n\n      .vertical-module-preview.container-module {\n        --container-primary-color: #3f51b5; /* Indigo for vertical */\n        --container-secondary-color: #c5cae9;\n        --container-accent-color: #303f9f;\n        --container-border-color: #7986cb;\n      }\n      \n      .form-field input[type="text"],\n      .form-field input[type="number"],\n      .form-field select,\n      .form-field textarea {\n        width: 100%;\n        padding: 8px 12px;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 14px;\n        font-family: inherit;\n        box-sizing: border-box;\n      }\n      \n      .form-field input[type="color"] {\n        width: 60px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        cursor: pointer;\n        background: none;\n      }\n      \n      .form-field input:focus,\n      .form-field select:focus,\n      .form-field textarea:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 1px var(--primary-color);\n      }\n      \n      .form-field textarea {\n        resize: vertical;\n        min-height: 60px;\n        font-family: monospace;\n      }\n      \n      .checkbox-wrapper {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        font-size: 14px;\n        cursor: pointer;\n        color: var(--primary-text-color);\n      }\n      \n      .checkbox-wrapper input[type="checkbox"] {\n        margin: 0;\n        cursor: pointer;\n      }\n      \n      .checkbox-group {\n        display: grid;\n        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));\n        gap: 8px;\n        margin-top: 8px;\n      }\n    '}}const Ze=()=>Ke.getInstance();class Qe{constructor(e){this.hass=e,this._templateSubscriptions=new Map,this._templateResults=new Map,this._evaluationCache=new Map,this.CACHE_TTL=1e3}getTemplateResult(e){const t=this._evaluationCache.get(e);return t&&Date.now()-t.timestamp<this.CACHE_TTL?t.value:this._templateResults.get(e)}hasTemplateSubscription(e){return this._templateSubscriptions.has(e)}getAllTemplateResults(){return this._templateResults}async evaluateTemplate(e){var t;if(!e||!this.hass)return!1;const o=e.trim();if(!o)return!1;const i=`eval_${o}`,n=this._evaluationCache.get(i);if(n&&Date.now()-n.timestamp<this.CACHE_TTL)return n.value;try{const e=await this.hass.callApi("POST","template",{template:o}),t=e.toLowerCase().trim();let n;if(["true","on","yes","1"].includes(t))n=!0;else if(["false","off","no","0","unavailable","unknown","none",""].includes(t))n=!1;else{const o=parseFloat(t);isNaN(o)?(console.warn(`[UltraVehicleCard] Template evaluated to ambiguous string '${e}', interpreting as false.`),n=!1):n=0!==o}return this._evaluationCache.set(i,{value:n,timestamp:Date.now(),stringValue:e}),n}catch(e){const i=(null===(t=e.error)||void 0===t?void 0:t.message)||e.message||String(e);return console.error(`[UltraVehicleCard] Error evaluating template via API: ${o}. Error: ${i}`),!1}}async subscribeToTemplate(e,t,o){if(e&&this.hass){if(this._templateSubscriptions.has(t)){try{const e=this._templateSubscriptions.get(t);if(e){const t=await e;t&&"function"==typeof t&&await t()}}catch(e){}this._templateSubscriptions.delete(t)}try{const i=new Promise(((i,n)=>{i(this.hass.connection.subscribeMessage((e=>{const i=e.result;this.hass.__uvc_template_strings||(this.hass.__uvc_template_strings={}),this.hass.__uvc_template_strings[t]=i;const n=this.parseTemplateResult(i,t);n!==this._templateResults.get(t)&&o&&o(),this._templateResults.set(t,n),this._evaluationCache.set(t,{value:n,timestamp:Date.now(),stringValue:i})}),{type:"render_template",template:e}))}));this._templateSubscriptions.set(t,i)}catch(t){console.error(`[UltraVehicleCard] Failed to subscribe to template: ${e}`,t)}}}parseTemplateResult(e,t){if(t&&t.startsWith("info_entity_"))return!0;if(t&&t.startsWith("state_text_"))return!0;if(null==e)return!1;if("boolean"==typeof e)return e;if("number"==typeof e)return 0!==e;if("string"==typeof e){const t=e.toLowerCase().trim();return"true"===t||"on"===t||"yes"===t||"active"===t||"home"===t||"1"===t||"open"===t||"unlocked"===t||"false"!==t&&"off"!==t&&"no"!==t&&"inactive"!==t&&"not_home"!==t&&"away"!==t&&"0"!==t&&"closed"!==t&&"locked"!==t&&"unavailable"!==t&&"unknown"!==t&&""!==t}return console.warn(`[UltraVehicleCard] Template evaluated to ambiguous type '${typeof e}', interpreting as false.`),!1}async unsubscribeAllTemplates(){for(const[e,t]of this._templateSubscriptions.entries())try{if(t){const e=await Promise.resolve(t).catch((e=>null));if(e&&"function"==typeof e)try{await e()}catch(e){}}}catch(e){}this._templateSubscriptions.clear(),this._templateResults.clear(),this._evaluationCache.clear()}updateHass(e){this.hass=e,this._evaluationCache.clear()}}class et{constructor(){this.hass=null,this.templateService=null}static getInstance(){return et.instance||(et.instance=new et),et.instance}setHass(e){this.hass=e,e&&(this.templateService=new Qe(e))}evaluateDisplayConditions(e,t="always"){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if("always"===t||!e||0===e.length)return!0;const o=e.filter((e=>!1!==e.enabled));if(0===o.length)return!0;const i=o.map((e=>this.evaluateSingleCondition(e)));switch(t){case"every":return i.every((e=>e));case"any":return i.some((e=>e));default:return!0}}evaluateModuleVisibility(e){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if(e.template_mode&&e.template){const t={id:`template_${e.id}`,type:"template",template:e.template,enabled:!0};return this.evaluateTemplateCondition(t)}return this.evaluateDisplayConditions(e.display_conditions||[],e.display_mode||"always")}evaluateRowVisibility(e){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if(e.template_mode&&e.template){const t={id:`template_${e.id}`,type:"template",template:e.template,enabled:!0};return this.evaluateTemplateCondition(t)}return this.evaluateDisplayConditions(e.display_conditions||[],e.display_mode||"always")}evaluateColumnVisibility(e){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if(e.template_mode&&e.template){const t={id:`template_${e.id}`,type:"template",template:e.template,enabled:!0};return this.evaluateTemplateCondition(t)}return this.evaluateDisplayConditions(e.display_conditions||[],e.display_mode||"always")}evaluateSingleCondition(e){if(!e.enabled)return!0;switch(e.type){case"entity_state":return this.evaluateEntityStateCondition(e);case"entity_attribute":return this.evaluateEntityAttributeCondition(e);case"time":return this.evaluateTimeCondition(e);case"template":return this.evaluateTemplateCondition(e);case"entity":return console.log("[LogicService] Migrating legacy entity condition to entity_state"),this.evaluateEntityStateCondition(e);default:return console.warn("[LogicService] Unknown condition type:",e.type),!0}}evaluateEntityStateCondition(e){if(!e.entity||!this.hass)return!0;const t=this.hass.states[e.entity];if(!t)return console.warn(`[LogicService] Entity not found: ${e.entity}`),!0;const o=e.operator||"=",i=e.value,n=t.state;switch(o){case"=":return n===String(i);case"!=":return n!==String(i);case">":const e=this.tryParseNumber(n),t=this.tryParseNumber(i);return null!==e&&null!==t&&e>t;case">=":const a=this.tryParseNumber(n),r=this.tryParseNumber(i);return null!==a&&null!==r&&a>=r;case"<":const l=this.tryParseNumber(n),s=this.tryParseNumber(i);return null!==l&&null!==s&&l<s;case"<=":const d=this.tryParseNumber(n),c=this.tryParseNumber(i);return null!==d&&null!==c&&d<=c;case"contains":return String(n).toLowerCase().includes(String(i).toLowerCase());case"not_contains":return!String(n).toLowerCase().includes(String(i).toLowerCase());case"has_value":return null!=n&&""!==n;case"no_value":return null==n||""===n;default:return console.warn(`[LogicService] Unknown operator: ${o}`),!0}}evaluateEntityAttributeCondition(e){if(!e.entity||!e.attribute||!this.hass)return!0;const t=this.hass.states[e.entity];if(!t)return console.warn(`[LogicService] Entity not found: ${e.entity}`),!0;const o=t.attributes[e.attribute];if(void 0===o)return console.warn(`[LogicService] Attribute '${e.attribute}' not found on entity '${e.entity}'`),!0;const i=e.operator||"=",n=e.value,a=o;switch(i){case"=":return String(a)===String(n);case"!=":return String(a)!==String(n);case">":const e=this.tryParseNumber(a),t=this.tryParseNumber(n);return null!==e&&null!==t&&e>t;case">=":const o=this.tryParseNumber(a),r=this.tryParseNumber(n);return null!==o&&null!==r&&o>=r;case"<":const l=this.tryParseNumber(a),s=this.tryParseNumber(n);return null!==l&&null!==s&&l<s;case"<=":const d=this.tryParseNumber(a),c=this.tryParseNumber(n);return null!==d&&null!==c&&d<=c;case"contains":return String(a).toLowerCase().includes(String(n).toLowerCase());case"not_contains":return!String(a).toLowerCase().includes(String(n).toLowerCase());case"has_value":return null!=a&&""!==a;case"no_value":return null==a||""===a;default:return console.warn(`[LogicService] Unknown operator: ${i}`),!0}}evaluateTimeCondition(e){if(!e.time_from||!e.time_to)return!0;const t=new Date,o=60*t.getHours()+t.getMinutes(),[i,n]=e.time_from.split(":").map(Number),[a,r]=e.time_to.split(":").map(Number),l=60*i+n,s=60*a+r;return l<=s?o>=l&&o<=s:o>=l||o<=s}evaluateTemplateCondition(e){if(!e.template||!this.hass)return!0;try{const t=`logic_condition_${e.id}_${e.template}`;if(this.templateService)if(this.templateService.hasTemplateSubscription(t)){const e=this.templateService.getTemplateResult(t);if(void 0!==e)return e}else this.templateService.subscribeToTemplate(e.template,t,(()=>{}));this.hass.callApi&&this.hass.callApi("POST","template",{template:e.template}).then((e=>{const o=e.toLowerCase().trim();let i;if(["true","on","yes","1"].includes(o))i=!0;else if(["false","off","no","0","unavailable","unknown","none",""].includes(o))i=!1;else{const e=parseFloat(o);i=!isNaN(e)&&0!==e}this.templateService&&this.templateService._templateResults.set(t,i)})).catch((e=>{console.warn("[LogicService] Error evaluating template via API:",e)}));const o=e.template;if(o.includes("{% if ")&&o.includes(" %}")){const e=o.match(/\{\%\s*if\s+(.+?)\s*\%\}/);if(e){const t=e[1].match(/states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]/);if(t){const e=t[1],o=t[2],i=t[3],n=this.hass.states[e];if(n){const e=n.state;if("=="===o)return e===i;if("!="===o)return e!==i}}}}const i=/\{\{\s*states\(['"]([^'"]+)['"]\)\s*\}\}/g;let n,a=o;for(;null!==(n=i.exec(o));){const e=n[1],t=this.hass.states[e],o=t?t.state:"unknown";a=a.replace(n[0],o)}if(a!==o){const e=a.toLowerCase().trim();if(["true","on","yes","1"].includes(e))return!0;if(["false","off","no","0","unavailable","unknown","none",""].includes(e))return!1}return console.log(`[LogicService] Template condition evaluation fallback for: ${o}`),!0}catch(e){return console.warn("[LogicService] Error evaluating template condition:",e),!0}}tryParseNumber(e){if("number"==typeof e)return e;if("string"==typeof e){const t=parseFloat(e);return isNaN(t)?null:t}return null}evaluateLogicProperties(e){if(!e.logic_entity||!this.hass)return!0;const t={id:"logic-property",type:e.logic_attribute?"entity_attribute":"entity_state",entity:e.logic_entity,attribute:e.logic_attribute,operator:e.logic_operator||"=",value:e.logic_value,enabled:!0};return this.evaluateSingleCondition(t)}}const tt=et.getInstance();class ot{static getInstance(){return ot.instance||(ot.instance=new ot),ot.instance}validateAndCorrectConfig(e){const t=[],o=[];let i;try{i=JSON.parse(JSON.stringify(e))}catch(e){return{valid:!1,errors:["Invalid JSON structure"],warnings:[]}}i.type||(i.type="custom:ultra-card",o.push("Added missing card type")),"custom:ultra-card"!==i.type&&t.push(`Invalid card type: ${i.type}`),i.layout||(i.layout={rows:[]},o.push("Added missing layout structure")),i.layout.rows||(i.layout.rows=[],o.push("Added missing rows array")),i.layout.rows=i.layout.rows.map(((e,i)=>{const n=this.validateAndCorrectRow(e,i);return t.push(...n.errors),o.push(...n.warnings),n.correctedRow})),i.layout.rows=i.layout.rows.filter((e=>null!==e));const n={valid:0===t.length,errors:t,warnings:o,correctedConfig:i};return n.valid?o.length>0&&console.log("✅ Config validation passed with corrections",{warnings:o.length,rows:i.layout.rows.length,totalModules:this.countTotalModules(i)}):console.error("❌ Config validation failed",{errors:t,warnings:o}),n}validateAndCorrectRow(e,t){const o=[],i=[];return e.id||(e.id=`row-${Date.now()}-${t}`,i.push(`Row ${t}: Added missing ID`)),e.columns&&Array.isArray(e.columns)||(e.columns=[{id:`col-${Date.now()}-0`,modules:[]}],i.push(`Row ${t}: Added missing columns array`)),e.columns=e.columns.map(((e,n)=>{const a=this.validateAndCorrectColumn(e,t,n);return o.push(...a.errors),i.push(...a.warnings),a.correctedColumn})).filter((e=>null!==e)),0===e.columns.length&&(e.columns=[{id:`col-${Date.now()}-fallback`,modules:[]}],i.push(`Row ${t}: Added fallback column`)),{correctedRow:e,errors:o,warnings:i}}validateAndCorrectColumn(e,t,o){const i=[],n=[];return e.id||(e.id=`col-${Date.now()}-${t}-${o}`,n.push(`Row ${t}, Column ${o}: Added missing ID`)),e.modules&&Array.isArray(e.modules)||(e.modules=[],n.push(`Row ${t}, Column ${o}: Added missing modules array`)),e.modules=e.modules.map(((e,a)=>{const r=this.validateAndCorrectModule(e,t,o,a);return r.valid?r.correctedModule?(n.push(...r.warnings||[]),r.correctedModule):e:(i.push(...r.errors),null)})).filter((e=>null!==e)),{correctedColumn:e,errors:i,warnings:n}}validateAndCorrectModule(e,t,o,i){const n=[],a=[],r=Ze();if(e.id||(e.id=`${e.type||"unknown"}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,a.push("Module: Added missing ID")),!e.type)return n.push(`Module ${e.id}: Missing type`),{valid:!1,errors:n,warnings:a};if(!r.isModuleRegistered(e.type))return n.push(`Module ${e.id}: Unknown module type "${e.type}"`),{valid:!1,errors:n,warnings:a};const l=r.getModule(e.type);if(l){const t=l.validate(e);if(!t.valid)return n.push(...t.errors.map((t=>`Module ${e.id}: ${t}`))),{valid:!1,errors:n,warnings:a};const o=l.createDefault(e.id);return{valid:!0,errors:[],warnings:a,correctedModule:this.mergeWithDefaults(e,o)}}return{valid:!1,errors:[`Module ${e.id}: No handler found for type "${e.type}"`],warnings:a}}mergeWithDefaults(e,t){const o=Object.assign({},t);return Object.keys(e).forEach((i=>{void 0!==e[i]&&null!==e[i]&&("object"!=typeof e[i]||Array.isArray(e[i])||"object"!=typeof t[i]?o[i]=e[i]:o[i]=Object.assign(Object.assign({},t[i]),e[i]))})),o}countTotalModules(e){return e.layout.rows.reduce(((e,t)=>e+t.columns.reduce(((e,t)=>e+t.modules.length),0)),0)}validateUniqueModuleIds(e){const t=new Set,o=[];for(const i of e.layout.rows)for(const e of i.columns)for(const i of e.modules)t.has(i.id)?o.push(i.id):t.add(i.id);return{valid:0===o.length,duplicates:o}}fixDuplicateModuleIds(e){const t=new Set,o=JSON.parse(JSON.stringify(e));for(const e of o.layout.rows)for(const o of e.columns)for(const e of o.modules){if(t.has(e.id)){let o=`${e.type}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`;for(;t.has(o);)o=`${e.type}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`;console.warn(`🔧 Fixed duplicate module ID: ${e.id} → ${o}`),e.id=o}t.add(e.id)}return o}}const it=ot.getInstance();var nt=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};let at=class extends se{render(){return V`
+    `}styleObjectToCss(t){return Object.entries(t).filter((([t,e])=>null!=e&&""!==e)).map((([t,e])=>`${this.camelToKebab(t)}: ${e}`)).join("; ")}camelToKebab(t){return t.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g,"$1-$2").toLowerCase()}addPixelUnit(t){return t&&/^\d+$/.test(t)?`${t}px`:t}getPaddingCSS(t){return t.padding_top||t.padding_bottom||t.padding_left||t.padding_right?`${this.addPixelUnit(t.padding_top)||"8px"} ${this.addPixelUnit(t.padding_right)||"12px"} ${this.addPixelUnit(t.padding_bottom)||"8px"} ${this.addPixelUnit(t.padding_left)||"12px"}`:"8px 12px"}getMarginCSS(t){return t.margin_top||t.margin_bottom||t.margin_left||t.margin_right?`${this.addPixelUnit(t.margin_top)||"0px"} ${this.addPixelUnit(t.margin_right)||"0px"} ${this.addPixelUnit(t.margin_bottom)||"0px"} ${this.addPixelUnit(t.margin_left)||"0px"}`:"0px"}getBackgroundCSS(t){return t.background_color||"transparent"}getBackgroundImageCSS(t,e){return"url"===t.background_image_type&&t.background_image?`url('${t.background_image}')`:"entity"===t.background_image_type&&t.background_image_entity&&e.states[t.background_image_entity]?`url('/api/camera_proxy/${t.background_image_entity}')`:""}getBorderCSS(t){return t.border_width&&t.border_style&&t.border_color?`${t.border_width} ${t.border_style} ${t.border_color}`:""}validateAction(t){const e=[];return"navigate"!==t.action||t.navigation_path||e.push("Navigation path is required for navigate action"),"call-service"!==t.action||t.service&&t.service_data||e.push("Service and service data are required for call-service action"),e}getStyles(){return"\n      .camera-module-container {\n        width: 100%;\n        box-sizing: border-box;\n      }\n      \n      .camera-name-overlay {\n        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);\n        backdrop-filter: blur(4px);\n        -webkit-backdrop-filter: blur(4px);\n        transition: all 0.2s ease;\n      }\n      \n      .camera-image-container {\n        position: relative;\n        overflow: hidden;\n        margin: 0 auto;\n        flex-shrink: 0;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n      \n      .camera-image {\n        width: 100%;\n        height: 100%;\n        border-radius: inherit;\n        transition: all 0.3s ease;\n      }\n      \n      .camera-unavailable {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        flex-direction: column;\n        background-color: var(--disabled-color, #f5f5f5);\n        color: var(--secondary-text-color);\n        min-height: 150px;\n      }\n      \n\n      \n      .camera-module-clickable {\n        cursor: pointer;\n        transition: transform 0.2s ease;\n      }\n      \n      .camera-module-clickable:hover {\n        transform: scale(1.02);\n      }\n      \n      .camera-module-clickable:active {\n        transform: scale(0.98);\n      }\n\n      /* Standard field styling */\n      .field-title {\n        font-size: 16px !important;\n        font-weight: 600 !important;\n        color: var(--primary-text-color) !important;\n        margin-bottom: 4px !important;\n      }\n\n      .field-description {\n        font-size: 13px !important;\n        color: var(--secondary-text-color) !important;\n        margin-bottom: 12px !important;\n        opacity: 0.8 !important;\n        line-height: 1.4 !important;\n      }\n\n      .section-title {\n        font-size: 18px !important;\n        font-weight: 700 !important;\n        color: var(--primary-color) !important;\n        text-transform: uppercase !important;\n        letter-spacing: 0.5px !important;\n      }\n\n      /* Conditional fields grouping */\n      .conditional-fields-group {\n        margin-top: 16px;\n        border-left: 4px solid var(--primary-color);\n        background: rgba(var(--rgb-primary-color), 0.08);\n        border-radius: 0 8px 8px 0;\n        overflow: hidden;\n        transition: all 0.2s ease;\n        animation: slideInFromLeft 0.3s ease-out;\n      }\n\n      @keyframes slideInFromLeft {\n        from {\n          opacity: 0;\n          transform: translateX(-10px);\n        }\n        to {\n          opacity: 1;\n          transform: translateX(0);\n        }\n      }\n    "}}class Xt{constructor(){this.modules=new Map,this.modulesByCategory=new Map,this.registerCoreModules()}static getInstance(){return Xt.instance||(Xt.instance=new Xt),Xt.instance}registerCoreModules(){this.registerModule(new ft),this.registerModule(new _t),this.registerModule(new $t),this.registerModule(new kt),this.registerModule(new Ft),this.registerModule(new Nt),this.registerModule(new Vt),this.registerModule(new Gt),this.registerModule(new Wt),this.registerModule(new qt),this.registerModule(new Jt)}registerModule(t){const e=t.metadata.type;this.modules.has(e)&&console.warn(`Module with type "${e}" is already registered. Overriding...`),this.modules.set(e,t),this.updateCategoryMap(t),console.log(`✅ Registered module: ${t.metadata.title} v${t.metadata.version} by ${t.metadata.author}`)}unregisterModule(t){return!!this.modules.get(t)&&(this.modules.delete(t),this.updateCategoryMaps(),console.log(`❌ Unregistered module: ${t}`),!0)}getModule(t){return this.modules.get(t)}getAllModules(){return Array.from(this.modules.values())}getModulesByCategory(t){return this.modulesByCategory.get(t)||[]}getCategories(){return Array.from(this.modulesByCategory.keys())}getAllModuleMetadata(){return this.getAllModules().map((t=>t.metadata))}searchModules(t){const e=t.toLowerCase();return this.getAllModules().filter((t=>{const o=t.metadata;return o.title.toLowerCase().includes(e)||o.description.toLowerCase().includes(e)||o.tags.some((t=>t.toLowerCase().includes(e)))||o.type.toLowerCase().includes(e)}))}createDefaultModule(t,e){console.log(`Creating default module for type: ${t}`);const o=this.getModule(t);if(!o)return console.error(`Module type "${t}" not found in registry`),console.log("Available module types:",Array.from(this.modules.keys())),null;try{const t=o.createDefault(e);return console.log("Successfully created default module:",t),t}catch(e){return console.error(`Error creating default module for type "${t}":`,e),null}}validateModule(t){const e=this.getModule(t.type);return e?e.validate(t):{valid:!1,errors:[`Unknown module type: ${t.type}`]}}getAllModuleStyles(){let t="";for(const e of this.getAllModules())e.getStyles&&(t+=`\n/* Styles for ${e.metadata.title} */\n`,t+=e.getStyles(),t+="\n");return t+=this.getCommonFormStyles(),t}isModuleRegistered(t){return this.modules.has(t)}getRegistryStats(){const t=this.getAllModules(),e={},o=new Set;return t.forEach((t=>{const i=t.metadata.category;e[i]=(e[i]||0)+1,o.add(t.metadata.author)})),{totalModules:t.length,modulesByCategory:e,authors:Array.from(o)}}updateCategoryMap(t){const e=t.metadata.category;this.modulesByCategory.has(e)||this.modulesByCategory.set(e,[]);const o=this.modulesByCategory.get(e),i=o.findIndex((e=>e.metadata.type===t.metadata.type));i>=0?o[i]=t:o.push(t)}updateCategoryMaps(){this.modulesByCategory.clear(),this.getAllModules().forEach((t=>this.updateCategoryMap(t)))}getCommonFormStyles(){return'\n      /* Common form styles for all modules */\n      .module-general-settings {\n        padding: 0;\n      }\n      \n      .form-field {\n        margin-bottom: 16px;\n      }\n      \n      .form-label {\n        display: block;\n        font-weight: 500;\n        margin-bottom: 4px;\n        font-size: 14px;\n        color: var(--primary-text-color);\n      }\n      \n      .form-description {\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        margin-top: 4px;\n        line-height: 1.3;\n      }\n\n      /* Container Module Global Styles */\n      .container-module {\n        --container-drag-handle-opacity: 0.8;\n        --container-badge-opacity: 0.9;\n      }\n\n      .container-module:hover {\n        --container-drag-handle-opacity: 1;\n        --container-badge-opacity: 1;\n      }\n\n      /* Container-specific colors that can be overridden by individual modules */\n      .horizontal-module-preview.container-module {\n        --container-primary-color: #9c27b0; /* Purple for horizontal */\n        --container-secondary-color: #e1bee7;\n        --container-accent-color: #7b1fa2;\n        --container-border-color: #ba68c8;\n      }\n\n      .vertical-module-preview.container-module {\n        --container-primary-color: #3f51b5; /* Indigo for vertical */\n        --container-secondary-color: #c5cae9;\n        --container-accent-color: #303f9f;\n        --container-border-color: #7986cb;\n      }\n      \n      .form-field input[type="text"],\n      .form-field input[type="number"],\n      .form-field select,\n      .form-field textarea {\n        width: 100%;\n        padding: 8px 12px;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        background: var(--secondary-background-color);\n        color: var(--primary-text-color);\n        font-size: 14px;\n        font-family: inherit;\n        box-sizing: border-box;\n      }\n      \n      .form-field input[type="color"] {\n        width: 60px;\n        height: 36px;\n        padding: 0;\n        border: 1px solid var(--divider-color);\n        border-radius: 4px;\n        cursor: pointer;\n        background: none;\n      }\n      \n      .form-field input:focus,\n      .form-field select:focus,\n      .form-field textarea:focus {\n        outline: none;\n        border-color: var(--primary-color);\n        box-shadow: 0 0 0 1px var(--primary-color);\n      }\n      \n      .form-field textarea {\n        resize: vertical;\n        min-height: 60px;\n        font-family: monospace;\n      }\n      \n      .checkbox-wrapper {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n        font-size: 14px;\n        cursor: pointer;\n        color: var(--primary-text-color);\n      }\n      \n      .checkbox-wrapper input[type="checkbox"] {\n        margin: 0;\n        cursor: pointer;\n      }\n      \n      .checkbox-group {\n        display: grid;\n        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));\n        gap: 8px;\n        margin-top: 8px;\n      }\n    '}}const Kt=()=>Xt.getInstance();class Zt{constructor(t){this.hass=t,this._templateSubscriptions=new Map,this._templateResults=new Map,this._evaluationCache=new Map,this.CACHE_TTL=1e3}getTemplateResult(t){const e=this._evaluationCache.get(t);return e&&Date.now()-e.timestamp<this.CACHE_TTL?e.value:this._templateResults.get(t)}hasTemplateSubscription(t){return this._templateSubscriptions.has(t)}getAllTemplateResults(){return this._templateResults}async evaluateTemplate(t){var e;if(!t||!this.hass)return!1;const o=t.trim();if(!o)return!1;const i=`eval_${o}`,n=this._evaluationCache.get(i);if(n&&Date.now()-n.timestamp<this.CACHE_TTL)return n.value;try{const t=await this.hass.callApi("POST","template",{template:o}),e=t.toLowerCase().trim();let n;if(["true","on","yes","1"].includes(e))n=!0;else if(["false","off","no","0","unavailable","unknown","none",""].includes(e))n=!1;else{const o=parseFloat(e);isNaN(o)?(console.warn(`[UltraVehicleCard] Template evaluated to ambiguous string '${t}', interpreting as false.`),n=!1):n=0!==o}return this._evaluationCache.set(i,{value:n,timestamp:Date.now(),stringValue:t}),n}catch(t){const i=(null===(e=t.error)||void 0===e?void 0:e.message)||t.message||String(t);return console.error(`[UltraVehicleCard] Error evaluating template via API: ${o}. Error: ${i}`),!1}}async subscribeToTemplate(t,e,o){if(t&&this.hass){if(this._templateSubscriptions.has(e)){try{const t=this._templateSubscriptions.get(e);if(t){const e=await t;e&&"function"==typeof e&&await e()}}catch(t){}this._templateSubscriptions.delete(e)}try{const i=new Promise(((i,n)=>{i(this.hass.connection.subscribeMessage((t=>{const i=t.result;this.hass.__uvc_template_strings||(this.hass.__uvc_template_strings={}),this.hass.__uvc_template_strings[e]=i;const n=this.parseTemplateResult(i,e);n!==this._templateResults.get(e)&&o&&o(),this._templateResults.set(e,n),this._evaluationCache.set(e,{value:n,timestamp:Date.now(),stringValue:i})}),{type:"render_template",template:t}))}));this._templateSubscriptions.set(e,i)}catch(e){console.error(`[UltraVehicleCard] Failed to subscribe to template: ${t}`,e)}}}parseTemplateResult(t,e){if(e&&e.startsWith("info_entity_"))return!0;if(e&&e.startsWith("state_text_"))return!0;if(null==t)return!1;if("boolean"==typeof t)return t;if("number"==typeof t)return 0!==t;if("string"==typeof t){const e=t.toLowerCase().trim();return"true"===e||"on"===e||"yes"===e||"active"===e||"home"===e||"1"===e||"open"===e||"unlocked"===e||"false"!==e&&"off"!==e&&"no"!==e&&"inactive"!==e&&"not_home"!==e&&"away"!==e&&"0"!==e&&"closed"!==e&&"locked"!==e&&"unavailable"!==e&&"unknown"!==e&&""!==e}return console.warn(`[UltraVehicleCard] Template evaluated to ambiguous type '${typeof t}', interpreting as false.`),!1}async unsubscribeAllTemplates(){for(const[t,e]of this._templateSubscriptions.entries())try{if(e){const t=await Promise.resolve(e).catch((t=>null));if(t&&"function"==typeof t)try{await t()}catch(t){}}}catch(t){}this._templateSubscriptions.clear(),this._templateResults.clear(),this._evaluationCache.clear()}updateHass(t){this.hass=t,this._evaluationCache.clear()}}class Qt{constructor(){this.hass=null,this.templateService=null}static getInstance(){return Qt.instance||(Qt.instance=new Qt),Qt.instance}setHass(t){this.hass=t,t&&(this.templateService=new Zt(t))}evaluateDisplayConditions(t,e="always"){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if("always"===e||!t||0===t.length)return!0;const o=t.filter((t=>!1!==t.enabled));if(0===o.length)return!0;const i=o.map((t=>this.evaluateSingleCondition(t)));switch(e){case"every":return i.every((t=>t));case"any":return i.some((t=>t));default:return!0}}evaluateModuleVisibility(t){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if(t.template_mode&&t.template){const e={id:`template_${t.id}`,type:"template",template:t.template,enabled:!0};return this.evaluateTemplateCondition(e)}return this.evaluateDisplayConditions(t.display_conditions||[],t.display_mode||"always")}evaluateRowVisibility(t){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if(t.template_mode&&t.template){const e={id:`template_${t.id}`,type:"template",template:t.template,enabled:!0};return this.evaluateTemplateCondition(e)}return this.evaluateDisplayConditions(t.display_conditions||[],t.display_mode||"always")}evaluateColumnVisibility(t){if(!this.hass)return console.warn("[LogicService] HomeAssistant instance not available"),!0;if(t.template_mode&&t.template){const e={id:`template_${t.id}`,type:"template",template:t.template,enabled:!0};return this.evaluateTemplateCondition(e)}return this.evaluateDisplayConditions(t.display_conditions||[],t.display_mode||"always")}evaluateSingleCondition(t){if(!t.enabled)return!0;switch(t.type){case"entity_state":return this.evaluateEntityStateCondition(t);case"entity_attribute":return this.evaluateEntityAttributeCondition(t);case"time":return this.evaluateTimeCondition(t);case"template":return this.evaluateTemplateCondition(t);case"entity":return console.log("[LogicService] Migrating legacy entity condition to entity_state"),this.evaluateEntityStateCondition(t);default:return console.warn("[LogicService] Unknown condition type:",t.type),!0}}evaluateEntityStateCondition(t){if(!t.entity||!this.hass)return!0;const e=this.hass.states[t.entity];if(!e)return console.warn(`[LogicService] Entity not found: ${t.entity}`),!0;const o=t.operator||"=",i=t.value,n=e.state;switch(o){case"=":return n===String(i);case"!=":return n!==String(i);case">":const t=this.tryParseNumber(n),e=this.tryParseNumber(i);return null!==t&&null!==e&&t>e;case">=":const a=this.tryParseNumber(n),r=this.tryParseNumber(i);return null!==a&&null!==r&&a>=r;case"<":const l=this.tryParseNumber(n),s=this.tryParseNumber(i);return null!==l&&null!==s&&l<s;case"<=":const d=this.tryParseNumber(n),c=this.tryParseNumber(i);return null!==d&&null!==c&&d<=c;case"contains":return String(n).toLowerCase().includes(String(i).toLowerCase());case"not_contains":return!String(n).toLowerCase().includes(String(i).toLowerCase());case"has_value":return null!=n&&""!==n;case"no_value":return null==n||""===n;default:return console.warn(`[LogicService] Unknown operator: ${o}`),!0}}evaluateEntityAttributeCondition(t){if(!t.entity||!t.attribute||!this.hass)return!0;const e=this.hass.states[t.entity];if(!e)return console.warn(`[LogicService] Entity not found: ${t.entity}`),!0;const o=e.attributes[t.attribute];if(void 0===o)return console.warn(`[LogicService] Attribute '${t.attribute}' not found on entity '${t.entity}'`),!0;const i=t.operator||"=",n=t.value,a=o;switch(i){case"=":return String(a)===String(n);case"!=":return String(a)!==String(n);case">":const t=this.tryParseNumber(a),e=this.tryParseNumber(n);return null!==t&&null!==e&&t>e;case">=":const o=this.tryParseNumber(a),r=this.tryParseNumber(n);return null!==o&&null!==r&&o>=r;case"<":const l=this.tryParseNumber(a),s=this.tryParseNumber(n);return null!==l&&null!==s&&l<s;case"<=":const d=this.tryParseNumber(a),c=this.tryParseNumber(n);return null!==d&&null!==c&&d<=c;case"contains":return String(a).toLowerCase().includes(String(n).toLowerCase());case"not_contains":return!String(a).toLowerCase().includes(String(n).toLowerCase());case"has_value":return null!=a&&""!==a;case"no_value":return null==a||""===a;default:return console.warn(`[LogicService] Unknown operator: ${i}`),!0}}evaluateTimeCondition(t){if(!t.time_from||!t.time_to)return!0;const e=new Date,o=60*e.getHours()+e.getMinutes(),[i,n]=t.time_from.split(":").map(Number),[a,r]=t.time_to.split(":").map(Number),l=60*i+n,s=60*a+r;return l<=s?o>=l&&o<=s:o>=l||o<=s}evaluateTemplateCondition(t){if(!t.template||!this.hass)return!0;try{const e=`logic_condition_${t.id}_${t.template}`;if(this.templateService)if(this.templateService.hasTemplateSubscription(e)){const t=this.templateService.getTemplateResult(e);if(void 0!==t)return t}else this.templateService.subscribeToTemplate(t.template,e,(()=>{}));this.hass.callApi&&this.hass.callApi("POST","template",{template:t.template}).then((t=>{const o=t.toLowerCase().trim();let i;if(["true","on","yes","1"].includes(o))i=!0;else if(["false","off","no","0","unavailable","unknown","none",""].includes(o))i=!1;else{const t=parseFloat(o);i=!isNaN(t)&&0!==t}this.templateService&&this.templateService._templateResults.set(e,i)})).catch((t=>{console.warn("[LogicService] Error evaluating template via API:",t)}));const o=t.template;if(o.includes("{% if ")&&o.includes(" %}")){const t=o.match(/\{\%\s*if\s+(.+?)\s*\%\}/);if(t){const e=t[1].match(/states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]/);if(e){const t=e[1],o=e[2],i=e[3],n=this.hass.states[t];if(n){const t=n.state;if("=="===o)return t===i;if("!="===o)return t!==i}}}}const i=/\{\{\s*states\(['"]([^'"]+)['"]\)\s*\}\}/g;let n,a=o;for(;null!==(n=i.exec(o));){const t=n[1],e=this.hass.states[t],o=e?e.state:"unknown";a=a.replace(n[0],o)}if(a!==o){const t=a.toLowerCase().trim();if(["true","on","yes","1"].includes(t))return!0;if(["false","off","no","0","unavailable","unknown","none",""].includes(t))return!1}return console.log(`[LogicService] Template condition evaluation fallback for: ${o}`),!0}catch(t){return console.warn("[LogicService] Error evaluating template condition:",t),!0}}tryParseNumber(t){if("number"==typeof t)return t;if("string"==typeof t){const e=parseFloat(t);return isNaN(e)?null:e}return null}evaluateLogicProperties(t){if(!t.logic_entity||!this.hass)return!0;const e={id:"logic-property",type:t.logic_attribute?"entity_attribute":"entity_state",entity:t.logic_entity,attribute:t.logic_attribute,operator:t.logic_operator||"=",value:t.logic_value,enabled:!0};return this.evaluateSingleCondition(e)}}const te=Qt.getInstance();class ee{static getInstance(){return ee.instance||(ee.instance=new ee),ee.instance}validateAndCorrectConfig(t){const e=[],o=[];let i;try{i=JSON.parse(JSON.stringify(t))}catch(t){return{valid:!1,errors:["Invalid JSON structure"],warnings:[]}}i.type||(i.type="custom:ultra-card",o.push("Added missing card type")),"custom:ultra-card"!==i.type&&e.push(`Invalid card type: ${i.type}`),i.layout||(i.layout={rows:[]},o.push("Added missing layout structure")),i.layout.rows||(i.layout.rows=[],o.push("Added missing rows array")),i.layout.rows=i.layout.rows.map(((t,i)=>{const n=this.validateAndCorrectRow(t,i);return e.push(...n.errors),o.push(...n.warnings),n.correctedRow})),i.layout.rows=i.layout.rows.filter((t=>null!==t));const n={valid:0===e.length,errors:e,warnings:o,correctedConfig:i};return n.valid?o.length>0&&console.log("✅ Config validation passed with corrections",{warnings:o.length,rows:i.layout.rows.length,totalModules:this.countTotalModules(i)}):console.error("❌ Config validation failed",{errors:e,warnings:o}),n}validateAndCorrectRow(t,e){const o=[],i=[];return t.id||(t.id=`row-${Date.now()}-${e}`,i.push(`Row ${e}: Added missing ID`)),t.columns&&Array.isArray(t.columns)||(t.columns=[{id:`col-${Date.now()}-0`,modules:[]}],i.push(`Row ${e}: Added missing columns array`)),t.columns=t.columns.map(((t,n)=>{const a=this.validateAndCorrectColumn(t,e,n);return o.push(...a.errors),i.push(...a.warnings),a.correctedColumn})).filter((t=>null!==t)),0===t.columns.length&&(t.columns=[{id:`col-${Date.now()}-fallback`,modules:[]}],i.push(`Row ${e}: Added fallback column`)),{correctedRow:t,errors:o,warnings:i}}validateAndCorrectColumn(t,e,o){const i=[],n=[];return t.id||(t.id=`col-${Date.now()}-${e}-${o}`,n.push(`Row ${e}, Column ${o}: Added missing ID`)),t.modules&&Array.isArray(t.modules)||(t.modules=[],n.push(`Row ${e}, Column ${o}: Added missing modules array`)),t.modules=t.modules.map(((t,a)=>{const r=this.validateAndCorrectModule(t,e,o,a);return r.valid?r.correctedModule?(n.push(...r.warnings||[]),r.correctedModule):t:(i.push(...r.errors),null)})).filter((t=>null!==t)),{correctedColumn:t,errors:i,warnings:n}}validateAndCorrectModule(t,e,o,i){const n=[],a=[],r=Kt();if(t.id||(t.id=`${t.type||"unknown"}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,a.push("Module: Added missing ID")),!t.type)return n.push(`Module ${t.id}: Missing type`),{valid:!1,errors:n,warnings:a};if(!r.isModuleRegistered(t.type))return n.push(`Module ${t.id}: Unknown module type "${t.type}"`),{valid:!1,errors:n,warnings:a};const l=r.getModule(t.type);if(l){const e=l.validate(t);if(!e.valid)return n.push(...e.errors.map((e=>`Module ${t.id}: ${e}`))),{valid:!1,errors:n,warnings:a};const o=l.createDefault(t.id);return{valid:!0,errors:[],warnings:a,correctedModule:this.mergeWithDefaults(t,o)}}return{valid:!1,errors:[`Module ${t.id}: No handler found for type "${t.type}"`],warnings:a}}mergeWithDefaults(t,e){const o=Object.assign({},e);return Object.keys(t).forEach((i=>{void 0!==t[i]&&null!==t[i]&&("object"!=typeof t[i]||Array.isArray(t[i])||"object"!=typeof e[i]?o[i]=t[i]:o[i]=Object.assign(Object.assign({},e[i]),t[i]))})),o}countTotalModules(t){return t.layout.rows.reduce(((t,e)=>t+e.columns.reduce(((t,e)=>t+e.modules.length),0)),0)}validateUniqueModuleIds(t){const e=new Set,o=[];for(const i of t.layout.rows)for(const t of i.columns)for(const i of t.modules)e.has(i.id)?o.push(i.id):e.add(i.id);return{valid:0===o.length,duplicates:o}}fixDuplicateModuleIds(t){const e=new Set,o=JSON.parse(JSON.stringify(t));for(const t of o.layout.rows)for(const o of t.columns)for(const t of o.modules){if(e.has(t.id)){let o=`${t.type}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`;for(;e.has(o);)o=`${t.type}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`;console.warn(`🔧 Fixed duplicate module ID: ${t.id} → ${o}`),t.id=o}e.add(t.id)}return o}}const oe=ee.getInstance();var ie=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};let ne=class extends st{render(){return V`
       <div class="about-tab">
         <div class="about-logo-container">
           <h1>Ultra Card</h1>
@@ -4612,7 +5655,7 @@
           <p>Modular layout system with conditional logic and professional design tools</p>
         </div>
       </div>
-    `}};at.styles=a`
+    `}};ne.styles=a`
     .about-tab {
       display: flex;
       flex-direction: column;
@@ -4700,20 +5743,20 @@
     .version-info p {
       margin: 4px 0;
     }
-  `,nt([me({attribute:!1})],at.prototype,"hass",void 0),at=nt([ce("ultra-about-tab")],at);class rt extends Se{constructor(e){if(super(e),this.it=W,2!==e.type)throw Error(this.constructor.directiveName+"() can only be used in child bindings")}render(e){if(e===W||null==e)return this._t=void 0,this.it=e;if(e===G)return e;if("string"!=typeof e)throw Error(this.constructor.directiveName+"() called with a non-string value");if(e===this.it)return this._t;this.it=e;const t=[e];return t.raw=t,this._t={_$litType$:this.constructor.resultType,strings:t,values:[]}}}rt.directiveName="unsafeHTML",rt.resultType=1;const lt=Ce(rt);var st,dt=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};let ct=st=class extends se{constructor(){super(...arguments),this.designProperties={},this._expandedSections=new Set,this._marginLocked=!1,this._paddingLocked=!1,this._clipboardProperties=null}connectedCallback(){super.connectedCallback(),this._loadClipboardFromStorage(),this._storageEventListener=this._handleStorageEvent.bind(this),window.addEventListener("storage",this._storageEventListener)}disconnectedCallback(){super.disconnectedCallback(),this._storageEventListener&&window.removeEventListener("storage",this._storageEventListener)}_handleStorageEvent(e){e.key===st.CLIPBOARD_KEY&&this._loadClipboardFromStorage()}_loadClipboardFromStorage(){try{const e=localStorage.getItem(st.CLIPBOARD_KEY);if(e){const t=JSON.parse(e);t&&"object"==typeof t&&(this._clipboardProperties=t,this.requestUpdate())}}catch(e){console.warn("Failed to load design clipboard from localStorage:",e),this._clipboardProperties=null}}_saveClipboardToStorage(e){try{localStorage.setItem(st.CLIPBOARD_KEY,JSON.stringify(e))}catch(e){console.warn("Failed to save design clipboard to localStorage:",e)}}_clearClipboardFromStorage(){try{localStorage.removeItem(st.CLIPBOARD_KEY)}catch(e){console.warn("Failed to clear design clipboard from localStorage:",e)}}_toggleSection(e){this._expandedSections.has(e)?this._expandedSections.delete(e):(this._expandedSections.clear(),this._expandedSections.add(e)),this.requestUpdate()}_updateProperty(e,t){const o={[e]:t};if(console.log(`🔧 GlobalDesignTab: Updating property ${e} =`,t),console.log("🔧 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate),this.onUpdate)console.log("🔧 GlobalDesignTab: Using callback approach for property update"),this.onUpdate(o);else{console.log("🔧 GlobalDesignTab: Using event approach for property update");const e=new CustomEvent("design-changed",{detail:o,bubbles:!0,composed:!0});console.log("🔧 GlobalDesignTab: Dispatching design-changed event:",e),this.dispatchEvent(e)}console.log(`🔧 GlobalDesignTab: Property update complete for ${e}`)}_updateSpacing(e,t,o){const i="margin"===e?this._marginLocked:this._paddingLocked;let n;if(n=i?{[`${e}_top`]:o,[`${e}_bottom`]:o,[`${e}_left`]:o,[`${e}_right`]:o}:{[`${e}_${t}`]:o},console.log(`🔧 GlobalDesignTab: Updating spacing ${e}-${t} =`,o,`(locked: ${i})`),console.log("🔧 GlobalDesignTab: Spacing updates:",n),console.log("🔧 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate),this.onUpdate)console.log("🔧 GlobalDesignTab: Using callback approach for spacing update"),this.onUpdate(n);else{console.log("🔧 GlobalDesignTab: Using event approach for spacing update");const e=new CustomEvent("design-changed",{detail:n,bubbles:!0,composed:!0});console.log("🔧 GlobalDesignTab: Dispatching spacing design-changed event:",e),this.dispatchEvent(e)}}_handleNumericKeydown(e,t,o){if("ArrowUp"!==e.key&&"ArrowDown"!==e.key)return;e.preventDefault();const i=t.match(/^(-?\d*\.?\d*)(.*)$/);if(!i)return;const n=i[1],a=i[2].trim()||"px";let r=parseFloat(n)||0,l=1;"rem"===a||"em"===a?l=.1:"%"===a?l=5:"px"===a&&(l=1),e.shiftKey?l*=10:e.altKey&&(l/=10),"ArrowUp"===e.key?r+=l:r-=l;let s=0;"rem"===a||"em"===a?s=e.altKey?3:1:"%"===a&&e.altKey&&(s=1),o(`${parseFloat(r.toFixed(s))}${a}`)}_toggleSpacingLock(e){"margin"===e?this._marginLocked=!this._marginLocked:this._paddingLocked=!this._paddingLocked,this.requestUpdate()}_resetSection(e){console.log(`🔄 GlobalDesignTab: RESET SECTION CALLED for: ${e}`),console.log("🔄 GlobalDesignTab: Current designProperties:",this.designProperties),console.log("🔄 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate);const t={};switch(e){case"text":t.color=void 0,t.text_align=void 0,t.font_size=void 0,t.line_height=void 0,t.letter_spacing=void 0,t.font_family=void 0,t.font_weight=void 0,t.text_transform=void 0,t.font_style=void 0;break;case"background":t.background_color=void 0,t.background_image=void 0,t.background_image_type=void 0,t.background_image_entity=void 0,t.backdrop_filter=void 0;break;case"sizes":t.width=void 0,t.height=void 0,t.max_width=void 0,t.max_height=void 0,t.min_width=void 0,t.min_height=void 0;break;case"spacing":t.margin_top=void 0,t.margin_bottom=void 0,t.margin_left=void 0,t.margin_right=void 0,t.padding_top=void 0,t.padding_bottom=void 0,t.padding_left=void 0,t.padding_right=void 0;break;case"border":t.border_radius=void 0,t.border_style=void 0,t.border_width=void 0,t.border_color=void 0;break;case"position":t.position=void 0,t.top=void 0,t.bottom=void 0,t.left=void 0,t.right=void 0,t.z_index=void 0;break;case"text-shadow":t.text_shadow_h=void 0,t.text_shadow_v=void 0,t.text_shadow_blur=void 0,t.text_shadow_color=void 0;break;case"box-shadow":t.box_shadow_h=void 0,t.box_shadow_v=void 0,t.box_shadow_blur=void 0,t.box_shadow_spread=void 0,t.box_shadow_color=void 0;break;case"overflow":t.overflow=void 0,t.clip_path=void 0;break;case"animations":t.animation_type=void 0,t.animation_entity=void 0,t.animation_trigger_type=void 0,t.animation_attribute=void 0,t.animation_state=void 0,t.intro_animation=void 0,t.outro_animation=void 0,t.animation_duration=void 0,t.animation_delay=void 0,t.animation_timing=void 0}if(console.log(`🔄 GlobalDesignTab: Reset properties for ${e}:`,t),this.onUpdate){console.log("🔄 GlobalDesignTab: Using callback approach for section reset");try{this.onUpdate(t),console.log(`🔄 GlobalDesignTab: Callback executed successfully for ${e}`)}catch(t){console.error(`🔄 GlobalDesignTab: Callback error for ${e}:`,t)}}else{console.log("🔄 GlobalDesignTab: Using event approach for section reset");const e=new CustomEvent("design-changed",{detail:t,bubbles:!0,composed:!0});console.log("🔄 GlobalDesignTab: Dispatching reset design-changed event:",e);const o=this.dispatchEvent(e);console.log("🔄 GlobalDesignTab: Event dispatched successfully:",o)}console.log(`🔄 GlobalDesignTab: Requesting update for section ${e}`),this.requestUpdate(),setTimeout((()=>{console.log(`🔄 GlobalDesignTab: Delayed update for section ${e} UI indicators`),this.requestUpdate()}),50),console.log(`✅ GlobalDesignTab: Reset complete for ${e}`)}_copyDesign(){this._clipboardProperties=Object.assign({},this.designProperties),this._saveClipboardToStorage(this._clipboardProperties);const e=Object.keys(this._clipboardProperties).filter((e=>this._clipboardProperties[e])).length;console.log(`Design properties copied to cross-card clipboard (${e} properties)`),this.requestUpdate()}_pasteDesign(){this._clipboardProperties||this._loadClipboardFromStorage(),this._clipboardProperties?(this.onUpdate?this.onUpdate(this._clipboardProperties):this.dispatchEvent(new CustomEvent("design-changed",{detail:this._clipboardProperties,bubbles:!0,composed:!0})),console.log("Design properties pasted from cross-card clipboard")):console.log("No design properties in cross-card clipboard")}_resetAllDesign(){console.log("🔄 GlobalDesignTab: RESET ALL DESIGN CALLED"),console.log("🔄 GlobalDesignTab: Current designProperties:",this.designProperties),console.log("🔄 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate);const e={color:void 0,text_align:void 0,font_size:void 0,line_height:void 0,letter_spacing:void 0,font_family:void 0,font_weight:void 0,text_transform:void 0,font_style:void 0,background_color:void 0,background_image:void 0,background_image_type:void 0,background_image_entity:void 0,backdrop_filter:void 0,width:void 0,height:void 0,max_width:void 0,max_height:void 0,min_width:void 0,min_height:void 0,margin_top:void 0,margin_bottom:void 0,margin_left:void 0,margin_right:void 0,padding_top:void 0,padding_bottom:void 0,padding_left:void 0,padding_right:void 0,border_radius:void 0,border_style:void 0,border_width:void 0,border_color:void 0,position:void 0,top:void 0,bottom:void 0,left:void 0,right:void 0,z_index:void 0,text_shadow_h:void 0,text_shadow_v:void 0,text_shadow_blur:void 0,text_shadow_color:void 0,box_shadow_h:void 0,box_shadow_v:void 0,box_shadow_blur:void 0,box_shadow_spread:void 0,box_shadow_color:void 0,overflow:void 0,clip_path:void 0,animation_type:void 0,animation_entity:void 0,animation_trigger_type:void 0,animation_attribute:void 0,animation_state:void 0,intro_animation:void 0,outro_animation:void 0,animation_duration:void 0,animation_delay:void 0,animation_timing:void 0};if(console.log("🔄 GlobalDesignTab: Reset properties for ALL sections:",e),this.onUpdate){console.log("🔄 GlobalDesignTab: Using callback approach for reset all");try{this.onUpdate(e),console.log("🔄 GlobalDesignTab: Reset all callback executed successfully")}catch(e){console.error("🔄 GlobalDesignTab: Reset all callback error:",e)}}else{console.log("🔄 GlobalDesignTab: Using event approach for reset all");const t=new CustomEvent("design-changed",{detail:e,bubbles:!0,composed:!0});console.log("🔄 GlobalDesignTab: Dispatching reset all design-changed event:",t);const o=this.dispatchEvent(t);console.log("🔄 GlobalDesignTab: Reset all event dispatched successfully:",o)}console.log("🔄 GlobalDesignTab: Requesting update for reset all"),this.requestUpdate(),setTimeout((()=>{console.log("🔄 GlobalDesignTab: Delayed update for reset all UI indicators"),this.requestUpdate()}),50),console.log("✅ GlobalDesignTab: All design properties reset to default")}_clearClipboard(){this._clipboardProperties=null,this._clearClipboardFromStorage(),console.log("Cross-card clipboard cleared"),this.requestUpdate()}async _handleBackgroundImageUpload(e){var t;const o=null===(t=e.target.files)||void 0===t?void 0:t[0];if(o&&this.hass)try{const e=await async function(e,t){var o;if(!t)throw console.error("[UPLOAD] Missing file."),new Error("No file provided for upload.");if(!(e&&e.auth&&e.auth.data&&e.auth.data.access_token))throw console.error("[UPLOAD] Missing Home Assistant authentication details."),new Error("Authentication details are missing.");const i=new FormData;i.append("file",t);let n="";n=e.connection&&"string"==typeof(null===(o=e.connection.options)||void 0===o?void 0:o.url)?e.connection.options.url.replace(/^ws/,"http"):"function"==typeof e.hassUrl?e.hassUrl():`${window.location.protocol}//${window.location.host}`;const a=`${n.replace(/\/$/,"")}/api/image/upload`;try{const t=await fetch(a,{method:"POST",headers:{Authorization:`Bearer ${e.auth.data.access_token}`},body:i});if(!t.ok){const e=await t.text();throw console.error(`[UPLOAD] Failed to upload image via ${a}: ${t.status} ${t.statusText}`,e),new Error(`Failed to upload image via ${a}: ${t.statusText}`)}const o=await t.json();if(!o||!o.id)throw console.error(`[UPLOAD] Invalid response from ${a}: missing id`,o),new Error(`Invalid response from ${a}: missing id`);return`/api/image/serve/${o.id}`}catch(e){throw console.error(`[UPLOAD] Error during fetch to ${a}:`,e),new Error(`Upload via ${a} failed: ${e instanceof Error?e.message:"Unknown network error"}`)}}(this.hass,o),t={background_image:e,background_image_type:"upload"};this.onUpdate?this.onUpdate(t):this.dispatchEvent(new CustomEvent("design-changed",{detail:t,bubbles:!0,composed:!0}))}catch(e){console.error("Background image upload failed:",e),alert(`Upload failed: ${e instanceof Error?e.message:"Unknown error"}`)}}_truncatePath(e){return e?e.length<=30?e:"..."+e.slice(-27):""}_getStateValueHint(e){if(!this.hass||!e)return"Enter the state value to trigger animation";const t=this.hass.states[e];return t?t.state&&"unknown"!==t.state&&"unavailable"!==t.state?`Current state: ${t.state}`:"Enter the state value to trigger animation":"Entity not found"}_getAttributeNameHint(e){if(!this.hass||!e)return"Enter the attribute name to monitor";const t=this.hass.states[e];if(!t||!t.attributes)return"Entity not found or has no attributes";const o=Object.keys(t.attributes).filter((e=>!e.startsWith("_")&&"object"!=typeof t.attributes[e])).slice(0,3);return o.length>0?`Available attributes: ${o.join(", ")}${Object.keys(t.attributes).length>3?", ...":""}`:"Enter the attribute name to monitor"}_getAttributeValueHint(e,t){if(!this.hass||!e)return"Enter the attribute value to trigger animation";if(!t)return"Select an attribute first";const o=this.hass.states[e];if(!o||!o.attributes)return"Entity not found or has no attributes";const i=o.attributes[t];if(null!=i){const e=String(i);return`Current value: ${e.length>30?`${e.slice(0,27)}...`:e}`}return"Attribute not found - check the attribute name"}_hasModifiedProperties(e){const t=this.designProperties,o=e=>null!=e&&""!==e;switch(e){case"text":return!!(o(t.color)||o(t.text_align)||o(t.font_size)||o(t.line_height)||o(t.letter_spacing)||o(t.font_family)||o(t.font_weight)||o(t.text_transform)||o(t.font_style));case"background":return!!(o(t.background_color)||o(t.background_image)||o(t.background_image_type)||o(t.background_image_entity)||o(t.backdrop_filter));case"sizes":return!!(o(t.width)||o(t.height)||o(t.max_width)||o(t.max_height)||o(t.min_width)||o(t.min_height));case"spacing":return!!(o(t.margin_top)||o(t.margin_bottom)||o(t.margin_left)||o(t.margin_right)||o(t.padding_top)||o(t.padding_bottom)||o(t.padding_left)||o(t.padding_right));case"border":return!!(o(t.border_radius)||o(t.border_style)||o(t.border_width)||o(t.border_color));case"position":return!!(o(t.position)||o(t.top)||o(t.bottom)||o(t.left)||o(t.right)||o(t.z_index));case"text-shadow":return!!(o(t.text_shadow_h)||o(t.text_shadow_v)||o(t.text_shadow_blur)||o(t.text_shadow_color));case"box-shadow":return!!(o(t.box_shadow_h)||o(t.box_shadow_v)||o(t.box_shadow_blur)||o(t.box_shadow_spread)||o(t.box_shadow_color));case"overflow":return!(!o(t.overflow)&&!o(t.clip_path));case"animations":return!!(o(t.animation_type)&&"none"!==t.animation_type||o(t.animation_entity)||o(t.animation_trigger_type)||o(t.animation_attribute)||o(t.animation_state)||o(t.intro_animation)&&"none"!==t.intro_animation||o(t.outro_animation)&&"none"!==t.outro_animation||o(t.animation_duration)||o(t.animation_delay)||o(t.animation_timing)&&"ease"!==t.animation_timing);default:return!1}}_renderAccordion(e,t,o){const i=this._expandedSections.has(o),n=this._hasModifiedProperties(o);return V`
+  `,ie([mt({attribute:!1})],ne.prototype,"hass",void 0),ne=ie([ct("ultra-about-tab")],ne);class ae extends St{constructor(t){if(super(t),this.it=W,2!==t.type)throw Error(this.constructor.directiveName+"() can only be used in child bindings")}render(t){if(t===W||null==t)return this._t=void 0,this.it=t;if(t===G)return t;if("string"!=typeof t)throw Error(this.constructor.directiveName+"() called with a non-string value");if(t===this.it)return this._t;this.it=t;const e=[t];return e.raw=e,this._t={_$litType$:this.constructor.resultType,strings:e,values:[]}}}ae.directiveName="unsafeHTML",ae.resultType=1;const re=Ct(ae);var le,se=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};let de=le=class extends st{constructor(){super(...arguments),this.designProperties={},this._expandedSections=new Set,this._marginLocked=!1,this._paddingLocked=!1,this._clipboardProperties=null}connectedCallback(){super.connectedCallback(),this._loadClipboardFromStorage(),this._storageEventListener=this._handleStorageEvent.bind(this),window.addEventListener("storage",this._storageEventListener)}disconnectedCallback(){super.disconnectedCallback(),this._storageEventListener&&window.removeEventListener("storage",this._storageEventListener)}_handleStorageEvent(t){t.key===le.CLIPBOARD_KEY&&this._loadClipboardFromStorage()}_loadClipboardFromStorage(){try{const t=localStorage.getItem(le.CLIPBOARD_KEY);if(t){const e=JSON.parse(t);e&&"object"==typeof e&&(this._clipboardProperties=e,this.requestUpdate())}}catch(t){console.warn("Failed to load design clipboard from localStorage:",t),this._clipboardProperties=null}}_saveClipboardToStorage(t){try{localStorage.setItem(le.CLIPBOARD_KEY,JSON.stringify(t))}catch(t){console.warn("Failed to save design clipboard to localStorage:",t)}}_clearClipboardFromStorage(){try{localStorage.removeItem(le.CLIPBOARD_KEY)}catch(t){console.warn("Failed to clear design clipboard from localStorage:",t)}}_toggleSection(t){this._expandedSections.has(t)?this._expandedSections.delete(t):(this._expandedSections.clear(),this._expandedSections.add(t)),this.requestUpdate()}_updateProperty(t,e){const o={[t]:e};if(console.log(`🔧 GlobalDesignTab: Updating property ${t} =`,e),console.log("🔧 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate),this.onUpdate)console.log("🔧 GlobalDesignTab: Using callback approach for property update"),this.onUpdate(o);else{console.log("🔧 GlobalDesignTab: Using event approach for property update");const t=new CustomEvent("design-changed",{detail:o,bubbles:!0,composed:!0});console.log("🔧 GlobalDesignTab: Dispatching design-changed event:",t),this.dispatchEvent(t)}console.log(`🔧 GlobalDesignTab: Property update complete for ${t}`)}_updateSpacing(t,e,o){const i="margin"===t?this._marginLocked:this._paddingLocked;let n;if(n=i?{[`${t}_top`]:o,[`${t}_bottom`]:o,[`${t}_left`]:o,[`${t}_right`]:o}:{[`${t}_${e}`]:o},console.log(`🔧 GlobalDesignTab: Updating spacing ${t}-${e} =`,o,`(locked: ${i})`),console.log("🔧 GlobalDesignTab: Spacing updates:",n),console.log("🔧 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate),this.onUpdate)console.log("🔧 GlobalDesignTab: Using callback approach for spacing update"),this.onUpdate(n);else{console.log("🔧 GlobalDesignTab: Using event approach for spacing update");const t=new CustomEvent("design-changed",{detail:n,bubbles:!0,composed:!0});console.log("🔧 GlobalDesignTab: Dispatching spacing design-changed event:",t),this.dispatchEvent(t)}}_handleNumericKeydown(t,e,o){if("ArrowUp"!==t.key&&"ArrowDown"!==t.key)return;t.preventDefault();const i=e.match(/^(-?\d*\.?\d*)(.*)$/);if(!i)return;const n=i[1],a=i[2].trim()||"px";let r=parseFloat(n)||0,l=1;"rem"===a||"em"===a?l=.1:"%"===a?l=5:"px"===a&&(l=1),t.shiftKey?l*=10:t.altKey&&(l/=10),"ArrowUp"===t.key?r+=l:r-=l;let s=0;"rem"===a||"em"===a?s=t.altKey?3:1:"%"===a&&t.altKey&&(s=1),o(`${parseFloat(r.toFixed(s))}${a}`)}_toggleSpacingLock(t){"margin"===t?this._marginLocked=!this._marginLocked:this._paddingLocked=!this._paddingLocked,this.requestUpdate()}_resetSection(t){console.log(`🔄 GlobalDesignTab: RESET SECTION CALLED for: ${t}`),console.log("🔄 GlobalDesignTab: Current designProperties:",this.designProperties),console.log("🔄 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate);const e={};switch(t){case"text":e.color=void 0,e.text_align=void 0,e.font_size=void 0,e.line_height=void 0,e.letter_spacing=void 0,e.font_family=void 0,e.font_weight=void 0,e.text_transform=void 0,e.font_style=void 0;break;case"background":e.background_color=void 0,e.background_image=void 0,e.background_image_type=void 0,e.background_image_entity=void 0,e.backdrop_filter=void 0;break;case"sizes":e.width=void 0,e.height=void 0,e.max_width=void 0,e.max_height=void 0,e.min_width=void 0,e.min_height=void 0;break;case"spacing":e.margin_top=void 0,e.margin_bottom=void 0,e.margin_left=void 0,e.margin_right=void 0,e.padding_top=void 0,e.padding_bottom=void 0,e.padding_left=void 0,e.padding_right=void 0;break;case"border":e.border_radius=void 0,e.border_style=void 0,e.border_width=void 0,e.border_color=void 0;break;case"position":e.position=void 0,e.top=void 0,e.bottom=void 0,e.left=void 0,e.right=void 0,e.z_index=void 0;break;case"text-shadow":e.text_shadow_h=void 0,e.text_shadow_v=void 0,e.text_shadow_blur=void 0,e.text_shadow_color=void 0;break;case"box-shadow":e.box_shadow_h=void 0,e.box_shadow_v=void 0,e.box_shadow_blur=void 0,e.box_shadow_spread=void 0,e.box_shadow_color=void 0;break;case"overflow":e.overflow=void 0,e.clip_path=void 0;break;case"animations":e.animation_type=void 0,e.animation_entity=void 0,e.animation_trigger_type=void 0,e.animation_attribute=void 0,e.animation_state=void 0,e.intro_animation=void 0,e.outro_animation=void 0,e.animation_duration=void 0,e.animation_delay=void 0,e.animation_timing=void 0}if(console.log(`🔄 GlobalDesignTab: Reset properties for ${t}:`,e),this.onUpdate){console.log("🔄 GlobalDesignTab: Using callback approach for section reset");try{this.onUpdate(e),console.log(`🔄 GlobalDesignTab: Callback executed successfully for ${t}`)}catch(e){console.error(`🔄 GlobalDesignTab: Callback error for ${t}:`,e)}}else{console.log("🔄 GlobalDesignTab: Using event approach for section reset");const t=new CustomEvent("design-changed",{detail:e,bubbles:!0,composed:!0});console.log("🔄 GlobalDesignTab: Dispatching reset design-changed event:",t);const o=this.dispatchEvent(t);console.log("🔄 GlobalDesignTab: Event dispatched successfully:",o)}console.log(`🔄 GlobalDesignTab: Requesting update for section ${t}`),this.requestUpdate(),setTimeout((()=>{console.log(`🔄 GlobalDesignTab: Delayed update for section ${t} UI indicators`),this.requestUpdate()}),50),console.log(`✅ GlobalDesignTab: Reset complete for ${t}`)}_copyDesign(){this._clipboardProperties=Object.assign({},this.designProperties),this._saveClipboardToStorage(this._clipboardProperties);const t=Object.keys(this._clipboardProperties).filter((t=>this._clipboardProperties[t])).length;console.log(`Design properties copied to cross-card clipboard (${t} properties)`),this.requestUpdate()}_pasteDesign(){this._clipboardProperties||this._loadClipboardFromStorage(),this._clipboardProperties?(this.onUpdate?this.onUpdate(this._clipboardProperties):this.dispatchEvent(new CustomEvent("design-changed",{detail:this._clipboardProperties,bubbles:!0,composed:!0})),console.log("Design properties pasted from cross-card clipboard")):console.log("No design properties in cross-card clipboard")}_resetAllDesign(){console.log("🔄 GlobalDesignTab: RESET ALL DESIGN CALLED"),console.log("🔄 GlobalDesignTab: Current designProperties:",this.designProperties),console.log("🔄 GlobalDesignTab: onUpdate callback exists:",!!this.onUpdate);const t={color:void 0,text_align:void 0,font_size:void 0,line_height:void 0,letter_spacing:void 0,font_family:void 0,font_weight:void 0,text_transform:void 0,font_style:void 0,background_color:void 0,background_image:void 0,background_image_type:void 0,background_image_entity:void 0,backdrop_filter:void 0,width:void 0,height:void 0,max_width:void 0,max_height:void 0,min_width:void 0,min_height:void 0,margin_top:void 0,margin_bottom:void 0,margin_left:void 0,margin_right:void 0,padding_top:void 0,padding_bottom:void 0,padding_left:void 0,padding_right:void 0,border_radius:void 0,border_style:void 0,border_width:void 0,border_color:void 0,position:void 0,top:void 0,bottom:void 0,left:void 0,right:void 0,z_index:void 0,text_shadow_h:void 0,text_shadow_v:void 0,text_shadow_blur:void 0,text_shadow_color:void 0,box_shadow_h:void 0,box_shadow_v:void 0,box_shadow_blur:void 0,box_shadow_spread:void 0,box_shadow_color:void 0,overflow:void 0,clip_path:void 0,animation_type:void 0,animation_entity:void 0,animation_trigger_type:void 0,animation_attribute:void 0,animation_state:void 0,intro_animation:void 0,outro_animation:void 0,animation_duration:void 0,animation_delay:void 0,animation_timing:void 0};if(console.log("🔄 GlobalDesignTab: Reset properties for ALL sections:",t),this.onUpdate){console.log("🔄 GlobalDesignTab: Using callback approach for reset all");try{this.onUpdate(t),console.log("🔄 GlobalDesignTab: Reset all callback executed successfully")}catch(t){console.error("🔄 GlobalDesignTab: Reset all callback error:",t)}}else{console.log("🔄 GlobalDesignTab: Using event approach for reset all");const e=new CustomEvent("design-changed",{detail:t,bubbles:!0,composed:!0});console.log("🔄 GlobalDesignTab: Dispatching reset all design-changed event:",e);const o=this.dispatchEvent(e);console.log("🔄 GlobalDesignTab: Reset all event dispatched successfully:",o)}console.log("🔄 GlobalDesignTab: Requesting update for reset all"),this.requestUpdate(),setTimeout((()=>{console.log("🔄 GlobalDesignTab: Delayed update for reset all UI indicators"),this.requestUpdate()}),50),console.log("✅ GlobalDesignTab: All design properties reset to default")}_clearClipboard(){this._clipboardProperties=null,this._clearClipboardFromStorage(),console.log("Cross-card clipboard cleared"),this.requestUpdate()}async _handleBackgroundImageUpload(t){var e;const o=null===(e=t.target.files)||void 0===e?void 0:e[0];if(o&&this.hass)try{const t=await async function(t,e){var o;if(!e)throw console.error("[UPLOAD] Missing file."),new Error("No file provided for upload.");if(!(t&&t.auth&&t.auth.data&&t.auth.data.access_token))throw console.error("[UPLOAD] Missing Home Assistant authentication details."),new Error("Authentication details are missing.");const i=new FormData;i.append("file",e);let n="";n=t.connection&&"string"==typeof(null===(o=t.connection.options)||void 0===o?void 0:o.url)?t.connection.options.url.replace(/^ws/,"http"):"function"==typeof t.hassUrl?t.hassUrl():`${window.location.protocol}//${window.location.host}`;const a=`${n.replace(/\/$/,"")}/api/image/upload`;try{const e=await fetch(a,{method:"POST",headers:{Authorization:`Bearer ${t.auth.data.access_token}`},body:i});if(!e.ok){const t=await e.text();throw console.error(`[UPLOAD] Failed to upload image via ${a}: ${e.status} ${e.statusText}`,t),new Error(`Failed to upload image via ${a}: ${e.statusText}`)}const o=await e.json();if(!o||!o.id)throw console.error(`[UPLOAD] Invalid response from ${a}: missing id`,o),new Error(`Invalid response from ${a}: missing id`);return`/api/image/serve/${o.id}`}catch(t){throw console.error(`[UPLOAD] Error during fetch to ${a}:`,t),new Error(`Upload via ${a} failed: ${t instanceof Error?t.message:"Unknown network error"}`)}}(this.hass,o),e={background_image:t,background_image_type:"upload"};this.onUpdate?this.onUpdate(e):this.dispatchEvent(new CustomEvent("design-changed",{detail:e,bubbles:!0,composed:!0}))}catch(t){console.error("Background image upload failed:",t),alert(`Upload failed: ${t instanceof Error?t.message:"Unknown error"}`)}}_truncatePath(t){return t?t.length<=30?t:"..."+t.slice(-27):""}_getStateValueHint(t){if(!this.hass||!t)return"Enter the state value to trigger animation";const e=this.hass.states[t];return e?e.state&&"unknown"!==e.state&&"unavailable"!==e.state?`Current state: ${e.state}`:"Enter the state value to trigger animation":"Entity not found"}_getAttributeNameHint(t){if(!this.hass||!t)return"Enter the attribute name to monitor";const e=this.hass.states[t];if(!e||!e.attributes)return"Entity not found or has no attributes";const o=Object.keys(e.attributes).filter((t=>!t.startsWith("_")&&"object"!=typeof e.attributes[t])).slice(0,3);return o.length>0?`Available attributes: ${o.join(", ")}${Object.keys(e.attributes).length>3?", ...":""}`:"Enter the attribute name to monitor"}_getAttributeValueHint(t,e){if(!this.hass||!t)return"Enter the attribute value to trigger animation";if(!e)return"Select an attribute first";const o=this.hass.states[t];if(!o||!o.attributes)return"Entity not found or has no attributes";const i=o.attributes[e];if(null!=i){const t=String(i);return`Current value: ${t.length>30?`${t.slice(0,27)}...`:t}`}return"Attribute not found - check the attribute name"}_hasModifiedProperties(t){const e=this.designProperties,o=t=>null!=t&&""!==t;switch(t){case"text":return!!(o(e.color)||o(e.text_align)||o(e.font_size)||o(e.line_height)||o(e.letter_spacing)||o(e.font_family)||o(e.font_weight)||o(e.text_transform)||o(e.font_style));case"background":return!!(o(e.background_color)||o(e.background_image)||o(e.background_image_type)||o(e.background_image_entity)||o(e.backdrop_filter));case"sizes":return!!(o(e.width)||o(e.height)||o(e.max_width)||o(e.max_height)||o(e.min_width)||o(e.min_height));case"spacing":return!!(o(e.margin_top)||o(e.margin_bottom)||o(e.margin_left)||o(e.margin_right)||o(e.padding_top)||o(e.padding_bottom)||o(e.padding_left)||o(e.padding_right));case"border":return!!(o(e.border_radius)||o(e.border_style)||o(e.border_width)||o(e.border_color));case"position":return!!(o(e.position)||o(e.top)||o(e.bottom)||o(e.left)||o(e.right)||o(e.z_index));case"text-shadow":return!!(o(e.text_shadow_h)||o(e.text_shadow_v)||o(e.text_shadow_blur)||o(e.text_shadow_color));case"box-shadow":return!!(o(e.box_shadow_h)||o(e.box_shadow_v)||o(e.box_shadow_blur)||o(e.box_shadow_spread)||o(e.box_shadow_color));case"overflow":return!(!o(e.overflow)&&!o(e.clip_path));case"animations":return!!(o(e.animation_type)&&"none"!==e.animation_type||o(e.animation_entity)||o(e.animation_trigger_type)||o(e.animation_attribute)||o(e.animation_state)||o(e.intro_animation)&&"none"!==e.intro_animation||o(e.outro_animation)&&"none"!==e.outro_animation||o(e.animation_duration)||o(e.animation_delay)||o(e.animation_timing)&&"ease"!==e.animation_timing);default:return!1}}_renderAccordion(t,e,o){const i=this._expandedSections.has(o),n=this._hasModifiedProperties(o);return V`
       <div class="accordion-section">
         <div class="accordion-header ${i?"expanded":""}">
           <button class="accordion-toggle" @click=${()=>this._toggleSection(o)}>
             <span class="accordion-title">
-              ${e} ${n?V`<span class="edit-indicator"></span>`:""}
+              ${t} ${n?V`<span class="edit-indicator"></span>`:""}
             </span>
           </button>
           <div class="accordion-actions">
             ${n?V`
                   <button
                     class="reset-button"
-                    @click=${e=>{e.stopPropagation(),this._resetSection(o)}}
-                    title="Reset ${e} settings to default"
+                    @click=${t=>{t.stopPropagation(),this._resetSection(o)}}
+                    title="Reset ${t} settings to default"
                   >
                     <ha-icon icon="mdi:refresh"></ha-icon>
                   </button>
@@ -4723,7 +5766,7 @@
             </button>
           </div>
         </div>
-        ${i?V`<div class="accordion-content">${t}</div>`:""}
+        ${i?V`<div class="accordion-content">${e}</div>`:""}
       </div>
     `}render(){return V`
       <div class="global-design-tab">
@@ -4765,19 +5808,19 @@
                 .value=${this.designProperties.color||""}
                 .defaultValue=${"var(--primary-text-color)"}
                 .hass=${this.hass}
-                @value-changed=${e=>this._updateProperty("color",e.detail.value)}
+                @value-changed=${t=>this._updateProperty("color",t.detail.value)}
               ></ultra-color-picker>
             </div>
 
             <div class="property-group">
               <label>Alignment:</label>
               <div class="button-group">
-                ${["left","center","right","justify"].map((e=>V`
+                ${["left","center","right","justify"].map((t=>V`
                     <button
-                      class="property-btn ${this.designProperties.text_align===e?"active":""}"
-                      @click=${()=>this._updateProperty("text_align",e)}
+                      class="property-btn ${this.designProperties.text_align===t?"active":""}"
+                      @click=${()=>this._updateProperty("text_align",t)}
                     >
-                      <ha-icon icon="mdi:format-align-${e}"></ha-icon>
+                      <ha-icon icon="mdi:format-align-${t}"></ha-icon>
                     </button>
                   `))}
               </div>
@@ -4788,7 +5831,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.font_size||""}
-                @input=${e=>this._updateProperty("font_size",e.target.value)}
+                @input=${t=>this._updateProperty("font_size",t.target.value)}
                 placeholder="16px, 1.2rem, max(1rem, 1.5vw)"
                 class="property-input"
               />
@@ -4799,7 +5842,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.line_height||""}
-                @input=${e=>this._updateProperty("line_height",e.target.value)}
+                @input=${t=>this._updateProperty("line_height",t.target.value)}
                 placeholder="28px, 1.7"
                 class="property-input"
               />
@@ -4810,7 +5853,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.letter_spacing||""}
-                @input=${e=>this._updateProperty("letter_spacing",e.target.value)}
+                @input=${t=>this._updateProperty("letter_spacing",t.target.value)}
                 placeholder="1px, -0.04em"
                 class="property-input"
               />
@@ -4820,7 +5863,7 @@
               <label>Font:</label>
               <select
                 .value=${this.designProperties.font_family||""}
-                @change=${e=>this._updateProperty("font_family",e.target.value)}
+                @change=${t=>this._updateProperty("font_family",t.target.value)}
                 class="property-select"
               >
                 <option value="">– Default –</option>
@@ -4836,7 +5879,7 @@
               <label>Font Weight:</label>
               <select
                 .value=${this.designProperties.font_weight||""}
-                @change=${e=>this._updateProperty("font_weight",e.target.value)}
+                @change=${t=>this._updateProperty("font_weight",t.target.value)}
                 class="property-select"
               >
                 <option value="">– Default –</option>
@@ -4854,7 +5897,7 @@
               <label>Text Transform:</label>
               <select
                 .value=${this.designProperties.text_transform||""}
-                @change=${e=>this._updateProperty("text_transform",e.target.value)}
+                @change=${t=>this._updateProperty("text_transform",t.target.value)}
                 class="property-select"
               >
                 <option value="">– Default –</option>
@@ -4869,7 +5912,7 @@
               <label>Font Style:</label>
               <select
                 .value=${this.designProperties.font_style||""}
-                @change=${e=>this._updateProperty("font_style",e.target.value)}
+                @change=${t=>this._updateProperty("font_style",t.target.value)}
                 class="property-select"
               >
                 <option value="">– Default –</option>
@@ -4886,7 +5929,7 @@
                 .value=${this.designProperties.background_color||""}
                 .defaultValue=${"transparent"}
                 .hass=${this.hass}
-                @value-changed=${e=>this._updateProperty("background_color",e.detail.value)}
+                @value-changed=${t=>this._updateProperty("background_color",t.detail.value)}
               ></ultra-color-picker>
             </div>
 
@@ -4894,7 +5937,7 @@
               <label>Background Image Type:</label>
               <select
                 .value=${this.designProperties.background_image_type||"none"}
-                @change=${e=>this._updateProperty("background_image_type",e.target.value)}
+                @change=${t=>this._updateProperty("background_image_type",t.target.value)}
                 class="property-select"
               >
                 <option value="none">None</option>
@@ -4939,7 +5982,7 @@
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this.designProperties.background_image_entity||""}
-                      @value-changed=${e=>this._updateProperty("background_image_entity",e.detail.value)}
+                      @value-changed=${t=>this._updateProperty("background_image_entity",t.detail.value)}
                       .label=${"Select entity with image attribute"}
                       allow-custom-entity
                     ></ha-entity-picker>
@@ -4951,7 +5994,7 @@
                     <input
                       type="text"
                       .value=${this.designProperties.background_image||""}
-                      @input=${e=>this._updateProperty("background_image",e.target.value)}
+                      @input=${t=>this._updateProperty("background_image",t.target.value)}
                       placeholder="https://example.com/image.jpg"
                       class="property-input"
                     />
@@ -4963,7 +6006,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.backdrop_filter||""}
-                @input=${e=>this._updateProperty("backdrop_filter",e.target.value)}
+                @input=${t=>this._updateProperty("backdrop_filter",t.target.value)}
                 placeholder="blur(10px), grayscale(100%), invert(75%)"
                 class="property-input"
               />
@@ -4975,8 +6018,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.width||""}
-                @input=${e=>this._updateProperty("width",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.width||"",(e=>this._updateProperty("width",e)))}
+                @input=${t=>this._updateProperty("width",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.width||"",(t=>this._updateProperty("width",t)))}
                 placeholder="200px, 100%, 14rem, 10vw"
                 class="property-input"
               />
@@ -4987,8 +6030,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.height||""}
-                @input=${e=>this._updateProperty("height",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.height||"",(e=>this._updateProperty("height",e)))}
+                @input=${t=>this._updateProperty("height",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.height||"",(t=>this._updateProperty("height",t)))}
                 placeholder="200px, 15rem, 10vh"
                 class="property-input"
               />
@@ -4999,8 +6042,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.max_width||""}
-                @input=${e=>this._updateProperty("max_width",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.max_width||"",(e=>this._updateProperty("max_width",e)))}
+                @input=${t=>this._updateProperty("max_width",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.max_width||"",(t=>this._updateProperty("max_width",t)))}
                 placeholder="200px, 100%, 14rem, 10vw"
                 class="property-input"
               />
@@ -5011,7 +6054,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.max_height||""}
-                @input=${e=>this._updateProperty("max_height",e.target.value)}
+                @input=${t=>this._updateProperty("max_height",t.target.value)}
                 placeholder="200px, 15rem, 10vh"
                 class="property-input"
               />
@@ -5022,7 +6065,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.min_width||""}
-                @input=${e=>this._updateProperty("min_width",e.target.value)}
+                @input=${t=>this._updateProperty("min_width",t.target.value)}
                 placeholder="200px, 100%, 14rem, 10vw"
                 class="property-input"
               />
@@ -5033,7 +6076,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.min_height||""}
-                @input=${e=>this._updateProperty("min_height",e.target.value)}
+                @input=${t=>this._updateProperty("min_height",t.target.value)}
                 placeholder="200px, 15rem, 10vh"
                 class="property-input"
               />
@@ -5059,8 +6102,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_top||""}
-                    @input=${e=>this._updateSpacing("margin","top",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.margin_top||"",(e=>this._updateSpacing("margin","top",e)))}
+                    @input=${t=>this._updateSpacing("margin","top",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.margin_top||"",(t=>this._updateSpacing("margin","top",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5070,8 +6113,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_right||""}
-                    @input=${e=>this._updateSpacing("margin","right",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.margin_right||"",(e=>this._updateSpacing("margin","right",e)))}
+                    @input=${t=>this._updateSpacing("margin","right",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.margin_right||"",(t=>this._updateSpacing("margin","right",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5081,8 +6124,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_bottom||""}
-                    @input=${e=>this._updateSpacing("margin","bottom",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.margin_bottom||"",(e=>this._updateSpacing("margin","bottom",e)))}
+                    @input=${t=>this._updateSpacing("margin","bottom",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.margin_bottom||"",(t=>this._updateSpacing("margin","bottom",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5092,8 +6135,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_left||""}
-                    @input=${e=>this._updateSpacing("margin","left",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.margin_left||"",(e=>this._updateSpacing("margin","left",e)))}
+                    @input=${t=>this._updateSpacing("margin","left",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.margin_left||"",(t=>this._updateSpacing("margin","left",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5119,8 +6162,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_top||""}
-                    @input=${e=>this._updateSpacing("padding","top",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.padding_top||"",(e=>this._updateSpacing("padding","top",e)))}
+                    @input=${t=>this._updateSpacing("padding","top",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.padding_top||"",(t=>this._updateSpacing("padding","top",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5130,8 +6173,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_right||""}
-                    @input=${e=>this._updateSpacing("padding","right",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.padding_right||"",(e=>this._updateSpacing("padding","right",e)))}
+                    @input=${t=>this._updateSpacing("padding","right",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.padding_right||"",(t=>this._updateSpacing("padding","right",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5141,8 +6184,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_bottom||""}
-                    @input=${e=>this._updateSpacing("padding","bottom",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.padding_bottom||"",(e=>this._updateSpacing("padding","bottom",e)))}
+                    @input=${t=>this._updateSpacing("padding","bottom",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.padding_bottom||"",(t=>this._updateSpacing("padding","bottom",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5152,8 +6195,8 @@
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_left||""}
-                    @input=${e=>this._updateSpacing("padding","left",e.target.value)}
-                    @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.padding_left||"",(e=>this._updateSpacing("padding","left",e)))}
+                    @input=${t=>this._updateSpacing("padding","left",t.target.value)}
+                    @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.padding_left||"",(t=>this._updateSpacing("padding","left",t)))}
                     class="spacing-input"
                   />
                 </div>
@@ -5166,8 +6209,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.border_radius||""}
-                @input=${e=>this._updateProperty("border_radius",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.border_radius||"",(e=>this._updateProperty("border_radius",e)))}
+                @input=${t=>this._updateProperty("border_radius",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.border_radius||"",(t=>this._updateProperty("border_radius",t)))}
                 placeholder="5px, 50%, 0.3em, 12px 0"
                 class="property-input"
               />
@@ -5177,7 +6220,7 @@
               <label>Border Style:</label>
               <select
                 .value=${this.designProperties.border_style||""}
-                @change=${e=>this._updateProperty("border_style",e.target.value)}
+                @change=${t=>this._updateProperty("border_style",t.target.value)}
                 class="property-select"
               >
                 <option value="">None</option>
@@ -5193,8 +6236,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.border_width||""}
-                @input=${e=>this._updateProperty("border_width",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.border_width||"",(e=>this._updateProperty("border_width",e)))}
+                @input=${t=>this._updateProperty("border_width",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.border_width||"",(t=>this._updateProperty("border_width",t)))}
                 placeholder="1px, 2px, 0.125rem"
                 class="property-input"
               />
@@ -5206,7 +6249,7 @@
                 .value=${this.designProperties.border_color||""}
                 .defaultValue=${"var(--divider-color)"}
                 .hass=${this.hass}
-                @value-changed=${e=>this._updateProperty("border_color",e.detail.value)}
+                @value-changed=${t=>this._updateProperty("border_color",t.detail.value)}
               ></ultra-color-picker>
             </div>
           `,"border")}
@@ -5215,7 +6258,7 @@
               <label>Position:</label>
               <select
                 .value=${this.designProperties.position||""}
-                @change=${e=>this._updateProperty("position",e.target.value)}
+                @change=${t=>this._updateProperty("position",t.target.value)}
                 class="property-select"
               >
                 <option value="">– Default –</option>
@@ -5233,32 +6276,32 @@
                       type="text"
                       placeholder="Top"
                       .value=${this.designProperties.top||""}
-                      @input=${e=>this._updateProperty("top",e.target.value)}
-                      @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.top||"",(e=>this._updateProperty("top",e)))}
+                      @input=${t=>this._updateProperty("top",t.target.value)}
+                      @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.top||"",(t=>this._updateProperty("top",t)))}
                     />
                     <div class="position-row">
                       <input
                         type="text"
                         placeholder="Left"
                         .value=${this.designProperties.left||""}
-                        @input=${e=>this._updateProperty("left",e.target.value)}
-                        @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.left||"",(e=>this._updateProperty("left",e)))}
+                        @input=${t=>this._updateProperty("left",t.target.value)}
+                        @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.left||"",(t=>this._updateProperty("left",t)))}
                       />
                       <div class="position-center">POS</div>
                       <input
                         type="text"
                         placeholder="Right"
                         .value=${this.designProperties.right||""}
-                        @input=${e=>this._updateProperty("right",e.target.value)}
-                        @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.right||"",(e=>this._updateProperty("right",e)))}
+                        @input=${t=>this._updateProperty("right",t.target.value)}
+                        @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.right||"",(t=>this._updateProperty("right",t)))}
                       />
                     </div>
                     <input
                       type="text"
                       placeholder="Bottom"
                       .value=${this.designProperties.bottom||""}
-                      @input=${e=>this._updateProperty("bottom",e.target.value)}
-                      @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.bottom||"",(e=>this._updateProperty("bottom",e)))}
+                      @input=${t=>this._updateProperty("bottom",t.target.value)}
+                      @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.bottom||"",(t=>this._updateProperty("bottom",t)))}
                     />
                   </div>
 
@@ -5267,8 +6310,8 @@
                     <input
                       type="text"
                       .value=${this.designProperties.z_index||""}
-                      @input=${e=>this._updateProperty("z_index",e.target.value)}
-                      @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.z_index||"",(e=>this._updateProperty("z_index",e)))}
+                      @input=${t=>this._updateProperty("z_index",t.target.value)}
+                      @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.z_index||"",(t=>this._updateProperty("z_index",t)))}
                       placeholder="-1, 1, 3, 50"
                       class="property-input"
                     />
@@ -5281,8 +6324,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.text_shadow_h||""}
-                @input=${e=>this._updateProperty("text_shadow_h",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.text_shadow_h||"",(e=>this._updateProperty("text_shadow_h",e)))}
+                @input=${t=>this._updateProperty("text_shadow_h",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.text_shadow_h||"",(t=>this._updateProperty("text_shadow_h",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5293,8 +6336,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.text_shadow_v||""}
-                @input=${e=>this._updateProperty("text_shadow_v",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.text_shadow_v||"",(e=>this._updateProperty("text_shadow_v",e)))}
+                @input=${t=>this._updateProperty("text_shadow_v",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.text_shadow_v||"",(t=>this._updateProperty("text_shadow_v",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5305,8 +6348,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.text_shadow_blur||""}
-                @input=${e=>this._updateProperty("text_shadow_blur",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.text_shadow_blur||"",(e=>this._updateProperty("text_shadow_blur",e)))}
+                @input=${t=>this._updateProperty("text_shadow_blur",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.text_shadow_blur||"",(t=>this._updateProperty("text_shadow_blur",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5318,7 +6361,7 @@
                 .value=${this.designProperties.text_shadow_color||""}
                 .defaultValue=${"rgba(0,0,0,0.5)"}
                 .hass=${this.hass}
-                @value-changed=${e=>this._updateProperty("text_shadow_color",e.detail.value)}
+                @value-changed=${t=>this._updateProperty("text_shadow_color",t.detail.value)}
               ></ultra-color-picker>
             </div>
           `,"text-shadow")}
@@ -5328,8 +6371,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.box_shadow_h||""}
-                @input=${e=>this._updateProperty("box_shadow_h",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.box_shadow_h||"",(e=>this._updateProperty("box_shadow_h",e)))}
+                @input=${t=>this._updateProperty("box_shadow_h",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.box_shadow_h||"",(t=>this._updateProperty("box_shadow_h",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5340,8 +6383,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.box_shadow_v||""}
-                @input=${e=>this._updateProperty("box_shadow_v",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.box_shadow_v||"",(e=>this._updateProperty("box_shadow_v",e)))}
+                @input=${t=>this._updateProperty("box_shadow_v",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.box_shadow_v||"",(t=>this._updateProperty("box_shadow_v",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5352,8 +6395,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.box_shadow_blur||""}
-                @input=${e=>this._updateProperty("box_shadow_blur",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.box_shadow_blur||"",(e=>this._updateProperty("box_shadow_blur",e)))}
+                @input=${t=>this._updateProperty("box_shadow_blur",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.box_shadow_blur||"",(t=>this._updateProperty("box_shadow_blur",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5364,8 +6407,8 @@
               <input
                 type="text"
                 .value=${this.designProperties.box_shadow_spread||""}
-                @input=${e=>this._updateProperty("box_shadow_spread",e.target.value)}
-                @keydown=${e=>this._handleNumericKeydown(e,this.designProperties.box_shadow_spread||"",(e=>this._updateProperty("box_shadow_spread",e)))}
+                @input=${t=>this._updateProperty("box_shadow_spread",t.target.value)}
+                @keydown=${t=>this._handleNumericKeydown(t,this.designProperties.box_shadow_spread||"",(t=>this._updateProperty("box_shadow_spread",t)))}
                 placeholder="0, 3px, 0.05em, 2rem"
                 class="property-input"
               />
@@ -5377,7 +6420,7 @@
                 .value=${this.designProperties.box_shadow_color||""}
                 .defaultValue=${"rgba(0,0,0,0.1)"}
                 .hass=${this.hass}
-                @value-changed=${e=>this._updateProperty("box_shadow_color",e.detail.value)}
+                @value-changed=${t=>this._updateProperty("box_shadow_color",t.detail.value)}
               ></ultra-color-picker>
             </div>
           `,"box-shadow")}
@@ -5385,13 +6428,12 @@
             <div class="property-group">
               <label>Overflow:</label>
               <select
-                .value=${this.designProperties.overflow||""}
-                @change=${e=>this._updateProperty("overflow",e.target.value)}
+                .value=${this.designProperties.overflow||"hidden"}
+                @change=${t=>this._updateProperty("overflow",t.target.value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
+                <option value="hidden">Hidden (Default)</option>
                 <option value="visible">Visible</option>
-                <option value="hidden">Hidden</option>
                 <option value="scroll">Scroll</option>
                 <option value="auto">Auto</option>
               </select>
@@ -5402,7 +6444,7 @@
               <input
                 type="text"
                 .value=${this.designProperties.clip_path||""}
-                @input=${e=>this._updateProperty("clip_path",e.target.value)}
+                @input=${t=>this._updateProperty("clip_path",t.target.value)}
                 placeholder="ellipse(75% 100% at bottom)"
                 class="property-input"
               />
@@ -5422,7 +6464,7 @@
                 <label>Animation Type:</label>
                 <select
                   .value=${this.designProperties.animation_type||"none"}
-                  @change=${e=>this._updateProperty("animation_type",e.target.value)}
+                  @change=${t=>this._updateProperty("animation_type",t.target.value)}
                   class="property-select"
                 >
                   <option value="none">None</option>
@@ -5444,7 +6486,7 @@
                 <input
                   type="text"
                   .value=${this.designProperties.animation_duration||"2s"}
-                  @input=${e=>this._updateProperty("animation_duration",e.target.value)}
+                  @input=${t=>this._updateProperty("animation_duration",t.target.value)}
                   placeholder="2s, 500ms, 1.5s"
                   class="property-input"
                 />
@@ -5460,7 +6502,7 @@
                         .hass=${this.hass}
                         .data=${{entity:this.designProperties.animation_entity||""}}
                         .schema=${[{name:"entity",selector:{entity:{}}}]}
-                        @value-changed=${e=>this._updateProperty("animation_entity",e.detail.value.entity)}
+                        @value-changed=${t=>this._updateProperty("animation_entity",t.detail.value.entity)}
                       ></ha-form>
                     </div>
 
@@ -5470,7 +6512,7 @@
                             <select
                               id="animation-trigger-type-select"
                               .value=${this.designProperties.animation_trigger_type||"state"}
-                              @change=${e=>{const t=e.target.value;console.log("Animation trigger type changing to:",t);const o={animation_trigger_type:t,animation_state:"",animation_attribute:""};this.onUpdate?this.onUpdate(o):this.dispatchEvent(new CustomEvent("design-changed",{detail:o,bubbles:!0,composed:!0})),this.designProperties=Object.assign(Object.assign({},this.designProperties),o),this.requestUpdate()}}
+                              @change=${t=>{const e=t.target.value;console.log("Animation trigger type changing to:",e);const o={animation_trigger_type:e,animation_state:"",animation_attribute:""};this.onUpdate?this.onUpdate(o):this.dispatchEvent(new CustomEvent("design-changed",{detail:o,bubbles:!0,composed:!0})),this.designProperties=Object.assign(Object.assign({},this.designProperties),o),this.requestUpdate()}}
                               class="property-select ${"attribute"===this.designProperties.animation_trigger_type?"attribute-mode":"state-mode"}"
                             >
                               <option value="state">Entity State</option>
@@ -5488,7 +6530,7 @@
                             </div>
                           </div>
 
-                          ${(()=>{const e=this.designProperties.animation_trigger_type||"state",t="attribute"===e;return console.log("TRIGGER TYPE DETECTION:",{currentTriggerType:e,isAttributeMode:t,entitySelected:!!this.designProperties.animation_entity,attributeSelected:!!this.designProperties.animation_attribute,stateValue:this.designProperties.animation_state}),t?(console.log("🟢 RENDERING ATTRIBUTE MODE UI"),console.log("Rendering attribute mode UI"),V`
+                          ${(()=>{const t=this.designProperties.animation_trigger_type||"state",e="attribute"===t;return console.log("TRIGGER TYPE DETECTION:",{currentTriggerType:t,isAttributeMode:e,entitySelected:!!this.designProperties.animation_entity,attributeSelected:!!this.designProperties.animation_attribute,stateValue:this.designProperties.animation_state}),e?(console.log("🟢 RENDERING ATTRIBUTE MODE UI"),console.log("Rendering attribute mode UI"),V`
                                 <div class="property-group attribute-mode-container">
                                   <div class="property-group">
                                     <label>
@@ -5498,7 +6540,7 @@
                                     <input
                                       type="text"
                                       .value=${this.designProperties.animation_attribute||""}
-                                      @input=${e=>{const t=e.target.value;console.log("Animation attribute changed to:",t),console.log("Current entity:",this.designProperties.animation_entity),console.log("Current trigger type:",this.designProperties.animation_trigger_type);const o=e.target;o.classList.add("change-success");const i={animation_attribute:t,animation_state:""};this.onUpdate?this.onUpdate(i):this.dispatchEvent(new CustomEvent("design-changed",{detail:i,bubbles:!0,composed:!0})),setTimeout((()=>{console.log("First UI refresh after attribute change (50ms)"),this.requestUpdate()}),50),setTimeout((()=>{console.log("Second UI refresh after attribute change (150ms)"),this.requestUpdate()}),150),setTimeout((()=>{console.log("Third UI refresh after attribute change (300ms)"),this.requestUpdate()}),300),setTimeout((()=>{console.log("Final UI refresh after attribute change (500ms)"),this.requestUpdate(),o.classList.remove("change-success")}),500)}}
+                                      @input=${t=>{const e=t.target.value;console.log("Animation attribute changed to:",e),console.log("Current entity:",this.designProperties.animation_entity),console.log("Current trigger type:",this.designProperties.animation_trigger_type);const o=t.target;o.classList.add("change-success");const i={animation_attribute:e,animation_state:""};this.onUpdate?this.onUpdate(i):this.dispatchEvent(new CustomEvent("design-changed",{detail:i,bubbles:!0,composed:!0})),setTimeout((()=>{console.log("First UI refresh after attribute change (50ms)"),this.requestUpdate()}),50),setTimeout((()=>{console.log("Second UI refresh after attribute change (150ms)"),this.requestUpdate()}),150),setTimeout((()=>{console.log("Third UI refresh after attribute change (300ms)"),this.requestUpdate()}),300),setTimeout((()=>{console.log("Final UI refresh after attribute change (500ms)"),this.requestUpdate(),o.classList.remove("change-success")}),500)}}
                                       placeholder="friendly_name, device_class, state, etc."
                                       class="property-input attribute-mode-input"
                                     />
@@ -5516,7 +6558,7 @@
                                     <input
                                       type="text"
                                       .value=${this.designProperties.animation_state||""}
-                                      @input=${e=>this._updateProperty("animation_state",e.target.value)}
+                                      @input=${t=>this._updateProperty("animation_state",t.target.value)}
                                       placeholder="blue, 255, heating, on, off, etc."
                                       class="property-input attribute-value-input"
                                     />
@@ -5538,7 +6580,7 @@
                                   <input
                                     type="text"
                                     .value=${this.designProperties.animation_state||""}
-                                    @input=${e=>this._updateProperty("animation_state",e.target.value)}
+                                    @input=${t=>this._updateProperty("animation_state",t.target.value)}
                                     placeholder="on, off, playing, idle, etc."
                                     class="property-input state-value-input"
                                   />
@@ -5575,7 +6617,7 @@
                   <label>Intro Animation:</label>
                   <select
                     .value=${this.designProperties.intro_animation||"none"}
-                    @change=${e=>this._updateProperty("intro_animation",e.target.value)}
+                    @change=${t=>this._updateProperty("intro_animation",t.target.value)}
                     class="property-select"
                   >
                     <option value="none">None</option>
@@ -5596,7 +6638,7 @@
                   <label>Outro Animation:</label>
                   <select
                     .value=${this.designProperties.outro_animation||"none"}
-                    @change=${e=>this._updateProperty("outro_animation",e.target.value)}
+                    @change=${t=>this._updateProperty("outro_animation",t.target.value)}
                     class="property-select"
                   >
                     <option value="none">None</option>
@@ -5621,7 +6663,7 @@
                   <input
                     type="text"
                     .value=${this.designProperties.animation_duration||""}
-                    @input=${e=>this._updateProperty("animation_duration",e.target.value)}
+                    @input=${t=>this._updateProperty("animation_duration",t.target.value)}
                     placeholder="0.3s, 500ms"
                     class="property-input"
                   />
@@ -5632,7 +6674,7 @@
                   <input
                     type="text"
                     .value=${this.designProperties.animation_delay||""}
-                    @input=${e=>this._updateProperty("animation_delay",e.target.value)}
+                    @input=${t=>this._updateProperty("animation_delay",t.target.value)}
                     placeholder="0s, 100ms"
                     class="property-input"
                   />
@@ -5642,7 +6684,7 @@
                   <label>Timing:</label>
                   <select
                     .value=${this.designProperties.animation_timing||"ease"}
-                    @change=${e=>this._updateProperty("animation_timing",e.target.value)}
+                    @change=${t=>this._updateProperty("animation_timing",t.target.value)}
                     class="property-select"
                   >
                     <option value="ease">Ease</option>
@@ -6884,12 +7926,12 @@
         animation: rotateOut var(--animation-duration, 0.6s) var(--animation-timing, ease)
           var(--animation-delay, 0s) both;
       }
-    `}};ct.CLIPBOARD_KEY="ultra-card-design-clipboard",ct._lastAnimationTriggerType=null,dt([me({attribute:!1})],ct.prototype,"hass",void 0),dt([me({attribute:!1})],ct.prototype,"designProperties",void 0),dt([me({type:Function})],ct.prototype,"onUpdate",void 0),dt([ge()],ct.prototype,"_expandedSections",void 0),dt([ge()],ct.prototype,"_marginLocked",void 0),dt([ge()],ct.prototype,"_paddingLocked",void 0),dt([ge()],ct.prototype,"_clipboardProperties",void 0),ct=st=dt([ce("ultra-global-design-tab")],ct);var pt=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};const ut=[{value:"default",label:"– Default –",category:"default"}],mt=[{value:"Montserrat",label:"Montserrat (used as default font)",category:"typography"}],gt=[{value:"Georgia, serif",label:"Georgia, serif",category:"websafe"},{value:"Palatino Linotype, Book Antiqua, Palatino, serif",label:"Palatino Linotype, Book Antiqua, Palatino, serif",category:"websafe"},{value:"Times New Roman, Times, serif",label:"Times New Roman, Times, serif",category:"websafe"},{value:"Arial, Helvetica, sans-serif",label:"Arial, Helvetica, sans-serif",category:"websafe"},{value:"Impact, Charcoal, sans-serif",label:"Impact, Charcoal, sans-serif",category:"websafe"},{value:"Lucida Sans Unicode, Lucida Grande, sans-serif",label:"Lucida Sans Unicode, Lucida Grande, sans-serif",category:"websafe"},{value:"Tahoma, Geneva, sans-serif",label:"Tahoma, Geneva, sans-serif",category:"websafe"},{value:"Trebuchet MS, Helvetica, sans-serif",label:"Trebuchet MS, Helvetica, sans-serif",category:"websafe"},{value:"Verdana, Geneva, sans-serif",label:"Verdana, Geneva, sans-serif",category:"websafe"},{value:"Courier New, Courier, monospace",label:"Courier New, Courier, monospace",category:"websafe"},{value:"Lucida Console, Monaco, monospace",label:"Lucida Console, Monaco, monospace",category:"websafe"}];let ht=class extends se{constructor(){super(...arguments),this._showModuleSelector=!1,this._selectedRowIndex=-1,this._selectedColumnIndex=-1,this._showModuleSettings=!1,this._selectedModule=null,this._activeModuleTab="general",this._activeDesignSubtab="text",this._showRowSettings=!1,this._selectedRowForSettings=-1,this._activeRowTab="general",this._showColumnSettings=!1,this._selectedColumnForSettings=null,this._activeColumnTab="general",this._showColumnLayoutSelector=!1,this._selectedRowForLayout=-1,this._draggedItem=null,this._dropTarget=null,this._selectedLayoutModuleIndex=-1,this._showLayoutChildSettings=!1,this._selectedLayoutChild=null,this._collapsedRows=new Set,this._collapsedColumns=new Set,this.COLUMN_LAYOUTS=[{id:"1-col",name:"1",proportions:[1],columnCount:1},{id:"1-2-1-2",name:"1/2 + 1/2",proportions:[1,1],columnCount:2},{id:"1-3-2-3",name:"1/3 + 2/3",proportions:[1,2],columnCount:2},{id:"2-3-1-3",name:"2/3 + 1/3",proportions:[2,1],columnCount:2},{id:"2-5-3-5",name:"2/5 + 3/5",proportions:[2,3],columnCount:2},{id:"3-5-2-5",name:"3/5 + 2/5",proportions:[3,2],columnCount:2},{id:"1-3-1-3-1-3",name:"1/3 + 1/3 + 1/3",proportions:[1,1,1],columnCount:3},{id:"1-4-1-2-1-4",name:"1/4 + 1/2 + 1/4",proportions:[1,2,1],columnCount:3},{id:"1-5-3-5-1-5",name:"1/5 + 3/5 + 1/5",proportions:[1,3,1],columnCount:3},{id:"1-6-2-3-1-6",name:"1/6 + 2/3 + 1/6",proportions:[1,4,1],columnCount:3},{id:"1-4-1-4-1-4-1-4",name:"1/4 + 1/4 + 1/4 + 1/4",proportions:[1,1,1,1],columnCount:4},{id:"1-5-1-5-1-5-1-5",name:"1/5 + 1/5 + 1/5 + 1/5",proportions:[1,1,1,1],columnCount:4},{id:"1-6-1-6-1-6-1-6",name:"1/6 + 1/6 + 1/6 + 1/6",proportions:[1,1,1,1],columnCount:4},{id:"1-8-1-4-1-4-1-8",name:"1/8 + 1/4 + 1/4 + 1/8",proportions:[1,2,2,1],columnCount:4},{id:"1-5-1-5-1-5-1-5-1-5",name:"1/5 + 1/5 + 1/5 + 1/5 + 1/5",proportions:[1,1,1,1,1],columnCount:5},{id:"1-6-1-6-1-3-1-6-1-6",name:"1/6 + 1/6 + 1/3 + 1/6 + 1/6",proportions:[1,1,2,1,1],columnCount:5},{id:"1-8-1-4-1-4-1-4-1-8",name:"1/8 + 1/4 + 1/4 + 1/4 + 1/8",proportions:[1,2,2,2,1],columnCount:5},{id:"1-6-1-6-1-6-1-6-1-6-1-6",name:"1/6 + 1/6 + 1/6 + 1/6 + 1/6 + 1/6",proportions:[1,1,1,1,1,1],columnCount:6}]}_createColumnIconHTML(e){const t=e.reduce(((e,t)=>e+t),0);return`<div style="display: flex; width: 100%; height: 16px; gap: 2px;">${e.map(((e,o)=>`<div style="width: ${e/t*100}%; height: 16px; background: #2196F3; border-radius: 2px; ${o>0?"margin-left: 2px;":""}"></div>`)).join("")}</div>`}_createSimpleIcon(e){return e.map((e=>"█".repeat(e))).join(" ")}_getLayoutsForColumnCount(e){const t=Math.min(e,6);return this.COLUMN_LAYOUTS.filter((e=>e.columnCount===t))}_migrateLegacyLayoutId(e){return{"50-50":"1-2-1-2","30-70":"1-3-2-3","70-30":"2-3-1-3","33-33-33":"1-3-1-3-1-3","25-50-25":"1-4-1-2-1-4","20-60-20":"1-5-3-5-1-5","25-25-25-25":"1-4-1-4-1-4-1-4"}[e]||e}_ensureLayout(){return this.config.layout&&this.config.layout.rows?this._migrateLayoutNames(this.config.layout):{rows:[{id:`row-${Date.now()}`,row_name:"Row 1",columns:[{id:`col-${Date.now()}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:"Column 1"}],column_layout:"1-col"}]}}_migrateLayoutNames(e){return{rows:e.rows.map(((e,t)=>{const o=e,i=Object.assign(Object.assign({},o),{row_name:o.row_name||`Row ${t+1}`});if(e.columns){const t=e.columns.map(((e,t)=>{const o=e;return Object.assign(Object.assign({},o),{column_name:o.column_name||`Column ${t+1}`})}));i.columns=t}return i}))}}_updateConfig(e){const t=Object.assign(Object.assign({},this.config),e),o=new CustomEvent("config-changed",{detail:{config:t},bubbles:!0,composed:!0});this.dispatchEvent(o)}_updateLayout(e){this._updateConfig({layout:e})}_toggleRowCollapse(e){this._collapsedRows.has(e)?this._collapsedRows.delete(e):this._collapsedRows.add(e),this._collapsedRows=new Set(this._collapsedRows),this._saveCollapseState()}_toggleColumnCollapse(e,t){const o=`${e}-${t}`;this._collapsedColumns.has(o)?this._collapsedColumns.delete(o):this._collapsedColumns.add(o),this._collapsedColumns=new Set(this._collapsedColumns),this._saveCollapseState()}_isRowCollapsed(e){return this._collapsedRows.has(e)}_isColumnCollapsed(e,t){const o=`${e}-${t}`;return this._collapsedColumns.has(o)}_saveCollapseState(){try{const e={collapsedRows:Array.from(this._collapsedRows),collapsedColumns:Array.from(this._collapsedColumns)};localStorage.setItem("ultra-card-layout-collapse-state",JSON.stringify(e))}catch(e){console.warn("Failed to save collapse state:",e)}}_loadCollapseState(){try{const e=localStorage.getItem("ultra-card-layout-collapse-state");if(e){const t=JSON.parse(e);this._collapsedRows=new Set(t.collapsedRows||[]),this._collapsedColumns=new Set(t.collapsedColumns||[])}}catch(e){console.warn("Failed to load collapse state:",e)}}_addRow(){console.log("Adding new row...");const e=this._ensureLayout(),t=e.rows.length,o={id:`row-${Date.now()}`,columns:[],column_layout:"1-col",row_name:`Row ${t+1}`},i={rows:[...e.rows,o]};this._updateLayout(i),console.log("Row added successfully (empty row)")}_deleteRow(e){console.log("Deleting row:",e);const t=this._ensureLayout();if(t.rows.length>1){const o={rows:t.rows.filter(((t,o)=>o!==e))};this._updateLayout(o),console.log("Row deleted successfully")}else console.log("Cannot delete the last remaining row")}_duplicateRow(e){console.log("Duplicating row:",e);const t=this._ensureLayout(),o=t.rows[e];if(!o)return void console.error("Row to copy not found at index:",e);const i=e+1,n=Object.assign(Object.assign({},JSON.parse(JSON.stringify(o))),{id:`row-${Date.now()}`,row_name:`Row ${i+1}`,columns:o.columns.map(((e,t)=>Object.assign(Object.assign({},JSON.parse(JSON.stringify(e))),{id:`col-${Date.now()}-${t}-${Math.random().toString(36).substr(2,9)}`,column_name:`Column ${t+1}`,modules:e.modules.map(((e,t)=>Object.assign(Object.assign({},JSON.parse(JSON.stringify(e))),{id:`${e.type}-${Date.now()}-${t}-${Math.random().toString(36).substr(2,9)}`})))})))}),a=JSON.parse(JSON.stringify(t));a.rows.splice(e+1,0,n),this._updateLayout(a),console.log("Row duplicated successfully. New layout has",a.rows.length,"rows")}_addColumn(e){console.log("Adding column to row:",e);const t=this._ensureLayout(),o=t.rows[e];if(!o)return void console.error("Row not found at index:",e);if(o.columns.length>=6)return void console.log("Cannot add more than 6 columns to a row");const i=o.columns.length,n={id:`col-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${i+1}`},a={rows:t.rows.map(((t,o)=>o===e?Object.assign(Object.assign({},t),{columns:[...t.columns,n]}):t))};this._updateLayout(a),console.log("Column added successfully. Row now has",a.rows[e].columns.length,"columns")}_addColumnAfter(e,t){console.log("Adding column after:",e,t);const o=this._ensureLayout(),i=o.rows[e];if(!i)return;if(i.columns.length>=6)return void console.log("Cannot add more than 6 columns to a row");const n=t+1,a={id:`col-${Date.now()}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${n+1}`},r={rows:o.rows.map(((o,i)=>{if(i===e){const e=[...o.columns];return e.splice(t+1,0,a),Object.assign(Object.assign({},o),{columns:e})}return o}))};this._updateLayout(r),console.log("Column added after successfully")}_duplicateColumn(e,t){console.log("Duplicating column:",e,t);const o=this._ensureLayout(),i=o.rows[e];if(!i||!i.columns[t])return void console.error("Row or column not found:",e,t);if(i.columns.length>=6)return void console.log("Cannot duplicate column: maximum 6 columns already reached");const n=i.columns[t],a=t+1,r=Object.assign(Object.assign({},JSON.parse(JSON.stringify(n))),{id:`col-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,column_name:`Column ${a+1}`,modules:n.modules.map(((e,t)=>Object.assign(Object.assign({},JSON.parse(JSON.stringify(e))),{id:`${e.type}-${Date.now()}-${t}-${Math.random().toString(36).substr(2,9)}`})))}),l=JSON.parse(JSON.stringify(o));l.rows[e].columns.splice(t+1,0,r),this._updateLayout(l),console.log("Column duplicated successfully. Row now has",l.rows[e].columns.length,"columns")}_deleteColumn(e,t){console.log("Deleting column:",e,t);const o=this._ensureLayout(),i=o.rows[e];if(!i)return void console.error("Row not found at index:",e);if(!i.columns[t])return void console.error("Column not found at index:",t);const n={rows:o.rows.map(((o,i)=>i===e?Object.assign(Object.assign({},o),{columns:o.columns.filter(((e,o)=>o!==t))}):o))};this._updateLayout(n),console.log("Column deleted successfully. Row now has",n.rows[e].columns.length,"columns")}_openColumnLayoutSelector(e){this._selectedRowForLayout=e,this._showColumnLayoutSelector=!0}_changeColumnLayout(e){if(-1===this._selectedRowForLayout)return;const t=this._ensureLayout(),o=t.rows[this._selectedRowForLayout];if(!o)return;const i=this.COLUMN_LAYOUTS.find((t=>t.id===e));if(!i)return;const n=i.columnCount,a=o.columns.length;console.log(`Changing layout from ${a} to ${n} columns`);const r=JSON.parse(JSON.stringify(t)),l=r.rows[this._selectedRowForLayout];if(n===a)l.column_layout=e;else if(n>a){const t=[...l.columns];for(let e=a;e<n;e++)t.push({id:`col-${Date.now()}-${e}-${Math.random().toString(36).substr(2,9)}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${e+1}`});l.columns=t,l.column_layout=e}else{const t=[],o=[];l.columns.forEach((e=>{e.modules&&e.modules.length>0&&o.push(...e.modules)}));for(let e=0;e<n;e++)e<a?t.push(Object.assign(Object.assign({},l.columns[e]),{modules:[]})):t.push({id:`col-${Date.now()}-${e}-${Math.random().toString(36).substr(2,9)}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${e+1}`});o.length>0&&(1===n?t[0].modules=o:o.forEach(((e,o)=>{t[o%n].modules.push(e)}))),l.columns=t,l.column_layout=e}this._updateLayout(r),console.log(`Layout changed successfully. Row now has ${n} columns`),this._showColumnLayoutSelector=!1,this._selectedRowForLayout=-1}_getCurrentLayoutDisplay(e){const t=e.columns.length,o=e.column_layout,i=this.COLUMN_LAYOUTS.find((e=>e.id===o));if(i)return this._createSimpleIcon(i.proportions);switch(t){case 1:return"█";case 2:return"█ █";case 3:return"█ █ █";case 4:return"█ █ █ █";default:return"█ ".repeat(Math.min(t,6)).trim()}}_openModuleSelector(e,t){console.log("Opening module selector for:",{rowIndex:e,columnIndex:t});const o=this._ensureLayout().rows[e];o&&o.columns&&0!==o.columns.length||(console.log("Row has no columns, automatically adding one"),this._addColumn(e),t=0),this._selectedRowIndex=e,this._selectedColumnIndex=t,this._showModuleSelector=!0}_addModule(e){if(console.log("Adding module of type:",e),-1===this._selectedRowIndex||-1===this._selectedColumnIndex)return void console.error("No row or column selected");const t=this._ensureLayout();if(!t.rows[this._selectedRowIndex])return void console.error("Selected row does not exist:",this._selectedRowIndex);const o=t.rows[this._selectedRowIndex];if(!o.columns[this._selectedColumnIndex])return void console.error("Selected column does not exist:",this._selectedColumnIndex);const i=o.columns[this._selectedColumnIndex];let n,a;switch(e){case"text":n={id:`text-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"text",text:"Sample Text",font_size:16,color:"var(--primary-text-color)"},delete n.name,delete n.title;break;case"separator":n={id:`separator-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"separator",thickness:1,color:"var(--divider-color)"},delete n.name,delete n.title,delete n.label;break;case"image":n={id:`image-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"image",image_type:"none"},delete n.name,delete n.title,delete n.label;break;case"markdown":n={id:`markdown-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"markdown",content:"This is a markdown module that supports:\n\n- Italic and bold text\n- Links\n- inline code\n- Lists and more!",markdown_content:"This is a markdown module that supports:\n\n- Italic and bold text\n- Links\n- inline code\n- Lists and more!"},delete n.name,delete n.title,delete n.label;break;case"bar":n={id:`bar-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"bar",entity:"sensor.battery_level",bar_color:"var(--primary-color)",background_color:"var(--secondary-background-color)",height:20,show_value:!0},delete n.name,delete n.title,delete n.label;break;case"button":n={id:`button-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"button",label:"Click Me",button_text:"Click Me",tap_action:{action:"more-info"}},delete n.name,delete n.title;break;case"info":n={id:`info-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"info",info_entities:[{entity:"sensor.temperature",name:"Temperature",icon:"mdi:thermometer"}]},delete n.name,delete n.title,delete n.label;break;default:try{const t=Ze().createDefaultModule(e);if(t){n=t,delete n.name,delete n.title,delete n.label;break}}catch(e){console.error("Module registry failed:",e)}n={id:`text-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"text",text:"Unknown Module Type",font_size:16,color:"var(--primary-text-color)"}}if(console.log("Created module:",n),a=this._selectedLayoutModuleIndex>=0?{rows:t.rows.map(((e,t)=>t===this._selectedRowIndex?Object.assign(Object.assign({},e),{columns:e.columns.map(((e,t)=>t===this._selectedColumnIndex?Object.assign(Object.assign({},e),{modules:e.modules.map(((e,t)=>{if(t===this._selectedLayoutModuleIndex){const t=e;return Object.assign(Object.assign({},t),{modules:[...t.modules||[],n]})}return e}))}):e))}):e))}:{rows:t.rows.map(((e,t)=>t===this._selectedRowIndex?Object.assign(Object.assign({},e),{columns:e.columns.map(((e,t)=>t===this._selectedColumnIndex?Object.assign(Object.assign({},e),{modules:[...e.modules||[],n]}):e))}):e))},this._updateLayout(a),this._showModuleSelector=!1,this._shouldAutoOpenSettings(e))if(this._selectedLayoutModuleIndex>=0);else{const e=i.modules.length;this._openModuleSettings(this._selectedRowIndex,this._selectedColumnIndex,e)}this._selectedRowIndex=-1,this._selectedColumnIndex=-1,this._selectedLayoutModuleIndex=-1,console.log("Module added successfully")}_duplicateModule(e,t,o){console.log("Duplicating module:",e,t,o);const i=this._ensureLayout(),n=i.rows[e];if(!n||!n.columns[t])return;const a=n.columns[t];if(!a.modules||!a.modules[o])return;const r=a.modules[o],l=Object.assign(Object.assign({},JSON.parse(JSON.stringify(r))),{id:`${r.type}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`}),s={rows:i.rows.map(((i,n)=>n===e?Object.assign(Object.assign({},i),{columns:i.columns.map(((e,i)=>{if(i===t){const t=[...e.modules];return t.splice(o+1,0,l),Object.assign(Object.assign({},e),{modules:t})}return e}))}):i))};this._updateLayout(s),console.log("Module duplicated successfully")}_deleteModule(e,t,o){console.log("Deleting module:",e,t,o);const i=this._ensureLayout(),n=i.rows[e];if(!n||!n.columns[t])return;const a=n.columns[t];if(!a.modules||!a.modules[o])return;const r={rows:i.rows.map(((i,n)=>n===e?Object.assign(Object.assign({},i),{columns:i.columns.map(((e,i)=>i===t?Object.assign(Object.assign({},e),{modules:e.modules.filter(((e,t)=>t!==o))}):e))}):i))};this._updateLayout(r),console.log("Module deleted successfully")}_openModuleSettings(e,t,o){this._selectedModule={rowIndex:e,columnIndex:t,moduleIndex:o},this._showModuleSettings=!0}_updateModule(e){if(console.log("🔄 LayoutTab: _updateModule called with updates:",e),!this._selectedModule)return void console.log("🔄 LayoutTab: No selected module, returning early");const t=this._ensureLayout(),{rowIndex:o,columnIndex:i,moduleIndex:n}=this._selectedModule;console.log(`🔄 LayoutTab: Updating module at row ${o}, column ${i}, module ${n}`);const a={rows:t.rows.map(((t,a)=>a===o?Object.assign(Object.assign({},t),{columns:t.columns.map(((t,o)=>o===i?Object.assign(Object.assign({},t),{modules:t.modules.map(((t,o)=>{if(o===n){console.log("🔄 LayoutTab: Original module:",t);const o=Object.assign({},t);for(const[t,i]of Object.entries(e))void 0===i?(console.log(`🔄 LayoutTab: DELETING property ${t} from module`),delete o[t]):(console.log(`🔄 LayoutTab: SETTING property ${t} =`,i),o[t]=i);return console.log("🔄 LayoutTab: Updated module:",o),o}return t}))}):t))}):t))};console.log("🔄 LayoutTab: Calling _updateLayout with new layout"),this._updateLayout(a),console.log("🔄 LayoutTab: Layout updated successfully")}_updateLayoutChildModule(e){if(console.log("🔄 LayoutTab: _updateLayoutChildModule called with updates:",e),!this._selectedLayoutChild)return void console.log("🔄 LayoutTab: No selected layout child, returning early");const{parentRowIndex:t,parentColumnIndex:o,parentModuleIndex:i,childIndex:n}=this._selectedLayoutChild,a=this._ensureLayout(),r=JSON.parse(JSON.stringify(a)),l=r.rows[t];if(!l||!l.columns[o])return;const s=l.columns[o];if(!s.modules||!s.modules[i])return;const d=s.modules[i];if(!d.modules||!d.modules[n])return;const c=d.modules[n];console.log("🔄 LayoutTab: Original child module:",c);const p=Object.assign({},c);for(const[t,o]of Object.entries(e))void 0===o?(console.log(`🔄 LayoutTab: DELETING property ${t} from child module`),delete p[t]):(console.log(`🔄 LayoutTab: SETTING child module property ${t} =`,o),p[t]=o);d.modules[n]=p,console.log("🔄 LayoutTab: Updated child module:",p),this._updateLayout(r),console.log("🔄 LayoutTab: Layout child module updated successfully")}_updateModuleDesign(e){var t,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f;if(console.log("🔄 LayoutTab: _updateModuleDesign called with updates:",e),console.log("🔄 LayoutTab: _selectedModule:",this._selectedModule),!this._selectedModule)return void console.log("🔄 LayoutTab: No selected module, returning early");const y={};if(e.hasOwnProperty("color")&&(y.color=e.color),e.hasOwnProperty("text_align")&&(y.text_align=e.text_align),e.hasOwnProperty("font_size")&&(y.font_size=e.font_size?parseFloat(e.font_size):void 0),e.hasOwnProperty("line_height")&&(y.line_height=e.line_height),e.hasOwnProperty("letter_spacing")&&(y.letter_spacing=e.letter_spacing),e.hasOwnProperty("font_family")&&(y.font_family=e.font_family),e.hasOwnProperty("font_weight")&&(y.font_weight=e.font_weight),e.hasOwnProperty("text_transform")&&(y.text_transform=e.text_transform),e.hasOwnProperty("font_style")&&(y.font_style=e.font_style),e.hasOwnProperty("background_color")&&(y.background_color=e.background_color),e.hasOwnProperty("background_image")&&(y.background_image=e.background_image),e.hasOwnProperty("background_image_type")&&(y.background_image_type=e.background_image_type),e.hasOwnProperty("background_image_entity")&&(y.background_image_entity=e.background_image_entity),e.hasOwnProperty("backdrop_filter")&&(y.backdrop_filter=e.backdrop_filter),e.hasOwnProperty("width")&&(y.width=e.width),e.hasOwnProperty("height")&&(y.height=e.height),e.hasOwnProperty("max_width")&&(y.max_width=e.max_width),e.hasOwnProperty("max_height")&&(y.max_height=e.max_height),e.hasOwnProperty("min_width")&&(y.min_width=e.min_width),e.hasOwnProperty("min_height")&&(y.min_height=e.min_height),e.hasOwnProperty("position")&&(y.position=e.position),e.hasOwnProperty("top")&&(y.top=e.top),e.hasOwnProperty("bottom")&&(y.bottom=e.bottom),e.hasOwnProperty("left")&&(y.left=e.left),e.hasOwnProperty("right")&&(y.right=e.right),e.hasOwnProperty("z_index")&&(y.z_index=e.z_index),e.hasOwnProperty("text_shadow_h")&&(y.text_shadow_h=e.text_shadow_h),e.hasOwnProperty("text_shadow_v")&&(y.text_shadow_v=e.text_shadow_v),e.hasOwnProperty("text_shadow_blur")&&(y.text_shadow_blur=e.text_shadow_blur),e.hasOwnProperty("text_shadow_color")&&(y.text_shadow_color=e.text_shadow_color),e.hasOwnProperty("box_shadow_h")&&(y.box_shadow_h=e.box_shadow_h),e.hasOwnProperty("box_shadow_v")&&(y.box_shadow_v=e.box_shadow_v),e.hasOwnProperty("box_shadow_blur")&&(y.box_shadow_blur=e.box_shadow_blur),e.hasOwnProperty("box_shadow_spread")&&(y.box_shadow_spread=e.box_shadow_spread),e.hasOwnProperty("box_shadow_color")&&(y.box_shadow_color=e.box_shadow_color),e.hasOwnProperty("overflow")&&(y.overflow=e.overflow),e.hasOwnProperty("clip_path")&&(y.clip_path=e.clip_path),e.hasOwnProperty("margin_top")&&(y.margin_top=e.margin_top),e.hasOwnProperty("margin_bottom")&&(y.margin_bottom=e.margin_bottom),e.hasOwnProperty("margin_left")&&(y.margin_left=e.margin_left),e.hasOwnProperty("margin_right")&&(y.margin_right=e.margin_right),e.hasOwnProperty("padding_top")&&(y.padding_top=e.padding_top),e.hasOwnProperty("padding_bottom")&&(y.padding_bottom=e.padding_bottom),e.hasOwnProperty("padding_left")&&(y.padding_left=e.padding_left),e.hasOwnProperty("padding_right")&&(y.padding_right=e.padding_right),e.hasOwnProperty("border_radius")&&(y.border_radius=e.border_radius),e.hasOwnProperty("border_style")&&(y.border_style=e.border_style),e.hasOwnProperty("border_width")&&(y.border_width=e.border_width),e.hasOwnProperty("border_color")&&(y.border_color=e.border_color),e.hasOwnProperty("animation_type")&&(y.animation_type=e.animation_type),e.hasOwnProperty("animation_entity")&&(y.animation_entity=e.animation_entity),e.hasOwnProperty("animation_trigger_type")&&(y.animation_trigger_type=e.animation_trigger_type),e.hasOwnProperty("animation_attribute")&&(y.animation_attribute=e.animation_attribute),e.hasOwnProperty("animation_state")&&(y.animation_state=e.animation_state),e.hasOwnProperty("intro_animation")&&(y.intro_animation=e.intro_animation),e.hasOwnProperty("outro_animation")&&(y.outro_animation=e.outro_animation),e.hasOwnProperty("animation_duration")&&(y.animation_duration=e.animation_duration),e.hasOwnProperty("animation_delay")&&(y.animation_delay=e.animation_delay),e.hasOwnProperty("animation_timing")&&(y.animation_timing=e.animation_timing),e.hasOwnProperty("margin_top")||e.hasOwnProperty("margin_bottom")||e.hasOwnProperty("margin_left")||e.hasOwnProperty("margin_right")){const{rowIndex:l,columnIndex:s,moduleIndex:d}=this._selectedModule,c=null===(o=null===(t=this._ensureLayout().rows[l])||void 0===t?void 0:t.columns[s])||void 0===o?void 0:o.modules[d];if(c){const t=e.hasOwnProperty("margin_top")?e.margin_top:null===(i=c.margin)||void 0===i?void 0:i.top,o=e.hasOwnProperty("margin_bottom")?e.margin_bottom:null===(n=c.margin)||void 0===n?void 0:n.bottom,l=e.hasOwnProperty("margin_left")?e.margin_left:null===(a=c.margin)||void 0===a?void 0:a.left,s=e.hasOwnProperty("margin_right")?e.margin_right:null===(r=c.margin)||void 0===r?void 0:r.right;if(void 0===t&&void 0===o&&void 0===l&&void 0===s)y.margin=void 0;else{const e=c.margin||{};y.margin={top:void 0!==t?parseFloat(t)||0:e.top||0,bottom:void 0!==o?parseFloat(o)||0:e.bottom||0,left:void 0!==l?parseFloat(l)||0:e.left||0,right:void 0!==s?parseFloat(s)||0:e.right||0}}}}if(e.hasOwnProperty("padding_top")||e.hasOwnProperty("padding_bottom")||e.hasOwnProperty("padding_left")||e.hasOwnProperty("padding_right")){const{rowIndex:t,columnIndex:o,moduleIndex:i}=this._selectedModule,n=null===(s=null===(l=this._ensureLayout().rows[t])||void 0===l?void 0:l.columns[o])||void 0===s?void 0:s.modules[i];if(n){const t=e.hasOwnProperty("padding_top")?e.padding_top:null===(d=n.padding)||void 0===d?void 0:d.top,o=e.hasOwnProperty("padding_bottom")?e.padding_bottom:null===(c=n.padding)||void 0===c?void 0:c.bottom,i=e.hasOwnProperty("padding_left")?e.padding_left:null===(p=n.padding)||void 0===p?void 0:p.left,a=e.hasOwnProperty("padding_right")?e.padding_right:null===(u=n.padding)||void 0===u?void 0:u.right;if(void 0===t&&void 0===o&&void 0===i&&void 0===a)y.padding=void 0;else{const e=n.padding||{};y.padding={top:void 0!==t?parseFloat(t)||0:e.top||0,bottom:void 0!==o?parseFloat(o)||0:e.bottom||0,left:void 0!==i?parseFloat(i)||0:e.left||0,right:void 0!==a?parseFloat(a)||0:e.right||0}}}}if(e.hasOwnProperty("border_radius")||e.hasOwnProperty("border_style")||e.hasOwnProperty("border_width")||e.hasOwnProperty("border_color")){const{rowIndex:t,columnIndex:o,moduleIndex:i}=this._selectedModule,n=null===(g=null===(m=this._ensureLayout().rows[t])||void 0===m?void 0:m.columns[o])||void 0===g?void 0:g.modules[i];if(n){const t=e.hasOwnProperty("border_radius")?e.border_radius:null===(h=n.border)||void 0===h?void 0:h.radius,o=e.hasOwnProperty("border_style")?e.border_style:null===(v=n.border)||void 0===v?void 0:v.style,i=e.hasOwnProperty("border_width")?e.border_width:null===(b=n.border)||void 0===b?void 0:b.width,a=e.hasOwnProperty("border_color")?e.border_color:null===(f=n.border)||void 0===f?void 0:f.color;if(void 0===t&&void 0===o&&void 0===i&&void 0===a)y.border=void 0;else{const e=n.border||{};y.border={radius:void 0!==t?parseFloat(t)||0:e.radius||0,style:void 0!==o?o:e.style||"none",width:void 0!==i?i:e.width||"1px",color:void 0!==a?a:e.color||"var(--divider-color)"}}}}console.log("🔄 LayoutTab: Final moduleUpdates being applied:",y),this._updateModule(y),console.log("🔄 LayoutTab: _updateModule called successfully")}_closeModuleSettings(){this._showModuleSettings=!1,this._selectedModule=null,this.requestUpdate()}_closeLayoutChildSettings(){this._showLayoutChildSettings=!1,this._selectedLayoutChild=null,this.requestUpdate()}_onDragStart(e,t,o,i,n){var a,r,l;if(!e.dataTransfer)return;e.stopPropagation();const s=this._ensureLayout();let d;switch(t){case"module":void 0!==i&&void 0!==n&&(d=null===(r=null===(a=s.rows[o])||void 0===a?void 0:a.columns[i])||void 0===r?void 0:r.modules[n]);break;case"column":void 0!==i&&(d=null===(l=s.rows[o])||void 0===l?void 0:l.columns[i]);break;case"row":d=s.rows[o]}this._draggedItem={type:t,rowIndex:o,columnIndex:i,moduleIndex:n,data:d},e.dataTransfer.effectAllowed="move",e.dataTransfer.setData("text/plain",JSON.stringify({type:t,rowIndex:o,columnIndex:i,moduleIndex:n}));const c=e.currentTarget;c&&(c.style.opacity="0.6",c.style.transform="scale(0.95)"),"column"===t?this.setAttribute("dragging-column",""):"row"===t&&this.setAttribute("dragging-row","")}_onDragEnd(e){const t=e.currentTarget;t&&(t.style.opacity="",t.style.transform=""),this.removeAttribute("dragging-column"),this.removeAttribute("dragging-row"),this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}_onDragOver(e){this._draggedItem&&(e.preventDefault(),e.stopPropagation(),e.dataTransfer&&(e.dataTransfer.dropEffect="move"))}_onDragEnter(e,t,o,i,n){if(e.preventDefault(),e.stopPropagation(),!this._draggedItem)return;if(this._draggedItem.type===t&&this._draggedItem.rowIndex===o&&this._draggedItem.columnIndex===i&&this._draggedItem.moduleIndex===n)return;if(void 0!==this._draggedItem.layoutChildIndex&&"layout"===t&&this._draggedItem.rowIndex===o&&this._draggedItem.columnIndex===i&&this._draggedItem.moduleIndex===n)return;if(!this._isValidDropTarget(this._draggedItem.type,t))return;this._dropTarget={type:t,rowIndex:o,columnIndex:i,moduleIndex:n};const a=e.currentTarget;a&&(a.style.borderColor="var(--primary-color)",a.style.backgroundColor="rgba(var(--rgb-primary-color), 0.1)"),this.requestUpdate()}_onDragLeave(e){const t=e.currentTarget;t&&(t.style.borderColor="",t.style.backgroundColor=""),e.relatedTarget&&e.currentTarget&&!e.currentTarget.contains(e.relatedTarget)&&(this._dropTarget=null,this.requestUpdate())}_onDrop(e,t,o,i,n){e.preventDefault(),e.stopPropagation();const a=e.currentTarget;a&&(a.style.borderColor="",a.style.backgroundColor=""),this._draggedItem&&(this._draggedItem.type===t&&this._draggedItem.rowIndex===o&&this._draggedItem.columnIndex===i&&this._draggedItem.moduleIndex===n||this._isValidDropTarget(this._draggedItem.type,t)&&(this._performMove(this._draggedItem,{type:t,rowIndex:o,columnIndex:i,moduleIndex:n}),this._draggedItem=null,this._dropTarget=null,this.requestUpdate()))}_isValidDropTarget(e,t){var o;return(null===(o={module:["module","column","layout","layout-child"],column:["column","row"],row:["row"]}[e])||void 0===o?void 0:o.includes(t))||!1}_performMove(e,t){const o=this._ensureLayout(),i=JSON.parse(JSON.stringify(o));switch(e.type){case"module":this._moveModule(i,e,t);break;case"column":this._moveColumn(i,e,t);break;case"row":this._moveRow(i,e,t)}this._updateLayout(i)}_moveModule(e,t,o){let i;if(void 0!==t.layoutChildIndex&&"layout-child"===o.type){const i=t.rowIndex,n=t.columnIndex,a=t.moduleIndex,r=t.layoutChildIndex,l=o.rowIndex,s=o.columnIndex,d=o.moduleIndex,c=o.childIndex;if(i===l&&n===s&&a===d){if(r===c)return;const t=e.rows[i].columns[n].modules[a];if(t&&this._isLayoutModule(t.type)&&t.modules){const e=t.modules.splice(r,1)[0];let o=c;r<c&&(o=c-1),t.modules.splice(o,0,e)}return}}if(void 0!==t.layoutChildIndex){const o=e.rows[t.rowIndex].columns[t.columnIndex].modules[t.moduleIndex];i=o.modules[t.layoutChildIndex],o.modules.splice(t.layoutChildIndex,1)}else i=e.rows[t.rowIndex].columns[t.columnIndex].modules[t.moduleIndex];if("layout"!==o.type)if("layout-child"!==o.type)if(void 0===t.layoutChildIndex&&e.rows[t.rowIndex].columns[t.columnIndex].modules.splice(t.moduleIndex,1),"module"===o.type){let n=o.moduleIndex||0;t.rowIndex===o.rowIndex&&t.columnIndex===o.columnIndex&&o.moduleIndex>t.moduleIndex&&n--,e.rows[o.rowIndex].columns[o.columnIndex].modules.splice(n,0,i)}else"column"===o.type&&e.rows[o.rowIndex].columns[o.columnIndex].modules.push(i);else{const n=e.rows[o.rowIndex].columns[o.columnIndex].modules[o.moduleIndex];if(n&&this._isLayoutModule(n.type)){n.modules||(n.modules=[]);const a=o.childIndex||0;n.modules.splice(a,0,i),void 0===t.layoutChildIndex&&e.rows[t.rowIndex].columns[t.columnIndex].modules.splice(t.moduleIndex,1)}}else{const n=e.rows[o.rowIndex].columns[o.columnIndex].modules[o.moduleIndex];n&&this._isLayoutModule(n.type)&&(n.modules||(n.modules=[]),n.modules.push(i),void 0===t.layoutChildIndex&&e.rows[t.rowIndex].columns[t.columnIndex].modules.splice(t.moduleIndex,1))}}_moveColumn(e,t,o){const i=e.rows[t.rowIndex].columns[t.columnIndex];e.rows[t.rowIndex].columns.splice(t.columnIndex,1),"column"===o.type?e.rows[o.rowIndex].columns.splice(o.columnIndex||0,0,i):"row"===o.type&&e.rows[o.rowIndex].columns.push(i)}_moveRow(e,t,o){const i=e.rows[t.rowIndex];e.rows.splice(t.rowIndex,1);const n=o.rowIndex;e.rows.splice(n,0,i)}_openRowSettings(e){this._selectedRowForSettings=e,this._showRowSettings=!0}_updateRow(e){if(console.log("🔄 LayoutTab: _updateRow called with updates:",e),-1===this._selectedRowForSettings)return void console.log("🔄 LayoutTab: No selected row for settings, returning early");const t=this._ensureLayout(),o=JSON.parse(JSON.stringify(t)),i=o.rows[this._selectedRowForSettings];console.log("🔄 LayoutTab: Original row:",i);for(const[t,o]of Object.entries(e))void 0===o?(console.log(`🔄 LayoutTab: DELETING property ${t} from row`),delete i[t]):(console.log(`🔄 LayoutTab: SETTING row property ${t} =`,o),i[t]=o);console.log("🔄 LayoutTab: Updated row:",i),this._updateLayout(o),console.log("🔄 LayoutTab: Row updated successfully")}_openColumnSettings(e,t){this._selectedColumnForSettings={rowIndex:e,columnIndex:t},this._showColumnSettings=!0}_updateColumn(e){if(console.log("🔄 LayoutTab: _updateColumn called with updates:",e),!this._selectedColumnForSettings)return void console.log("🔄 LayoutTab: No selected column for settings, returning early");const t=this._ensureLayout(),o=JSON.parse(JSON.stringify(t)),i=o.rows[this._selectedColumnForSettings.rowIndex].columns[this._selectedColumnForSettings.columnIndex];console.log("🔄 LayoutTab: Original column:",i);for(const[t,o]of Object.entries(e))void 0===o?(console.log(`🔄 LayoutTab: DELETING property ${t} from column`),delete i[t]):(console.log(`🔄 LayoutTab: SETTING column property ${t} =`,o),i[t]=o);console.log("🔄 LayoutTab: Updated column:",i),this._updateLayout(o),console.log("🔄 LayoutTab: Column updated successfully")}_loadGoogleFont(e){if(!e||"default"===e||gt.some((t=>t.value===e)))return;if(document.querySelector(`link[href*="${e.replace(/\s+/g,"+")}"]`))return;const t=document.createElement("link");t.rel="stylesheet",t.href=`https://fonts.googleapis.com/css2?family=${e.replace(/\s+/g,"+")}:wght@300;400;500;600;700&display=swap`,document.head.appendChild(t)}_renderModulePreview(){var e,t,o;if(!this._selectedModule)return V``;const{rowIndex:i,columnIndex:n,moduleIndex:a}=this._selectedModule,r=null===(o=null===(t=null===(e=this.config.layout)||void 0===e?void 0:e.rows[i])||void 0===t?void 0:t.columns[n])||void 0===o?void 0:o.modules[a];return r?V`
+    `}};de.CLIPBOARD_KEY="ultra-card-design-clipboard",de._lastAnimationTriggerType=null,se([mt({attribute:!1})],de.prototype,"hass",void 0),se([mt({attribute:!1})],de.prototype,"designProperties",void 0),se([mt({type:Function})],de.prototype,"onUpdate",void 0),se([gt()],de.prototype,"_expandedSections",void 0),se([gt()],de.prototype,"_marginLocked",void 0),se([gt()],de.prototype,"_paddingLocked",void 0),se([gt()],de.prototype,"_clipboardProperties",void 0),de=le=se([ct("ultra-global-design-tab")],de);var ce=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};const pe=[{value:"default",label:"– Default –",category:"default"}],ue=[{value:"Montserrat",label:"Montserrat (used as default font)",category:"typography"}],me=[{value:"Georgia, serif",label:"Georgia, serif",category:"websafe"},{value:"Palatino Linotype, Book Antiqua, Palatino, serif",label:"Palatino Linotype, Book Antiqua, Palatino, serif",category:"websafe"},{value:"Times New Roman, Times, serif",label:"Times New Roman, Times, serif",category:"websafe"},{value:"Arial, Helvetica, sans-serif",label:"Arial, Helvetica, sans-serif",category:"websafe"},{value:"Impact, Charcoal, sans-serif",label:"Impact, Charcoal, sans-serif",category:"websafe"},{value:"Lucida Sans Unicode, Lucida Grande, sans-serif",label:"Lucida Sans Unicode, Lucida Grande, sans-serif",category:"websafe"},{value:"Tahoma, Geneva, sans-serif",label:"Tahoma, Geneva, sans-serif",category:"websafe"},{value:"Trebuchet MS, Helvetica, sans-serif",label:"Trebuchet MS, Helvetica, sans-serif",category:"websafe"},{value:"Verdana, Geneva, sans-serif",label:"Verdana, Geneva, sans-serif",category:"websafe"},{value:"Courier New, Courier, monospace",label:"Courier New, Courier, monospace",category:"websafe"},{value:"Lucida Console, Monaco, monospace",label:"Lucida Console, Monaco, monospace",category:"websafe"}];let ge=class extends st{constructor(){super(...arguments),this._showModuleSelector=!1,this._selectedRowIndex=-1,this._selectedColumnIndex=-1,this._showModuleSettings=!1,this._selectedModule=null,this._activeModuleTab="general",this._activeDesignSubtab="text",this._showRowSettings=!1,this._selectedRowForSettings=-1,this._activeRowTab="general",this._showColumnSettings=!1,this._selectedColumnForSettings=null,this._activeColumnTab="general",this._showColumnLayoutSelector=!1,this._selectedRowForLayout=-1,this._draggedItem=null,this._dropTarget=null,this._selectedLayoutModuleIndex=-1,this._showLayoutChildSettings=!1,this._selectedLayoutChild=null,this._collapsedRows=new Set,this._collapsedColumns=new Set,this.COLUMN_LAYOUTS=[{id:"1-col",name:"1",proportions:[1],columnCount:1},{id:"1-2-1-2",name:"1/2 + 1/2",proportions:[1,1],columnCount:2},{id:"1-3-2-3",name:"1/3 + 2/3",proportions:[1,2],columnCount:2},{id:"2-3-1-3",name:"2/3 + 1/3",proportions:[2,1],columnCount:2},{id:"2-5-3-5",name:"2/5 + 3/5",proportions:[2,3],columnCount:2},{id:"3-5-2-5",name:"3/5 + 2/5",proportions:[3,2],columnCount:2},{id:"1-3-1-3-1-3",name:"1/3 + 1/3 + 1/3",proportions:[1,1,1],columnCount:3},{id:"1-4-1-2-1-4",name:"1/4 + 1/2 + 1/4",proportions:[1,2,1],columnCount:3},{id:"1-5-3-5-1-5",name:"1/5 + 3/5 + 1/5",proportions:[1,3,1],columnCount:3},{id:"1-6-2-3-1-6",name:"1/6 + 2/3 + 1/6",proportions:[1,4,1],columnCount:3},{id:"1-4-1-4-1-4-1-4",name:"1/4 + 1/4 + 1/4 + 1/4",proportions:[1,1,1,1],columnCount:4},{id:"1-5-1-5-1-5-1-5",name:"1/5 + 1/5 + 1/5 + 1/5",proportions:[1,1,1,1],columnCount:4},{id:"1-6-1-6-1-6-1-6",name:"1/6 + 1/6 + 1/6 + 1/6",proportions:[1,1,1,1],columnCount:4},{id:"1-8-1-4-1-4-1-8",name:"1/8 + 1/4 + 1/4 + 1/8",proportions:[1,2,2,1],columnCount:4},{id:"1-5-1-5-1-5-1-5-1-5",name:"1/5 + 1/5 + 1/5 + 1/5 + 1/5",proportions:[1,1,1,1,1],columnCount:5},{id:"1-6-1-6-1-3-1-6-1-6",name:"1/6 + 1/6 + 1/3 + 1/6 + 1/6",proportions:[1,1,2,1,1],columnCount:5},{id:"1-8-1-4-1-4-1-4-1-8",name:"1/8 + 1/4 + 1/4 + 1/4 + 1/8",proportions:[1,2,2,2,1],columnCount:5},{id:"1-6-1-6-1-6-1-6-1-6-1-6",name:"1/6 + 1/6 + 1/6 + 1/6 + 1/6 + 1/6",proportions:[1,1,1,1,1,1],columnCount:6}]}_createColumnIconHTML(t){const e=t.reduce(((t,e)=>t+e),0);return`<div style="display: flex; width: 100%; height: 16px; gap: 2px;">${t.map(((t,o)=>`<div style="width: ${t/e*100}%; height: 16px; background: #2196F3; border-radius: 2px; ${o>0?"margin-left: 2px;":""}"></div>`)).join("")}</div>`}_createSimpleIcon(t){return t.map((t=>"█".repeat(t))).join(" ")}_getLayoutsForColumnCount(t){const e=Math.min(t,6);return this.COLUMN_LAYOUTS.filter((t=>t.columnCount===e))}_migrateLegacyLayoutId(t){return{"50-50":"1-2-1-2","30-70":"1-3-2-3","70-30":"2-3-1-3","33-33-33":"1-3-1-3-1-3","25-50-25":"1-4-1-2-1-4","20-60-20":"1-5-3-5-1-5","25-25-25-25":"1-4-1-4-1-4-1-4"}[t]||t}_ensureLayout(){return this.config.layout&&this.config.layout.rows?this._migrateLayoutNames(this.config.layout):{rows:[{id:`row-${Date.now()}`,row_name:"Row 1",columns:[{id:`col-${Date.now()}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:"Column 1"}],column_layout:"1-col"}]}}_migrateLayoutNames(t){return{rows:t.rows.map(((t,e)=>{const o=t,i=Object.assign(Object.assign({},o),{row_name:o.row_name||`Row ${e+1}`});if(t.columns){const e=t.columns.map(((t,e)=>{const o=t;return Object.assign(Object.assign({},o),{column_name:o.column_name||`Column ${e+1}`})}));i.columns=e}return i}))}}_updateConfig(t){const e=Object.assign(Object.assign({},this.config),t),o=new CustomEvent("config-changed",{detail:{config:e},bubbles:!0,composed:!0});this.dispatchEvent(o)}_updateLayout(t){this._updateConfig({layout:t})}_toggleRowCollapse(t){this._collapsedRows.has(t)?this._collapsedRows.delete(t):this._collapsedRows.add(t),this._collapsedRows=new Set(this._collapsedRows),this._saveCollapseState()}_toggleColumnCollapse(t,e){const o=`${t}-${e}`;this._collapsedColumns.has(o)?this._collapsedColumns.delete(o):this._collapsedColumns.add(o),this._collapsedColumns=new Set(this._collapsedColumns),this._saveCollapseState()}_isRowCollapsed(t){return this._collapsedRows.has(t)}_isColumnCollapsed(t,e){const o=`${t}-${e}`;return this._collapsedColumns.has(o)}_saveCollapseState(){try{const t={collapsedRows:Array.from(this._collapsedRows),collapsedColumns:Array.from(this._collapsedColumns)};localStorage.setItem("ultra-card-layout-collapse-state",JSON.stringify(t))}catch(t){console.warn("Failed to save collapse state:",t)}}_loadCollapseState(){try{const t=localStorage.getItem("ultra-card-layout-collapse-state");if(t){const e=JSON.parse(t);this._collapsedRows=new Set(e.collapsedRows||[]),this._collapsedColumns=new Set(e.collapsedColumns||[])}}catch(t){console.warn("Failed to load collapse state:",t)}}_addRow(){console.log("Adding new row...");const t=this._ensureLayout(),e=t.rows.length,o={id:`row-${Date.now()}`,columns:[],column_layout:"1-col",row_name:`Row ${e+1}`},i={rows:[...t.rows,o]};this._updateLayout(i),console.log("Row added successfully (empty row)")}_deleteRow(t){console.log("Deleting row:",t);const e=this._ensureLayout();if(e.rows.length>1){const o={rows:e.rows.filter(((e,o)=>o!==t))};this._updateLayout(o),console.log("Row deleted successfully")}else console.log("Cannot delete the last remaining row")}_duplicateRow(t){console.log("Duplicating row:",t);const e=this._ensureLayout(),o=e.rows[t];if(!o)return void console.error("Row to copy not found at index:",t);const i=t+1,n=Object.assign(Object.assign({},JSON.parse(JSON.stringify(o))),{id:`row-${Date.now()}`,row_name:`Row ${i+1}`,columns:o.columns.map(((t,e)=>Object.assign(Object.assign({},JSON.parse(JSON.stringify(t))),{id:`col-${Date.now()}-${e}-${Math.random().toString(36).substr(2,9)}`,column_name:`Column ${e+1}`,modules:t.modules.map(((t,e)=>Object.assign(Object.assign({},JSON.parse(JSON.stringify(t))),{id:`${t.type}-${Date.now()}-${e}-${Math.random().toString(36).substr(2,9)}`})))})))}),a=JSON.parse(JSON.stringify(e));a.rows.splice(t+1,0,n),this._updateLayout(a),console.log("Row duplicated successfully. New layout has",a.rows.length,"rows")}_addColumn(t){console.log("Adding column to row:",t);const e=this._ensureLayout(),o=e.rows[t];if(!o)return void console.error("Row not found at index:",t);if(o.columns.length>=6)return void console.log("Cannot add more than 6 columns to a row");const i=o.columns.length,n={id:`col-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${i+1}`},a={rows:e.rows.map(((e,o)=>o===t?Object.assign(Object.assign({},e),{columns:[...e.columns,n]}):e))};this._updateLayout(a),console.log("Column added successfully. Row now has",a.rows[t].columns.length,"columns")}_addColumnAfter(t,e){console.log("Adding column after:",t,e);const o=this._ensureLayout(),i=o.rows[t];if(!i)return;if(i.columns.length>=6)return void console.log("Cannot add more than 6 columns to a row");const n=e+1,a={id:`col-${Date.now()}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${n+1}`},r={rows:o.rows.map(((o,i)=>{if(i===t){const t=[...o.columns];return t.splice(e+1,0,a),Object.assign(Object.assign({},o),{columns:t})}return o}))};this._updateLayout(r),console.log("Column added after successfully")}_duplicateColumn(t,e){console.log("Duplicating column:",t,e);const o=this._ensureLayout(),i=o.rows[t];if(!i||!i.columns[e])return void console.error("Row or column not found:",t,e);if(i.columns.length>=6)return void console.log("Cannot duplicate column: maximum 6 columns already reached");const n=i.columns[e],a=e+1,r=Object.assign(Object.assign({},JSON.parse(JSON.stringify(n))),{id:`col-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,column_name:`Column ${a+1}`,modules:n.modules.map(((t,e)=>Object.assign(Object.assign({},JSON.parse(JSON.stringify(t))),{id:`${t.type}-${Date.now()}-${e}-${Math.random().toString(36).substr(2,9)}`})))}),l=JSON.parse(JSON.stringify(o));l.rows[t].columns.splice(e+1,0,r),this._updateLayout(l),console.log("Column duplicated successfully. Row now has",l.rows[t].columns.length,"columns")}_deleteColumn(t,e){console.log("Deleting column:",t,e);const o=this._ensureLayout(),i=o.rows[t];if(!i)return void console.error("Row not found at index:",t);if(!i.columns[e])return void console.error("Column not found at index:",e);const n={rows:o.rows.map(((o,i)=>i===t?Object.assign(Object.assign({},o),{columns:o.columns.filter(((t,o)=>o!==e))}):o))};this._updateLayout(n),console.log("Column deleted successfully. Row now has",n.rows[t].columns.length,"columns")}_openColumnLayoutSelector(t){this._selectedRowForLayout=t,this._showColumnLayoutSelector=!0}_changeColumnLayout(t){if(-1===this._selectedRowForLayout)return;const e=this._ensureLayout(),o=e.rows[this._selectedRowForLayout];if(!o)return;const i=this.COLUMN_LAYOUTS.find((e=>e.id===t));if(!i)return;const n=i.columnCount,a=o.columns.length;console.log(`Changing layout from ${a} to ${n} columns`);const r=JSON.parse(JSON.stringify(e)),l=r.rows[this._selectedRowForLayout];if(n===a)l.column_layout=t;else if(n>a){const e=[...l.columns];for(let t=a;t<n;t++)e.push({id:`col-${Date.now()}-${t}-${Math.random().toString(36).substr(2,9)}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${t+1}`});l.columns=e,l.column_layout=t}else{const e=[],o=[];l.columns.forEach((t=>{t.modules&&t.modules.length>0&&o.push(...t.modules)}));for(let t=0;t<n;t++)t<a?e.push(Object.assign(Object.assign({},l.columns[t]),{modules:[]})):e.push({id:`col-${Date.now()}-${t}-${Math.random().toString(36).substr(2,9)}`,modules:[],vertical_alignment:"center",horizontal_alignment:"center",column_name:`Column ${t+1}`});o.length>0&&(1===n?e[0].modules=o:o.forEach(((t,o)=>{e[o%n].modules.push(t)}))),l.columns=e,l.column_layout=t}this._updateLayout(r),console.log(`Layout changed successfully. Row now has ${n} columns`),this._showColumnLayoutSelector=!1,this._selectedRowForLayout=-1}_getCurrentLayoutDisplay(t){const e=t.columns.length,o=t.column_layout,i=this.COLUMN_LAYOUTS.find((t=>t.id===o));if(i)return this._createSimpleIcon(i.proportions);switch(e){case 1:return"█";case 2:return"█ █";case 3:return"█ █ █";case 4:return"█ █ █ █";default:return"█ ".repeat(Math.min(e,6)).trim()}}_openModuleSelector(t,e){console.log("Opening module selector for:",{rowIndex:t,columnIndex:e});const o=this._ensureLayout().rows[t];o&&o.columns&&0!==o.columns.length||(console.log("Row has no columns, automatically adding one"),this._addColumn(t),e=0),this._selectedRowIndex=t,this._selectedColumnIndex=e,this._selectedLayoutModuleIndex=-1,this._showModuleSelector=!0}_addModule(t){if(console.log("Adding module of type:",t),-1===this._selectedRowIndex||-1===this._selectedColumnIndex)return void console.error("No row or column selected");const e=this._ensureLayout();if(!e.rows[this._selectedRowIndex])return void console.error("Selected row does not exist:",this._selectedRowIndex);const o=e.rows[this._selectedRowIndex];if(!o.columns[this._selectedColumnIndex])return void console.error("Selected column does not exist:",this._selectedColumnIndex);const i=o.columns[this._selectedColumnIndex];let n,a;switch(t){case"text":n={id:`text-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"text",text:"Sample Text",font_size:16,color:"var(--primary-text-color)"},delete n.name,delete n.title;break;case"separator":n={id:`separator-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"separator",thickness:1,color:"var(--divider-color)"},delete n.name,delete n.title,delete n.label;break;case"image":n={id:`image-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"image",image_type:"none"},delete n.name,delete n.title,delete n.label;break;case"markdown":n={id:`markdown-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"markdown",content:"This is a markdown module that supports:\n\n- Italic and bold text\n- Links\n- inline code\n- Lists and more!",markdown_content:"This is a markdown module that supports:\n\n- Italic and bold text\n- Links\n- inline code\n- Lists and more!"},delete n.name,delete n.title,delete n.label;break;case"bar":n={id:`bar-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"bar",entity:"sensor.battery_level",bar_color:"var(--primary-color)",show_value:!0},delete n.name,delete n.title,delete n.label;break;case"button":n={id:`button-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"button",label:"Click Me",button_text:"Click Me",tap_action:{action:"more-info"}},delete n.name,delete n.title;break;case"info":n={id:`info-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"info",info_entities:[{entity:"sensor.temperature",name:"Temperature",icon:"mdi:thermometer"}]},delete n.name,delete n.title,delete n.label;break;default:try{const e=Kt().createDefaultModule(t);if(e){n=e,delete n.name,delete n.title,delete n.label;break}}catch(t){console.error("Module registry failed:",t)}n={id:`text-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"text",text:"Unknown Module Type",font_size:16,color:"var(--primary-text-color)"}}if(console.log("Created module:",n),a=this._selectedLayoutModuleIndex>=0?{rows:e.rows.map(((t,e)=>e===this._selectedRowIndex?Object.assign(Object.assign({},t),{columns:t.columns.map(((t,e)=>e===this._selectedColumnIndex?Object.assign(Object.assign({},t),{modules:t.modules.map(((t,e)=>{if(e===this._selectedLayoutModuleIndex){const e=t;return Object.assign(Object.assign({},e),{modules:[...e.modules||[],n]})}return t}))}):t))}):t))}:{rows:e.rows.map(((t,e)=>e===this._selectedRowIndex?Object.assign(Object.assign({},t),{columns:t.columns.map(((t,e)=>e===this._selectedColumnIndex?Object.assign(Object.assign({},t),{modules:[...t.modules||[],n]}):t))}):t))},this._updateLayout(a),this._showModuleSelector=!1,this._shouldAutoOpenSettings(t))if(this._selectedLayoutModuleIndex>=0);else{const t=i.modules.length;this._openModuleSettings(this._selectedRowIndex,this._selectedColumnIndex,t)}this._selectedRowIndex=-1,this._selectedColumnIndex=-1,this._selectedLayoutModuleIndex=-1,console.log("Module added successfully")}_duplicateModule(t,e,o){console.log("Duplicating module:",t,e,o);const i=this._ensureLayout(),n=i.rows[t];if(!n||!n.columns[e])return;const a=n.columns[e];if(!a.modules||!a.modules[o])return;const r=a.modules[o],l=Object.assign(Object.assign({},JSON.parse(JSON.stringify(r))),{id:`${r.type}-${Date.now()}-${Math.random().toString(36).substr(2,9)}`}),s={rows:i.rows.map(((i,n)=>n===t?Object.assign(Object.assign({},i),{columns:i.columns.map(((t,i)=>{if(i===e){const e=[...t.modules];return e.splice(o+1,0,l),Object.assign(Object.assign({},t),{modules:e})}return t}))}):i))};this._updateLayout(s),console.log("Module duplicated successfully")}_deleteModule(t,e,o){if(console.log("Deleting module:",t,e,o),!confirm("Are you sure you want to delete this module?"))return;const i=this._ensureLayout(),n=i.rows[t];if(!n||!n.columns[e])return;const a=n.columns[e];if(!a.modules||!a.modules[o])return;const r={rows:i.rows.map(((i,n)=>n===t?Object.assign(Object.assign({},i),{columns:i.columns.map(((t,i)=>i===e?Object.assign(Object.assign({},t),{modules:t.modules.filter(((t,e)=>e!==o))}):t))}):i))};this._updateLayout(r),console.log("Module deleted successfully")}_openModuleSettings(t,e,o){this._selectedModule={rowIndex:t,columnIndex:e,moduleIndex:o},this._showModuleSettings=!0}_updateModule(t){if(console.log("🔄 LayoutTab: _updateModule called with updates:",t),!this._selectedModule)return void console.log("🔄 LayoutTab: No selected module, returning early");const e=this._ensureLayout(),{rowIndex:o,columnIndex:i,moduleIndex:n}=this._selectedModule;console.log(`🔄 LayoutTab: Updating module at row ${o}, column ${i}, module ${n}`);const a={rows:e.rows.map(((e,a)=>a===o?Object.assign(Object.assign({},e),{columns:e.columns.map(((e,o)=>o===i?Object.assign(Object.assign({},e),{modules:e.modules.map(((e,o)=>{if(o===n){console.log("🔄 LayoutTab: Original module:",e);const o=Object.assign({},e);for(const[e,i]of Object.entries(t))void 0===i?(console.log(`🔄 LayoutTab: DELETING property ${e} from module`),delete o[e]):(console.log(`🔄 LayoutTab: SETTING property ${e} =`,i),o[e]=i);return console.log("🔄 LayoutTab: Updated module:",o),o}return e}))}):e))}):e))};console.log("🔄 LayoutTab: Calling _updateLayout with new layout"),this._updateLayout(a),console.log("🔄 LayoutTab: Layout updated successfully")}_updateLayoutChildModule(t){if(console.log("🔄 LayoutTab: _updateLayoutChildModule called with updates:",t),!this._selectedLayoutChild)return void console.log("🔄 LayoutTab: No selected layout child, returning early");const{parentRowIndex:e,parentColumnIndex:o,parentModuleIndex:i,childIndex:n}=this._selectedLayoutChild,a=this._ensureLayout(),r=JSON.parse(JSON.stringify(a)),l=r.rows[e];if(!l||!l.columns[o])return;const s=l.columns[o];if(!s.modules||!s.modules[i])return;const d=s.modules[i];if(!d.modules||!d.modules[n])return;const c=d.modules[n];console.log("🔄 LayoutTab: Original child module:",c);const p=Object.assign({},c);for(const[e,o]of Object.entries(t))void 0===o?(console.log(`🔄 LayoutTab: DELETING property ${e} from child module`),delete p[e]):(console.log(`🔄 LayoutTab: SETTING child module property ${e} =`,o),p[e]=o);d.modules[n]=p,console.log("🔄 LayoutTab: Updated child module:",p),this._updateLayout(r),console.log("🔄 LayoutTab: Layout child module updated successfully")}_updateModuleDesign(t){var e,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f;if(console.log("🔄 LayoutTab: _updateModuleDesign called with updates:",t),console.log("🔄 LayoutTab: _selectedModule:",this._selectedModule),!this._selectedModule)return void console.log("🔄 LayoutTab: No selected module, returning early");const _={};if(t.hasOwnProperty("color")&&(_.color=t.color),t.hasOwnProperty("text_align")&&(_.text_align=t.text_align),t.hasOwnProperty("font_size")&&(_.font_size=t.font_size?parseFloat(t.font_size):void 0),t.hasOwnProperty("line_height")&&(_.line_height=t.line_height),t.hasOwnProperty("letter_spacing")&&(_.letter_spacing=t.letter_spacing),t.hasOwnProperty("font_family")&&(_.font_family=t.font_family),t.hasOwnProperty("font_weight")&&(_.font_weight=t.font_weight),t.hasOwnProperty("text_transform")&&(_.text_transform=t.text_transform),t.hasOwnProperty("font_style")&&(_.font_style=t.font_style),t.hasOwnProperty("background_color")&&(_.background_color=t.background_color),t.hasOwnProperty("background_image")&&(_.background_image=t.background_image),t.hasOwnProperty("background_image_type")&&(_.background_image_type=t.background_image_type),t.hasOwnProperty("background_image_entity")&&(_.background_image_entity=t.background_image_entity),t.hasOwnProperty("backdrop_filter")&&(_.backdrop_filter=t.backdrop_filter),t.hasOwnProperty("width")&&(_.width=t.width),t.hasOwnProperty("height")&&(_.height=t.height),t.hasOwnProperty("max_width")&&(_.max_width=t.max_width),t.hasOwnProperty("max_height")&&(_.max_height=t.max_height),t.hasOwnProperty("min_width")&&(_.min_width=t.min_width),t.hasOwnProperty("min_height")&&(_.min_height=t.min_height),t.hasOwnProperty("position")&&(_.position=t.position),t.hasOwnProperty("top")&&(_.top=t.top),t.hasOwnProperty("bottom")&&(_.bottom=t.bottom),t.hasOwnProperty("left")&&(_.left=t.left),t.hasOwnProperty("right")&&(_.right=t.right),t.hasOwnProperty("z_index")&&(_.z_index=t.z_index),t.hasOwnProperty("text_shadow_h")&&(_.text_shadow_h=t.text_shadow_h),t.hasOwnProperty("text_shadow_v")&&(_.text_shadow_v=t.text_shadow_v),t.hasOwnProperty("text_shadow_blur")&&(_.text_shadow_blur=t.text_shadow_blur),t.hasOwnProperty("text_shadow_color")&&(_.text_shadow_color=t.text_shadow_color),t.hasOwnProperty("box_shadow_h")&&(_.box_shadow_h=t.box_shadow_h),t.hasOwnProperty("box_shadow_v")&&(_.box_shadow_v=t.box_shadow_v),t.hasOwnProperty("box_shadow_blur")&&(_.box_shadow_blur=t.box_shadow_blur),t.hasOwnProperty("box_shadow_spread")&&(_.box_shadow_spread=t.box_shadow_spread),t.hasOwnProperty("box_shadow_color")&&(_.box_shadow_color=t.box_shadow_color),t.hasOwnProperty("overflow")&&(_.overflow=t.overflow),t.hasOwnProperty("clip_path")&&(_.clip_path=t.clip_path),t.hasOwnProperty("margin_top")&&(_.margin_top=t.margin_top),t.hasOwnProperty("margin_bottom")&&(_.margin_bottom=t.margin_bottom),t.hasOwnProperty("margin_left")&&(_.margin_left=t.margin_left),t.hasOwnProperty("margin_right")&&(_.margin_right=t.margin_right),t.hasOwnProperty("padding_top")&&(_.padding_top=t.padding_top),t.hasOwnProperty("padding_bottom")&&(_.padding_bottom=t.padding_bottom),t.hasOwnProperty("padding_left")&&(_.padding_left=t.padding_left),t.hasOwnProperty("padding_right")&&(_.padding_right=t.padding_right),t.hasOwnProperty("border_radius")&&(_.border_radius=t.border_radius),t.hasOwnProperty("border_style")&&(_.border_style=t.border_style),t.hasOwnProperty("border_width")&&(_.border_width=t.border_width),t.hasOwnProperty("border_color")&&(_.border_color=t.border_color),t.hasOwnProperty("animation_type")&&(_.animation_type=t.animation_type),t.hasOwnProperty("animation_entity")&&(_.animation_entity=t.animation_entity),t.hasOwnProperty("animation_trigger_type")&&(_.animation_trigger_type=t.animation_trigger_type),t.hasOwnProperty("animation_attribute")&&(_.animation_attribute=t.animation_attribute),t.hasOwnProperty("animation_state")&&(_.animation_state=t.animation_state),t.hasOwnProperty("intro_animation")&&(_.intro_animation=t.intro_animation),t.hasOwnProperty("outro_animation")&&(_.outro_animation=t.outro_animation),t.hasOwnProperty("animation_duration")&&(_.animation_duration=t.animation_duration),t.hasOwnProperty("animation_delay")&&(_.animation_delay=t.animation_delay),t.hasOwnProperty("animation_timing")&&(_.animation_timing=t.animation_timing),t.hasOwnProperty("margin_top")||t.hasOwnProperty("margin_bottom")||t.hasOwnProperty("margin_left")||t.hasOwnProperty("margin_right")){const{rowIndex:l,columnIndex:s,moduleIndex:d}=this._selectedModule,c=null===(o=null===(e=this._ensureLayout().rows[l])||void 0===e?void 0:e.columns[s])||void 0===o?void 0:o.modules[d];if(c){const e=t.hasOwnProperty("margin_top")?t.margin_top:null===(i=c.margin)||void 0===i?void 0:i.top,o=t.hasOwnProperty("margin_bottom")?t.margin_bottom:null===(n=c.margin)||void 0===n?void 0:n.bottom,l=t.hasOwnProperty("margin_left")?t.margin_left:null===(a=c.margin)||void 0===a?void 0:a.left,s=t.hasOwnProperty("margin_right")?t.margin_right:null===(r=c.margin)||void 0===r?void 0:r.right;if(void 0===e&&void 0===o&&void 0===l&&void 0===s)_.margin=void 0;else{const t=c.margin||{};_.margin={top:void 0!==e?parseFloat(e)||0:t.top||0,bottom:void 0!==o?parseFloat(o)||0:t.bottom||0,left:void 0!==l?parseFloat(l)||0:t.left||0,right:void 0!==s?parseFloat(s)||0:t.right||0}}}}if(t.hasOwnProperty("padding_top")||t.hasOwnProperty("padding_bottom")||t.hasOwnProperty("padding_left")||t.hasOwnProperty("padding_right")){const{rowIndex:e,columnIndex:o,moduleIndex:i}=this._selectedModule,n=null===(s=null===(l=this._ensureLayout().rows[e])||void 0===l?void 0:l.columns[o])||void 0===s?void 0:s.modules[i];if(n){const e=t.hasOwnProperty("padding_top")?t.padding_top:null===(d=n.padding)||void 0===d?void 0:d.top,o=t.hasOwnProperty("padding_bottom")?t.padding_bottom:null===(c=n.padding)||void 0===c?void 0:c.bottom,i=t.hasOwnProperty("padding_left")?t.padding_left:null===(p=n.padding)||void 0===p?void 0:p.left,a=t.hasOwnProperty("padding_right")?t.padding_right:null===(u=n.padding)||void 0===u?void 0:u.right;if(void 0===e&&void 0===o&&void 0===i&&void 0===a)_.padding=void 0;else{const t=n.padding||{};_.padding={top:void 0!==e?parseFloat(e)||0:t.top||0,bottom:void 0!==o?parseFloat(o)||0:t.bottom||0,left:void 0!==i?parseFloat(i)||0:t.left||0,right:void 0!==a?parseFloat(a)||0:t.right||0}}}}if(t.hasOwnProperty("border_radius")||t.hasOwnProperty("border_style")||t.hasOwnProperty("border_width")||t.hasOwnProperty("border_color")){const{rowIndex:e,columnIndex:o,moduleIndex:i}=this._selectedModule,n=null===(g=null===(m=this._ensureLayout().rows[e])||void 0===m?void 0:m.columns[o])||void 0===g?void 0:g.modules[i];if(n){const e=t.hasOwnProperty("border_radius")?t.border_radius:null===(h=n.border)||void 0===h?void 0:h.radius,o=t.hasOwnProperty("border_style")?t.border_style:null===(v=n.border)||void 0===v?void 0:v.style,i=t.hasOwnProperty("border_width")?t.border_width:null===(b=n.border)||void 0===b?void 0:b.width,a=t.hasOwnProperty("border_color")?t.border_color:null===(f=n.border)||void 0===f?void 0:f.color;if(void 0===e&&void 0===o&&void 0===i&&void 0===a)_.border=void 0;else{const t=n.border||{};_.border={radius:void 0!==e?parseFloat(e)||0:t.radius||0,style:void 0!==o?o:t.style||"none",width:void 0!==i?i:t.width||"1px",color:void 0!==a?a:t.color||"var(--divider-color)"}}}}console.log("🔄 LayoutTab: Final moduleUpdates being applied:",_),this._updateModule(_),console.log("🔄 LayoutTab: _updateModule called successfully")}_closeModuleSettings(){this._showModuleSettings=!1,this._selectedModule=null,this.requestUpdate()}_closeLayoutChildSettings(){this._showLayoutChildSettings=!1,this._selectedLayoutChild=null,this.requestUpdate()}_onDragStart(t,e,o,i,n){var a,r,l;if(!t.dataTransfer)return;t.stopPropagation();const s=this._ensureLayout();let d;switch(e){case"module":void 0!==i&&void 0!==n&&(d=null===(r=null===(a=s.rows[o])||void 0===a?void 0:a.columns[i])||void 0===r?void 0:r.modules[n]);break;case"column":void 0!==i&&(d=null===(l=s.rows[o])||void 0===l?void 0:l.columns[i]);break;case"row":d=s.rows[o]}this._draggedItem={type:e,rowIndex:o,columnIndex:i,moduleIndex:n,data:d},t.dataTransfer.effectAllowed="move",t.dataTransfer.setData("text/plain",JSON.stringify({type:e,rowIndex:o,columnIndex:i,moduleIndex:n}));const c=t.currentTarget;c&&(c.style.opacity="0.6",c.style.transform="scale(0.95)"),"column"===e?this.setAttribute("dragging-column",""):"row"===e&&this.setAttribute("dragging-row","")}_onDragEnd(t){const e=t.currentTarget;e&&(e.style.opacity="",e.style.transform=""),this.removeAttribute("dragging-column"),this.removeAttribute("dragging-row"),this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}_onDragOver(t){this._draggedItem&&(t.preventDefault(),t.stopPropagation(),t.dataTransfer&&(t.dataTransfer.dropEffect="move"))}_onDragEnter(t,e,o,i,n){if(t.preventDefault(),t.stopPropagation(),!this._draggedItem)return;if(this._draggedItem.type===e&&this._draggedItem.rowIndex===o&&this._draggedItem.columnIndex===i&&this._draggedItem.moduleIndex===n)return;if(void 0!==this._draggedItem.layoutChildIndex&&"layout"===e&&this._draggedItem.rowIndex===o&&this._draggedItem.columnIndex===i&&this._draggedItem.moduleIndex===n)return;if(!this._isValidDropTarget(this._draggedItem.type,e))return;this._dropTarget={type:e,rowIndex:o,columnIndex:i,moduleIndex:n};const a=t.currentTarget;a&&(a.style.borderColor="var(--primary-color)",a.style.backgroundColor="rgba(var(--rgb-primary-color), 0.1)"),this.requestUpdate()}_onDragLeave(t){const e=t.currentTarget;e&&(e.style.borderColor="",e.style.backgroundColor=""),t.relatedTarget&&t.currentTarget&&!t.currentTarget.contains(t.relatedTarget)&&(this._dropTarget=null,this.requestUpdate())}_onDrop(t,e,o,i,n){t.preventDefault(),t.stopPropagation();const a=t.currentTarget;a&&(a.style.borderColor="",a.style.backgroundColor=""),this._draggedItem&&(this._draggedItem.type===e&&this._draggedItem.rowIndex===o&&this._draggedItem.columnIndex===i&&this._draggedItem.moduleIndex===n||this._isValidDropTarget(this._draggedItem.type,e)&&(this._performMove(this._draggedItem,{type:e,rowIndex:o,columnIndex:i,moduleIndex:n}),this._draggedItem=null,this._dropTarget=null,this.requestUpdate()))}_isValidDropTarget(t,e){var o;return(null===(o={module:["module","column","layout","layout-child"],column:["column","row"],row:["row"]}[t])||void 0===o?void 0:o.includes(e))||!1}_performMove(t,e){const o=this._ensureLayout(),i=JSON.parse(JSON.stringify(o));switch(t.type){case"module":this._moveModule(i,t,e);break;case"column":this._moveColumn(i,t,e);break;case"row":this._moveRow(i,t,e)}this._updateLayout(i)}_moveModule(t,e,o){let i;if(void 0!==e.layoutChildIndex&&"layout-child"===o.type){const i=e.rowIndex,n=e.columnIndex,a=e.moduleIndex,r=e.layoutChildIndex,l=o.rowIndex,s=o.columnIndex,d=o.moduleIndex,c=o.childIndex;if(i===l&&n===s&&a===d){if(r===c)return;const e=t.rows[i].columns[n].modules[a];if(e&&this._isLayoutModule(e.type)&&e.modules){const t=e.modules.splice(r,1)[0];let o=c;r<c&&(o=c-1),e.modules.splice(o,0,t)}return}}if(void 0!==e.layoutChildIndex){const o=t.rows[e.rowIndex].columns[e.columnIndex].modules[e.moduleIndex];i=o.modules[e.layoutChildIndex],o.modules.splice(e.layoutChildIndex,1)}else i=t.rows[e.rowIndex].columns[e.columnIndex].modules[e.moduleIndex];if("layout"!==o.type)if("layout-child"!==o.type)if(void 0===e.layoutChildIndex&&t.rows[e.rowIndex].columns[e.columnIndex].modules.splice(e.moduleIndex,1),"module"===o.type){let n=o.moduleIndex||0;e.rowIndex===o.rowIndex&&e.columnIndex===o.columnIndex&&o.moduleIndex>e.moduleIndex&&n--,t.rows[o.rowIndex].columns[o.columnIndex].modules.splice(n,0,i)}else"column"===o.type&&t.rows[o.rowIndex].columns[o.columnIndex].modules.push(i);else{const n=t.rows[o.rowIndex].columns[o.columnIndex].modules[o.moduleIndex];if(n&&this._isLayoutModule(n.type)){n.modules||(n.modules=[]);const a=o.childIndex||0;n.modules.splice(a,0,i),void 0===e.layoutChildIndex&&t.rows[e.rowIndex].columns[e.columnIndex].modules.splice(e.moduleIndex,1)}}else{const n=t.rows[o.rowIndex].columns[o.columnIndex].modules[o.moduleIndex];n&&this._isLayoutModule(n.type)&&(n.modules||(n.modules=[]),n.modules.push(i),void 0===e.layoutChildIndex&&t.rows[e.rowIndex].columns[e.columnIndex].modules.splice(e.moduleIndex,1))}}_moveColumn(t,e,o){const i=t.rows[e.rowIndex].columns[e.columnIndex];t.rows[e.rowIndex].columns.splice(e.columnIndex,1),"column"===o.type?t.rows[o.rowIndex].columns.splice(o.columnIndex||0,0,i):"row"===o.type&&t.rows[o.rowIndex].columns.push(i)}_moveRow(t,e,o){const i=t.rows[e.rowIndex];t.rows.splice(e.rowIndex,1);const n=o.rowIndex;t.rows.splice(n,0,i)}_openRowSettings(t){this._selectedRowForSettings=t,this._showRowSettings=!0}_updateRow(t){if(console.log("🔄 LayoutTab: _updateRow called with updates:",t),-1===this._selectedRowForSettings)return void console.log("🔄 LayoutTab: No selected row for settings, returning early");const e=this._ensureLayout(),o=JSON.parse(JSON.stringify(e)),i=o.rows[this._selectedRowForSettings];console.log("🔄 LayoutTab: Original row:",i);for(const[e,o]of Object.entries(t))void 0===o?(console.log(`🔄 LayoutTab: DELETING property ${e} from row`),delete i[e]):(console.log(`🔄 LayoutTab: SETTING row property ${e} =`,o),i[e]=o);console.log("🔄 LayoutTab: Updated row:",i),this._updateLayout(o),console.log("🔄 LayoutTab: Row updated successfully")}_openColumnSettings(t,e){this._selectedColumnForSettings={rowIndex:t,columnIndex:e},this._showColumnSettings=!0}_updateColumn(t){if(console.log("🔄 LayoutTab: _updateColumn called with updates:",t),!this._selectedColumnForSettings)return void console.log("🔄 LayoutTab: No selected column for settings, returning early");const e=this._ensureLayout(),o=JSON.parse(JSON.stringify(e)),i=o.rows[this._selectedColumnForSettings.rowIndex].columns[this._selectedColumnForSettings.columnIndex];console.log("🔄 LayoutTab: Original column:",i);for(const[e,o]of Object.entries(t))void 0===o?(console.log(`🔄 LayoutTab: DELETING property ${e} from column`),delete i[e]):(console.log(`🔄 LayoutTab: SETTING column property ${e} =`,o),i[e]=o);console.log("🔄 LayoutTab: Updated column:",i),this._updateLayout(o),console.log("🔄 LayoutTab: Column updated successfully")}_loadGoogleFont(t){if(!t||"default"===t||me.some((e=>e.value===t)))return;if(document.querySelector(`link[href*="${t.replace(/\s+/g,"+")}"]`))return;const e=document.createElement("link");e.rel="stylesheet",e.href=`https://fonts.googleapis.com/css2?family=${t.replace(/\s+/g,"+")}:wght@300;400;500;600;700&display=swap`,document.head.appendChild(e)}_renderModulePreview(){var t,e,o;if(!this._selectedModule)return V``;const{rowIndex:i,columnIndex:n,moduleIndex:a}=this._selectedModule,r=null===(o=null===(e=null===(t=this.config.layout)||void 0===t?void 0:t.rows[i])||void 0===e?void 0:e.columns[n])||void 0===o?void 0:o.modules[a];return r?V`
       <div class="module-preview">
         <div class="preview-header">Live Preview</div>
         <div class="preview-content">${this._renderSingleModuleWithAnimation(r)}</div>
       </div>
-    `:V``}_renderSingleModule(e,t,o,i){return this._renderSimplifiedModule(e,t,o,i)}_renderSimplifiedModule(e,t,o,i){const n=Ze().getModule(e.type),a=(null==n?void 0:n.metadata)||{icon:"mdi:help-circle",title:"Unknown",description:"Unknown module type"};if("horizontal"===e.type||"vertical"===e.type)return this._renderLayoutModuleAsColumn(e,t,o,i,a);const r=this._generateModuleInfo(e),l=this._getModuleDisplayName(e);return V`
+    `:V``}_renderSingleModule(t,e,o,i){return this._renderSimplifiedModule(t,e,o,i)}_renderSimplifiedModule(t,e,o,i){const n=Kt().getModule(t.type),a=(null==n?void 0:n.metadata)||{icon:"mdi:help-circle",title:"Unknown",description:"Unknown module type"};if("horizontal"===t.type||"vertical"===t.type)return this._renderLayoutModuleAsColumn(t,e,o,i,a);const r=this._generateModuleInfo(t),l=this._getModuleDisplayName(t);return V`
       <div class="simplified-module">
         <div class="simplified-module-header">
           <div class="simplified-module-drag-handle" title="Drag to move module">
@@ -6900,32 +7942,33 @@
             <div class="simplified-module-title">${l}</div>
             <div class="simplified-module-info">${r}</div>
           </div>
-          ${void 0!==t&&void 0!==o&&void 0!==i?V`
+          ${void 0!==e&&void 0!==o&&void 0!==i?V`
                 <div class="simplified-module-actions">
                   <button
                     class="simplified-action-btn edit-btn"
-                    @click=${e=>{e.stopPropagation(),this._openModuleSettings(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._openModuleSettings(e,o,i)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Edit Module"
                   >
                     <ha-icon icon="mdi:pencil"></ha-icon>
                   </button>
                   <button
                     class="simplified-action-btn duplicate-btn"
-                    @click=${e=>{e.stopPropagation(),this._duplicateModule(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._duplicateModule(e,o,i)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Duplicate Module"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
                   </button>
                   <button
                     class="simplified-action-btn delete-btn"
-                    @click=${e=>{e.stopPropagation(),this._deleteModule(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._deleteModule(e,o,i)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Delete Module"
+                    style="margin-left: 8px;"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
                   </button>
@@ -6933,7 +7976,7 @@
               `:""}
         </div>
       </div>
-    `}_renderLayoutModuleAsColumn(e,t,o,i,n){const a=e,r=a.modules&&a.modules.length>0,l="horizontal"===e.type;return e.type,V`
+    `}_renderLayoutModuleAsColumn(t,e,o,i,n){const a=t,r=a.modules&&a.modules.length>0,l="horizontal"===t.type;return t.type,V`
       <div class="layout-module-container">
         <div class="layout-module-header">
           <div class="layout-module-title">
@@ -6944,40 +7987,32 @@
             <span>${l?"Horizontal Layout":"Vertical Layout"}</span>
           </div>
           <div class="layout-module-actions">
-            ${void 0!==t&&void 0!==o&&void 0!==i?V`
-                  <button
-                    class="layout-module-add-btn"
-                    @click=${e=>{e.stopPropagation(),this._openLayoutModuleSelector(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
-                    title="Add Module to Layout"
-                  >
-                    <ha-icon icon="mdi:plus"></ha-icon>
-                  </button>
+            ${void 0!==e&&void 0!==o&&void 0!==i?V`
                   <button
                     class="layout-module-settings-btn"
-                    @click=${e=>{e.stopPropagation(),this._openModuleSettings(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._openModuleSettings(e,o,i)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Layout Settings"
                   >
                     <ha-icon icon="mdi:cog"></ha-icon>
                   </button>
                   <button
                     class="layout-module-duplicate-btn"
-                    @click=${e=>{e.stopPropagation(),this._duplicateModule(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._duplicateModule(e,o,i)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Duplicate Layout"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
                   </button>
                   <button
                     class="layout-module-delete-btn"
-                    @click=${e=>{e.stopPropagation(),this._deleteModule(t,o,i)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._deleteModule(e,o,i)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Delete Layout"
+                    style="margin-left: 8px;"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
                   </button>
@@ -6996,24 +8031,24 @@
             overflow: hidden;
           "
           @dragover=${this._onDragOver}
-          @dragenter=${e=>this._onDragEnter(e,"layout",t,o,i)}
+          @dragenter=${t=>this._onDragEnter(t,"layout",e,o,i)}
           @dragleave=${this._onDragLeave}
-          @drop=${e=>this._onDrop(e,"layout",t,o,i)}
+          @drop=${t=>this._onDrop(t,"layout",e,o,i)}
         >
-          ${r?a.modules.map(((e,n)=>{var a,r,l,s,d;return V`
+          ${r?a.modules.map(((t,n)=>{var a,r,l,s,d;return V`
                   <div
                     class="layout-child-module-wrapper"
                     draggable="true"
-                    @dragstart=${e=>this._onLayoutChildDragStart(e,t,o,i,n)}
-                    @dragend=${e=>this._onLayoutChildDragEnd(e)}
+                    @dragstart=${t=>this._onLayoutChildDragStart(t,e,o,i,n)}
+                    @dragend=${t=>this._onLayoutChildDragEnd(t)}
                     @dragover=${this._onDragOver}
-                    @dragenter=${e=>this._onLayoutChildDragEnter(e,t,o,i,n)}
+                    @dragenter=${t=>this._onLayoutChildDragEnter(t,e,o,i,n)}
                     @dragleave=${this._onDragLeave}
-                    @drop=${e=>this._onLayoutChildDrop(e,t,o,i,n)}
-                    class="${"layout-child"===(null===(a=this._dropTarget)||void 0===a?void 0:a.type)&&(null===(r=this._dropTarget)||void 0===r?void 0:r.rowIndex)===t&&(null===(l=this._dropTarget)||void 0===l?void 0:l.columnIndex)===o&&(null===(s=this._dropTarget)||void 0===s?void 0:s.moduleIndex)===i&&(null===(d=this._dropTarget)||void 0===d?void 0:d.childIndex)===n?"drop-target":""}"
+                    @drop=${t=>this._onLayoutChildDrop(t,e,o,i,n)}
+                    class="${"layout-child"===(null===(a=this._dropTarget)||void 0===a?void 0:a.type)&&(null===(r=this._dropTarget)||void 0===r?void 0:r.rowIndex)===e&&(null===(l=this._dropTarget)||void 0===l?void 0:l.columnIndex)===o&&(null===(s=this._dropTarget)||void 0===s?void 0:s.moduleIndex)===i&&(null===(d=this._dropTarget)||void 0===d?void 0:d.childIndex)===n?"drop-target":""}"
                     style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;"
                   >
-                    ${this._renderLayoutChildModule(e,t,o,i,n)}
+                    ${this._renderLayoutChildModule(t,e,o,i,n)}
                   </div>
                 `})):V`
                 <div class="layout-module-empty">
@@ -7022,34 +8057,20 @@
                 </div>
               `}
           ${r?V`
-                <div
-                  class="layout-append-zone"
-                  @dragover=${this._onDragOver}
-                  @dragenter=${e=>this._onLayoutAppendDragEnter(e,t,o,i)}
-                  @dragleave=${this._onDragLeave}
-                  @drop=${e=>this._onLayoutAppendDrop(e,t,o,i)}
-                  style="
-                    min-height: 20px;
-                    margin-top: 8px;
-                    border: 2px dashed transparent;
-                    border-radius: 4px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: var(--secondary-text-color);
-                    font-size: 12px;
-                    transition: all 0.2s ease;
-                  "
+                <button
+                  class="add-module-btn"
+                  @click=${t=>{t.stopPropagation(),this._openLayoutModuleSelector(e,o,i)}}
                 >
-                  Drop here to add to end
-                </div>
+                  <ha-icon icon="mdi:plus"></ha-icon>
+                  Add Module
+                </button>
               `:""}
         </div>
       </div>
-    `}_getJustifyContent(e){switch(e){case"left":default:return"flex-start";case"center":return"center";case"right":return"flex-end";case"justify":return"space-between"}}_renderLayoutChildModule(e,t,o,i,n){const a=Ze().getModule(e.type),r=(null==a?void 0:a.metadata)||{icon:"mdi:help-circle",title:"Unknown",description:"Unknown module type"},l=this._generateModuleInfo(e),s=this._getModuleDisplayName(e);return V`
+    `}_getJustifyContent(t){switch(t){case"left":default:return"flex-start";case"center":return"center";case"right":return"flex-end";case"justify":return"space-between"}}_renderLayoutChildModule(t,e,o,i,n){const a=Kt().getModule(t.type),r=(null==a?void 0:a.metadata)||{icon:"mdi:help-circle",title:"Unknown",description:"Unknown module type"},l=this._generateModuleInfo(t),s=this._getModuleDisplayName(t);return V`
       <div
         class="layout-child-simplified-module"
-        @click=${e=>{const a=e.target;a.closest(".layout-child-actions")||a.closest(".layout-child-drag-handle")||(e.stopPropagation(),void 0!==t&&void 0!==o&&void 0!==i&&void 0!==n&&this._openLayoutChildSettings(t,o,i,n))}}
+        @click=${t=>{const a=t.target;a.closest(".layout-child-actions")||a.closest(".layout-child-drag-handle")||(t.stopPropagation(),void 0!==e&&void 0!==o&&void 0!==i&&void 0!==n&&this._openLayoutChildSettings(e,o,i,n))}}
       >
         <div class="layout-child-module-header">
           <div class="layout-child-drag-handle" title="Drag to reorder">
@@ -7060,32 +8081,33 @@
             <div class="layout-child-title">${s}</div>
             <div class="layout-child-info">${l}</div>
           </div>
-          ${void 0!==t&&void 0!==o&&void 0!==i&&void 0!==n?V`
+          ${void 0!==e&&void 0!==o&&void 0!==i&&void 0!==n?V`
                 <div class="layout-child-actions">
                   <button
                     class="layout-child-action-btn edit-btn"
-                    @click=${e=>{e.stopPropagation(),this._openLayoutChildSettings(t,o,i,n)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._openLayoutChildSettings(e,o,i,n)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Edit Child Module"
                   >
                     <ha-icon icon="mdi:pencil"></ha-icon>
                   </button>
                   <button
                     class="layout-child-action-btn duplicate-btn"
-                    @click=${e=>{e.stopPropagation(),this._duplicateLayoutChildModule(t,o,i,n)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._duplicateLayoutChildModule(e,o,i,n)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Duplicate Child Module"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
                   </button>
                   <button
                     class="layout-child-action-btn delete-btn"
-                    @click=${e=>{e.stopPropagation(),this._deleteLayoutChildModule(t,o,i,n)}}
-                    @mousedown=${e=>e.stopPropagation()}
-                    @dragstart=${e=>e.preventDefault()}
+                    @click=${t=>{t.stopPropagation(),this._deleteLayoutChildModule(e,o,i,n)}}
+                    @mousedown=${t=>t.stopPropagation()}
+                    @dragstart=${t=>t.preventDefault()}
                     title="Delete Child Module"
+                    style="margin-left: 8px;"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
                   </button>
@@ -7093,10 +8115,10 @@
               `:""}
         </div>
       </div>
-    `}_onLayoutModuleDragOver(e,t,o,i){e.preventDefault(),e.stopPropagation(),e.dataTransfer&&(e.dataTransfer.dropEffect="move")}_onLayoutModuleDragEnter(e,t,o,i){e.preventDefault(),e.stopPropagation(),this._draggedItem&&"module"===this._draggedItem.type&&(this._draggedItem.rowIndex===t&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i||e.currentTarget.classList.add("layout-drop-target"))}_onLayoutModuleDragLeave(e){e.preventDefault(),e.stopPropagation()}_onLayoutModuleDrop(e,t,o,i){if(e.preventDefault(),e.stopPropagation(),e.currentTarget.classList.remove("layout-drop-target"),!this._draggedItem||"module"!==this._draggedItem.type)return void console.log("Invalid drop - not a module or no dragged item");if(void 0===t||void 0===o||void 0===i)return void console.log("Invalid drop - missing coordinates");const n=this._ensureLayout(),a=n.rows[t];if(!a||!a.columns[o])return void console.log("Invalid drop - target row/column not found");const r=a.columns[o].modules[i];if(!r||!this._isLayoutModule(r.type))return void console.log("Invalid drop - target is not a layout module");r.modules||(r.modules=[]);const l=JSON.parse(JSON.stringify(this._draggedItem.data));if(void 0!==this._draggedItem.layoutChildIndex&&this._draggedItem.rowIndex===t&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i)return void console.log("Ignoring layout drop - this should be handled by child reordering");r.modules.push(l);const s=n.rows[this._draggedItem.rowIndex];s&&s.columns[this._draggedItem.columnIndex]&&s.columns[this._draggedItem.columnIndex].modules.splice(this._draggedItem.moduleIndex,1),this._updateLayout(n),console.log("Module successfully moved to layout module"),this._draggedItem=null,this._dropTarget=null}_onLayoutChildDragStart(e,t,o,i,n){var a,r,l;if(!e.dataTransfer)return;e.stopPropagation();const s=null===(r=null===(a=this._ensureLayout().rows[t])||void 0===a?void 0:a.columns[o])||void 0===r?void 0:r.modules[i],d=null===(l=null==s?void 0:s.modules)||void 0===l?void 0:l[n];if(d){this._draggedItem={type:"module",rowIndex:t,columnIndex:o,moduleIndex:i,data:d,layoutChildIndex:n},e.dataTransfer.effectAllowed="move",e.dataTransfer.setData("text/plain",JSON.stringify({type:"layout-child",parentRowIndex:t,parentColumnIndex:o,parentModuleIndex:i,childIndex:n}));const a=e.currentTarget;a&&(a.style.opacity="0.6",a.style.transform="scale(0.95)")}}_onLayoutChildDragEnd(e){e.preventDefault(),e.stopPropagation();const t=e.currentTarget;t&&(t.style.opacity="",t.style.transform=""),this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}_onLayoutChildDragEnter(e,t,o,i,n){e.preventDefault(),e.stopPropagation(),this._draggedItem&&"module"===this._draggedItem.type&&(void 0!==this._draggedItem.layoutChildIndex&&this._draggedItem.rowIndex===t&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i&&this._draggedItem.layoutChildIndex===n||(this._dropTarget={type:"layout-child",rowIndex:t,columnIndex:o,moduleIndex:i,childIndex:n},this.requestUpdate()))}_onLayoutChildDrop(e,t,o,i,n){if(e.preventDefault(),e.stopPropagation(),!this._draggedItem||"module"!==this._draggedItem.type)return void console.log("Invalid drop - not a module or no dragged item");if(void 0===t||void 0===o||void 0===i||void 0===n)return void console.log("Invalid drop - missing coordinates");const a=this._ensureLayout(),r=JSON.parse(JSON.stringify(a)),l=r.rows[t].columns[o].modules[i];if(l&&this._isLayoutModule(l.type)){if(l.modules||(l.modules=[]),void 0!==this._draggedItem.layoutChildIndex){const e=this._draggedItem.rowIndex,a=this._draggedItem.columnIndex,s=this._draggedItem.moduleIndex,d=this._draggedItem.layoutChildIndex;if(e===t&&a===o&&s===i){if(d===n)return;const e=l.modules.splice(d,1)[0];let t=n;d<n&&(t=n-1),l.modules.splice(t,0,e),this._updateLayout(r),console.log("Layout child module reordered successfully")}else{const t=r.rows[e].columns[a].modules[s];if(t&&this._isLayoutModule(t.type)&&t.modules){const e=t.modules.splice(d,1)[0];l.modules.splice(n,0,e),this._updateLayout(r),console.log("Module moved from one layout to another successfully")}}}else{const e=JSON.parse(JSON.stringify(this._draggedItem.data));l.modules.splice(n,0,e);const t=r.rows[this._draggedItem.rowIndex];t&&t.columns[this._draggedItem.columnIndex]&&t.columns[this._draggedItem.columnIndex].modules.splice(this._draggedItem.moduleIndex,1),this._updateLayout(r),console.log("Module moved from column to layout position successfully")}this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}else console.log("Invalid drop - target is not a layout module")}_onLayoutAppendDragEnter(e,t,o,i){if(e.preventDefault(),e.stopPropagation(),!this._draggedItem||"module"!==this._draggedItem.type)return;this._dropTarget={type:"layout-append",rowIndex:t,columnIndex:o,moduleIndex:i};const n=e.currentTarget;n.style.borderColor="var(--primary-color)",n.style.backgroundColor="rgba(var(--rgb-primary-color), 0.1)",this.requestUpdate()}_onLayoutAppendDrop(e,t,o,i){e.preventDefault(),e.stopPropagation();const n=e.currentTarget;if(n.style.borderColor="transparent",n.style.backgroundColor="transparent",!this._draggedItem||"module"!==this._draggedItem.type)return void console.log("Invalid drop - not a module or no dragged item");if(void 0===t||void 0===o||void 0===i)return void console.log("Invalid drop - missing coordinates");const a=this._ensureLayout(),r=JSON.parse(JSON.stringify(a)),l=r.rows[t].columns[o].modules[i];if(l&&this._isLayoutModule(l.type))if(l.modules||(l.modules=[]),void 0!==this._draggedItem.layoutChildIndex&&this._draggedItem.rowIndex===t&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i){const e=this._draggedItem.layoutChildIndex,t=l.modules.splice(e,1)[0];l.modules.push(t),this._updateLayout(r),console.log("Layout child module moved to end successfully")}else{const e=JSON.parse(JSON.stringify(this._draggedItem.data));if(l.modules.push(e),void 0===this._draggedItem.layoutChildIndex){const e=r.rows[this._draggedItem.rowIndex];e&&e.columns[this._draggedItem.columnIndex]&&e.columns[this._draggedItem.columnIndex].modules.splice(this._draggedItem.moduleIndex,1)}this._updateLayout(r),console.log("Module successfully moved to end of layout module")}this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}_openLayoutModuleSelector(e,t,o){console.log("Opening layout module selector for:",e,t,o),this._selectedRowIndex=e,this._selectedColumnIndex=t,this._selectedLayoutModuleIndex=o,this._showModuleSelector=!0}_openLayoutChildSettings(e,t,o,i){console.log("Opening layout child settings:",e,t,o,i),this._selectedLayoutChild={parentRowIndex:e,parentColumnIndex:t,parentModuleIndex:o,childIndex:i},this._showLayoutChildSettings=!0}_duplicateLayoutChildModule(e,t,o,i){console.log("Duplicating layout child module:",e,t,o,i);const n=this._ensureLayout(),a=n.rows[e];if(!a||!a.columns[t])return;const r=a.columns[t];if(!r.modules||!r.modules[o])return;const l=r.modules[o];if(!l.modules||!l.modules[i])return;const s=l.modules[i],d=JSON.parse(JSON.stringify(s)),c={rows:n.rows.map(((n,a)=>a===e?Object.assign(Object.assign({},n),{columns:n.columns.map(((e,n)=>n===t?Object.assign(Object.assign({},e),{modules:e.modules.map(((e,t)=>{if(t===o){const t=e,o=[...t.modules];return o.splice(i+1,0,d),Object.assign(Object.assign({},t),{modules:o})}return e}))}):e))}):n))};this._updateLayout(c),console.log("Layout child module duplicated successfully")}_deleteLayoutChildModule(e,t,o,i){console.log("Deleting layout child module:",e,t,o,i);const n=this._ensureLayout(),a=n.rows[e];if(!a||!a.columns[t])return;const r=a.columns[t];if(!r.modules||!r.modules[o])return;const l=r.modules[o];if(!l.modules||!l.modules[i])return;const s={rows:n.rows.map(((n,a)=>a===e?Object.assign(Object.assign({},n),{columns:n.columns.map(((e,n)=>n===t?Object.assign(Object.assign({},e),{modules:e.modules.map(((e,t)=>{if(t===o){const t=e;return Object.assign(Object.assign({},t),{modules:t.modules.filter(((e,t)=>t!==i))})}return e}))}):e))}):n))};this._updateLayout(s),console.log("Layout child module deleted successfully")}_getModuleDisplayName(e){const t=e;if(t.module_name&&t.module_name.trim())return t.module_name;switch(e.type){case"text":return"Text Module";case"image":return"Image Module";case"icon":return"Icon Module";case"bar":return"Bar Module";case"info":return"Info Module";case"button":return"Button Module";case"separator":return"Separator Module";case"markdown":return"Markdown Module";default:return e.type.charAt(0).toUpperCase()+e.type.slice(1)+" Module"}}_getRowDisplayName(e,t){const o=e.row_name;return o&&o.trim()?o:`Row ${t+1}`}_getColumnDisplayName(e,t){const o=e.column_name;return o&&o.trim()?o:`Column ${t+1}`}_generateModuleInfo(e){var t,o,i,n;const a=e;switch(e.type){case"text":return a.text&&a.text.trim()?a.text.length>50?`${a.text.substring(0,50)}...`:a.text:"No text configured";case"image":if(a.image_entity)return`Entity: ${a.image_entity}`;if(a.image_url){const e=a.image_url;if(e.startsWith("data:image/"))return"Uploaded image";const t=e.split("/").pop()||e;return t.length>30?`${t.substring(0,30)}...`:t}if(a.image_path){const e=a.image_path,t=e.split("/").pop()||e;return t.length>30?`${t.substring(0,30)}...`:t}return"No image configured";case"icon":const r=(null===(t=a.icons)||void 0===t?void 0:t.length)||0;if(r>1)return`${r} icons configured`;if(1===r){const e=a.icons[0];return(null==e?void 0:e.entity)?`Entity: ${e.entity}`:(null==e?void 0:e.icon)?`Icon: ${e.icon}`:"Icon configured"}return"No icons configured";case"bar":return a.entity?`Entity: ${a.entity}`:"Entity: sensor.battery_level";case"info":if(null===(o=a.info_entities)||void 0===o?void 0:o.length){const e=a.info_entities[0];if(null==e?void 0:e.entity)return a.info_entities.length>1?`${e.entity} + ${a.info_entities.length-1} more`:`Entity: ${e.entity}`}return a.entity?`Entity: ${a.entity}`:(null===(i=a.entities)||void 0===i?void 0:i.length)?`${a.entities.length} entities configured`:"No entity configured";case"button":return a.button_text&&a.button_text.trim()?a.button_text:a.text&&a.text.trim()?a.text:a.label&&a.label.trim()?a.label:"No button text configured";case"markdown":const l=a.content||a.markdown_content;if(l&&l.trim()){const e=l.replace(/[#*`>\-\[\]]/g,"").trim().split(" ").slice(0,8).join(" ");return e.length>40?`${e.substring(0,40)}...`:e}return"This is a markdown module that supports italic and bold text...";case"separator":const s=[];return a.separator_style&&s.push(`Style: ${a.separator_style}`),a.thickness&&s.push(`${a.thickness}px thick`),a.width_percent&&100!==a.width_percent&&s.push(`${a.width_percent}% width`),s.length>0?s.join(" • "):"Visual separator";default:return a.entity?`Entity: ${a.entity}`:(null===(n=a.entities)||void 0===n?void 0:n.length)?`${a.entities.length} entities`:void 0!==a.value?`Value: ${a.value}`:a.text?`Text: ${a.text.length>20?a.text.substring(0,20)+"...":a.text}`:`${e.type.charAt(0).toUpperCase()}${e.type.slice(1)} module`}}_renderSingleModuleWithAnimation(e){var t,o,i,n;tt.setHass(this.hass);const a=tt.evaluateDisplayConditions(e.display_conditions||[],e.display_mode||"always"),r=e,l=tt.evaluateLogicProperties({logic_entity:null===(t=r.design)||void 0===t?void 0:t.logic_entity,logic_attribute:null===(o=r.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=r.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=r.design)||void 0===n?void 0:n.logic_value}),s=Ze().getModule(e.type),d=!a||!l;let c;c=s?s.renderPreview(e,this.hass):V`
+    `}_onLayoutModuleDragOver(t,e,o,i){t.preventDefault(),t.stopPropagation(),t.dataTransfer&&(t.dataTransfer.dropEffect="move")}_onLayoutModuleDragEnter(t,e,o,i){t.preventDefault(),t.stopPropagation(),this._draggedItem&&"module"===this._draggedItem.type&&(this._draggedItem.rowIndex===e&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i||t.currentTarget.classList.add("layout-drop-target"))}_onLayoutModuleDragLeave(t){t.preventDefault(),t.stopPropagation()}_onLayoutModuleDrop(t,e,o,i){if(t.preventDefault(),t.stopPropagation(),t.currentTarget.classList.remove("layout-drop-target"),!this._draggedItem||"module"!==this._draggedItem.type)return void console.log("Invalid drop - not a module or no dragged item");if(void 0===e||void 0===o||void 0===i)return void console.log("Invalid drop - missing coordinates");const n=this._ensureLayout(),a=n.rows[e];if(!a||!a.columns[o])return void console.log("Invalid drop - target row/column not found");const r=a.columns[o].modules[i];if(!r||!this._isLayoutModule(r.type))return void console.log("Invalid drop - target is not a layout module");r.modules||(r.modules=[]);const l=JSON.parse(JSON.stringify(this._draggedItem.data));if(void 0!==this._draggedItem.layoutChildIndex&&this._draggedItem.rowIndex===e&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i)return void console.log("Ignoring layout drop - this should be handled by child reordering");r.modules.push(l);const s=n.rows[this._draggedItem.rowIndex];s&&s.columns[this._draggedItem.columnIndex]&&s.columns[this._draggedItem.columnIndex].modules.splice(this._draggedItem.moduleIndex,1),this._updateLayout(n),console.log("Module successfully moved to layout module"),this._draggedItem=null,this._dropTarget=null}_onLayoutChildDragStart(t,e,o,i,n){var a,r,l;if(!t.dataTransfer)return;t.stopPropagation();const s=null===(r=null===(a=this._ensureLayout().rows[e])||void 0===a?void 0:a.columns[o])||void 0===r?void 0:r.modules[i],d=null===(l=null==s?void 0:s.modules)||void 0===l?void 0:l[n];if(d){this._draggedItem={type:"module",rowIndex:e,columnIndex:o,moduleIndex:i,data:d,layoutChildIndex:n},t.dataTransfer.effectAllowed="move",t.dataTransfer.setData("text/plain",JSON.stringify({type:"layout-child",parentRowIndex:e,parentColumnIndex:o,parentModuleIndex:i,childIndex:n}));const a=t.currentTarget;a&&(a.style.opacity="0.6",a.style.transform="scale(0.95)")}}_onLayoutChildDragEnd(t){t.preventDefault(),t.stopPropagation();const e=t.currentTarget;e&&(e.style.opacity="",e.style.transform=""),this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}_onLayoutChildDragEnter(t,e,o,i,n){t.preventDefault(),t.stopPropagation(),this._draggedItem&&"module"===this._draggedItem.type&&(void 0!==this._draggedItem.layoutChildIndex&&this._draggedItem.rowIndex===e&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i&&this._draggedItem.layoutChildIndex===n||(this._dropTarget={type:"layout-child",rowIndex:e,columnIndex:o,moduleIndex:i,childIndex:n},this.requestUpdate()))}_onLayoutChildDrop(t,e,o,i,n){if(t.preventDefault(),t.stopPropagation(),!this._draggedItem||"module"!==this._draggedItem.type)return void console.log("Invalid drop - not a module or no dragged item");if(void 0===e||void 0===o||void 0===i||void 0===n)return void console.log("Invalid drop - missing coordinates");const a=this._ensureLayout(),r=JSON.parse(JSON.stringify(a)),l=r.rows[e].columns[o].modules[i];if(l&&this._isLayoutModule(l.type)){if(l.modules||(l.modules=[]),void 0!==this._draggedItem.layoutChildIndex){const t=this._draggedItem.rowIndex,a=this._draggedItem.columnIndex,s=this._draggedItem.moduleIndex,d=this._draggedItem.layoutChildIndex;if(t===e&&a===o&&s===i){if(d===n)return;const t=l.modules.splice(d,1)[0];let e=n;d<n&&(e=n-1),l.modules.splice(e,0,t),this._updateLayout(r),console.log("Layout child module reordered successfully")}else{const e=r.rows[t].columns[a].modules[s];if(e&&this._isLayoutModule(e.type)&&e.modules){const t=e.modules.splice(d,1)[0];l.modules.splice(n,0,t),this._updateLayout(r),console.log("Module moved from one layout to another successfully")}}}else{const t=JSON.parse(JSON.stringify(this._draggedItem.data));l.modules.splice(n,0,t);const e=r.rows[this._draggedItem.rowIndex];e&&e.columns[this._draggedItem.columnIndex]&&e.columns[this._draggedItem.columnIndex].modules.splice(this._draggedItem.moduleIndex,1),this._updateLayout(r),console.log("Module moved from column to layout position successfully")}this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}else console.log("Invalid drop - target is not a layout module")}_onLayoutAppendDragEnter(t,e,o,i){if(t.preventDefault(),t.stopPropagation(),!this._draggedItem||"module"!==this._draggedItem.type)return;this._dropTarget={type:"layout-append",rowIndex:e,columnIndex:o,moduleIndex:i};const n=t.currentTarget;n.style.borderColor="var(--primary-color)",n.style.backgroundColor="rgba(var(--rgb-primary-color), 0.1)",this.requestUpdate()}_onLayoutAppendDrop(t,e,o,i){t.preventDefault(),t.stopPropagation();const n=t.currentTarget;if(n.style.borderColor="transparent",n.style.backgroundColor="transparent",!this._draggedItem||"module"!==this._draggedItem.type)return void console.log("Invalid drop - not a module or no dragged item");if(void 0===e||void 0===o||void 0===i)return void console.log("Invalid drop - missing coordinates");const a=this._ensureLayout(),r=JSON.parse(JSON.stringify(a)),l=r.rows[e].columns[o].modules[i];if(l&&this._isLayoutModule(l.type))if(l.modules||(l.modules=[]),void 0!==this._draggedItem.layoutChildIndex&&this._draggedItem.rowIndex===e&&this._draggedItem.columnIndex===o&&this._draggedItem.moduleIndex===i){const t=this._draggedItem.layoutChildIndex,e=l.modules.splice(t,1)[0];l.modules.push(e),this._updateLayout(r),console.log("Layout child module moved to end successfully")}else{const t=JSON.parse(JSON.stringify(this._draggedItem.data));if(l.modules.push(t),void 0===this._draggedItem.layoutChildIndex){const t=r.rows[this._draggedItem.rowIndex];t&&t.columns[this._draggedItem.columnIndex]&&t.columns[this._draggedItem.columnIndex].modules.splice(this._draggedItem.moduleIndex,1)}this._updateLayout(r),console.log("Module successfully moved to end of layout module")}this._draggedItem=null,this._dropTarget=null,this.requestUpdate()}_openLayoutModuleSelector(t,e,o){console.log("Opening layout module selector for:",t,e,o),this._selectedRowIndex=t,this._selectedColumnIndex=e,this._selectedLayoutModuleIndex=o,this._showModuleSelector=!0}_openLayoutChildSettings(t,e,o,i){console.log("Opening layout child settings:",t,e,o,i),this._selectedLayoutChild={parentRowIndex:t,parentColumnIndex:e,parentModuleIndex:o,childIndex:i},this._showLayoutChildSettings=!0}_duplicateLayoutChildModule(t,e,o,i){console.log("Duplicating layout child module:",t,e,o,i);const n=this._ensureLayout(),a=n.rows[t];if(!a||!a.columns[e])return;const r=a.columns[e];if(!r.modules||!r.modules[o])return;const l=r.modules[o];if(!l.modules||!l.modules[i])return;const s=l.modules[i],d=JSON.parse(JSON.stringify(s)),c={rows:n.rows.map(((n,a)=>a===t?Object.assign(Object.assign({},n),{columns:n.columns.map(((t,n)=>n===e?Object.assign(Object.assign({},t),{modules:t.modules.map(((t,e)=>{if(e===o){const e=t,o=[...e.modules];return o.splice(i+1,0,d),Object.assign(Object.assign({},e),{modules:o})}return t}))}):t))}):n))};this._updateLayout(c),console.log("Layout child module duplicated successfully")}_deleteLayoutChildModule(t,e,o,i){if(console.log("Deleting layout child module:",t,e,o,i),!confirm("Are you sure you want to delete this module?"))return;const n=this._ensureLayout(),a=n.rows[t];if(!a||!a.columns[e])return;const r=a.columns[e];if(!r.modules||!r.modules[o])return;const l=r.modules[o];if(!l.modules||!l.modules[i])return;const s={rows:n.rows.map(((n,a)=>a===t?Object.assign(Object.assign({},n),{columns:n.columns.map(((t,n)=>n===e?Object.assign(Object.assign({},t),{modules:t.modules.map(((t,e)=>{if(e===o){const e=t;return Object.assign(Object.assign({},e),{modules:e.modules.filter(((t,e)=>e!==i))})}return t}))}):t))}):n))};this._updateLayout(s),console.log("Layout child module deleted successfully")}_getModuleDisplayName(t){const e=t;if(e.module_name&&e.module_name.trim())return e.module_name;switch(t.type){case"text":return"Text Module";case"image":return"Image Module";case"icon":return"Icon Module";case"bar":return"Bar Module";case"info":return"Info Module";case"button":return"Button Module";case"separator":return"Separator Module";case"markdown":return"Markdown Module";default:return t.type.charAt(0).toUpperCase()+t.type.slice(1)+" Module"}}_getRowDisplayName(t,e){const o=t.row_name;return o&&o.trim()?o:`Row ${e+1}`}_getColumnDisplayName(t,e){const o=t.column_name;return o&&o.trim()?o:`Column ${e+1}`}_generateModuleInfo(t){var e,o,i,n;const a=t;switch(t.type){case"text":return a.text&&a.text.trim()?a.text.length>50?`${a.text.substring(0,50)}...`:a.text:"No text configured";case"image":if(a.image_entity)return`Entity: ${a.image_entity}`;if(a.image_url){const t=a.image_url;if(t.startsWith("data:image/"))return"Uploaded image";const e=t.split("/").pop()||t;return e.length>30?`${e.substring(0,30)}...`:e}if(a.image_path){const t=a.image_path,e=t.split("/").pop()||t;return e.length>30?`${e.substring(0,30)}...`:e}return"No image configured";case"icon":const r=(null===(e=a.icons)||void 0===e?void 0:e.length)||0;if(r>1)return`${r} icons configured`;if(1===r){const t=a.icons[0];return(null==t?void 0:t.entity)?`Entity: ${t.entity}`:(null==t?void 0:t.icon)?`Icon: ${t.icon}`:"Icon configured"}return"No icons configured";case"bar":return a.entity?`Entity: ${a.entity}`:"Entity: sensor.battery_level";case"info":if(null===(o=a.info_entities)||void 0===o?void 0:o.length){const t=a.info_entities[0];if(null==t?void 0:t.entity)return a.info_entities.length>1?`${t.entity} + ${a.info_entities.length-1} more`:`Entity: ${t.entity}`}return a.entity?`Entity: ${a.entity}`:(null===(i=a.entities)||void 0===i?void 0:i.length)?`${a.entities.length} entities configured`:"No entity configured";case"button":return a.button_text&&a.button_text.trim()?a.button_text:a.text&&a.text.trim()?a.text:a.label&&a.label.trim()?a.label:"No button text configured";case"markdown":const l=a.content||a.markdown_content;if(l&&l.trim()){const t=l.replace(/[#*`>\-\[\]]/g,"").trim().split(" ").slice(0,8).join(" ");return t.length>40?`${t.substring(0,40)}...`:t}return"This is a markdown module that supports italic and bold text...";case"separator":const s=[];return a.separator_style&&s.push(`Style: ${a.separator_style}`),a.thickness&&s.push(`${a.thickness}px thick`),a.width_percent&&100!==a.width_percent&&s.push(`${a.width_percent}% width`),s.length>0?s.join(" • "):"Visual separator";default:return a.entity?`Entity: ${a.entity}`:(null===(n=a.entities)||void 0===n?void 0:n.length)?`${a.entities.length} entities`:void 0!==a.value?`Value: ${a.value}`:a.text?`Text: ${a.text.length>20?a.text.substring(0,20)+"...":a.text}`:`${t.type.charAt(0).toUpperCase()}${t.type.slice(1)} module`}}_renderSingleModuleWithAnimation(t){var e,o,i,n;te.setHass(this.hass);const a=te.evaluateDisplayConditions(t.display_conditions||[],t.display_mode||"always"),r=t,l=te.evaluateLogicProperties({logic_entity:null===(e=r.design)||void 0===e?void 0:e.logic_entity,logic_attribute:null===(o=r.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=r.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=r.design)||void 0===n?void 0:n.logic_value}),s=Kt().getModule(t.type),d=!a||!l;let c;c=s?s.renderPreview(t,this.hass):V`
         <div class="module-placeholder">
           <ha-icon icon="mdi:help-circle"></ha-icon>
-          <span>Unknown Module: ${e.type}</span>
+          <span>Unknown Module: ${t.type}</span>
         </div>
       `;const p=this._getPreviewAnimationData(r);return V`
       <div class="module-with-logic ${d?"logic-hidden":""}">
@@ -7115,31 +8137,31 @@
               </div>
             `:""}
       </div>
-    `}_getPreviewAnimationData(e){var t,o,i,n,a,r;const l=e.animation_type||(null===(t=e.design)||void 0===t?void 0:t.animation_type);if(!l||"none"===l)return{class:"",duration:"2s"};const s=e.animation_duration||(null===(o=e.design)||void 0===o?void 0:o.animation_duration)||"2s",d=e.animation_entity||(null===(i=e.design)||void 0===i?void 0:i.animation_entity),c=e.animation_trigger_type||(null===(n=e.design)||void 0===n?void 0:n.animation_trigger_type)||"state",p=e.animation_attribute||(null===(a=e.design)||void 0===a?void 0:a.animation_attribute),u=e.animation_state||(null===(r=e.design)||void 0===r?void 0:r.animation_state);if(!d)return{class:`animation-${l}`,duration:s};if(u&&this.hass){const e=this.hass.states[d];if(e){let t=!1;if("attribute"===c&&p){const o=e.attributes[p];t=String(o)===u}else t=e.state===u;if(t)return{class:`animation-${l}`,duration:s}}}return{class:"",duration:s}}_getRowPreviewAnimationData(e){const t=e.design||{},o=t.animation_type;if(!o||"none"===o)return{class:"",duration:"2s"};const i=t.animation_duration||"2s",n=t.animation_entity,a=t.animation_trigger_type||"state",r=t.animation_attribute,l=t.animation_state;if(!n)return{class:`animation-${o}`,duration:i};if(l&&this.hass){const e=this.hass.states[n];if(e){let t=!1;if("attribute"===a&&r){const o=e.attributes[r];t=String(o)===l}else t=e.state===l;if(t)return{class:`animation-${o}`,duration:i}}}return{class:"",duration:i}}_getColumnPreviewAnimationData(e){const t=e.design||{},o=t.animation_type;if(!o||"none"===o)return{class:"",duration:"2s"};const i=t.animation_duration||"2s",n=t.animation_entity,a=t.animation_trigger_type||"state",r=t.animation_attribute,l=t.animation_state;if(!n)return{class:`animation-${o}`,duration:i};if(l&&this.hass){const e=this.hass.states[n];if(e){let t=!1;if("attribute"===a&&r){const o=e.attributes[r];t=String(o)===l}else t=e.state===l;if(t)return{class:`animation-${o}`,duration:i}}}return{class:"",duration:i}}_renderRowPreview(e){const t=this._getRowPreviewAnimationData(e),o=V`
+    `}_getPreviewAnimationData(t){var e,o,i,n,a,r;const l=t.animation_type||(null===(e=t.design)||void 0===e?void 0:e.animation_type);if(!l||"none"===l)return{class:"",duration:"2s"};const s=t.animation_duration||(null===(o=t.design)||void 0===o?void 0:o.animation_duration)||"2s",d=t.animation_entity||(null===(i=t.design)||void 0===i?void 0:i.animation_entity),c=t.animation_trigger_type||(null===(n=t.design)||void 0===n?void 0:n.animation_trigger_type)||"state",p=t.animation_attribute||(null===(a=t.design)||void 0===a?void 0:a.animation_attribute),u=t.animation_state||(null===(r=t.design)||void 0===r?void 0:r.animation_state);if(!d)return{class:`animation-${l}`,duration:s};if(u&&this.hass){const t=this.hass.states[d];if(t){let e=!1;if("attribute"===c&&p){const o=t.attributes[p];e=String(o)===u}else e=t.state===u;if(e)return{class:`animation-${l}`,duration:s}}}return{class:"",duration:s}}_getRowPreviewAnimationData(t){const e=t.design||{},o=e.animation_type;if(!o||"none"===o)return{class:"",duration:"2s"};const i=e.animation_duration||"2s",n=e.animation_entity,a=e.animation_trigger_type||"state",r=e.animation_attribute,l=e.animation_state;if(!n)return{class:`animation-${o}`,duration:i};if(l&&this.hass){const t=this.hass.states[n];if(t){let e=!1;if("attribute"===a&&r){const o=t.attributes[r];e=String(o)===l}else e=t.state===l;if(e)return{class:`animation-${o}`,duration:i}}}return{class:"",duration:i}}_getColumnPreviewAnimationData(t){const e=t.design||{},o=e.animation_type;if(!o||"none"===o)return{class:"",duration:"2s"};const i=e.animation_duration||"2s",n=e.animation_entity,a=e.animation_trigger_type||"state",r=e.animation_attribute,l=e.animation_state;if(!n)return{class:`animation-${o}`,duration:i};if(l&&this.hass){const t=this.hass.states[n];if(t){let e=!1;if("attribute"===a&&r){const o=t.attributes[r];e=String(o)===l}else e=t.state===l;if(e)return{class:`animation-${o}`,duration:i}}}return{class:"",duration:i}}_renderRowPreview(t){const e=this._getRowPreviewAnimationData(t),o=V`
       <div
         class="row-preview-content"
-        style="background: ${e.background_color||"var(--ha-card-background, var(--card-background-color, #fff))"};gap: ${e.gap||16}px;"
+        style="background: ${t.background_color||"var(--ha-card-background, var(--card-background-color, #fff))"};gap: ${t.gap||16}px;"
       >
-        ${e.columns.map(((e,t)=>V`<div class="column-preview">Column ${t+1}</div>`))}
+        ${t.columns.map(((t,e)=>V`<div class="column-preview">Column ${e+1}</div>`))}
       </div>
     `;return V`
       <div class="module-preview">
         <div class="preview-header">Live Preview</div>
         <div class="preview-content">
-          ${t.class?V`
+          ${e.class?V`
                 <div
-                  class="${t.class}"
-                  style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${t.duration};"
+                  class="${e.class}"
+                  style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${e.duration};"
                 >
                   ${o}
                 </div>
               `:o}
         </div>
       </div>
-    `}_renderColumnPreview(e){var t;const o=this._getColumnPreviewAnimationData(e),i=V`
+    `}_renderColumnPreview(t){var e;const o=this._getColumnPreviewAnimationData(t),i=V`
       <div class="column-preview-content">
         <p>Column Preview</p>
-        <div class="module-count">${(null===(t=e.modules)||void 0===t?void 0:t.length)||0} modules</div>
+        <div class="module-count">${(null===(e=t.modules)||void 0===e?void 0:e.length)||0} modules</div>
       </div>
     `;return V`
       <div class="module-preview">
@@ -7155,7 +8177,7 @@
               `:i}
         </div>
       </div>
-    `}_renderModuleSettings(){var e,t,o;if(!this._selectedModule)return V``;const{rowIndex:i,columnIndex:n,moduleIndex:a}=this._selectedModule,r=null===(o=null===(t=null===(e=this.config.layout)||void 0===e?void 0:e.rows[i])||void 0===t?void 0:t.columns[n])||void 0===o?void 0:o.modules[a];if(!r)return V``;const l=Ze().getModule(r.type),s=l&&"function"==typeof l.renderActionsTab,d=l&&"function"==typeof l.renderOtherTab;return("actions"===this._activeModuleTab&&!s||"other"===this._activeModuleTab&&!d)&&(this._activeModuleTab="general"),V`
+    `}_renderModuleSettings(){var t,e,o;if(!this._selectedModule)return V``;const{rowIndex:i,columnIndex:n,moduleIndex:a}=this._selectedModule,r=null===(o=null===(e=null===(t=this.config.layout)||void 0===t?void 0:t.rows[i])||void 0===e?void 0:e.columns[n])||void 0===o?void 0:o.modules[a];if(!r)return V``;const l=Kt().getModule(r.type),s=l&&"function"==typeof l.renderActionsTab,d=l&&"function"==typeof l.renderOtherTab;return("actions"===this._activeModuleTab&&!s||"other"===this._activeModuleTab&&!d)&&(this._activeModuleTab="general"),V`
       <div class="module-settings-popup">
         <div class="popup-overlay"></div>
         <div class="popup-content">
@@ -7228,7 +8250,7 @@
           </div>
         </div>
       </div>
-    `}_renderLayoutChildSettings(){if(!this._selectedLayoutChild)return V``;const{parentRowIndex:e,parentColumnIndex:t,parentModuleIndex:o,childIndex:i}=this._selectedLayoutChild,n=this._ensureLayout().rows[e];if(!n||!n.columns[t])return V``;const a=n.columns[t];if(!a.modules||!a.modules[o])return V``;const r=a.modules[o];if(!r.modules||!r.modules[i])return V``;const l=r.modules[i],s=Ze().getModule(l.type),d=s&&"function"==typeof s.renderActionsTab,c=s&&"function"==typeof s.renderOtherTab;return("actions"===this._activeModuleTab&&!d||"other"===this._activeModuleTab&&!c)&&(this._activeModuleTab="general"),V`
+    `}_renderLayoutChildSettings(){if(!this._selectedLayoutChild)return V``;const{parentRowIndex:t,parentColumnIndex:e,parentModuleIndex:o,childIndex:i}=this._selectedLayoutChild,n=this._ensureLayout().rows[t];if(!n||!n.columns[e])return V``;const a=n.columns[e];if(!a.modules||!a.modules[o])return V``;const r=a.modules[o];if(!r.modules||!r.modules[i])return V``;const l=r.modules[i],s=Kt().getModule(l.type),d=s&&"function"==typeof s.renderActionsTab,c=s&&"function"==typeof s.renderOtherTab;return("actions"===this._activeModuleTab&&!d||"other"===this._activeModuleTab&&!c)&&(this._activeModuleTab="general"),V`
       <div class="module-settings-popup">
         <div class="popup-overlay" @click=${()=>this._closeLayoutChildSettings()}></div>
         <div class="popup-content">
@@ -7310,13 +8332,13 @@
           </div>
         </div>
       </div>
-    `}_renderLayoutChildGeneralTab(e){const t=Ze().getModule(e.type),o=V`
+    `}_renderLayoutChildGeneralTab(t){const e=Kt().getModule(t.type),o=V`
       <div class="settings-section">
         <label>Module Name:</label>
         <input
           type="text"
-          .value=${e.module_name||""}
-          @input=${e=>this._updateLayoutChildModule({module_name:e.target.value})}
+          .value=${t.module_name||""}
+          @input=${t=>this._updateLayoutChildModule({module_name:t.target.value})}
           placeholder="Give this module a custom name to make it easier to identify in the editor."
           class="module-name-input"
         />
@@ -7324,29 +8346,29 @@
           Give this module a custom name to make it easier to identify in the editor.
         </div>
       </div>
-    `;if(t){const i=t.renderGeneralTab(e,this.hass,this.config,(e=>this._updateLayoutChildModule(e)));return V` ${o} ${i} `}return V`
+    `;if(e){const i=e.renderGeneralTab(t,this.hass,this.config,(t=>this._updateLayoutChildModule(t)));return V` ${o} ${i} `}return V`
       ${o}
       <div class="settings-section">
         <div class="error-message">
           <ha-icon icon="mdi:alert-circle"></ha-icon>
-          <span>No settings available for module type: ${e.type}</span>
+          <span>No settings available for module type: ${t.type}</span>
         </div>
       </div>
-    `}_renderLayoutChildActionsTab(e){const t=Ze().getModule(e.type);return t&&"function"==typeof t.renderActionsTab?t.renderActionsTab(e,this.hass,this.config,(e=>this._updateLayoutChildModule(e))):V`
+    `}_renderLayoutChildActionsTab(t){const e=Kt().getModule(t.type);return e&&"function"==typeof e.renderActionsTab?e.renderActionsTab(t,this.hass,this.config,(t=>this._updateLayoutChildModule(t))):V`
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
           <span>This module does not have action settings</span>
         </div>
       </div>
-    `}_renderLayoutChildOtherTab(e){const t=Ze().getModule(e.type);return t&&"function"==typeof t.renderOtherTab?t.renderOtherTab(e,this.hass,this.config,(e=>this._updateLayoutChildModule(e))):V`
+    `}_renderLayoutChildOtherTab(t){const e=Kt().getModule(t.type);return e&&"function"==typeof e.renderOtherTab?e.renderOtherTab(t,this.hass,this.config,(t=>this._updateLayoutChildModule(t))):V`
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
           <span>This module does not have other settings</span>
         </div>
       </div>
-    `}_renderLayoutChildLogicTab(e){const t=this._selectedModule;this._selectedModule={rowIndex:0,columnIndex:0,moduleIndex:0};const o=this._updateModule.bind(this);this._updateModule=e=>{this._updateLayoutChildModule(e)};const i=this._renderLogicTab(e);return this._selectedModule=t,this._updateModule=o,i}_renderLayoutChildDesignTab(e){const t=this._updateModule.bind(this),o=this._updateModuleDesign.bind(this);this._updateModule=e=>{this._updateLayoutChildModule(e)},this._updateModuleDesign=e=>{this._updateLayoutChildModule({design:e})};const i=this._renderDesignTab(e);return this._updateModule=t,this._updateModuleDesign=o,i}_renderRowSettings(){var e;if(-1===this._selectedRowForSettings)return V``;const t=null===(e=this.config.layout)||void 0===e?void 0:e.rows[this._selectedRowForSettings];return t?V`
+    `}_renderLayoutChildLogicTab(t){const e=this._selectedModule;this._selectedModule={rowIndex:0,columnIndex:0,moduleIndex:0};const o=this._updateModule.bind(this);this._updateModule=t=>{this._updateLayoutChildModule(t)};const i=this._renderLogicTab(t);return this._selectedModule=e,this._updateModule=o,i}_renderLayoutChildDesignTab(t){const e=this._updateModule.bind(this),o=this._updateModuleDesign.bind(this);this._updateModule=t=>{this._updateLayoutChildModule(t)},this._updateModuleDesign=t=>{this._updateLayoutChildModule({design:t})};const i=this._renderDesignTab(t);return this._updateModule=e,this._updateModuleDesign=o,i}_renderRowSettings(){var t;if(-1===this._selectedRowForSettings)return V``;const e=null===(t=this.config.layout)||void 0===t?void 0:t.rows[this._selectedRowForSettings];return e?V`
       <div class="settings-popup">
         <div class="popup-overlay" @click=${()=>this._showRowSettings=!1}></div>
         <div class="popup-content">
@@ -7373,7 +8395,7 @@
             </div>
           </div>
 
-          ${this._renderRowPreview(t)}
+          ${this._renderRowPreview(e)}
 
           <div class="settings-tabs">
             <button
@@ -7397,13 +8419,13 @@
           </div>
 
           <div class="settings-tab-content">
-            ${"general"===this._activeRowTab?this._renderRowGeneralTab(t):""}
-            ${"logic"===this._activeRowTab?this._renderRowLogicTab(t):""}
-            ${"design"===this._activeRowTab?this._renderRowDesignTab(t):""}
+            ${"general"===this._activeRowTab?this._renderRowGeneralTab(e):""}
+            ${"logic"===this._activeRowTab?this._renderRowLogicTab(e):""}
+            ${"design"===this._activeRowTab?this._renderRowDesignTab(e):""}
           </div>
         </div>
       </div>
-    `:V``}_renderColumnSettings(){var e,t;if(!this._selectedColumnForSettings)return V``;const{rowIndex:o,columnIndex:i}=this._selectedColumnForSettings,n=null===(t=null===(e=this.config.layout)||void 0===e?void 0:e.rows[o])||void 0===t?void 0:t.columns[i];return n?V`
+    `:V``}_renderColumnSettings(){var t,e;if(!this._selectedColumnForSettings)return V``;const{rowIndex:o,columnIndex:i}=this._selectedColumnForSettings,n=null===(e=null===(t=this.config.layout)||void 0===t?void 0:t.rows[o])||void 0===e?void 0:e.columns[i];return n?V`
       <div class="settings-popup">
         <div class="popup-overlay" @click=${()=>this._showColumnSettings=!1}></div>
         <div class="popup-content">
@@ -7460,13 +8482,13 @@
           </div>
         </div>
       </div>
-    `:V``}_renderRowGeneralTab(e){return V`
+    `:V``}_renderRowGeneralTab(t){return V`
       <div class="settings-section">
         <label>Row Name:</label>
         <input
           type="text"
-          .value=${e.row_name||""}
-          @input=${e=>this._updateRow({row_name:e.target.value})}
+          .value=${t.row_name||""}
+          @input=${t=>this._updateRow({row_name:t.target.value})}
           placeholder="Give this row a custom name to make it easier to identify in the editor."
           class="row-name-input"
         />
@@ -7477,10 +8499,10 @@
       <div class="settings-section">
         <ultra-color-picker
           .label=${"Row Background Color"}
-          .value=${e.background_color||""}
+          .value=${t.background_color||""}
           .defaultValue=${"var(--ha-card-background, var(--card-background-color, #fff))"}
           .hass=${this.hass}
-          @value-changed=${e=>{const t=e.detail.value;this._updateRow({background_color:t})}}
+          @value-changed=${t=>{const e=t.detail.value;this._updateRow({background_color:e})}}
         ></ultra-color-picker>
       </div>
       <div class="settings-section">
@@ -7489,11 +8511,11 @@
           type="number"
           min="0"
           max="50"
-          .value=${e.gap||16}
-          @change=${e=>this._updateRow({gap:Number(e.target.value)})}
+          .value=${t.gap||16}
+          @change=${t=>this._updateRow({gap:Number(t.target.value)})}
         />
       </div>
-    `}_renderRowLogicTab(e){const t=e.display_conditions||[],o=e.display_mode||"always",i=e.template_mode||!1;return V`
+    `}_renderRowLogicTab(t){const e=t.display_conditions||[],o=t.display_mode||"always",i=t.template_mode||!1;return V`
       <div class="logic-tab-content">
         <!-- Conditions Section (only shown when template mode is disabled) -->
         ${i?V`
@@ -7511,7 +8533,7 @@
                 <div class="display-mode-selector">
                   <select
                     .value=${o}
-                    @change=${e=>{const t=e.target.value;this._updateRow({display_mode:t})}}
+                    @change=${t=>{const e=t.target.value;this._updateRow({display_mode:e})}}
                     class="display-mode-dropdown"
                   >
                     <option value="always">Always</option>
@@ -7529,18 +8551,17 @@
                         <button
                           type="button"
                           class="add-condition-btn"
-                          @click=${()=>this._addRowCondition(e)}
+                          @click=${()=>this._addRowCondition(t)}
                         >
-                          <ha-icon icon="mdi:plus"></ha-icon>
                           Add Condition
                         </button>
                       </div>
 
                       <div class="conditions-list">
-                        ${t.map(((t,o)=>this._renderRowCondition(e,t,o)))}
+                        ${e.map(((e,o)=>this._renderRowCondition(t,e,o)))}
                       </div>
 
-                      ${0===t.length?V`
+                      ${0===e.length?V`
                             <div class="no-conditions">
                               <p>No conditions added yet. Click "Add Condition" to get started.</p>
                             </div>
@@ -7557,7 +8578,7 @@
               <input
                 type="checkbox"
                 .checked=${i}
-                @change=${e=>{const t=e.target.checked;this._updateRow({template_mode:t,display_mode:t?"always":o})}}
+                @change=${t=>{const e=t.target.checked;this._updateRow({template_mode:e,display_mode:e?"always":o})}}
               />
               <span class="slider"></span>
             </label>
@@ -7570,8 +8591,8 @@
           ${i?V`
                 <div class="template-content">
                   <textarea
-                    .value=${e.template||""}
-                    @input=${e=>this._updateRow({template:e.target.value})}
+                    .value=${t.template||""}
+                    @input=${t=>this._updateRow({template:t.target.value})}
                     placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
                     class="template-editor"
                     rows="6"
@@ -7593,19 +8614,19 @@
               `:""}
         </div>
       </div>
-    `}_renderRowDesignTab(e){var t,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f,y,_,x,w,$,k,C,S,I,z,T,P,A,L;const O=Object.assign(Object.assign({},e.design),{background_color:(null===(t=e.design)||void 0===t?void 0:t.background_color)||e.background_color,padding_top:(null===(o=e.design)||void 0===o?void 0:o.padding_top)||(null===(i=e.padding)||void 0===i?void 0:i.toString()),padding_bottom:(null===(n=e.design)||void 0===n?void 0:n.padding_bottom)||(null===(a=e.padding)||void 0===a?void 0:a.toString()),padding_left:(null===(r=e.design)||void 0===r?void 0:r.padding_left)||(null===(l=e.padding)||void 0===l?void 0:l.toString()),padding_right:(null===(s=e.design)||void 0===s?void 0:s.padding_right)||(null===(d=e.padding)||void 0===d?void 0:d.toString()),border_radius:(null===(c=e.design)||void 0===c?void 0:c.border_radius)||(null===(p=e.border_radius)||void 0===p?void 0:p.toString()),border_color:(null===(u=e.design)||void 0===u?void 0:u.border_color)||e.border_color,border_width:(null===(m=e.design)||void 0===m?void 0:m.border_width)||(null===(g=e.border_width)||void 0===g?void 0:g.toString()),margin_top:(null===(h=e.design)||void 0===h?void 0:h.margin_top)||(null===(v=e.margin)||void 0===v?void 0:v.toString()),margin_bottom:(null===(b=e.design)||void 0===b?void 0:b.margin_bottom)||(null===(f=e.margin)||void 0===f?void 0:f.toString()),margin_left:(null===(y=e.design)||void 0===y?void 0:y.margin_left)||(null===(_=e.margin)||void 0===_?void 0:_.toString()),margin_right:(null===(x=e.design)||void 0===x?void 0:x.margin_right)||(null===(w=e.margin)||void 0===w?void 0:w.toString()),animation_type:null===($=e.design)||void 0===$?void 0:$.animation_type,animation_entity:null===(k=e.design)||void 0===k?void 0:k.animation_entity,animation_trigger_type:null===(C=e.design)||void 0===C?void 0:C.animation_trigger_type,animation_attribute:null===(S=e.design)||void 0===S?void 0:S.animation_attribute,animation_state:null===(I=e.design)||void 0===I?void 0:I.animation_state,animation_duration:null===(z=e.design)||void 0===z?void 0:z.animation_duration,intro_animation:null===(T=e.design)||void 0===T?void 0:T.intro_animation,outro_animation:null===(P=e.design)||void 0===P?void 0:P.outro_animation,animation_delay:null===(A=e.design)||void 0===A?void 0:A.animation_delay,animation_timing:null===(L=e.design)||void 0===L?void 0:L.animation_timing});return console.log("🔄 LayoutTab: Rendering row design tab with properties:",O),V`
+    `}_renderRowDesignTab(t){var e,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f,_,y,x,w,$,k,C,S,I,z,T,P,A,M;const O=Object.assign(Object.assign({},t.design),{background_color:(null===(e=t.design)||void 0===e?void 0:e.background_color)||t.background_color,padding_top:(null===(o=t.design)||void 0===o?void 0:o.padding_top)||(null===(i=t.padding)||void 0===i?void 0:i.toString()),padding_bottom:(null===(n=t.design)||void 0===n?void 0:n.padding_bottom)||(null===(a=t.padding)||void 0===a?void 0:a.toString()),padding_left:(null===(r=t.design)||void 0===r?void 0:r.padding_left)||(null===(l=t.padding)||void 0===l?void 0:l.toString()),padding_right:(null===(s=t.design)||void 0===s?void 0:s.padding_right)||(null===(d=t.padding)||void 0===d?void 0:d.toString()),border_radius:(null===(c=t.design)||void 0===c?void 0:c.border_radius)||(null===(p=t.border_radius)||void 0===p?void 0:p.toString()),border_color:(null===(u=t.design)||void 0===u?void 0:u.border_color)||t.border_color,border_width:(null===(m=t.design)||void 0===m?void 0:m.border_width)||(null===(g=t.border_width)||void 0===g?void 0:g.toString()),margin_top:(null===(h=t.design)||void 0===h?void 0:h.margin_top)||(null===(v=t.margin)||void 0===v?void 0:v.toString()),margin_bottom:(null===(b=t.design)||void 0===b?void 0:b.margin_bottom)||(null===(f=t.margin)||void 0===f?void 0:f.toString()),margin_left:(null===(_=t.design)||void 0===_?void 0:_.margin_left)||(null===(y=t.margin)||void 0===y?void 0:y.toString()),margin_right:(null===(x=t.design)||void 0===x?void 0:x.margin_right)||(null===(w=t.margin)||void 0===w?void 0:w.toString()),animation_type:null===($=t.design)||void 0===$?void 0:$.animation_type,animation_entity:null===(k=t.design)||void 0===k?void 0:k.animation_entity,animation_trigger_type:null===(C=t.design)||void 0===C?void 0:C.animation_trigger_type,animation_attribute:null===(S=t.design)||void 0===S?void 0:S.animation_attribute,animation_state:null===(I=t.design)||void 0===I?void 0:I.animation_state,animation_duration:null===(z=t.design)||void 0===z?void 0:z.animation_duration,intro_animation:null===(T=t.design)||void 0===T?void 0:T.intro_animation,outro_animation:null===(P=t.design)||void 0===P?void 0:P.outro_animation,animation_delay:null===(A=t.design)||void 0===A?void 0:A.animation_delay,animation_timing:null===(M=t.design)||void 0===M?void 0:M.animation_timing});return console.log("🔄 LayoutTab: Rendering row design tab with properties:",O),V`
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${O}
-        @design-changed=${t=>{console.log("🔄 LayoutTab: Received design-changed event for ROW:",t.detail),console.log("🔄 LayoutTab: Current row design before update:",e.design);const o=t.detail,i=Object.assign(Object.assign({},e.design),o);console.log("🔄 LayoutTab: Updated row design:",i),this._updateRow({design:i})}}
+        @design-changed=${e=>{console.log("🔄 LayoutTab: Received design-changed event for ROW:",e.detail),console.log("🔄 LayoutTab: Current row design before update:",t.design);const o=e.detail,i=Object.assign(Object.assign({},t.design),o);console.log("🔄 LayoutTab: Updated row design:",i),this._updateRow({design:i})}}
       ></ultra-global-design-tab>
-    `}_renderColumnGeneralTab(e){return V`
+    `}_renderColumnGeneralTab(t){return V`
       <div class="settings-section">
         <label>Column Name:</label>
         <input
           type="text"
-          .value=${e.column_name||""}
-          @input=${e=>this._updateColumn({column_name:e.target.value})}
+          .value=${t.column_name||""}
+          @input=${t=>this._updateColumn({column_name:t.target.value})}
           placeholder="Give this column a custom name to make it easier to identify in the editor."
           class="column-name-input"
         />
@@ -7616,8 +8637,8 @@
       <div class="settings-section">
         <label>Vertical Alignment:</label>
         <select
-          .value=${e.vertical_alignment||"center"}
-          @change=${e=>this._updateColumn({vertical_alignment:e.target.value})}
+          .value=${t.vertical_alignment||"center"}
+          @change=${t=>this._updateColumn({vertical_alignment:t.target.value})}
         >
           <option value="top">Top</option>
           <option value="center">Center</option>
@@ -7628,8 +8649,8 @@
       <div class="settings-section">
         <label>Horizontal Alignment:</label>
         <select
-          .value=${e.horizontal_alignment||"center"}
-          @change=${e=>this._updateColumn({horizontal_alignment:e.target.value})}
+          .value=${t.horizontal_alignment||"center"}
+          @change=${t=>this._updateColumn({horizontal_alignment:t.target.value})}
         >
           <option value="left">Left</option>
           <option value="center">Center</option>
@@ -7637,7 +8658,7 @@
           <option value="stretch">Stretch</option>
         </select>
       </div>
-    `}_renderColumnLogicTab(e){const t=e.display_conditions||[],o=e.display_mode||"always",i=e.template_mode||!1;return V`
+    `}_renderColumnLogicTab(t){const e=t.display_conditions||[],o=t.display_mode||"always",i=t.template_mode||!1;return V`
       <div class="logic-tab-content">
         <!-- Conditions Section (only shown when template mode is disabled) -->
         ${i?V`
@@ -7655,7 +8676,7 @@
                 <div class="display-mode-selector">
                   <select
                     .value=${o}
-                    @change=${e=>{const t=e.target.value;this._updateColumn({display_mode:t})}}
+                    @change=${t=>{const e=t.target.value;this._updateColumn({display_mode:e})}}
                     class="display-mode-dropdown"
                   >
                     <option value="always">Always</option>
@@ -7673,18 +8694,17 @@
                         <button
                           type="button"
                           class="add-condition-btn"
-                          @click=${()=>this._addColumnCondition(e)}
+                          @click=${()=>this._addColumnCondition(t)}
                         >
-                          <ha-icon icon="mdi:plus"></ha-icon>
                           Add Condition
                         </button>
                       </div>
 
                       <div class="conditions-list">
-                        ${t.map(((t,o)=>this._renderColumnCondition(e,t,o)))}
+                        ${e.map(((e,o)=>this._renderColumnCondition(t,e,o)))}
                       </div>
 
-                      ${0===t.length?V`
+                      ${0===e.length?V`
                             <div class="no-conditions">
                               <p>No conditions added yet. Click "Add Condition" to get started.</p>
                             </div>
@@ -7701,7 +8721,7 @@
               <input
                 type="checkbox"
                 .checked=${i}
-                @change=${e=>{const t=e.target.checked;this._updateColumn({template_mode:t,display_mode:t?"always":o})}}
+                @change=${t=>{const e=t.target.checked;this._updateColumn({template_mode:e,display_mode:e?"always":o})}}
               />
               <span class="slider"></span>
             </label>
@@ -7714,8 +8734,8 @@
           ${i?V`
                 <div class="template-content">
                   <textarea
-                    .value=${e.template||""}
-                    @input=${e=>this._updateColumn({template:e.target.value})}
+                    .value=${t.template||""}
+                    @input=${t=>this._updateColumn({template:t.target.value})}
                     placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
                     class="template-editor"
                     rows="6"
@@ -7737,19 +8757,19 @@
               `:""}
         </div>
       </div>
-    `}_renderColumnDesignTab(e){var t,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f,y,_,x,w,$,k,C,S,I,z,T,P,A,L;const O=Object.assign(Object.assign({},e.design),{background_color:(null===(t=e.design)||void 0===t?void 0:t.background_color)||e.background_color,padding_top:(null===(o=e.design)||void 0===o?void 0:o.padding_top)||(null===(i=e.padding)||void 0===i?void 0:i.toString()),padding_bottom:(null===(n=e.design)||void 0===n?void 0:n.padding_bottom)||(null===(a=e.padding)||void 0===a?void 0:a.toString()),padding_left:(null===(r=e.design)||void 0===r?void 0:r.padding_left)||(null===(l=e.padding)||void 0===l?void 0:l.toString()),padding_right:(null===(s=e.design)||void 0===s?void 0:s.padding_right)||(null===(d=e.padding)||void 0===d?void 0:d.toString()),border_radius:(null===(c=e.design)||void 0===c?void 0:c.border_radius)||(null===(p=e.border_radius)||void 0===p?void 0:p.toString()),border_color:(null===(u=e.design)||void 0===u?void 0:u.border_color)||e.border_color,border_width:(null===(m=e.design)||void 0===m?void 0:m.border_width)||(null===(g=e.border_width)||void 0===g?void 0:g.toString()),margin_top:(null===(h=e.design)||void 0===h?void 0:h.margin_top)||(null===(v=e.margin)||void 0===v?void 0:v.toString()),margin_bottom:(null===(b=e.design)||void 0===b?void 0:b.margin_bottom)||(null===(f=e.margin)||void 0===f?void 0:f.toString()),margin_left:(null===(y=e.design)||void 0===y?void 0:y.margin_left)||(null===(_=e.margin)||void 0===_?void 0:_.toString()),margin_right:(null===(x=e.design)||void 0===x?void 0:x.margin_right)||(null===(w=e.margin)||void 0===w?void 0:w.toString()),animation_type:null===($=e.design)||void 0===$?void 0:$.animation_type,animation_entity:null===(k=e.design)||void 0===k?void 0:k.animation_entity,animation_trigger_type:null===(C=e.design)||void 0===C?void 0:C.animation_trigger_type,animation_attribute:null===(S=e.design)||void 0===S?void 0:S.animation_attribute,animation_state:null===(I=e.design)||void 0===I?void 0:I.animation_state,animation_duration:null===(z=e.design)||void 0===z?void 0:z.animation_duration,intro_animation:null===(T=e.design)||void 0===T?void 0:T.intro_animation,outro_animation:null===(P=e.design)||void 0===P?void 0:P.outro_animation,animation_delay:null===(A=e.design)||void 0===A?void 0:A.animation_delay,animation_timing:null===(L=e.design)||void 0===L?void 0:L.animation_timing});return console.log("🔄 LayoutTab: Rendering column design tab with properties:",O),V`
+    `}_renderColumnDesignTab(t){var e,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f,_,y,x,w,$,k,C,S,I,z,T,P,A,M;const O=Object.assign(Object.assign({},t.design),{background_color:(null===(e=t.design)||void 0===e?void 0:e.background_color)||t.background_color,padding_top:(null===(o=t.design)||void 0===o?void 0:o.padding_top)||(null===(i=t.padding)||void 0===i?void 0:i.toString()),padding_bottom:(null===(n=t.design)||void 0===n?void 0:n.padding_bottom)||(null===(a=t.padding)||void 0===a?void 0:a.toString()),padding_left:(null===(r=t.design)||void 0===r?void 0:r.padding_left)||(null===(l=t.padding)||void 0===l?void 0:l.toString()),padding_right:(null===(s=t.design)||void 0===s?void 0:s.padding_right)||(null===(d=t.padding)||void 0===d?void 0:d.toString()),border_radius:(null===(c=t.design)||void 0===c?void 0:c.border_radius)||(null===(p=t.border_radius)||void 0===p?void 0:p.toString()),border_color:(null===(u=t.design)||void 0===u?void 0:u.border_color)||t.border_color,border_width:(null===(m=t.design)||void 0===m?void 0:m.border_width)||(null===(g=t.border_width)||void 0===g?void 0:g.toString()),margin_top:(null===(h=t.design)||void 0===h?void 0:h.margin_top)||(null===(v=t.margin)||void 0===v?void 0:v.toString()),margin_bottom:(null===(b=t.design)||void 0===b?void 0:b.margin_bottom)||(null===(f=t.margin)||void 0===f?void 0:f.toString()),margin_left:(null===(_=t.design)||void 0===_?void 0:_.margin_left)||(null===(y=t.margin)||void 0===y?void 0:y.toString()),margin_right:(null===(x=t.design)||void 0===x?void 0:x.margin_right)||(null===(w=t.margin)||void 0===w?void 0:w.toString()),animation_type:null===($=t.design)||void 0===$?void 0:$.animation_type,animation_entity:null===(k=t.design)||void 0===k?void 0:k.animation_entity,animation_trigger_type:null===(C=t.design)||void 0===C?void 0:C.animation_trigger_type,animation_attribute:null===(S=t.design)||void 0===S?void 0:S.animation_attribute,animation_state:null===(I=t.design)||void 0===I?void 0:I.animation_state,animation_duration:null===(z=t.design)||void 0===z?void 0:z.animation_duration,intro_animation:null===(T=t.design)||void 0===T?void 0:T.intro_animation,outro_animation:null===(P=t.design)||void 0===P?void 0:P.outro_animation,animation_delay:null===(A=t.design)||void 0===A?void 0:A.animation_delay,animation_timing:null===(M=t.design)||void 0===M?void 0:M.animation_timing});return console.log("🔄 LayoutTab: Rendering column design tab with properties:",O),V`
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${O}
-        @design-changed=${t=>{console.log("🔄 LayoutTab: Received design-changed event for COLUMN:",t.detail),console.log("🔄 LayoutTab: Current column design before update:",e.design);const o=t.detail,i=Object.assign(Object.assign({},e.design),o);console.log("🔄 LayoutTab: Updated column design:",i),this._updateColumn({design:i})}}
+        @design-changed=${e=>{console.log("🔄 LayoutTab: Received design-changed event for COLUMN:",e.detail),console.log("🔄 LayoutTab: Current column design before update:",t.design);const o=e.detail,i=Object.assign(Object.assign({},t.design),o);console.log("🔄 LayoutTab: Updated column design:",i),this._updateColumn({design:i})}}
       ></ultra-global-design-tab>
-    `}_renderGeneralTab(e){const t=Ze().getModule(e.type),o=V`
+    `}_renderGeneralTab(t){const e=Kt().getModule(t.type),o=V`
       <div class="settings-section">
         <label>Module Name:</label>
         <input
           type="text"
-          .value=${e.module_name||""}
-          @input=${e=>this._updateModule({module_name:e.target.value})}
+          .value=${t.module_name||""}
+          @input=${t=>this._updateModule({module_name:t.target.value})}
           placeholder="Give this module a custom name to make it easier to identify in the editor."
           class="module-name-input"
         />
@@ -7757,37 +8777,37 @@
           Give this module a custom name to make it easier to identify in the editor.
         </div>
       </div>
-    `;if(t){const i=t.renderGeneralTab(e,this.hass,this.config,(e=>this._updateModule(e)));return e.type,V` ${o} ${i} `}return V`
+    `;if(e){const i=e.renderGeneralTab(t,this.hass,this.config,(t=>this._updateModule(t)));return t.type,V` ${o} ${i} `}return V`
       ${o}
       <div class="settings-section">
         <div class="error-message">
           <ha-icon icon="mdi:alert-circle"></ha-icon>
-          <span>No settings available for module type: ${e.type}</span>
+          <span>No settings available for module type: ${t.type}</span>
         </div>
       </div>
-    `}_renderActionsTab(e){const t=Ze().getModule(e.type);return t&&"function"==typeof t.renderActionsTab?t.renderActionsTab(e,this.hass,this.config,(e=>this._updateModule(e))):V`
+    `}_renderActionsTab(t){const e=Kt().getModule(t.type);return e&&"function"==typeof e.renderActionsTab?e.renderActionsTab(t,this.hass,this.config,(t=>this._updateModule(t))):V`
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
           <span>This module does not have action settings</span>
         </div>
       </div>
-    `}_renderOtherTab(e){const t=Ze().getModule(e.type);return t&&"function"==typeof t.renderOtherTab?t.renderOtherTab(e,this.hass,this.config,(e=>this._updateModule(e))):V`
+    `}_renderOtherTab(t){const e=Kt().getModule(t.type);return e&&"function"==typeof e.renderOtherTab?e.renderOtherTab(t,this.hass,this.config,(t=>this._updateModule(t))):V`
       <div class="settings-section">
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
           <span>This module does not have other settings</span>
         </div>
       </div>
-    `}_addCondition(e){const t={id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"entity_state",entity:"",operator:"=",value:"",enabled:!0},o=[...e.display_conditions||[],t];this._updateModule({display_conditions:o})}_addRowCondition(e){const t={id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"entity_state",entity:"",operator:"=",value:"",enabled:!0},o=[...e.display_conditions||[],t];this._updateRow({display_conditions:o})}_addColumnCondition(e){const t={id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"entity_state",entity:"",operator:"=",value:"",enabled:!0},o=[...e.display_conditions||[],t];this._updateColumn({display_conditions:o})}_removeCondition(e,t){const o=(e.display_conditions||[]).filter(((e,o)=>o!==t));this._updateModule({display_conditions:o})}_updateCondition(e,t,o){const i=(e.display_conditions||[]).map(((e,i)=>i===t?Object.assign(Object.assign({},e),o):e));this._updateModule({display_conditions:i})}_duplicateCondition(e,t){const o=e.display_conditions||[],i=o[t];if(i){const e=Object.assign(Object.assign({},i),{id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`}),n=[...o.slice(0,t+1),e,...o.slice(t+1)];this._updateModule({display_conditions:n})}}_renderRowCondition(e,t,o){return this._renderConditionGeneric(t,o,(t=>{const i=(e.display_conditions||[]).map(((e,i)=>i===o?Object.assign(Object.assign({},e),t):e));this._updateRow({display_conditions:i})}),(()=>{const t=(e.display_conditions||[]).filter(((e,t)=>t!==o));this._updateRow({display_conditions:t})}))}_renderColumnCondition(e,t,o){return this._renderConditionGeneric(t,o,(t=>{const i=(e.display_conditions||[]).map(((e,i)=>i===o?Object.assign(Object.assign({},e),t):e));this._updateColumn({display_conditions:i})}),(()=>{const t=(e.display_conditions||[]).filter(((e,t)=>t!==o));this._updateColumn({display_conditions:t})}))}_renderConditionGeneric(e,t,o,i){return V`
-      <div class="condition-item ${e.enabled?"enabled":"disabled"}">
+    `}_addCondition(t){const e={id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"entity_state",entity:"",operator:"=",value:"",enabled:!0},o=[...t.display_conditions||[],e];this._updateModule({display_conditions:o})}_addRowCondition(t){const e={id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"entity_state",entity:"",operator:"=",value:"",enabled:!0},o=[...t.display_conditions||[],e];this._updateRow({display_conditions:o})}_addColumnCondition(t){const e={id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`,type:"entity_state",entity:"",operator:"=",value:"",enabled:!0},o=[...t.display_conditions||[],e];this._updateColumn({display_conditions:o})}_removeCondition(t,e){const o=(t.display_conditions||[]).filter(((t,o)=>o!==e));this._updateModule({display_conditions:o})}_updateCondition(t,e,o){const i=(t.display_conditions||[]).map(((t,i)=>i===e?Object.assign(Object.assign({},t),o):t));this._updateModule({display_conditions:i})}_duplicateCondition(t,e){const o=t.display_conditions||[],i=o[e];if(i){const t=Object.assign(Object.assign({},i),{id:`condition-${Date.now()}-${Math.random().toString(36).substr(2,9)}`}),n=[...o.slice(0,e+1),t,...o.slice(e+1)];this._updateModule({display_conditions:n})}}_renderRowCondition(t,e,o){return this._renderConditionGeneric(e,o,(e=>{const i=(t.display_conditions||[]).map(((t,i)=>i===o?Object.assign(Object.assign({},t),e):t));this._updateRow({display_conditions:i})}),(()=>{const e=(t.display_conditions||[]).filter(((t,e)=>e!==o));this._updateRow({display_conditions:e})}))}_renderColumnCondition(t,e,o){return this._renderConditionGeneric(e,o,(e=>{const i=(t.display_conditions||[]).map(((t,i)=>i===o?Object.assign(Object.assign({},t),e):t));this._updateColumn({display_conditions:i})}),(()=>{const e=(t.display_conditions||[]).filter(((t,e)=>e!==o));this._updateColumn({display_conditions:e})}))}_renderConditionGeneric(t,e,o,i){return V`
+      <div class="condition-item ${t.enabled?"enabled":"disabled"}">
         <div class="condition-header">
           <div class="condition-header-left">
             <button type="button" class="condition-toggle ${"expanded"}">
               <ha-icon icon="mdi:chevron-${"down"}"></ha-icon>
             </button>
             <span class="condition-label">
-              ${"entity_state"===e.type?e.entity||"Select Entity State":"entity_attribute"===e.type?e.entity||"Select Entity Attribute":"time"===e.type?"Time Condition":"Template Condition"}
+              ${"entity_state"===t.type?t.entity||"Select Entity State":"entity_attribute"===t.type?t.entity||"Select Entity Attribute":"time"===t.type?"Time Condition":"Template Condition"}
             </span>
           </div>
 
@@ -7809,8 +8829,8 @@
                 <div class="condition-field">
                   <label>Condition Type:</label>
                   <select
-                    .value=${e.type}
-                    @change=${e=>{const t=e.target.value;o({type:t,entity:"",operator:"=",value:""})}}
+                    .value=${t.type}
+                    @change=${t=>{const e=t.target.value;o({type:e,entity:"",operator:"=",value:""})}}
                   >
                     <option value="entity_state">Entity State</option>
                     <option value="entity_attribute">Entity Attribute</option>
@@ -7819,16 +8839,16 @@
                   </select>
                 </div>
 
-                ${"entity_state"===e.type?this._renderEntityConditionGeneric(e,o):""}
-                ${"entity_attribute"===e.type?this._renderEntityAttributeConditionGeneric(e,o):""}
+                ${"entity_state"===t.type?this._renderEntityConditionGeneric(t,o):""}
+                ${"entity_attribute"===t.type?this._renderEntityAttributeConditionGeneric(t,o):""}
 
                 <!-- Enable/Disable Toggle -->
                 <div class="condition-field">
                   <label class="condition-enable-toggle">
                     <input
                       type="checkbox"
-                      .checked=${!1!==e.enabled}
-                      @change=${e=>o({enabled:e.target.checked})}
+                      .checked=${!1!==t.enabled}
+                      @change=${t=>o({enabled:t.target.checked})}
                     />
                     Enable this condition
                   </label>
@@ -7836,16 +8856,16 @@
               </div>
             `}
       </div>
-    `}_renderEntityConditionGeneric(e,t){return V`
+    `}_renderEntityConditionGeneric(t,e){return V`
       <div class="entity-condition-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
           <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
-            .data=${{entity:e.entity||""}}
+            .data=${{entity:t.entity||""}}
             .schema=${[{name:"entity",selector:{entity:{}}}]}
-            @value-changed=${e=>t({entity:e.detail.value.entity})}
+            @value-changed=${t=>e({entity:t.detail.value.entity})}
           ></ha-form>
         </div>
 
@@ -7853,8 +8873,8 @@
         <div class="condition-field">
           <label>Operator:</label>
           <select
-            .value=${e.operator||"="}
-            @change=${e=>t({operator:e.target.value})}
+            .value=${t.operator||"="}
+            @change=${t=>e({operator:t.target.value})}
           >
             <option value="=">=</option>
             <option value="!=">!=</option>
@@ -7868,28 +8888,28 @@
         </div>
 
         <!-- Value (if not has_value/no_value) -->
-        ${"has_value"!==e.operator&&"no_value"!==e.operator?V`
+        ${"has_value"!==t.operator&&"no_value"!==t.operator?V`
               <div class="condition-field">
                 <label>Value:</label>
                 <input
                   type="text"
-                  .value=${e.value||""}
-                  @input=${e=>t({value:e.target.value})}
+                  .value=${t.value||""}
+                  @input=${t=>e({value:t.target.value})}
                   placeholder="Enter value to compare"
                 />
               </div>
             `:""}
       </div>
-    `}_renderEntityAttributeConditionGeneric(e,t){return V`
+    `}_renderEntityAttributeConditionGeneric(t,e){return V`
       <div class="entity-attribute-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
           <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
-            .data=${{entity:e.entity||""}}
+            .data=${{entity:t.entity||""}}
             .schema=${[{name:"entity",selector:{entity:{}}}]}
-            @value-changed=${e=>t({entity:e.detail.value.entity})}
+            @value-changed=${t=>e({entity:t.detail.value.entity})}
           ></ha-form>
         </div>
 
@@ -7898,8 +8918,8 @@
           <label>Attribute Name:</label>
           <input
             type="text"
-            .value=${e.attribute||""}
-            @input=${e=>t({attribute:e.target.value})}
+            .value=${t.attribute||""}
+            @input=${t=>e({attribute:t.target.value})}
             placeholder="Enter attribute name (e.g., battery_level, friendly_name)"
           />
           <div class="field-help">
@@ -7912,8 +8932,8 @@
         <div class="condition-field">
           <label>Operator:</label>
           <select
-            .value=${e.operator||"="}
-            @change=${e=>t({operator:e.target.value})}
+            .value=${t.operator||"="}
+            @change=${t=>e({operator:t.target.value})}
           >
             <option value="=">=</option>
             <option value="!=">!=</option>
@@ -7927,20 +8947,20 @@
         </div>
 
         <!-- Value (if not has_value/no_value) -->
-        ${"has_value"!==e.operator&&"no_value"!==e.operator?V`
+        ${"has_value"!==t.operator&&"no_value"!==t.operator?V`
               <div class="condition-field">
                 <label>Value:</label>
                 <input
                   type="text"
-                  .value=${e.value||""}
-                  @input=${e=>t({value:e.target.value})}
+                  .value=${t.value||""}
+                  @input=${t=>e({value:t.target.value})}
                   placeholder="Enter value to compare"
                 />
               </div>
             `:""}
       </div>
-    `}_renderCondition(e,t,o){return V`
-      <div class="condition-item ${t.enabled?"enabled":"disabled"}">
+    `}_renderCondition(t,e,o){return V`
+      <div class="condition-item ${e.enabled?"enabled":"disabled"}">
         <div class="condition-header">
           <div class="condition-header-left">
             <button
@@ -7951,7 +8971,7 @@
               <ha-icon icon="mdi:chevron-${"down"}"></ha-icon>
             </button>
             <span class="condition-label">
-              ${"entity_state"===t.type?t.entity||"Select Entity State":"entity_attribute"===t.type?t.entity||"Select Entity Attribute":"time"===t.type?"Time Condition":"Template Condition"}
+              ${"entity_state"===e.type?e.entity||"Select Entity State":"entity_attribute"===e.type?e.entity||"Select Entity Attribute":"time"===e.type?"Time Condition":"Template Condition"}
             </span>
           </div>
 
@@ -7959,7 +8979,7 @@
             <button
               type="button"
               class="condition-action-btn"
-              @click=${()=>this._duplicateCondition(e,o)}
+              @click=${()=>this._duplicateCondition(t,o)}
               title="Duplicate"
             >
               <ha-icon icon="mdi:content-copy"></ha-icon>
@@ -7967,7 +8987,7 @@
             <button
               type="button"
               class="condition-action-btn delete"
-              @click=${()=>this._removeCondition(e,o)}
+              @click=${()=>this._removeCondition(t,o)}
               title="Delete"
             >
               <ha-icon icon="mdi:delete"></ha-icon>
@@ -7984,8 +9004,8 @@
                 <div class="condition-field">
                   <label>Condition Type:</label>
                   <select
-                    .value=${t.type}
-                    @change=${t=>{const i=t.target.value;this._updateCondition(e,o,{type:i,entity:"",operator:"=",value:""})}}
+                    .value=${e.type}
+                    @change=${e=>{const i=e.target.value;this._updateCondition(t,o,{type:i,entity:"",operator:"=",value:""})}}
                   >
                     <option value="entity_state">Entity State</option>
                     <option value="entity_attribute">Entity Attribute</option>
@@ -7994,18 +9014,18 @@
                   </select>
                 </div>
 
-                ${"entity_state"===t.type?this._renderEntityCondition(e,t,o):""}
-                ${"entity_attribute"===t.type?this._renderEntityAttributeCondition(e,t,o):""}
-                ${"time"===t.type?this._renderTimeCondition(e,t,o):""}
-                ${"template"===t.type?this._renderTemplateCondition(e,t,o):""}
+                ${"entity_state"===e.type?this._renderEntityCondition(t,e,o):""}
+                ${"entity_attribute"===e.type?this._renderEntityAttributeCondition(t,e,o):""}
+                ${"time"===e.type?this._renderTimeCondition(t,e,o):""}
+                ${"template"===e.type?this._renderTemplateCondition(t,e,o):""}
 
                 <!-- Enable/Disable Toggle -->
                 <div class="condition-field">
                   <label class="condition-enable-toggle">
                     <input
                       type="checkbox"
-                      .checked=${!1!==t.enabled}
-                      @change=${t=>this._updateCondition(e,o,{enabled:t.target.checked})}
+                      .checked=${!1!==e.enabled}
+                      @change=${e=>this._updateCondition(t,o,{enabled:e.target.checked})}
                     />
                     Enable this condition
                   </label>
@@ -8013,16 +9033,16 @@
               </div>
             `}
       </div>
-    `}_renderEntityCondition(e,t,o){return V`
+    `}_renderEntityCondition(t,e,o){return V`
       <div class="entity-condition-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
           <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
-            .data=${{entity:t.entity||""}}
+            .data=${{entity:e.entity||""}}
             .schema=${[{name:"entity",selector:{entity:{}}}]}
-            @value-changed=${t=>this._updateCondition(e,o,{entity:t.detail.value.entity})}
+            @value-changed=${e=>this._updateCondition(t,o,{entity:e.detail.value.entity})}
           ></ha-form>
         </div>
 
@@ -8030,8 +9050,8 @@
         <div class="condition-field">
           <label>Operator:</label>
           <select
-            .value=${t.operator||"="}
-            @change=${t=>this._updateCondition(e,o,{operator:t.target.value})}
+            .value=${e.operator||"="}
+            @change=${e=>this._updateCondition(t,o,{operator:e.target.value})}
           >
             <option value="=">=</option>
             <option value="!=">!=</option>
@@ -8045,28 +9065,28 @@
         </div>
 
         <!-- Value (if not has_value/no_value) -->
-        ${"has_value"!==t.operator&&"no_value"!==t.operator?V`
+        ${"has_value"!==e.operator&&"no_value"!==e.operator?V`
               <div class="condition-field">
                 <label>Value:</label>
                 <input
                   type="text"
-                  .value=${t.value||""}
-                  @input=${t=>this._updateCondition(e,o,{value:t.target.value})}
+                  .value=${e.value||""}
+                  @input=${e=>this._updateCondition(t,o,{value:e.target.value})}
                   placeholder="Enter value to compare"
                 />
               </div>
             `:""}
       </div>
-    `}_renderEntityAttributeCondition(e,t,o){return V`
+    `}_renderEntityAttributeCondition(t,e,o){return V`
       <div class="entity-attribute-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
           <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
-            .data=${{entity:t.entity||""}}
+            .data=${{entity:e.entity||""}}
             .schema=${[{name:"entity",selector:{entity:{}}}]}
-            @value-changed=${t=>this._updateCondition(e,o,{entity:t.detail.value.entity})}
+            @value-changed=${e=>this._updateCondition(t,o,{entity:e.detail.value.entity})}
           ></ha-form>
         </div>
 
@@ -8075,8 +9095,8 @@
           <label>Attribute Name:</label>
           <input
             type="text"
-            .value=${t.attribute||""}
-            @input=${t=>this._updateCondition(e,o,{attribute:t.target.value})}
+            .value=${e.attribute||""}
+            @input=${e=>this._updateCondition(t,o,{attribute:e.target.value})}
             placeholder="Enter attribute name (e.g., battery_level, friendly_name)"
           />
           <div class="field-help">
@@ -8089,8 +9109,8 @@
         <div class="condition-field">
           <label>Operator:</label>
           <select
-            .value=${t.operator||"="}
-            @change=${t=>this._updateCondition(e,o,{operator:t.target.value})}
+            .value=${e.operator||"="}
+            @change=${e=>this._updateCondition(t,o,{operator:e.target.value})}
           >
             <option value="=">=</option>
             <option value="!=">!=</option>
@@ -8104,19 +9124,19 @@
         </div>
 
         <!-- Value (if not has_value/no_value) -->
-        ${"has_value"!==t.operator&&"no_value"!==t.operator?V`
+        ${"has_value"!==e.operator&&"no_value"!==e.operator?V`
               <div class="condition-field">
                 <label>Value:</label>
                 <input
                   type="text"
-                  .value=${t.value||""}
-                  @input=${t=>this._updateCondition(e,o,{value:t.target.value})}
+                  .value=${e.value||""}
+                  @input=${e=>this._updateCondition(t,o,{value:e.target.value})}
                   placeholder="Enter value to compare"
                 />
               </div>
             `:""}
       </div>
-    `}_renderTimeCondition(e,t,o){return V`
+    `}_renderTimeCondition(t,e,o){return V`
       <div class="time-condition-fields">
         <p class="condition-info">Local time is ${(new Date).toLocaleString()}</p>
 
@@ -8125,8 +9145,8 @@
             <label>From Time:</label>
             <input
               type="time"
-              .value=${t.time_from||""}
-              @input=${t=>this._updateCondition(e,o,{time_from:t.target.value})}
+              .value=${e.time_from||""}
+              @input=${e=>this._updateCondition(t,o,{time_from:e.target.value})}
             />
           </div>
 
@@ -8134,26 +9154,26 @@
             <label>To Time:</label>
             <input
               type="time"
-              .value=${t.time_to||""}
-              @input=${t=>this._updateCondition(e,o,{time_to:t.target.value})}
+              .value=${e.time_to||""}
+              @input=${e=>this._updateCondition(t,o,{time_to:e.target.value})}
             />
           </div>
         </div>
       </div>
-    `}_renderTemplateCondition(e,t,o){return V`
+    `}_renderTemplateCondition(t,e,o){return V`
       <div class="template-condition">
         <div class="condition-field">
           <label>Template:</label>
           <textarea
-            .value=${t.template||""}
-            @input=${t=>this._updateCondition(e,o,{template:t.target.value})}
+            .value=${e.template||""}
+            @input=${e=>this._updateCondition(t,o,{template:e.target.value})}
             placeholder="{% if states('sensor.example') == 'on' %}true{% else %}false{% endif %}"
             rows="3"
           ></textarea>
         </div>
         <div class="template-help">Template should return 'true' or 'false'</div>
       </div>
-    `}_renderLogicTab(e){const t=e.display_conditions||[],o=e.display_mode||"always",i=e.template_mode||!1;return V`
+    `}_renderLogicTab(t){const e=t.display_conditions||[],o=t.display_mode||"always",i=t.template_mode||!1;return V`
       <div class="logic-tab-content">
         <!-- Basic Conditions Section -->
         <div
@@ -8168,7 +9188,7 @@
           <div class="display-mode-selector">
             <select
               .value=${o}
-              @change=${e=>{const t=e.target.value;this._updateModule({display_mode:t})}}
+              @change=${t=>{const e=t.target.value;this._updateModule({display_mode:e})}}
               class="display-mode-dropdown"
               .disabled=${i}
             >
@@ -8193,19 +9213,18 @@
                   <button
                     type="button"
                     class="add-condition-btn"
-                    @click=${()=>this._addCondition(e)}
+                    @click=${()=>this._addCondition(t)}
                     .disabled=${i}
                   >
-                    <ha-icon icon="mdi:plus"></ha-icon>
                     Add Condition
                   </button>
                 </div>
 
                 <div class="conditions-list">
-                  ${t.map(((t,o)=>this._renderCondition(e,t,o)))}
+                  ${e.map(((e,o)=>this._renderCondition(t,e,o)))}
                 </div>
 
-                ${0===t.length?V`
+                ${0===e.length?V`
                       <div class="no-conditions">
                         <p>No conditions added yet. Click "Add Condition" to get started.</p>
                       </div>
@@ -8222,7 +9241,7 @@
                 <input
                   type="checkbox"
                   .checked=${i}
-                  @change=${e=>{const t=e.target.checked;this._updateModule({template_mode:t,display_mode:t?"always":o})}}
+                  @change=${t=>{const e=t.target.checked;this._updateModule({template_mode:e,display_mode:e?"always":o})}}
                 />
                 <span class="slider round"></span>
               </label>
@@ -8236,8 +9255,8 @@
           ${i?V`
                 <div class="template-content">
                   <textarea
-                    .value=${e.template||""}
-                    @input=${e=>this._updateModule({template:e.target.value})}
+                    .value=${t.template||""}
+                    @input=${t=>this._updateModule({template:t.target.value})}
                     placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
                     class="template-editor"
                     rows="6"
@@ -8267,21 +9286,21 @@
               `:""}
         </div>
       </div>
-    `}_renderDesignTab(e){var t,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f,y,_,x,w,$,k,C;const S={color:e.color,text_align:e.text_align||e.alignment,font_size:null===(t=e.font_size)||void 0===t?void 0:t.toString(),line_height:null===(o=e.line_height)||void 0===o?void 0:o.toString(),letter_spacing:e.letter_spacing,font_family:e.font_family,font_weight:e.font_weight,text_transform:e.text_transform,font_style:e.font_style,background_color:e.background_color,background_image:e.background_image,background_image_type:e.background_image_type,background_image_entity:e.background_image_entity,backdrop_filter:e.backdrop_filter,width:e.width,height:e.height,max_width:e.max_width,max_height:e.max_height,min_width:e.min_width,min_height:e.min_height,margin_top:(null===(n=null===(i=e.margin)||void 0===i?void 0:i.top)||void 0===n?void 0:n.toString())||e.margin_top,margin_bottom:(null===(r=null===(a=e.margin)||void 0===a?void 0:a.bottom)||void 0===r?void 0:r.toString())||e.margin_bottom,margin_left:(null===(s=null===(l=e.margin)||void 0===l?void 0:l.left)||void 0===s?void 0:s.toString())||e.margin_left,margin_right:(null===(c=null===(d=e.margin)||void 0===d?void 0:d.right)||void 0===c?void 0:c.toString())||e.margin_right,padding_top:(null===(u=null===(p=e.padding)||void 0===p?void 0:p.top)||void 0===u?void 0:u.toString())||e.padding_top,padding_bottom:(null===(g=null===(m=e.padding)||void 0===m?void 0:m.bottom)||void 0===g?void 0:g.toString())||e.padding_bottom,padding_left:(null===(v=null===(h=e.padding)||void 0===h?void 0:h.left)||void 0===v?void 0:v.toString())||e.padding_left,padding_right:(null===(f=null===(b=e.padding)||void 0===b?void 0:b.right)||void 0===f?void 0:f.toString())||e.padding_right,border_radius:(null===(_=null===(y=e.border)||void 0===y?void 0:y.radius)||void 0===_?void 0:_.toString())||(null===(x=e.border_radius)||void 0===x?void 0:x.toString()),border_style:(null===(w=e.border)||void 0===w?void 0:w.style)||e.border_style,border_width:(null===(k=null===($=e.border)||void 0===$?void 0:$.width)||void 0===k?void 0:k.toString())||e.border_width,border_color:(null===(C=e.border)||void 0===C?void 0:C.color)||e.border_color,position:e.position,top:e.top,bottom:e.bottom,left:e.left,right:e.right,z_index:e.z_index,text_shadow_h:e.text_shadow_h,text_shadow_v:e.text_shadow_v,text_shadow_blur:e.text_shadow_blur,text_shadow_color:e.text_shadow_color,box_shadow_h:e.box_shadow_h,box_shadow_v:e.box_shadow_v,box_shadow_blur:e.box_shadow_blur,box_shadow_spread:e.box_shadow_spread,box_shadow_color:e.box_shadow_color,overflow:e.overflow,clip_path:e.clip_path,animation_type:e.animation_type,animation_entity:e.animation_entity,animation_trigger_type:e.animation_trigger_type,animation_attribute:e.animation_attribute,animation_state:e.animation_state,intro_animation:e.intro_animation,outro_animation:e.outro_animation,animation_duration:e.animation_duration,animation_delay:e.animation_delay,animation_timing:e.animation_timing};return console.log("🔄 LayoutTab: Rendering module design tab with properties:",S),V`
+    `}_renderDesignTab(t){var e,o,i,n,a,r,l,s,d,c,p,u,m,g,h,v,b,f,_,y,x,w,$,k,C;const S={color:t.color,text_align:t.text_align||t.alignment,font_size:null===(e=t.font_size)||void 0===e?void 0:e.toString(),line_height:null===(o=t.line_height)||void 0===o?void 0:o.toString(),letter_spacing:t.letter_spacing,font_family:t.font_family,font_weight:t.font_weight,text_transform:t.text_transform,font_style:t.font_style,background_color:t.background_color,background_image:t.background_image,background_image_type:t.background_image_type,background_image_entity:t.background_image_entity,backdrop_filter:t.backdrop_filter,width:t.width,height:t.height,max_width:t.max_width,max_height:t.max_height,min_width:t.min_width,min_height:t.min_height,margin_top:(null===(n=null===(i=t.margin)||void 0===i?void 0:i.top)||void 0===n?void 0:n.toString())||t.margin_top,margin_bottom:(null===(r=null===(a=t.margin)||void 0===a?void 0:a.bottom)||void 0===r?void 0:r.toString())||t.margin_bottom,margin_left:(null===(s=null===(l=t.margin)||void 0===l?void 0:l.left)||void 0===s?void 0:s.toString())||t.margin_left,margin_right:(null===(c=null===(d=t.margin)||void 0===d?void 0:d.right)||void 0===c?void 0:c.toString())||t.margin_right,padding_top:(null===(u=null===(p=t.padding)||void 0===p?void 0:p.top)||void 0===u?void 0:u.toString())||t.padding_top,padding_bottom:(null===(g=null===(m=t.padding)||void 0===m?void 0:m.bottom)||void 0===g?void 0:g.toString())||t.padding_bottom,padding_left:(null===(v=null===(h=t.padding)||void 0===h?void 0:h.left)||void 0===v?void 0:v.toString())||t.padding_left,padding_right:(null===(f=null===(b=t.padding)||void 0===b?void 0:b.right)||void 0===f?void 0:f.toString())||t.padding_right,border_radius:(null===(y=null===(_=t.border)||void 0===_?void 0:_.radius)||void 0===y?void 0:y.toString())||(null===(x=t.border_radius)||void 0===x?void 0:x.toString()),border_style:(null===(w=t.border)||void 0===w?void 0:w.style)||t.border_style,border_width:(null===(k=null===($=t.border)||void 0===$?void 0:$.width)||void 0===k?void 0:k.toString())||t.border_width,border_color:(null===(C=t.border)||void 0===C?void 0:C.color)||t.border_color,position:t.position,top:t.top,bottom:t.bottom,left:t.left,right:t.right,z_index:t.z_index,text_shadow_h:t.text_shadow_h,text_shadow_v:t.text_shadow_v,text_shadow_blur:t.text_shadow_blur,text_shadow_color:t.text_shadow_color,box_shadow_h:t.box_shadow_h,box_shadow_v:t.box_shadow_v,box_shadow_blur:t.box_shadow_blur,box_shadow_spread:t.box_shadow_spread,box_shadow_color:t.box_shadow_color,overflow:t.overflow,clip_path:t.clip_path,animation_type:t.animation_type,animation_entity:t.animation_entity,animation_trigger_type:t.animation_trigger_type,animation_attribute:t.animation_attribute,animation_state:t.animation_state,intro_animation:t.intro_animation,outro_animation:t.outro_animation,animation_duration:t.animation_duration,animation_delay:t.animation_delay,animation_timing:t.animation_timing};return console.log("🔄 LayoutTab: Rendering module design tab with properties:",S),V`
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${S}
-        .onUpdate=${e=>{console.log("🔄 LayoutTab: Received onUpdate callback for MODULE:",e),console.log("🔄 LayoutTab: Current selected module:",this._selectedModule),this._updateModuleDesign(e)}}
+        .onUpdate=${t=>{console.log("🔄 LayoutTab: Received onUpdate callback for MODULE:",t),console.log("🔄 LayoutTab: Current selected module:",this._selectedModule),this._updateModuleDesign(t)}}
       ></ultra-global-design-tab>
-    `}_renderTextDesignTab(e){if("text"===e.type){const t=e;return V`
+    `}_renderTextDesignTab(t){if("text"===t.type){const e=t;return V`
         <!-- Text Color Section -->
         <div class="settings-section">
           <ultra-color-picker
             .label=${"Text Color"}
-            .value=${t.color||""}
+            .value=${e.color||""}
             .defaultValue=${"var(--primary-text-color)"}
             .hass=${this.hass}
-            @value-changed=${e=>{const o=e.detail.value;this._updateModule({color:o}),this._loadGoogleFont(t.font_family)}}
+            @value-changed=${t=>{const o=t.detail.value;this._updateModule({color:o}),this._loadGoogleFont(e.font_family)}}
           ></ultra-color-picker>
         </div>
 
@@ -8289,26 +9308,26 @@
         <div class="settings-section">
           <label>Font:</label>
           <select
-            .value=${t.font_family||"default"}
-            @change=${e=>{const t=e.target.value;this._updateModule({font_family:t}),this._loadGoogleFont(t)}}
+            .value=${e.font_family||"default"}
+            @change=${t=>{const e=t.target.value;this._updateModule({font_family:e}),this._loadGoogleFont(e)}}
             class="font-dropdown"
           >
-            ${ut.map((e=>V`
-                <option value="${e.value}" ?selected=${t.font_family===e.value}>
-                  ${e.label}
+            ${pe.map((t=>V`
+                <option value="${t.value}" ?selected=${e.font_family===t.value}>
+                  ${t.label}
                 </option>
               `))}
             <optgroup label="Fonts from Typography settings">
-              ${mt.map((e=>V`
-                  <option value="${e.value}" ?selected=${t.font_family===e.value}>
-                    ${e.label}
+              ${ue.map((t=>V`
+                  <option value="${t.value}" ?selected=${e.font_family===t.value}>
+                    ${t.label}
                   </option>
                 `))}
             </optgroup>
             <optgroup label="Web safe font combinations (do not need to be loaded)">
-              ${gt.map((e=>V`
-                  <option value="${e.value}" ?selected=${t.font_family===e.value}>
-                    ${e.label}
+              ${me.map((t=>V`
+                  <option value="${t.value}" ?selected=${e.font_family===t.value}>
+                    ${t.label}
                   </option>
                 `))}
             </optgroup>
@@ -8322,8 +9341,8 @@
             type="number"
             min="8"
             max="72"
-            .value=${t.font_size||16}
-            @input=${e=>this._updateModule({font_size:Number(e.target.value)})}
+            .value=${e.font_size||16}
+            @input=${t=>this._updateModule({font_size:Number(t.target.value)})}
             class="font-size-input"
           />
         </div>
@@ -8332,12 +9351,12 @@
         <div class="settings-section">
           <label>Text Alignment:</label>
           <div class="alignment-buttons">
-            ${["left","center","right"].map((e=>V`
+            ${["left","center","right"].map((t=>V`
                 <button
-                  class="alignment-btn ${t.alignment===e?"active":""}"
-                  @click=${()=>this._updateModule({alignment:e})}
+                  class="alignment-btn ${e.alignment===t?"active":""}"
+                  @click=${()=>this._updateModule({alignment:t})}
                 >
-                  <ha-icon icon="mdi:format-align-${e}"></ha-icon>
+                  <ha-icon icon="mdi:format-align-${t}"></ha-icon>
                 </button>
               `))}
           </div>
@@ -8348,60 +9367,60 @@
           <label>Text Formatting:</label>
           <div class="format-buttons">
             <button
-              class="format-btn ${t.bold?"active":""}"
-              @click=${()=>this._updateModule({bold:!t.bold})}
+              class="format-btn ${e.bold?"active":""}"
+              @click=${()=>this._updateModule({bold:!e.bold})}
             >
               <ha-icon icon="mdi:format-bold"></ha-icon>
             </button>
             <button
-              class="format-btn ${t.italic?"active":""}"
-              @click=${()=>this._updateModule({italic:!t.italic})}
+              class="format-btn ${e.italic?"active":""}"
+              @click=${()=>this._updateModule({italic:!e.italic})}
             >
               <ha-icon icon="mdi:format-italic"></ha-icon>
             </button>
             <button
-              class="format-btn ${t.uppercase?"active":""}"
-              @click=${()=>this._updateModule({uppercase:!t.uppercase})}
+              class="format-btn ${e.uppercase?"active":""}"
+              @click=${()=>this._updateModule({uppercase:!e.uppercase})}
             >
               <ha-icon icon="mdi:format-letter-case-upper"></ha-icon>
             </button>
             <button
-              class="format-btn ${t.strikethrough?"active":""}"
-              @click=${()=>this._updateModule({strikethrough:!t.strikethrough})}
+              class="format-btn ${e.strikethrough?"active":""}"
+              @click=${()=>this._updateModule({strikethrough:!e.strikethrough})}
             >
               <ha-icon icon="mdi:format-strikethrough"></ha-icon>
             </button>
           </div>
         </div>
-      `}if("separator"===e.type)return V`
+      `}if("separator"===t.type)return V`
         <div class="settings-section">
           <ultra-color-picker
             .label=${"Separator Color"}
-            .value=${e.color||""}
+            .value=${t.color||""}
             .defaultValue=${"var(--divider-color)"}
             .hass=${this.hass}
-            @value-changed=${e=>{const t=e.detail.value;this._updateModule({color:t})}}
+            @value-changed=${t=>{const e=t.detail.value;this._updateModule({color:e})}}
           ></ultra-color-picker>
         </div>
-      `;if("bar"===e.type){const t=e;return V`
+      `;if("bar"===t.type){const e=t;return V`
         <!-- Bar Colors -->
         <div class="settings-section">
           <ultra-color-picker
             .label=${"Bar Color"}
-            .value=${t.bar_color||""}
+            .value=${e.bar_color||""}
             .defaultValue=${"var(--primary-color)"}
             .hass=${this.hass}
-            @value-changed=${e=>{const t=e.detail.value;this._updateModule({bar_color:t})}}
+            @value-changed=${t=>{const e=t.detail.value;this._updateModule({bar_color:e})}}
           ></ultra-color-picker>
         </div>
 
         <div class="settings-section">
           <ultra-color-picker
             .label=${"Background Color"}
-            .value=${t.background_color||""}
+            .value=${e.background_color||""}
             .defaultValue=${"var(--secondary-background-color)"}
             .hass=${this.hass}
-            @value-changed=${e=>{const t=e.detail.value;this._updateModule({background_color:t})}}
+            @value-changed=${t=>{const e=t.detail.value;this._updateModule({background_color:e})}}
           ></ultra-color-picker>
         </div>
 
@@ -8413,8 +9432,8 @@
             min="10"
             max="100"
             step="5"
-            .value=${t.height||20}
-            @input=${e=>this._updateModule({height:Number(e.target.value)})}
+            .value=${e.height||20}
+            @input=${t=>this._updateModule({height:Number(t.target.value)})}
             class="number-input"
           />
         </div>
@@ -8425,8 +9444,8 @@
             type="number"
             min="0"
             max="50"
-            .value=${t.border_radius||10}
-            @input=${e=>this._updateModule({border_radius:Number(e.target.value)})}
+            .value=${e.border_radius||10}
+            @input=${t=>this._updateModule({border_radius:Number(t.target.value)})}
             class="number-input"
           />
         </div>
@@ -8436,23 +9455,23 @@
           <label class="checkbox-wrapper">
             <input
               type="checkbox"
-              .checked=${!1!==t.show_value}
-              @change=${e=>this._updateModule({show_value:e.target.checked})}
+              .checked=${!1!==e.show_value}
+              @change=${t=>this._updateModule({show_value:t.target.checked})}
             />
             Show Value
           </label>
         </div>
 
-        ${t.show_value?V`
+        ${e.show_value?V`
               <div class="settings-section">
                 <label>Value Position:</label>
                 <div class="value-position-buttons">
-                  ${["inside","outside","none"].map((e=>V`
+                  ${["inside","outside","none"].map((t=>V`
                       <button
-                        class="position-btn ${t.value_position===e?"active":""}"
-                        @click=${()=>this._updateModule({value_position:e})}
+                        class="position-btn ${e.value_position===t?"active":""}"
+                        @click=${()=>this._updateModule({value_position:t})}
                       >
-                        ${e.charAt(0).toUpperCase()+e.slice(1)}
+                        ${t.charAt(0).toUpperCase()+t.slice(1)}
                       </button>
                     `))}
                 </div>
@@ -8463,8 +9482,8 @@
           <label class="checkbox-wrapper">
             <input
               type="checkbox"
-              .checked=${!1!==t.show_percentage}
-              @change=${e=>this._updateModule({show_percentage:e.target.checked})}
+              .checked=${!1!==e.show_percentage}
+              @change=${t=>this._updateModule({show_percentage:t.target.checked})}
             />
             Show as Percentage
           </label>
@@ -8474,23 +9493,23 @@
           <label class="checkbox-wrapper">
             <input
               type="checkbox"
-              .checked=${!1!==t.animation}
-              @change=${e=>this._updateModule({animation:e.target.checked})}
+              .checked=${!1!==e.animation}
+              @change=${t=>this._updateModule({animation:t.target.checked})}
             />
             Animation
           </label>
         </div>
-      `}if("image"===e.type){const t=e;return V`
+      `}if("image"===t.type){const e=t;return V`
         <!-- Image Alignment -->
         <div class="settings-section">
           <label>Image Alignment:</label>
           <div class="alignment-buttons">
-            ${["left","center","right"].map((e=>V`
+            ${["left","center","right"].map((t=>V`
                 <button
-                  class="alignment-btn ${t.alignment===e?"active":""}"
-                  @click=${()=>this._updateModule({alignment:e})}
+                  class="alignment-btn ${e.alignment===t?"active":""}"
+                  @click=${()=>this._updateModule({alignment:t})}
                 >
-                  <ha-icon icon="mdi:format-align-${e}"></ha-icon>
+                  <ha-icon icon="mdi:format-align-${t}"></ha-icon>
                 </button>
               `))}
           </div>
@@ -8504,8 +9523,8 @@
             min="50"
             max="500"
             step="10"
-            .value=${t.image_width||100}
-            @input=${e=>this._updateModule({image_width:Number(e.target.value)})}
+            .value=${e.image_width||100}
+            @input=${t=>this._updateModule({image_width:Number(t.target.value)})}
             class="number-input"
           />
         </div>
@@ -8517,8 +9536,8 @@
             min="50"
             max="500"
             step="10"
-            .value=${t.image_height||100}
-            @input=${e=>this._updateModule({image_height:Number(e.target.value)})}
+            .value=${e.image_height||100}
+            @input=${t=>this._updateModule({image_height:Number(t.target.value)})}
             class="number-input"
           />
         </div>
@@ -8529,8 +9548,8 @@
             type="number"
             min="0"
             max="50"
-            .value=${t.border_radius||8}
-            @input=${e=>this._updateModule({border_radius:Number(e.target.value)})}
+            .value=${e.border_radius||8}
+            @input=${t=>this._updateModule({border_radius:Number(t.target.value)})}
             class="number-input"
           />
         </div>
@@ -8538,29 +9557,29 @@
         <div class="settings-section">
           <label>Image Fit:</label>
           <div class="value-position-buttons">
-            ${["cover","contain","fill","none"].map((e=>V`
+            ${["cover","contain","fill","none"].map((t=>V`
                 <button
-                  class="position-btn ${t.image_fit===e?"active":""}"
-                  @click=${()=>this._updateModule({image_fit:e})}
+                  class="position-btn ${e.image_fit===t?"active":""}"
+                  @click=${()=>this._updateModule({image_fit:t})}
                 >
-                  ${e.charAt(0).toUpperCase()+e.slice(1)}
+                  ${t.charAt(0).toUpperCase()+t.slice(1)}
                 </button>
               `))}
           </div>
         </div>
       `}return V`<div class="settings-section">
-      <p>Design options not available for ${e.type} modules.</p>
-    </div>`}_renderBackgroundDesignTab(e){return V`
+      <p>Design options not available for ${t.type} modules.</p>
+    </div>`}_renderBackgroundDesignTab(t){return V`
       <div class="settings-section">
         <ultra-color-picker
           .label=${"Background Color"}
-          .value=${e.background_color||""}
+          .value=${t.background_color||""}
           .defaultValue=${"var(--ha-card-background, var(--card-background-color, #fff))"}
           .hass=${this.hass}
-          @value-changed=${e=>{const t=e.detail.value;this._updateModule({background_color:t})}}
+          @value-changed=${t=>{const e=t.detail.value;this._updateModule({background_color:e})}}
         ></ultra-color-picker>
       </div>
-    `}_renderSpacingDesignTab(e){var t,o,i,n,a,r,l,s;return V`
+    `}_renderSpacingDesignTab(t){var e,o,i,n,a,r,l,s;return V`
       <div class="spacing-grid">
         <div class="spacing-section">
           <h4>Margin</h4>
@@ -8568,29 +9587,29 @@
             <input
               type="number"
               placeholder="Top"
-              .value=${(null===(t=e.margin)||void 0===t?void 0:t.top)||0}
-              @input=${t=>this._updateModule({margin:Object.assign(Object.assign({},e.margin),{top:Number(t.target.value)})})}
+              .value=${(null===(e=t.margin)||void 0===e?void 0:e.top)||0}
+              @input=${e=>this._updateModule({margin:Object.assign(Object.assign({},t.margin),{top:Number(e.target.value)})})}
             />
             <div class="spacing-row">
               <input
                 type="number"
                 placeholder="Left"
-                .value=${(null===(o=e.margin)||void 0===o?void 0:o.left)||0}
-                @input=${t=>this._updateModule({margin:Object.assign(Object.assign({},e.margin),{left:Number(t.target.value)})})}
+                .value=${(null===(o=t.margin)||void 0===o?void 0:o.left)||0}
+                @input=${e=>this._updateModule({margin:Object.assign(Object.assign({},t.margin),{left:Number(e.target.value)})})}
               />
               <span class="spacing-center">M</span>
               <input
                 type="number"
                 placeholder="Right"
-                .value=${(null===(i=e.margin)||void 0===i?void 0:i.right)||0}
-                @input=${t=>this._updateModule({margin:Object.assign(Object.assign({},e.margin),{right:Number(t.target.value)})})}
+                .value=${(null===(i=t.margin)||void 0===i?void 0:i.right)||0}
+                @input=${e=>this._updateModule({margin:Object.assign(Object.assign({},t.margin),{right:Number(e.target.value)})})}
               />
             </div>
             <input
               type="number"
               placeholder="Bottom"
-              .value=${(null===(n=e.margin)||void 0===n?void 0:n.bottom)||0}
-              @input=${t=>this._updateModule({margin:Object.assign(Object.assign({},e.margin),{bottom:Number(t.target.value)})})}
+              .value=${(null===(n=t.margin)||void 0===n?void 0:n.bottom)||0}
+              @input=${e=>this._updateModule({margin:Object.assign(Object.assign({},t.margin),{bottom:Number(e.target.value)})})}
             />
           </div>
         </div>
@@ -8601,68 +9620,67 @@
             <input
               type="number"
               placeholder="Top"
-              .value=${(null===(a=e.padding)||void 0===a?void 0:a.top)||0}
-              @input=${t=>this._updateModule({padding:Object.assign(Object.assign({},e.padding),{top:Number(t.target.value)})})}
+              .value=${(null===(a=t.padding)||void 0===a?void 0:a.top)||0}
+              @input=${e=>this._updateModule({padding:Object.assign(Object.assign({},t.padding),{top:Number(e.target.value)})})}
             />
             <div class="spacing-row">
               <input
                 type="number"
                 placeholder="Left"
-                .value=${(null===(r=e.padding)||void 0===r?void 0:r.left)||0}
-                @input=${t=>this._updateModule({padding:Object.assign(Object.assign({},e.padding),{left:Number(t.target.value)})})}
+                .value=${(null===(r=t.padding)||void 0===r?void 0:r.left)||0}
+                @input=${e=>this._updateModule({padding:Object.assign(Object.assign({},t.padding),{left:Number(e.target.value)})})}
               />
               <span class="spacing-center">P</span>
               <input
                 type="number"
                 placeholder="Right"
-                .value=${(null===(l=e.padding)||void 0===l?void 0:l.right)||0}
-                @input=${t=>this._updateModule({padding:Object.assign(Object.assign({},e.padding),{right:Number(t.target.value)})})}
+                .value=${(null===(l=t.padding)||void 0===l?void 0:l.right)||0}
+                @input=${e=>this._updateModule({padding:Object.assign(Object.assign({},t.padding),{right:Number(e.target.value)})})}
               />
             </div>
             <input
               type="number"
               placeholder="Bottom"
-              .value=${(null===(s=e.padding)||void 0===s?void 0:s.bottom)||0}
-              @input=${t=>this._updateModule({padding:Object.assign(Object.assign({},e.padding),{bottom:Number(t.target.value)})})}
+              .value=${(null===(s=t.padding)||void 0===s?void 0:s.bottom)||0}
+              @input=${e=>this._updateModule({padding:Object.assign(Object.assign({},t.padding),{bottom:Number(e.target.value)})})}
             />
           </div>
         </div>
       </div>
-    `}firstUpdated(e){super.firstUpdated(e),this._loadCollapseState()}updated(e){super.updated(e)}_renderBorderDesignTab(e){var t;return V`
+    `}firstUpdated(t){super.firstUpdated(t),this._loadCollapseState()}updated(t){super.updated(t)}_renderBorderDesignTab(t){var e;return V`
       <div class="settings-section">
         <label>Border Radius (px):</label>
         <input
           type="number"
           min="0"
           max="50"
-          .value=${(null===(t=e.border)||void 0===t?void 0:t.radius)||0}
-          @input=${t=>this._updateModule({border:Object.assign(Object.assign({},e.border),{radius:Number(t.target.value)})})}
+          .value=${(null===(e=t.border)||void 0===e?void 0:e.radius)||0}
+          @input=${e=>this._updateModule({border:Object.assign(Object.assign({},t.border),{radius:Number(e.target.value)})})}
         />
       </div>
-    `}render(){const e=this._ensureLayout();return V`
+    `}render(){const t=this._ensureLayout();return V`
       <div class="layout-builder">
         <div class="builder-header">
           <h3>Layout Builder</h3>
           <button
             class="add-row-btn"
-            @click=${e=>{e.stopPropagation(),this._addRow()}}
+            @click=${t=>{t.stopPropagation(),this._addRow()}}
           >
-            <ha-icon icon="mdi:plus"></ha-icon>
             Add Row
           </button>
         </div>
 
         <div class="rows-container">
-          ${e.rows.map(((e,t)=>{var o,i;return V`
+          ${t.rows.map(((t,e)=>{var o,i;return V`
               <div
-                class="row-builder ${this._isRowCollapsed(t)?"collapsed":""} ${"row"===(null===(o=this._dropTarget)||void 0===o?void 0:o.type)&&(null===(i=this._dropTarget)||void 0===i?void 0:i.rowIndex)===t?"drop-target":""}"
+                class="row-builder ${this._isRowCollapsed(e)?"collapsed":""} ${"row"===(null===(o=this._dropTarget)||void 0===o?void 0:o.type)&&(null===(i=this._dropTarget)||void 0===i?void 0:i.rowIndex)===e?"drop-target":""}"
                 draggable="true"
-                @dragstart=${e=>this._onDragStart(e,"row",t)}
+                @dragstart=${t=>this._onDragStart(t,"row",e)}
                 @dragend=${this._onDragEnd}
                 @dragover=${this._onDragOver}
-                @dragenter=${e=>this._onDragEnter(e,"row",t)}
+                @dragenter=${t=>this._onDragEnter(t,"row",e)}
                 @dragleave=${this._onDragLeave}
-                @drop=${e=>this._onDrop(e,"row",t)}
+                @drop=${t=>this._onDrop(t,"row",e)}
               >
                 <div class="row-header">
                   <div class="row-title">
@@ -8671,80 +9689,72 @@
                     </div>
                     <button
                       class="row-collapse-btn"
-                      @click=${e=>{e.stopPropagation(),this._toggleRowCollapse(t)}}
-                      @mousedown=${e=>e.stopPropagation()}
-                      @dragstart=${e=>e.preventDefault()}
-                      title="${this._isRowCollapsed(t)?"Expand Row":"Collapse Row"}"
+                      @click=${t=>{t.stopPropagation(),this._toggleRowCollapse(e)}}
+                      @mousedown=${t=>t.stopPropagation()}
+                      @dragstart=${t=>t.preventDefault()}
+                      title="${this._isRowCollapsed(e)?"Expand Row":"Collapse Row"}"
                     >
                       <ha-icon
-                        icon="mdi:chevron-${this._isRowCollapsed(t)?"right":"down"}"
+                        icon="mdi:chevron-${this._isRowCollapsed(e)?"right":"down"}"
                       ></ha-icon>
                     </button>
-                    <span>${this._getRowDisplayName(e,t)}</span>
+                    <span>${this._getRowDisplayName(t,e)}</span>
                     <button
                       class="column-layout-btn"
-                      @click=${e=>{e.stopPropagation(),this._openColumnLayoutSelector(t)}}
-                      @mousedown=${e=>e.stopPropagation()}
-                      @dragstart=${e=>e.preventDefault()}
+                      @click=${t=>{t.stopPropagation(),this._openColumnLayoutSelector(e)}}
+                      @mousedown=${t=>t.stopPropagation()}
+                      @dragstart=${t=>t.preventDefault()}
                       title="Change Column Layout"
                     >
-                      <span class="layout-icon">${this._getCurrentLayoutDisplay(e)}</span>
+                      <span class="layout-icon">${this._getCurrentLayoutDisplay(t)}</span>
                     </button>
                   </div>
                   <div class="row-actions">
                     <button
-                      class="row-add-column-btn"
-                      @click=${e=>{e.stopPropagation(),this._addColumn(t)}}
-                      @mousedown=${e=>e.stopPropagation()}
-                      @dragstart=${e=>e.preventDefault()}
-                      title="Add Column to Row"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                    <button
                       class="row-duplicate-btn"
-                      @click=${e=>{e.stopPropagation(),this._duplicateRow(t)}}
-                      @mousedown=${e=>e.stopPropagation()}
-                      @dragstart=${e=>e.preventDefault()}
+                      @click=${t=>{t.stopPropagation(),this._duplicateRow(e)}}
+                      @mousedown=${t=>t.stopPropagation()}
+                      @dragstart=${t=>t.preventDefault()}
                       title="Duplicate Row"
                     >
                       <ha-icon icon="mdi:content-copy"></ha-icon>
                     </button>
                     <button
                       class="row-settings-btn"
-                      @click=${e=>{e.stopPropagation(),this._openRowSettings(t)}}
-                      @mousedown=${e=>e.stopPropagation()}
-                      @dragstart=${e=>e.preventDefault()}
+                      @click=${t=>{t.stopPropagation(),this._openRowSettings(e)}}
+                      @mousedown=${t=>t.stopPropagation()}
+                      @dragstart=${t=>t.preventDefault()}
                       title="Row Settings"
                     >
                       <ha-icon icon="mdi:cog"></ha-icon>
                     </button>
                     <button
                       class="delete-row-btn"
-                      @click=${e=>{e.stopPropagation(),this._deleteRow(t)}}
-                      @mousedown=${e=>e.stopPropagation()}
-                      @dragstart=${e=>e.preventDefault()}
+                      @click=${t=>{t.stopPropagation(),this._deleteRow(e)}}
+                      @mousedown=${t=>t.stopPropagation()}
+                      @dragstart=${t=>t.preventDefault()}
                       title="Delete Row"
+                      style="margin-left: 8px;"
                     >
                       <ha-icon icon="mdi:delete"></ha-icon>
                     </button>
                   </div>
                 </div>
-                ${this._isRowCollapsed(t)?"":V`
+                ${this._isRowCollapsed(e)?"":V`
                       <div
                         class="columns-container"
-                        data-layout="${e.column_layout||"1-2-1-2"}"
+                        data-layout="${t.column_layout||"1-2-1-2"}"
                       >
-                        ${e.columns&&e.columns.length>0?e.columns.map(((e,o)=>{var i,n,a,r,l,s;return V`
+                        ${t.columns&&t.columns.length>0?t.columns.map(((t,o)=>{var i,n,a,r,l,s;return V`
                                 <div
-                                  class="column-builder ${this._isColumnCollapsed(t,o)?"collapsed":""} ${"column"===(null===(i=this._dropTarget)||void 0===i?void 0:i.type)&&(null===(n=this._dropTarget)||void 0===n?void 0:n.rowIndex)===t&&(null===(a=this._dropTarget)||void 0===a?void 0:a.columnIndex)===o?"drop-target":""}"
+                                  class="column-builder ${this._isColumnCollapsed(e,o)?"collapsed":""} ${"column"===(null===(i=this._dropTarget)||void 0===i?void 0:i.type)&&(null===(n=this._dropTarget)||void 0===n?void 0:n.rowIndex)===e&&(null===(a=this._dropTarget)||void 0===a?void 0:a.columnIndex)===o?"drop-target":""}"
                                   draggable="true"
-                                  @dragstart=${e=>this._onDragStart(e,"column",t,o)}
+                                  @dragstart=${t=>this._onDragStart(t,"column",e,o)}
                                   @dragend=${this._onDragEnd}
                                   @dragover=${this._onDragOver}
-                                  @dragenter=${e=>this._onDragEnter(e,"column",t,o)}
+                                  @dragenter=${t=>this._onDragEnter(t,"column",e,o)}
                                   @dragleave=${this._onDragLeave}
-                                  @drop=${e=>this._onDrop(e,"column",t,o)}
+                                  @drop=${t=>this._onDrop(t,"column",e,o)}
                                 >
                                   <div class="column-header">
                                     <div class="column-title">
@@ -8753,89 +9763,81 @@
                                       </div>
                                       <button
                                         class="column-collapse-btn"
-                                        @click=${e=>{e.stopPropagation(),this._toggleColumnCollapse(t,o)}}
-                                        @mousedown=${e=>e.stopPropagation()}
-                                        @dragstart=${e=>e.preventDefault()}
-                                        title="${this._isColumnCollapsed(t,o)?"Expand Column":"Collapse Column"}"
+                                        @click=${t=>{t.stopPropagation(),this._toggleColumnCollapse(e,o)}}
+                                        @mousedown=${t=>t.stopPropagation()}
+                                        @dragstart=${t=>t.preventDefault()}
+                                        title="${this._isColumnCollapsed(e,o)?"Expand Column":"Collapse Column"}"
                                       >
                                         <ha-icon
-                                          icon="mdi:chevron-${this._isColumnCollapsed(t,o)?"right":"down"}"
+                                          icon="mdi:chevron-${this._isColumnCollapsed(e,o)?"right":"down"}"
                                         ></ha-icon>
                                       </button>
                                       <span
-                                        >${this._getColumnDisplayName(e,o)}</span
+                                        >${this._getColumnDisplayName(t,o)}</span
                                       >
                                     </div>
                                     <div class="column-actions">
                                       <button
-                                        class="column-add-module-btn"
-                                        @click=${e=>{e.stopPropagation(),this._openModuleSelector(t,o)}}
-                                        @mousedown=${e=>e.stopPropagation()}
-                                        @dragstart=${e=>e.preventDefault()}
-                                        title="Add Module to Column"
-                                      >
-                                        <ha-icon icon="mdi:plus"></ha-icon>
-                                      </button>
-                                      <button
                                         class="column-duplicate-btn"
-                                        @click=${e=>{e.stopPropagation(),this._duplicateColumn(t,o)}}
-                                        @mousedown=${e=>e.stopPropagation()}
-                                        @dragstart=${e=>e.preventDefault()}
+                                        @click=${t=>{t.stopPropagation(),this._duplicateColumn(e,o)}}
+                                        @mousedown=${t=>t.stopPropagation()}
+                                        @dragstart=${t=>t.preventDefault()}
                                         title="Duplicate Column"
                                       >
                                         <ha-icon icon="mdi:content-copy"></ha-icon>
                                       </button>
                                       <button
                                         class="column-settings-btn"
-                                        @click=${e=>{e.stopPropagation(),this._openColumnSettings(t,o)}}
-                                        @mousedown=${e=>e.stopPropagation()}
-                                        @dragstart=${e=>e.preventDefault()}
+                                        @click=${t=>{t.stopPropagation(),this._openColumnSettings(e,o)}}
+                                        @mousedown=${t=>t.stopPropagation()}
+                                        @dragstart=${t=>t.preventDefault()}
                                         title="Column Settings"
                                       >
                                         <ha-icon icon="mdi:cog"></ha-icon>
                                       </button>
                                       <button
                                         class="column-delete-btn"
-                                        @click=${e=>{e.stopPropagation(),this._deleteColumn(t,o)}}
-                                        @mousedown=${e=>e.stopPropagation()}
-                                        @dragstart=${e=>e.preventDefault()}
+                                        @click=${t=>{t.stopPropagation(),this._deleteColumn(e,o)}}
+                                        @mousedown=${t=>t.stopPropagation()}
+                                        @dragstart=${t=>t.preventDefault()}
                                         title="Delete Column"
+                                        style="margin-left: 8px;"
                                       >
                                         <ha-icon icon="mdi:delete"></ha-icon>
                                       </button>
                                     </div>
                                   </div>
-                                  ${this._isColumnCollapsed(t,o)?"":V`
+                                  ${this._isColumnCollapsed(e,o)?"":V`
                                         <div
-                                          class="modules-container ${"column"===(null===(r=this._dropTarget)||void 0===r?void 0:r.type)&&(null===(l=this._dropTarget)||void 0===l?void 0:l.rowIndex)===t&&(null===(s=this._dropTarget)||void 0===s?void 0:s.columnIndex)===o?"drop-target":""}"
+                                          class="modules-container ${"column"===(null===(r=this._dropTarget)||void 0===r?void 0:r.type)&&(null===(l=this._dropTarget)||void 0===l?void 0:l.rowIndex)===e&&(null===(s=this._dropTarget)||void 0===s?void 0:s.columnIndex)===o?"drop-target":""}"
                                           @dragover=${this._onDragOver}
-                                          @dragenter=${e=>this._onDragEnter(e,"column",t,o)}
+                                          @dragenter=${t=>this._onDragEnter(t,"column",e,o)}
                                           @dragleave=${this._onDragLeave}
-                                          @drop=${e=>this._onDrop(e,"column",t,o)}
+                                          @drop=${t=>this._onDrop(t,"column",e,o)}
                                         >
-                                          ${e.modules.map(((e,i)=>{var n,a,r,l;return V`
+                                          ${t.modules.map(((t,i)=>{var n,a,r,l;return V`
                                               <div
                                                 class="module-item"
                                                 draggable="true"
-                                                @dragstart=${e=>this._onDragStart(e,"module",t,o,i)}
+                                                @dragstart=${t=>this._onDragStart(t,"module",e,o,i)}
                                                 @dragend=${this._onDragEnd}
                                                 @dragover=${this._onDragOver}
-                                                @dragenter=${e=>this._onDragEnter(e,"module",t,o,i)}
+                                                @dragenter=${t=>this._onDragEnter(t,"module",e,o,i)}
                                                 @dragleave=${this._onDragLeave}
-                                                @drop=${e=>this._onDrop(e,"module",t,o,i)}
-                                                class="${"module"===(null===(n=this._dropTarget)||void 0===n?void 0:n.type)&&(null===(a=this._dropTarget)||void 0===a?void 0:a.rowIndex)===t&&(null===(r=this._dropTarget)||void 0===r?void 0:r.columnIndex)===o&&(null===(l=this._dropTarget)||void 0===l?void 0:l.moduleIndex)===i?"drop-target":""}"
+                                                @drop=${t=>this._onDrop(t,"module",e,o,i)}
+                                                class="${"module"===(null===(n=this._dropTarget)||void 0===n?void 0:n.type)&&(null===(a=this._dropTarget)||void 0===a?void 0:a.rowIndex)===e&&(null===(r=this._dropTarget)||void 0===r?void 0:r.columnIndex)===o&&(null===(l=this._dropTarget)||void 0===l?void 0:l.moduleIndex)===i?"drop-target":""}"
                                               >
                                                 <div
                                                   class="module-content"
-                                                  @click=${()=>this._openModuleSettings(t,o,i)}
+                                                  @click=${()=>this._openModuleSettings(e,o,i)}
                                                 >
-                                                  ${this._renderSingleModule(e,t,o,i)}
+                                                  ${this._renderSingleModule(t,e,o,i)}
                                                 </div>
                                               </div>
                                             `}))}
                                           <button
                                             class="add-module-btn"
-                                            @click=${e=>{e.stopPropagation(),this._openModuleSelector(t,o)}}
+                                            @click=${t=>{t.stopPropagation(),this._openModuleSelector(e,o)}}
                                           >
                                             <ha-icon icon="mdi:plus"></ha-icon>
                                             Add Module
@@ -8848,7 +9850,7 @@
                                 <p>This row has no columns.</p>
                                 <button
                                   class="add-module-btn"
-                                  @click=${e=>{e.stopPropagation(),this._openModuleSelector(t,0)}}
+                                  @click=${t=>{t.stopPropagation(),this._openModuleSelector(e,0)}}
                                   style="margin-top: 8px;"
                                 >
                                   <ha-icon icon="mdi:plus"></ha-icon>
@@ -8859,7 +9861,7 @@
                         <div class="add-column-container">
                           <button
                             class="add-column-btn"
-                            @click=${e=>{e.stopPropagation(),this._addColumn(t)}}
+                            @click=${t=>{t.stopPropagation(),this._addColumn(e)}}
                             title="Add Column"
                           >
                             <ha-icon icon="mdi:plus"></ha-icon>
@@ -8879,33 +9881,33 @@
         ${this._showColumnSettings?this._renderColumnSettings():""}
         ${this._showColumnLayoutSelector?this._renderColumnLayoutSelector():""}
       </div>
-    `}_renderModuleSelector(){const e=Ze().getAllModules(),t=this._selectedLayoutModuleIndex>=0,o=e.filter((e=>"layout"===e.metadata.category)),i=e.filter((e=>"layout"!==e.metadata.category));return V`
+    `}_renderModuleSelector(){const t=Kt().getAllModules(),e=this._selectedLayoutModuleIndex>=0,o=t.filter((t=>"layout"===t.metadata.category)),i=t.filter((t=>"layout"!==t.metadata.category));return V`
       <div class="module-selector-popup">
         <div class="popup-overlay" @click=${()=>this._showModuleSelector=!1}></div>
         <div class="selector-content">
           <div class="selector-header">
             <h3>Add Module</h3>
-            ${t?V`<p class="selector-subtitle">
+            ${e?V`<p class="selector-subtitle">
                   Adding to layout module (only content modules allowed)
                 </p>`:""}
           </div>
 
-          ${!t&&o.length>0?V`
+          ${!e&&o.length>0?V`
                 <div class="module-category">
                   <h4 class="category-title">Layout Containers</h4>
                   <p class="category-description">Create containers to organize your modules</p>
                   <div class="module-types layout-modules">
-                    ${o.map((e=>{const t=e.metadata,o="horizontal"===t.type,i="vertical"===t.type;return V`
+                    ${o.map((t=>{const e=t.metadata,o="horizontal"===e.type,i="vertical"===e.type;return V`
                         <button
                           class="module-type-btn layout-module ${o?"horizontal-layout":""} ${i?"vertical-layout":""}"
-                          @click=${()=>this._addModule(t.type)}
-                          title="${t.description}"
+                          @click=${()=>this._addModule(e.type)}
+                          title="${e.description}"
                         >
                           <div class="layout-badge">Layout</div>
-                          <ha-icon icon="${t.icon}"></ha-icon>
+                          <ha-icon icon="${e.icon}"></ha-icon>
                           <div class="module-info">
-                            <span class="module-title">${t.title}</span>
-                            <span class="module-description">${t.description}</span>
+                            <span class="module-title">${e.title}</span>
+                            <span class="module-description">${e.description}</span>
                           </div>
                         </button>
                       `}))}
@@ -8917,16 +9919,16 @@
                   <h4 class="category-title">Content Modules</h4>
                   <p class="category-description">Add content and interactive elements</p>
                   <div class="module-types content-modules">
-                    ${i.map((e=>{const t=e.metadata;return V`
+                    ${i.map((t=>{const e=t.metadata;return V`
                         <button
                           class="module-type-btn content-module"
-                          @click=${()=>this._addModule(t.type)}
-                          title="${t.description}"
+                          @click=${()=>this._addModule(e.type)}
+                          title="${e.description}"
                         >
-                          <ha-icon icon="${t.icon}"></ha-icon>
+                          <ha-icon icon="${e.icon}"></ha-icon>
                           <div class="module-info">
-                            <span class="module-title">${t.title}</span>
-                            <span class="module-description">${t.description}</span>
+                            <span class="module-title">${e.title}</span>
+                            <span class="module-description">${e.description}</span>
                           </div>
                         </button>
                       `}))}
@@ -8935,33 +9937,33 @@
               `:""}
         </div>
       </div>
-    `}_formatCategoryTitle(e){return e.charAt(0).toUpperCase()+e.slice(1)}_isLayoutModule(e){return["horizontal","vertical"].includes(e)}_shouldAutoOpenSettings(e){return!this._isLayoutModule(e)}_getLayoutModuleColor(e){return this._isLayoutModule(e)?"var(--success-color, #4caf50)":"var(--accent-color, var(--orange-color, #ff9800))"}_renderColumnLayoutSelector(){const e=this._ensureLayout().rows[this._selectedRowForLayout],t=e?e.columns.length:1,o=(null==e?void 0:e.column_layout)||"1-col",i=this._migrateLegacyLayoutId(o),n=this._getLayoutsForColumnCount(t);return V`
+    `}_formatCategoryTitle(t){return t.charAt(0).toUpperCase()+t.slice(1)}_isLayoutModule(t){return["horizontal","vertical"].includes(t)}_shouldAutoOpenSettings(t){return!this._isLayoutModule(t)}_getLayoutModuleColor(t){return this._isLayoutModule(t)?"var(--success-color, #4caf50)":"var(--accent-color, var(--orange-color, #ff9800))"}_renderColumnLayoutSelector(){const t=this._ensureLayout().rows[this._selectedRowForLayout],e=t?t.columns.length:1,o=(null==t?void 0:t.column_layout)||"1-col",i=this._migrateLegacyLayoutId(o),n=this._getLayoutsForColumnCount(e);return V`
       <div class="column-layout-selector-popup">
         <div class="popup-overlay" @click=${()=>this._showColumnLayoutSelector=!1}></div>
         <div class="selector-content">
           <div class="selector-header">
             <h3>Choose Column Layout</h3>
             <p>
-              Select any layout for ${t}
-              column${1!==t?"s":""} (Currently: ${t}
-              column${1!==t?"s":""})
+              Select any layout for ${e}
+              column${1!==e?"s":""} (Currently: ${e}
+              column${1!==e?"s":""})
             </p>
           </div>
 
           <div class="layout-options">
-            ${n.map((e=>V`
+            ${n.map((t=>V`
                 <button
-                  class="layout-option-btn ${e.id===o||e.id===i?"current":""}"
-                  @click=${()=>this._changeColumnLayout(e.id)}
-                  title="${e.name}"
+                  class="layout-option-btn ${t.id===o||t.id===i?"current":""}"
+                  @click=${()=>this._changeColumnLayout(t.id)}
+                  title="${t.name}"
                 >
                   <div class="layout-visual">
                     <div class="layout-icon-large">
-                      ${lt(this._createColumnIconHTML(e.proportions))}
+                      ${re(this._createColumnIconHTML(t.proportions))}
                     </div>
                   </div>
-                  <div class="layout-name">${e.name}</div>
-                  ${e.id===o||e.id===i?V`<div class="current-badge">Current</div>`:""}
+                  <div class="layout-name">${t.name}</div>
+                  ${t.id===o||t.id===i?V`<div class="current-badge">Current</div>`:""}
                 </button>
               `))}
           </div>
@@ -12014,6 +13016,11 @@
         color: white;
       }
 
+      .layout-child-action-btn.duplicate-btn:hover {
+        background: var(--info-color, #2196f3);
+        color: white;
+      }
+
       .layout-child-action-btn.delete-btn:hover {
         background: var(--error-color);
         color: white;
@@ -12039,7 +13046,7 @@
           --mdc-icon-size: 20px;
         }
       }
-    `}};pt([me({attribute:!1})],ht.prototype,"hass",void 0),pt([me({attribute:!1})],ht.prototype,"config",void 0),pt([ge()],ht.prototype,"_showModuleSelector",void 0),pt([ge()],ht.prototype,"_selectedRowIndex",void 0),pt([ge()],ht.prototype,"_selectedColumnIndex",void 0),pt([ge()],ht.prototype,"_showModuleSettings",void 0),pt([ge()],ht.prototype,"_selectedModule",void 0),pt([ge()],ht.prototype,"_activeModuleTab",void 0),pt([ge()],ht.prototype,"_activeDesignSubtab",void 0),pt([ge()],ht.prototype,"_showRowSettings",void 0),pt([ge()],ht.prototype,"_selectedRowForSettings",void 0),pt([ge()],ht.prototype,"_activeRowTab",void 0),pt([ge()],ht.prototype,"_showColumnSettings",void 0),pt([ge()],ht.prototype,"_selectedColumnForSettings",void 0),pt([ge()],ht.prototype,"_activeColumnTab",void 0),pt([ge()],ht.prototype,"_showColumnLayoutSelector",void 0),pt([ge()],ht.prototype,"_selectedRowForLayout",void 0),pt([ge()],ht.prototype,"_draggedItem",void 0),pt([ge()],ht.prototype,"_dropTarget",void 0),pt([ge()],ht.prototype,"_selectedLayoutModuleIndex",void 0),pt([ge()],ht.prototype,"_showLayoutChildSettings",void 0),pt([ge()],ht.prototype,"_selectedLayoutChild",void 0),pt([ge()],ht.prototype,"_collapsedRows",void 0),pt([ge()],ht.prototype,"_collapsedColumns",void 0),ht=pt([ce("ultra-layout-tab")],ht);var vt=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};let bt=class extends se{constructor(){super(...arguments),this._activeTab="layout"}setConfig(e){this.config=e||{type:"custom:ultra-card",layout:{rows:[]}}}connectedCallback(){super.connectedCallback(),this.addEventListener("config-changed",this._handleConfigChanged)}disconnectedCallback(){super.disconnectedCallback(),this.removeEventListener("config-changed",this._handleConfigChanged)}_handleConfigChanged(e){if(e.stopPropagation(),e.detail&&e.detail.config&&(this.config=e.detail.config,!e.detail.isInternal)){const t=new CustomEvent("config-changed",{detail:{config:e.detail.config,isInternal:!0},bubbles:!0,composed:!0});this.dispatchEvent(t)}}_updateConfig(e){const t=Object.assign(Object.assign({},this.config),e);this._configDebounceTimeout&&clearTimeout(this._configDebounceTimeout),this._configDebounceTimeout=window.setTimeout((()=>{const e=it.validateAndCorrectConfig(t);if(!e.valid){console.error("❌ Ultra Card Editor: Config validation failed",{errors:e.errors,warnings:e.warnings});const o=new CustomEvent("config-changed",{detail:{config:t,isInternal:!0},bubbles:!0,composed:!0});return void this.dispatchEvent(o)}const o=it.validateUniqueModuleIds(e.correctedConfig);let i=e.correctedConfig;o.valid||(console.warn("⚠️  Ultra Card Editor: Duplicate module IDs detected, fixing...",{duplicates:o.duplicates}),i=it.fixDuplicateModuleIds(i)),e.warnings.length>0&&console.info("ℹ️  Ultra Card: Config corrected with warnings",{warnings:e.warnings.length});const n=new CustomEvent("config-changed",{detail:{config:i,isInternal:!0},bubbles:!0,composed:!0});this.dispatchEvent(n)}),100)}render(){return this.hass&&this.config?V`
+    `}};ce([mt({attribute:!1})],ge.prototype,"hass",void 0),ce([mt({attribute:!1})],ge.prototype,"config",void 0),ce([gt()],ge.prototype,"_showModuleSelector",void 0),ce([gt()],ge.prototype,"_selectedRowIndex",void 0),ce([gt()],ge.prototype,"_selectedColumnIndex",void 0),ce([gt()],ge.prototype,"_showModuleSettings",void 0),ce([gt()],ge.prototype,"_selectedModule",void 0),ce([gt()],ge.prototype,"_activeModuleTab",void 0),ce([gt()],ge.prototype,"_activeDesignSubtab",void 0),ce([gt()],ge.prototype,"_showRowSettings",void 0),ce([gt()],ge.prototype,"_selectedRowForSettings",void 0),ce([gt()],ge.prototype,"_activeRowTab",void 0),ce([gt()],ge.prototype,"_showColumnSettings",void 0),ce([gt()],ge.prototype,"_selectedColumnForSettings",void 0),ce([gt()],ge.prototype,"_activeColumnTab",void 0),ce([gt()],ge.prototype,"_showColumnLayoutSelector",void 0),ce([gt()],ge.prototype,"_selectedRowForLayout",void 0),ce([gt()],ge.prototype,"_draggedItem",void 0),ce([gt()],ge.prototype,"_dropTarget",void 0),ce([gt()],ge.prototype,"_selectedLayoutModuleIndex",void 0),ce([gt()],ge.prototype,"_showLayoutChildSettings",void 0),ce([gt()],ge.prototype,"_selectedLayoutChild",void 0),ce([gt()],ge.prototype,"_collapsedRows",void 0),ce([gt()],ge.prototype,"_collapsedColumns",void 0),ge=ce([ct("ultra-layout-tab")],ge);var he=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};let ve=class extends st{constructor(){super(...arguments),this._activeTab="layout"}setConfig(t){this.config=t||{type:"custom:ultra-card",layout:{rows:[]}}}connectedCallback(){super.connectedCallback(),this.addEventListener("config-changed",this._handleConfigChanged)}disconnectedCallback(){super.disconnectedCallback(),this.removeEventListener("config-changed",this._handleConfigChanged)}_handleConfigChanged(t){if(t.stopPropagation(),t.detail&&t.detail.config&&(this.config=t.detail.config,!t.detail.isInternal)){const e=new CustomEvent("config-changed",{detail:{config:t.detail.config,isInternal:!0},bubbles:!0,composed:!0});this.dispatchEvent(e)}}_updateConfig(t){const e=Object.assign(Object.assign({},this.config),t);this._configDebounceTimeout&&clearTimeout(this._configDebounceTimeout),this._configDebounceTimeout=window.setTimeout((()=>{const t=oe.validateAndCorrectConfig(e);if(!t.valid){console.error("❌ Ultra Card Editor: Config validation failed",{errors:t.errors,warnings:t.warnings});const o=new CustomEvent("config-changed",{detail:{config:e,isInternal:!0},bubbles:!0,composed:!0});return void this.dispatchEvent(o)}const o=oe.validateUniqueModuleIds(t.correctedConfig);let i=t.correctedConfig;o.valid||(console.warn("⚠️  Ultra Card Editor: Duplicate module IDs detected, fixing...",{duplicates:o.duplicates}),i=oe.fixDuplicateModuleIds(i)),t.warnings.length>0&&console.info("ℹ️  Ultra Card: Config corrected with warnings",{warnings:t.warnings.length});const n=new CustomEvent("config-changed",{detail:{config:i,isInternal:!0},bubbles:!0,composed:!0});this.dispatchEvent(n)}),100)}render(){return this.hass&&this.config?V`
       <div class="card-config">
         <div class="tabs">
           <button
@@ -12066,7 +13073,7 @@
           ${"layout"===this._activeTab?V`<ultra-layout-tab .hass=${this.hass} .config=${this.config}></ultra-layout-tab>`:"settings"===this._activeTab?this._renderSettingsTab():V`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`}
         </div>
       </div>
-    `:V`<div>Loading...</div>`}_renderSettingsTab(){const e="var(--card-background-color)";return V`
+    `:V`<div>Loading...</div>`}_renderSettingsTab(){const t="var(--card-background-color)";return V`
       <div class="settings-tab">
         <div class="settings-header">
           <h3>Card Settings</h3>
@@ -12087,10 +13094,10 @@
                 <div class="setting-description">The background color of the entire card</div>
                 <ultra-color-picker
                   .label=${"Card Background Color"}
-                  .value=${this.config.card_background||e}
-                  .defaultValue=${e}
+                  .value=${this.config.card_background||t}
+                  .defaultValue=${t}
                   .hass=${this.hass}
-                  @value-changed=${e=>this._updateConfig({card_background:e.detail.value})}
+                  @value-changed=${t=>this._updateConfig({card_background:t.detail.value})}
                 ></ultra-color-picker>
               </div>
 
@@ -12103,7 +13110,7 @@
                     min="0"
                     max="50"
                     .value=${this.config.card_border_radius||8}
-                    @change=${e=>this._updateConfig({card_border_radius:Number(e.target.value)})}
+                    @change=${t=>this._updateConfig({card_border_radius:Number(t.target.value)})}
                   />
                   <span class="unit">px</span>
                   <button
@@ -12135,7 +13142,7 @@
                     min="0"
                     max="100"
                     .value=${this.config.card_padding||16}
-                    @change=${e=>this._updateConfig({card_padding:Number(e.target.value)})}
+                    @change=${t=>this._updateConfig({card_padding:Number(t.target.value)})}
                   />
                   <span class="unit">px</span>
                   <button
@@ -12157,7 +13164,7 @@
                     min="0"
                     max="50"
                     .value=${this.config.card_margin||0}
-                    @change=${e=>this._updateConfig({card_margin:Number(e.target.value)})}
+                    @change=${t=>this._updateConfig({card_margin:Number(t.target.value)})}
                   />
                   <span class="unit">px</span>
                   <button
@@ -12397,53 +13404,53 @@
           gap: 16px;
         }
       }
-    `}};vt([me({attribute:!1})],bt.prototype,"hass",void 0),vt([me({attribute:!1})],bt.prototype,"config",void 0),vt([ge()],bt.prototype,"_activeTab",void 0),vt([ge()],bt.prototype,"_configDebounceTimeout",void 0),bt=vt([ce("ultra-card-editor")],bt);var ft=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};let yt=class extends se{constructor(){super(...arguments),this._moduleVisibilityState=new Map,this._animatingModules=new Set,this._lastHassChangeTime=0}willUpdate(e){if(e.has("config")){const t=e.get("config"),o=this.config;t&&JSON.stringify(t.layout)===JSON.stringify(null==o?void 0:o.layout)||(this._moduleVisibilityState.clear(),this._animatingModules.clear()),this.requestUpdate()}if(e.has("hass")){const e=Date.now();e-this._lastHassChangeTime>100&&(this._lastHassChangeTime=e,this.hass&&tt.setHass(this.hass),this.requestUpdate())}}setConfig(e){if(!e)throw new Error("Invalid configuration");const t=it.validateAndCorrectConfig(e);if(!t.valid)throw console.error("❌ Ultra Card: Config validation failed",{errors:t.errors,warnings:t.warnings}),new Error(`Invalid configuration: ${t.errors.join(", ")}`);const o=it.validateUniqueModuleIds(t.correctedConfig);let i=t.correctedConfig;o.valid||(console.warn("⚠️  Ultra Card: Duplicate module IDs detected, fixing...",{duplicates:o.duplicates}),i=it.fixDuplicateModuleIds(i)),t.warnings.length>0&&console.info("ℹ️  Ultra Card: Config corrected with warnings",{warnings:t.warnings,totalModules:this._countTotalModules(i)}),this.config=Object.assign({},i),this.requestUpdate()}static getConfigElement(){return document.createElement("ultra-card-editor")}static getStubConfig(){return{type:"custom:ultra-card",layout:{rows:[{id:"row1",columns:[{id:"col1",modules:[{type:"text",text:"Welcome to Ultra Card",font_size:24,color:"#2196f3",alignment:"center"}]}]}]}}}render(){if(!this.config||!this.hass)return V`<div>Loading...</div>`;const e=this._getCardStyle();return this.config.layout&&this.config.layout.rows&&0!==this.config.layout.rows.length?V`
-      <div class="card-container" style="${e}">
-        ${this.config.layout.rows.map((e=>this._renderRow(e)))}
+    `}};he([mt({attribute:!1})],ve.prototype,"hass",void 0),he([mt({attribute:!1})],ve.prototype,"config",void 0),he([gt()],ve.prototype,"_activeTab",void 0),he([gt()],ve.prototype,"_configDebounceTimeout",void 0),ve=he([ct("ultra-card-editor")],ve);var be=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};let fe=class extends st{constructor(){super(...arguments),this._moduleVisibilityState=new Map,this._animatingModules=new Set,this._lastHassChangeTime=0}willUpdate(t){if(t.has("config")){const e=t.get("config"),o=this.config;e&&JSON.stringify(e.layout)===JSON.stringify(null==o?void 0:o.layout)||(this._moduleVisibilityState.clear(),this._animatingModules.clear()),this.requestUpdate()}if(t.has("hass")){const t=Date.now();t-this._lastHassChangeTime>100&&(this._lastHassChangeTime=t,this.hass&&te.setHass(this.hass),this.requestUpdate())}}setConfig(t){if(!t)throw new Error("Invalid configuration");const e=oe.validateAndCorrectConfig(t);if(!e.valid)throw console.error("❌ Ultra Card: Config validation failed",{errors:e.errors,warnings:e.warnings}),new Error(`Invalid configuration: ${e.errors.join(", ")}`);const o=oe.validateUniqueModuleIds(e.correctedConfig);let i=e.correctedConfig;o.valid||(console.warn("⚠️  Ultra Card: Duplicate module IDs detected, fixing...",{duplicates:o.duplicates}),i=oe.fixDuplicateModuleIds(i)),e.warnings.length>0&&console.info("ℹ️  Ultra Card: Config corrected with warnings",{warnings:e.warnings,totalModules:this._countTotalModules(i)}),this.config=Object.assign({},i),this.requestUpdate()}static getConfigElement(){return document.createElement("ultra-card-editor")}static getStubConfig(){return{type:"custom:ultra-card",layout:{rows:[{id:"row1",columns:[{id:"col1",modules:[{type:"text",text:"Ultra Card",font_size:24,color:"#2196f3",alignment:"center"}]}]}]}}}render(){if(!this.config||!this.hass)return V`<div>Loading...</div>`;const t=this._getCardStyle();return this.config.layout&&this.config.layout.rows&&0!==this.config.layout.rows.length?V`
+      <div class="card-container" style="${t}">
+        ${this.config.layout.rows.map((t=>this._renderRow(t)))}
       </div>
     `:V`
-        <div class="card-container" style="${e}">
+        <div class="card-container" style="${t}">
           <div class="welcome-text">
             <h2>Ultra Card</h2>
             <p>Modular card builder for Home Assistant</p>
             <p>Configure using the visual editor</p>
           </div>
         </div>
-      `}_getCardStyle(){if(!this.config)return"";const e=[];return this.config.card_background&&e.push(`background: ${this.config.card_background}`),void 0!==this.config.card_border_radius&&e.push(`border-radius: ${this.config.card_border_radius}px`),void 0!==this.config.card_padding&&e.push(`padding: ${this.config.card_padding}px`),void 0!==this.config.card_margin&&e.push(`margin: ${this.config.card_margin}px`),e.join("; ")}_renderRow(e){var t,o,i,n,a,r,l;this.hass&&tt.setHass(this.hass);const s=tt.evaluateRowVisibility(e),d=e,c=tt.evaluateLogicProperties({logic_entity:null===(t=d.design)||void 0===t?void 0:t.logic_entity,logic_attribute:null===(o=d.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=d.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=d.design)||void 0===n?void 0:n.logic_value});if(!s||!c)return V``;const p=this._getStateBasedAnimationClass(e.design),u=this._generateRowStyles(e),m=V`
+      `}_getCardStyle(){if(!this.config)return"";const t=[];return this.config.card_background&&t.push(`background: ${this.config.card_background}`),void 0!==this.config.card_border_radius&&t.push(`border-radius: ${this.config.card_border_radius}px`),void 0!==this.config.card_padding&&t.push(`padding: ${this.config.card_padding}px`),void 0!==this.config.card_margin&&t.push(`margin: ${this.config.card_margin}px`),t.join("; ")}_renderRow(t){var e,o,i,n,a,r,l;this.hass&&te.setHass(this.hass);const s=te.evaluateRowVisibility(t),d=t,c=te.evaluateLogicProperties({logic_entity:null===(e=d.design)||void 0===e?void 0:e.logic_entity,logic_attribute:null===(o=d.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=d.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=d.design)||void 0===n?void 0:n.logic_value});if(!s||!c)return V``;const p=this._getStateBasedAnimationClass(t.design),u=this._generateRowStyles(t),m=V`
       <div class="card-row" style=${u}>
-        ${e.columns.map((e=>this._renderColumn(e)))}
+        ${t.columns.map((t=>this._renderColumn(t)))}
       </div>
-    `;if(p){const t=(null===(a=e.design)||void 0===a?void 0:a.animation_duration)||"2s",o=(null===(r=e.design)||void 0===r?void 0:r.animation_delay)||"0s",i=(null===(l=e.design)||void 0===l?void 0:l.animation_timing)||"ease";return V`
+    `;if(p){const e=(null===(a=t.design)||void 0===a?void 0:a.animation_duration)||"2s",o=(null===(r=t.design)||void 0===r?void 0:r.animation_delay)||"0s",i=(null===(l=t.design)||void 0===l?void 0:l.animation_timing)||"ease";return V`
         <div
           class="row-animation-wrapper ${p}"
           style="
-            --animation-duration: ${t};
+            --animation-duration: ${e};
             --animation-delay: ${o};
             --animation-timing: ${i};
           "
         >
           ${m}
         </div>
-      `}return m}_renderColumn(e){var t,o,i,n,a,r,l;const s=tt.evaluateColumnVisibility(e),d=e,c=tt.evaluateLogicProperties({logic_entity:null===(t=d.design)||void 0===t?void 0:t.logic_entity,logic_attribute:null===(o=d.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=d.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=d.design)||void 0===n?void 0:n.logic_value});if(!s||!c)return V``;const p=this._getStateBasedAnimationClass(e.design),u=this._generateColumnStyles(e),m=V`
+      `}return m}_renderColumn(t){var e,o,i,n,a,r,l;const s=te.evaluateColumnVisibility(t),d=t,c=te.evaluateLogicProperties({logic_entity:null===(e=d.design)||void 0===e?void 0:e.logic_entity,logic_attribute:null===(o=d.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=d.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=d.design)||void 0===n?void 0:n.logic_value});if(!s||!c)return V``;const p=this._getStateBasedAnimationClass(t.design),u=this._generateColumnStyles(t),m=V`
       <div class="card-column" style=${u}>
-        ${e.modules.map((e=>this._renderModule(e)))}
+        ${t.modules.map((t=>this._renderModule(t)))}
       </div>
-    `;if(p){const t=(null===(a=e.design)||void 0===a?void 0:a.animation_duration)||"2s",o=(null===(r=e.design)||void 0===r?void 0:r.animation_delay)||"0s",i=(null===(l=e.design)||void 0===l?void 0:l.animation_timing)||"ease";return V`
+    `;if(p){const e=(null===(a=t.design)||void 0===a?void 0:a.animation_duration)||"2s",o=(null===(r=t.design)||void 0===r?void 0:r.animation_delay)||"0s",i=(null===(l=t.design)||void 0===l?void 0:l.animation_timing)||"ease";return V`
         <div
           class="column-animation-wrapper ${p}"
           style="
-            --animation-duration: ${t};
+            --animation-duration: ${e};
             --animation-delay: ${o};
             --animation-timing: ${i};
           "
         >
           ${m}
         </div>
-      `}return m}_renderModule(e){var t,o,i,n,a,r,l,s,d,c,p,u,m,g;const h=tt.evaluateModuleVisibility(e),v=e,b=tt.evaluateLogicProperties({logic_entity:null===(t=v.design)||void 0===t?void 0:t.logic_entity,logic_attribute:null===(o=v.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=v.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=v.design)||void 0===n?void 0:n.logic_value}),f=h&&b,y=e.id||`${e.type}-${Math.random()}`,_=this._moduleVisibilityState.get(y),x=this._animatingModules.has(y),w=v.intro_animation||(null===(a=v.design)||void 0===a?void 0:a.intro_animation)||"none",$=v.outro_animation||(null===(r=v.design)||void 0===r?void 0:r.outro_animation)||"none",k=v.animation_duration||(null===(l=v.design)||void 0===l?void 0:l.animation_duration)||"2s",C=v.animation_delay||(null===(s=v.design)||void 0===s?void 0:s.animation_delay)||"0s",S=v.animation_timing||(null===(d=v.design)||void 0===d?void 0:d.animation_timing)||"ease",I=v.animation_type||(null===(c=v.design)||void 0===c?void 0:c.animation_type),z=v.animation_entity||(null===(p=v.design)||void 0===p?void 0:p.animation_entity),T=v.animation_trigger_type||(null===(u=v.design)||void 0===u?void 0:u.animation_trigger_type)||"state",P=v.animation_attribute||(null===(m=v.design)||void 0===m?void 0:m.animation_attribute),A=v.animation_state||(null===(g=v.design)||void 0===g?void 0:g.animation_state);let L=!1;if(I&&"none"!==I)if(z){if(A&&this.hass){const e=this.hass.states[z];if(e)if("attribute"===T&&P){const t=e.attributes[P];L=String(t)===A}else L=e.state===A}}else L=!0;let O="",M=!1;if(L&&"none"!==I?O=`animation-${I}`:void 0!==_&&_!==f?f&&"none"!==w?x?O=`animation-${w}`:(O=`animation-${w}`,M=!0,this._animatingModules.add(y),setTimeout((()=>{this._animatingModules.delete(y),this.requestUpdate()}),this._parseAnimationDuration(k)+this._parseAnimationDuration(C))):f||"none"===$||(x?O=`animation-${$}`:(O=`animation-${$}`,M=!0,this._animatingModules.add(y),setTimeout((()=>{this._animatingModules.delete(y),this.requestUpdate()}),this._parseAnimationDuration(k)+this._parseAnimationDuration(C)))):x&&(f&&"none"!==w?O=`animation-${w}`:f||"none"===$||(O=`animation-${$}`)),this._moduleVisibilityState.set(y,f),!f&&!x&&!M)return V``;const D=Ze().getModule(e.type);let E;return E=D&&this.hass?D.renderPreview(e,this.hass):V`
+      `}return m}_renderModule(t){var e,o,i,n,a,r,l,s,d,c,p,u,m,g;const h=te.evaluateModuleVisibility(t),v=t,b=te.evaluateLogicProperties({logic_entity:null===(e=v.design)||void 0===e?void 0:e.logic_entity,logic_attribute:null===(o=v.design)||void 0===o?void 0:o.logic_attribute,logic_operator:null===(i=v.design)||void 0===i?void 0:i.logic_operator,logic_value:null===(n=v.design)||void 0===n?void 0:n.logic_value}),f=h&&b,_=t.id||`${t.type}-${Math.random()}`,y=this._moduleVisibilityState.get(_),x=this._animatingModules.has(_),w=v.intro_animation||(null===(a=v.design)||void 0===a?void 0:a.intro_animation)||"none",$=v.outro_animation||(null===(r=v.design)||void 0===r?void 0:r.outro_animation)||"none",k=v.animation_duration||(null===(l=v.design)||void 0===l?void 0:l.animation_duration)||"2s",C=v.animation_delay||(null===(s=v.design)||void 0===s?void 0:s.animation_delay)||"0s",S=v.animation_timing||(null===(d=v.design)||void 0===d?void 0:d.animation_timing)||"ease",I=v.animation_type||(null===(c=v.design)||void 0===c?void 0:c.animation_type),z=v.animation_entity||(null===(p=v.design)||void 0===p?void 0:p.animation_entity),T=v.animation_trigger_type||(null===(u=v.design)||void 0===u?void 0:u.animation_trigger_type)||"state",P=v.animation_attribute||(null===(m=v.design)||void 0===m?void 0:m.animation_attribute),A=v.animation_state||(null===(g=v.design)||void 0===g?void 0:g.animation_state);let M=!1;if(I&&"none"!==I)if(z){if(A&&this.hass){const t=this.hass.states[z];if(t)if("attribute"===T&&P){const e=t.attributes[P];M=String(e)===A}else M=t.state===A}}else M=!0;let O="",L=!1;if(M&&"none"!==I?O=`animation-${I}`:void 0!==y&&y!==f?f&&"none"!==w?x?O=`animation-${w}`:(O=`animation-${w}`,L=!0,this._animatingModules.add(_),setTimeout((()=>{this._animatingModules.delete(_),this.requestUpdate()}),this._parseAnimationDuration(k)+this._parseAnimationDuration(C))):f||"none"===$||(x?O=`animation-${$}`:(O=`animation-${$}`,L=!0,this._animatingModules.add(_),setTimeout((()=>{this._animatingModules.delete(_),this.requestUpdate()}),this._parseAnimationDuration(k)+this._parseAnimationDuration(C)))):x&&(f&&"none"!==w?O=`animation-${w}`:f||"none"===$||(O=`animation-${$}`)),this._moduleVisibilityState.set(_,f),!f&&!x&&!L)return V``;const D=Kt().getModule(t.type);let E;return E=D&&this.hass?D.renderPreview(t,this.hass):V`
         <div class="unknown-module">
-          <span>Unknown Module: ${e.type}</span>
+          <span>Unknown Module: ${t.type}</span>
         </div>
-      `,O||"none"!==w||"none"!==$||L?V`
+      `,O||"none"!==w||"none"!==$||M?V`
         <div
           class="module-animation-wrapper ${O}"
           style="
@@ -12454,7 +13461,7 @@
         >
           ${E}
         </div>
-      `:E}_parseAnimationDuration(e){const t=e.match(/^(\d*\.?\d+)(s|ms)?$/);if(!t)return 300;const o=parseFloat(t[1]),i=t[2];return i?"s"===i?1e3*o:o:1e3*o}_getStateBasedAnimationClass(e){if(!e)return"";const t=e.animation_type,o=e.animation_entity,i=e.animation_trigger_type||"state",n=e.animation_attribute,a=e.animation_state;if(!t||"none"===t)return"";if(!o)return`animation-${t}`;if(!a||!this.hass)return"";const r=this.hass.states[o];if(!r)return"";let l=!1;if("attribute"===i&&n){const e=r.attributes[n];l=String(e)===a}else l=r.state===a;return l?`animation-${t}`:""}_countTotalModules(e){return e.layout&&e.layout.rows?e.layout.rows.reduce(((e,t)=>e+t.columns.reduce(((e,t)=>e+t.modules.length),0)),0):0}_getGridTemplateColumns(e,t){return{"1-col":"1fr","1-2-1-2":"1fr 1fr","1-3-2-3":"1fr 2fr","2-3-1-3":"2fr 1fr","2-5-3-5":"2fr 3fr","3-5-2-5":"3fr 2fr","1-3-1-3-1-3":"1fr 1fr 1fr","1-4-1-2-1-4":"1fr 2fr 1fr","1-5-3-5-1-5":"1fr 3fr 1fr","1-6-2-3-1-6":"1fr 4fr 1fr","1-4-1-4-1-4-1-4":"1fr 1fr 1fr 1fr","1-5-1-5-1-5-1-5":"1fr 1fr 1fr 1fr","1-6-1-6-1-6-1-6":"1fr 1fr 1fr 1fr","1-8-1-4-1-4-1-8":"1fr 2fr 2fr 1fr","1-5-1-5-1-5-1-5-1-5":"1fr 1fr 1fr 1fr 1fr","1-6-1-6-1-3-1-6-1-6":"1fr 1fr 2fr 1fr 1fr","1-8-1-4-1-4-1-4-1-8":"1fr 2fr 2fr 2fr 1fr","1-6-1-6-1-6-1-6-1-6-1-6":"1fr 1fr 1fr 1fr 1fr 1fr","50-50":"1fr 1fr","30-70":"3fr 7fr","70-30":"7fr 3fr","40-60":"4fr 6fr","60-40":"6fr 4fr","33-33-33":"1fr 1fr 1fr","25-50-25":"1fr 2fr 1fr","20-60-20":"1fr 3fr 1fr","25-25-25-25":"1fr 1fr 1fr 1fr"}[e]||`repeat(${t}, 1fr)`}_addPixelUnit(e){return e?/^\d+$/.test(e)?`${e}px`:/^[\d\s]+$/.test(e)?e.split(" ").map((e=>e.trim()?`${e}px`:e)).join(" "):e:e}_generateRowStyles(e){const t=e.design||{},o={display:"grid",gridTemplateColumns:this._getGridTemplateColumns(e.column_layout||"1-col",e.columns.length),gap:`${e.gap||16}px`,marginBottom:"16px"},i={padding:t.padding_top||t.padding_bottom||t.padding_left||t.padding_right?`${t.padding_top||"0"} ${t.padding_right||"0"} ${t.padding_bottom||"0"} ${t.padding_left||"0"}`:e.padding?`${e.padding}px`:void 0,margin:t.margin_top||t.margin_bottom||t.margin_left||t.margin_right?`${t.margin_top||"0"} ${t.margin_right||"0"} ${t.margin_bottom||"16px"} ${t.margin_left||"0"}`:e.margin?`${e.margin}px`:void 0,background:t.background_color||e.background_color||"transparent",border:t.border_style&&"none"!==t.border_style?`${t.border_width||"1px"} ${t.border_style} ${t.border_color||"var(--divider-color)"}`:"none",borderRadius:this._addPixelUnit(t.border_radius)||(e.border_radius?`${e.border_radius}px`:"0"),position:t.position||"relative",top:t.top||"auto",bottom:t.bottom||"auto",left:t.left||"auto",right:t.right||"auto",zIndex:t.z_index||"auto",width:t.width||"100%",height:t.height||"auto",maxWidth:t.max_width||"none",maxHeight:t.max_height||"none",minWidth:t.min_width||"none",minHeight:t.min_height||"auto",overflow:t.overflow||"visible",clipPath:t.clip_path||"none",backdropFilter:t.backdrop_filter||"none",boxShadow:t.box_shadow_h&&t.box_shadow_v?`${t.box_shadow_h||"0"} ${t.box_shadow_v||"0"} ${t.box_shadow_blur||"0"} ${t.box_shadow_spread||"0"} ${t.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},n=Object.assign(Object.assign({},o),i),a=Object.fromEntries(Object.entries(n).filter((([e,t])=>void 0!==t)));return this._styleObjectToCss(a)}_generateColumnStyles(e){const t=e.design||{},o={display:"flex",flexDirection:"column",gap:"8px",alignItems:"left"===e.horizontal_alignment?"flex-start":"right"===e.horizontal_alignment?"flex-end":"stretch"===e.horizontal_alignment?"stretch":"center",justifyContent:"top"===e.vertical_alignment?"flex-start":"bottom"===e.vertical_alignment?"flex-end":"stretch"===e.vertical_alignment?"stretch":"center"},i={padding:t.padding_top||t.padding_bottom||t.padding_left||t.padding_right?`${t.padding_top||"0"} ${t.padding_right||"0"} ${t.padding_bottom||"0"} ${t.padding_left||"0"}`:e.padding?`${e.padding}px`:void 0,margin:t.margin_top||t.margin_bottom||t.margin_left||t.margin_right?`${t.margin_top||"0"} ${t.margin_right||"0"} ${t.margin_bottom||"0"} ${t.margin_left||"0"}`:e.margin?`${e.margin}px`:void 0,background:t.background_color||e.background_color||"transparent",border:t.border_style&&"none"!==t.border_style?`${t.border_width||"1px"} ${t.border_style} ${t.border_color||"var(--divider-color)"}`:"none",borderRadius:this._addPixelUnit(t.border_radius)||(e.border_radius?`${e.border_radius}px`:"0"),position:t.position||"relative",top:t.top||"auto",bottom:t.bottom||"auto",left:t.left||"auto",right:t.right||"auto",zIndex:t.z_index||"auto",width:t.width||"100%",height:t.height||"auto",maxWidth:t.max_width||"none",maxHeight:t.max_height||"none",minWidth:t.min_width||"none",minHeight:t.min_height||"auto",overflow:t.overflow||"visible",clipPath:t.clip_path||"none",backdropFilter:t.backdrop_filter||"none",boxShadow:t.box_shadow_h&&t.box_shadow_v?`${t.box_shadow_h||"0"} ${t.box_shadow_v||"0"} ${t.box_shadow_blur||"0"} ${t.box_shadow_spread||"0"} ${t.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},n=Object.assign(Object.assign({},o),i),a=Object.fromEntries(Object.entries(n).filter((([e,t])=>void 0!==t)));return this._styleObjectToCss(a)}_styleObjectToCss(e){return Object.entries(e).map((([e,t])=>`${e.replace(/[A-Z]/g,(e=>`-${e.toLowerCase()}`))}: ${t}`)).join("; ")}static get styles(){return a`
+      `:E}_parseAnimationDuration(t){const e=t.match(/^(\d*\.?\d+)(s|ms)?$/);if(!e)return 300;const o=parseFloat(e[1]),i=e[2];return i?"s"===i?1e3*o:o:1e3*o}_getStateBasedAnimationClass(t){if(!t)return"";const e=t.animation_type,o=t.animation_entity,i=t.animation_trigger_type||"state",n=t.animation_attribute,a=t.animation_state;if(!e||"none"===e)return"";if(!o)return`animation-${e}`;if(!a||!this.hass)return"";const r=this.hass.states[o];if(!r)return"";let l=!1;if("attribute"===i&&n){const t=r.attributes[n];l=String(t)===a}else l=r.state===a;return l?`animation-${e}`:""}_countTotalModules(t){return t.layout&&t.layout.rows?t.layout.rows.reduce(((t,e)=>t+e.columns.reduce(((t,e)=>t+e.modules.length),0)),0):0}_getGridTemplateColumns(t,e){return{"1-col":"1fr","1-2-1-2":"1fr 1fr","1-3-2-3":"1fr 2fr","2-3-1-3":"2fr 1fr","2-5-3-5":"2fr 3fr","3-5-2-5":"3fr 2fr","1-3-1-3-1-3":"1fr 1fr 1fr","1-4-1-2-1-4":"1fr 2fr 1fr","1-5-3-5-1-5":"1fr 3fr 1fr","1-6-2-3-1-6":"1fr 4fr 1fr","1-4-1-4-1-4-1-4":"1fr 1fr 1fr 1fr","1-5-1-5-1-5-1-5":"1fr 1fr 1fr 1fr","1-6-1-6-1-6-1-6":"1fr 1fr 1fr 1fr","1-8-1-4-1-4-1-8":"1fr 2fr 2fr 1fr","1-5-1-5-1-5-1-5-1-5":"1fr 1fr 1fr 1fr 1fr","1-6-1-6-1-3-1-6-1-6":"1fr 1fr 2fr 1fr 1fr","1-8-1-4-1-4-1-4-1-8":"1fr 2fr 2fr 2fr 1fr","1-6-1-6-1-6-1-6-1-6-1-6":"1fr 1fr 1fr 1fr 1fr 1fr","50-50":"1fr 1fr","30-70":"3fr 7fr","70-30":"7fr 3fr","40-60":"4fr 6fr","60-40":"6fr 4fr","33-33-33":"1fr 1fr 1fr","25-50-25":"1fr 2fr 1fr","20-60-20":"1fr 3fr 1fr","25-25-25-25":"1fr 1fr 1fr 1fr"}[t]||`repeat(${e}, 1fr)`}_addPixelUnit(t){return t?/^\d+$/.test(t)?`${t}px`:/^[\d\s]+$/.test(t)?t.split(" ").map((t=>t.trim()?`${t}px`:t)).join(" "):t:t}_generateRowStyles(t){const e=t.design||{},o={display:"grid",gridTemplateColumns:this._getGridTemplateColumns(t.column_layout||"1-col",t.columns.length),gap:`${t.gap||16}px`,marginBottom:"16px"},i={padding:e.padding_top||e.padding_bottom||e.padding_left||e.padding_right?`${e.padding_top||"0"} ${e.padding_right||"0"} ${e.padding_bottom||"0"} ${e.padding_left||"0"}`:t.padding?`${t.padding}px`:void 0,margin:e.margin_top||e.margin_bottom||e.margin_left||e.margin_right?`${e.margin_top||"0"} ${e.margin_right||"0"} ${e.margin_bottom||"16px"} ${e.margin_left||"0"}`:t.margin?`${t.margin}px`:void 0,background:e.background_color||t.background_color||"transparent",border:e.border_style&&"none"!==e.border_style?`${e.border_width||"1px"} ${e.border_style} ${e.border_color||"var(--divider-color)"}`:"none",borderRadius:this._addPixelUnit(e.border_radius)||(t.border_radius?`${t.border_radius}px`:"0"),position:e.position||"relative",top:e.top||"auto",bottom:e.bottom||"auto",left:e.left||"auto",right:e.right||"auto",zIndex:e.z_index||"auto",width:e.width||"100%",height:e.height||"auto",maxWidth:e.max_width||"none",maxHeight:e.max_height||"none",minWidth:e.min_width||"none",minHeight:e.min_height||"auto",overflow:e.overflow||"hidden",clipPath:e.clip_path||"none",backdropFilter:e.backdrop_filter||"none",boxShadow:e.box_shadow_h&&e.box_shadow_v?`${e.box_shadow_h||"0"} ${e.box_shadow_v||"0"} ${e.box_shadow_blur||"0"} ${e.box_shadow_spread||"0"} ${e.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},n=Object.assign(Object.assign({},o),i),a=Object.fromEntries(Object.entries(n).filter((([t,e])=>void 0!==e)));return this._styleObjectToCss(a)}_generateColumnStyles(t){const e=t.design||{},o={display:"flex",flexDirection:"column",gap:"8px",alignItems:"left"===t.horizontal_alignment?"flex-start":"right"===t.horizontal_alignment?"flex-end":"stretch"===t.horizontal_alignment?"stretch":"center",justifyContent:"top"===t.vertical_alignment?"flex-start":"bottom"===t.vertical_alignment?"flex-end":"stretch"===t.vertical_alignment?"stretch":"center"},i={padding:e.padding_top||e.padding_bottom||e.padding_left||e.padding_right?`${e.padding_top||"0"} ${e.padding_right||"0"} ${e.padding_bottom||"0"} ${e.padding_left||"0"}`:t.padding?`${t.padding}px`:void 0,margin:e.margin_top||e.margin_bottom||e.margin_left||e.margin_right?`${e.margin_top||"0"} ${e.margin_right||"0"} ${e.margin_bottom||"0"} ${e.margin_left||"0"}`:t.margin?`${t.margin}px`:void 0,background:e.background_color||t.background_color||"transparent",border:e.border_style&&"none"!==e.border_style?`${e.border_width||"1px"} ${e.border_style} ${e.border_color||"var(--divider-color)"}`:"none",borderRadius:this._addPixelUnit(e.border_radius)||(t.border_radius?`${t.border_radius}px`:"0"),position:e.position||"relative",top:e.top||"auto",bottom:e.bottom||"auto",left:e.left||"auto",right:e.right||"auto",zIndex:e.z_index||"auto",width:e.width||"100%",height:e.height||"auto",maxWidth:e.max_width||"none",maxHeight:e.max_height||"none",minWidth:e.min_width||"none",minHeight:e.min_height||"auto",overflow:e.overflow||"hidden",clipPath:e.clip_path||"none",backdropFilter:e.backdrop_filter||"none",boxShadow:e.box_shadow_h&&e.box_shadow_v?`${e.box_shadow_h||"0"} ${e.box_shadow_v||"0"} ${e.box_shadow_blur||"0"} ${e.box_shadow_spread||"0"} ${e.box_shadow_color||"rgba(0,0,0,0.1)"}`:"none",boxSizing:"border-box"},n=Object.assign(Object.assign({},o),i),a=Object.fromEntries(Object.entries(n).filter((([t,e])=>void 0!==e)));return this._styleObjectToCss(a)}_styleObjectToCss(t){return Object.entries(t).map((([t,e])=>`${t.replace(/[A-Z]/g,(t=>`-${t.toLowerCase()}`))}: ${e}`)).join("; ")}static get styles(){return a`
       :host {
         display: block;
       }
@@ -13239,7 +14246,7 @@
           opacity: 0;
         }
       }
-    `}};ft([me({attribute:!1})],yt.prototype,"hass",void 0),ft([me({attribute:!1,type:Object})],yt.prototype,"config",void 0),ft([ge()],yt.prototype,"_moduleVisibilityState",void 0),ft([ge()],yt.prototype,"_animatingModules",void 0),yt=ft([ce("ultra-card")],yt),setTimeout((()=>{if(!customElements.get("ultra-card")){console.warn("🔧 Ultra Card element not found, attempting manual registration...");try{customElements.define("ultra-card",yt),console.log("✅ Ultra Card manually registered successfully")}catch(e){console.error("❌ Failed to manually register Ultra Card:",e)}}}),0);var _t=function(e,t,o,i){var n,a=arguments.length,r=a<3?t:null===i?i=Object.getOwnPropertyDescriptor(t,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,o,i);else for(var l=e.length-1;l>=0;l--)(n=e[l])&&(r=(a<3?n(r):a>3?n(t,o,r):n(t,o))||r);return a>3&&r&&Object.defineProperty(t,o,r),r};let xt=class extends se{constructor(){super(...arguments),this.value="",this.label="Navigation Target",this.disabled=!1}_valueChanged(e){const t=e.detail.value;this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t},bubbles:!0,composed:!0}))}render(){return V`
+    `}};be([mt({attribute:!1})],fe.prototype,"hass",void 0),be([mt({attribute:!1,type:Object})],fe.prototype,"config",void 0),be([gt()],fe.prototype,"_moduleVisibilityState",void 0),be([gt()],fe.prototype,"_animatingModules",void 0),fe=be([ct("ultra-card")],fe),setTimeout((()=>{if(!customElements.get("ultra-card")){console.warn("🔧 Ultra Card element not found, attempting manual registration...");try{customElements.define("ultra-card",fe),console.log("✅ Ultra Card manually registered successfully")}catch(t){console.error("❌ Failed to manually register Ultra Card:",t)}}}),0);var _e=function(t,e,o,i){var n,a=arguments.length,r=a<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,o):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(t,e,o,i);else for(var l=t.length-1;l>=0;l--)(n=t[l])&&(r=(a<3?n(r):a>3?n(e,o,r):n(e,o))||r);return a>3&&r&&Object.defineProperty(e,o,r),r};let ye=class extends st{constructor(){super(...arguments),this.value="",this.label="Navigation Target",this.disabled=!1}_valueChanged(t){const e=t.detail.value;this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:e},bubbles:!0,composed:!0}))}render(){return V`
       <div class="navigation-picker">
         ${this.label?V`<label class="label">${this.label}</label>`:""}
         ${this.helper?V`<div class="helper">${this.helper}</div>`:""}
@@ -13252,7 +14259,7 @@
           @value-changed=${this._valueChanged}
         ></ha-selector>
       </div>
-    `}};xt.styles=a`
+    `}};ye.styles=a`
     :host {
       display: block;
     }
@@ -13278,4 +14285,4 @@
       width: 100%;
       display: block;
     }
-  `,_t([me({attribute:!1})],xt.prototype,"hass",void 0),_t([me()],xt.prototype,"value",void 0),_t([me()],xt.prototype,"label",void 0),_t([me()],xt.prototype,"helper",void 0),_t([me({type:Boolean})],xt.prototype,"disabled",void 0),xt=_t([ce("ultra-navigation-picker")],xt);const wt="1.0.0-alpha2",$t=Ze();console.log(`🚀 Ultra Card v${wt} loaded with ${$t.getRegistryStats().totalModules} modules`),window.customCards=window.customCards||[],window.customCards.push({type:"ultra-card",name:"Ultra Card",description:"A modular card system for Home Assistant with dynamic layouts and powerful customization options.",preview:!0,documentationURL:"https://github.com/WJDDesigns/Ultra-Card",version:wt}),console.log("✅ Ultra Card registered with Home Assistant card picker")})();
+  `,_e([mt({attribute:!1})],ye.prototype,"hass",void 0),_e([mt()],ye.prototype,"value",void 0),_e([mt()],ye.prototype,"label",void 0),_e([mt()],ye.prototype,"helper",void 0),_e([mt({type:Boolean})],ye.prototype,"disabled",void 0),ye=_e([ct("ultra-navigation-picker")],ye);const xe="1.0.0-alpha3",we=Kt();console.log(`🚀 Ultra Card v${xe} loaded with ${we.getRegistryStats().totalModules} modules`),window.customCards=window.customCards||[],window.customCards.push({type:"ultra-card",name:"Ultra Card",description:"A modular card system for Home Assistant with dynamic layouts and powerful customization options.",preview:!0,documentationURL:"https://github.com/WJDDesigns/Ultra-Card",version:xe}),console.log("✅ Ultra Card registered with Home Assistant card picker")})();

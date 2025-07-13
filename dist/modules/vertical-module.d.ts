@@ -9,19 +9,23 @@ export declare class UltraVerticalModule extends BaseUltraModule {
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     private _renderChildModulePreview;
-    private _getModuleTitle;
-    private _getModuleIcon;
+    /**
+     * Apply layout module design properties to child modules
+     * Layout properties override child module properties
+     */
+    private applyLayoutDesignToChild;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];
     };
+    private styleObjectToCss;
+    private camelToKebab;
+    private addPixelUnit;
+    private getPaddingCSS;
+    private getMarginCSS;
+    private getBackgroundCSS;
+    private getBackgroundImageCSS;
+    private getBorderCSS;
     private getJustifyContent;
-    private _onDragOver;
-    private _onDragEnter;
-    private _onDragLeave;
-    private _onDrop;
-    private _onModuleDragStart;
-    private _onDragEnd;
-    private _onAddModuleClick;
     getStyles(): string;
 }
