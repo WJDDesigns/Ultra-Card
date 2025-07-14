@@ -306,6 +306,8 @@ export interface IconConfig {
     active_state?: string;
     custom_inactive_state_text?: string;
     custom_active_state_text?: string;
+    custom_inactive_name_text?: string;
+    custom_active_name_text?: string;
     inactive_template_mode?: boolean;
     inactive_template?: string;
     active_template_mode?: boolean;
@@ -330,6 +332,7 @@ export interface IconConfig {
     show_units?: boolean;
     icon_size?: number;
     text_size?: number;
+    name_icon_gap?: number;
     active_icon_size?: number;
     inactive_icon_size?: number;
     icon_background?: 'none' | 'rounded-square' | 'circle';

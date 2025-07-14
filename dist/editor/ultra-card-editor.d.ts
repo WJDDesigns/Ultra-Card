@@ -9,11 +9,17 @@ export declare class UltraCardEditor extends LitElement {
     config: UltraCardConfig;
     private _activeTab;
     private _configDebounceTimeout?;
+    private _isFullScreen;
+    private _isMobile;
     setConfig(config: UltraCardConfig): void;
     connectedCallback(): void;
+    private _resizeListener?;
     disconnectedCallback(): void;
+    private _checkMobileDevice;
     private _handleConfigChanged;
+    private _handleKeyDown;
     private _updateConfig;
+    private _toggleFullScreen;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;
     static get styles(): import("lit").CSSResult;

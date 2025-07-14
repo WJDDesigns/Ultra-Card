@@ -33,6 +33,11 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private getCameraImageViaWebSocket;
     private handleImageError;
     protected renderConditionalFieldsGroup(title: string, content: TemplateResult): TemplateResult;
+    private getTextColor;
+    private getTextSize;
+    private getSmallTextSize;
+    private getTextWeight;
+    private getTextFont;
     private styleObjectToCss;
     private camelToKebab;
     private addPixelUnit;

@@ -6,6 +6,7 @@ import '../global-design-tab';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
+    isFullScreen: boolean;
     private _showModuleSelector;
     private _selectedRowIndex;
     private _selectedColumnIndex;
@@ -28,10 +29,12 @@ export declare class LayoutTab extends LitElement {
     private _selectedLayoutChild;
     private _collapsedRows;
     private _collapsedColumns;
+    private _collapsedLayoutModules;
     private _createColumnIconHTML;
     private _createSimpleIcon;
     private readonly COLUMN_LAYOUTS;
     private _getLayoutsForColumnCount;
+    private _getGridTemplateColumns;
     private _migrateLegacyLayoutId;
     private _ensureLayout;
     private _migrateLayoutNames;
@@ -41,6 +44,8 @@ export declare class LayoutTab extends LitElement {
     private _toggleColumnCollapse;
     private _isRowCollapsed;
     private _isColumnCollapsed;
+    private _toggleLayoutModuleCollapse;
+    private _isLayoutModuleCollapsed;
     private _saveCollapseState;
     private _loadCollapseState;
     private _addRow;
