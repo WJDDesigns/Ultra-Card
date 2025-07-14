@@ -13,16 +13,5 @@ export declare class UltraButtonModule extends BaseUltraModule {
     private renderLinkActionForm;
     private renderActionTypeSpecificFields;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
-    private getButtonStyleCSS;
-    private getAlignmentCSS;
-    validate(module: CardModule): {
-        valid: boolean;
-        errors: string[];
-    };
-    private getTextShadowCSS;
     private styleObjectToCss;
-    private camelToKebab;
-    private getBackgroundImageCSS;
-    private addPixelUnit;
-    getStyles(): string;
 }

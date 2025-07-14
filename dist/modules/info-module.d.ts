@@ -20,4 +20,6 @@ export declare class UltraInfoModule extends BaseUltraModule {
     private getBackgroundImageCSS;
     private styleObjectToCss;
     private addPixelUnit;
+    private _mapOldActionToNew;
+    private _mapNewActionToOld;
 }

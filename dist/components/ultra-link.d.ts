@@ -6,12 +6,15 @@ export interface UltraLinkConfig {
     double_tap_action?: TapActionConfig;
 }
 export interface TapActionConfig {
-    action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+    action: 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
     entity?: string;
     navigation_path?: string;
     url_path?: string;
     service?: string;
     service_data?: Record<string, any>;
+    perform_action?: string;
+    target?: Record<string, any>;
+    [key: string]: any;
 }
 export declare class UltraLinkComponent {
     static render(hass: HomeAssistant, config: UltraLinkConfig, updateConfig: (updates: Partial<UltraLinkConfig>) => void, title?: string): TemplateResult;

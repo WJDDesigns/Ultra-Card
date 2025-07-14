@@ -30,6 +30,7 @@ export declare abstract class BaseUltraModule implements UltraModule {
     abstract createDefault(id?: string): CardModule;
     abstract renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     abstract renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+    renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];
