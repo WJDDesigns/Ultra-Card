@@ -415,8 +415,25 @@ export interface IconConfig {
     text_size?: number;
     name_icon_gap?: number;
     name_state_gap?: number;
+    icon_state_gap?: number;
     active_icon_size?: number;
     inactive_icon_size?: number;
+    active_text_size?: number;
+    inactive_text_size?: number;
+    state_size?: number;
+    active_state_size?: number;
+    inactive_state_size?: number;
+    icon_size_locked?: boolean;
+    text_size_locked?: boolean;
+    state_size_locked?: boolean;
+    active_icon_locked?: boolean;
+    active_icon_color_locked?: boolean;
+    active_icon_background_locked?: boolean;
+    active_icon_background_color_locked?: boolean;
+    active_name_locked?: boolean;
+    active_name_color_locked?: boolean;
+    active_state_locked?: boolean;
+    active_state_color_locked?: boolean;
     icon_background?: 'none' | 'rounded-square' | 'circle';
     use_entity_color_for_icon_background?: boolean;
     icon_background_color?: string;
@@ -429,6 +446,7 @@ export interface IconConfig {
     vertical_alignment?: 'top' | 'center' | 'bottom';
     container_width?: number;
     container_background_shape?: 'none' | 'rounded' | 'square' | 'circle';
+    container_background_color?: string;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;

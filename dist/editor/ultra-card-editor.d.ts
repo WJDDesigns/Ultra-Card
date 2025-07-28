@@ -11,6 +11,8 @@ export declare class UltraCardEditor extends LitElement {
     private _configDebounceTimeout?;
     private _isFullScreen;
     private _isMobile;
+    /** Flag to ensure module CSS for animations is injected once */
+    private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
     connectedCallback(): void;
     private _resizeListener?;
@@ -22,5 +24,11 @@ export declare class UltraCardEditor extends LitElement {
     private _toggleFullScreen;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;
+    /**
+     * Inject a <style> element containing the combined CSS returned by the
+     * ModuleRegistry so that module previews benefit from their specific styles
+     * (especially animations) while editing.
+     */
+    private _injectModuleStyles;
     static get styles(): import("lit").CSSResult;
 }

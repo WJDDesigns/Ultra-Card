@@ -29,6 +29,7 @@ export declare class UltraColorPicker extends LitElement {
     private _getDisplayValue;
     private _getColorForNativeInput;
     private _isDefaultValue;
+    private _getContrastColor;
     protected render(): TemplateResult;
     static get styles(): import("lit").CSSResult;
 }

@@ -8,6 +8,13 @@ export declare class UltraCard extends LitElement {
     private _moduleVisibilityState;
     private _animatingModules;
     private _lastHassChangeTime;
+    private _templateUpdateListener?;
+    /**
+     * Flag to ensure module CSS is injected only once per card instance.
+     */
+    private _moduleStylesInjected;
+    connectedCallback(): void;
+    disconnectedCallback(): void;
     protected willUpdate(changedProps: PropertyValues): void;
     setConfig(config: UltraCardConfig): void;
     static getConfigElement(): HTMLElement;
@@ -46,5 +53,12 @@ export declare class UltraCard extends LitElement {
      * Convert style object to CSS string
      */
     private _styleObjectToCss;
+    /**
+     * Inject a <style> block containing the combined styles from every registered
+     * module into the card's shadow-root. This is required for features such as
+     * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
+     * individual modules to take effect when the card is rendered in Lovelace.
+     */
+    private _injectModuleStyles;
     static get styles(): import("lit").CSSResult;
 }

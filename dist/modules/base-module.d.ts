@@ -1,6 +1,7 @@
 import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig } from '../types';
+import { UcFormUtils } from '../utils/uc-form-utils';
 export interface ModuleMetadata {
     type: string;
     title: string;
@@ -113,4 +114,36 @@ export declare abstract class BaseUltraModule implements UltraModule {
      * ```
      */
     protected renderConditionalFieldsGroup(header: string, content: TemplateResult): TemplateResult;
+    /**
+     * Ultra Card form renderer
+     */
+    protected renderUcForm: (hass: HomeAssistant, data: Record<string, any>, schema: any[], onChange: (e: CustomEvent) => void, hideLabels?: boolean) => TemplateResult;
+    /**
+     * Field section with custom title/description + clean form
+     */
+    protected renderFieldSection: (title: string, description: string, hass: HomeAssistant, data: Record<string, any>, schema: any[], onChange: (e: CustomEvent) => void) => TemplateResult;
+    /**
+     * Settings section with multiple fields
+     */
+    protected renderSettingsSection: (title: string, description: string, fields: Array<{
+        title: string;
+        description: string;
+        hass: HomeAssistant;
+        data: Record<string, any>;
+        schema: any[];
+        onChange: (e: CustomEvent) => void;
+    }>) => TemplateResult;
+    /**
+     * Inject clean form styles
+     */
+    protected injectUcFormStyles: () => TemplateResult;
+    protected entityField: typeof UcFormUtils.entity;
+    protected textField: typeof UcFormUtils.text;
+    protected selectField: typeof UcFormUtils.select;
+    protected iconField: typeof UcFormUtils.icon;
+    protected booleanField: typeof UcFormUtils.boolean;
+    protected numberField: typeof UcFormUtils.number;
+    protected colorField: typeof UcFormUtils.color;
+    protected gridField: typeof UcFormUtils.grid;
+    protected expandableField: typeof UcFormUtils.expandable;
 }

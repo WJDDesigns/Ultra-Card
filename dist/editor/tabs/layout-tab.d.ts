@@ -14,6 +14,7 @@ export declare class LayoutTab extends LitElement {
     private _selectedModule;
     private _activeModuleTab;
     private _activeDesignSubtab;
+    private _previewCollapsed;
     private _showRowSettings;
     private _selectedRowForSettings;
     private _activeRowTab;
@@ -27,12 +28,15 @@ export declare class LayoutTab extends LitElement {
     private _selectedLayoutModuleIndex;
     private _showLayoutChildSettings;
     private _selectedLayoutChild;
+    private _templateUpdateListener;
     private _collapsedRows;
     private _collapsedColumns;
     private _collapsedLayoutModules;
     private _createColumnIconHTML;
     private _createSimpleIcon;
     private readonly COLUMN_LAYOUTS;
+    connectedCallback(): void;
+    disconnectedCallback(): void;
     private _getLayoutsForColumnCount;
     private _getGridTemplateColumns;
     private _migrateLegacyLayoutId;
