@@ -43,6 +43,7 @@ export declare abstract class BaseUltraModule implements UltraModule {
         min?: number;
         max?: number;
         step?: number;
+        defaultValue?: number;
     }, description?: string): TemplateResult;
     protected renderTextInput(label: string, value: string, onChange: (value: string) => void, placeholder?: string, description?: string): TemplateResult;
     protected renderEntityPicker(label: string, value: string, onChange: (value: string) => void, hass: HomeAssistant, placeholder?: string, description?: string, entityFilter?: (entityId: string) => boolean): TemplateResult;

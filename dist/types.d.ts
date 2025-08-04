@@ -411,6 +411,7 @@ export interface IconConfig {
     show_state?: boolean;
     show_name?: boolean;
     show_units?: boolean;
+    enable_hover_effect?: boolean;
     icon_size?: number;
     text_size?: number;
     name_icon_gap?: number;
@@ -521,6 +522,7 @@ export interface HorizontalModule extends BaseModule {
     type: 'horizontal';
     modules: CardModule[];
     alignment?: 'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify';
+    vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | 'baseline';
     gap?: number;
     wrap?: boolean;
     tap_action?: {
@@ -795,6 +797,8 @@ export interface CardRow {
     columns: CardColumn[];
     column_layout?: '1-col' | '1-2-1-2' | '1-3-2-3' | '2-3-1-3' | '2-5-3-5' | '3-5-2-5' | '1-3-1-3-1-3' | '1-4-1-2-1-4' | '1-5-3-5-1-5' | '1-6-2-3-1-6' | '1-4-1-4-1-4-1-4' | '1-5-1-5-1-5-1-5' | '1-6-1-6-1-6-1-6' | '1-8-1-4-1-4-1-8' | '1-5-1-5-1-5-1-5-1-5' | '1-6-1-6-1-3-1-6-1-6' | '1-8-1-4-1-4-1-4-1-8' | '1-6-1-6-1-6-1-6-1-6-1-6' | '50-50' | '30-70' | '70-30' | '40-60' | '60-40' | '33-33-33' | '25-50-25' | '20-60-20' | '25-25-25-25';
     gap?: number;
+    column_alignment?: 'top' | 'middle' | 'bottom';
+    content_alignment?: 'start' | 'end' | 'center' | 'stretch';
     background_color?: string;
     padding?: number;
     margin?: number;

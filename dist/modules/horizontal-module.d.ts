@@ -27,5 +27,6 @@ export declare class UltraHorizontalModule extends BaseUltraModule {
     private getBackgroundImageCSS;
     private getBorderCSS;
     private getJustifyContent;
+    private getAlignItems;
     getStyles(): string;
 }
