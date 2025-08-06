@@ -5,8 +5,9 @@ import { CardModule, ImageModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 export declare class UltraImageModule extends BaseUltraModule {
     metadata: ModuleMetadata;
-    createDefault(id?: string): ImageModule;
+    createDefault(id?: string, hass?: HomeAssistant): ImageModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     private handleFileUpload;
     validate(module: CardModule): {

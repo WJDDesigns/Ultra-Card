@@ -1,14 +1,15 @@
 import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, CameraModule } from '../types';
+import { CardModule, CameraModule, UltraCardConfig } from '../types';
 export declare class UltraCameraModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private clickTimeout;
     private holdTimeout;
     private isHolding;
-    createDefault(id?: string): CameraModule;
+    createDefault(id?: string, hass?: HomeAssistant): CameraModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: any, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;

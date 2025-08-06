@@ -5,7 +5,7 @@ import { CardModule, UltraCardConfig } from '../types';
 import { VerticalModule } from '../types';
 export declare class UltraVerticalModule extends BaseUltraModule {
     metadata: ModuleMetadata;
-    createDefault(id?: string): VerticalModule;
+    createDefault(id?: string, hass?: HomeAssistant): VerticalModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     private _renderChildModulePreview;

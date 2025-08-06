@@ -13,11 +13,9 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _injectGlobalStyles;
     private _hashString;
     private _highlightJinja2;
-    createDefault(id?: string): IconModule;
+    createDefault(id?: string, hass?: HomeAssistant): IconModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    private renderIconActionConfig;
-    private renderSingleActionConfig;
     renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult;

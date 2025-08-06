@@ -15,7 +15,7 @@ export declare class ModuleRegistry {
     getCategories(): string[];
     getAllModuleMetadata(): ModuleMetadata[];
     searchModules(query: string): UltraModule[];
-    createDefaultModule(type: string, id?: string): CardModule | null;
+    createDefaultModule(type: string, id?: string, hass?: any): CardModule | null;
     validateModule(moduleConfig: CardModule): {
         valid: boolean;
         errors: string[];

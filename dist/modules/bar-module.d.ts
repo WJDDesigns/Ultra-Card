@@ -6,8 +6,10 @@ import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 export declare class UltraBarModule extends BaseUltraModule {
     metadata: ModuleMetadata;
-    createDefault(id?: string): BarModule;
+    createDefault(id?: string, hass?: HomeAssistant): BarModule;
+    private findSuitableBatterySensor;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;

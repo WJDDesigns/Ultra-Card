@@ -5,13 +5,16 @@ import { CardModule, ButtonModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 export declare class UltraButtonModule extends BaseUltraModule {
     metadata: ModuleMetadata;
-    createDefault(id?: string): ButtonModule;
+    createDefault(id?: string, hass?: HomeAssistant): ButtonModule;
     private getButtonStyles;
     private getAlignmentOptions;
     private getIconPositionOptions;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private renderLinkActionForm;
     private renderActionTypeSpecificFields;
+    renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    private renderButtonActionConfig;
+    private renderSingleActionConfig;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     private styleObjectToCss;
 }

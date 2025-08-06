@@ -104,6 +104,8 @@ export interface TextModule extends BaseModule {
     font_style?: 'normal' | 'italic' | 'oblique';
     template_mode?: boolean;
     template?: string;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface SeparatorModule extends BaseModule {
     type: 'separator';
@@ -144,6 +146,8 @@ export interface SeparatorModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface ImageModule extends BaseModule {
     type: 'image';
@@ -217,6 +221,8 @@ export interface ImageModule extends BaseModule {
     hover_transition?: number;
     template_mode?: boolean;
     template?: string;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface InfoEntityConfig {
     id: string;
@@ -225,6 +231,8 @@ export interface InfoEntityConfig {
     icon?: string;
     show_icon?: boolean;
     show_name?: boolean;
+    show_state?: boolean;
+    show_units?: boolean;
     text_size?: number;
     name_size?: number;
     icon_size?: number;
@@ -239,6 +247,7 @@ export interface InfoEntityConfig {
     icon_color?: string;
     name_color?: string;
     text_color?: string;
+    state_color?: string;
     click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service';
     navigation_path?: string;
     url?: string;
@@ -255,6 +264,8 @@ export interface InfoEntityConfig {
     content_alignment?: 'start' | 'center' | 'end';
     overall_alignment?: 'left' | 'center' | 'right';
     icon_gap?: number;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface InfoModule extends BaseModule {
     type: 'info';
@@ -288,6 +299,8 @@ export interface InfoModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface BarModule extends BaseModule {
     type: 'bar';
@@ -376,6 +389,8 @@ export interface BarModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface IconConfig {
     id: string;
@@ -517,6 +532,8 @@ export interface IconModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface HorizontalModule extends BaseModule {
     type: 'horizontal';
@@ -615,6 +632,8 @@ export interface ButtonModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface MarkdownModule extends BaseModule {
     type: 'markdown';
@@ -658,6 +677,8 @@ export interface MarkdownModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export interface CameraModule extends BaseModule {
     type: 'camera';
@@ -708,6 +729,8 @@ export interface CameraModule extends BaseModule {
     };
     template_mode?: boolean;
     template?: string;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }
 export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule;
 export interface SharedDesignProperties {

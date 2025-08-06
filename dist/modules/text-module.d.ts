@@ -5,8 +5,11 @@ import { CardModule, TextModule, UltraCardConfig } from '../types';
 export declare class UltraTextModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private clickTimeout;
-    createDefault(id?: string): TextModule;
+    createDefault(id?: string, hass?: HomeAssistant): TextModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    private renderTextActionConfig;
+    private renderSingleActionConfig;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
