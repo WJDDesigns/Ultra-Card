@@ -41,6 +41,8 @@ export declare class UcFormUtils {
     static expandable(name: string, title: string, schema: any[]): any;
     private static _hideLabels;
     private static _defaultComputeLabel;
+    private static _hideDescriptions;
+    private static _defaultComputeDescription;
     /**
      * Get clean form styles
      */

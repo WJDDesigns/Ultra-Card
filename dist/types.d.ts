@@ -23,7 +23,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -732,7 +732,120 @@ export interface CameraModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule;
+export interface GraphEntityConfig {
+    id: string;
+    entity: string;
+    name?: string;
+    attribute?: string;
+    color?: string;
+    chart_type_override?: string;
+    show_points?: boolean;
+    fill_area?: boolean;
+    line_width?: number;
+    line_style?: 'solid' | 'dashed' | 'dotted';
+    is_primary?: boolean;
+}
+export interface GraphsModule extends BaseModule {
+    type: 'graphs';
+    chart_type: 'line' | 'bar' | 'area' | 'scatter' | 'bubble' | 'pie' | 'donut' | 'radar' | 'histogram' | 'heatmap' | 'waterfall' | 'combo';
+    entities: GraphEntityConfig[];
+    time_period: '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';
+    custom_time_start?: string;
+    custom_time_end?: string;
+    show_title?: boolean;
+    title?: string;
+    title_size?: number;
+    title_color?: string;
+    show_legend?: boolean;
+    normalize_values?: boolean;
+    legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
+    show_grid?: boolean;
+    grid_color?: string;
+    background_color?: string;
+    chart_width?: string;
+    chart_height?: number;
+    info_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'middle';
+    show_x_axis?: boolean;
+    x_axis_label?: string;
+    x_axis_color?: string;
+    x_axis_grid?: boolean;
+    show_y_axis?: boolean;
+    y_axis_label?: string;
+    y_axis_color?: string;
+    y_axis_min?: number;
+    y_axis_max?: number;
+    y_axis_grid?: boolean;
+    data_aggregation?: 'mean' | 'sum' | 'min' | 'max' | 'median' | 'first' | 'last' | 'count' | 'delta';
+    data_points_limit?: number;
+    smooth_curves?: boolean;
+    enable_animation?: boolean;
+    animation_duration?: string;
+    enable_zoom?: boolean;
+    enable_pan?: boolean;
+    show_tooltips?: boolean;
+    line_tension?: number;
+    fill_opacity?: number;
+    show_points?: boolean;
+    point_radius?: number;
+    bar_width?: number;
+    bar_spacing?: number;
+    stacked?: boolean;
+    horizontal?: boolean;
+    inner_radius?: number;
+    start_angle?: number;
+    show_percentages?: boolean;
+    explode_slices?: boolean;
+    point_size?: number;
+    point_opacity?: number;
+    show_regression?: boolean;
+    bubble_scale?: number;
+    scale_min?: number;
+    scale_max?: number;
+    grid_levels?: number;
+    point_style?: 'circle' | 'triangle' | 'rect' | 'star';
+    cell_padding?: number;
+    color_scheme?: 'viridis' | 'plasma' | 'inferno' | 'magma' | 'blues' | 'reds' | 'greens' | 'greys';
+    show_values?: boolean;
+    value_format?: string;
+    positive_color?: string;
+    negative_color?: string;
+    total_color?: string;
+    connector_color?: string;
+    primary_axis?: 'left' | 'right';
+    secondary_axis?: 'left' | 'right' | 'none';
+    sync_axes?: boolean;
+    auto_refresh?: boolean;
+    refresh_interval?: number;
+    template_mode?: boolean;
+    template?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule;
 export interface SharedDesignProperties {
     color?: string;
     text_align?: 'left' | 'center' | 'right' | 'justify';
