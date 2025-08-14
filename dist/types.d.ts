@@ -325,6 +325,7 @@ export interface BarModule extends BaseModule {
     label_alignment?: 'left' | 'center' | 'right' | 'space-between';
     show_percentage?: boolean;
     percentage_text_size?: number;
+    percentage_text_alignment?: 'left' | 'center' | 'right';
     show_value?: boolean;
     value_position?: 'inside' | 'outside' | 'none';
     left_enabled?: boolean;
