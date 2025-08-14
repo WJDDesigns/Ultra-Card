@@ -106,6 +106,8 @@ export interface TextModule extends BaseModule {
     template?: string;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+    hover_effect?: 'none' | 'color' | 'scale' | 'glow' | 'lift';
+    hover_glow_color?: string;
 }
 export interface SeparatorModule extends BaseModule {
     type: 'separator';

@@ -5,6 +5,7 @@ import { CardModule, InfoModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 export declare class UltraInfoModule extends BaseUltraModule {
     metadata: ModuleMetadata;
+    private _templateService?;
     createDefault(id?: string, hass?: HomeAssistant): InfoModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
@@ -39,4 +40,5 @@ export declare class UltraInfoModule extends BaseUltraModule {
     private getBackgroundImageCSS;
     private styleObjectToCss;
     private addPixelUnit;
+    private _hashString;
 }

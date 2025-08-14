@@ -5,6 +5,7 @@ import { CardModule, TextModule, UltraCardConfig } from '../types';
 export declare class UltraTextModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private clickTimeout;
+    private _templateService?;
     createDefault(id?: string, hass?: HomeAssistant): TextModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
@@ -37,4 +38,5 @@ export declare class UltraTextModule extends BaseUltraModule {
     private styleObjectToCss;
     private camelToKebab;
     private addPixelUnit;
+    private _hashString;
 }

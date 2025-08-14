@@ -42,6 +42,10 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private styleObjectToCss;
     private camelToKebab;
     private addPixelUnit;
+    private getPaddingWithDesign;
+    private getMarginWithDesign;
+    private getBorderWithDesign;
+    private getBackgroundImageWithDesign;
     private getPaddingCSS;
     private getMarginCSS;
     private getBackgroundCSS;
