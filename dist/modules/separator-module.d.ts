@@ -17,6 +17,7 @@ export declare class UltraSeparatorModule extends BaseUltraModule {
     private getSeparatorLineStyles;
     private getTitleStyles;
     private camelToKebab;
+    private _colorWithAlpha;
     private getBackgroundImageCSS;
     private styleObjectToCss;
     private addPixelUnit;

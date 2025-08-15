@@ -11,8 +11,11 @@ export interface ActionConfig {
     entity?: string;
     navigation_path?: string;
     url_path?: string;
+    perform_action?: string;
     service?: string;
+    target?: Record<string, any> | string;
     service_data?: Record<string, any>;
+    data?: Record<string, any>;
     [key: string]: any;
 }
 export declare class GlobalActionsTab {

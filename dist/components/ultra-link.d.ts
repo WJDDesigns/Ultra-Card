@@ -10,10 +10,11 @@ export interface TapActionConfig {
     entity?: string;
     navigation_path?: string;
     url_path?: string;
-    service?: string;
-    service_data?: Record<string, any>;
     perform_action?: string;
+    service?: string;
     target?: Record<string, any>;
+    data?: Record<string, any>;
+    service_data?: Record<string, any>;
     [key: string]: any;
 }
 export declare class UltraLinkComponent {
