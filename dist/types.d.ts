@@ -368,6 +368,17 @@ export interface BarModule extends BaseModule {
     animation?: boolean;
     template_mode?: boolean;
     template?: string;
+    bar_animation_enabled?: boolean;
+    bar_animation_entity?: string;
+    bar_animation_trigger_type?: 'state' | 'attribute';
+    bar_animation_attribute?: string;
+    bar_animation_value?: string;
+    bar_animation_type?: 'none' | 'charging' | 'pulse' | 'blinking' | 'bouncing' | 'glow' | 'rainbow' | 'bubbles' | 'fill' | 'ripple' | 'traffic' | 'traffic_flow' | 'heartbeat' | 'flicker' | 'shimmer' | 'vibrate';
+    bar_animation_override_entity?: string;
+    bar_animation_override_trigger_type?: 'state' | 'attribute';
+    bar_animation_override_attribute?: string;
+    bar_animation_override_value?: string;
+    bar_animation_override_type?: 'none' | 'charging' | 'pulse' | 'blinking' | 'bouncing' | 'glow' | 'rainbow' | 'bubbles' | 'fill' | 'ripple' | 'traffic' | 'traffic_flow' | 'heartbeat' | 'flicker' | 'shimmer' | 'vibrate';
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;

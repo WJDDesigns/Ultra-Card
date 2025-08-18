@@ -15,6 +15,8 @@ export declare class LayoutTab extends LitElement {
     private _activeModuleTab;
     private _activeDesignSubtab;
     private _previewCollapsed;
+    /** Inject module CSS once so animations render inside this tab's shadow DOM */
+    private _moduleStylesInjected;
     private _showRowSettings;
     private _selectedRowForSettings;
     private _activeRowTab;
@@ -44,6 +46,8 @@ export declare class LayoutTab extends LitElement {
     private readonly COLUMN_LAYOUTS;
     connectedCallback(): void;
     disconnectedCallback(): void;
+    /** Inject combined CSS from all modules into this component's shadow root */
+    private _injectModuleStyles;
     private _setupPopupDragHandlers;
     private _onPopupDragStart;
     private _onPopupDragMove;
