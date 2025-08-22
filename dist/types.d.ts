@@ -317,7 +317,7 @@ export interface BarModule extends BaseModule {
     percentage_template?: string;
     bar_size?: 'extra-thick' | 'thick' | 'medium' | 'thin';
     bar_radius?: 'square' | 'round' | 'pill';
-    bar_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed';
+    bar_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed' | 'dots';
     bar_width?: number;
     bar_alignment?: 'left' | 'center' | 'right';
     height?: number;
@@ -615,7 +615,7 @@ export interface ButtonModule extends BaseModule {
     type: 'button';
     label: string;
     action?: LinkAction;
-    style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed';
+    style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed' | 'dots';
     alignment?: 'left' | 'center' | 'right' | 'justify';
     show_icon?: boolean;
     icon?: string;
