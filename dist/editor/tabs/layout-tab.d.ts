@@ -55,6 +55,7 @@ export declare class LayoutTab extends LitElement {
     private _cleanupDragListeners;
     private _setupPopupRef;
     private _getLayoutsForColumnCount;
+    private _getDefaultLayoutForColumnCount;
     private _getGridTemplateColumns;
     private _migrateLegacyLayoutId;
     private _ensureLayout;
