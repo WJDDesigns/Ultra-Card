@@ -14,6 +14,7 @@ export declare class UltraImageModule extends BaseUltraModule {
         errors: string[];
     };
     private getBackgroundImageCSS;
+    private getAttributeByPath;
     private styleObjectToCss;
     getStyles(): string;
     private addPixelUnit;

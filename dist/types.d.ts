@@ -758,6 +758,8 @@ export interface GraphEntityConfig {
     line_width?: number;
     line_style?: 'solid' | 'dashed' | 'dotted';
     is_primary?: boolean;
+    label_show_name?: boolean;
+    label_show_value?: boolean;
 }
 export interface GraphsModule extends BaseModule {
     type: 'graphs';
@@ -770,6 +772,7 @@ export interface GraphsModule extends BaseModule {
     title?: string;
     title_size?: number;
     title_color?: string;
+    chart_alignment?: 'left' | 'center' | 'right';
     show_legend?: boolean;
     normalize_values?: boolean;
     legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
@@ -779,6 +782,9 @@ export interface GraphsModule extends BaseModule {
     chart_width?: string;
     chart_height?: number;
     info_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'middle';
+    show_info_overlay?: boolean;
+    show_display_name?: boolean;
+    show_entity_value?: boolean;
     show_x_axis?: boolean;
     x_axis_label?: string;
     x_axis_color?: string;
@@ -809,6 +815,8 @@ export interface GraphsModule extends BaseModule {
     start_angle?: number;
     show_percentages?: boolean;
     explode_slices?: boolean;
+    slice_gap?: number;
+    show_slice_labels?: boolean;
     point_size?: number;
     point_opacity?: number;
     show_regression?: boolean;

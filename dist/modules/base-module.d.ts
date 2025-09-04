@@ -18,6 +18,7 @@ export interface UltraModule {
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderOtherTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderDesignTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
@@ -32,6 +33,8 @@ export declare abstract class BaseUltraModule implements UltraModule {
     abstract renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     abstract renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderDesignTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];

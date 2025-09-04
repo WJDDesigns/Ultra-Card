@@ -13,7 +13,7 @@ export declare class ActionsTabService {
      * Renders a complete Actions tab for any module using the global-actions-tab component
      * with hover effects section below it
      */
-    static render(module: CardModule & ModuleWithActions, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void, injectUcFormStyles: () => TemplateResult): TemplateResult;
+    static render(module: CardModule & ModuleWithActions, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     /**
      * Utility method to check if a module has any active actions configured
      */
