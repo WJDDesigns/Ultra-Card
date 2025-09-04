@@ -7213,43 +7213,43 @@
           style="display: block; width: 100%; height: 100%; margin: 0; padding: 0;"
         >
           ${p?Y`${Array.from({length:4},((t,e)=>{const i=100*(e+1)/5;return Y`<line x1="0" y1="${i}" x2="300" y2="${i}" stroke="rgba(255,255,255,.08)" stroke-width="0.5" />`}))}`:""}
-          ${s.map((e=>{var i;const n=e.values.map(((t,e)=>`${e/(a.length-1)*300},${c>0?100-(t-d)/c*100:100}`)),s=(e=>{if(!t.smooth_curves)return e.map(((t,e)=>{const[i,o]=t.split(",");return`${0===e?"M":"L"} ${i} ${o}`})).join(" ");if(e.length<2){const[t,i]=e[0].split(",");return`M ${t} ${i}`}let i="";const o=e.map((t=>{const[e,i]=t.split(",");return{x:parseFloat(e),y:parseFloat(i)}}));i=`M ${o[0].x} ${o[0].y}`;for(let t=0;t<o.length-1;t++){const e=o[Math.max(0,t-1)],n=o[t],a=o[t+1],r=o[Math.min(o.length-1,t+2)],s=.5;i+=` C ${n.x+(a.x-e.x)/6*s} ${n.y+(a.y-e.y)/6*s}, ${a.x-(r.x-n.x)/6*s} ${a.y-(r.y-n.y)/6*s}, ${a.x} ${a.y}`}return i})(n),l=n[n.length-1].split(",")[0],p=this._colorWithAlpha(e.color,.25),u="dashed"===e.lineStyle?"4 3":"dotted"===e.lineStyle?"1 3":"none";return Y`<g>
-              ${!0===e.fillArea?Y`<path d="${s} L ${l} 100 L 0 100 Z" fill="${p}" stroke="none" />`:""}
-              <path d="${s}" stroke="${e.color}" stroke-width="${null!==(i=e.lineWidth)&&void 0!==i?i:2}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${u}" />
-              ${!1!==e.showPoints?Y`${e.values.map(((i,n)=>{const s=n/(a.length-1)*300,l=c>0?100-(i-d)/c*100:100,p="transparent"===m?"var(--card-background-color)":m,u=`point-${t.id}-${n}-${r.indexOf(e)}`;return Y`
-                        <circle 
-                          id="${u}"
-                          cx="${s}" 
-                          cy="${l}" 
-                          r="3" 
-                          fill="${p}" 
-                          stroke="${e.color}" 
-                          stroke-width="1.5"
-                          style="cursor: ${!1!==t.show_tooltips?"pointer":"default"};"
-                          @mouseenter=${!1!==t.show_tooltips?r=>{const s=e.originalValues?e.originalValues[n]:i;let l=`${s}${e.unit||""}`;e.entityId&&(l=(0,Mt.formatEntityState)(o,e.entityId,{state:s,includeUnit:!0})),this._showTooltip(r,t.id,e.name,l,a[n])}:null}
-                          @mouseleave=${!1!==t.show_tooltips?e=>this._hideTooltip(t.id,e):null}
-                        >
-                          ${!1!==t.show_tooltips?Y`
-                            <animate 
-                              attributeName="r" 
-                              begin="mouseenter" 
-                              dur="0.2s" 
-                              from="3" 
-                              to="5" 
-                              fill="freeze" 
-                            />
-                            <animate 
-                              attributeName="r" 
-                              begin="mouseleave" 
-                              dur="0.2s" 
-                              from="5" 
-                              to="3" 
-                              fill="freeze" 
-                            />
-                          `:""}
-                        </circle>
-                      `}))}`:""}
-            </g>`}))}
+          ${(()=>s.map((e=>{var i;const n=e.values.map(((t,e)=>`${e/(a.length-1)*300},${c>0?8+(l-t)/c*92:100}`)),s=(e=>{if(!t.smooth_curves)return e.map(((t,e)=>{const[i,o]=t.split(",");return`${0===e?"M":"L"} ${i} ${o}`})).join(" ");if(e.length<2){const[t,i]=e[0].split(",");return`M ${t} ${i}`}let i="";const o=e.map((t=>{const[e,i]=t.split(",");return{x:parseFloat(e),y:parseFloat(i)}}));i=`M ${o[0].x} ${o[0].y}`;for(let t=0;t<o.length-1;t++){const e=o[Math.max(0,t-1)],n=o[t],a=o[t+1],r=o[Math.min(o.length-1,t+2)],s=.5;i+=` C ${n.x+(a.x-e.x)/6*s} ${n.y+(a.y-e.y)/6*s}, ${a.x-(r.x-n.x)/6*s} ${a.y-(r.y-n.y)/6*s}, ${a.x} ${a.y}`}return i})(n),d=n[n.length-1].split(",")[0],p=this._colorWithAlpha(e.color,.25),u="dashed"===e.lineStyle?"4 3":"dotted"===e.lineStyle?"1 3":"none";return Y`<g>
+                ${!0===e.fillArea?Y`<path d="${s} L ${d} 100 L 0 100 Z" fill="${p}" stroke="none" />`:""}
+                <path d="${s}" stroke="${e.color}" stroke-width="${null!==(i=e.lineWidth)&&void 0!==i?i:2}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${u}" />
+                ${!1!==e.showPoints?Y`${e.values.map(((i,n)=>{const s=n/(a.length-1)*300,d=c>0?8+(l-i)/c*92:100,p="transparent"===m?"var(--card-background-color)":m,u=`point-${t.id}-${n}-${r.indexOf(e)}`;return Y`
+                          <circle 
+                            id="${u}"
+                            cx="${s}" 
+                            cy="${d}" 
+                            r="3" 
+                            fill="${p}" 
+                            stroke="${e.color}" 
+                            stroke-width="1.5"
+                            style="cursor: ${!1!==t.show_tooltips?"pointer":"default"};"
+                            @mouseenter=${!1!==t.show_tooltips?r=>{const s=e.originalValues?e.originalValues[n]:i;let l=`${s}${e.unit||""}`;e.entityId&&(l=(0,Mt.formatEntityState)(o,e.entityId,{state:s,includeUnit:!0})),this._showTooltip(r,t.id,e.name,l,a[n])}:null}
+                            @mouseleave=${!1!==t.show_tooltips?e=>this._hideTooltip(t.id,e):null}
+                          >
+                            ${!1!==t.show_tooltips?Y`
+                              <animate 
+                                attributeName="r" 
+                                begin="mouseenter" 
+                                dur="0.2s" 
+                                from="3" 
+                                to="5" 
+                                fill="freeze" 
+                              />
+                              <animate 
+                                attributeName="r" 
+                                begin="mouseleave" 
+                                dur="0.2s" 
+                                from="5" 
+                                to="3" 
+                                fill="freeze" 
+                              />
+                            `:""}
+                          </circle>
+                        `}))}`:""}
+              </g>`})))()}
         </svg>
       </div>
     `}_renderLegend(t,e,i){return q`<div
@@ -16741,4 +16741,4 @@
       width: 100%;
       display: block;
     }
-  `,Me([bt({attribute:!1})],Le.prototype,"hass",void 0),Me([bt()],Le.prototype,"value",void 0),Me([bt()],Le.prototype,"label",void 0),Me([bt()],Le.prototype,"helper",void 0),Me([bt({type:Boolean})],Le.prototype,"disabled",void 0),Le=Me([gt("ultra-navigation-picker")],Le);const Oe="1.0.0-beta4",je=ue();console.log(`🚀 Ultra Card v${Oe} loaded with ${je.getRegistryStats().totalModules} modules`),window.customCards=window.customCards||[],window.customCards.push({type:"ultra-card",name:"Ultra Card",description:"A modular card system for Home Assistant with dynamic layouts and powerful customization options.",preview:!0,documentationURL:"https://github.com/WJDDesigns/Ultra-Card",version:Oe})})();
+  `,Me([bt({attribute:!1})],Le.prototype,"hass",void 0),Me([bt()],Le.prototype,"value",void 0),Me([bt()],Le.prototype,"label",void 0),Me([bt()],Le.prototype,"helper",void 0),Me([bt({type:Boolean})],Le.prototype,"disabled",void 0),Le=Me([gt("ultra-navigation-picker")],Le);const Oe="1.0.0-beta5",je=ue();console.log(`🚀 Ultra Card v${Oe} loaded with ${je.getRegistryStats().totalModules} modules`),window.customCards=window.customCards||[],window.customCards.push({type:"ultra-card",name:"Ultra Card",description:"A modular card system for Home Assistant with dynamic layouts and powerful customization options.",preview:!0,documentationURL:"https://github.com/WJDDesigns/Ultra-Card",version:Oe})})();
