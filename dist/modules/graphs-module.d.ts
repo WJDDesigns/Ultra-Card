@@ -68,6 +68,7 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     private handleHoldAction;
     private handleDoubleAction;
     private styleObjectToCss;
+    private _resolveChartWidth;
     private camelToKebab;
     private addPixelUnit;
     private getPaddingCSS;

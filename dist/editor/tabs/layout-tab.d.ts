@@ -21,6 +21,9 @@ export declare class LayoutTab extends LitElement {
     private _activeColumnTab;
     private _showColumnLayoutSelector;
     private _selectedRowForLayout;
+    private _isPreviewCollapsed;
+    private _togglePreviewCollapsed;
+    private _resolvePreviewBackgroundImageCSS;
     private _draggedItem;
     private _dropTarget;
     private _selectedLayoutModuleIndex;
@@ -117,9 +120,11 @@ export declare class LayoutTab extends LitElement {
     private _renderRowSettings;
     private _renderColumnSettings;
     private _renderRowGeneralTab;
+    private _renderRowActionsTab;
     private _renderRowLogicTab;
     private _renderRowDesignTab;
     private _renderColumnGeneralTab;
+    private _renderColumnActionsTab;
     private _renderColumnLogicTab;
     private _renderColumnDesignTab;
     private _renderGeneralTab;

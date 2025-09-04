@@ -8,6 +8,7 @@ export declare class UltraBarModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private _templateService?;
     createDefault(id?: string, hass?: HomeAssistant): BarModule;
+    renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private findSuitableBatterySensor;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;

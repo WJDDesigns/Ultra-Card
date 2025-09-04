@@ -50,6 +50,11 @@ export declare class UltraCard extends LitElement {
      */
     private _generateColumnStyles;
     /**
+     * Build a CSS background-image value from design properties for rows/columns.
+     * Mirrors module background image behavior (upload/url/entity/legacy path).
+     */
+    private _resolveBackgroundImageCSS;
+    /**
      * Convert style object to CSS string
      */
     private _styleObjectToCss;
