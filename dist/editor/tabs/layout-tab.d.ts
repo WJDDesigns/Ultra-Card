@@ -22,7 +22,17 @@ export declare class LayoutTab extends LitElement {
     private _showColumnLayoutSelector;
     private _selectedRowForLayout;
     private _isPreviewCollapsed;
+    private _collapsedConditionIds;
+    private _draggingCondition;
+    /** Listen for template updates from modules to refresh live previews */
+    private _templateUpdateListener?;
+    connectedCallback(): void;
     private _togglePreviewCollapsed;
+    private _toggleConditionExpanded;
+    private _reorderArray;
+    private _onConditionDragStart;
+    private _onConditionDragOver;
+    private _onConditionDrop;
     private _resolvePreviewBackgroundImageCSS;
     private _draggedItem;
     private _dropTarget;

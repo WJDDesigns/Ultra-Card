@@ -41,4 +41,5 @@ export declare class UltraInfoModule extends BaseUltraModule {
     private styleObjectToCss;
     private addPixelUnit;
     private _hashString;
+    private _handleTemplateChange;
 }
