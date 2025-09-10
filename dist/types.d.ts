@@ -467,6 +467,9 @@ export interface IconConfig {
     icon_background?: 'none' | 'rounded-square' | 'circle';
     use_entity_color_for_icon_background?: boolean;
     icon_background_color?: string;
+    background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+    background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
+    background_size?: 'cover' | 'contain' | 'auto' | string;
     active_icon_background?: 'none' | 'rounded-square' | 'circle';
     inactive_icon_background?: 'none' | 'rounded-square' | 'circle';
     active_icon_background_color?: string;
@@ -881,6 +884,9 @@ export interface SharedDesignProperties {
     font_style?: 'normal' | 'italic' | 'oblique';
     background_color?: string;
     background_image?: string;
+    background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+    background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
+    background_size?: 'cover' | 'contain' | 'auto' | string;
     backdrop_filter?: string;
     width?: string;
     height?: string;
