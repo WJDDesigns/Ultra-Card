@@ -585,6 +585,7 @@ export interface VerticalModule extends BaseModule {
     type: 'vertical';
     modules: CardModule[];
     alignment?: 'top' | 'center' | 'bottom' | 'space-between' | 'space-around';
+    horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
     gap?: number;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';

@@ -27,6 +27,8 @@ export declare class LayoutTab extends LitElement {
     /** Listen for template updates from modules to refresh live previews */
     private _templateUpdateListener?;
     connectedCallback(): void;
+    /** Determine if current device/viewport should be treated as mobile */
+    private _isMobileDevice;
     private _togglePreviewCollapsed;
     private _toggleConditionExpanded;
     private _reorderArray;
