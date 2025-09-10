@@ -6,4 +6,6 @@ export declare class GlobalActionsTab {
     static getClickableClass(module: any): string;
     static getClickableStyle(module: any): string;
     static getHoverStyles(): string;
+    private static renderActionConfig;
+    private static computeLabel;
 }
