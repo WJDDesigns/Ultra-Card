@@ -9,6 +9,8 @@ export declare class UltraInfoModule extends BaseUltraModule {
     createDefault(id?: string, hass?: HomeAssistant): InfoModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private renderInfoActionConfig;
     private renderSingleActionConfig;
     renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;

@@ -14,6 +14,7 @@ export declare class UltraVerticalModule extends BaseUltraModule {
      * Layout properties override child module properties
      */
     private applyLayoutDesignToChild;
+    renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];

@@ -76,6 +76,7 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     private getBackgroundCSS;
     private getBackgroundImageCSS;
     private getBorderCSS;
+    renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];

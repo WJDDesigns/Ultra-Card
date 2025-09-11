@@ -7,6 +7,10 @@ export declare class UltraCard extends LitElement {
     config?: UltraCardConfig;
     private _moduleVisibilityState;
     private _animatingModules;
+    private _rowVisibilityState;
+    private _columnVisibilityState;
+    private _animatingRows;
+    private _animatingColumns;
     private _lastHassChangeTime;
     private _templateUpdateListener?;
     /**
