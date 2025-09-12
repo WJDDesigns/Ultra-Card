@@ -127,6 +127,7 @@ export declare class LayoutTab extends LitElement {
     private _renderLayoutChildGeneralTab;
     private _renderLayoutChildActionsTab;
     private _renderLayoutChildOtherTab;
+    private _renderModuleLogicTab;
     private _renderLayoutChildLogicTab;
     private _renderLayoutChildDesignTab;
     private _renderRowSettings;

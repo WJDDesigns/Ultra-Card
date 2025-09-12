@@ -872,6 +872,22 @@ export interface GraphsModule extends BaseModule {
     hover_background_color?: string;
 }
 export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule;
+export interface HoverEffectConfig {
+    effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
+    duration?: number;
+    timing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
+    delay?: number;
+    highlight_color?: string;
+    outline_color?: string;
+    outline_width?: number;
+    glow_color?: string;
+    shadow_color?: string;
+    scale?: number;
+    translate_x?: number;
+    translate_y?: number;
+    rotate_degrees?: number;
+    intensity?: 'subtle' | 'normal' | 'strong';
+}
 export interface SharedDesignProperties {
     color?: string;
     text_align?: 'left' | 'center' | 'right' | 'justify';
@@ -933,6 +949,7 @@ export interface SharedDesignProperties {
     animation_duration?: string;
     animation_delay?: string;
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
+    hover_effect?: HoverEffectConfig;
     logic_entity?: string;
     logic_attribute?: string;
     logic_operator?: '=' | '!=' | '>' | '>=' | '<' | '<=' | 'contains' | 'not_contains' | 'has_value' | 'no_value';
