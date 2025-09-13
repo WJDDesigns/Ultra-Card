@@ -9,7 +9,6 @@ export declare class UltraButtonModule extends BaseUltraModule {
     private getButtonStyles;
     private getAlignmentOptions;
     private getIconPositionOptions;
-    private getHoverEffectOptions;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private renderLinkActionForm;
     private renderActionTypeSpecificFields;
