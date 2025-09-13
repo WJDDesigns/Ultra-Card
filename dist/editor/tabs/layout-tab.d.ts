@@ -175,4 +175,8 @@ export declare class LayoutTab extends LitElement {
     private _getLayoutModuleColor;
     private _renderColumnLayoutSelector;
     static get styles(): import("lit").CSSResult;
+    private _handleBackgroundImageUpload;
+    private _truncatePath;
+    private _getBackgroundSizeDropdownValue;
+    private _getCustomSizeValue;
 }

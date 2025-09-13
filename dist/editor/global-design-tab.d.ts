@@ -103,4 +103,6 @@ export declare class GlobalDesignTab extends LitElement {
     private _renderAccordion;
     protected render(): TemplateResult;
     static get styles(): import("lit").CSSResult;
+    private _getBackgroundSizeDropdownValue;
+    private _getCustomSizeValue;
 }
