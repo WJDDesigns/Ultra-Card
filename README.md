@@ -127,7 +127,7 @@ Created by **[WJD Designs](https://wjddesigns.com)**
 
 Special thanks to our amazing Discord community for helping shape Ultra Card and making it what it is today:
 
-BlowfishDiesel, Knucklehead Smiff, Martin / Korsiolsa, MoonRaven, mooseBringer, The_Cre8r, and many others.
+BlowfishDiesel, Knucklehead Smiff, Martin / Korsiolsa, MoonRaven, mooseBringer, The_Cre8r, K1ngF1sher and many others.
 
 ---
 
