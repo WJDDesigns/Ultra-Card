@@ -123,28 +123,12 @@ MIT License - see LICENSE file for details.
 
 Created by **WJD Designs**
 
+### Special Thanks
+
+Special thanks to our amazing Discord community for helping shape Ultra Card and making it what it is today:
+
+BlowfishDiesel, Knucklehead Smiff, Martin / Korsiolsa, MoonRaven, mooseBringer, The_Cre8r, and many others.
+
 ---
 
 **Built for Home Assistant with ❤️**
-<<<<<<< HEAD
-=======
-```
-
-### Advanced Example with Conditions
-
-```yaml
-type: custom:ultra-card
-layout:
-  rows:
-    - id: row1
-      columns:
-        - id: col1
-          modules:
-            - type: text
-              text: 'Good Morning!'
-              display_mode: every
-              display_conditions:
-                - type: time
-                  time_from: '06:00'
-                  time_to: '12:00'
-```
