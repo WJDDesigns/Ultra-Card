@@ -67,18 +67,18 @@ All Ultra Card layouts can be configured using Dashboard UI editor.
 
 Different modules are available for different content types:
 
-- 📝 **Text module** - Custom text with template support
-- 🖼️ **Image module** - Responsive images with hover effects
-- 🎯 **Icon module** - Interactive status icons with animations
-- 📊 **Bar module** - Animated progress bars with gradients
-- ℹ️ **Info module** - Entity information with custom formatting
-- 🔘 **Button module** - Action buttons with multiple styles
-- ➖ **Separator module** - Visual dividers and spacers
-- 📖 **Markdown module** - Rich text with HTML support
-- 📹 **Camera module** - Live camera feeds with controls
-- 📈 **Graphs module** - Historical data visualization
-- ↔️ **Horizontal layout** - Arrange modules side by side
-- ↕️ **Vertical layout** - Stack modules vertically
+- 📝 [Text module](docs/modules/text.md)
+- 🖼️ [Image module](docs/modules/image.md)
+- 🎯 [Icon module](docs/modules/icon.md)
+- 📊 [Bar module](docs/modules/bar.md)
+- ℹ️ [Info module](docs/modules/info.md)
+- 🔘 [Button module](docs/modules/button.md)
+- ➖ [Separator module](docs/modules/separator.md)
+- 📖 [Markdown module](docs/modules/markdown.md)
+- 📹 [Camera module](docs/modules/camera.md)
+- 📈 [Graphs module](docs/modules/graphs.md)
+- ↔️ [Horizontal layout](docs/modules/horizontal.md)
+- ↕️ [Vertical layout](docs/modules/vertical.md)
 
 ## Module Settings
 
@@ -126,3 +126,25 @@ Created by **WJD Designs**
 ---
 
 **Built for Home Assistant with ❤️**
+<<<<<<< HEAD
+=======
+```
+
+### Advanced Example with Conditions
+
+```yaml
+type: custom:ultra-card
+layout:
+  rows:
+    - id: row1
+      columns:
+        - id: col1
+          modules:
+            - type: text
+              text: 'Good Morning!'
+              display_mode: every
+              display_conditions:
+                - type: time
+                  time_from: '06:00'
+                  time_to: '12:00'
+```

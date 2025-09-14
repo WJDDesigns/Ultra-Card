@@ -1,3 +1,8 @@
+<<<<<<< HEAD
 * text=auto eol=lf
 *.{cmd,[cC][mM][dD]} text eol=crlf
 *.{bat,[bB][aA][tT]} text eol=crlf 
+=======
+# Auto detect text files and perform LF normalization
+* text=auto
+>>>>>>> 406f2ac0b6ee9105dd726a62f3995b830a83524e
