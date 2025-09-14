@@ -121,7 +121,7 @@ MIT License - see LICENSE file for details.
 
 ## Credits
 
-Created by **WJD Designs**
+Created by **[WJD Designs](https://wjddesigns.com)**
 
 ### Special Thanks
 
