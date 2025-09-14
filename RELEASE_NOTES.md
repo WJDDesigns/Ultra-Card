@@ -5,6 +5,7 @@
 ### New Features
 
 - **🎨 New "Minimal" Bar Style**: Added a sleek minimal progress bar style featuring a thin line with a dot indicator
+
   - Dynamic line thickness controlled by bar height setting
   - Proportional dot scaling that maintains visual balance
   - Full gradient mode support (Full, Cropped, Value-Based)
