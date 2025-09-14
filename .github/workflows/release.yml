@@ -34,7 +34,7 @@ jobs:
           cp dist/ultra-card.js.LICENSE.txt release/
           cp hacs.json release/
           cp README.md release/
-          cp LICENSE release/
+          cp license release/
           cd release
           zip -r ../ultra-card-${{ github.ref_name }}.zip .
 
