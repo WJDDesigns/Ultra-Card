@@ -431,6 +431,10 @@
       },
       "appearance": {
         "title": "Aspetto barra",
+        "direction": "Direzione di riempimento",
+        "direction_desc": "Scegli la direzione in cui si riempie la barra all'aumentare del valore.",
+        "left_to_right": "Da sinistra a destra",
+        "right_to_left": "Da destra a sinistra",
         "height": "Altezza barra",
         "height_desc": "Regola lo spessore della barra di avanzamento in pixel.",
         "border_radius": "Raggio del bordo",

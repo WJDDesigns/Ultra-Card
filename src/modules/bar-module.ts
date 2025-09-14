@@ -59,6 +59,7 @@ export class UltraBarModule extends BaseUltraModule {
 
       // Bar Appearance - Fix height default to be explicit
       height: 20, // Explicit default height in pixels
+      bar_direction: 'left-to-right', // Default fill direction
       bar_size: 'medium',
       bar_radius: 'round',
       bar_style: 'flat',
@@ -107,6 +108,9 @@ export class UltraBarModule extends BaseUltraModule {
       bar_background_color: '',
       bar_border_color: 'var(--divider-color)', // Show default border
       percentage_text_color: '',
+
+      // Minimal style dot color
+      dot_color: '',
 
       // Gradient Configuration
       use_gradient: false,
@@ -582,6 +586,186 @@ export class UltraBarModule extends BaseUltraModule {
             ${localize('editor.bar.appearance.title', lang, 'Bar Appearance')}
           </div>
 
+          <!-- Bar Style -->
+          <div class="field-group" style="margin-bottom: 16px;">
+            <div
+              class="field-title"
+              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 4px;"
+            >
+              ${localize('editor.bar.appearance.style', lang, 'Bar Style')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+            >
+              ${localize(
+                'editor.bar.appearance.style_desc',
+                lang,
+                'Choose the visual style of the progress bar.'
+              )}
+            </div>
+            <ha-form
+              .hass=${hass}
+              .data=${{ bar_style: barModule.bar_style || 'flat' }}
+              .schema=${[
+                {
+                  name: 'bar_style',
+                  selector: {
+                    select: {
+                      options: [
+                        {
+                          value: 'flat',
+                          label: localize(
+                            'editor.bar.appearance.style_flat',
+                            lang,
+                            'Flat (Default)'
+                          ),
+                        },
+                        {
+                          value: 'glossy',
+                          label: localize('editor.bar.appearance.style_glossy', lang, 'Glossy'),
+                        },
+                        {
+                          value: 'embossed',
+                          label: localize('editor.bar.appearance.style_embossed', lang, 'Embossed'),
+                        },
+                        {
+                          value: 'inset',
+                          label: localize('editor.bar.appearance.style_inset', lang, 'Inset'),
+                        },
+                        {
+                          value: 'gradient-overlay',
+                          label: localize(
+                            'editor.bar.appearance.style_gradient',
+                            lang,
+                            'Gradient Overlay'
+                          ),
+                        },
+                        {
+                          value: 'neon-glow',
+                          label: localize('editor.bar.appearance.style_neon', lang, 'Neon Glow'),
+                        },
+                        {
+                          value: 'outline',
+                          label: localize('editor.bar.appearance.style_outline', lang, 'Outline'),
+                        },
+                        {
+                          value: 'glass',
+                          label: localize('editor.bar.appearance.style_glass', lang, 'Glass'),
+                        },
+                        {
+                          value: 'metallic',
+                          label: localize('editor.bar.appearance.style_metallic', lang, 'Metallic'),
+                        },
+                        {
+                          value: 'neumorphic',
+                          label: localize(
+                            'editor.bar.appearance.style_neumorphic',
+                            lang,
+                            'Neumorphic'
+                          ),
+                        },
+                        {
+                          value: 'dashed',
+                          label: localize('editor.bar.appearance.style_dashed', lang, 'Dashed'),
+                        },
+                        {
+                          value: 'dots',
+                          label: localize('editor.bar.appearance.style_dots', lang, 'Dots'),
+                        },
+                        {
+                          value: 'minimal',
+                          label: localize('editor.bar.appearance.style_minimal', lang, 'Minimal'),
+                        },
+                      ],
+                      mode: 'dropdown',
+                    },
+                  },
+                  label: '',
+                },
+              ]}
+              .computeLabel=${() => ''}
+              .computeDescription=${() => ''}
+              @value-changed=${(e: CustomEvent) => updateModule({ bar_style: e.detail.value.bar_style })}
+            ></ha-form>
+          </div>
+
+          <!-- Bar Fill Direction -->
+          <div class="field-group" style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px !important; font-weight: 600 !important;"
+            >
+              ${localize('editor.bar.appearance.direction', lang, 'Fill Direction')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+            >
+              ${localize(
+                'editor.bar.appearance.direction_desc',
+                lang,
+                'Choose which direction the bar fills from as the value increases.'
+              )}
+            </div>
+            <div
+              style="display: flex; gap: 8px; justify-content: flex-start; flex-wrap: wrap;"
+            >
+              <button
+                type="button"
+                style="padding: 8px 12px; border: 2px solid ${
+                  (barModule.bar_direction || 'left-to-right') === 'left-to-right'
+                    ? 'var(--primary-color)'
+                    : 'var(--divider-color)'
+                }; background: ${
+                  (barModule.bar_direction || 'left-to-right') === 'left-to-right'
+                    ? 'var(--primary-color)'
+                    : 'transparent'
+                }; color: ${
+                  (barModule.bar_direction || 'left-to-right') === 'left-to-right'
+                    ? 'white'
+                    : 'var(--primary-text-color)'
+                }; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; box-sizing: border-box;"
+                @click=${() => updateModule({ bar_direction: 'left-to-right' })}
+              >
+                <ha-icon
+                  icon="mdi:arrow-right"
+                  style="font-size: 16px; flex-shrink: 0;"
+                ></ha-icon>
+                <span
+                  style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  >${localize('editor.bar.appearance.left_to_right', lang, 'Left to Right')}</span
+                >
+              </button>
+              <button
+                type="button"
+                style="padding: 8px 12px; border: 2px solid ${
+                  (barModule.bar_direction || 'left-to-right') === 'right-to-left'
+                    ? 'var(--primary-color)'
+                    : 'var(--divider-color)'
+                }; background: ${
+                  (barModule.bar_direction || 'left-to-right') === 'right-to-left'
+                    ? 'var(--primary-color)'
+                    : 'transparent'
+                }; color: ${
+                  (barModule.bar_direction || 'left-to-right') === 'right-to-left'
+                    ? 'white'
+                    : 'var(--primary-text-color)'
+                }; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; box-sizing: border-box;"
+                @click=${() => updateModule({ bar_direction: 'right-to-left' })}
+              >
+                <ha-icon
+                  icon="mdi:arrow-left"
+                  style="font-size: 16px; flex-shrink: 0;"
+                ></ha-icon>
+                <span
+                  style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  >${localize('editor.bar.appearance.right_to_left', lang, 'Right to Left')}</span
+                >
+              </button>
+            </div>
+          </div>
+
           <!-- Bar Height -->
           <div class="field-container" style="margin-bottom: 24px;">
             <div class="field-title">${localize('editor.bar.appearance.height', lang, 'Bar Height')}</div>
@@ -696,86 +880,6 @@ export class UltraBarModule extends BaseUltraModule {
                 <ha-icon icon="mdi:refresh"></ha-icon>
               </button>
             </div>
-          </div>
-
-          <!-- Bar Style -->
-          <div class="field-group" style="margin-bottom: 16px;">
-            ${FormUtils.renderField(
-              localize('editor.bar.appearance.style', lang, 'Bar Style'),
-              localize(
-                'editor.bar.appearance.style_desc',
-                lang,
-                'Choose the visual style of the progress bar.'
-              ),
-              hass,
-              { bar_style: barModule.bar_style || 'flat' },
-              [
-                FormUtils.createSchemaItem('bar_style', {
-                  select: {
-                    options: [
-                      {
-                        value: 'flat',
-                        label: localize('editor.bar.appearance.style_flat', lang, 'Flat (Default)'),
-                      },
-                      {
-                        value: 'glossy',
-                        label: localize('editor.bar.appearance.style_glossy', lang, 'Glossy'),
-                      },
-                      {
-                        value: 'embossed',
-                        label: localize('editor.bar.appearance.style_embossed', lang, 'Embossed'),
-                      },
-                      {
-                        value: 'inset',
-                        label: localize('editor.bar.appearance.style_inset', lang, 'Inset'),
-                      },
-                      {
-                        value: 'gradient-overlay',
-                        label: localize(
-                          'editor.bar.appearance.style_gradient',
-                          lang,
-                          'Gradient Overlay'
-                        ),
-                      },
-                      {
-                        value: 'neon-glow',
-                        label: localize('editor.bar.appearance.style_neon', lang, 'Neon Glow'),
-                      },
-                      {
-                        value: 'outline',
-                        label: localize('editor.bar.appearance.style_outline', lang, 'Outline'),
-                      },
-                      {
-                        value: 'glass',
-                        label: localize('editor.bar.appearance.style_glass', lang, 'Glass'),
-                      },
-                      {
-                        value: 'metallic',
-                        label: localize('editor.bar.appearance.style_metallic', lang, 'Metallic'),
-                      },
-                      {
-                        value: 'neumorphic',
-                        label: localize(
-                          'editor.bar.appearance.style_neumorphic',
-                          lang,
-                          'Neumorphic'
-                        ),
-                      },
-                      {
-                        value: 'dashed',
-                        label: localize('editor.bar.appearance.style_dashed', lang, 'Dashed'),
-                      },
-                      {
-                        value: 'dots',
-                        label: localize('editor.bar.appearance.style_dots', lang, 'Dots'),
-                      },
-                    ],
-                    mode: 'dropdown',
-                  },
-                }),
-              ],
-              (e: CustomEvent) => updateModule({ bar_style: e.detail.value.bar_style })
-            )}
           </div>
 
           <!-- Bar Width -->
@@ -1760,6 +1864,29 @@ export class UltraBarModule extends BaseUltraModule {
                     updateModule({ percentage_text_color: e.detail.value })}
                 ></ultra-color-picker>
               </div>
+
+              ${
+                barModule.bar_style === 'minimal'
+                  ? html`
+                      <div class="color-item">
+                        <div
+                          class="field-title"
+                          style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                        >
+                          ${localize('editor.bar.colors.dot_color', lang, 'Dot Color')}
+                        </div>
+                        <ultra-color-picker
+                          style="width: 100%;"
+                          .value=${(barModule as any).dot_color || ''}
+                          .defaultValue=${'var(--primary-color)'}
+                          .hass=${hass}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ dot_color: e.detail.value })}
+                        ></ultra-color-picker>
+                      </div>
+                    `
+                  : ''
+              }
             </div>
           </div>
 
@@ -2635,7 +2762,17 @@ export class UltraBarModule extends BaseUltraModule {
     const trackBackground = barModule.bar_background_color || 'transparent';
 
     // Calculate bar height from height property with proper default
-    const barHeight = `${(barModule as any).height ?? 20}px`;
+    let barHeightValue = (barModule as any).height ?? 20;
+
+    // For minimal style, ensure container is tall enough for the dot
+    if (barModule.bar_style === 'minimal') {
+      const lineHeight = Math.max(1, Math.floor(barHeightValue / 3));
+      const dotSize = Math.max(8, Math.min(24, lineHeight * 3 + 6));
+      // Container needs to be at least as tall as the dot plus some padding
+      barHeightValue = Math.max(barHeightValue, dotSize + 8);
+    }
+
+    const barHeight = `${barHeightValue}px`;
 
     // Calculate border radius for the bar track. Prefer module value over global design so the slider takes effect immediately.
     const resolvedBorderRadius = (barModule.border_radius ??
@@ -2729,6 +2866,10 @@ export class UltraBarModule extends BaseUltraModule {
           ? barModule.gradient_stops
           : createDefaultGradientStops();
 
+      // Determine gradient direction based on bar direction
+      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+      const gradientDirection = fillDirection === 'right-to-left' ? 'to left' : 'to right';
+
       // Build gradient string with resolved colors so CSS variables work reliably in all modes
       const gradientString = [...gradientStops]
         .sort((a, b) => a.position - b.position)
@@ -2737,7 +2878,7 @@ export class UltraBarModule extends BaseUltraModule {
 
       if (barModule.gradient_display_mode === 'full') {
         // Full mode: Show entire gradient on the bar fill only
-        barFillBackground = `linear-gradient(to right, ${gradientString})`;
+        barFillBackground = `linear-gradient(${gradientDirection}, ${gradientString})`;
       } else if (barModule.gradient_display_mode === 'value-based') {
         // Value-based mode: Show only the solid color that corresponds to the current percentage
         const sortedStops = [...gradientStops].sort((a, b) => a.position - b.position);
@@ -2779,7 +2920,7 @@ export class UltraBarModule extends BaseUltraModule {
             }
           }
 
-          barFillBackground = `linear-gradient(to right, ${segments.join(', ')})`;
+          barFillBackground = `linear-gradient(${gradientDirection}, ${segments.join(', ')})`;
         }
       }
     }
@@ -2907,6 +3048,10 @@ export class UltraBarModule extends BaseUltraModule {
           const lastColor = lastStop
             ? resolveCSSColor(lastStop.color)
             : barModule.bar_color || 'var(--primary-color)';
+
+          // Determine gradient direction based on bar direction
+          const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+          const gradientDirection = fillDirection === 'right-to-left' ? 'to left' : 'to right';
           const gradStr = stops.map(s => `${resolveCSSColor(s.color)} ${s.position}%`).join(', ');
 
           const pct = Math.max(0, Math.min(100, percentage));
@@ -2934,6 +3079,7 @@ export class UltraBarModule extends BaseUltraModule {
 
           // Use the actual barFillBackground for border so it matches exactly
           const gradientMode = barModule.gradient_display_mode || 'full';
+          const isRightToLeft = fillDirection === 'right-to-left';
 
           let borderLayers = '';
           let sizeRule = '';
@@ -2942,25 +3088,41 @@ export class UltraBarModule extends BaseUltraModule {
             if (gradientMode === 'value-based') {
               // Value-based: solid color border matching fill
               borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(to right, ${extendColor}, ${extendColor}) border-box`;
+               linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
               sizeRule = `background-size: 100% 100%, 100% 100%;`;
             } else if (gradientMode === 'cropped') {
               // Cropped: gradient up to percentage, then extend last color
-              borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               ${barFillBackground} border-box,
-               linear-gradient(to right, ${extendColor}, ${extendColor}) border-box`;
-              sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
+              if (isRightToLeft) {
+                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
+                 ${barFillBackground} border-box,
+                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
+                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;
+                           background-position: 0 0, ${100 - pct}% 0, 0 0;`;
+              } else {
+                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
+                 ${barFillBackground} border-box,
+                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
+                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
+              }
             } else {
               // Full: show full gradient for fill portion, extend last color for remaining border
-              borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(to right, ${gradStr}) border-box,
-               linear-gradient(to right, ${extendColor}, ${extendColor}) border-box`;
-              sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
+              if (isRightToLeft) {
+                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
+                 linear-gradient(${gradientDirection}, ${gradStr}) border-box,
+                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
+                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;
+                           background-position: 0 0, ${100 - pct}% 0, 0 0;`;
+              } else {
+                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
+                 linear-gradient(${gradientDirection}, ${gradStr}) border-box,
+                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
+                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
+              }
             }
           } else {
             // No gradient: solid color border
             borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(to right, ${barFillBackground}, ${barFillBackground}) border-box`;
+               linear-gradient(${gradientDirection}, ${barFillBackground}, ${barFillBackground}) border-box`;
             sizeRule = `background-size: 100% 100%, 100% 100%;`;
           }
 
@@ -3033,9 +3195,15 @@ export class UltraBarModule extends BaseUltraModule {
         const segmentWidth = 12;
         const gapWidth = 4;
         const totalWidth = segmentWidth + gapWidth;
+        const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+        const isRightToLeft = fillDirection === 'right-to-left';
 
         if (percentage >= 99.5) {
           // At 100%, create rounded last dash
+          const borderRadiusStyle = isRightToLeft
+            ? `${borderRadius}px 0 0 ${borderRadius}px`
+            : `0 ${borderRadius}px ${borderRadius}px 0`;
+
           fillStyleCSS = `
             mask-image: repeating-linear-gradient(
               90deg,
@@ -3051,10 +3219,12 @@ export class UltraBarModule extends BaseUltraModule {
               transparent ${segmentWidth}px,
               transparent ${totalWidth}px
             );
-            border-radius: 0 ${borderRadius}px ${borderRadius}px 0;
+            border-radius: ${borderRadiusStyle};
           `;
         } else {
           // Less than 100% - square dashes, force end with gap
+          const maskDirection = isRightToLeft ? '270deg' : '90deg';
+
           fillStyleCSS = `
             mask-image: 
               repeating-linear-gradient(
@@ -3065,7 +3235,7 @@ export class UltraBarModule extends BaseUltraModule {
                 transparent ${totalWidth}px
               ),
               linear-gradient(
-                90deg,
+                ${maskDirection},
                 black 0%,
                 black calc(100% - ${gapWidth + 2}px),
                 transparent calc(100% - ${gapWidth + 2}px),
@@ -3080,7 +3250,7 @@ export class UltraBarModule extends BaseUltraModule {
                 transparent ${totalWidth}px
               ),
               linear-gradient(
-                90deg,
+                ${maskDirection},
                 black 0%,
                 black calc(100% - ${gapWidth + 2}px),
                 transparent calc(100% - ${gapWidth + 2}px),
@@ -3115,6 +3285,19 @@ export class UltraBarModule extends BaseUltraModule {
         } else {
           fillStyleCSS = `background: transparent;`;
         }
+        break;
+      case 'minimal':
+        // Minimal style: thin line with dot indicator
+        barStyleCSS = `
+          background: transparent;
+          border: none;
+          box-shadow: none;
+        `;
+        fillStyleCSS = `
+          background: transparent;
+          border: none;
+          position: relative;
+        `;
         break;
     }
 
@@ -3340,11 +3523,8 @@ export class UltraBarModule extends BaseUltraModule {
 
     // Calculate bar container alignment and width
     const normalizedWidth = Math.max(1, Math.min(100, Number(barModule.bar_width || 100)));
-    // Force full-width track to avoid Flex shrink/collapse inside horizontal rows
-    // We still use bar_alignment for content alignment. The old bar_width setting
-    // is effectively ignored when placed in a flex row, but default is 100% so this
-    // preserves existing behavior in most cases.
-    const barWidth = '100%';
+    // Use the actual bar_width setting from the module
+    const barWidth = `${normalizedWidth}%`;
     let barContainerAlignment = 'flex-start';
     switch (barModule.bar_alignment) {
       case 'left':
@@ -3457,7 +3637,7 @@ export class UltraBarModule extends BaseUltraModule {
             style="
             width: ${barWidth};
             max-width: 100%;
-            flex: 1 1 auto;
+            flex: ${normalizedWidth < 100 ? '0 0 auto' : '1 1 auto'};
             height: ${barHeight}; 
             background: ${trackBackground};
             min-width: 80px;
@@ -3482,125 +3662,331 @@ export class UltraBarModule extends BaseUltraModule {
           @pointerdown=${handlePointerDown}
           @pointerup=${handlePointerUp}
         >
-            <!-- Bar Fill / Dots Style -->
+            <!-- Bar Fill / Dots Style / Minimal Style -->
             ${
-              barModule.bar_style === 'dots'
+              barModule.bar_style === 'minimal'
                 ? (() => {
-                    const dotCount = 20; // More dots with smaller gaps
-                    const barH = ((barModule as any).height ?? 20) as number;
-                    const dotSize = Math.max(6, Math.floor(barH - 8));
-                    const trackBg = trackBackground;
-                    const stops =
+                    const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+                    const isRightToLeft = fillDirection === 'right-to-left';
+                    const dotPosition = isRightToLeft ? 100 - percentage : percentage;
+
+                    // Handle gradient colors for minimal style
+                    let trackColor = barModule.bar_color || 'var(--primary-color)';
+                    let dotColor =
+                      (barModule as any).dot_color || barModule.bar_color || 'var(--primary-color)';
+
+                    if (
                       barModule.use_gradient &&
-                      (barModule as any).gradient_stops &&
-                      (barModule as any).gradient_stops.length > 0
-                        ? [...(barModule as any).gradient_stops].sort(
-                            (a: any, b: any) => a.position - b.position
-                          )
-                        : createDefaultGradientStops();
-                    const getColorAt = (pos: number): string => {
-                      const sorted = [...stops].sort((a: any, b: any) => a.position - b.position);
-                      let before = sorted[0];
-                      let after = sorted[sorted.length - 1];
-                      for (let i = 0; i < sorted.length - 1; i++) {
-                        if (pos >= sorted[i].position && pos <= sorted[i + 1].position) {
-                          before = sorted[i];
-                          after = sorted[i + 1];
-                          break;
-                        }
-                      }
-                      if (before.position === pos) return before.color;
-                      if (after.position === pos) return after.color;
-                      const range = after.position - before.position;
-                      const factor = range === 0 ? 0 : (pos - before.position) / range;
-                      return this.interpolateColor(before.color, after.color, factor);
-                    };
-                    const mode = (barModule as any).gradient_display_mode || 'full';
-                    const dots = Array.from({ length: dotCount }, (_v, i) => {
-                      const centerPct = Math.round(((i + 1) / (dotCount + 1)) * 100);
-                      const isActive = centerPct <= percentage;
-                      let color = barFillBackground as string;
-                      if ((barModule as any).use_gradient) {
-                        if (mode === 'full') {
-                          // Full: Show gradient across all dots, but only fill active ones
-                          if (isActive) {
-                            // Normalize position to full gradient range (0-100)
-                            const norm =
-                              percentage > 0
-                                ? Math.min(
-                                    100,
-                                    Math.max(
-                                      0,
-                                      Math.round((centerPct / Math.max(1, percentage)) * 100)
-                                    )
-                                  )
-                                : 0;
-                            color = getColorAt(norm);
-                          } else {
-                            color = trackBg;
+                      barModule.gradient_stops &&
+                      barModule.gradient_stops.length > 0
+                    ) {
+                      const stops = [...barModule.gradient_stops].sort(
+                        (a, b) => a.position - b.position
+                      );
+                      const gradientMode = barModule.gradient_display_mode || 'full';
+                      const gradientDirection =
+                        fillDirection === 'right-to-left' ? 'to left' : 'to right';
+
+                      if (gradientMode === 'full') {
+                        // Full mode: Show complete gradient on track, dot color at current position
+                        const gradientString = stops
+                          .map(s => `${resolveCSSColor(s.color)} ${s.position}%`)
+                          .join(', ');
+                        trackColor = `linear-gradient(${gradientDirection}, ${gradientString})`;
+                        dotColor =
+                          (barModule as any).dot_color ||
+                          resolveCSSColor(interpolateColorAtPosition(stops, percentage));
+                      } else if (gradientMode === 'cropped') {
+                        // Cropped mode: Show gradient only up to current percentage
+                        if (percentage <= 0) {
+                          // At 0%, use first stop color for both track and dot
+                          const firstColor = resolveCSSColor(stops[0].color);
+                          trackColor = firstColor;
+                          dotColor = (barModule as any).dot_color || firstColor;
+                        } else {
+                          // Build cropped gradient up to current percentage
+                          const croppedStops = [
+                            ...stops.filter(stop => stop.position <= percentage),
+                          ];
+
+                          // Always include the color at the exact percentage
+                          const colorAtPercentage = interpolateColorAtPosition(stops, percentage);
+
+                          // Only add the percentage stop if it's not already there
+                          if (!croppedStops.some(stop => stop.position === percentage)) {
+                            croppedStops.push({
+                              id: `cropped_${percentage}`,
+                              position: percentage,
+                              color: colorAtPercentage,
+                            });
                           }
-                        } else if (mode === 'cropped') {
-                          // Cropped: Each dot shows its position color from the full gradient
-                          color = isActive ? getColorAt(centerPct) : trackBg;
-                        } else if (mode === 'value-based') {
-                          const valColor = getColorAt(percentage);
-                          color = isActive ? valColor : trackBg;
+
+                          // Sort and ensure we have at least one stop
+                          croppedStops.sort((a, b) => a.position - b.position);
+
+                          if (croppedStops.length === 0) {
+                            // Fallback to first gradient color
+                            const firstColor = resolveCSSColor(stops[0].color);
+                            trackColor = firstColor;
+                            dotColor = (barModule as any).dot_color || firstColor;
+                          } else {
+                            // Normalize positions to 0-100% range for the cropped section
+                            const normalizedStops = croppedStops.map(stop => ({
+                              ...stop,
+                              position: percentage > 0 ? (stop.position / percentage) * 100 : 0,
+                            }));
+
+                            const croppedGradientString = normalizedStops
+                              .map(
+                                s =>
+                                  `${resolveCSSColor(s.color)} ${Math.min(100, Math.max(0, s.position))}%`
+                              )
+                              .join(', ');
+
+                            trackColor = `linear-gradient(${gradientDirection}, ${croppedGradientString})`;
+                            dotColor =
+                              (barModule as any).dot_color || resolveCSSColor(colorAtPercentage);
+                          }
                         }
-                      } else {
-                        color = isActive
-                          ? (barModule as any).bar_color ||
-                            moduleWithDesign.color ||
-                            'var(--primary-color)'
-                          : trackBg;
+                      } else if (gradientMode === 'value-based') {
+                        // Value-based mode: Single color based on current percentage
+                        const colorAtPercentage = interpolateColorAtPosition(stops, percentage);
+                        const resolvedColor = resolveCSSColor(colorAtPercentage);
+                        trackColor = resolvedColor;
+                        dotColor = (barModule as any).dot_color || resolvedColor;
                       }
-                      return html`<div
-                        style="width:${dotSize}px;height:${dotSize}px;border-radius:50%;background:${color};flex-shrink:0;"
-                      ></div>`;
-                    });
-                    return html`<div
-                      class="dots-container"
-                      style="display:flex;align-items:center;justify-content:space-between;width:100%;height:100%;padding:0 ${Math.max(
-                        2,
-                        Math.floor(dotSize / 3)
-                      )}px;box-sizing:border-box;"
-                    >
-                      ${dots}
-                    </div>`;
+                    }
+
+                    // For cropped mode, we need separate track background and filled portion
+                    const gradientMode = barModule.gradient_display_mode || 'full';
+                    const needsSeparateTrack = gradientMode === 'cropped' && barModule.use_gradient;
+
+                    // For minimal style, use bar height as line thickness (scale down from bar height)
+                    const barHeightValue = (barModule as any).height ?? 20;
+                    const lineHeight = Math.max(1, Math.floor(barHeightValue / 3)); // Scale down for line thickness
+
+                    // Scale dot size with reasonable limits (minimum 8px, maximum 24px)
+                    const dotSize = Math.max(8, Math.min(24, lineHeight * 3 + 6));
+
+                    return html`
+                      ${needsSeparateTrack
+                        ? html`
+                            <!-- Background track (unfilled portion) -->
+                            <div
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: 0;
+                                right: 0;
+                                height: ${lineHeight}px;
+                            background: ${barModule.bar_background_color ||
+                              'rgba(var(--rgb-primary-color), 0.2)'};
+                            transform: translateY(-50%);
+                            border-radius: ${Math.max(1, Math.floor(lineHeight / 2))}px;
+                            opacity: 0.6;
+                          "
+                            ></div>
+
+                            <!-- Filled track portion (with gradient) -->
+                            <div
+                              class="minimal-track ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${isRightToLeft ? `${100 - percentage}%` : '0'};
+                                width: ${percentage}%;
+                                height: ${lineHeight}px;
+                            background: ${trackColor};
+                            transform: translateY(-50%);
+                            border-radius: ${Math.max(1, Math.floor(lineHeight / 2))}px;
+                            opacity: 0.8;
+                            transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
+                          "
+                            ></div>
+                          `
+                        : html`
+                            <!-- Track line (full/value-based modes) -->
+                            <div
+                              class="minimal-track ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: 0;
+                                right: 0;
+                                height: ${lineHeight}px;
+                            background: ${trackColor};
+                            transform: translateY(-50%);
+                            border-radius: ${Math.max(1, Math.floor(lineHeight / 2))}px;
+                            opacity: 0.8;
+                            transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
+                          "
+                            ></div>
+                          `}
+
+                      <!-- Dot indicator -->
+                      <div
+                        class="minimal-dot ${animationClass}"
+                        style="
+                          position: absolute;
+                          top: 50%;
+                          left: ${dotPosition}%;
+                          width: ${dotSize}px;
+                          height: ${dotSize}px;
+                          background: ${dotColor};
+                          border: 2px solid var(--card-background-color);
+                          border-radius: 50%;
+                          transform: translate(-50%, -50%);
+                          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                          transition: ${barModule.animation !== false
+                          ? 'left 0.3s ease, background 0.3s ease'
+                          : 'none'};
+                          z-index: 5;
+                        "
+                      ></div>
+                    `;
                   })()
-                : html`
-                    <div
-                      class="bar-fill ${animationClass}"
-                      style="
-                      width: ${percentage}%;
-                      height: 100%;
-                      background: ${barFillBackground};
-                      transition: ${barModule.animation !== false ? 'width 0.3s ease' : 'none'};
-                      border-radius: ${percentage >= 99.5
-                        ? borderRadius + 'px'
-                        : `${borderRadius}px 0 0 ${borderRadius}px`};
-                      position: absolute;
-                      left: 0;
-                      top: 0;
-                      bottom: 0;
-                      will-change: width;
-                      backface-visibility: hidden;
-                      ${fillStyleCSS}
-                    "
-                    >
-                      ${fillOverlayCSS
-                        ? html` <div
-                            class="bar-fill-overlay"
-                            style="
-                              position: absolute;
-                              inset: 0;
-                              border-radius: inherit;
-                              pointer-events: none;
-                              ${fillOverlayCSS}
-                            "
-                          ></div>`
-                        : ''}
-                    </div>
-                  `
+                : barModule.bar_style === 'dots'
+                  ? (() => {
+                      const dotCount = 20; // More dots with smaller gaps
+                      const barH = ((barModule as any).height ?? 20) as number;
+                      const dotSize = Math.max(6, Math.floor(barH - 8));
+                      const trackBg = trackBackground;
+                      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+                      const stops =
+                        barModule.use_gradient &&
+                        (barModule as any).gradient_stops &&
+                        (barModule as any).gradient_stops.length > 0
+                          ? [...(barModule as any).gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            )
+                          : createDefaultGradientStops();
+                      const getColorAt = (pos: number): string => {
+                        const sorted = [...stops].sort((a: any, b: any) => a.position - b.position);
+                        let before = sorted[0];
+                        let after = sorted[sorted.length - 1];
+                        for (let i = 0; i < sorted.length - 1; i++) {
+                          if (pos >= sorted[i].position && pos <= sorted[i + 1].position) {
+                            before = sorted[i];
+                            after = sorted[i + 1];
+                            break;
+                          }
+                        }
+                        if (before.position === pos) return before.color;
+                        if (after.position === pos) return after.color;
+                        const range = after.position - before.position;
+                        const factor = range === 0 ? 0 : (pos - before.position) / range;
+                        return this.interpolateColor(before.color, after.color, factor);
+                      };
+                      const mode = (barModule as any).gradient_display_mode || 'full';
+                      const dots = Array.from({ length: dotCount }, (_v, i) => {
+                        const centerPct = Math.round(((i + 1) / (dotCount + 1)) * 100);
+                        // For right-to-left, we need to calculate from the opposite end
+                        const isActive =
+                          fillDirection === 'right-to-left'
+                            ? 100 - centerPct <= percentage
+                            : centerPct <= percentage;
+                        let color = barFillBackground as string;
+                        if ((barModule as any).use_gradient) {
+                          if (mode === 'full') {
+                            // Full: Show gradient across all dots, but only fill active ones
+                            if (isActive) {
+                              // Normalize position to full gradient range (0-100)
+                              const norm =
+                                percentage > 0
+                                  ? Math.min(
+                                      100,
+                                      Math.max(
+                                        0,
+                                        Math.round((centerPct / Math.max(1, percentage)) * 100)
+                                      )
+                                    )
+                                  : 0;
+                              color = getColorAt(norm);
+                            } else {
+                              color = trackBg;
+                            }
+                          } else if (mode === 'cropped') {
+                            // Cropped: Each dot shows its position color from the full gradient
+                            color = isActive ? getColorAt(centerPct) : trackBg;
+                          } else if (mode === 'value-based') {
+                            const valColor = getColorAt(percentage);
+                            color = isActive ? valColor : trackBg;
+                          }
+                        } else {
+                          color = isActive
+                            ? (barModule as any).bar_color ||
+                              moduleWithDesign.color ||
+                              'var(--primary-color)'
+                            : trackBg;
+                        }
+                        return html`<div
+                          style="width:${dotSize}px;height:${dotSize}px;border-radius:50%;background:${color};flex-shrink:0;"
+                        ></div>`;
+                      });
+
+                      // Reverse dots order for right-to-left direction
+                      const orderedDots = fillDirection === 'right-to-left' ? dots.reverse() : dots;
+
+                      return html`<div
+                        class="dots-container"
+                        style="display:flex;align-items:center;justify-content:space-between;width:100%;height:100%;padding:0 ${Math.max(
+                          2,
+                          Math.floor(dotSize / 3)
+                        )}px;box-sizing:border-box;flex-direction:${fillDirection ===
+                        'right-to-left'
+                          ? 'row-reverse'
+                          : 'row'};"
+                      >
+                        ${orderedDots}
+                      </div>`;
+                    })()
+                  : (() => {
+                      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+                      const isRightToLeft = fillDirection === 'right-to-left';
+
+                      // Calculate border radius based on direction and percentage
+                      let fillBorderRadius = '';
+                      if (percentage >= 99.5) {
+                        fillBorderRadius = `${borderRadius}px`;
+                      } else if (isRightToLeft) {
+                        fillBorderRadius = `0 ${borderRadius}px ${borderRadius}px 0`;
+                      } else {
+                        fillBorderRadius = `${borderRadius}px 0 0 ${borderRadius}px`;
+                      }
+
+                      return html`
+                        <div
+                          class="bar-fill ${animationClass}"
+                          style="
+                        width: ${percentage}%;
+                        height: 100%;
+                        background: ${barFillBackground};
+                        transition: ${barModule.animation !== false ? 'width 0.3s ease' : 'none'};
+                        border-radius: ${fillBorderRadius};
+                        position: absolute;
+                        ${isRightToLeft ? 'right: 0;' : 'left: 0;'}
+                        top: 0;
+                        bottom: 0;
+                        will-change: width;
+                        backface-visibility: hidden;
+                        ${fillStyleCSS}
+                      "
+                        >
+                          ${fillOverlayCSS
+                            ? html` <div
+                                class="bar-fill-overlay"
+                                style="
+                                position: absolute;
+                                inset: 0;
+                                border-radius: inherit;
+                                pointer-events: none;
+                                ${fillOverlayCSS}
+                              "
+                              ></div>`
+                            : ''}
+                        </div>
+                      `;
+                    })()
             }
 
             <!-- Limit Indicator -->
@@ -4590,6 +4976,33 @@ export class UltraBarModule extends BaseUltraModule {
 
       .bar-fill.bar-anim-vibrate { animation: vibrate 0.15s linear infinite; }
       @keyframes vibrate { 0% { transform: translate(0); } 25% { transform: translate(0.5px,-0.5px); } 50% { transform: translate(-0.5px,0.5px); } 75% { transform: translate(0.5px,0.5px); } 100% { transform: translate(0); } }
+
+      /* Minimal Bar Animations */
+      .minimal-track.bar-anim-pulse { animation: minimal-track-pulse 1.6s ease-in-out infinite; }
+      @keyframes minimal-track-pulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
+      
+      .minimal-dot.bar-anim-pulse { animation: minimal-dot-pulse 1.6s ease-in-out infinite; }
+      @keyframes minimal-dot-pulse { 0%,100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.15); } }
+      
+      .minimal-track.bar-anim-glow { box-shadow: 0 0 4px currentColor; animation: minimal-track-glow 1.5s ease-in-out infinite; }
+      @keyframes minimal-track-glow { 0%,100% { box-shadow: 0 0 4px currentColor; } 50% { box-shadow: 0 0 8px currentColor; } }
+      
+      .minimal-dot.bar-anim-glow { animation: minimal-dot-glow 1.5s ease-in-out infinite; }
+      @keyframes minimal-dot-glow { 0%,100% { box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 6px currentColor; } 50% { box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 12px currentColor; } }
+      
+      .minimal-track.bar-anim-blink { animation: minimal-blink 1s steps(2, start) infinite; }
+      .minimal-dot.bar-anim-blink { animation: minimal-blink 1s steps(2, start) infinite; }
+      @keyframes minimal-blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+      
+      .minimal-dot.bar-anim-bouncing { animation: minimal-dot-bounce 1.2s ease-in-out infinite; }
+      @keyframes minimal-dot-bounce { 0%,100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 4px)); } }
+      
+      .minimal-track.bar-anim-shimmer { position: relative; overflow: hidden; }
+      .minimal-track.bar-anim-shimmer::after { content:''; position:absolute; top:-50%; bottom:-50%; width:40%; left:-40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); animation: minimal-shimmer-move 1.4s ease-in-out infinite; }
+      @keyframes minimal-shimmer-move { 0% { left: -40%; } 100% { left: 120%; } }
+      
+      .minimal-dot.bar-anim-vibrate { animation: minimal-dot-vibrate 0.15s linear infinite; }
+      @keyframes minimal-dot-vibrate { 0% { transform: translate(-50%, -50%); } 25% { transform: translate(calc(-50% + 0.5px), calc(-50% - 0.5px)); } 50% { transform: translate(calc(-50% - 0.5px), calc(-50% + 0.5px)); } 75% { transform: translate(calc(-50% + 0.5px), calc(-50% + 0.5px)); } 100% { transform: translate(-50%, -50%); } }
     `;
   }
 

@@ -311,6 +311,10 @@
         }
       },
       "appearance": {
+        "direction": "Směr plnění",
+        "direction_desc": "Vyberte směr, kterým se pruh plní při zvyšování hodnoty.",
+        "left_to_right": "Zleva doprava",
+        "right_to_left": "Zprava doleva",
         "alignment": "Zarovnání pruhu",
         "alignment_desc": "Vyberte způsob zarovnání pruhu, když je šířka menší než 100%.",
         "border_radius": "Poloměr ohraničení",

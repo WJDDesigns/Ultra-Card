@@ -311,6 +311,10 @@
         }
       },
       "appearance": {
+        "direction": "Kierunek wypełniania",
+        "direction_desc": "Wybierz kierunek, w którym pasek wypełnia się wraz ze wzrostem wartości.",
+        "left_to_right": "Z lewej do prawej",
+        "right_to_left": "Z prawej do lewej",
         "alignment": "Wyrównanie paska",
         "alignment_desc": "Wybierz jak wyrównać pasek gdy ma mniej niż 100% szerokości.",
         "border_radius": "Promień obramowania",

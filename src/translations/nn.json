@@ -311,6 +311,10 @@
         }
       },
       "appearance": {
+        "direction": "Fylleretning",
+        "direction_desc": "Vel retninga stolpen fyllast i når verdien aukar.",
+        "left_to_right": "Venstre til høgre",
+        "right_to_left": "Høgre til venstre",
         "alignment": "Stolpejustering",
         "alignment_desc": "Vel korleis stolpen skal justerast når breidda er under 100 %.",
         "border_radius": "Kantavrunding",

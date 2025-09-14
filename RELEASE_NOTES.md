@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.0.0-Beta1 (New Minimal Bar Style & Improvements)
+
+### New Features
+
+- **🎨 New "Minimal" Bar Style**: Added a sleek minimal progress bar style featuring a thin line with a dot indicator
+  - Dynamic line thickness controlled by bar height setting
+  - Proportional dot scaling that maintains visual balance
+  - Full gradient mode support (Full, Cropped, Value-Based)
+  - Custom dot color picker for complete customization
+  - Smooth animations including pulse, glow, blink, shimmer, and more
+  - Smart container height adjustment to prevent dot cutoff at low heights
+
+- **🔧 Bar Module Improvements**:
+  - Fixed bar width control in General tab - now works alongside Global Design Tab
+  - Improved UI organization - Bar Style selection now appears above Fill Direction
+  - Enhanced gradient rendering for all gradient modes with proper color interpolation
+  - Better animation support across all bar styles
+
+### Bug Fixes
+
+- **Fixed bar width slider**: General tab width control now properly affects bar width instead of being overridden by flex properties
+- **Fixed Bar Style dropdown**: Converted from FormUtils to direct ha-form implementation for better reliability
+- **Fixed gradient color resolution**: Improved CSS variable handling and color interpolation for gradients
+- **Fixed minimal style container height**: Automatically adjusts container height to accommodate dot size at low bar heights
+- **Fixed dot scaling**: Implemented reasonable size limits to prevent oversized dots at high bar heights
+
+### Technical Improvements
+
+- Enhanced gradient calculation logic with proper CSS variable resolution
+- Improved color interpolation for smooth gradient transitions
+- Better responsive design for minimal bar style
+- Optimized rendering performance for all bar styles
+- Added comprehensive animation support for minimal style elements
+
 ## Version 2.0-Beta1 (TypeScript Rewrite)
 
 ### Major Changes

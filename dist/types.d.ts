@@ -318,9 +318,10 @@ export interface BarModule extends BaseModule {
     percentage_current_entity?: string;
     percentage_total_entity?: string;
     percentage_template?: string;
+    bar_direction?: 'left-to-right' | 'right-to-left';
     bar_size?: 'extra-thick' | 'thick' | 'medium' | 'thin';
     bar_radius?: 'square' | 'round' | 'pill';
-    bar_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed' | 'dots';
+    bar_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed' | 'dots' | 'minimal';
     bar_width?: number;
     bar_alignment?: 'left' | 'center' | 'right';
     height?: number;
@@ -359,6 +360,7 @@ export interface BarModule extends BaseModule {
     bar_background_color?: string;
     bar_border_color?: string;
     percentage_text_color?: string;
+    dot_color?: string;
     use_gradient?: boolean;
     gradient_display_mode?: 'full' | 'cropped' | 'value-based';
     gradient_stops?: Array<{

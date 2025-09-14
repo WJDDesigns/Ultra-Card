@@ -537,6 +537,7 @@ export interface BarModule extends BaseModule {
   percentage_template?: string;
 
   // Bar Appearance
+  bar_direction?: 'left-to-right' | 'right-to-left';
   bar_size?: 'extra-thick' | 'thick' | 'medium' | 'thin';
   bar_radius?: 'square' | 'round' | 'pill';
   bar_style?:
@@ -551,7 +552,8 @@ export interface BarModule extends BaseModule {
     | 'metallic'
     | 'neumorphic'
     | 'dashed'
-    | 'dots';
+    | 'dots'
+    | 'minimal';
   bar_width?: number; // Now a percentage number instead of string
   bar_alignment?: 'left' | 'center' | 'right';
   height?: number;
@@ -598,6 +600,7 @@ export interface BarModule extends BaseModule {
   bar_background_color?: string;
   bar_border_color?: string;
   percentage_text_color?: string;
+  dot_color?: string; // Color for minimal style dot indicator
 
   // Gradient Configuration
   use_gradient?: boolean;

@@ -431,6 +431,10 @@
       },
       "appearance": {
         "title": "Apparence de barre",
+        "direction": "Direction de remplissage",
+        "direction_desc": "Choisissez la direction dans laquelle la barre se remplit lorsque la valeur augmente.",
+        "left_to_right": "Gauche vers droite",
+        "right_to_left": "Droite vers gauche",
         "height": "Hauteur de barre",
         "height_desc": "Ajustez l'épaisseur de la barre de progression en pixels.",
         "border_radius": "Rayon de bordure",

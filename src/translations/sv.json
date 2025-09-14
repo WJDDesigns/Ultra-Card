@@ -311,6 +311,10 @@
         }
       },
       "appearance": {
+        "direction": "Fyllriktning",
+        "direction_desc": "Välj riktningen stapeln fyller i när värdet ökar.",
+        "left_to_right": "Vänster till höger",
+        "right_to_left": "Höger till vänster",
         "alignment": "Stapeljustering",
         "alignment_desc": "Välj hur stapeln ska justeras när den är mindre än 100% bredd.",
         "border_radius": "Kantradius",

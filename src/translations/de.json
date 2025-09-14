@@ -431,6 +431,10 @@
       },
       "appearance": {
         "title": "Balken-Erscheinungsbild",
+        "direction": "Füllrichtung",
+        "direction_desc": "Wählen Sie die Richtung, in die sich der Balken bei steigendem Wert füllt.",
+        "left_to_right": "Links nach Rechts",
+        "right_to_left": "Rechts nach Links",
         "height": "Balkenhöhe",
         "height_desc": "Passen Sie die Dicke des Fortschrittsbalkens in Pixeln an.",
         "border_radius": "Rahmen-Radius",

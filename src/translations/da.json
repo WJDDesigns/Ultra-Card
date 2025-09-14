@@ -311,6 +311,10 @@
         }
       },
       "appearance": {
+        "direction": "Fylderetning",
+        "direction_desc": "Vælg retningen bjælken fylder i når værdien stiger.",
+        "left_to_right": "Venstre til højre",
+        "right_to_left": "Højre til venstre",
         "alignment": "Bjælkejustering",
         "alignment_desc": "Vælg hvordan bjælken skal justeres når den er mindre end 100% bredde.",
         "border_radius": "Kantradius",

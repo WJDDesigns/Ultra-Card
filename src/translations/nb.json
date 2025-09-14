@@ -332,6 +332,10 @@
         "style_neumorphic": "Neumorfisk",
         "style_outline": "Omriss",
         "title": "Stolpeutseende",
+        "direction": "Fylleretning",
+        "direction_desc": "Velg retningen stolpen fyller seg i når verdien øker.",
+        "left_to_right": "Venstre til høyre",
+        "right_to_left": "Høyre til venstre",
         "width": "Stolpebredde",
         "width_desc": "Sett stolpebredden som prosent av beholder."
       },

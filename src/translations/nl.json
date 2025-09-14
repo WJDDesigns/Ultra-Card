@@ -311,6 +311,10 @@
         }
       },
       "appearance": {
+        "direction": "Vulrichting",
+        "direction_desc": "Kies de richting waarin de balk vult naarmate de waarde toeneemt.",
+        "left_to_right": "Links naar rechts",
+        "right_to_left": "Rechts naar links",
         "alignment": "Balk uitlijning",
         "alignment_desc": "Kies hoe de balk moet worden uitgelijnd wanneer deze minder dan 100% breed is.",
         "border_radius": "Randradius",

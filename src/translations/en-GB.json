@@ -431,6 +431,10 @@
       },
       "appearance": {
         "title": "Bar Appearance",
+        "direction": "Fill Direction",
+        "direction_desc": "Choose which direction the bar fills from as the value increases.",
+        "left_to_right": "Left to Right",
+        "right_to_left": "Right to Left",
         "height": "Bar Height",
         "height_desc": "Adjust the thickness of the progress bar in pixels.",
         "border_radius": "Border Radius",

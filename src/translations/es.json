@@ -436,6 +436,10 @@
       },
       "appearance": {
         "title": "Apariencia de la barra",
+        "direction": "Dirección de llenado",
+        "direction_desc": "Elija la dirección en la que se llena la barra a medida que aumenta el valor.",
+        "left_to_right": "Izquierda a derecha",
+        "right_to_left": "Derecha a izquierda",
         "height": "Altura de la barra",
         "height_desc": "Ajusta el grosor de la barra de progreso en píxeles.",
         "border_radius": "Radio del borde",
