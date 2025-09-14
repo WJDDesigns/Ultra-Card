@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.0.0-Beta1 (New Minimal Bar Style & Improvements)
+## Version 1.1.0-Beta1 (New Minimal Bar Style & Improvements)
 
 ### New Features
 
