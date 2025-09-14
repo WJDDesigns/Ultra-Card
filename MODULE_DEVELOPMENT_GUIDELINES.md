@@ -62,6 +62,28 @@ createDefault(id?: string): YourModuleType {
 
 ## UI Guidelines
 
+### 0. Dropdowns and labels (required)
+
+- All module editors must render dropdowns using our clean form utilities with labels/descriptions suppressed in the native control. Titles and help text must be provided outside the control via `UcFormUtils.renderFieldSection`/`renderSettingsSection` or `FormUtils.renderField`.
+- When using `UcFormUtils.renderForm` (preferred), pass `showLabels = false` (default). This injects `.computeLabel` and `.computeDescription` to prevent floating labels or overlay text inside the input.
+- Do not rely on HA’s floating labels inside `ha-form`. Always present human‑readable titles like “Time Period”, “Chart Width”, “Info Display”, etc., not underscored keys.
+
+Example:
+
+```ts
+${this.renderFieldSection(
+  'Time Period',
+  'How much historical data to show.',
+  hass,
+  { time_period: module.time_period || '24h' },
+  [this.selectField('time_period', [
+    { value: '1h', label: 'Last Hour' },
+    { value: '24h', label: 'Last 24 Hours' },
+  ])],
+  (e: CustomEvent) => updateModule(e.detail.value)
+)}
+```
+
 ### 1. Settings Section Structure
 
 Use consistent section styling:
@@ -148,45 +170,179 @@ Always include link configuration using UltraLinkComponent:
 </div>
 ```
 
-### 6. Template Configuration Pattern
+### 6. Template Mode UI Pattern (standardized)
 
-If your module supports templates:
+All modules that support templates must use the same UI structure and wording shown below. Section title must be "Template Mode" and the input label must be "Value Template". Use a boolean toggle and reveal a grouped area with a multiline editor and a compact examples block.
 
 ```typescript
-<div class="settings-section" style="...">
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;">
-    <div class="section-title" style="...">
-      Template Configuration
-    </div>
-    ${FormUtils.renderCleanForm(
-      hass,
-      { template_mode: module.template_mode || false },
-      [FormUtils.createSchemaItem('template_mode', { boolean: {} })],
-      (e: CustomEvent) => updateModule({ template_mode: e.detail.value.template_mode })
-    )}
+<div class="settings-section" style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;">
+  <div class="section-title" style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;">
+    Template Mode
+  </div>
+
+  <div class="field-group" style="margin-bottom: 16px;">
+    <ha-form
+      .hass=${hass}
+      .data=${{ template_mode: module.template_mode || false }}
+      .schema=${[{ name: 'template_mode', label: 'Template Mode', description: 'Use Home Assistant templating syntax to render content', selector: { boolean: {} } }]}
+      .computeLabel=${(s: any) => s.label || s.name}
+      .computeDescription=${(s: any) => s.description || ''}
+      @value-changed=${(e: CustomEvent) => updateModule({ template_mode: e.detail.value.template_mode })}
+    ></ha-form>
   </div>
 
   ${module.template_mode
-    ? this.renderConditionalFieldsGroup(
-        'Template Settings',
-        html`
-          ${FormUtils.renderField(
-            'Template Code',
-            'Enter the Jinja2 template code. Example: {{ states(\'sensor.example\') }}',
-            hass,
-            { template: module.template || '' },
-            [FormUtils.createSchemaItem('template', { text: { multiline: true } })],
-            (e: CustomEvent) => updateModule({ template: e.detail.value.template })
-          )}
-        `
-      )
-    : html`
-        <div style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;">
-          Enable template mode to use dynamic content
+    ? html`
+        <div class="field-group" style="margin-bottom: 16px;">
+          <ha-form
+            .hass=${hass}
+            .data=${{ template: module.template || '' }}
+            .schema=${[{ name: 'template', label: 'Value Template', description: 'Template to render using Jinja2 syntax', selector: { text: { multiline: true } } }]}
+            .computeLabel=${(s: any) => s.label || s.name}
+            .computeDescription=${(s: any) => s.description || ''}
+            @value-changed=${(e: CustomEvent) => updateModule({ template: e.detail.value.template })}
+          ></ha-form>
         </div>
+
+        <div class="template-examples">
+          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Common Examples:</div>
+          <div class="example-item" style="margin-bottom: 16px;">
+            <div class="example-code" style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;">{{ states('sensor.example') }}</div>
+            <div class="example-description" style="font-size: 12px; color: var(--secondary-text-color);">Basic value</div>
+          </div>
+          <div class="example-item" style="margin-bottom: 16px;">
+            <div class="example-code" style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;">{{ states('sensor.example') | int(default=0) }}%</div>
+            <div class="example-description" style="font-size: 12px; color: var(--secondary-text-color);">With percent</div>
+          </div>
+        </div>
+      `
+    : html`
+        <div style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;">Enable template mode to use dynamic content</div>
       `}
 </div>
 ```
+
+Notes:
+
+- The above structure must be used for all modules with `template_mode`/`template` fields (Text, Info, Camera, Graphs, etc.).
+- Place the Template Mode section as the last group in the General/Other tab for that module.
+
+### 7. Logic Tab vs Template Mode (must remain separate)
+
+Purpose separation is mandatory:
+
+- Template Mode (General/Other tab): Renders text/value or dynamically selects an entity for that specific module. It should never control visibility. It uses fields `template_mode` and `template` that are local to the module’s content rendering.
+- Logic tab: Controls when the element is shown/hidden via `display_mode` and `display_conditions` (time, state, template condition). This must NOT reuse the content `template_mode` toggle or field. Logic template(s) appear in per-condition UI (e.g., “Template” condition returning true/false) and are stored under the logic data structure, not the module’s content template field.
+
+Implementation rules:
+
+- Do not read or mutate the General tab’s `template_mode` / `template` from the Logic tab. Keep separate properties for logic, e.g., `display_mode`, `display_conditions`, and per-condition `template` strings.
+- In the Logic tab UI, never bind to `module.template_mode`. If a legacy binding exists, remove it and use the dedicated logic fields instead.
+- Use wording that reinforces separation: Logic template inputs must include the hint “Template should return true/false (controls visibility)”. Content Template Mode uses “Value Template” and affects rendered text/value only.
+- When both are configured, logic takes effect for visibility, while content template affects the module’s internal display when visible.
+
+### 8. Hierarchy and cross-cutting tabs (Actions, Logic, Design)
+
+All editor tabs for Rows, Columns and Modules MUST behave consistently and follow the same hierarchy. The DOM structure is always:
+
+```
+(Row)
+  <div class="uc-row-container">        // Row-level Actions, Logic, Design attach here
+    (Column)
+      <div class="uc-column-container"> // Column-level Actions, Logic, Design attach here
+        (Module)
+          <div class="uc-module-container"> // Module-level Actions, Logic, Design attach here
+            ...module content...
+          </div>
+      </div>
+  </div>
+```
+
+Shared principles:
+
+- Each level exposes three tabs: Actions, Logic, Design.
+- A level’s settings apply to its outer container and everything inside it.
+- Parent settings cascade down to children. Child settings NEVER modify the parent.
+
+Actions (tap/hold/double-tap):
+
+- Every level can have its own actions. The action handlers must be attached to the container of that level.
+- Precedence is child-first. If a module has an active action, clicking the module executes the module action and MUST NOT bubble to the column/row. Use `stopPropagation()` and/or pointer event containment.
+- If a child has no active actions, allow the event to bubble so the column action can fire; if no column action, the row action can fire.
+- Hover effects (if enabled) apply to the container at that level only. Child hover effects take visual priority inside their own container, but must not leak to the parent.
+
+Logic (show/hide):
+
+- Visibility is evaluated top-down with AND semantics: `visible = rowVisible && columnVisible && moduleVisible`.
+- A hidden parent hides all its descendants regardless of their individual logic.
+- Logic uses `display_mode` and `display_conditions` with per-condition templates that RETURN TRUE/FALSE. These logic templates are distinct from content templates (see section 7).
+- UI phrasing in Logic templates must state: “Template should return true/false (controls visibility)”.
+
+Design (style cascade and overrides):
+
+- Design settings on a level affect that container and all nested content inside that container.
+- Parent Design overrides child General settings and also overrides child Design settings where specified. Cascading precedence:
+  - Row Design (highest)
+  - Column Design
+  - Module Design
+  - Module General (lowest)
+- Practical rule: If the module has red text in General, setting white text in the row’s Design forces white in that module (because parent style wins).
+- Implementation guidance:
+  - Compute effective styles by merging in order (lowest to highest priority): `computed = { ...moduleGeneral, ...moduleDesign, ...columnDesign, ...rowDesign }` but remember parent design should overwrite child design where defined.
+  - Apply Design styles to the container `style` attribute (inline) or as CSS variables set on the container, then reference those variables in child content.
+  - All modules must expose a container element and use a helper (e.g., `styleObjectToCss`) so Design can apply uniformly.
+
+Testing checklist (hierarchy):
+
+- Clicking a module with its own action does NOT trigger column/row actions; clicking empty space inside a column triggers column or row action as configured.
+- Setting Logic to hide a row hides its columns and modules even if their logic evaluates true.
+- Row Design color/background/fonts propagate to columns and modules; a later change on Column Design should override Module General but be overridden by Row Design where both specify the same property.
+
+### 9. Single-source global tabs (one file per tab)
+
+To simplify future development and guarantee consistent behavior, the editor must use a single implementation file for each global tab. Modules/rows/columns only invoke these APIs and provide a thin glue layer.
+
+- Actions: `src/services/actions-tab-service.ts` (already in use)
+
+  - API: `ActionsTabService.render(scope, hass, config, update, injectStyles)` returns a complete Actions tab (including hover controls).
+  - Helpers: `hasActiveActions`, `getHoverStyles`, `getClickableClass`, `getClickableStyle`.
+
+- Logic: `src/services/logic-tab-service.ts` (centralize)
+
+  - API: `LogicTabService.render(scope, hass, update)` renders display mode and conditions (time, state, template).
+  - The template condition editor must say “Template should return true/false (controls visibility)”.
+  - Emits updates for `display_mode` and `display_conditions` only (never touches content `template_mode`).
+  - Provides `LogicTabService.evaluate(scope, hass)` for preview if needed (wraps `LogicService`).
+
+- Design: `src/services/design-tab-service.ts` (centralize)
+  - API: `DesignTabService.render(scope, hass, update)` renders all shared design controls (colors, fonts, sizes, spacing, borders, background, images, effects).
+  - Exposes `DesignTabService.apply(containerStyles, parentDesign, childDesign, general)` that merges styles using precedence: Row > Column > Module Design > Module General.
+  - All modules must render into a container and call the helper used by Design to convert the computed style object to inline CSS or CSS variables.
+
+Usage example in a module file:
+
+```ts
+// Actions tab
+renderActionsTab(module, hass, config, update) {
+  return ActionsTabService.render(module, hass, config, update, () => this.injectUcFormStyles());
+}
+
+// Logic tab
+renderLogicTab(module, hass, update) {
+  return LogicTabService.render(module, hass, update);
+}
+
+// Design tab
+renderDesignTab(module, hass, update) {
+  return DesignTabService.render(module, hass, update);
+}
+```
+
+Migration guidance:
+
+- New modules must use the three services above; keep module files focused on module-specific tabs (General, Other).
+- Existing modules should be updated incrementally to remove bespoke logic/actions/design tab code and delegate to the services.
+- Rows and Columns must use the same services and pass their own config objects so behavior matches modules.
 
 ## Preview Rendering
 
@@ -550,5 +706,178 @@ ${FormUtils.renderCleanForm(
   (e: CustomEvent) => updateModule({ boolean_field: e.detail.value.boolean_field })
 )}
 ```
+
+### 4. Number Range Control with Slider
+
+For numeric fields that benefit from visual adjustment, use this optimized pattern with a dominant slider, compact number input, and reset button.
+
+To ensure the control is styled correctly in the editor UI, you must include the required CSS within an inline `<style>` tag in your `renderGeneralTab` method. These styles should also be included in your module's `getStyles()` method to apply to the card preview.
+
+```typescript
+// In your renderGeneralTab method
+<div class="field-container" style="margin-bottom: 24px;">
+  <div class="field-title">Field Name</div>
+  <div class="field-description">
+    Field description explaining the range and purpose.
+  </div>
+  <style>
+    .number-range-control {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .range-slider {
+      flex: 0 0 65%;
+      height: 6px;
+      background: var(--divider-color);
+      border-radius: 3px;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 0;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--primary-color);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .range-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: var(--primary-color);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .range-slider:hover {
+      background: var(--primary-color);
+      opacity: 0.7;
+    }
+
+    .range-slider:hover::-webkit-slider-thumb {
+      transform: scale(1.1);
+    }
+
+    .range-slider:hover::-moz-range-thumb {
+      transform: scale(1.1);
+    }
+
+    .range-input {
+      flex: 0 0 20%;
+      padding: 6px 8px !important;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      font-size: 13px;
+      text-align: center;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .range-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+    }
+
+    .range-reset-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .range-reset-btn:hover {
+      background: var(--primary-color);
+      color: var(--text-primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .range-reset-btn ha-icon {
+      font-size: 14px;
+    }
+  </style>
+  <div class="number-range-control">
+    <input
+      type="range"
+      class="range-slider"
+      min="${MIN_VALUE}"
+      max="${MAX_VALUE}"
+      step="0.1"
+      .value="${module.field_name || DEFAULT_VALUE}"
+      @input=${(e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const value = parseFloat(target.value);
+        updateModule({ field_name: value });
+      }}
+    />
+    <input
+      type="number"
+      class="range-input"
+      min="${MIN_VALUE}"
+      max="${MAX_VALUE}"
+      step="0.1"
+      .value="${module.field_name || DEFAULT_VALUE}"
+      @input=${(e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const value = parseFloat(target.value);
+        if (!isNaN(value)) {
+          updateModule({ field_name: value });
+        }
+      }}
+      @keydown=${(e: KeyboardEvent) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const target = e.target as HTMLInputElement;
+          const currentValue = parseFloat(target.value) || DEFAULT_VALUE;
+          const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
+          const newValue = Math.max(MIN_VALUE, Math.min(MAX_VALUE, currentValue + increment));
+          const roundedValue = Math.round(newValue * 10) / 10;
+          updateModule({ field_name: roundedValue });
+        }
+      }}
+    />
+    <button
+      class="range-reset-btn"
+      @click=${() => updateModule({ field_name: DEFAULT_VALUE })}
+      title="Reset to default (${DEFAULT_VALUE})"
+    >
+      <ha-icon icon="mdi:refresh"></ha-icon>
+    </button>
+  </div>
+</div>
+```
+
+This pattern provides:
+
+- Visual slider for intuitive adjustment
+- Precise number input with arrow key support (±0.1 increments)
+- Reset button with tooltip for default values
+- Synchronized updates across all controls
+- Responsive design that works on all screen sizes
+- Support for negative values and decimal precision
 
 This guideline ensures consistency across all modules and provides a clear development path for new features.

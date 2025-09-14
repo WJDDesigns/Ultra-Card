@@ -10,6 +10,7 @@ import { UltraMarkdownModule } from './markdown-module';
 import { UltraHorizontalModule } from './horizontal-module';
 import { UltraVerticalModule } from './vertical-module';
 import { UltraCameraModule } from './camera-module';
+import { UltraGraphsModule } from './graphs-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -43,6 +44,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraHorizontalModule());
     this.registerModule(new UltraVerticalModule());
     this.registerModule(new UltraCameraModule());
+    this.registerModule(new UltraGraphsModule());
   }
 
   // Register a new module (for core modules or third-party modules)
@@ -56,9 +58,7 @@ export class ModuleRegistry {
     this.modules.set(type, module);
     this.updateCategoryMap(module);
 
-    console.log(
-      `✅ Registered module: ${module.metadata.title} v${module.metadata.version} by ${module.metadata.author}`
-    );
+    // Module registered successfully
   }
 
   // Unregister a module
@@ -71,7 +71,6 @@ export class ModuleRegistry {
     this.modules.delete(type);
     this.updateCategoryMaps();
 
-    console.log(`❌ Unregistered module: ${type}`);
     return true;
   }
 
@@ -115,18 +114,16 @@ export class ModuleRegistry {
   }
 
   // Create a default instance of a module
-  public createDefaultModule(type: string, id?: string): CardModule | null {
-    console.log(`Creating default module for type: ${type}`);
+  public createDefaultModule(type: string, id?: string, hass?: any): CardModule | null {
     const module = this.getModule(type);
     if (!module) {
       console.error(`Module type "${type}" not found in registry`);
-      console.log('Available module types:', Array.from(this.modules.keys()));
       return null;
     }
 
     try {
-      const defaultModule = module.createDefault(id);
-      console.log(`Successfully created default module:`, defaultModule);
+      // Check if the module's createDefault method accepts hass parameter
+      const defaultModule = (module as any).createDefault(id, hass);
       return defaultModule;
     } catch (error) {
       console.error(`Error creating default module for type "${type}":`, error);

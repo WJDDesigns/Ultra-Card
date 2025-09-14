@@ -2,6 +2,12 @@ import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, MarkdownModule, UltraCardConfig } from '../types';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
+import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { getImageUrl } from '../utils/image-upload';
+import { localize } from '../localize/localize';
 
 export class UltraMarkdownModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -15,7 +21,7 @@ export class UltraMarkdownModule extends BaseUltraModule {
     tags: ['markdown', 'content', 'rich-text', 'formatting', 'template'],
   };
 
-  createDefault(id?: string): MarkdownModule {
+  createDefault(id?: string, hass?: HomeAssistant): MarkdownModule {
     return {
       id: id || this.generateId('markdown'),
       type: 'markdown',
@@ -34,16 +40,22 @@ This is a **markdown** module that supports:
 3. Code blocks
 4. And much more...
 
-> This is a blockquote example`,
-      link: '',
-      hide_if_no_link: false,
-      template_mode: false,
-      template: '',
+> This is a blockquote example
+
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Row 1    | Data     | More     |
+| Row 2    | Content  | Here     |`,
       enable_html: false,
       enable_tables: true,
       enable_code_highlighting: true,
-      max_height: 'none',
-      overflow_behavior: 'visible',
+      // Global action configuration
+      tap_action: { action: 'nothing' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
+      // Logic (visibility) defaults
+      display_mode: 'always',
+      display_conditions: [],
     };
   }
 
@@ -54,21 +66,35 @@ This is a **markdown** module that supports:
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const markdownModule = module as MarkdownModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
+      ${this.injectUcFormStyles()}
       <div class="module-general-settings">
         <!-- Content Section -->
-        <div class="wpbakery-section">
-          <h4>Markdown Content</h4>
-          <div class="ha-form-field">
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.markdown.content.title', lang, 'Markdown Content')}
+          </div>
+          <div class="field-group">
             <ha-form
               .hass=${hass}
               .data=${{ markdown_content: markdownModule.markdown_content || '' }}
               .schema=${[
                 {
                   name: 'markdown_content',
-                  label: 'Content',
-                  description: 'Enter your markdown content with full formatting support',
+                  label: localize('editor.markdown.content.label', lang, 'Content'),
+                  description: localize(
+                    'editor.markdown.content.desc',
+                    lang,
+                    'Enter your markdown content with full formatting support'
+                  ),
                   selector: { text: { multiline: true } },
                 },
               ]}
@@ -80,307 +106,275 @@ This is a **markdown** module that supports:
           </div>
         </div>
 
-        <!-- Link & Behavior Section -->
-        <div class="wpbakery-section">
-          <h4>Link & Behavior</h4>
-          <div class="two-column-grid">
-            <div class="ha-form-field">
+        <!-- Feature Settings Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.markdown.features.title', lang, 'Markdown Features')}
+          </div>
+
+          <div class="three-column-grid">
+            <div class="field-group">
               <ha-form
                 .hass=${hass}
-                .data=${{ link: markdownModule.link || '' }}
+                .data=${{ enable_html: markdownModule.enable_html || false }}
                 .schema=${[
                   {
-                    name: 'link',
-                    label: 'Link URL',
-                    description: 'Optional URL to make the markdown clickable',
-                    selector: { text: {} },
-                  },
-                ]}
-                .computeLabel=${(schema: any) => schema.label || schema.name}
-                .computeDescription=${(schema: any) => schema.description || ''}
-                @value-changed=${(e: CustomEvent) => updateModule({ link: e.detail.value.link })}
-              ></ha-form>
-            </div>
-            <div class="ha-form-field">
-              <ha-form
-                .hass=${hass}
-                .data=${{ hide_if_no_link: markdownModule.hide_if_no_link || false }}
-                .schema=${[
-                  {
-                    name: 'hide_if_no_link',
-                    label: 'Hide if No Link',
-                    description: 'Hide module when no link is provided',
+                    name: 'enable_html',
+                    label: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
+                    description: localize(
+                      'editor.markdown.enable_html_desc',
+                      lang,
+                      'Allow HTML tags in markdown content'
+                    ),
                     selector: { boolean: {} },
                   },
                 ]}
                 .computeLabel=${(schema: any) => schema.label || schema.name}
                 .computeDescription=${(schema: any) => schema.description || ''}
                 @value-changed=${(e: CustomEvent) =>
-                  updateModule({ hide_if_no_link: e.detail.value.hide_if_no_link })}
+                  updateModule({ enable_html: e.detail.value.enable_html })}
               ></ha-form>
             </div>
-          </div>
-        </div>
 
-        <!-- Display Options Section -->
-        <div class="wpbakery-section">
-          <h4>Display Options</h4>
-          <div class="two-column-grid">
-            <div class="ha-form-field">
+            <div class="field-group">
               <ha-form
                 .hass=${hass}
-                .data=${{ max_height: markdownModule.max_height || 'none' }}
+                .data=${{ enable_tables: markdownModule.enable_tables !== false }}
                 .schema=${[
                   {
-                    name: 'max_height',
-                    label: 'Max Height',
-                    description: 'Maximum height (e.g., 300px, 50vh, none)',
-                    selector: { text: {} },
+                    name: 'enable_tables',
+                    label: localize('editor.markdown.enable_tables', lang, 'Enable Tables'),
+                    description: localize(
+                      'editor.markdown.enable_tables_desc',
+                      lang,
+                      'Support for markdown table syntax'
+                    ),
+                    selector: { boolean: {} },
                   },
                 ]}
                 .computeLabel=${(schema: any) => schema.label || schema.name}
                 .computeDescription=${(schema: any) => schema.description || ''}
                 @value-changed=${(e: CustomEvent) =>
-                  updateModule({ max_height: e.detail.value.max_height })}
+                  updateModule({ enable_tables: e.detail.value.enable_tables })}
               ></ha-form>
             </div>
-            <div class="ha-form-field">
+
+            <div class="field-group">
               <ha-form
                 .hass=${hass}
-                .data=${{ overflow_behavior: markdownModule.overflow_behavior || 'visible' }}
+                .data=${{
+                  enable_code_highlighting: markdownModule.enable_code_highlighting !== false,
+                }}
                 .schema=${[
                   {
-                    name: 'overflow_behavior',
-                    label: 'Overflow Behavior',
-                    selector: {
-                      select: {
-                        options: [
-                          { value: 'visible', label: 'Visible' },
-                          { value: 'scroll', label: 'Scroll' },
-                          { value: 'hidden', label: 'Hidden' },
-                        ],
-                        mode: 'dropdown',
-                      },
-                    },
+                    name: 'enable_code_highlighting',
+                    label: localize('editor.markdown.code_highlighting', lang, 'Code Highlighting'),
+                    description: localize(
+                      'editor.markdown.code_highlighting_desc',
+                      lang,
+                      'Syntax highlighting for code blocks'
+                    ),
+                    selector: { boolean: {} },
                   },
                 ]}
                 .computeLabel=${(schema: any) => schema.label || schema.name}
+                .computeDescription=${(schema: any) => schema.description || ''}
                 @value-changed=${(e: CustomEvent) =>
-                  updateModule({ overflow_behavior: e.detail.value.overflow_behavior })}
+                  updateModule({
+                    enable_code_highlighting: e.detail.value.enable_code_highlighting,
+                  })}
               ></ha-form>
             </div>
           </div>
-
-          <!-- Feature Toggles -->
-          <div class="three-column-grid">
-            <ha-form
-              .hass=${hass}
-              .data=${{ enable_html: markdownModule.enable_html || false }}
-              .schema=${[
-                {
-                  name: 'enable_html',
-                  label: 'Enable HTML',
-                  description: 'Allow HTML tags in markdown',
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ enable_html: e.detail.value.enable_html })}
-            ></ha-form>
-
-            <ha-form
-              .hass=${hass}
-              .data=${{ enable_tables: markdownModule.enable_tables !== false }}
-              .schema=${[
-                {
-                  name: 'enable_tables',
-                  label: 'Enable Tables',
-                  description: 'Support for markdown tables',
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ enable_tables: e.detail.value.enable_tables })}
-            ></ha-form>
-
-            <ha-form
-              .hass=${hass}
-              .data=${{
-                enable_code_highlighting: markdownModule.enable_code_highlighting !== false,
-              }}
-              .schema=${[
-                {
-                  name: 'enable_code_highlighting',
-                  label: 'Code Highlighting',
-                  description: 'Syntax highlighting for code blocks',
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ enable_code_highlighting: e.detail.value.enable_code_highlighting })}
-            ></ha-form>
-          </div>
-        </div>
-
-        <!-- Template Mode Section -->
-        <div class="wpbakery-section">
-          <h4>Template Mode</h4>
-
-          <ha-form
-            .hass=${hass}
-            .data=${{ template_mode: markdownModule.template_mode || false }}
-            .schema=${[
-              {
-                name: 'template_mode',
-                label: 'Enable Template Mode',
-                description: 'Use Home Assistant Jinja2 templates for dynamic content',
-                selector: { boolean: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || schema.name}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) =>
-              updateModule({ template_mode: e.detail.value.template_mode })}
-          ></ha-form>
-
-          ${markdownModule.template_mode
-            ? html`
-                <div style="margin-top: 16px;">
-                  <ha-form
-                    .hass=${hass}
-                    .data=${{ template: markdownModule.template || '' }}
-                    .schema=${[
-                      {
-                        name: 'template',
-                        label: 'Template',
-                        description:
-                          'Jinja2 template for dynamic content (e.g., {{ states("sensor.temperature") }}°C)',
-                        selector: { text: { multiline: true } },
-                      },
-                    ]}
-                    .computeLabel=${(schema: any) => schema.label || schema.name}
-                    .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ template: e.detail.value.template })}
-                  ></ha-form>
-                </div>
-              `
-            : ''}
         </div>
       </div>
     `;
   }
 
+  renderActionsTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
+  }
+
   renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     const markdownModule = module as MarkdownModule;
 
-    // Check if element should be hidden when no link
-    if (
-      markdownModule.hide_if_no_link &&
-      (!markdownModule.link || markdownModule.link.trim() === '')
-    ) {
-      return html`<div class="markdown-module-hidden">Hidden (no link)</div>`;
-    }
-
-    // Apply design properties with priority
+    // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = markdownModule as any;
+    const designProperties = (markdownModule as any).design || {};
 
     const containerStyles = {
       padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
         moduleWithDesign.padding_top ||
         moduleWithDesign.padding_bottom ||
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
-          ? `${moduleWithDesign.padding_top || '8'}px ${moduleWithDesign.padding_right || '0'}px ${moduleWithDesign.padding_bottom || '8'}px ${moduleWithDesign.padding_left || '0'}px`
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '8px 0',
       margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
         moduleWithDesign.margin_top ||
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${moduleWithDesign.margin_top || '0'}px ${moduleWithDesign.margin_right || '0'}px ${moduleWithDesign.margin_bottom || '0'}px ${moduleWithDesign.margin_left || '0'}px`
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
           : '0',
       background:
-        moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
-          ? moduleWithDesign.background_color
-          : 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(moduleWithDesign, hass),
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
+        designProperties.background_color && designProperties.background_color !== 'transparent'
+          ? designProperties.background_color
+          : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
+            ? moduleWithDesign.background_color
+            : 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
       border:
-        moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none'
-          ? `${moduleWithDesign.border_width || '1px'} ${moduleWithDesign.border_style} ${moduleWithDesign.border_color || 'var(--divider-color)'}`
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
           : 'none',
-      borderRadius: this.addPixelUnit(moduleWithDesign.border_radius) || '0',
-      position: moduleWithDesign.position || 'static',
-      top: moduleWithDesign.top || 'auto',
-      bottom: moduleWithDesign.bottom || 'auto',
-      left: moduleWithDesign.left || 'auto',
-      right: moduleWithDesign.right || 'auto',
-      zIndex: moduleWithDesign.z_index || 'auto',
-      width: moduleWithDesign.width || '100%',
-      height: moduleWithDesign.height || 'auto',
-      maxWidth: moduleWithDesign.max_width || '100%',
-      maxHeight: moduleWithDesign.max_height || 'none',
-      minWidth: moduleWithDesign.min_width || 'none',
-      minHeight: moduleWithDesign.min_height || 'auto',
-      overflow: moduleWithDesign.overflow || 'visible',
-      clipPath: moduleWithDesign.clip_path || 'none',
-      backdropFilter: moduleWithDesign.backdrop_filter || 'none',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
+      position: designProperties.position || moduleWithDesign.position || 'static',
+      top: designProperties.top || moduleWithDesign.top || 'auto',
+      bottom: designProperties.bottom || moduleWithDesign.bottom || 'auto',
+      left: designProperties.left || moduleWithDesign.left || 'auto',
+      right: designProperties.right || moduleWithDesign.right || 'auto',
+      zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
+      width: designProperties.width || moduleWithDesign.width || '100%',
+      height: designProperties.height || moduleWithDesign.height || 'auto',
+      maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
+      maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
+      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
+      backdropFilter:
+        designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
       boxShadow:
-        moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
-          ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
-          : 'none',
+        designProperties.box_shadow_h && designProperties.box_shadow_v
+          ? `${designProperties.box_shadow_h || '0'} ${designProperties.box_shadow_v || '0'} ${designProperties.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || '0'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
+            ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+            : 'none',
       boxSizing: 'border-box',
     };
 
     const contentStyles = {
-      fontSize: moduleWithDesign.font_size
-        ? `${moduleWithDesign.font_size}px`
-        : `${markdownModule.font_size || 14}px`,
-      fontFamily: moduleWithDesign.font_family || markdownModule.font_family || 'Roboto',
-      color: moduleWithDesign.color || markdownModule.color || 'var(--primary-text-color)',
-      textAlign: moduleWithDesign.text_align || markdownModule.alignment || 'left',
-      lineHeight: moduleWithDesign.line_height || markdownModule.line_height || 1.6,
-      letterSpacing: moduleWithDesign.letter_spacing || markdownModule.letter_spacing || 'normal',
+      fontSize:
+        (designProperties.font_size && designProperties.font_size) ||
+        (moduleWithDesign.font_size
+          ? `${moduleWithDesign.font_size}px`
+          : `${markdownModule.font_size || 14}px`),
+      fontFamily:
+        designProperties.font_family ||
+        moduleWithDesign.font_family ||
+        markdownModule.font_family ||
+        'Roboto',
+      color:
+        (designProperties && designProperties.color) ||
+        moduleWithDesign.color ||
+        markdownModule.color ||
+        'var(--primary-text-color)',
+      textAlign:
+        (designProperties.text_align && designProperties.text_align !== 'inherit'
+          ? designProperties.text_align
+          : undefined) ||
+        moduleWithDesign.text_align ||
+        markdownModule.alignment ||
+        'left',
+      lineHeight:
+        designProperties.line_height ||
+        moduleWithDesign.line_height ||
+        markdownModule.line_height ||
+        1.6,
+      letterSpacing:
+        designProperties.letter_spacing ||
+        moduleWithDesign.letter_spacing ||
+        markdownModule.letter_spacing ||
+        'normal',
       padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
         moduleWithDesign.padding_top ||
         moduleWithDesign.padding_bottom ||
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
-          ? `${moduleWithDesign.padding_top || '8'}px ${moduleWithDesign.padding_right || '0'}px ${moduleWithDesign.padding_bottom || '8'}px ${moduleWithDesign.padding_left || '0'}px`
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '8px 0',
       maxHeight:
-        markdownModule.max_height && markdownModule.max_height !== 'none'
+        (designProperties.max_height && designProperties.max_height !== 'none'
+          ? designProperties.max_height
+          : undefined) ||
+        (markdownModule.max_height && markdownModule.max_height !== 'none'
           ? markdownModule.max_height
-          : 'none',
+          : 'none'),
       overflow:
-        markdownModule.max_height && markdownModule.max_height !== 'none'
+        (designProperties.max_height && designProperties.max_height !== 'none'
+          ? designProperties.overflow || 'visible'
+          : undefined) ||
+        (markdownModule.max_height && markdownModule.max_height !== 'none'
           ? markdownModule.overflow_behavior || 'visible'
-          : 'visible',
+          : 'visible'),
       // Shadow effects
       textShadow:
-        moduleWithDesign.text_shadow_h && moduleWithDesign.text_shadow_v
-          ? `${moduleWithDesign.text_shadow_h || '0'} ${moduleWithDesign.text_shadow_v || '0'} ${moduleWithDesign.text_shadow_blur || '0'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,0.5)'}`
-          : 'none',
+        designProperties.text_shadow_h && designProperties.text_shadow_v
+          ? `${designProperties.text_shadow_h || '0'} ${designProperties.text_shadow_v || '0'} ${designProperties.text_shadow_blur || '0'} ${designProperties.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+          : moduleWithDesign.text_shadow_h && moduleWithDesign.text_shadow_v
+            ? `${moduleWithDesign.text_shadow_h || '0'} ${moduleWithDesign.text_shadow_v || '0'} ${moduleWithDesign.text_shadow_blur || '0'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+            : 'none',
       boxShadow:
-        moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
-          ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
-          : 'none',
+        designProperties.box_shadow_h && designProperties.box_shadow_v
+          ? `${designProperties.box_shadow_h || '0'} ${designProperties.box_shadow_v || '0'} ${designProperties.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || '0'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
+            ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+            : 'none',
     };
 
-    // Enhanced markdown to HTML conversion
+    // Enhanced markdown to HTML conversion with feature toggle support
     const renderMarkdown = (content: string): string => {
       if (!content) return '';
 
-      let html = content
+      let html = content;
+
+      // HTML support (respect HTML setting) - handle early if disabled
+      if (!markdownModule.enable_html) {
+        // Escape HTML tags if HTML is disabled (but preserve markdown syntax)
+        html = html.replace(
+          /<(?![/]?(h[1-6]|p|strong|em|code|pre|blockquote|ul|ol|li|a|hr|table|thead|tbody|tr|th|td)\b)[^>]*>/g,
+          match => {
+            return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          }
+        );
+      }
+
+      html = html
         // Headers (support H1-H6)
         .replace(/^#{6} (.*$)/gim, '<h6>$1</h6>')
         .replace(/^#{5} (.*$)/gim, '<h5>$1</h5>')
@@ -392,8 +386,6 @@ This is a **markdown** module that supports:
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        // Inline code
-        .replace(/`(.*?)`/g, '<code>$1</code>')
         // Links
         .replace(
           /\[([^\]]+)\]\(([^)]+)\)/g,
@@ -403,19 +395,103 @@ This is a **markdown** module that supports:
         .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
         // Horizontal rules
         .replace(/^---$/gim, '<hr>')
-        .replace(/^\*\*\*$/gim, '<hr>')
-        // Line breaks (preserve double newlines as paragraphs)
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br/>');
+        .replace(/^\*\*\*$/gim, '<hr>');
+
+      // Code blocks and inline code (respect code highlighting setting)
+      if (markdownModule.enable_code_highlighting !== false) {
+        // Code blocks (triple backticks)
+        html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+          const className = lang ? ` class="language-${lang}"` : '';
+          return `<pre><code${className}>${code.trim()}</code></pre>`;
+        });
+        // Inline code
+        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+      } else {
+        // Simple code formatting without highlighting
+        html = html.replace(/```[\s\S]*?```/g, match => {
+          const code = match.replace(/```(\w+)?\n?/, '').replace(/```$/, '');
+          return `<pre><code>${code.trim()}</code></pre>`;
+        });
+        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+      }
+
+      // Tables (respect table setting)
+      if (markdownModule.enable_tables !== false) {
+        // Simple table parsing
+        const lines = html.split('\n');
+        let inTable = false;
+        let tableHtml = '';
+        let processedLines: string[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+
+          if (line.includes('|') && line.split('|').length > 2) {
+            if (!inTable) {
+              inTable = true;
+              tableHtml = '<table>';
+              // Check if next line is a separator
+              const nextLine = lines[i + 1]?.trim();
+              const isHeader = nextLine && /^[\|\-\s:]+$/.test(nextLine);
+
+              if (isHeader) {
+                tableHtml += '<thead>';
+                const cells = line.split('|').filter(cell => cell.trim());
+                tableHtml += '<tr>';
+                cells.forEach(cell => {
+                  tableHtml += `<th>${cell.trim()}</th>`;
+                });
+                tableHtml += '</tr></thead><tbody>';
+                i++; // Skip separator line
+              } else {
+                tableHtml += '<tbody>';
+                const cells = line.split('|').filter(cell => cell.trim());
+                tableHtml += '<tr>';
+                cells.forEach(cell => {
+                  tableHtml += `<td>${cell.trim()}</td>`;
+                });
+                tableHtml += '</tr>';
+              }
+            } else {
+              const cells = line.split('|').filter(cell => cell.trim());
+              tableHtml += '<tr>';
+              cells.forEach(cell => {
+                tableHtml += `<td>${cell.trim()}</td>`;
+              });
+              tableHtml += '</tr>';
+            }
+          } else {
+            if (inTable) {
+              inTable = false;
+              tableHtml += '</tbody></table>';
+              processedLines.push(tableHtml);
+              tableHtml = '';
+            }
+            processedLines.push(line);
+          }
+        }
+
+        if (inTable) {
+          tableHtml += '</tbody></table>';
+          processedLines.push(tableHtml);
+        }
+
+        html = processedLines.join('\n');
+      }
+
+      // Line breaks (preserve double newlines as paragraphs)
+      html = html.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>');
 
       // Wrap in paragraph tags
       html = '<p>' + html + '</p>';
 
-      // Clean up empty paragraphs
+      // Clean up empty paragraphs and fix nesting
       html = html.replace(/<p><\/p>/g, '');
       html = html.replace(/<p>(<h[1-6]>.*?<\/h[1-6]>)<\/p>/g, '$1');
       html = html.replace(/<p>(<blockquote>.*?<\/blockquote>)<\/p>/g, '$1');
       html = html.replace(/<p>(<hr>)<\/p>/g, '$1');
+      html = html.replace(/<p>(<table>[\s\S]*?<\/table>)<\/p>/g, '$1');
+      html = html.replace(/<p>(<pre>[\s\S]*?<\/pre>)<\/p>/g, '$1');
 
       // Lists (improved implementation)
       html = html.replace(/^[-*+] (.*$)/gim, '<li>$1</li>');
@@ -427,25 +503,123 @@ This is a **markdown** module that supports:
       return html;
     };
 
-    const content =
-      markdownModule.template_mode && markdownModule.template
-        ? `Template: ${markdownModule.template}`
-        : renderMarkdown(markdownModule.markdown_content || '');
+    const content = renderMarkdown(markdownModule.markdown_content || '');
 
-    const element =
-      markdownModule.link && markdownModule.link.trim() !== ''
-        ? html`<a href="${markdownModule.link}" style="color: inherit; text-decoration: inherit;">
-            <div class="markdown-content" .innerHTML=${content}></div>
-          </a>`
-        : html`<div class="markdown-content" .innerHTML=${content}></div>`;
+    // Gesture handling variables
+    let clickTimeout: any = null;
+    let holdTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    // Handle gesture events for tap, hold, double-tap actions
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      isHolding = false;
+
+      // Start hold timer
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (markdownModule.hold_action && markdownModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            markdownModule.hold_action as any,
+            hass,
+            e.target as HTMLElement
+          );
+        }
+      }, 500); // 500ms hold threshold
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Clear hold timer
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      // If this was a hold gesture, don't process as click
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      // Double click detection (within 300ms)
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        // This is a double click
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (
+          markdownModule.double_tap_action &&
+          markdownModule.double_tap_action.action !== 'nothing'
+        ) {
+          UltraLinkComponent.handleAction(
+            markdownModule.double_tap_action as any,
+            hass,
+            e.target as HTMLElement
+          );
+        }
+      } else {
+        // This might be a single click, but wait to see if double click follows
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          // This is a single click
+          clickCount = 0;
+
+          // Execute tap action
+          if (markdownModule.tap_action && markdownModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              markdownModule.tap_action as any,
+              hass,
+              e.target as HTMLElement
+            );
+          }
+        }, 300); // Wait 300ms to see if double click follows
+      }
+    };
+
+    const element = html`<div class="markdown-content" .innerHTML=${content}></div>`;
 
     return html`
-      <div class="markdown-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      <div
+        class="markdown-module-container"
+        style="${this.styleObjectToCss(containerStyles)}; cursor: ${(markdownModule.tap_action &&
+          markdownModule.tap_action.action !== 'nothing') ||
+        (markdownModule.hold_action && markdownModule.hold_action.action !== 'nothing') ||
+        (markdownModule.double_tap_action && markdownModule.double_tap_action.action !== 'nothing')
+          ? 'pointer'
+          : 'default'};"
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
+      >
         <div class="markdown-module-preview" style=${this.styleObjectToCss(contentStyles)}>
           ${element}
         </div>
       </div>
     `;
+  }
+
+  // Explicit Logic tab renderer (some editors call this directly)
+  renderLogicTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -488,14 +662,6 @@ This is a **markdown** module that supports:
         word-wrap: break-word;
       }
       
-      .markdown-module-hidden {
-        color: var(--secondary-text-color);
-        font-style: italic;
-        text-align: center;
-        padding: 12px;
-        background: var(--secondary-background-color);
-        border-radius: 4px;
-      }
 
       .markdown-content {
         width: 100%;
@@ -632,52 +798,42 @@ This is a **markdown** module that supports:
   }
 
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
-    if (
-      !moduleWithDesign.background_image_type ||
-      moduleWithDesign.background_image_type === 'none'
-    ) {
-      return 'none';
-    }
+    const imageType = moduleWithDesign.background_image_type;
+    const backgroundImage = moduleWithDesign.background_image;
+    const backgroundEntity = moduleWithDesign.background_image_entity;
 
-    switch (moduleWithDesign.background_image_type) {
-      case 'upload':
-      case 'url':
-        if (moduleWithDesign.background_image) {
-          return `url("${moduleWithDesign.background_image}")`;
+    if (!imageType || imageType === 'none') return 'none';
+
+    switch (imageType) {
+      case 'upload': {
+        if (backgroundImage) {
+          const resolved = getImageUrl(hass, backgroundImage);
+          return `url("${resolved}")`;
         }
         break;
-
-      case 'entity':
-        if (
-          moduleWithDesign.background_image_entity &&
-          hass?.states[moduleWithDesign.background_image_entity]
-        ) {
-          const entityState = hass.states[moduleWithDesign.background_image_entity];
-          let imageUrl = '';
-
-          // Try to get image from entity
-          if (entityState.attributes?.entity_picture) {
-            imageUrl = entityState.attributes.entity_picture;
-          } else if (entityState.attributes?.image) {
-            imageUrl = entityState.attributes.image;
-          } else if (entityState.state && typeof entityState.state === 'string') {
-            // Handle cases where state itself is an image path
-            if (entityState.state.startsWith('/') || entityState.state.startsWith('http')) {
-              imageUrl = entityState.state;
+      }
+      case 'url': {
+        if (backgroundImage) {
+          return `url("${backgroundImage}")`;
+        }
+        break;
+      }
+      case 'entity': {
+        if (backgroundEntity && hass) {
+          const entityState = hass.states[backgroundEntity];
+          if (entityState) {
+            const imageUrl =
+              (entityState.attributes as any)?.entity_picture ||
+              (entityState.attributes as any)?.image ||
+              (typeof entityState.state === 'string' ? entityState.state : '');
+            if (imageUrl && imageUrl !== 'unknown' && imageUrl !== 'unavailable') {
+              const resolved = getImageUrl(hass, imageUrl);
+              return `url("${resolved}")`;
             }
-          }
-
-          if (imageUrl) {
-            // Handle Home Assistant local paths
-            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
-              imageUrl = imageUrl;
-            } else if (imageUrl.startsWith('/')) {
-              imageUrl = imageUrl;
-            }
-            return `url("${imageUrl}")`;
           }
         }
         break;
+      }
     }
 
     return 'none';

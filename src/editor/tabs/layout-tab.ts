@@ -15,9 +15,14 @@ import {
 } from '../../types';
 import '../../components/ultra-color-picker';
 import { getModuleRegistry } from '../../modules/module-registry';
+import { BaseUltraModule } from '../../modules/base-module';
+import { UcHoverEffectsService } from '../../services/uc-hover-effects-service';
 import '../global-design-tab';
 import { DesignProperties } from '../global-design-tab';
+import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
+import { getImageUrl, uploadImage } from '../../utils/image-upload';
+import { localize } from '../../localize/localize';
 
 // Typography and font definitions matching the professional interface
 const DEFAULT_FONTS = [{ value: 'default', label: '– Default –', category: 'default' }];
@@ -110,6 +115,143 @@ export class LayoutTab extends LitElement {
   @state() private _showColumnLayoutSelector = false;
   @state() private _selectedRowForLayout = -1;
 
+  // Collapsible preview in headers
+  @state() private _isPreviewCollapsed = false;
+  // Track collapsed condition items by id (not in set => expanded)
+  @state() private _collapsedConditionIds: Set<string> = new Set();
+  // Drag state for condition reordering
+  @state() private _draggingCondition:
+    | { scope: 'module'; fromIndex: number }
+    | { scope: 'row'; fromIndex: number }
+    | { scope: 'column'; fromIndex: number }
+    | null = null;
+
+  /** Listen for template updates from modules to refresh live previews */
+  private _templateUpdateListener?: () => void;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._templateUpdateListener = () => {
+      this.requestUpdate();
+    };
+    window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+
+    // Inject hover effect styles into layout tab's shadow root for popup previews
+    UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
+  }
+
+  /** Determine if current device/viewport should be treated as mobile */
+  private _isMobileDevice(): boolean {
+    const isMobileViewport = window.innerWidth <= 768;
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+    return isMobileViewport || isMobileUserAgent;
+  }
+
+  private _togglePreviewCollapsed(e?: Event): void {
+    if (e) e.stopPropagation();
+    this._isPreviewCollapsed = !this._isPreviewCollapsed;
+  }
+
+  private _toggleConditionExpanded(conditionId: string): void {
+    const next = new Set(this._collapsedConditionIds);
+    if (next.has(conditionId)) next.delete(conditionId);
+    else next.add(conditionId);
+    this._collapsedConditionIds = next;
+  }
+
+  // Generic array reorder helper
+  private _reorderArray<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
+    if (fromIndex === toIndex) return arr;
+    const copy = [...arr];
+    const [moved] = copy.splice(fromIndex, 1);
+    const adjustedTo = fromIndex < toIndex ? toIndex - 1 : toIndex;
+    copy.splice(adjustedTo, 0, moved);
+    return copy;
+  }
+
+  // Condition drag handlers
+  private _onConditionDragStart(
+    e: DragEvent,
+    scope: 'module' | 'row' | 'column',
+    fromIndex: number
+  ): void {
+    e.stopPropagation();
+    this._draggingCondition = { scope, fromIndex } as any;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(fromIndex));
+    }
+  }
+
+  private _onConditionDragOver(e: DragEvent): void {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  }
+
+  private _onConditionDrop(
+    e: DragEvent,
+    scope: 'module' | 'row' | 'column',
+    targetIndex: number,
+    getConditions: () => DisplayCondition[] | undefined,
+    setConditions: (next: DisplayCondition[]) => void
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!this._draggingCondition || this._draggingCondition.scope !== scope) {
+      this._draggingCondition = null;
+      return;
+    }
+    const fromIndex = this._draggingCondition.fromIndex;
+    const list = getConditions() || [];
+    const next = this._reorderArray(list, fromIndex, targetIndex);
+    setConditions(next);
+    this._draggingCondition = null;
+  }
+
+  // Resolve background-image CSS for previews to match main card behavior
+  private _resolvePreviewBackgroundImageCSS(design: any): string {
+    const hass = this.hass;
+    const type = design?.background_image_type;
+    const backgroundImage = design?.background_image;
+
+    // Support legacy direct path when no explicit type is set
+    if (!type || type === 'none') {
+      if (backgroundImage) {
+        const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
+        return `url("${resolved}")`;
+      }
+      return 'none';
+    }
+
+    if (type === 'upload' || type === 'url') {
+      if (backgroundImage) {
+        const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
+        return `url("${resolved}")`;
+      }
+      return 'none';
+    }
+
+    if (type === 'entity') {
+      const entityId = design?.background_image_entity;
+      if (entityId && hass && hass.states[entityId]) {
+        const stateObj: any = hass.states[entityId];
+        let src = '';
+        if (stateObj.attributes?.entity_picture) src = stateObj.attributes.entity_picture;
+        else if (stateObj.attributes?.image) src = stateObj.attributes.image;
+        else if (typeof stateObj.state === 'string') src = stateObj.state;
+        if (src) {
+          const resolved = getImageUrl(hass, src);
+          return `url("${resolved}")`;
+        }
+      }
+      return 'none';
+    }
+
+    return 'none';
+  }
+
   // Drag and drop state
   @state() private _draggedItem: {
     type: 'module' | 'column' | 'row';
@@ -136,6 +278,206 @@ export class LayoutTab extends LitElement {
     parentModuleIndex: number;
     childIndex: number;
   } | null = null;
+
+  // Popup drag and resize state
+  @state() private _popupDragState: {
+    isDragging: boolean;
+    dragStartX: number;
+    dragStartY: number;
+    initialX: number;
+    initialY: number;
+    element: HTMLElement | null;
+  } = {
+    isDragging: false,
+    dragStartX: 0,
+    dragStartY: 0,
+    initialX: 0,
+    initialY: 0,
+    element: null,
+  };
+
+  @state() private _popupResizeState: {
+    isResizing: boolean;
+    resizeStartX: number;
+    resizeStartY: number;
+    initialWidth: number;
+    initialHeight: number;
+    element: HTMLElement | null;
+  } = {
+    isResizing: false,
+    resizeStartX: 0,
+    resizeStartY: 0,
+    initialWidth: 0,
+    initialHeight: 0,
+    element: null,
+  };
+
+  // Component lifecycle
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    // Clean up any active drag/resize operations
+    this._endPopupDrag();
+    this._endPopupResize();
+    // Remove template update listener
+    if (this._templateUpdateListener) {
+      window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+      this._templateUpdateListener = undefined;
+    }
+    // Clean up hover effect styles
+    UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
+  }
+
+  // Popup drag and resize functionality
+  private _startPopupDrag(e: MouseEvent, element: HTMLElement): void {
+    // Disable dragging on mobile for predictable centered UX
+    if (this._isMobileDevice()) return;
+    e.preventDefault();
+
+    const rect = element.getBoundingClientRect();
+
+    // Convert current position to absolute positioning for drag
+    element.style.left = `${rect.left}px`;
+    element.style.top = `${rect.top}px`;
+    element.style.transform = 'none';
+    // Clear centering margins so left/top take effect and prevent jump-to-top
+    element.style.marginLeft = '0';
+    element.style.marginTop = '0';
+
+    this._popupDragState = {
+      isDragging: true,
+      dragStartX: e.clientX,
+      dragStartY: e.clientY,
+      initialX: rect.left,
+      initialY: rect.top,
+      element,
+    };
+
+    // Add global event listeners
+    document.addEventListener('mousemove', this._handlePopupDrag);
+    document.addEventListener('mouseup', this._endPopupDrag);
+
+    // Add dragging class for visual feedback
+    element.classList.add('popup-dragging');
+  }
+
+  private _handlePopupDrag = (e: MouseEvent): void => {
+    if (!this._popupDragState.isDragging || !this._popupDragState.element) return;
+
+    const deltaX = e.clientX - this._popupDragState.dragStartX;
+    const deltaY = e.clientY - this._popupDragState.dragStartY;
+
+    const newX = this._popupDragState.initialX + deltaX;
+    const newY = this._popupDragState.initialY + deltaY;
+
+    // Constrain to viewport
+    const maxX = window.innerWidth - this._popupDragState.element.offsetWidth;
+    const maxY = window.innerHeight - this._popupDragState.element.offsetHeight;
+
+    const constrainedX = Math.max(0, Math.min(newX, maxX));
+    const constrainedY = Math.max(0, Math.min(newY, maxY));
+
+    this._popupDragState.element.style.left = `${constrainedX}px`;
+    this._popupDragState.element.style.top = `${constrainedY}px`;
+    this._popupDragState.element.style.transform = 'none';
+  };
+
+  private _endPopupDrag = (): void => {
+    if (this._popupDragState.element) {
+      this._popupDragState.element.classList.remove('popup-dragging');
+    }
+
+    this._popupDragState = {
+      isDragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      initialX: 0,
+      initialY: 0,
+      element: null,
+    };
+
+    // Remove global event listeners
+    document.removeEventListener('mousemove', this._handlePopupDrag);
+    document.removeEventListener('mouseup', this._endPopupDrag);
+  };
+
+  private _startPopupResize(e: MouseEvent, element: HTMLElement): void {
+    // Disable resizing on mobile for predictable centered UX
+    if (this._isMobileDevice()) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    // If popup is still centered via transform, convert to absolute left/top once
+    const style = window.getComputedStyle(element);
+    const hasTransform = style.transform && style.transform !== 'none';
+    const rect = element.getBoundingClientRect();
+    if (hasTransform) {
+      element.style.left = `${rect.left}px`;
+      element.style.top = `${rect.top}px`;
+      element.style.transform = 'none';
+      element.style.marginLeft = '0';
+      element.style.marginTop = '0';
+    }
+    this._popupResizeState = {
+      isResizing: true,
+      resizeStartX: e.clientX,
+      resizeStartY: e.clientY,
+      initialWidth: rect.width,
+      initialHeight: rect.height,
+      element,
+    };
+
+    // Add global event listeners
+    document.addEventListener('mousemove', this._handlePopupResize);
+    document.addEventListener('mouseup', this._endPopupResize);
+
+    // Add resizing class for visual feedback
+    element.classList.add('popup-resizing');
+  }
+
+  private _handlePopupResize = (e: MouseEvent): void => {
+    if (!this._popupResizeState.isResizing || !this._popupResizeState.element) return;
+
+    const deltaX = e.clientX - this._popupResizeState.resizeStartX;
+    const deltaY = e.clientY - this._popupResizeState.resizeStartY;
+
+    const newWidth = this._popupResizeState.initialWidth + deltaX;
+    const newHeight = this._popupResizeState.initialHeight + deltaY;
+
+    // Set maximum dimensions only - no minimum restrictions
+    const maxWidth = window.innerWidth * 0.9;
+    const maxHeight = window.innerHeight * 0.9;
+
+    const constrainedWidth = Math.min(newWidth, maxWidth);
+    const constrainedHeight = Math.min(newHeight, maxHeight);
+
+    // Apply size and maintain current top/left (anchor stays in place)
+    this._popupResizeState.element.style.setProperty('width', `${constrainedWidth}px`, 'important');
+    this._popupResizeState.element.style.setProperty(
+      'height',
+      `${constrainedHeight}px`,
+      'important'
+    );
+  };
+
+  private _endPopupResize = (): void => {
+    if (this._popupResizeState.element) {
+      this._popupResizeState.element.classList.remove('popup-resizing');
+      // Keep both width and height so user resize persists
+    }
+
+    this._popupResizeState = {
+      isResizing: false,
+      resizeStartX: 0,
+      resizeStartY: 0,
+      initialWidth: 0,
+      initialHeight: 0,
+      element: null,
+    };
+
+    // Remove global event listeners
+    document.removeEventListener('mousemove', this._handlePopupResize);
+    document.removeEventListener('mouseup', this._endPopupResize);
+  };
 
   // Create visual column icon representation for popup
   private _createColumnIconHTML(proportions: number[]): string {
@@ -308,7 +650,6 @@ export class LayoutTab extends LitElement {
   }
 
   private _addRow(): void {
-    console.log('Adding new row...');
     const layout = this._ensureLayout();
 
     // Create a new empty row with no columns
@@ -324,11 +665,9 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log('Row added successfully (empty row)');
   }
 
   private _deleteRow(rowIndex: number): void {
-    console.log('Deleting row:', rowIndex);
     const layout = this._ensureLayout();
 
     if (layout.rows.length > 1) {
@@ -338,14 +677,11 @@ export class LayoutTab extends LitElement {
       };
 
       this._updateLayout(newLayout);
-      console.log('Row deleted successfully');
     } else {
-      console.log('Cannot delete the last remaining row');
     }
   }
 
   private _duplicateRow(rowIndex: number): void {
-    console.log('Duplicating row:', rowIndex);
     const layout = this._ensureLayout();
     const rowToCopy = layout.rows[rowIndex];
     if (!rowToCopy) {
@@ -371,11 +707,9 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
     newLayout.rows.splice(rowIndex + 1, 0, duplicatedRow);
     this._updateLayout(newLayout);
-    console.log('Row duplicated successfully. New layout has', newLayout.rows.length, 'rows');
   }
 
   private _addColumn(rowIndex: number): void {
-    console.log('Adding column to row:', rowIndex);
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row) {
@@ -385,7 +719,6 @@ export class LayoutTab extends LitElement {
 
     // Enforce maximum 6 columns
     if (row.columns.length >= 6) {
-      console.log('Cannot add more than 6 columns to a row');
       return;
     }
 
@@ -410,22 +743,15 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log(
-      'Column added successfully. Row now has',
-      newLayout.rows[rowIndex].columns.length,
-      'columns'
-    );
   }
 
   private _addColumnAfter(rowIndex: number, columnIndex: number): void {
-    console.log('Adding column after:', rowIndex, columnIndex);
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row) return;
 
     // Enforce maximum 6 columns
     if (row.columns.length >= 6) {
-      console.log('Cannot add more than 6 columns to a row');
       return;
     }
 
@@ -452,11 +778,9 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log('Column added after successfully');
   }
 
   private _duplicateColumn(rowIndex: number, columnIndex: number): void {
-    console.log('Duplicating column:', rowIndex, columnIndex);
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row || !row.columns[columnIndex]) {
@@ -466,7 +790,6 @@ export class LayoutTab extends LitElement {
 
     // Enforce maximum 6 columns
     if (row.columns.length >= 6) {
-      console.log('Cannot duplicate column: maximum 6 columns already reached');
       return;
     }
 
@@ -486,15 +809,9 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
     newLayout.rows[rowIndex].columns.splice(columnIndex + 1, 0, duplicatedColumn);
     this._updateLayout(newLayout);
-    console.log(
-      'Column duplicated successfully. Row now has',
-      newLayout.rows[rowIndex].columns.length,
-      'columns'
-    );
   }
 
   private _deleteColumn(rowIndex: number, columnIndex: number): void {
-    console.log('Deleting column:', rowIndex, columnIndex);
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row) {
@@ -521,11 +838,6 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log(
-      'Column deleted successfully. Row now has',
-      newLayout.rows[rowIndex].columns.length,
-      'columns'
-    );
   }
 
   private _openColumnLayoutSelector(rowIndex: number): void {
@@ -545,8 +857,6 @@ export class LayoutTab extends LitElement {
 
     const targetColumnCount = selectedLayout.columnCount;
     const currentColumnCount = row.columns.length;
-
-    console.log(`Changing layout from ${currentColumnCount} to ${targetColumnCount} columns`);
 
     // Create new layout
     const newLayout = JSON.parse(JSON.stringify(layout));
@@ -621,7 +931,6 @@ export class LayoutTab extends LitElement {
     }
 
     this._updateLayout(newLayout);
-    console.log(`Layout changed successfully. Row now has ${targetColumnCount} columns`);
 
     // Close the selector
     this._showColumnLayoutSelector = false;
@@ -654,14 +963,11 @@ export class LayoutTab extends LitElement {
   }
 
   private _openModuleSelector(rowIndex: number, columnIndex: number): void {
-    console.log('Opening module selector for:', { rowIndex, columnIndex });
-
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
 
     // If the row has no columns, automatically add one
     if (!row || !row.columns || row.columns.length === 0) {
-      console.log('Row has no columns, automatically adding one');
       this._addColumn(rowIndex);
       // Set the column index to 0 since we just added the first column
       columnIndex = 0;
@@ -673,8 +979,6 @@ export class LayoutTab extends LitElement {
   }
 
   private _addModule(type: string): void {
-    console.log('Adding module of type:', type);
-
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
       console.error('No row or column selected');
       return;
@@ -695,6 +999,7 @@ export class LayoutTab extends LitElement {
     }
 
     const column = row.columns[this._selectedColumnIndex];
+    const lang = this.hass?.locale?.language || 'en';
 
     // Create a simple default module with proper typing
     let newModule: CardModule;
@@ -704,7 +1009,7 @@ export class LayoutTab extends LitElement {
         newModule = {
           id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: 'text',
-          text: 'Sample Text',
+          text: localize('editor.modules.sample_text', lang, 'Sample Text'),
           font_size: 16,
           color: 'var(--primary-text-color)',
         } as TextModule;
@@ -763,7 +1068,8 @@ export class LayoutTab extends LitElement {
           type: 'bar',
           entity: 'sensor.battery_level',
           bar_color: 'var(--primary-color)',
-          background_color: 'var(--secondary-background-color)',
+          // Default container background should be transparent; track color is handled separately
+          background_color: 'transparent',
           height: 20,
           show_value: true,
         } as BarModule;
@@ -829,8 +1135,6 @@ export class LayoutTab extends LitElement {
         } as TextModule;
         break;
     }
-
-    console.log('Created module:', newModule);
 
     // Create new layout with updated modules
     let newLayout;
@@ -905,12 +1209,9 @@ export class LayoutTab extends LitElement {
     this._selectedRowIndex = -1;
     this._selectedColumnIndex = -1;
     this._selectedLayoutModuleIndex = -1;
-
-    console.log('Module added successfully');
   }
 
   private _duplicateModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
-    console.log('Duplicating module:', rowIndex, columnIndex, moduleIndex);
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row || !row.columns[columnIndex]) return;
@@ -950,11 +1251,9 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log('Module duplicated successfully');
   }
 
   private _deleteModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
-    console.log('Deleting module:', rowIndex, columnIndex, moduleIndex);
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
     if (!row || !row.columns[columnIndex]) return;
@@ -984,7 +1283,6 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log('Module deleted successfully');
   }
 
   private _openModuleSettings(rowIndex: number, columnIndex: number, moduleIndex: number): void {
@@ -993,19 +1291,12 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateModule(updates: Partial<CardModule>): void {
-    console.log(`🔄 LayoutTab: _updateModule called with updates:`, updates);
-
     if (!this._selectedModule) {
-      console.log(`🔄 LayoutTab: No selected module, returning early`);
       return;
     }
 
     const layout = this._ensureLayout();
     const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-
-    console.log(
-      `🔄 LayoutTab: Updating module at row ${rowIndex}, column ${columnIndex}, module ${moduleIndex}`
-    );
 
     // Create a new layout with the updated module
     const newLayout = {
@@ -1019,23 +1310,18 @@ export class LayoutTab extends LitElement {
                   ...col,
                   modules: col.modules.map((module, mIndex) => {
                     if (mIndex === moduleIndex) {
-                      console.log(`🔄 LayoutTab: Original module:`, module);
-
                       // Create updated module by copying original and applying updates
                       const updatedModule = { ...module };
 
                       // Apply updates, but DELETE properties that are set to undefined (for reset functionality)
                       for (const [key, value] of Object.entries(updates)) {
                         if (value === undefined) {
-                          console.log(`🔄 LayoutTab: DELETING property ${key} from module`);
                           delete (updatedModule as any)[key];
                         } else {
-                          console.log(`🔄 LayoutTab: SETTING property ${key} =`, value);
                           (updatedModule as any)[key] = value;
                         }
                       }
 
-                      console.log(`🔄 LayoutTab: Updated module:`, updatedModule);
                       return updatedModule as CardModule;
                     }
                     return module;
@@ -1050,16 +1336,11 @@ export class LayoutTab extends LitElement {
       }),
     };
 
-    console.log(`🔄 LayoutTab: Calling _updateLayout with new layout`);
     this._updateLayout(newLayout);
-    console.log(`🔄 LayoutTab: Layout updated successfully`);
   }
 
   private _updateLayoutChildModule(updates: Partial<CardModule>): void {
-    console.log(`🔄 LayoutTab: _updateLayoutChildModule called with updates:`, updates);
-
     if (!this._selectedLayoutChild) {
-      console.log(`🔄 LayoutTab: No selected layout child, returning early`);
       return;
     }
 
@@ -1079,36 +1360,45 @@ export class LayoutTab extends LitElement {
     if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
 
     const originalChildModule = layoutModule.modules[childIndex];
-    console.log(`🔄 LayoutTab: Original child module:`, originalChildModule);
 
     // Create updated module by copying original and applying updates
-    const updatedModule = { ...originalChildModule };
+    const updatedModule: any = { ...originalChildModule };
 
-    // Apply updates, but DELETE properties that are set to undefined (for reset functionality)
+    // Special handling: deep-merge nested design object so partial updates don't wipe other fields
+    if (updates.hasOwnProperty('design')) {
+      const incomingDesign = (updates as any).design || {};
+      const existingDesign = (updatedModule.design || {}) as Record<string, any>;
+      const mergedDesign: Record<string, any> = { ...existingDesign };
+      for (const [dKey, dVal] of Object.entries(incomingDesign)) {
+        if (dVal === undefined) {
+          delete mergedDesign[dKey];
+        } else {
+          mergedDesign[dKey] = dVal;
+        }
+      }
+      updatedModule.design = mergedDesign;
+    }
+
+    // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
     for (const [key, value] of Object.entries(updates)) {
+      if (key === 'design') continue;
       if (value === undefined) {
-        console.log(`🔄 LayoutTab: DELETING property ${key} from child module`);
-        delete (updatedModule as any)[key];
+        delete updatedModule[key];
       } else {
-        console.log(`🔄 LayoutTab: SETTING child module property ${key} =`, value);
-        (updatedModule as any)[key] = value;
+        updatedModule[key] = value;
       }
     }
 
     // Update the child module in the layout
     layoutModule.modules[childIndex] = updatedModule;
 
-    console.log(`🔄 LayoutTab: Updated child module:`, updatedModule);
     this._updateLayout(newLayout);
-    console.log(`🔄 LayoutTab: Layout child module updated successfully`);
   }
 
   private _updateModuleDesign(updates: Partial<DesignProperties>): void {
-    console.log(`🔄 LayoutTab: _updateModuleDesign called with updates:`, updates);
-    console.log(`🔄 LayoutTab: _selectedModule:`, this._selectedModule);
-
-    if (!this._selectedModule) {
-      console.log(`🔄 LayoutTab: No selected module, returning early`);
+    // Support both direct module edits and child-module edits inside layout containers
+    const isChildEdit = !this._selectedModule && !!this._selectedLayoutChild;
+    if (!this._selectedModule && !this._selectedLayoutChild) {
       return;
     }
 
@@ -1116,7 +1406,29 @@ export class LayoutTab extends LitElement {
 
     // Convert design properties back to module properties (including undefined for reset)
     if (updates.hasOwnProperty('color')) moduleUpdates.color = updates.color;
-    if (updates.hasOwnProperty('text_align')) moduleUpdates.text_align = updates.text_align;
+    if (updates.hasOwnProperty('text_align')) {
+      // Get the actual module to check its type
+      const layout = this._ensureLayout();
+      let actualModule: any = null;
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        actualModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else {
+        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule!;
+        actualModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      }
+
+      // For modules that use design object for text_align (like text modules), update the design object
+      if (actualModule && actualModule.type === 'text') {
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(actualModule.design || {}) };
+        moduleUpdates.design.text_align = updates.text_align;
+      } else {
+        moduleUpdates.text_align = updates.text_align;
+      }
+    }
     if (updates.hasOwnProperty('font_size'))
       moduleUpdates.font_size = updates.font_size ? parseFloat(updates.font_size) : undefined;
     if (updates.hasOwnProperty('line_height')) moduleUpdates.line_height = updates.line_height;
@@ -1127,8 +1439,25 @@ export class LayoutTab extends LitElement {
     if (updates.hasOwnProperty('text_transform'))
       moduleUpdates.text_transform = updates.text_transform;
     if (updates.hasOwnProperty('font_style')) moduleUpdates.font_style = updates.font_style;
-    if (updates.hasOwnProperty('background_color'))
+    if (updates.hasOwnProperty('background_color')) {
+      const layout = this._ensureLayout();
+      let currentModule: any = null;
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else if (this._selectedModule) {
+        currentModule =
+          layout.rows[this._selectedModule.rowIndex]?.columns[this._selectedModule.columnIndex]
+            ?.modules[this._selectedModule.moduleIndex];
+      }
+      if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+      moduleUpdates.design.background_color = updates.background_color;
+      // Also set top-level for immediate preview compatibility
       moduleUpdates.background_color = updates.background_color;
+    }
     if (updates.hasOwnProperty('background_image'))
       moduleUpdates.background_image = updates.background_image;
     if (updates.hasOwnProperty('background_image_type'))
@@ -1137,8 +1466,54 @@ export class LayoutTab extends LitElement {
       moduleUpdates.background_image_entity = updates.background_image_entity;
     if (updates.hasOwnProperty('backdrop_filter'))
       moduleUpdates.backdrop_filter = updates.backdrop_filter;
-    if (updates.hasOwnProperty('width')) moduleUpdates.width = updates.width;
-    if (updates.hasOwnProperty('height')) moduleUpdates.height = updates.height;
+    if (updates.hasOwnProperty('width')) {
+      // Check if this is a bar module that stores width in design object
+      const layout = this._ensureLayout();
+      let currentModule: any = null;
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else if (this._selectedModule) {
+        currentModule =
+          layout.rows[this._selectedModule.rowIndex]?.columns[this._selectedModule.columnIndex]
+            ?.modules[this._selectedModule.moduleIndex];
+      }
+
+      if (currentModule?.type === 'bar') {
+        // For bar modules, update the design.width instead of top-level width
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design.width = updates.width;
+      } else {
+        moduleUpdates.width = updates.width;
+      }
+    }
+    if (updates.hasOwnProperty('height')) {
+      // Check if this is a bar module that stores height in design object
+      const layout = this._ensureLayout();
+      let currentModule: any = null;
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else if (this._selectedModule) {
+        currentModule =
+          layout.rows[this._selectedModule.rowIndex]?.columns[this._selectedModule.columnIndex]
+            ?.modules[this._selectedModule.moduleIndex];
+      }
+
+      if (currentModule?.type === 'bar') {
+        // For bar modules, update the design.height instead of top-level height
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design.height = updates.height;
+      } else {
+        moduleUpdates.height = updates.height;
+      }
+    }
     if (updates.hasOwnProperty('max_width')) moduleUpdates.max_width = updates.max_width;
     if (updates.hasOwnProperty('max_height')) moduleUpdates.max_height = updates.max_height;
     if (updates.hasOwnProperty('min_width')) moduleUpdates.min_width = updates.min_width;
@@ -1225,9 +1600,18 @@ export class LayoutTab extends LitElement {
       updates.hasOwnProperty('margin_left') ||
       updates.hasOwnProperty('margin_right')
     ) {
-      const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
       const layout = this._ensureLayout();
-      const module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      let module: any = null;
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        module = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else if (this._selectedModule) {
+        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+        module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      }
 
       if (module) {
         // Check if all margin properties are being reset to undefined
@@ -1375,9 +1759,11 @@ export class LayoutTab extends LitElement {
       }
     }
 
-    console.log(`🔄 LayoutTab: Final moduleUpdates being applied:`, moduleUpdates);
-    this._updateModule(moduleUpdates);
-    console.log(`🔄 LayoutTab: _updateModule called successfully`);
+    if (isChildEdit) {
+      this._updateLayoutChildModule(moduleUpdates);
+    } else {
+      this._updateModule(moduleUpdates);
+    }
   }
 
   private _closeModuleSettings(): void {
@@ -1793,10 +2179,7 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateRow(updates: Partial<CardRow>): void {
-    console.log(`🔄 LayoutTab: _updateRow called with updates:`, updates);
-
     if (this._selectedRowForSettings === -1) {
-      console.log(`🔄 LayoutTab: No selected row for settings, returning early`);
       return;
     }
 
@@ -1804,22 +2187,16 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
     const targetRow = newLayout.rows[this._selectedRowForSettings];
 
-    console.log(`🔄 LayoutTab: Original row:`, targetRow);
-
     // Apply updates, but DELETE properties that are set to undefined (for reset functionality)
     for (const [key, value] of Object.entries(updates)) {
       if (value === undefined) {
-        console.log(`🔄 LayoutTab: DELETING property ${key} from row`);
         delete (targetRow as any)[key];
       } else {
-        console.log(`🔄 LayoutTab: SETTING row property ${key} =`, value);
         (targetRow as any)[key] = value;
       }
     }
 
-    console.log(`🔄 LayoutTab: Updated row:`, targetRow);
     this._updateLayout(newLayout);
-    console.log(`🔄 LayoutTab: Row updated successfully`);
   }
 
   // Column settings methods
@@ -1829,10 +2206,7 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateColumn(updates: Partial<CardColumn>): void {
-    console.log(`🔄 LayoutTab: _updateColumn called with updates:`, updates);
-
     if (!this._selectedColumnForSettings) {
-      console.log(`🔄 LayoutTab: No selected column for settings, returning early`);
       return;
     }
 
@@ -1843,22 +2217,16 @@ export class LayoutTab extends LitElement {
         this._selectedColumnForSettings.columnIndex
       ];
 
-    console.log(`🔄 LayoutTab: Original column:`, targetColumn);
-
     // Apply updates, but DELETE properties that are set to undefined (for reset functionality)
     for (const [key, value] of Object.entries(updates)) {
       if (value === undefined) {
-        console.log(`🔄 LayoutTab: DELETING property ${key} from column`);
         delete (targetColumn as any)[key];
       } else {
-        console.log(`🔄 LayoutTab: SETTING column property ${key} =`, value);
         (targetColumn as any)[key] = value;
       }
     }
 
-    console.log(`🔄 LayoutTab: Updated column:`, targetColumn);
     this._updateLayout(newLayout);
-    console.log(`🔄 LayoutTab: Column updated successfully`);
   }
 
   private _loadGoogleFont(fontFamily?: string): void {
@@ -1885,16 +2253,40 @@ export class LayoutTab extends LitElement {
 
   private _renderModulePreview(): TemplateResult {
     if (!this._selectedModule) return html``;
+    const lang = this.hass?.locale?.language || 'en';
 
     const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
     const module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
 
     if (!module) return html``;
 
+    // Prefer module-specific split preview when available (e.g., icon module)
+    const registry = getModuleRegistry();
+    const handler = registry.getModule(module.type) as any;
+    const previewContent =
+      handler && typeof handler.renderSplitPreview === 'function'
+        ? handler.renderSplitPreview(module, this.hass)
+        : this._renderSingleModuleWithAnimation(module);
+
     return html`
       <div class="module-preview">
-        <div class="preview-header">Live Preview</div>
-        <div class="preview-content">${this._renderSingleModuleWithAnimation(module)}</div>
+        <div
+          class="preview-header"
+          @click=${this._togglePreviewCollapsed}
+          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+        >
+          <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
+          <ha-icon
+            class="preview-caret"
+            icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+          ></ha-icon>
+        </div>
+        <div
+          class="preview-content"
+          style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+        >
+          ${previewContent}
+        </div>
       </div>
     `;
   }
@@ -1916,6 +2308,7 @@ export class LayoutTab extends LitElement {
     moduleIndex?: number
   ): TemplateResult {
     const registry = getModuleRegistry();
+    const lang = this.hass?.locale?.language || 'en';
     const moduleHandler = registry.getModule(module.type);
 
     // Get module metadata for icon and description
@@ -1941,7 +2334,10 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="simplified-module">
         <div class="simplified-module-header">
-          <div class="simplified-module-drag-handle" title="Drag to move module">
+          <div
+            class="simplified-module-drag-handle"
+            title="${localize('editor.layout.drag_to_move_module', lang, 'Drag to move module')}"
+          >
             <ha-icon icon="mdi:drag"></ha-icon>
           </div>
           <ha-icon icon="${metadata.icon}" class="simplified-module-icon"></ha-icon>
@@ -1960,7 +2356,7 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Edit Module"
+                    title="${localize('editor.layout.edit_module', lang, 'Edit Module')}"
                   >
                     <ha-icon icon="mdi:pencil"></ha-icon>
                   </button>
@@ -1972,7 +2368,7 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Duplicate Module"
+                    title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
                   </button>
@@ -1984,7 +2380,7 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Delete Module"
+                    title="${localize('editor.layout.delete_module', lang, 'Delete Module')}"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
                   </button>
@@ -2003,6 +2399,7 @@ export class LayoutTab extends LitElement {
     moduleIndex?: number,
     metadata?: any
   ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
     const layoutModule = module as any; // HorizontalModule or VerticalModule
     const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
     const isHorizontal = module.type === 'horizontal';
@@ -2012,11 +2409,22 @@ export class LayoutTab extends LitElement {
       <div class="layout-module-container">
         <div class="layout-module-header">
           <div class="layout-module-title">
-            <div class="layout-module-drag-handle" title="Drag to move layout module">
+            <div
+              class="layout-module-drag-handle"
+              title="${localize(
+                'editor.layout.drag_to_move_layout',
+                lang,
+                'Drag to move layout module'
+              )}"
+            >
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
             <ha-icon icon="${metadata?.icon || 'mdi:view-sequential'}"></ha-icon>
-            <span>${isHorizontal ? 'Horizontal Layout' : 'Vertical Layout'}</span>
+            <span
+              >${isHorizontal
+                ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
+                : localize('editor.layout.vertical_layout', lang, 'Vertical Layout')}</span
+            >
           </div>
           <div class="layout-module-actions">
             ${rowIndex !== undefined && columnIndex !== undefined && moduleIndex !== undefined
@@ -2029,7 +2437,11 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Add Module to Layout"
+                    title="${localize(
+                      'editor.layout.add_module_to_layout',
+                      lang,
+                      'Add Module to Layout'
+                    )}"
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                   </button>
@@ -2041,7 +2453,7 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Layout Settings"
+                    title="${localize('editor.layout.layout_settings', lang, 'Layout Settings')}"
                   >
                     <ha-icon icon="mdi:cog"></ha-icon>
                   </button>
@@ -2053,7 +2465,7 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Duplicate Layout"
+                    title="${localize('editor.layout.duplicate_layout', lang, 'Duplicate Layout')}"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
                   </button>
@@ -2065,7 +2477,7 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Delete Layout"
+                    title="${localize('editor.layout.delete_layout', lang, 'Delete Layout')}"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
                   </button>
@@ -2137,9 +2549,23 @@ export class LayoutTab extends LitElement {
                 `
               )
             : html`
-                <div class="layout-module-empty">
+                <div
+                  class="layout-module-empty"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._openLayoutModuleSelector(rowIndex!, columnIndex!, moduleIndex!);
+                  }}
+                  title="${localize(
+                    'editor.layout.click_to_add_module',
+                    lang,
+                    'Click to add a module'
+                  )}"
+                  style="cursor: pointer;"
+                >
                   <ha-icon icon="mdi:plus-circle"></ha-icon>
-                  <span>Drop modules here</span>
+                  <span
+                    >${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span
+                  >
                 </div>
               `}
           ${hasChildren
@@ -2196,6 +2622,7 @@ export class LayoutTab extends LitElement {
     parentModuleIndex?: number,
     childIndex?: number
   ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
     // In the layout builder, show simplified modules like regular columns
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(childModule.type);
@@ -2239,7 +2666,10 @@ export class LayoutTab extends LitElement {
         }}
       >
         <div class="layout-child-module-header">
-          <div class="layout-child-drag-handle" title="Drag to reorder">
+          <div
+            class="layout-child-drag-handle"
+            title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+          >
             <ha-icon icon="mdi:drag"></ha-icon>
           </div>
           <ha-icon icon="${metadata.icon}" class="layout-child-icon"></ha-icon>
@@ -2266,7 +2696,11 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Edit Child Module"
+                    title="${localize(
+                      'editor.layout.edit_child_module',
+                      lang,
+                      'Edit Child Module'
+                    )}"
                   >
                     <ha-icon icon="mdi:pencil"></ha-icon>
                   </button>
@@ -2283,7 +2717,11 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Duplicate Child Module"
+                    title="${localize(
+                      'editor.layout.duplicate_child_module',
+                      lang,
+                      'Duplicate Child Module'
+                    )}"
                   >
                     <ha-icon icon="mdi:content-copy"></ha-icon>
                   </button>
@@ -2300,7 +2738,11 @@ export class LayoutTab extends LitElement {
                     }}
                     @mousedown=${(e: Event) => e.stopPropagation()}
                     @dragstart=${(e: Event) => e.preventDefault()}
-                    title="Delete Child Module"
+                    title="${localize(
+                      'editor.layout.delete_child_module',
+                      lang,
+                      'Delete Child Module'
+                    )}"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
                   </button>
@@ -2371,12 +2813,10 @@ export class LayoutTab extends LitElement {
     target.classList.remove('layout-drop-target');
 
     if (!this._draggedItem || this._draggedItem.type !== 'module') {
-      console.log('Invalid drop - not a module or no dragged item');
       return;
     }
 
     if (rowIndex === undefined || columnIndex === undefined || moduleIndex === undefined) {
-      console.log('Invalid drop - missing coordinates');
       return;
     }
 
@@ -2384,7 +2824,6 @@ export class LayoutTab extends LitElement {
     const layout = this._ensureLayout();
     const targetRow = layout.rows[rowIndex];
     if (!targetRow || !targetRow.columns[columnIndex]) {
-      console.log('Invalid drop - target row/column not found');
       return;
     }
 
@@ -2392,7 +2831,6 @@ export class LayoutTab extends LitElement {
     const targetLayoutModule = targetColumn.modules[moduleIndex] as any; // HorizontalModule or VerticalModule
 
     if (!targetLayoutModule || !this._isLayoutModule(targetLayoutModule.type)) {
-      console.log('Invalid drop - target is not a layout module');
       return;
     }
 
@@ -2412,7 +2850,6 @@ export class LayoutTab extends LitElement {
       this._draggedItem.moduleIndex === moduleIndex
     ) {
       // This is reordering within the same layout - don't add, the child handler should handle this
-      console.log('Ignoring layout drop - this should be handled by child reordering');
       return;
     }
 
@@ -2428,7 +2865,6 @@ export class LayoutTab extends LitElement {
 
     // Update the layout
     this._updateLayout(layout);
-    console.log('Module successfully moved to layout module');
 
     // Clear drag state
     this._draggedItem = null;
@@ -2547,7 +2983,6 @@ export class LayoutTab extends LitElement {
     e.stopPropagation();
 
     if (!this._draggedItem || this._draggedItem.type !== 'module') {
-      console.log('Invalid drop - not a module or no dragged item');
       return;
     }
 
@@ -2557,7 +2992,6 @@ export class LayoutTab extends LitElement {
       moduleIndex === undefined ||
       childIndex === undefined
     ) {
-      console.log('Invalid drop - missing coordinates');
       return;
     }
 
@@ -2568,7 +3002,6 @@ export class LayoutTab extends LitElement {
     ] as any;
 
     if (!targetLayoutModule || !this._isLayoutModule(targetLayoutModule.type)) {
-      console.log('Invalid drop - target is not a layout module');
       return;
     }
 
@@ -2609,7 +3042,6 @@ export class LayoutTab extends LitElement {
         targetLayoutModule.modules.splice(newIndex, 0, movedModule);
 
         this._updateLayout(newLayout);
-        console.log('Layout child module reordered successfully');
       } else {
         // Handle moving from a different layout module to this one
         const sourceLayoutModule = newLayout.rows[sourceParentRow].columns[sourceParentColumn]
@@ -2627,7 +3059,6 @@ export class LayoutTab extends LitElement {
           targetLayoutModule.modules.splice(childIndex, 0, movedModule);
 
           this._updateLayout(newLayout);
-          console.log('Module moved from one layout to another successfully');
         }
       }
     } else {
@@ -2645,7 +3076,6 @@ export class LayoutTab extends LitElement {
       }
 
       this._updateLayout(newLayout);
-      console.log('Module moved from column to layout position successfully');
     }
 
     // Clear drag state
@@ -2696,12 +3126,10 @@ export class LayoutTab extends LitElement {
     target.style.backgroundColor = 'transparent';
 
     if (!this._draggedItem || this._draggedItem.type !== 'module') {
-      console.log('Invalid drop - not a module or no dragged item');
       return;
     }
 
     if (rowIndex === undefined || columnIndex === undefined || moduleIndex === undefined) {
-      console.log('Invalid drop - missing coordinates');
       return;
     }
 
@@ -2732,7 +3160,6 @@ export class LayoutTab extends LitElement {
         targetLayoutModule.modules.push(movedModule);
 
         this._updateLayout(newLayout);
-        console.log('Layout child module moved to end successfully');
       } else {
         // Handle moving from outside the layout (new module)
         const draggedModule = JSON.parse(JSON.stringify(this._draggedItem.data));
@@ -2750,7 +3177,6 @@ export class LayoutTab extends LitElement {
         }
 
         this._updateLayout(newLayout);
-        console.log('Module successfully moved to end of layout module');
       }
     }
 
@@ -2766,7 +3192,6 @@ export class LayoutTab extends LitElement {
     columnIndex: number,
     moduleIndex: number
   ): void {
-    console.log('Opening layout module selector for:', rowIndex, columnIndex, moduleIndex);
     // Set the layout module as the target for adding child modules
     this._selectedRowIndex = rowIndex;
     this._selectedColumnIndex = columnIndex;
@@ -2780,14 +3205,6 @@ export class LayoutTab extends LitElement {
     parentModuleIndex: number,
     childIndex: number
   ): void {
-    console.log(
-      'Opening layout child settings:',
-      parentRowIndex,
-      parentColumnIndex,
-      parentModuleIndex,
-      childIndex
-    );
-
     this._selectedLayoutChild = {
       parentRowIndex,
       parentColumnIndex,
@@ -2803,14 +3220,6 @@ export class LayoutTab extends LitElement {
     parentModuleIndex: number,
     childIndex: number
   ): void {
-    console.log(
-      'Duplicating layout child module:',
-      parentRowIndex,
-      parentColumnIndex,
-      parentModuleIndex,
-      childIndex
-    );
-
     const layout = this._ensureLayout();
     const row = layout.rows[parentRowIndex];
     if (!row || !row.columns[parentColumnIndex]) return;
@@ -2859,7 +3268,6 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log('Layout child module duplicated successfully');
   }
 
   private _deleteLayoutChildModule(
@@ -2868,14 +3276,6 @@ export class LayoutTab extends LitElement {
     parentModuleIndex: number,
     childIndex: number
   ): void {
-    console.log(
-      'Deleting layout child module:',
-      parentRowIndex,
-      parentColumnIndex,
-      parentModuleIndex,
-      childIndex
-    );
-
     const layout = this._ensureLayout();
     const row = layout.rows[parentRowIndex];
     if (!row || !row.columns[parentColumnIndex]) return;
@@ -2919,7 +3319,6 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
-    console.log('Layout child module deleted successfully');
   }
 
   private _getModuleDisplayName(module: CardModule): string {
@@ -2930,23 +3329,28 @@ export class LayoutTab extends LitElement {
     }
 
     // Fallback to consistent module type names
+    const lang = this.hass?.locale?.language || 'en';
     switch (module.type) {
       case 'text':
-        return 'Text Module';
+        return localize('editor.modules.text', lang, 'Text Module');
       case 'image':
-        return 'Image Module';
+        return localize('editor.modules.image', lang, 'Image Module');
       case 'icon':
-        return 'Icon Module';
+        return localize('editor.modules.icon', lang, 'Icon Module');
       case 'bar':
-        return 'Bar Module';
+        return localize('editor.modules.bar', lang, 'Bar Module');
       case 'info':
-        return 'Info Module';
+        return localize('editor.modules.info', lang, 'Info Module');
       case 'button':
-        return 'Button Module';
+        return localize('editor.modules.button', lang, 'Button Module');
       case 'separator':
-        return 'Separator Module';
+        return localize('editor.modules.separator', lang, 'Separator Module');
       case 'markdown':
-        return 'Markdown Module';
+        return localize('editor.modules.markdown', lang, 'Markdown Module');
+      case 'camera':
+        return localize('editor.modules.camera', lang, 'Camera Module');
+      case 'graphs':
+        return localize('editor.modules.graphs', lang, 'Graphs Module');
       default:
         return module.type.charAt(0).toUpperCase() + module.type.slice(1) + ' Module';
     }
@@ -2954,6 +3358,7 @@ export class LayoutTab extends LitElement {
 
   private _generateModuleInfo(module: CardModule): string {
     const moduleAny = module as any;
+    const lang = this.hass?.locale?.language || 'en';
 
     switch (module.type) {
       case 'text':
@@ -2963,7 +3368,7 @@ export class LayoutTab extends LitElement {
             ? `${moduleAny.text.substring(0, 50)}...`
             : moduleAny.text;
         }
-        return 'No text configured';
+        return localize('editor.modules.no_text_configured', lang, 'No text configured');
 
       case 'image':
         // Show image name/source
@@ -2972,7 +3377,7 @@ export class LayoutTab extends LitElement {
           const url = moduleAny.image_url;
           // Handle base64 data URLs (uploaded images)
           if (url.startsWith('data:image/')) {
-            return 'Uploaded image';
+            return localize('editor.modules.uploaded_image', lang, 'Uploaded image');
           }
           // Handle regular URLs
           const fileName = url.split('/').pop() || url;
@@ -2983,23 +3388,32 @@ export class LayoutTab extends LitElement {
           const fileName = path.split('/').pop() || path;
           return fileName.length > 30 ? `${fileName.substring(0, 30)}...` : fileName;
         }
-        return 'No image configured';
+        return localize('editor.modules.no_image_configured', lang, 'No image configured');
 
       case 'icon':
         const iconCount = moduleAny.icons?.length || 0;
-        if (iconCount > 1) return `${iconCount} icons configured`;
+        if (iconCount > 1)
+          return localize(
+            'editor.modules.icons_configured',
+            lang,
+            '{count} icons configured'
+          ).replace('{count}', iconCount.toString());
         if (iconCount === 1) {
           const firstIcon = moduleAny.icons[0];
           if (firstIcon?.entity) return `Entity: ${firstIcon.entity}`;
           if (firstIcon?.icon) return `Icon: ${firstIcon.icon}`;
           return 'Icon configured';
         }
-        return 'No icons configured';
+        return localize('editor.modules.no_icons_configured', lang, 'No icons configured');
 
       case 'bar':
         // Show the entity configured for the bar
         if (moduleAny.entity) return `Entity: ${moduleAny.entity}`;
-        return 'Entity: sensor.battery_level'; // Default entity suggestion
+        return localize(
+          'editor.modules.default_entity_suggestion',
+          lang,
+          'Entity: sensor.battery_level'
+        ); // Default entity suggestion
 
       case 'info':
         // Show the entity configured for info module
@@ -3062,11 +3476,8 @@ export class LayoutTab extends LitElement {
     // Initialize logic service with current hass instance
     logicService.setHass(this.hass);
 
-    // Check module display conditions
-    const shouldShow = logicService.evaluateDisplayConditions(
-      module.display_conditions || [],
-      module.display_mode || 'always'
-    );
+    // Check module visibility using the same logic as the runtime card
+    const shouldShow = logicService.evaluateModuleVisibility(module);
 
     // Also check global design logic properties if they exist
     const moduleWithDesign = module as any;
@@ -3079,6 +3490,7 @@ export class LayoutTab extends LitElement {
 
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
+    const lang = this.hass?.locale?.language || 'en';
 
     // Always render the module, but dim it if logic conditions are not met
     const isLogicHidden = !shouldShow || !globalLogicVisible;
@@ -3116,7 +3528,13 @@ export class LayoutTab extends LitElement {
           ? html`
               <div class="logic-overlay">
                 <ha-icon icon="mdi:eye-off-outline"></ha-icon>
-                <span>Hidden by Logic</span>
+                <span
+                  >${localize(
+                    'editor.layout.hidden_by_logic',
+                    this.hass?.locale?.language || 'en',
+                    'Hidden by Logic'
+                  )}</span
+                >
               </div>
             `
           : ''}
@@ -3300,11 +3718,19 @@ export class LayoutTab extends LitElement {
     // Get row animation data for preview
     const rowAnimationData = this._getRowPreviewAnimationData(row);
 
+    // Include background image using same resolution as main card
+    const rd: any = row.design || {};
+    const rowBgImageCSS = this._resolvePreviewBackgroundImageCSS(rd);
+
     const rowContent = html`
       <div
         class="row-preview-content"
-        style="background: ${row.background_color ||
-        'var(--ha-card-background, var(--card-background-color, #fff))'};gap: ${row.gap || 16}px;"
+        style="background: ${row.design?.background_color ||
+        row.background_color ||
+        'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${rowBgImageCSS}; background-size: ${rd.background_size ||
+        'cover'}; background-position: ${rd.background_position ||
+        'center'}; background-repeat: ${rd.background_repeat || 'no-repeat'};gap: ${row.gap ||
+        16}px;"
       >
         ${row.columns.map(
           (column, columnIndex) => html`<div class="column-preview">Column ${columnIndex + 1}</div>`
@@ -3312,10 +3738,24 @@ export class LayoutTab extends LitElement {
       </div>
     `;
 
+    const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-preview">
-        <div class="preview-header">Live Preview</div>
-        <div class="preview-content">
+        <div
+          class="preview-header"
+          @click=${this._togglePreviewCollapsed}
+          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+        >
+          <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
+          <ha-icon
+            class="preview-caret"
+            icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+          ></ha-icon>
+        </div>
+        <div
+          class="preview-content"
+          style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+        >
           ${rowAnimationData.class
             ? html`
                 <div
@@ -3335,17 +3775,54 @@ export class LayoutTab extends LitElement {
     // Get column animation data for preview
     const columnAnimationData = this._getColumnPreviewAnimationData(column);
 
+    // Resolve background image exactly like main card
+    const d: any = column.design || {};
+    const bgImageCSS = this._resolvePreviewBackgroundImageCSS(d);
+
     const columnContent = html`
-      <div class="column-preview-content">
-        <p>Column Preview</p>
-        <div class="module-count">${column.modules?.length || 0} modules</div>
+      <div
+        class="column-preview-content"
+        style="background: ${column.design?.background_color ||
+        column.background_color ||
+        'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${bgImageCSS}; background-size: ${d.background_size ||
+        'cover'}; background-position: ${d.background_position ||
+        'center'}; background-repeat: ${d.background_repeat || 'no-repeat'};"
+      >
+        <p>
+          ${localize(
+            'editor.layout.column_preview',
+            this.hass?.locale?.language || 'en',
+            'Column Preview'
+          )}
+        </p>
+        <div class="module-count">
+          ${localize(
+            'editor.layout.modules_count',
+            this.hass?.locale?.language || 'en',
+            '{count} modules'
+          ).replace('{count}', String(column.modules?.length || 0))}
+        </div>
       </div>
     `;
 
+    const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-preview">
-        <div class="preview-header">Live Preview</div>
-        <div class="preview-content">
+        <div
+          class="preview-header"
+          @click=${this._togglePreviewCollapsed}
+          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+        >
+          <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
+          <ha-icon
+            class="preview-caret"
+            icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+          ></ha-icon>
+        </div>
+        <div
+          class="preview-content"
+          style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+        >
           ${columnAnimationData.class
             ? html`
                 <div
@@ -3374,8 +3851,8 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
     const hasActionsTab =
       moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
-    const hasOtherTab =
-      moduleHandler && typeof (moduleHandler as any).renderOtherTab === 'function';
+    // Globally disable the legacy "Other" tab across modules
+    const hasOtherTab = false;
 
     // Ensure active tab is valid for this module
     if (
@@ -3385,12 +3862,26 @@ export class LayoutTab extends LitElement {
       this._activeModuleTab = 'general';
     }
 
+    const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-settings-popup">
         <div class="popup-overlay"></div>
-        <div class="popup-content">
-          <div class="popup-header">
-            <h3>Module Settings - ${module.type.charAt(0).toUpperCase() + module.type.slice(1)}</h3>
+        <div
+          class="popup-content draggable-popup"
+          id="module-popup-${this._selectedModule?.rowIndex}-${this._selectedModule
+            ?.columnIndex}-${this._selectedModule?.moduleIndex}"
+        >
+          <div
+            class="popup-header"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupDrag(e, popup);
+            }}
+          >
+            <h3>
+              ${localize('editor.layout.module_settings_title', lang, 'Module Settings')} -
+              ${module.type.charAt(0).toUpperCase() + module.type.slice(1)}
+            </h3>
             <div class="header-actions">
               <button
                 class="action-button duplicate-button"
@@ -3404,7 +3895,7 @@ export class LayoutTab extends LitElement {
                     this._closeModuleSettings();
                   }
                 }}
-                title="Duplicate Module"
+                title="${localize('editor.layout.duplicate_module', lang, 'Duplicate Module')}"
               >
                 <ha-icon icon="mdi:content-copy"></ha-icon>
               </button>
@@ -3420,7 +3911,7 @@ export class LayoutTab extends LitElement {
                     this._closeModuleSettings();
                   }
                 }}
-                title="Delete Module"
+                title="${localize('editor.layout.delete_module', lang, 'Delete Module')}"
               >
                 <ha-icon icon="mdi:delete"></ha-icon>
               </button>
@@ -3435,7 +3926,7 @@ export class LayoutTab extends LitElement {
               class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
               @click=${() => (this._activeModuleTab = 'general')}
             >
-              General
+              ${localize('editor.layout.general_tab', lang, 'General')}
             </button>
             ${hasActionsTab
               ? html`
@@ -3443,7 +3934,7 @@ export class LayoutTab extends LitElement {
                     class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
                     @click=${() => (this._activeModuleTab = 'actions')}
                   >
-                    Actions
+                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
                   </button>
                 `
               : ''}
@@ -3453,7 +3944,7 @@ export class LayoutTab extends LitElement {
                     class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
                     @click=${() => (this._activeModuleTab = 'other')}
                   >
-                    Other
+                    ${localize('editor.layout.other_tab', lang, 'Other')}
                   </button>
                 `
               : ''}
@@ -3461,13 +3952,13 @@ export class LayoutTab extends LitElement {
               class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
               @click=${() => (this._activeModuleTab = 'logic')}
             >
-              Logic
+              ${localize('editor.layout.logic_tab', lang, 'Logic')}
             </button>
             <button
               class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
               @click=${() => (this._activeModuleTab = 'design')}
             >
-              Design
+              ${localize('editor.layout.design_tab', lang, 'Design')}
             </button>
           </div>
 
@@ -3477,8 +3968,20 @@ export class LayoutTab extends LitElement {
               ? this._renderActionsTab(module)
               : ''}
             ${this._activeModuleTab === 'other' && hasOtherTab ? this._renderOtherTab(module) : ''}
-            ${this._activeModuleTab === 'logic' ? this._renderLogicTab(module) : ''}
+            ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
             ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
+          </div>
+
+          <!-- Resize handle -->
+          <div
+            class="resize-handle"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupResize(e, popup);
+            }}
+            title="${localize('editor.layout.drag_to_resize', lang, 'Drag to resize')}"
+          >
+            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
           </div>
         </div>
       </div>
@@ -3509,8 +4012,8 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(childModule.type);
     const hasActionsTab =
       moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
-    const hasOtherTab =
-      moduleHandler && typeof (moduleHandler as any).renderOtherTab === 'function';
+    // Globally disable the legacy "Other" tab across modules (child module editor)
+    const hasOtherTab = false;
 
     // Ensure active tab is valid for this module
     if (
@@ -3520,14 +4023,30 @@ export class LayoutTab extends LitElement {
       this._activeModuleTab = 'general';
     }
 
+    const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="module-settings-popup">
         <div class="popup-overlay" @click=${() => this._closeLayoutChildSettings()}></div>
-        <div class="popup-content">
-          <div class="popup-header">
+        <div
+          class="popup-content draggable-popup"
+          id="child-popup-${this._selectedLayoutChild?.parentRowIndex}-${this._selectedLayoutChild
+            ?.parentColumnIndex}-${this._selectedLayoutChild?.parentModuleIndex}-${this
+            ._selectedLayoutChild?.childIndex}"
+        >
+          <div
+            class="popup-header"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupDrag(e, popup);
+            }}
+          >
             <h3>
-              Child Module Settings -
-              ${childModule.type.charAt(0).toUpperCase() + childModule.type.slice(1)}
+              ${localize(
+                'editor.layout.child_module_settings_title',
+                lang,
+                'Child Module Settings'
+              )}
+              - ${childModule.type.charAt(0).toUpperCase() + childModule.type.slice(1)}
             </h3>
             <div class="header-actions">
               <button
@@ -3572,8 +4091,23 @@ export class LayoutTab extends LitElement {
 
           <!-- Child module preview -->
           <div class="module-preview">
-            <div class="preview-header">Live Preview</div>
-            <div class="preview-content">${this._renderSingleModuleWithAnimation(childModule)}</div>
+            <div
+              class="preview-header"
+              @click=${this._togglePreviewCollapsed}
+              title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+            >
+              <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
+              <ha-icon
+                class="preview-caret"
+                icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+              ></ha-icon>
+            </div>
+            <div
+              class="preview-content"
+              style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+            >
+              ${this._renderSingleModuleWithAnimation(childModule)}
+            </div>
           </div>
 
           <div class="module-tabs">
@@ -3581,7 +4115,7 @@ export class LayoutTab extends LitElement {
               class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
               @click=${() => (this._activeModuleTab = 'general')}
             >
-              General
+              ${localize('editor.layout.general_tab', lang, 'General')}
             </button>
             ${hasActionsTab
               ? html`
@@ -3589,7 +4123,7 @@ export class LayoutTab extends LitElement {
                     class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
                     @click=${() => (this._activeModuleTab = 'actions')}
                   >
-                    Actions
+                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
                   </button>
                 `
               : ''}
@@ -3607,13 +4141,13 @@ export class LayoutTab extends LitElement {
               class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
               @click=${() => (this._activeModuleTab = 'logic')}
             >
-              Logic
+              ${localize('editor.layout.logic_tab', lang, 'Logic')}
             </button>
             <button
               class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
               @click=${() => (this._activeModuleTab = 'design')}
             >
-              Design
+              ${localize('editor.layout.design_tab', lang, 'Design')}
             </button>
           </div>
 
@@ -3632,6 +4166,18 @@ export class LayoutTab extends LitElement {
               ? this._renderLayoutChildDesignTab(childModule)
               : ''}
           </div>
+
+          <!-- Resize handle -->
+          <div
+            class="resize-handle"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupResize(e, popup);
+            }}
+            title="Drag to resize"
+          >
+            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
+          </div>
         </div>
       </div>
     `;
@@ -3643,9 +4189,10 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     // Render Module Name field first for all modules
+    const lang = this.hass?.locale?.language || 'en';
     const moduleNameField = html`
       <div class="settings-section">
-        <label>Module Name:</label>
+        <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
         <input
           type="text"
           .value=${(module as any).module_name || ''}
@@ -3653,11 +4200,19 @@ export class LayoutTab extends LitElement {
             this._updateLayoutChildModule({
               module_name: (e.target as HTMLInputElement).value,
             } as any)}
-          placeholder="Give this module a custom name to make it easier to identify in the editor."
+          placeholder="${localize(
+            'editor.layout_extra.module_name_placeholder',
+            lang,
+            'Give this module a custom name to make it easier to identify in the editor.'
+          )}"
           class="module-name-input"
         />
         <div class="field-help">
-          Give this module a custom name to make it easier to identify in the editor.
+          ${localize(
+            'editor.layout_extra.module_name_help',
+            lang,
+            'Give this module a custom name to make it easier to identify in the editor.'
+          )}
         </div>
       </div>
     `;
@@ -3727,30 +4282,18 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _renderModuleLogicTab(module: CardModule): TemplateResult {
+    // For standalone modules, use _updateModule callback
+    return GlobalLogicTab.render(module, this.hass, (updates: Partial<CardModule>) =>
+      this._updateModule(updates)
+    );
+  }
+
   private _renderLayoutChildLogicTab(module: CardModule): TemplateResult {
-    // Use the existing logic tab implementation but temporarily set the selected module
-    // This is a bit of a hack but works for the logic tab which relies on _selectedModule
-    const originalSelected = this._selectedModule;
-    const tempSelected = {
-      rowIndex: 0,
-      columnIndex: 0,
-      moduleIndex: 0,
-    };
-    this._selectedModule = tempSelected;
-
-    // Override the _updateModule method temporarily
-    const originalUpdateModule = this._updateModule.bind(this);
-    this._updateModule = (updates: Partial<CardModule>) => {
-      this._updateLayoutChildModule(updates);
-    };
-
-    const result = this._renderLogicTab(module);
-
-    // Restore original methods
-    this._selectedModule = originalSelected;
-    this._updateModule = originalUpdateModule;
-
-    return result;
+    // For child modules, use _updateLayoutChildModule callback
+    return GlobalLogicTab.render(module, this.hass, (updates: Partial<CardModule>) =>
+      this._updateLayoutChildModule(updates)
+    );
   }
 
   private _renderLayoutChildDesignTab(module: CardModule): TemplateResult {
@@ -3763,7 +4306,31 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateModuleDesign = (updates: Partial<DesignProperties>) => {
-      this._updateLayoutChildModule({ design: updates } as any);
+      // Deep-merge design updates into the existing child module design
+      const layout = this._ensureLayout();
+      const selChild = this._selectedLayoutChild;
+      let currentModule: any = undefined;
+      if (selChild) {
+        const parentModule: any = (layout.rows[selChild.parentRowIndex]?.columns[
+          selChild.parentColumnIndex
+        ]?.modules || [])[selChild.parentModuleIndex];
+        currentModule = (parentModule?.modules || [])[selChild.childIndex];
+      }
+
+      const existingDesign = (currentModule as any)?.design || {};
+      const mergedDesign = { ...existingDesign, ...updates } as any;
+
+      const modulePatch: any = { design: mergedDesign };
+      // Mirror background_color to top-level for preview compatibility
+      if (Object.prototype.hasOwnProperty.call(updates, 'background_color')) {
+        modulePatch.background_color = (updates as any).background_color;
+        // For Bar child modules, also set bar_background_color so the track updates immediately
+        if (currentModule?.type === 'bar') {
+          modulePatch.bar_background_color = (updates as any).background_color as any;
+        }
+      }
+
+      this._updateLayoutChildModule(modulePatch);
     };
 
     const result = this._renderDesignTab(module);
@@ -3784,9 +4351,21 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="settings-popup">
         <div class="popup-overlay" @click=${() => (this._showRowSettings = false)}></div>
-        <div class="popup-content">
-          <div class="popup-header">
-            <h3>Row Settings</h3>
+        <div class="popup-content draggable-popup" id="row-popup-${this._selectedRowForSettings}">
+          <div
+            class="popup-header"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupDrag(e, popup);
+            }}
+          >
+            <h3>
+              ${localize(
+                'editor.layout.row_settings',
+                this.hass?.locale?.language || 'en',
+                'Row Settings'
+              )}
+            </h3>
             <div class="header-actions">
               <button
                 class="action-button duplicate-button"
@@ -3821,26 +4400,53 @@ export class LayoutTab extends LitElement {
               class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
               @click=${() => (this._activeRowTab = 'general')}
             >
-              General
+              ${localize(
+                'editor.layout.general_tab',
+                this.hass?.locale?.language || 'en',
+                'General'
+              )}
+            </button>
+            <button
+              class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
+              @click=${() => (this._activeRowTab = 'actions')}
+            >
+              ${localize(
+                'editor.layout.actions_tab',
+                this.hass?.locale?.language || 'en',
+                'Actions'
+              )}
             </button>
             <button
               class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
               @click=${() => (this._activeRowTab = 'logic')}
             >
-              Logic
+              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
             </button>
             <button
               class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
               @click=${() => (this._activeRowTab = 'design')}
             >
-              Design
+              ${localize('editor.layout.design_tab', this.hass?.locale?.language || 'en', 'Design')}
             </button>
           </div>
 
           <div class="settings-tab-content">
             ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
+            ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
             ${this._activeRowTab === 'logic' ? this._renderRowLogicTab(row) : ''}
             ${this._activeRowTab === 'design' ? this._renderRowDesignTab(row) : ''}
+          </div>
+
+          <!-- Resize handle -->
+          <div
+            class="resize-handle"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupResize(e, popup);
+            }}
+            title="Drag to resize"
+          >
+            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
           </div>
         </div>
       </div>
@@ -3857,9 +4463,25 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="settings-popup">
         <div class="popup-overlay" @click=${() => (this._showColumnSettings = false)}></div>
-        <div class="popup-content">
-          <div class="popup-header">
-            <h3>Column Settings</h3>
+        <div
+          class="popup-content draggable-popup"
+          id="column-popup-${this._selectedColumnForSettings?.rowIndex}-${this
+            ._selectedColumnForSettings?.columnIndex}"
+        >
+          <div
+            class="popup-header"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupDrag(e, popup);
+            }}
+          >
+            <h3>
+              ${localize(
+                'editor.layout.column_settings',
+                this.hass?.locale?.language || 'en',
+                'Column Settings'
+              )}
+            </h3>
             <div class="header-actions">
               <button
                 class="action-button duplicate-button"
@@ -3904,26 +4526,53 @@ export class LayoutTab extends LitElement {
               class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
               @click=${() => (this._activeColumnTab = 'general')}
             >
-              General
+              ${localize(
+                'editor.layout.general_tab',
+                this.hass?.locale?.language || 'en',
+                'General'
+              )}
+            </button>
+            <button
+              class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
+              @click=${() => (this._activeColumnTab = 'actions')}
+            >
+              ${localize(
+                'editor.layout.actions_tab',
+                this.hass?.locale?.language || 'en',
+                'Actions'
+              )}
             </button>
             <button
               class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
               @click=${() => (this._activeColumnTab = 'logic')}
             >
-              Logic
+              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
             </button>
             <button
               class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
               @click=${() => (this._activeColumnTab = 'design')}
             >
-              Design
+              ${localize('editor.layout.design_tab', this.hass?.locale?.language || 'en', 'Design')}
             </button>
           </div>
 
           <div class="settings-tab-content">
             ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
+            ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
             ${this._activeColumnTab === 'logic' ? this._renderColumnLogicTab(column) : ''}
             ${this._activeColumnTab === 'design' ? this._renderColumnDesignTab(column) : ''}
+          </div>
+
+          <!-- Resize handle -->
+          <div
+            class="resize-handle"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.popup-content') as HTMLElement;
+              if (popup) this._startPopupResize(e, popup);
+            }}
+            title="Drag to resize"
+          >
+            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
           </div>
         </div>
       </div>
@@ -3934,7 +4583,11 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="settings-section">
         <ultra-color-picker
-          .label=${'Row Background Color'}
+          .label=${localize(
+            'editor.layout.row_background_color',
+            this.hass?.locale?.language || 'en',
+            'Row Background Color'
+          )}
           .value=${row.background_color || ''}
           .defaultValue=${'var(--ha-card-background, var(--card-background-color, #fff))'}
           .hass=${this.hass}
@@ -3945,7 +4598,13 @@ export class LayoutTab extends LitElement {
         ></ultra-color-picker>
       </div>
       <div class="settings-section">
-        <label>Column Gap (px):</label>
+        <label
+          >${localize(
+            'editor.layout.column_gap',
+            this.hass?.locale?.language || 'en',
+            'Column Gap (px)'
+          )}:</label
+        >
         <input
           type="number"
           min="0"
@@ -3958,140 +4617,25 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _renderRowActionsTab(row: CardRow): TemplateResult {
+    const actions = row as any as { tap_action?: any; hold_action?: any; double_tap_action?: any };
+    const updateRow = (updates: Partial<CardRow>) => this._updateRow(updates);
+    const handler = new (class extends (BaseUltraModule as any) {})();
+    // Use GlobalActionsTab through BaseUltraModule default
+    return (handler as any).renderActionsTab(actions, this.hass, this.config, (updates: any) => {
+      this._updateRow(updates);
+    });
+  }
+
   private _renderRowLogicTab(row: CardRow): TemplateResult {
-    const conditions = row.display_conditions || [];
-    const displayMode = row.display_mode || 'always';
-    const templateMode = row.template_mode || false;
-
-    return html`
-      <div class="logic-tab-content">
-        <!-- Conditions Section (only shown when template mode is disabled) -->
-        ${!templateMode
-          ? html`
-              <div class="logic-section">
-                <div class="section-header">
-                  <h3>Display this Row</h3>
-                </div>
-
-                <div class="display-mode-selector">
-                  <select
-                    .value=${displayMode}
-                    @change=${(e: Event) => {
-                      const value = (e.target as HTMLSelectElement).value as
-                        | 'always'
-                        | 'every'
-                        | 'any';
-                      this._updateRow({ display_mode: value });
-                    }}
-                    class="display-mode-dropdown"
-                  >
-                    <option value="always">Always</option>
-                    <option value="every">If EVERY condition below is met</option>
-                    <option value="any">If ANY condition below is met</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Conditions Section -->
-              ${displayMode !== 'always'
-                ? html`
-                    <div class="conditions-section">
-                      <div class="conditions-header">
-                        <h4>Conditions</h4>
-                        <button
-                          type="button"
-                          class="add-condition-btn"
-                          @click=${() => this._addRowCondition(row)}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          Add Condition
-                        </button>
-                      </div>
-
-                      <div class="conditions-list">
-                        ${conditions.map((condition, index) =>
-                          this._renderRowCondition(row, condition, index)
-                        )}
-                      </div>
-
-                      ${conditions.length === 0
-                        ? html`
-                            <div class="no-conditions">
-                              <p>No conditions added yet. Click "Add Condition" to get started.</p>
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  `
-                : ''}
-            `
-          : html`
-              <div class="template-mode-notice">
-                <p>
-                  <em>Advanced Template Mode is enabled. Basic conditions above are ignored.</em>
-                </p>
-              </div>
-            `}
-
-        <!-- Advanced Template Mode Section -->
-        <div class="template-section">
-          <div class="switch-container">
-            <span class="switch-label">Advanced Template Mode</span>
-            <label class="switch">
-              <input
-                type="checkbox"
-                .checked=${templateMode}
-                @change=${(e: Event) => {
-                  const checked = (e.target as HTMLInputElement).checked;
-                  this._updateRow({
-                    template_mode: checked,
-                    // Reset display_mode to 'always' when enabling template mode
-                    display_mode: checked ? 'always' : displayMode,
-                  });
-                }}
-              />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="template-description">
-            Use Jinja2 templates for advanced conditional logic. When enabled, the conditions above
-            are ignored.
-          </div>
-
-          ${templateMode
-            ? html`
-                <div class="template-content">
-                  <textarea
-                    .value=${row.template || ''}
-                    @input=${(e: Event) =>
-                      this._updateRow({ template: (e.target as HTMLTextAreaElement).value })}
-                    placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
-                    class="template-editor"
-                    rows="6"
-                  ></textarea>
-                  <div class="template-help">
-                    <p><strong>Template should return a boolean value:</strong></p>
-                    <ul>
-                      <li>
-                        <code>true</code>, <code>on</code>, <code>yes</code>, <code>1</code> → Show
-                        row
-                      </li>
-                      <li>
-                        <code>false</code>, <code>off</code>, <code>no</code>, <code>0</code> → Hide
-                        row
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
+    return GlobalLogicTab.render(row as any, this.hass, (updates: Partial<CardRow>) => {
+      this._updateRow(updates);
+    });
   }
 
   private _renderRowDesignTab(row: CardRow): TemplateResult {
     // Extract current design properties from row
+    const isBarModule = (module as any)?.type === 'bar';
     const designProperties: DesignProperties = {
       ...row.design,
       // Map legacy properties to design properties if they exist
@@ -4120,19 +4664,14 @@ export class LayoutTab extends LitElement {
       animation_timing: row.design?.animation_timing,
     };
 
-    console.log(`🔄 LayoutTab: Rendering row design tab with properties:`, designProperties);
-
     return html`
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
         @design-changed=${(e: CustomEvent) => {
-          console.log(`🔄 LayoutTab: Received design-changed event for ROW:`, e.detail);
-          console.log(`🔄 LayoutTab: Current row design before update:`, row.design);
           const updates = e.detail;
           // Update the row with design properties
           const updatedDesign = { ...row.design, ...updates };
-          console.log(`🔄 LayoutTab: Updated row design:`, updatedDesign);
           this._updateRow({ design: updatedDesign });
         }}
       ></ultra-global-design-tab>
@@ -4142,7 +4681,13 @@ export class LayoutTab extends LitElement {
   private _renderColumnGeneralTab(column: CardColumn): TemplateResult {
     return html`
       <div class="settings-section">
-        <label>Vertical Alignment:</label>
+        <label
+          >${localize(
+            'editor.layout.vertical_alignment',
+            this.hass?.locale?.language || 'en',
+            'Vertical Alignment'
+          )}:</label
+        >
         <select
           .value=${column.vertical_alignment || 'center'}
           @change=${(e: Event) =>
@@ -4150,14 +4695,40 @@ export class LayoutTab extends LitElement {
               vertical_alignment: (e.target as HTMLSelectElement).value as any,
             })}
         >
-          <option value="top">Top</option>
-          <option value="center">Center</option>
-          <option value="bottom">Bottom</option>
-          <option value="stretch">Stretch</option>
+          <option value="top">
+            ${localize('editor.layout.alignment_top', this.hass?.locale?.language || 'en', 'Top')}
+          </option>
+          <option value="center">
+            ${localize(
+              'editor.layout.alignment_center',
+              this.hass?.locale?.language || 'en',
+              'Center'
+            )}
+          </option>
+          <option value="bottom">
+            ${localize(
+              'editor.layout.alignment_bottom',
+              this.hass?.locale?.language || 'en',
+              'Bottom'
+            )}
+          </option>
+          <option value="stretch">
+            ${localize(
+              'editor.layout.alignment_stretch',
+              this.hass?.locale?.language || 'en',
+              'Stretch'
+            )}
+          </option>
         </select>
       </div>
       <div class="settings-section">
-        <label>Horizontal Alignment:</label>
+        <label
+          >${localize(
+            'editor.layout.horizontal_alignment',
+            this.hass?.locale?.language || 'en',
+            'Horizontal Alignment'
+          )}:</label
+        >
         <select
           .value=${column.horizontal_alignment || 'center'}
           @change=${(e: Event) =>
@@ -4165,145 +4736,51 @@ export class LayoutTab extends LitElement {
               horizontal_alignment: (e.target as HTMLSelectElement).value as any,
             })}
         >
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-          <option value="stretch">Stretch</option>
+          <option value="left">
+            ${localize('editor.layout.alignment_left', this.hass?.locale?.language || 'en', 'Left')}
+          </option>
+          <option value="center">
+            ${localize(
+              'editor.layout.alignment_center',
+              this.hass?.locale?.language || 'en',
+              'Center'
+            )}
+          </option>
+          <option value="right">
+            ${localize(
+              'editor.layout.alignment_right',
+              this.hass?.locale?.language || 'en',
+              'Right'
+            )}
+          </option>
+          <option value="stretch">
+            ${localize(
+              'editor.layout.alignment_stretch',
+              this.hass?.locale?.language || 'en',
+              'Stretch'
+            )}
+          </option>
         </select>
       </div>
     `;
   }
 
+  private _renderColumnActionsTab(column: CardColumn): TemplateResult {
+    const actions = column as any as {
+      tap_action?: any;
+      hold_action?: any;
+      double_tap_action?: any;
+    };
+    const handler = new (class extends (BaseUltraModule as any) {})();
+    return (handler as any).renderActionsTab(actions, this.hass, this.config, (updates: any) => {
+      this._updateColumn(updates);
+    });
+  }
+
   private _renderColumnLogicTab(column: CardColumn): TemplateResult {
-    const conditions = column.display_conditions || [];
-    const displayMode = column.display_mode || 'always';
-    const templateMode = column.template_mode || false;
-
-    return html`
-      <div class="logic-tab-content">
-        <!-- Conditions Section (only shown when template mode is disabled) -->
-        ${!templateMode
-          ? html`
-              <div class="logic-section">
-                <div class="section-header">
-                  <h3>Display this Column</h3>
-                </div>
-
-                <div class="display-mode-selector">
-                  <select
-                    .value=${displayMode}
-                    @change=${(e: Event) => {
-                      const value = (e.target as HTMLSelectElement).value as
-                        | 'always'
-                        | 'every'
-                        | 'any';
-                      this._updateColumn({ display_mode: value });
-                    }}
-                    class="display-mode-dropdown"
-                  >
-                    <option value="always">Always</option>
-                    <option value="every">If EVERY condition below is met</option>
-                    <option value="any">If ANY condition below is met</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Conditions Section -->
-              ${displayMode !== 'always'
-                ? html`
-                    <div class="conditions-section">
-                      <div class="conditions-header">
-                        <h4>Conditions</h4>
-                        <button
-                          type="button"
-                          class="add-condition-btn"
-                          @click=${() => this._addColumnCondition(column)}
-                        >
-                          <ha-icon icon="mdi:plus"></ha-icon>
-                          Add Condition
-                        </button>
-                      </div>
-
-                      <div class="conditions-list">
-                        ${conditions.map((condition, index) =>
-                          this._renderColumnCondition(column, condition, index)
-                        )}
-                      </div>
-
-                      ${conditions.length === 0
-                        ? html`
-                            <div class="no-conditions">
-                              <p>No conditions added yet. Click "Add Condition" to get started.</p>
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  `
-                : ''}
-            `
-          : html`
-              <div class="template-mode-notice">
-                <p>
-                  <em>Advanced Template Mode is enabled. Basic conditions above are ignored.</em>
-                </p>
-              </div>
-            `}
-
-        <!-- Advanced Template Mode Section -->
-        <div class="template-section">
-          <div class="switch-container">
-            <span class="switch-label">Advanced Template Mode</span>
-            <label class="switch">
-              <input
-                type="checkbox"
-                .checked=${templateMode}
-                @change=${(e: Event) => {
-                  const checked = (e.target as HTMLInputElement).checked;
-                  this._updateColumn({
-                    template_mode: checked,
-                    // Reset display_mode to 'always' when enabling template mode
-                    display_mode: checked ? 'always' : displayMode,
-                  });
-                }}
-              />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="template-description">
-            Use Jinja2 templates for advanced conditional logic. When enabled, the conditions above
-            are ignored.
-          </div>
-
-          ${templateMode
-            ? html`
-                <div class="template-content">
-                  <textarea
-                    .value=${column.template || ''}
-                    @input=${(e: Event) =>
-                      this._updateColumn({ template: (e.target as HTMLTextAreaElement).value })}
-                    placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
-                    class="template-editor"
-                    rows="6"
-                  ></textarea>
-                  <div class="template-help">
-                    <p><strong>Template should return a boolean value:</strong></p>
-                    <ul>
-                      <li>
-                        <code>true</code>, <code>on</code>, <code>yes</code>, <code>1</code> → Show
-                        column
-                      </li>
-                      <li>
-                        <code>false</code>, <code>off</code>, <code>no</code>, <code>0</code> → Hide
-                        column
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              `
-            : ''}
-        </div>
-      </div>
-    `;
+    return GlobalLogicTab.render(column as any, this.hass, (updates: Partial<CardColumn>) => {
+      this._updateColumn(updates);
+    });
   }
 
   private _renderColumnDesignTab(column: CardColumn): TemplateResult {
@@ -4336,19 +4813,14 @@ export class LayoutTab extends LitElement {
       animation_timing: column.design?.animation_timing,
     };
 
-    console.log(`🔄 LayoutTab: Rendering column design tab with properties:`, designProperties);
-
     return html`
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
         @design-changed=${(e: CustomEvent) => {
-          console.log(`🔄 LayoutTab: Received design-changed event for COLUMN:`, e.detail);
-          console.log(`🔄 LayoutTab: Current column design before update:`, column.design);
           const updates = e.detail;
           // Update the column with design properties
           const updatedDesign = { ...column.design, ...updates };
-          console.log(`🔄 LayoutTab: Updated column design:`, updatedDesign);
           this._updateColumn({ design: updatedDesign });
         }}
       ></ultra-global-design-tab>
@@ -4356,23 +4828,32 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderGeneralTab(module: CardModule): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
 
     // Render Module Name field first for all modules
     const moduleNameField = html`
       <div class="settings-section">
-        <label>Module Name:</label>
+        <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
         <input
           type="text"
           .value=${(module as any).module_name || ''}
           @input=${(e: Event) =>
             this._updateModule({ module_name: (e.target as HTMLInputElement).value } as any)}
-          placeholder="Give this module a custom name to make it easier to identify in the editor."
+          placeholder="${localize(
+            'editor.layout_extra.module_name_placeholder',
+            lang,
+            'Give this module a custom name to make it easier to identify in the editor.'
+          )}"
           class="module-name-input"
         />
         <div class="field-help">
-          Give this module a custom name to make it easier to identify in the editor.
+          ${localize(
+            'editor.layout_extra.module_name_help',
+            lang,
+            'Give this module a custom name to make it easier to identify in the editor.'
+          )}
         </div>
       </div>
     `;
@@ -4551,7 +5032,11 @@ export class LayoutTab extends LitElement {
         const conditions = row.display_conditions || [];
         const updatedConditions = conditions.filter((_, i) => i !== index);
         this._updateRow({ display_conditions: updatedConditions });
-      }
+      },
+      'row',
+      index,
+      () => row.display_conditions,
+      (next: DisplayCondition[]) => this._updateRow({ display_conditions: next })
     );
   }
 
@@ -4575,7 +5060,11 @@ export class LayoutTab extends LitElement {
         const conditions = column.display_conditions || [];
         const updatedConditions = conditions.filter((_, i) => i !== index);
         this._updateColumn({ display_conditions: updatedConditions });
-      }
+      },
+      'column',
+      index,
+      () => column.display_conditions,
+      (next: DisplayCondition[]) => this._updateColumn({ display_conditions: next })
     );
   }
 
@@ -4584,15 +5073,32 @@ export class LayoutTab extends LitElement {
     condition: DisplayCondition,
     index: number,
     onUpdate: (updates: Partial<DisplayCondition>) => void,
-    onDelete: () => void
+    onDelete: () => void,
+    scope?: 'module' | 'row' | 'column',
+    targetIndex?: number,
+    getConditions?: () => DisplayCondition[] | undefined,
+    setConditions?: (next: DisplayCondition[]) => void
   ): TemplateResult {
-    const isExpanded = true; // Always expanded for now
+    const isExpanded = !this._collapsedConditionIds.has(condition.id);
 
     return html`
-      <div class="condition-item ${condition.enabled ? 'enabled' : 'disabled'}">
+      <div
+        class="condition-item enabled"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => scope && this._onConditionDragStart(e, scope, index)}
+        @dragover=${this._onConditionDragOver}
+        @drop=${(e: DragEvent) =>
+          scope && getConditions && setConditions && typeof targetIndex === 'number'
+            ? this._onConditionDrop(e, scope, targetIndex!, getConditions!, setConditions!)
+            : null}
+      >
         <div class="condition-header">
           <div class="condition-header-left">
-            <button type="button" class="condition-toggle ${isExpanded ? 'expanded' : ''}">
+            <button
+              type="button"
+              class="condition-toggle ${isExpanded ? 'expanded' : ''}"
+              @click=${() => this._toggleConditionExpanded(condition.id)}
+            >
               <ha-icon icon="mdi:chevron-${isExpanded ? 'down' : 'right'}"></ha-icon>
             </button>
             <span class="condition-label">
@@ -4654,20 +5160,7 @@ export class LayoutTab extends LitElement {
                   ? this._renderEntityAttributeConditionGeneric(condition, onUpdate)
                   : ''}
 
-                <!-- Enable/Disable Toggle -->
-                <div class="condition-field">
-                  <label class="condition-enable-toggle">
-                    <input
-                      type="checkbox"
-                      .checked=${condition.enabled !== false}
-                      @change=${(e: Event) =>
-                        onUpdate({
-                          enabled: (e.target as HTMLInputElement).checked,
-                        })}
-                    />
-                    Enable this condition
-                  </label>
-                </div>
+                <!-- Removed enable/disable toggle; delete the condition to disable -->
               </div>
             `
           : ''}
@@ -4684,7 +5177,6 @@ export class LayoutTab extends LitElement {
       <div class="entity-condition-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
-          <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
             .data=${{ entity: condition.entity || '' }}
@@ -4692,6 +5184,7 @@ export class LayoutTab extends LitElement {
               {
                 name: 'entity',
                 selector: { entity: {} },
+                label: 'Entity',
               },
             ]}
             @value-changed=${(e: CustomEvent) => onUpdate({ entity: e.detail.value.entity })}
@@ -4749,7 +5242,6 @@ export class LayoutTab extends LitElement {
       <div class="entity-attribute-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
-          <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
             .data=${{ entity: condition.entity || '' }}
@@ -4757,6 +5249,7 @@ export class LayoutTab extends LitElement {
               {
                 name: 'entity',
                 selector: { entity: {} },
+                label: 'Entity',
               },
             ]}
             @value-changed=${(e: CustomEvent) => onUpdate({ entity: e.detail.value.entity })}
@@ -4826,18 +5319,16 @@ export class LayoutTab extends LitElement {
     condition: DisplayCondition,
     index: number
   ): TemplateResult {
-    const isExpanded = true; // Always expanded for now, can add state management later
+    const isExpanded = !this._collapsedConditionIds.has(condition.id);
 
     return html`
-      <div class="condition-item ${condition.enabled ? 'enabled' : 'disabled'}">
+      <div class="condition-item enabled">
         <div class="condition-header">
           <div class="condition-header-left">
             <button
               type="button"
               class="condition-toggle ${isExpanded ? 'expanded' : ''}"
-              @click=${() => {
-                // Toggle expansion - implement state management if needed
-              }}
+              @click=${() => this._toggleConditionExpanded(condition.id)}
             >
               <ha-icon icon="mdi:chevron-${isExpanded ? 'down' : 'right'}"></ha-icon>
             </button>
@@ -4869,7 +5360,22 @@ export class LayoutTab extends LitElement {
             >
               <ha-icon icon="mdi:delete"></ha-icon>
             </button>
-            <button type="button" class="condition-drag-handle" title="Drag to reorder">
+            <button
+              type="button"
+              class="condition-drag-handle"
+              title="Drag to reorder"
+              draggable="true"
+              @dragstart=${(e: DragEvent) => this._onConditionDragStart(e, 'module', index)}
+              @dragover=${this._onConditionDragOver}
+              @drop=${(e: DragEvent) =>
+                this._onConditionDrop(
+                  e,
+                  'module',
+                  index,
+                  () => module.display_conditions,
+                  (next: DisplayCondition[]) => this._updateModule({ display_conditions: next })
+                )}
+            >
               <ha-icon icon="mdi:drag"></ha-icon>
             </button>
           </div>
@@ -4917,20 +5423,7 @@ export class LayoutTab extends LitElement {
                   ? this._renderTemplateCondition(module, condition, index)
                   : ''}
 
-                <!-- Enable/Disable Toggle -->
-                <div class="condition-field">
-                  <label class="condition-enable-toggle">
-                    <input
-                      type="checkbox"
-                      .checked=${condition.enabled !== false}
-                      @change=${(e: Event) =>
-                        this._updateCondition(module, index, {
-                          enabled: (e.target as HTMLInputElement).checked,
-                        })}
-                    />
-                    Enable this condition
-                  </label>
-                </div>
+                <!-- Removed enable/disable toggle; delete the condition to disable -->
               </div>
             `
           : ''}
@@ -4948,7 +5441,6 @@ export class LayoutTab extends LitElement {
       <div class="entity-condition-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
-          <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
             .data=${{ entity: condition.entity || '' }}
@@ -4956,8 +5448,12 @@ export class LayoutTab extends LitElement {
               {
                 name: 'entity',
                 selector: { entity: {} },
+                label: 'Entity',
               },
             ]}
+            .computeLabel=${(schema: any) =>
+              schema.label ??
+              (schema.name ? schema.name.charAt(0).toUpperCase() + schema.name.slice(1) : '')}
             @value-changed=${(e: CustomEvent) =>
               this._updateCondition(module, index, { entity: e.detail.value.entity })}
           ></ha-form>
@@ -5015,7 +5511,6 @@ export class LayoutTab extends LitElement {
       <div class="entity-attribute-fields">
         <!-- Entity Picker -->
         <div class="condition-field">
-          <label>Entity:</label>
           <ha-form
             .hass=${this.hass}
             .data=${{ entity: condition.entity || '' }}
@@ -5023,8 +5518,12 @@ export class LayoutTab extends LitElement {
               {
                 name: 'entity',
                 selector: { entity: {} },
+                label: 'Entity',
               },
             ]}
+            .computeLabel=${(schema: any) =>
+              schema.label ??
+              (schema.name ? schema.name.charAt(0).toUpperCase() + schema.name.slice(1) : '')}
             @value-changed=${(e: CustomEvent) =>
               this._updateCondition(module, index, { entity: e.detail.value.entity })}
           ></ha-form>
@@ -5157,22 +5656,23 @@ export class LayoutTab extends LitElement {
   private _renderLogicTab(module: CardModule): TemplateResult {
     const conditions = module.display_conditions || [];
     const displayMode = module.display_mode || 'always';
-    const templateMode = (module as any).template_mode || false;
+    const templateMode = false; // Advanced Template Mode removed; use Display Conditions instead
 
+    const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="logic-tab-content">
         <!-- Basic Conditions Section -->
-        <div
-          class="logic-section"
-          style="opacity: ${templateMode ? '0.5' : '1'}; pointer-events: ${templateMode
-            ? 'none'
-            : 'auto'}"
-        >
+        <div class="logic-section">
           <div class="section-header">
-            <h3>Display this Element</h3>
-            ${templateMode
-              ? html`<span class="disabled-note">Disabled - Using Advanced Template Mode</span>`
-              : ''}
+            <h3>${localize('editor.layout_logic.display_title', lang, 'Display this Element')}</h3>
+          </div>
+
+          <div class="template-description">
+            ${localize(
+              'editor.layout_logic.display_desc',
+              lang,
+              'Control when this element is shown. Choose "Always" to keep it visible. Select "If EVERY condition below is met" or "If ANY condition below is met" to display it only when the conditions you add below evaluate to true.'
+            )}
           </div>
 
           <div class="display-mode-selector">
@@ -5183,11 +5683,16 @@ export class LayoutTab extends LitElement {
                 this._updateModule({ display_mode: value });
               }}
               class="display-mode-dropdown"
-              .disabled=${templateMode}
             >
-              <option value="always">Always</option>
-              <option value="every">If EVERY condition below is met</option>
-              <option value="any">If ANY condition below is met</option>
+              <option value="always">
+                ${localize('editor.layout_logic.always', lang, 'Always')}
+              </option>
+              <option value="every">
+                ${localize('editor.layout_logic.every', lang, 'If EVERY condition below is met')}
+              </option>
+              <option value="any">
+                ${localize('editor.layout_logic.any', lang, 'If ANY condition below is met')}
+              </option>
             </select>
           </div>
         </div>
@@ -5195,40 +5700,50 @@ export class LayoutTab extends LitElement {
         <!-- Conditions Section -->
         ${displayMode !== 'always'
           ? html`
-              <div
-                class="conditions-section"
-                style="opacity: ${templateMode ? '0.5' : '1'}; pointer-events: ${templateMode
-                  ? 'none'
-                  : 'auto'}"
-              >
+              <div class="conditions-section">
                 <div class="conditions-header">
-                  <h4>Conditions</h4>
-                  ${templateMode
-                    ? html`<span class="disabled-note"
-                        >Disabled - Using Advanced Template Mode</span
-                      >`
-                    : ''}
+                  <h4>${localize('editor.layout_logic.conditions', lang, 'Conditions')}</h4>
                   <button
                     type="button"
                     class="add-condition-btn"
                     @click=${() => this._addCondition(module)}
-                    .disabled=${templateMode}
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
-                    Add Condition
+                    ${localize('editor.layout_logic.add_condition', lang, 'Add Condition')}
                   </button>
                 </div>
 
-                <div class="conditions-list">
-                  ${conditions.map((condition, index) =>
-                    this._renderCondition(module, condition, index)
+                <div class="conditions-list" @dragover=${this._onConditionDragOver}>
+                  ${conditions.map(
+                    (condition, index) => html`
+                      <div
+                        class="condition-row-dropzone"
+                        @drop=${(e: DragEvent) =>
+                          this._onConditionDrop(
+                            e,
+                            'module',
+                            index,
+                            () => module.display_conditions,
+                            (next: DisplayCondition[]) =>
+                              this._updateModule({ display_conditions: next })
+                          )}
+                      >
+                        ${this._renderCondition(module, condition, index)}
+                      </div>
+                    `
                   )}
                 </div>
 
                 ${conditions.length === 0
                   ? html`
                       <div class="no-conditions">
-                        <p>No conditions added yet. Click "Add Condition" to get started.</p>
+                        <p>
+                          ${localize(
+                            'editor.layout_logic.no_conditions',
+                            lang,
+                            'No conditions added yet. Click "Add Condition" to get started.'
+                          )}
+                        </p>
                       </div>
                     `
                   : ''}
@@ -5236,94 +5751,60 @@ export class LayoutTab extends LitElement {
             `
           : ''}
 
-        <!-- Advanced Template Mode Section -->
-        <div class="template-section">
-          <div class="template-header">
-            <div class="switch-container">
-              <label class="switch-label">Advanced Template Mode</label>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  .checked=${templateMode}
-                  @change=${(e: Event) => {
-                    const checked = (e.target as HTMLInputElement).checked;
-                    this._updateModule({
-                      template_mode: checked,
-                      // Reset display_mode to 'always' when enabling template mode
-                      display_mode: checked ? 'always' : displayMode,
-                    });
-                  }}
-                />
-                <span class="slider round"></span>
-              </label>
-            </div>
-            <div class="template-description">
-              Use Jinja2 templates for advanced conditional logic. When enabled, the conditions
-              above are ignored.
-            </div>
-          </div>
-
-          ${templateMode
-            ? html`
-                <div class="template-content">
-                  <textarea
-                    .value=${(module as any).template || ''}
-                    @input=${(e: Event) =>
-                      this._updateModule({
-                        template: (e.target as HTMLTextAreaElement).value,
-                      })}
-                    placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
-                    class="template-editor"
-                    rows="6"
-                  ></textarea>
-                  <div class="template-help">
-                    <p><strong>Template should return a boolean value:</strong></p>
-                    <ul>
-                      <li>
-                        <code>true</code>, <code>on</code>, <code>yes</code>, <code>1</code> → Show
-                        element
-                      </li>
-                      <li>
-                        <code>false</code>, <code>off</code>, <code>no</code>, <code>0</code> → Hide
-                        element
-                      </li>
-                    </ul>
-                    <p><strong>Examples:</strong></p>
-                    <ul>
-                      <li><code>{{ states('sensor.temperature') | float > 20 }}</code></li>
-                      <li>
-                        <code>{% if is_state('binary_sensor.motion', 'on') %}true{% endif %}</code>
-                      </li>
-                      <li><code>{{ state_attr('sensor.weather', 'humidity') > 50 }}</code></li>
-                    </ul>
-                  </div>
-                </div>
-              `
-            : ''}
-        </div>
+        <!-- Advanced Template Mode removed; use Template condition type in Conditions -->
       </div>
     `;
   }
 
   private _renderDesignTab(module: CardModule): TemplateResult {
+    const isBarModule = (module as any)?.type === 'bar';
     // Extract current design properties from module
     const designProperties: DesignProperties = {
       color: (module as any).color,
-      text_align: (module as any).text_align || (module as any).alignment,
-      font_size: (module as any).font_size?.toString(),
+      text_align: (() => {
+        // Explicit priority order for text alignment
+        if ((module as any).text_align !== undefined) return (module as any).text_align;
+        if ((module as any).alignment !== undefined) return (module as any).alignment;
+        if ((module as any).design?.text_align !== undefined)
+          return (module as any).design.text_align;
+        // Do not inject defaults here; allow field to remain blank in the editor
+        return undefined;
+      })(),
+      font_size: (() => {
+        const fontSize = (module as any).font_size;
+        if (fontSize !== undefined && fontSize !== null && fontSize !== '')
+          return fontSize.toString();
+        // No default so the input can be blank
+        return undefined;
+      })(),
       line_height: (module as any).line_height?.toString(),
       letter_spacing: (module as any).letter_spacing,
       font_family: (module as any).font_family,
-      font_weight: (module as any).font_weight,
-      text_transform: (module as any).text_transform,
+      font_weight: (() => {
+        const fontWeight = (module as any).font_weight;
+        if (fontWeight !== undefined && fontWeight !== null && fontWeight !== '') return fontWeight;
+        // No default so the input can be blank
+        return undefined;
+      })(),
+      text_transform: (() => {
+        const textTransform = (module as any).text_transform;
+        if (textTransform !== undefined && textTransform !== null && textTransform !== '')
+          return textTransform;
+        // No default so the input can be blank
+        return undefined;
+      })(),
       font_style: (module as any).font_style,
-      background_color: (module as any).background_color,
+      // Use design-scoped background color only so default top-level values
+      // don't mark Background as edited on brand-new modules
+      background_color: (module as any).design?.background_color,
       background_image: (module as any).background_image,
       background_image_type: (module as any).background_image_type,
       background_image_entity: (module as any).background_image_entity,
       backdrop_filter: (module as any).backdrop_filter,
-      width: (module as any).width,
-      height: (module as any).height,
+      // For Bar modules, the top-level height is the bar thickness, not container height.
+      // Use design-scoped size values only so default bar height doesn't mark Sizes as edited.
+      width: (isBarModule ? (module as any).design?.width : (module as any).width) as any,
+      height: (isBarModule ? (module as any).design?.height : (module as any).height) as any,
       max_width: (module as any).max_width,
       max_height: (module as any).max_height,
       min_width: (module as any).min_width,
@@ -5375,15 +5856,11 @@ export class LayoutTab extends LitElement {
       animation_timing: (module as any).animation_timing,
     };
 
-    console.log(`🔄 LayoutTab: Rendering module design tab with properties:`, designProperties);
-
     return html`
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
         .onUpdate=${(updates: Partial<DesignProperties>) => {
-          console.log(`🔄 LayoutTab: Received onUpdate callback for MODULE:`, updates);
-          console.log(`🔄 LayoutTab: Current selected module:`, this._selectedModule);
           this._updateModuleDesign(updates);
         }}
       ></ultra-global-design-tab>
@@ -5455,12 +5932,25 @@ export class LayoutTab extends LitElement {
         <div class="settings-section">
           <label>Font Size (px):</label>
           <input
-            type="number"
-            min="8"
-            max="72"
-            .value=${textModule.font_size || 16}
-            @input=${(e: Event) =>
-              this._updateModule({ font_size: Number((e.target as HTMLInputElement).value) })}
+            type="text"
+            .value=${(textModule.font_size ?? '').toString()}
+            @input=${(e: Event) => {
+              const raw = (e.target as HTMLInputElement).value;
+              // allow blank
+              if (raw === '') {
+                this._updateModule({ font_size: undefined });
+                return;
+              }
+              // accept plain number or number with units; store number when numeric
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric) && /^\s*-?\d*\.?\d*\s*(px|rem|em|%)?\s*$/i.test(raw)) {
+                // keep numeric (module schema expects number for legacy field)
+                this._updateModule({ font_size: numeric });
+              } else {
+                // if invalid, do not update to avoid thrashing
+              }
+            }}
+            placeholder=""
             class="font-size-input"
           />
         </div>
@@ -5569,13 +6059,19 @@ export class LayoutTab extends LitElement {
         <div class="settings-section">
           <label>Bar Height (px):</label>
           <input
-            type="number"
-            min="10"
-            max="100"
-            step="5"
-            .value=${barModule.height || 20}
-            @input=${(e: Event) =>
-              this._updateModule({ height: Number((e.target as HTMLInputElement).value) })}
+            type="text"
+            .value=${(barModule.height ?? '').toString()}
+            @input=${(e: Event) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '') {
+                this._updateModule({ height: undefined });
+                return;
+              }
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric)) {
+                this._updateModule({ height: numeric });
+              }
+            }}
             class="number-input"
           />
         </div>
@@ -5583,12 +6079,19 @@ export class LayoutTab extends LitElement {
         <div class="settings-section">
           <label>Border Radius (px):</label>
           <input
-            type="number"
-            min="0"
-            max="50"
-            .value=${barModule.border_radius || 10}
-            @input=${(e: Event) =>
-              this._updateModule({ border_radius: Number((e.target as HTMLInputElement).value) })}
+            type="text"
+            .value=${(barModule.border_radius ?? '').toString()}
+            @input=${(e: Event) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '') {
+                this._updateModule({ border_radius: undefined });
+                return;
+              }
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric)) {
+                this._updateModule({ border_radius: numeric });
+              }
+            }}
             class="number-input"
           />
         </div>
@@ -5679,13 +6182,19 @@ export class LayoutTab extends LitElement {
         <div class="settings-section">
           <label>Width (px):</label>
           <input
-            type="number"
-            min="50"
-            max="500"
-            step="10"
-            .value=${imageModule.image_width || 100}
-            @input=${(e: Event) =>
-              this._updateModule({ image_width: Number((e.target as HTMLInputElement).value) })}
+            type="text"
+            .value=${(imageModule.image_width ?? '').toString()}
+            @input=${(e: Event) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '') {
+                this._updateModule({ image_width: undefined });
+                return;
+              }
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric)) {
+                this._updateModule({ image_width: numeric });
+              }
+            }}
             class="number-input"
           />
         </div>
@@ -5693,13 +6202,19 @@ export class LayoutTab extends LitElement {
         <div class="settings-section">
           <label>Height (px):</label>
           <input
-            type="number"
-            min="50"
-            max="500"
-            step="10"
-            .value=${imageModule.image_height || 100}
-            @input=${(e: Event) =>
-              this._updateModule({ image_height: Number((e.target as HTMLInputElement).value) })}
+            type="text"
+            .value=${(imageModule.image_height ?? '').toString()}
+            @input=${(e: Event) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '') {
+                this._updateModule({ image_height: undefined });
+                return;
+              }
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric)) {
+                this._updateModule({ image_height: numeric });
+              }
+            }}
             class="number-input"
           />
         </div>
@@ -5707,12 +6222,19 @@ export class LayoutTab extends LitElement {
         <div class="settings-section">
           <label>Border Radius (px):</label>
           <input
-            type="number"
-            min="0"
-            max="50"
-            .value=${imageModule.border_radius || 8}
-            @input=${(e: Event) =>
-              this._updateModule({ border_radius: Number((e.target as HTMLInputElement).value) })}
+            type="text"
+            .value=${(imageModule.border_radius ?? '').toString()}
+            @input=${(e: Event) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '') {
+                this._updateModule({ border_radius: undefined });
+                return;
+              }
+              const numeric = parseFloat(raw);
+              if (!Number.isNaN(numeric)) {
+                this._updateModule({ border_radius: numeric });
+              }
+            }}
             class="number-input"
           />
         </div>
@@ -5753,6 +6275,191 @@ export class LayoutTab extends LitElement {
             this._updateModule({ background_color: value });
           }}
         ></ultra-color-picker>
+
+        <div class="property-group">
+          <label>Background Image Type:</label>
+          <select
+            .value=${module.background_image_type || 'none'}
+            @change=${(e: Event) => {
+              const value = (e.target as HTMLSelectElement).value as
+                | 'none'
+                | 'upload'
+                | 'entity'
+                | 'url';
+              this._updateModule({ background_image_type: value });
+            }}
+            class="property-select"
+          >
+            <option value="none">None</option>
+            <option value="upload">Upload Image</option>
+            <option value="entity">Entity Image</option>
+            <option value="url">Image URL</option>
+          </select>
+        </div>
+
+        ${module.background_image_type === 'upload'
+          ? html`
+              <div class="property-group">
+                <label>Upload Background Image:</label>
+                <div class="upload-container">
+                  <div class="file-upload-row">
+                    <label class="file-upload-button">
+                      <div class="button-content">
+                        <ha-icon icon="mdi:upload"></ha-icon>
+                        <span class="button-label">Choose File</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        @change=${this._handleBackgroundImageUpload}
+                        style="display: none"
+                      />
+                    </label>
+                    <div class="path-display">
+                      ${module.background_image
+                        ? html`<span class="uploaded-path" title="${module.background_image}">
+                            ${this._truncatePath(module.background_image)}
+                          </span>`
+                        : html`<span class="no-file">No file chosen</span>`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+          : ''}
+        ${module.background_image_type === 'entity'
+          ? html`
+              <div class="property-group">
+                <label>Background Image Entity:</label>
+                <ha-entity-picker
+                  .hass=${this.hass}
+                  .value=${module.background_image_entity || ''}
+                  @value-changed=${(e: CustomEvent) => {
+                    this._updateModule({ background_image_entity: e.detail.value });
+                  }}
+                  .label=${'Select entity with image attribute'}
+                  allow-custom-entity
+                ></ha-entity-picker>
+              </div>
+            `
+          : ''}
+        ${module.background_image_type === 'url'
+          ? html`
+              <div class="property-group">
+                <label>Background Image URL:</label>
+                <input
+                  type="text"
+                  .value=${module.background_image || ''}
+                  @input=${(e: Event) => {
+                    const value = (e.target as HTMLInputElement).value;
+                    this._updateModule({ background_image: value });
+                  }}
+                  placeholder="https://example.com/image.jpg"
+                  class="property-input"
+                />
+              </div>
+            `
+          : ''}
+        ${module.background_image_type && module.background_image_type !== 'none'
+          ? html`
+              <div class="property-group">
+                <label>Background Size:</label>
+                <select
+                  .value=${this._getBackgroundSizeDropdownValue(module.background_size)}
+                  @change=${(e: Event) => {
+                    const value = (e.target as HTMLSelectElement).value;
+                    this._updateModule({ background_size: value });
+                  }}
+                  class="property-select"
+                >
+                  <option value="cover">Cover</option>
+                  <option value="contain">Contain</option>
+                  <option value="auto">Auto</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              ${this._getBackgroundSizeDropdownValue(module.background_size) === 'custom'
+                ? html`
+                    <div class="property-group">
+                      <label>Custom Width:</label>
+                      <input
+                        type="text"
+                        .value=${this._getCustomSizeValue(module.background_size, 'width')}
+                        @input=${(e: Event) => {
+                          const width = (e.target as HTMLInputElement).value;
+                          const height = this._getCustomSizeValue(module.background_size, 'height');
+                          const customSize =
+                            width && height ? `${width} ${height}` : width || height || 'auto';
+                          this._updateModule({ background_size: customSize });
+                        }}
+                        placeholder="100px, 50%, auto"
+                        class="property-input"
+                      />
+                    </div>
+                    <div class="property-group">
+                      <label>Custom Height:</label>
+                      <input
+                        type="text"
+                        .value=${this._getCustomSizeValue(module.background_size, 'height')}
+                        @input=${(e: Event) => {
+                          const height = (e.target as HTMLInputElement).value;
+                          const width = this._getCustomSizeValue(module.background_size, 'width');
+                          const customSize =
+                            width && height ? `${width} ${height}` : width || height || 'auto';
+                          this._updateModule({ background_size: customSize });
+                        }}
+                        placeholder="100px, 50%, auto"
+                        class="property-input"
+                      />
+                    </div>
+                  `
+                : ''}
+
+              <div class="property-group">
+                <label>Background Repeat:</label>
+                <select
+                  .value=${module.background_repeat || 'no-repeat'}
+                  @change=${(e: Event) => {
+                    const value = (e.target as HTMLSelectElement).value as
+                      | 'repeat'
+                      | 'repeat-x'
+                      | 'repeat-y'
+                      | 'no-repeat';
+                    this._updateModule({ background_repeat: value });
+                  }}
+                  class="property-select"
+                >
+                  <option value="no-repeat">No Repeat</option>
+                  <option value="repeat">Repeat</option>
+                  <option value="repeat-x">Repeat X</option>
+                  <option value="repeat-y">Repeat Y</option>
+                </select>
+              </div>
+
+              <div class="property-group">
+                <label>Background Position:</label>
+                <select
+                  .value=${module.background_position || 'center center'}
+                  @change=${(e: Event) => {
+                    const value = (e.target as HTMLSelectElement).value;
+                    this._updateModule({ background_position: value });
+                  }}
+                  class="property-select"
+                >
+                  <option value="left top">Left Top</option>
+                  <option value="left center">Left Center</option>
+                  <option value="left bottom">Left Bottom</option>
+                  <option value="center top">Center Top</option>
+                  <option value="center center">Center</option>
+                  <option value="center bottom">Center Bottom</option>
+                  <option value="right top">Right Top</option>
+                  <option value="right center">Right Center</option>
+                  <option value="right bottom">Right Bottom</option>
+                </select>
+              </div>
+            `
+          : ''}
       </div>
     `;
   }
@@ -5764,50 +6471,62 @@ export class LayoutTab extends LitElement {
           <h4>Margin</h4>
           <div class="spacing-cross">
             <input
-              type="number"
+              type="text"
               placeholder="Top"
-              .value=${module.margin?.top || 0}
-              @input=${(e: Event) =>
+              .value=${(module.margin?.top ?? '').toString()}
+              @input=${(e: Event) => {
+                const raw = (e.target as HTMLInputElement).value;
+                const next = raw === '' ? undefined : parseFloat(raw);
                 this._updateModule({
-                  margin: { ...module.margin, top: Number((e.target as HTMLInputElement).value) },
-                })}
+                  margin: { ...module.margin, top: next as any },
+                });
+              }}
             />
             <div class="spacing-row">
               <input
-                type="number"
+                type="text"
                 placeholder="Left"
-                .value=${module.margin?.left || 0}
+                .value=${(module.margin?.left ?? '').toString()}
                 @input=${(e: Event) =>
                   this._updateModule({
                     margin: {
                       ...module.margin,
-                      left: Number((e.target as HTMLInputElement).value),
+                      left:
+                        (e.target as HTMLInputElement).value === ''
+                          ? (undefined as any)
+                          : parseFloat((e.target as HTMLInputElement).value),
                     },
                   })}
               />
               <span class="spacing-center">M</span>
               <input
-                type="number"
+                type="text"
                 placeholder="Right"
-                .value=${module.margin?.right || 0}
+                .value=${(module.margin?.right ?? '').toString()}
                 @input=${(e: Event) =>
                   this._updateModule({
                     margin: {
                       ...module.margin,
-                      right: Number((e.target as HTMLInputElement).value),
+                      right:
+                        (e.target as HTMLInputElement).value === ''
+                          ? (undefined as any)
+                          : parseFloat((e.target as HTMLInputElement).value),
                     },
                   })}
               />
             </div>
             <input
-              type="number"
+              type="text"
               placeholder="Bottom"
-              .value=${module.margin?.bottom || 0}
+              .value=${(module.margin?.bottom ?? '').toString()}
               @input=${(e: Event) =>
                 this._updateModule({
                   margin: {
                     ...module.margin,
-                    bottom: Number((e.target as HTMLInputElement).value),
+                    bottom:
+                      (e.target as HTMLInputElement).value === ''
+                        ? (undefined as any)
+                        : parseFloat((e.target as HTMLInputElement).value),
                   },
                 })}
             />
@@ -5818,50 +6537,65 @@ export class LayoutTab extends LitElement {
           <h4>Padding</h4>
           <div class="spacing-cross">
             <input
-              type="number"
+              type="text"
               placeholder="Top"
-              .value=${module.padding?.top || 0}
+              .value=${(module.padding?.top ?? '').toString()}
               @input=${(e: Event) =>
                 this._updateModule({
-                  padding: { ...module.padding, top: Number((e.target as HTMLInputElement).value) },
+                  padding: {
+                    ...module.padding,
+                    top:
+                      (e.target as HTMLInputElement).value === ''
+                        ? (undefined as any)
+                        : parseFloat((e.target as HTMLInputElement).value),
+                  },
                 })}
             />
             <div class="spacing-row">
               <input
-                type="number"
+                type="text"
                 placeholder="Left"
-                .value=${module.padding?.left || 0}
+                .value=${(module.padding?.left ?? '').toString()}
                 @input=${(e: Event) =>
                   this._updateModule({
                     padding: {
                       ...module.padding,
-                      left: Number((e.target as HTMLInputElement).value),
+                      left:
+                        (e.target as HTMLInputElement).value === ''
+                          ? (undefined as any)
+                          : parseFloat((e.target as HTMLInputElement).value),
                     },
                   })}
               />
               <span class="spacing-center">P</span>
               <input
-                type="number"
+                type="text"
                 placeholder="Right"
-                .value=${module.padding?.right || 0}
+                .value=${(module.padding?.right ?? '').toString()}
                 @input=${(e: Event) =>
                   this._updateModule({
                     padding: {
                       ...module.padding,
-                      right: Number((e.target as HTMLInputElement).value),
+                      right:
+                        (e.target as HTMLInputElement).value === ''
+                          ? (undefined as any)
+                          : parseFloat((e.target as HTMLInputElement).value),
                     },
                   })}
               />
             </div>
             <input
-              type="number"
+              type="text"
               placeholder="Bottom"
-              .value=${module.padding?.bottom || 0}
+              .value=${(module.padding?.bottom ?? '').toString()}
               @input=${(e: Event) =>
                 this._updateModule({
                   padding: {
                     ...module.padding,
-                    bottom: Number((e.target as HTMLInputElement).value),
+                    bottom:
+                      (e.target as HTMLInputElement).value === ''
+                        ? (undefined as any)
+                        : parseFloat((e.target as HTMLInputElement).value),
                   },
                 })}
             />
@@ -5885,13 +6619,17 @@ export class LayoutTab extends LitElement {
       <div class="settings-section">
         <label>Border Radius (px):</label>
         <input
-          type="number"
-          min="0"
-          max="50"
-          .value=${module.border?.radius || 0}
+          type="text"
+          .value=${(module.border?.radius ?? '').toString()}
           @input=${(e: Event) =>
             this._updateModule({
-              border: { ...module.border, radius: Number((e.target as HTMLInputElement).value) },
+              border: {
+                ...module.border,
+                radius:
+                  (e.target as HTMLInputElement).value === ''
+                    ? (undefined as any)
+                    : parseFloat((e.target as HTMLInputElement).value),
+              },
             })}
         />
       </div>
@@ -5900,20 +6638,26 @@ export class LayoutTab extends LitElement {
 
   protected render(): TemplateResult {
     const layout = this._ensureLayout();
+    const lang = this.hass?.locale?.language || 'en';
 
     return html`
       <div class="layout-builder">
         <div class="builder-header">
-          <h3>Layout Builder</h3>
+          <h3>${localize('editor.tabs.layout', lang, 'Layout Builder')}</h3>
           <button
             class="add-row-btn"
             @click=${(e: Event) => {
               e.stopPropagation();
               this._addRow();
             }}
+            title="${localize(
+              'editor.layout.add_row_tooltip',
+              lang,
+              'Add a new row to your layout'
+            )}"
           >
             <ha-icon icon="mdi:plus"></ha-icon>
-            Add Row
+            ${localize('editor.layout.add_row', lang, 'Add Row')}
           </button>
         </div>
 
@@ -5985,7 +6729,11 @@ export class LayoutTab extends LitElement {
                       }}
                       @mousedown=${(e: Event) => e.stopPropagation()}
                       @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Row Settings"
+                      title="${localize(
+                        'editor.layout.row_settings',
+                        this.hass?.locale?.language || 'en',
+                        'Row Settings'
+                      )}"
                     >
                       <ha-icon icon="mdi:cog"></ha-icon>
                     </button>
@@ -6065,7 +6813,11 @@ export class LayoutTab extends LitElement {
                                   }}
                                   @mousedown=${(e: Event) => e.stopPropagation()}
                                   @dragstart=${(e: Event) => e.preventDefault()}
-                                  title="Column Settings"
+                                  title="${localize(
+                                    'editor.layout.column_settings',
+                                    this.hass?.locale?.language || 'en',
+                                    'Column Settings'
+                                  )}"
                                 >
                                   <ha-icon icon="mdi:cog"></ha-icon>
                                 </button>
@@ -6221,9 +6973,25 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="module-selector-popup">
         <div class="popup-overlay" @click=${() => (this._showModuleSelector = false)}></div>
-        <div class="selector-content">
-          <div class="selector-header">
-            <h3>Add Module</h3>
+        <div class="selector-content draggable-popup" id="module-selector-popup">
+          <div
+            class="selector-header"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
+              if (popup) this._startPopupDrag(e, popup);
+            }}
+          >
+            <div class="selector-header-top">
+              <h3>Add Module</h3>
+              <button
+                class="close-button"
+                title="Close"
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                @click=${() => (this._showModuleSelector = false)}
+              >
+                ×
+              </button>
+            </div>
             ${isAddingToLayoutModule
               ? html`<p class="selector-subtitle">
                   Adding to layout module (only content modules allowed)
@@ -6249,7 +7017,6 @@ export class LayoutTab extends LitElement {
                           @click=${() => this._addModule(metadata.type)}
                           title="${metadata.description}"
                         >
-                          <div class="layout-badge">Layout</div>
                           <ha-icon icon="${metadata.icon}"></ha-icon>
                           <div class="module-info">
                             <span class="module-title">${metadata.title}</span>
@@ -6288,6 +7055,18 @@ export class LayoutTab extends LitElement {
                 </div>
               `
             : ''}
+
+          <!-- Resize handle -->
+          <div
+            class="resize-handle"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
+              if (popup) this._startPopupResize(e, popup);
+            }}
+            title="Drag to resize"
+          >
+            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
+          </div>
         </div>
       </div>
     `;
@@ -6334,8 +7113,14 @@ export class LayoutTab extends LitElement {
     return html`
       <div class="column-layout-selector-popup">
         <div class="popup-overlay" @click=${() => (this._showColumnLayoutSelector = false)}></div>
-        <div class="selector-content">
-          <div class="selector-header">
+        <div class="selector-content draggable-popup" id="column-layout-selector-popup">
+          <div
+            class="selector-header"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
+              if (popup) this._startPopupDrag(e, popup);
+            }}
+          >
             <h3>Choose Column Layout</h3>
             <p>
               Select any layout for ${currentColumnCount}
@@ -6367,6 +7152,18 @@ export class LayoutTab extends LitElement {
                 </button>
               `
             )}
+          </div>
+
+          <!-- Resize handle -->
+          <div
+            class="resize-handle"
+            @mousedown=${(e: MouseEvent) => {
+              const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
+              if (popup) this._startPopupResize(e, popup);
+            }}
+            title="Drag to resize"
+          >
+            <ha-icon icon="mdi:resize-bottom-right"></ha-icon>
           </div>
         </div>
       </div>
@@ -7065,21 +7862,71 @@ export class LayoutTab extends LitElement {
         position: relative;
         background: var(--card-background-color);
         border-radius: 8px;
-        padding: 24px;
+        /* remove top padding so sticky header touches the top edge */
+        padding: 0 24px 24px;
         max-width: 500px;
         width: 90%;
         max-height: 80vh;
-        overflow-y: auto;
+        overflow-x: hidden; /* prevent bleed */
+        overflow-y: auto; /* allow vertical scrolling when content exceeds height */
+      }
+
+      .selector-content.draggable-popup {
+        position: relative !important; /* avoid transform so fixed menus anchor correctly */
+        width: min(700px, 95vw);
+        height: min(750px, 90vh);
+        transform: none !important;
+        top: auto !important;
+        left: auto !important;
+        margin: 0 auto;
+      }
+
+      /* Mobile optimization for selector popup */
+      @media (max-width: 768px) {
+        .selector-content.draggable-popup {
+          width: 95vw;
+          height: 90vh;
+        }
       }
 
       .selector-header {
-        padding-bottom: 16px;
+        position: sticky; /* keep header visible while scrolling */
+        top: 0;
+        z-index: 5;
+        background: var(--card-background-color);
+        padding: 20px 0 16px; /* top padding moved from container */
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 16px;
+        cursor: move;
+        user-select: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      }
+
+      .selector-header-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        white-space: nowrap;
       }
 
       .selector-header h3 {
-        margin: 0 0 4px 0;
+        margin: 0; /* align vertically with X */
+        flex: 1; /* push the X to the far right */
+      }
+
+      .selector-header .close-button {
+        margin-left: auto; /* ensure it sits on the same row to the right */
+        background: none;
+        border: none;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+      }
+
+      .selector-header .close-button:hover {
+        color: var(--primary-color);
       }
 
       .module-stats {
@@ -7447,7 +8294,8 @@ export class LayoutTab extends LitElement {
         align-items: flex-start;
         justify-content: center;
         padding: 20px;
-        overflow-y: auto;
+        overflow-y: hidden; /* scrolling handled inside content to support sticky header */
+        overflow-x: visible;
       }
 
       .settings-tabs {
@@ -7478,7 +8326,8 @@ export class LayoutTab extends LitElement {
 
       .settings-tab-content {
         padding: 24px;
-        max-height: 400px;
+        flex: 1 1 auto;
+        min-height: 0; /* allow parent to control height */
         overflow-y: auto;
       }
 
@@ -7494,17 +8343,52 @@ export class LayoutTab extends LitElement {
         align-items: flex-start;
         justify-content: center;
         padding: 20px;
-        overflow-y: auto;
+        overflow-y: hidden; /* scrolling handled inside popup-content for sticky header */
+        overflow-x: visible;
       }
 
       .popup-content {
         position: relative;
         background: var(--card-background-color);
         border-radius: 8px;
-        width: 100%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow-y: auto;
+        width: 720px;
+        min-height: 480px;
+        max-width: 98vw;
+        max-height: 98vh;
+        overflow-y: auto; /* internal scroll container for sticky header */
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Dropdown positioning fixes for popup context -
+         ensure menus anchor to fields inside transformed draggable popups */
+      .popup-content ha-select,
+      .selector-content ha-select {
+        position: relative !important;
+        overflow: visible !important;
+        z-index: 9999 !important;
+      }
+
+      .popup-content ha-select .mdc-select__menu,
+      .popup-content ha-select mwc-menu,
+      .popup-content ha-select .mdc-menu,
+      .popup-content ha-select ha-menu,
+      .selector-content ha-select .mdc-select__menu,
+      .selector-content ha-select mwc-menu,
+      .selector-content ha-select .mdc-menu,
+      .selector-content ha-select ha-menu {
+        /* Let HA position menus; we only ensure visibility */
+        z-index: 10001 !important;
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        max-width: min(360px, 95vw) !important;
+      }
+
+      /* Allow dropdown overflow; keep inner content scrollable */
+      .popup-content {
+        /* Allow dropdowns to overflow the scrolling container */
+        overflow: visible !important;
       }
 
       .popup-header {
@@ -7513,6 +8397,11 @@ export class LayoutTab extends LitElement {
         align-items: center;
         padding: 20px 24px;
         border-bottom: 1px solid var(--divider-color);
+        position: sticky; /* keep header visible while scrolling */
+        top: 0;
+        z-index: 5; /* above tab content */
+        background: var(--card-background-color);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
 
       .close-button {
@@ -7576,12 +8465,129 @@ export class LayoutTab extends LitElement {
         gap: 8px;
       }
 
+      /* Drag and Resize Functionality */
+      .draggable-popup {
+        position: absolute;
+        /* Avoid transforms so fixed-position menus anchor to viewport correctly */
+        transform: none !important;
+        max-width: none;
+        max-height: none;
+        width: min(700px, 95vw);
+        height: min(750px, 90vh);
+        /* Center the popup initially */
+        /* Use margins for centering instead of transforms to not create a containing block */
+        top: 50%;
+        left: 50%;
+        margin-left: -350px; /* half of width when 700px; will be clamped by max-width */
+        margin-top: -375px; /* half of height when 750px; responsive will adjust */
+        /* Reset translate centering */
+        /* transform already set to none above */
+        z-index: 1000;
+      }
+
+      /* During drag/resize, remove centering transform and use absolute positioning */
+      .draggable-popup.popup-dragging,
+      .draggable-popup.popup-resizing {
+        position: absolute;
+        transform: none;
+        /* left and top will be set by JavaScript during drag */
+      }
+
+      /* Mobile optimization for module popups */
+      @media (max-width: 768px) {
+        .draggable-popup {
+          width: 95vw;
+          height: 90vh;
+          /* Keep centered without transforms using viewport-based negative margins */
+          top: 50%;
+          left: 50%;
+          margin-left: calc(-47.5vw);
+          margin-top: calc(-45vh);
+        }
+        /* Remove move affordance on mobile */
+        .popup-header {
+          cursor: default;
+        }
+        /* Hide resize handle on mobile */
+        .draggable-popup .resize-handle {
+          display: none;
+        }
+      }
+
+      .popup-header {
+        cursor: move;
+        user-select: none;
+      }
+
+      .resize-handle {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        width: 20px;
+        height: 20px;
+        cursor: se-resize;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        background: var(--card-background-color);
+        border-radius: 8px 0 8px 0;
+        transition: all 0.2s ease;
+        z-index: 20; /* ensure it stays above content */
+      }
+
+      /* Keep sticky behavior even during drag/resize */
+      .draggable-popup .resize-handle {
+        transform: none !important;
+      }
+
+      .resize-handle:hover {
+        color: var(--primary-color);
+        background: var(--divider-color);
+      }
+
+      .resize-handle ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .popup-dragging {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        z-index: 1010 !important;
+      }
+
+      .popup-resizing {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        transition: none !important;
+      }
+
+      .popup-resizing * {
+        transition: none !important;
+      }
+
+      /* Override any conflicting styles for resizable elements */
+      .draggable-popup.popup-resizing {
+        max-width: none !important;
+        max-height: none !important;
+        width: auto !important;
+        height: auto !important;
+      }
+
+      .popup-dragging .popup-header,
+      .popup-resizing .popup-header {
+        cursor: move;
+      }
+
+      .popup-dragging .resize-handle,
+      .popup-resizing .resize-handle {
+        pointer-events: none;
+      }
+
       /* Module Preview */
       .module-preview {
         margin: 16px 24px;
         border: 1px solid var(--divider-color);
         border-radius: 8px;
-        overflow: hidden;
+        overflow: visible; /* allow inner preview content to fully render */
       }
 
       .preview-header {
@@ -7589,6 +8595,15 @@ export class LayoutTab extends LitElement {
         background: var(--secondary-background-color);
         font-weight: 500;
         font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+      }
+
+      .preview-caret {
+        --mdc-icon-size: 20px;
+        color: var(--secondary-text-color);
       }
 
       .preview-content {
@@ -7626,11 +8641,12 @@ export class LayoutTab extends LitElement {
 
       .module-tab-content {
         padding: 24px;
-        max-height: 400px;
-        overflow-y: auto;
+        flex: 1;
+        overflow-y: auto; /* body scrolls */
+        overflow-x: visible; /* allow dropdown menus to render outside content column */
         width: 100%;
         box-sizing: border-box;
-        overflow-x: hidden;
+        min-height: 0; /* Allow flex child to shrink below content size */
       }
 
       /* Design Subtabs */
@@ -8135,7 +9151,7 @@ export class LayoutTab extends LitElement {
       .conditions-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px; /* slightly larger separation between condition cards */
       }
 
       .no-conditions {
@@ -8271,13 +9287,17 @@ export class LayoutTab extends LitElement {
       .condition-field {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
+        margin-bottom: 8px; /* add breathing room between stacked fields */
       }
 
       .condition-field label {
         font-weight: 500;
         color: var(--primary-text-color);
         font-size: 14px;
+        display: block;
+        margin: 0 0 8px 0;
+        text-transform: capitalize;
       }
 
       .condition-field select,
@@ -8389,8 +9409,14 @@ export class LayoutTab extends LitElement {
           border-bottom: none;
         }
 
+        /* Single column module grid on mobile */
         .module-types {
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: 1fr;
+        }
+
+        /* Hide green layout badge on mobile to avoid conflict with title */
+        .layout-badge {
+          display: none !important;
         }
 
         .spacing-grid {
@@ -8525,7 +9551,7 @@ export class LayoutTab extends LitElement {
         font-size: 14px;
         color: var(--secondary-text-color);
         line-height: 1.4;
-        margin-top: 4px;
+        margin: 4px 0 12px 0;
       }
 
       /* Animation keyframes and classes for preview windows */
@@ -8826,59 +9852,13 @@ export class LayoutTab extends LitElement {
         border-style: dashed !important;
       }
 
-      /* Drag handle indicators */
-      .row-header::before {
-        content: '⋮⋮';
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
-        letter-spacing: -2px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-      }
-
-      .column-header::before {
-        content: '⋮⋮';
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 12px;
-        letter-spacing: -2px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-      }
-
+      /* Drag handle indicators (disabled) */
+      /* We now render explicit drag handles inside headers. The legacy
+         pseudo-element indicators caused duplicate icons on mobile. */
+      .row-header::before,
+      .column-header::before,
       .module-content::before {
-        content: '⋮⋮';
-        position: absolute;
-        left: 4px;
-        top: 8px;
-        color: var(--secondary-text-color);
-        font-size: 10px;
-        letter-spacing: -1px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        z-index: 1;
-      }
-
-      .row-builder[draggable='true']:hover .row-header::before {
-        opacity: 1;
-      }
-
-      .column-builder[draggable='true']:hover .column-header::before {
-        opacity: 1;
-      }
-
-      .module-item[draggable='true']:hover .module-content::before {
-        opacity: 0.8;
+        content: none !important; /* hide legacy indicators */
       }
 
       /* Module item hover effect - consolidated with action display */
@@ -9106,11 +10086,20 @@ export class LayoutTab extends LitElement {
         text-align: center;
         padding: 24px;
         width: 100%;
+        cursor: pointer;
+        user-select: none;
+        transition:
+          color 0.2s ease,
+          opacity 0.2s ease;
       }
 
       .layout-module-empty ha-icon {
         --mdc-icon-size: 32px;
         opacity: 0.7;
+      }
+
+      .layout-module-empty:hover ha-icon {
+        opacity: 1;
       }
 
       .layout-child-module-wrapper {
@@ -9240,36 +10229,8 @@ export class LayoutTab extends LitElement {
         color: white;
       }
 
-      /* Drag handle indicators */
-      .row-header::before,
-      .column-header::before {
-        content: '⠿⠿';
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 10px;
-        line-height: 1;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        pointer-events: none;
-        letter-spacing: 1px;
-      }
-
-      .row-builder:hover .row-header::before,
-      .column-builder:hover .column-header::before {
-        opacity: 1;
-      }
-
       /* Drag handle for touch devices */
       @media (hover: none) {
-        .row-header::before,
-        .column-header::before,
-        .module-content::before {
-          opacity: 1;
-        }
-
         /* On touch devices, show action buttons on tap/focus */
         .module-item:active .module-hover-overlay,
         .module-item:focus-within .module-hover-overlay {
@@ -9287,5 +10248,66 @@ export class LayoutTab extends LitElement {
         }
       }
     `;
+  }
+
+  private async _handleBackgroundImageUpload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.hass) return;
+
+    try {
+      const imagePath = await uploadImage(this.hass, file);
+      this._updateModule({
+        background_image: imagePath,
+        background_image_type: 'upload' as const,
+      });
+    } catch (error) {
+      console.error('Background image upload failed:', error);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private _truncatePath(path: string): string {
+    if (!path) return '';
+    const maxLength = 30;
+    if (path.length <= maxLength) return path;
+    return '...' + path.slice(-maxLength + 3);
+  }
+
+  private _getBackgroundSizeDropdownValue(backgroundSize: string | undefined): string {
+    if (!backgroundSize) {
+      return 'cover';
+    }
+
+    // If it's one of the preset values, return it as-is
+    if (['cover', 'contain', 'auto'].includes(backgroundSize)) {
+      return backgroundSize;
+    }
+
+    // If it's 'custom' or any other custom value, return 'custom'
+    return 'custom';
+  }
+
+  private _getCustomSizeValue(
+    backgroundSize: string | undefined,
+    dimension: 'width' | 'height'
+  ): string {
+    if (!backgroundSize || ['cover', 'contain', 'auto'].includes(backgroundSize)) {
+      return '';
+    }
+
+    // If it's just 'custom' without actual values, return empty
+    if (backgroundSize === 'custom') {
+      return '';
+    }
+
+    // Parse custom size value like "100px 200px" or "50% auto"
+    const parts = backgroundSize.split(' ');
+    if (dimension === 'width') {
+      return parts[0] || '';
+    } else if (dimension === 'height') {
+      return parts[1] || parts[0] || '';
+    }
+    return '';
   }
 }

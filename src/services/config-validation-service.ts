@@ -83,17 +83,7 @@ export class ConfigValidationService {
       correctedConfig,
     };
 
-    if (result.valid) {
-      if (warnings.length > 0) {
-        console.log('✅ Config validation passed with corrections', {
-          warnings: warnings.length,
-          rows: correctedConfig.layout.rows.length,
-          totalModules: this.countTotalModules(correctedConfig),
-        });
-      }
-    } else {
-      console.error('❌ Config validation failed', { errors, warnings });
-    }
+    // Suppress console logs in production; return results to caller UI only
 
     return result;
   }
@@ -252,6 +242,7 @@ export class ConfigValidationService {
 
       // If module is valid, ensure it has all required default properties
       const defaultModule = moduleHandler.createDefault(module.id);
+
       const correctedModule = this.mergeWithDefaults(module, defaultModule);
 
       return {
@@ -353,7 +344,7 @@ export class ConfigValidationService {
             while (usedIds.has(newId)) {
               newId = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             }
-            console.warn(`🔧 Fixed duplicate module ID: ${module.id} → ${newId}`);
+            // silent correction
             module.id = newId;
           }
           usedIds.add(module.id);

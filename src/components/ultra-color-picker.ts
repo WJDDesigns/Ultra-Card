@@ -77,33 +77,34 @@ export class UltraColorPicker extends LitElement {
   @state() private _currentValue?: string;
   @state() private _showPalette = false;
   @state() private _textInputValue?: string;
+  private _documentClickHandler?: (e: Event) => void;
 
   protected firstUpdated(): void {
     this._currentValue = this.value;
     this._textInputValue = this.value;
     // Simple click outside handler for accordion
-    document.addEventListener('click', this._handleDocumentClick.bind(this));
+    this._documentClickHandler = this._handleDocumentClick.bind(this);
+    document.addEventListener('click', this._documentClickHandler, true);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    document.removeEventListener('click', this._handleDocumentClick.bind(this));
+    if (this._documentClickHandler) {
+      document.removeEventListener('click', this._documentClickHandler, true);
+      this._documentClickHandler = undefined;
+    }
   }
 
   private _handleDocumentClick(event: Event): void {
     if (!this._showPalette) return;
+    // If click originated inside this component (including within shadow DOM), ignore
+    const path = (event as any).composedPath?.() as EventTarget[] | undefined;
+    if (path && path.includes(this)) return;
 
     const target = event.target as Node;
-
-    // Don't close if clicking within the component
-    if (this.shadowRoot?.contains(target)) {
-      return;
-    }
-
+    if (this.shadowRoot?.contains(target)) return;
     // Don't close if it's a color input event (these can sometimes trigger outside events)
-    if (target instanceof HTMLInputElement && target.type === 'color') {
-      return;
-    }
+    if (target instanceof HTMLInputElement && target.type === 'color') return;
 
     this._showPalette = false;
   }
@@ -122,13 +123,14 @@ export class UltraColorPicker extends LitElement {
     }
 
     this._showPalette = !this._showPalette;
-    console.log(`🎨 UltraColorPicker: Toggled palette to ${this._showPalette}`);
   }
 
   private _selectColor(color: string, event: Event): void {
     event.stopPropagation();
     this._currentValue = color;
+    this.value = color; // Update the property
     this._showPalette = false;
+    this.requestUpdate(); // Force re-render
 
     const changeEvent = new CustomEvent('value-changed', {
       detail: { value: color },
@@ -256,6 +258,33 @@ export class UltraColorPicker extends LitElement {
     );
   }
 
+  private _getContrastColor(backgroundColor: string): string {
+    // For CSS variables and complex colors, use white text
+    if (
+      !backgroundColor ||
+      backgroundColor.startsWith('var(') ||
+      backgroundColor.includes('gradient')
+    ) {
+      return 'var(--primary-text-color)';
+    }
+
+    // Simple hex color contrast calculation
+    if (backgroundColor.startsWith('#')) {
+      const hex = backgroundColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+
+      // Calculate luminance
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+      return luminance > 0.5 ? '#000000' : '#ffffff';
+    }
+
+    // Default to theme text color
+    return 'var(--primary-text-color)';
+  }
+
   protected render(): TemplateResult {
     const displayValue = this._getDisplayValue();
     const nativeInputColor = this._getColorForNativeInput();
@@ -268,6 +297,9 @@ export class UltraColorPicker extends LitElement {
           <!-- Main trigger input field -->
           <div
             class="color-input-field ${this.disabled ? 'disabled' : ''}"
+            style="background-color: ${displayValue}; color: ${this._getContrastColor(
+              displayValue
+            )};"
             @click=${this._togglePalette}
             tabindex="0"
             role="button"
@@ -336,6 +368,8 @@ export class UltraColorPicker extends LitElement {
                       .value=${this._textInputValue || ''}
                       @input=${this._handleTextInputChange}
                       @keydown=${this._handleTextInputKeyDown}
+                      @click=${(e: Event) => e.stopPropagation()}
+                      @focus=${(e: Event) => e.stopPropagation()}
                       placeholder="e.g. #ff0000, rgb(255,0,0), var(--primary-color)"
                       spellcheck="false"
                     />

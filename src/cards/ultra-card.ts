@@ -7,16 +7,13 @@ import {
   CardRow,
   CardColumn,
   TextModule,
-  SeparatorModule,
-  InfoModule,
-  BarModule,
-  IconModule,
-  InfoEntityConfig,
-  IconConfig,
+  ImageModule,
 } from '../types';
 import { getModuleRegistry } from '../modules';
+import { getImageUrl } from '../utils/image-upload';
 import { logicService } from '../services/logic-service';
 import { configValidationService } from '../services/config-validation-service';
+import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
@@ -28,7 +25,47 @@ export class UltraCard extends LitElement {
 
   @state() private _moduleVisibilityState = new Map<string, boolean>();
   @state() private _animatingModules = new Set<string>();
+  @state() private _rowVisibilityState = new Map<string, boolean>();
+  @state() private _columnVisibilityState = new Map<string, boolean>();
+  @state() private _animatingRows = new Set<string>();
+  @state() private _animatingColumns = new Set<string>();
   private _lastHassChangeTime = 0;
+  private _templateUpdateListener?: () => void;
+  /**
+   * Flag to ensure module CSS is injected only once per card instance.
+   */
+  private _moduleStylesInjected = false;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+
+    // Inject combined CSS from all registered modules so that any module-specific
+    // styles (e.g. icon animations) are available inside this card's shadow-root.
+    // Without this, classes like `.icon-animation-pulse` will render but have no
+    // effect because the corresponding keyframes are missing.
+    this._injectModuleStyles();
+
+    // Inject hover effect styles into this card's shadow root
+    UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
+
+    // Listen for template updates from modules
+    this._templateUpdateListener = () => {
+      this.requestUpdate();
+    };
+    window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+
+    // Clean up hover effect styles
+    UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
+
+    // Clean up event listener
+    if (this._templateUpdateListener) {
+      window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+    }
+  }
 
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('config')) {
@@ -41,10 +78,22 @@ export class UltraCard extends LitElement {
         // Clear animation states when layout changes
         this._moduleVisibilityState.clear();
         this._animatingModules.clear();
+        this._rowVisibilityState.clear();
+        this._columnVisibilityState.clear();
+        this._animatingRows.clear();
+        this._animatingColumns.clear();
       }
 
       // Force re-render when config changes
       this.requestUpdate();
+
+      // Reflect card-level styles to host CSS variables so HA wrappers honor them
+      const radius = newConfig?.card_border_radius;
+      if (radius !== undefined && radius !== null) {
+        this.style.setProperty('--ha-card-border-radius', `${radius}px`);
+      } else {
+        this.style.removeProperty('--ha-card-border-radius');
+      }
     }
 
     // Handle Home Assistant state changes for logic condition evaluation
@@ -95,13 +144,7 @@ export class UltraCard extends LitElement {
       finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
     }
 
-    // Log validation info for debugging
-    if (validationResult.warnings.length > 0) {
-      console.info('ℹ️  Ultra Card: Config corrected with warnings', {
-        warnings: validationResult.warnings,
-        totalModules: this._countTotalModules(finalConfig),
-      });
-    }
+    // Suppress console info; warnings are surfaced in-editor only
 
     this.config = { ...finalConfig };
     // Request update to ensure re-render with new config
@@ -127,11 +170,20 @@ export class UltraCard extends LitElement {
                 modules: [
                   {
                     type: 'text',
-                    text: 'Welcome to Ultra Card',
+                    text: 'Ultra Card',
                     font_size: 24,
                     color: '#2196f3',
                     alignment: 'center',
                   } as TextModule,
+                  {
+                    type: 'image',
+                    image_type: 'default',
+                    width: 100,
+                    height: 200,
+                    alignment: 'center',
+                    border_radius: 8,
+                    object_fit: 'cover',
+                  } as ImageModule,
                 ],
               },
             ],
@@ -219,25 +271,105 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    // Check for row-level state-based animation
-    const rowAnimationClass = this._getStateBasedAnimationClass(row.design);
+    // Row animation handling (state-based + intro/outro)
+    const rowId = (row as any).id || `row-${Math.random()}`;
+    const previouslyVisible = this._rowVisibilityState.get(rowId);
+    const isVisible = true; // At this point row is visible by logic checks
+
+    // Get animation properties
+    const introAnimation = row.design?.intro_animation || 'none';
+    const outroAnimation = row.design?.outro_animation || 'none';
+    const animationDuration = row.design?.animation_duration || '2s';
+    const animationDelay = row.design?.animation_delay || '0s';
+    const animationTiming = row.design?.animation_timing || 'ease';
+
+    // State-based animation class
+    const stateAnimationClass = this._getStateBasedAnimationClass(row.design);
+
+    // Determine animation class
+    let animationClass = '';
+    let willStartAnimation = false;
+    const isAnimating = this._animatingRows.has(rowId);
+
+    if (stateAnimationClass) {
+      animationClass = stateAnimationClass; // continuous while condition is met
+    } else if (previouslyVisible !== undefined && previouslyVisible !== isVisible) {
+      if (isVisible && introAnimation !== 'none') {
+        if (!isAnimating) {
+          animationClass = `animation-${introAnimation}`;
+          willStartAnimation = true;
+          this._animatingRows.add(rowId);
+          setTimeout(
+            () => {
+              this._animatingRows.delete(rowId);
+              this.requestUpdate();
+            },
+            this._parseAnimationDuration(animationDuration) +
+              this._parseAnimationDuration(animationDelay)
+          );
+        } else {
+          animationClass = `animation-${introAnimation}`;
+        }
+      } else if (!isVisible && outroAnimation !== 'none') {
+        if (!isAnimating) {
+          animationClass = `animation-${outroAnimation}`;
+          willStartAnimation = true;
+          this._animatingRows.add(rowId);
+          setTimeout(
+            () => {
+              this._animatingRows.delete(rowId);
+              this.requestUpdate();
+            },
+            this._parseAnimationDuration(animationDuration) +
+              this._parseAnimationDuration(animationDelay)
+          );
+        } else {
+          animationClass = `animation-${outroAnimation}`;
+        }
+      }
+    } else if (previouslyVisible === undefined && isVisible && introAnimation !== 'none') {
+      // Initial mount: play intro once
+      animationClass = `animation-${introAnimation}`;
+      willStartAnimation = true;
+      this._animatingRows.add(rowId);
+      setTimeout(
+        () => {
+          this._animatingRows.delete(rowId);
+          this.requestUpdate();
+        },
+        this._parseAnimationDuration(animationDuration) +
+          this._parseAnimationDuration(animationDelay)
+      );
+    } else if (isAnimating) {
+      if (isVisible && introAnimation !== 'none') animationClass = `animation-${introAnimation}`;
+      else if (!isVisible && outroAnimation !== 'none')
+        animationClass = `animation-${outroAnimation}`;
+    }
+
+    // Update visibility state
+    this._rowVisibilityState.set(rowId, isVisible);
+
     const rowStyles = this._generateRowStyles(row);
 
+    // Get hover effect configuration from row design
+    const hoverEffect = row.design?.hover_effect;
+    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
     const rowContent = html`
-      <div class="card-row" style=${rowStyles}>
+      <div class="card-row ${hoverEffectClass}" style=${rowStyles}>
         ${row.columns.map(column => this._renderColumn(column))}
       </div>
     `;
 
-    // Apply row-level animation if configured
-    if (rowAnimationClass) {
-      const animationDuration = row.design?.animation_duration || '2s';
-      const animationDelay = row.design?.animation_delay || '0s';
-      const animationTiming = row.design?.animation_timing || 'ease';
-
+    if (
+      animationClass ||
+      introAnimation !== 'none' ||
+      outroAnimation !== 'none' ||
+      stateAnimationClass
+    ) {
       return html`
         <div
-          class="row-animation-wrapper ${rowAnimationClass}"
+          class="row-animation-wrapper ${animationClass}"
           style="
             --animation-duration: ${animationDuration};
             --animation-delay: ${animationDelay};
@@ -270,25 +402,100 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    // Check for column-level state-based animation
-    const columnAnimationClass = this._getStateBasedAnimationClass(column.design);
+    // Column animation handling (state-based + intro/outro)
+    const columnId = (column as any).id || `column-${Math.random()}`;
+    const previouslyVisible = this._columnVisibilityState.get(columnId);
+    const isVisible = true; // Logic checks passed above
+
+    const introAnimation = column.design?.intro_animation || 'none';
+    const outroAnimation = column.design?.outro_animation || 'none';
+    const animationDuration = column.design?.animation_duration || '2s';
+    const animationDelay = column.design?.animation_delay || '0s';
+    const animationTiming = column.design?.animation_timing || 'ease';
+
+    const stateAnimationClass = this._getStateBasedAnimationClass(column.design);
+
+    let animationClass = '';
+    let willStartAnimation = false;
+    const isAnimating = this._animatingColumns.has(columnId);
+
+    if (stateAnimationClass) {
+      animationClass = stateAnimationClass;
+    } else if (previouslyVisible !== undefined && previouslyVisible !== isVisible) {
+      if (isVisible && introAnimation !== 'none') {
+        if (!isAnimating) {
+          animationClass = `animation-${introAnimation}`;
+          willStartAnimation = true;
+          this._animatingColumns.add(columnId);
+          setTimeout(
+            () => {
+              this._animatingColumns.delete(columnId);
+              this.requestUpdate();
+            },
+            this._parseAnimationDuration(animationDuration) +
+              this._parseAnimationDuration(animationDelay)
+          );
+        } else {
+          animationClass = `animation-${introAnimation}`;
+        }
+      } else if (!isVisible && outroAnimation !== 'none') {
+        if (!isAnimating) {
+          animationClass = `animation-${outroAnimation}`;
+          willStartAnimation = true;
+          this._animatingColumns.add(columnId);
+          setTimeout(
+            () => {
+              this._animatingColumns.delete(columnId);
+              this.requestUpdate();
+            },
+            this._parseAnimationDuration(animationDuration) +
+              this._parseAnimationDuration(animationDelay)
+          );
+        } else {
+          animationClass = `animation-${outroAnimation}`;
+        }
+      }
+    } else if (previouslyVisible === undefined && isVisible && introAnimation !== 'none') {
+      animationClass = `animation-${introAnimation}`;
+      willStartAnimation = true;
+      this._animatingColumns.add(columnId);
+      setTimeout(
+        () => {
+          this._animatingColumns.delete(columnId);
+          this.requestUpdate();
+        },
+        this._parseAnimationDuration(animationDuration) +
+          this._parseAnimationDuration(animationDelay)
+      );
+    } else if (isAnimating) {
+      if (isVisible && introAnimation !== 'none') animationClass = `animation-${introAnimation}`;
+      else if (!isVisible && outroAnimation !== 'none')
+        animationClass = `animation-${outroAnimation}`;
+    }
+
+    this._columnVisibilityState.set(columnId, isVisible);
+
     const columnStyles = this._generateColumnStyles(column);
 
+    // Get hover effect configuration from column design
+    const hoverEffect = column.design?.hover_effect;
+    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
     const columnContent = html`
-      <div class="card-column" style=${columnStyles}>
+      <div class="card-column ${hoverEffectClass}" style=${columnStyles}>
         ${column.modules.map(module => this._renderModule(module))}
       </div>
     `;
 
-    // Apply column-level animation if configured
-    if (columnAnimationClass) {
-      const animationDuration = column.design?.animation_duration || '2s';
-      const animationDelay = column.design?.animation_delay || '0s';
-      const animationTiming = column.design?.animation_timing || 'ease';
-
+    if (
+      animationClass ||
+      introAnimation !== 'none' ||
+      outroAnimation !== 'none' ||
+      stateAnimationClass
+    ) {
       return html`
         <div
-          class="column-animation-wrapper ${columnAnimationClass}"
+          class="column-animation-wrapper ${animationClass}"
           style="
             --animation-duration: ${animationDuration};
             --animation-delay: ${animationDelay};
@@ -349,12 +556,15 @@ export class UltraCard extends LitElement {
     const stateAnimationState =
       moduleWithDesign.animation_state || moduleWithDesign.design?.animation_state;
 
+    // Removed verbose animation property logging for cleaner console
+
     // Evaluate state-based animation condition
     let shouldTriggerStateAnimation = false;
     if (stateAnimationType && stateAnimationType !== 'none') {
       // If no entity is configured, play animation continuously
       if (!stateAnimationEntity) {
         shouldTriggerStateAnimation = true;
+        // No console output: continuous animation when no entity is set
       }
       // If entity is configured, check the state/attribute condition
       else if (stateAnimationState && this.hass) {
@@ -368,6 +578,7 @@ export class UltraCard extends LitElement {
             // Check entity state
             shouldTriggerStateAnimation = entity.state === stateAnimationState;
           }
+          // No console output for entity state checks
         }
       }
     }
@@ -381,6 +592,7 @@ export class UltraCard extends LitElement {
     // Handle state-based animations first (priority over intro/outro)
     if (shouldTriggerStateAnimation && stateAnimationType !== 'none') {
       animationClass = `animation-${stateAnimationType}`;
+      // No console output when applying state animation class
       // State-based animations are continuous when condition is met
     }
     // Handle visibility changes with animations (only if no state animation active)
@@ -428,6 +640,21 @@ export class UltraCard extends LitElement {
           animationClass = `animation-${outroAnimation}`;
         }
       }
+    }
+    // Initial mount: if module is visible and intro_animation is configured, play it once
+    else if (previouslyVisible === undefined && isVisible && introAnimation !== 'none') {
+      animationClass = `animation-${introAnimation}`;
+      willStartAnimation = true;
+      this._animatingModules.add(moduleId);
+
+      setTimeout(
+        () => {
+          this._animatingModules.delete(moduleId);
+          this.requestUpdate();
+        },
+        this._parseAnimationDuration(animationDuration) +
+          this._parseAnimationDuration(animationDelay)
+      );
     } else if (isAnimating) {
       // Currently animating - determine which animation class to apply
       if (isVisible && introAnimation !== 'none') {
@@ -460,6 +687,10 @@ export class UltraCard extends LitElement {
       `;
     }
 
+    // Get hover effect configuration from module design
+    const hoverEffect = moduleWithDesign.design?.hover_effect;
+    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
     // Apply animation wrapper if needed (or if module has animation properties)
     if (
       animationClass ||
@@ -469,7 +700,7 @@ export class UltraCard extends LitElement {
     ) {
       return html`
         <div
-          class="module-animation-wrapper ${animationClass}"
+          class="module-animation-wrapper ${animationClass} ${hoverEffectClass}"
           style="
             --animation-duration: ${animationDuration};
             --animation-delay: ${animationDelay};
@@ -479,6 +710,11 @@ export class UltraCard extends LitElement {
           ${moduleContent}
         </div>
       `;
+    }
+
+    // Apply hover effect wrapper if needed
+    if (hoverEffectClass) {
+      return html` <div class="module-hover-wrapper ${hoverEffectClass}">${moduleContent}</div> `;
     }
 
     return moduleContent;
@@ -641,15 +877,55 @@ export class UltraCard extends LitElement {
   private _generateRowStyles(row: CardRow): string {
     const design = row.design || {};
 
-    const baseStyles = {
+    // Map column alignment values to CSS align-items values
+    const getAlignItems = (alignment?: string): string | undefined => {
+      switch (alignment) {
+        case 'top':
+          return 'start';
+        case 'bottom':
+          return 'end';
+        case 'middle':
+          return 'center';
+        default:
+          return undefined; // No default alignment to allow Global Design tab control
+      }
+    };
+
+    // Map content alignment values to CSS justify-items values
+    const getJustifyItems = (alignment?: string): string | undefined => {
+      switch (alignment) {
+        case 'start':
+          return 'start';
+        case 'end':
+          return 'end';
+        case 'center':
+          return 'center';
+        case 'stretch':
+          return 'stretch';
+        default:
+          return undefined; // No default alignment to allow Global Design tab control
+      }
+    };
+
+    const alignItemsValue = getAlignItems((row as any).column_alignment);
+    const justifyItemsValue = getJustifyItems((row as any).content_alignment);
+
+    const baseStyles: Record<string, string> = {
       display: 'grid',
       gridTemplateColumns: this._getGridTemplateColumns(
         row.column_layout || '1-col',
         row.columns.length
       ),
       gap: `${row.gap || 16}px`,
-      marginBottom: '16px',
     };
+
+    // Only add alignment properties if they are explicitly set (not undefined)
+    if (alignItemsValue !== undefined) {
+      baseStyles.alignItems = alignItemsValue;
+    }
+    if (justifyItemsValue !== undefined) {
+      baseStyles.justifyItems = justifyItemsValue;
+    }
 
     const designStyles = {
       // Padding
@@ -662,12 +938,18 @@ export class UltraCard extends LitElement {
       // Margin (override default marginBottom if design margin is set)
       margin:
         design.margin_top || design.margin_bottom || design.margin_left || design.margin_right
-          ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '16px'} ${design.margin_left || '0'}`
+          ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '0'} ${design.margin_left || '0'}`
           : row.margin
             ? `${row.margin}px`
             : undefined,
       // Background
       background: design.background_color || row.background_color || 'transparent',
+      backgroundImage: this._resolveBackgroundImageCSS(design),
+      backgroundSize: design.background_size || (design.background_image ? 'cover' : undefined),
+      backgroundPosition:
+        design.background_position || (design.background_image ? 'center' : undefined),
+      backgroundRepeat:
+        design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -677,7 +959,7 @@ export class UltraCard extends LitElement {
         this._addPixelUnit(design.border_radius) ||
         (row.border_radius ? `${row.border_radius}px` : '0'),
       // Position
-      position: design.position || 'relative',
+      position: design.position || 'inherit',
       top: design.top || 'auto',
       bottom: design.bottom || 'auto',
       left: design.left || 'auto',
@@ -717,28 +999,34 @@ export class UltraCard extends LitElement {
   private _generateColumnStyles(column: CardColumn): string {
     const design = column.design || {};
 
-    const baseStyles = {
+    const baseStyles: Record<string, string> = {
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
-      // Apply column alignment
-      alignItems:
+    };
+
+    // Apply column alignment only if explicitly set
+    if (column.horizontal_alignment) {
+      baseStyles.alignItems =
         column.horizontal_alignment === 'left'
           ? 'flex-start'
           : column.horizontal_alignment === 'right'
             ? 'flex-end'
             : column.horizontal_alignment === 'stretch'
               ? 'stretch'
-              : 'center',
-      justifyContent:
+              : 'center';
+    }
+
+    if (column.vertical_alignment) {
+      baseStyles.justifyContent =
         column.vertical_alignment === 'top'
           ? 'flex-start'
           : column.vertical_alignment === 'bottom'
             ? 'flex-end'
             : column.vertical_alignment === 'stretch'
               ? 'stretch'
-              : 'center',
-    };
+              : 'center';
+    }
 
     const designStyles = {
       // Padding
@@ -757,6 +1045,12 @@ export class UltraCard extends LitElement {
             : undefined,
       // Background
       background: design.background_color || column.background_color || 'transparent',
+      backgroundImage: this._resolveBackgroundImageCSS(design),
+      backgroundSize: design.background_size || (design.background_image ? 'cover' : undefined),
+      backgroundPosition:
+        design.background_position || (design.background_image ? 'center' : undefined),
+      backgroundRepeat:
+        design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -766,7 +1060,7 @@ export class UltraCard extends LitElement {
         this._addPixelUnit(design.border_radius) ||
         (column.border_radius ? `${column.border_radius}px` : '0'),
       // Position
-      position: design.position || 'relative',
+      position: design.position || 'inherit',
       top: design.top || 'auto',
       bottom: design.bottom || 'auto',
       left: design.left || 'auto',
@@ -801,6 +1095,51 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Build a CSS background-image value from design properties for rows/columns.
+   * Mirrors module background image behavior (upload/url/entity/legacy path).
+   */
+  private _resolveBackgroundImageCSS(design: any): string {
+    const hass = this.hass;
+    const type = design?.background_image_type;
+    const backgroundImage = design?.background_image;
+
+    // If no explicit type set, support legacy direct path
+    if (!type || type === 'none') {
+      if (backgroundImage) {
+        const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
+        return `url("${resolved}")`;
+      }
+      return 'none';
+    }
+
+    if (type === 'upload' || type === 'url') {
+      if (backgroundImage) {
+        const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
+        return `url("${resolved}")`;
+      }
+      return 'none';
+    }
+
+    if (type === 'entity') {
+      const entityId = design?.background_image_entity;
+      if (entityId && hass && hass.states[entityId]) {
+        const stateObj: any = hass.states[entityId];
+        let src = '';
+        if (stateObj.attributes?.entity_picture) src = stateObj.attributes.entity_picture;
+        else if (stateObj.attributes?.image) src = stateObj.attributes.image;
+        else if (typeof stateObj.state === 'string') src = stateObj.state;
+        if (src) {
+          const resolved = getImageUrl(hass, src);
+          return `url("${resolved}")`;
+        }
+      }
+      return 'none';
+    }
+
+    return 'none';
+  }
+
+  /**
    * Convert style object to CSS string
    */
   private _styleObjectToCss(styles: Record<string, string>): string {
@@ -813,6 +1152,27 @@ export class UltraCard extends LitElement {
       .join('; ');
   }
 
+  /**
+   * Inject a <style> block containing the combined styles from every registered
+   * module into the card's shadow-root. This is required for features such as
+   * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
+   * individual modules to take effect when the card is rendered in Lovelace.
+   */
+  private _injectModuleStyles(): void {
+    if (this._moduleStylesInjected || !this.shadowRoot) {
+      return;
+    }
+
+    const moduleCss = getModuleRegistry().getAllModuleStyles();
+
+    if (moduleCss.trim().length > 0) {
+      const styleEl = document.createElement('style');
+      styleEl.textContent = moduleCss;
+      this.shadowRoot.appendChild(styleEl);
+      this._moduleStylesInjected = true;
+    }
+  }
+
   static get styles() {
     return css`
       :host {
@@ -821,7 +1181,7 @@ export class UltraCard extends LitElement {
 
       .card-container {
         background: var(--card-background-color, var(--ha-card-background, white));
-        border-radius: 8px;
+        border-radius: var(--ha-card-border-radius, 8px);
         box-shadow: var(--ha-card-box-shadow, 0 2px 4px rgba(0, 0, 0, 0.1));
         padding: 16px;
         transition: all 0.3s ease;
@@ -1606,12 +1966,10 @@ export class UltraCard extends LitElement {
 // Immediate fallback registration to ensure element is always available
 setTimeout(() => {
   if (!customElements.get('ultra-card')) {
-    console.warn('🔧 Ultra Card element not found, attempting manual registration...');
     try {
       customElements.define('ultra-card', UltraCard);
-      console.log('✅ Ultra Card manually registered successfully');
     } catch (error) {
-      console.error('❌ Failed to manually register Ultra Card:', error);
+      // Silent fallback
     }
   }
 }, 0);

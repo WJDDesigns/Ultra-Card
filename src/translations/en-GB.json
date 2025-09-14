@@ -1,0 +1,1209 @@
+{
+  "editor": {
+    "tabs": {
+      "layout": "Layout Builder",
+      "settings": "Settings",
+      "about": "About"
+    },
+    "settings": {
+      "title": "Card Settings",
+      "description": "Configure global card appearance and behaviour."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Control the visual appearance of your card"
+    },
+    "spacing": {
+      "title": "Spacing",
+      "description": "Control the spacing and positioning of your card"
+    },
+    "fields": {
+      "card_background_color": "Card Background Colour",
+      "card_background_color_desc": "The background colour of the entire card",
+      "border_radius": "Border Radius",
+      "border_radius_desc": "Rounded corners for the card (in pixels)",
+      "card_padding": "Card Padding",
+      "card_padding_desc": "Internal spacing within the card",
+      "card_margin": "Card Margin",
+      "card_margin_desc": "External spacing around the card",
+      "unit_px": "px",
+      "reset_default": "Reset to default",
+      "reset_default_value": "Reset to default ({value})"
+    },
+    "tooltips": {
+      "enter_fullscreen": "Enter Full Screen",
+      "return_dashboard": "Return to Dashboard",
+      "dashboard": "Dashboard"
+    },
+    "common": {
+      "left": "Left",
+      "center": "Center",
+      "right": "Right",
+      "top": "Top",
+      "bottom": "Bottom",
+      "none": "None",
+      "state": "State",
+      "attribute": "Attribute",
+      "attribute_name": "Attribute Name",
+      "entity": "Entity",
+      "space_between": "Space Between",
+      "space_around": "Space Around",
+      "justify": "Justify",
+      "stretch": "Stretch",
+      "baseline": "Baseline"
+    },
+    "horizontal": {
+      "layout": {
+        "title": "Layout Configuration",
+        "desc": "Configure how elements are arranged horizontally within the container."
+      },
+      "alignment": {
+        "horizontal": "Horizontal Alignment",
+        "horizontal_desc": "Choose how elements are aligned horizontally within the container.",
+        "vertical": "Vertical Alignment",
+        "vertical_desc": "Choose how elements are aligned vertically within the container."
+      },
+      "wrapping": {
+        "title": "Allow Wrapping",
+        "desc": "Allow elements to wrap to the next line when they exceed the container width."
+      },
+      "gap": {
+        "title": "Gap Configuration",
+        "between_items": "Gap Between Items",
+        "desc": "Set the spacing between horizontal elements (in rem units). Use negative values to overlap elements."
+      },
+      "empty": {
+        "no_modules": "No modules added yet",
+        "add_modules": "Add modules in the layout builder to see them here"
+      }
+    },
+    "vertical": {
+      "layout": {
+        "title": "Layout Configuration",
+        "desc": "Configure how elements are arranged vertically within the container."
+      },
+      "alignment": {
+        "vertical": "Vertical Alignment",
+        "vertical_desc": "Choose how elements are aligned vertically within the container."
+      },
+      "gap": {
+        "title": "Gap Configuration",
+        "between_items": "Gap Between Items",
+        "desc": "Set the spacing between vertical elements (in rem units). Use negative values to overlap elements."
+      },
+      "empty": {
+        "no_modules": "No modules added yet",
+        "add_modules": "Add modules in the layout builder to see them here"
+      }
+    },
+    "layout": {
+      "live_preview": "Live Preview",
+      "toggle_preview": "Toggle preview",
+      "drag_to_move_module": "Drag to move module",
+      "edit_module": "Edit Module",
+      "duplicate_module": "Duplicate Module",
+      "delete_module": "Delete Module",
+      "drag_to_move_layout": "Drag to move layout module",
+      "horizontal_layout": "Horizontal Layout",
+      "vertical_layout": "Vertical Layout",
+      "add_module_to_layout": "Add Module to Layout",
+      "layout_settings": "Layout Settings",
+      "duplicate_layout": "Duplicate Layout",
+      "delete_layout": "Delete Layout",
+      "click_to_add_module": "Click to add a module",
+      "drop_modules_here": "Drop modules here",
+      "drag_to_reorder": "Drag to reorder",
+      "edit_child_module": "Edit Child Module",
+      "duplicate_child_module": "Duplicate Child Module",
+      "delete_child_module": "Delete Child Module",
+      "module_settings_title": "Module Settings",
+      "child_module_settings_title": "Child Module Settings",
+      "general_tab": "General",
+      "actions_tab": "Actions",
+      "other_tab": "Other",
+      "logic_tab": "Logic",
+      "design_tab": "Design",
+      "drag_to_resize": "Drag to resize",
+      "hidden_by_logic": "Hidden by Logic",
+      "add_row": "Add Row",
+      "add_row_tooltip": "Add a new row to your layout",
+      "row_settings": "Row Settings",
+      "column_settings": "Column Settings",
+      "row_background_color": "Row Background Colour",
+      "column_gap": "Column Gap (px)",
+      "vertical_alignment": "Vertical Alignment",
+      "horizontal_alignment": "Horizontal Alignment",
+      "column_preview": "Column Preview",
+      "modules_count": "{count} modules",
+      "alignment_top": "Top",
+      "alignment_center": "Center",
+      "alignment_bottom": "Bottom",
+      "alignment_stretch": "Stretch",
+      "alignment_left": "Left",
+      "alignment_right": "Right"
+    },
+    "layout_logic": {
+      "display_title": "Display this Element",
+      "display_desc": "Control when this element is shown. Choose \"Always\" to keep it visible. Select \"If EVERY condition below is met\" or \"If ANY condition below is met\" to display it only when the conditions you add below evaluate to true.",
+      "always": "Always",
+      "every": "If EVERY condition below is met",
+      "any": "If ANY condition below is met",
+      "conditions": "Conditions",
+      "add_condition": "Add Condition",
+      "no_conditions": "No conditions added yet. Click \"Add Condition\" to get started.",
+      "condition_types": {
+        "entity_state": "Entity State",
+        "entity_attribute": "Entity Attribute",
+        "time": "Time Range",
+        "template": "Template"
+      },
+      "condition_fields": {
+        "entity": "Entity",
+        "operator": "Operator",
+        "value": "Value",
+        "attribute": "Attribute",
+        "time_from": "From",
+        "time_to": "To",
+        "template": "Template"
+      },
+      "condition_header": "Condition",
+      "custom_name": "Custom Name",
+      "custom_name_desc": "Optional: Give this condition a custom name for easier identification",
+      "condition_type": "Condition Type"
+    },
+    "hover_effects": {
+      "title": "Hover Effects",
+      "description": "Configure visual effects that appear when hovering over this module, row, or column.",
+      "effect": "Hover Effect",
+      "effect_desc": "Select the visual effect to apply when hovering",
+      "effects": {
+        "none": "None",
+        "highlight": "Highlight",
+        "outline": "Outline",
+        "grow": "Grow",
+        "shrink": "Shrink",
+        "pulse": "Pulse",
+        "bounce": "Bounce",
+        "float": "Float",
+        "glow": "Glow",
+        "shadow": "Shadow",
+        "rotate": "Rotate",
+        "skew": "Skew",
+        "wobble": "Wobble",
+        "buzz": "Buzz",
+        "fade": "Fade"
+      }
+    },
+    "about": {
+      "developed_by": "Developed by",
+      "desc1": "A powerful modular card builder for Home Assistant",
+      "desc2": "Create custom layouts with a professional page-builder interface",
+      "desc3": "Modular layout system with conditional logic and professional design tools",
+      "github_repo": "Check Out Our Github",
+      "join_discord": "Join Our Discord",
+      "support_title": "Support Ultra Card",
+      "support_desc": "Your generous tips fuel the development of amazing features for this card! Without support from users like you, continued innovation wouldn't be possible.",
+      "leave_tip": "LEAVE A TIP (PAYPAL)",
+      "version": "Version"
+    },
+    "actions": {
+      "title": "Link Configuration",
+      "description": "Configure what happens when users interact with this element. Choose different actions for tap, hold, and double-tap gestures.",
+      "tap_action": "Tap Action",
+      "tap_action_desc": "Action performed when tapping/clicking the module",
+      "hold_action": "Hold Action",
+      "hold_action_desc": "Action performed when holding down on the module",
+      "double_tap_action": "Double Tap Action",
+      "double_tap_action_desc": "Action performed when double-tapping the module",
+      "tap_behavior": "Tap Behaviour",
+      "tap_behavior_desc": "Action to perform when the element is tapped/clicked.",
+      "hold_behavior": "Hold Behaviour",
+      "hold_behavior_desc": "Action to perform when the element is pressed and held.",
+      "double_tap_behavior": "Double Tap Behaviour",
+      "double_tap_behavior_desc": "Action to perform when the element is double-tapped/clicked."
+    },
+    "icon": {
+      "entity_config": {
+        "title": "ENTITY CONFIGURATION",
+        "desc": "Configure the entity and active/inactive states"
+      },
+      "entity": "Entity",
+      "entity_desc": "Select the entity this icon represents",
+      "inactive_state": "Inactive State",
+      "inactive_state_desc": "State value considered \"inactive\" (leave blank to use actual entity state)",
+      "active_state": "Active State",
+      "active_state_desc": "State value considered \"active\" (leave blank to use actual entity state)",
+      "icon_section": {
+        "title": "Icon Configuration"
+      },
+      "inactive_icon": "Inactive Icon",
+      "inactive_icon_desc": "Icon to show when inactive",
+      "inactive_icon_config": "Inactive Icon Configuration",
+      "inactive_icon_config_desc": "Configure inactive icon settings",
+      "active_icon": "Active Icon",
+      "active_icon_desc": "Icon to show when active",
+      "icon_color_inactive": "Colour when inactive",
+      "icon_color_active": "Colour when active",
+      "background_shape_inactive": "Background shape when inactive",
+      "background_shape_active": "Background shape when active",
+      "background_color_inactive": "Background colour when inactive",
+      "background_color_active": "Background colour when active",
+      "icon_size_inactive": "Icon size when inactive",
+      "icon_size_active": "Icon size when active",
+      "inactive_icon_color": "Inactive icon colour",
+      "active_icon_color": "Active icon colour",
+      "inactive_icon_background": "Inactive icon background",
+      "active_icon_background": "Active icon background",
+      "inactive_icon_background_color": "Inactive icon background colour",
+      "active_icon_background_color": "Active icon background colour",
+      "name_section": {
+        "title": "Name Configuration"
+      },
+      "inactive_name": "Inactive Name",
+      "inactive_name_desc": "Custom name when inactive",
+      "inactive_name_config": "Inactive Name Configuration",
+      "inactive_name_config_desc": "Configure inactive name settings",
+      "active_name": "Active Name",
+      "active_name_desc": "Custom name when active",
+      "custom_inactive_name": "Custom Inactive Name",
+      "custom_inactive_name_desc": "Override entity name when inactive (leave empty to use entity name)",
+      "custom_active_name": "Custom Active Name",
+      "custom_active_name_desc": "Override entity name when active (leave empty to use entity name)",
+      "name_color_inactive": "Name colour when inactive",
+      "name_color_active": "Name colour when active",
+      "name_size_inactive": "Name text size when inactive",
+      "name_size_active": "Name text size when active",
+      "inactive_name_color": "Inactive name colour",
+      "active_name_color": "Active name colour",
+      "state_section": {
+        "title": "State Configuration"
+      },
+      "inactive_state_color": "Inactive state colour",
+      "active_state_color": "Active state colour",
+      "inactive_state_text": "Inactive state text",
+      "active_state_text": "Active state text",
+      "inactive_state_config": "Inactive State Configuration",
+      "inactive_state_config_desc": "Configure inactive state settings",
+      "custom_inactive_state": "Custom Inactive State",
+      "custom_inactive_state_desc": "Custom text when inactive (leave empty to use actual state)",
+      "custom_active_state": "Custom Active State",
+      "custom_active_state_desc": "Custom text when active (leave empty to use actual state)",
+      "state_color_inactive": "State colour when inactive",
+      "state_color_active": "State colour when active",
+      "state_size_inactive": "State text size when inactive",
+      "state_size_active": "State text size when active",
+      "background_section": {
+        "title": "Inactive Background",
+        "desc": "Configure inactive background settings"
+      },
+      "template_section": {
+        "title": "Advanced Template Mode",
+        "desc": "Use Jinja2 templates for advanced icon control. Templates can control visibility (true/false to show/hide icons) and customize state text. Return custom text for Active State, return actual entity state for Inactive State."
+      },
+      "template_mode": "Advanced Template Mode",
+      "template": "Template",
+      "animation_section": {
+        "title": "Icon Animation",
+        "desc": "Configure animations for active and inactive states"
+      },
+      "active_animation": "Active Animation",
+      "active_animation_desc": "Animation when icon is active",
+      "inactive_animation": "Inactive Animation",
+      "inactive_animation_desc": "Animation when icon is inactive",
+      "animation_none": "None",
+      "animation_pulse": "Pulse",
+      "animation_spin": "Spin",
+      "animation_bounce": "Bounce",
+      "animation_flash": "Flash",
+      "animation_shake": "Shake",
+      "animation_vibrate": "Vibrate",
+      "animation_rotate_left": "Rotate Left",
+      "animation_rotate_right": "Rotate Right",
+      "animation_fade": "Fade",
+      "animation_scale": "Scale",
+      "animation_tada": "Tada"
+    },
+    "text": {
+      "content_section": {
+        "title": "Content Configuration",
+        "desc": "Configure the text content and basic settings for this module."
+      },
+      "text_content": "Text Content",
+      "text_content_desc": "Enter the text content to display in this module.",
+      "icon_section": {
+        "title": "Icon Configuration",
+        "desc": "Choose an icon to display alongside the text content."
+      },
+      "icon": "Icon",
+      "icon_desc": "Choose an icon to display alongside the text. Leave empty for no icon.",
+      "icon_position": "Icon Position",
+      "icon_position_desc": "Choose where to position the icon relative to the text.",
+      "before_text": "Before Text",
+      "after_text": "After Text",
+      "template_mode": "Template Mode",
+      "template_mode_desc": "Use Home Assistant templating syntax to render text",
+      "value_template": "Value Template",
+      "value_template_desc": "Template to render the text using Jinja2 syntax",
+      "examples_title": "Common Examples:",
+      "example_basic": "Basic value",
+      "example_percent": "With percent"
+    },
+    "markdown": {
+      "content": {
+        "title": "Markdown Content",
+        "label": "Content",
+        "desc": "Enter your markdown content with full formatting support"
+      },
+      "features": {
+        "title": "Markdown Features"
+      },
+      "enable_html": "Enable HTML",
+      "enable_html_desc": "Allow HTML tags in markdown content",
+      "enable_tables": "Enable Tables",
+      "enable_tables_desc": "Support for markdown table syntax",
+      "code_highlighting": "Code Highlighting",
+      "code_highlighting_desc": "Syntax highlighting for code blocks"
+    },
+    "bar": {
+      "bar_settings": {
+        "title": "Bar Settings",
+        "desc": "Configure how the bar percentage is calculated and displayed."
+      },
+      "perc_type": {
+        "entity": "Entity (0-100)",
+        "attribute": "Entity Attribute",
+        "difference": "Difference",
+        "template": "Template"
+      },
+      "attribute_section": {
+        "title": "Entity Attribute Configuration",
+        "desc": "Configure entity attribute settings"
+      },
+      "attribute_entity": "Attribute Entity",
+      "attribute_entity_desc": "Select the entity that contains the attribute with the percentage value",
+      "attribute_name": "Attribute Name",
+      "attribute_name_desc": "Enter the name of the attribute that contains the percentage value (e.g., \"battery_level\")",
+      "diff_section": {
+        "title": "Difference Calculation Configuration",
+        "desc": "Configure difference calculation settings"
+      },
+      "current_entity": "Current Value Entity",
+      "current_entity_desc": "Entity representing the current/used amount (e.g., fuel used, battery consumed)",
+      "total_entity": "Total Value Entity",
+      "total_entity_desc": "Entity representing the total/maximum amount (e.g., fuel capacity, battery capacity)",
+      "template_section": {
+        "title": "Template Configuration",
+        "desc": "Configure template settings"
+      },
+      "percentage_template": "Percentage Template",
+      "percentage_template_desc": "Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}",
+      "attr_config": {
+        "title": "Entity Attribute Configuration",
+        "desc": "Configure entity attribute settings",
+        "attribute_entity": "Attribute Entity",
+        "attribute_entity_desc": "Select the entity that contains the attribute with the percentage value",
+        "attribute_name": "Attribute Name",
+        "attribute_name_desc": "Enter the name of the attribute that contains the percentage value (e.g., \"battery_level\")"
+      },
+      "diff_config": {
+        "title": "Difference Calculation Configuration",
+        "desc": "Configure difference calculation settings",
+        "current_entity": "Current Value Entity",
+        "current_entity_desc": "Entity representing the current/used amount (e.g., fuel used, battery consumed)",
+        "total_entity": "Total Value Entity",
+        "total_entity_desc": "Entity representing the total/maximum amount (e.g., fuel capacity, battery capacity)"
+      },
+      "template_config": {
+        "title": "Template Configuration",
+        "desc": "Configure template settings",
+        "percentage_template": "Percentage Template",
+        "percentage_template_desc": "Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}"
+      },
+      "entity": {
+        "title": "Bar Percentage Entity",
+        "desc_present": "The entity that provides the percentage value for the bar.",
+        "desc_empty": "Select an entity that provides a percentage value (0-100). Battery sensors are ideal for bars.",
+        "no_entity_warning": "No entity selected - Please choose a sensor with values between 0-100"
+      },
+      "limit_entity": {
+        "title": "Limit Value Entity (Optional)",
+        "desc": "Optional: Add a vertical indicator line on the bar (e.g. charge limit for EV battery)."
+      },
+      "appearance": {
+        "title": "Bar Appearance",
+        "height": "Bar Height",
+        "height_desc": "Adjust the thickness of the progress bar in pixels.",
+        "border_radius": "Border Radius",
+        "border_radius_desc": "Control the rounded corners of the bar.",
+        "style": "Bar Style",
+        "style_desc": "Choose the visual style of the progress bar.",
+        "style_flat": "Flat (Default)",
+        "style_glossy": "Glossy",
+        "style_embossed": "Embossed",
+        "style_inset": "Inset",
+        "style_gradient": "Gradient Overlay",
+        "style_neon": "Neon Glow",
+        "style_outline": "Outline",
+        "style_glass": "Glass",
+        "style_metallic": "Metallic",
+        "style_neumorphic": "Neumorphic",
+        "style_dashed": "Dashed",
+        "style_dots": "Dots",
+        "width": "Bar Width",
+        "width_desc": "Set the bar width as percentage of container.",
+        "alignment": "Bar Alignment",
+        "alignment_desc": "Choose how to align the bar when it's less than 100% width."
+      },
+      "labels": {
+        "alignment": "Label Alignment",
+        "alignment_desc": "Control how left and right labels are positioned."
+      },
+      "percentage": {
+        "title": "Percentage Text Display",
+        "desc": "Control the visibility and appearance of percentage values shown directly on the bar. These numbers provide a clear visual indicator of the current level.",
+        "text_size": "Text Size",
+        "text_size_desc": "Adjust the size of percentage text shown on the bar.",
+        "text_alignment": "Percentage Text Alignment"
+      },
+      "left": {
+        "title": "Left Side",
+        "desc": "Configure the title and entity value shown on the left side of the bar. This is useful for displaying labels like 'Range' or 'Battery' alongside their values.",
+        "title_size": "Title Size",
+        "value_size": "Value Size",
+        "template_mode": "Template Mode",
+        "template_desc": "Use a template to format the displayed value. Templates use Home Assistant's Jinja2 syntax.",
+        "value_template": "Value Template",
+        "value_template_desc": "Template to format the left side value using Jinja2 syntax",
+        "enable_toggle": "Enable the toggle above to configure left side settings"
+      },
+      "right": {
+        "title": "Right Side",
+        "desc": "Configure the title and entity value shown on the right side of the bar. This is ideal for complementary information like 'Time to Full' or secondary measurements.",
+        "title_size": "Title Size",
+        "value_size": "Value Size",
+        "template_mode": "Template Mode",
+        "template_desc": "Use a template to format the displayed value. Templates use Home Assistant's Jinja2 syntax.",
+        "value_template": "Value Template",
+        "value_template_desc": "Template to format the right side value using Jinja2 syntax",
+        "enable_toggle": "Enable the toggle above to configure right side settings"
+      },
+      "colors": {
+        "title": "Colors",
+        "bar_color": "Bar Colour",
+        "background_color": "Background Colour",
+        "border_color": "Border Colour",
+        "limit_indicator": "Limit Indicator",
+        "percentage_text": "Percentage Text",
+        "left_side": "Left Side Colors",
+        "right_side": "Right Side Colors",
+        "title_color": "Title Colour",
+        "value_color": "Value Colour"
+      },
+      "gradient": {
+        "title": "Gradient Mode",
+        "desc": "Apply a colour gradient to the bar fill. When enabled, choose how the gradient is displayed and customize colour stops below.",
+        "full": "Full",
+        "cropped": "Cropped",
+        "value_based": "Value Based"
+      },
+      "animation": {
+        "title": "Bar Animation",
+        "desc": "Animate the bar fill using presets like charging stripes, pulse, glow and more. You can trigger animations based on an entity's state or attribute, and optionally override the animation when another condition is met.",
+        "trigger": {
+          "title": "Animation Trigger",
+          "desc": "Select an entity to watch and define the value + animation to apply when it matches.",
+          "entity_desc": "Entity to evaluate for animation trigger",
+          "type": "Trigger Type",
+          "type_desc": "Choose whether to compare entity state or an attribute",
+          "attribute_name_desc": "Attribute name to compare (e.g., charging_status)",
+          "match_value": "Match Value",
+          "match_value_desc": "Text to compare against state or attribute (comparison is text-based)."
+        },
+        "type": "Animation Type",
+        "type_desc": "Select how the bar should animate when triggered.",
+        "types": {
+          "charging": "Charging (Diagonal Lines)",
+          "pulse": "Pulse",
+          "blinking": "Blinking",
+          "bouncing": "Bouncing",
+          "glow": "Glow",
+          "rainbow": "Rainbow",
+          "bubbles": "Bubbles",
+          "fill": "Fill",
+          "ripple": "Ripple",
+          "traffic": "Traffic (Barber Pole)",
+          "heartbeat": "Heartbeat",
+          "flicker": "Flicker",
+          "shimmer": "Shimmer",
+          "vibrate": "Vibrate"
+        },
+        "override": {
+          "title": "Action Animation Override",
+          "desc": "Select an action entity and state to define when this animation should override the regular animation",
+          "entity_desc": "Entity to evaluate for override trigger",
+          "type_desc": "Animation to use when override condition matches.",
+          "attribute_name_desc": "Attribute name to compare",
+          "match_value": "Override Match Value",
+          "match_value_desc": "Text comparison against state or attribute",
+          "type": "Override Animation Type"
+        }
+      }
+    },
+    "image": {
+      "settings": "Image Settings",
+      "source_type": "Image Source Type",
+      "source_type_desc": "Choose how you want to specify the image source.",
+      "source": {
+        "default": "Default Image",
+        "url": "Image URL",
+        "upload": "Upload Image",
+        "entity": "Entity Image",
+        "attribute": "Entity Attribute"
+      },
+      "url_section": {
+        "title": "Image URL Configuration"
+      },
+      "image_url": "Image URL",
+      "image_url_desc": "Enter the direct URL to the image you want to display.",
+      "upload_section": {
+        "title": "Upload Image Configuration"
+      },
+      "upload": "Upload Image",
+      "upload_desc": "Click to upload an image file from your device.",
+      "entity_section": {
+        "title": "Entity Image Configuration"
+      },
+      "entity": "Entity",
+      "entity_desc": "Select an entity that has an image (e.g., person, camera entities).",
+      "attribute_section": {
+        "title": "Entity Attribute Configuration"
+      },
+      "entity_attr_desc": "Select the entity that contains the image URL in one of its attributes.",
+      "attribute_name": "Attribute Name",
+      "attribute_name_desc": "Enter the attribute path that contains the image URL (dot notation supported, e.g., vehicle_data.vehicleDetails.generalDashboard).",
+      "width": "Width (%)",
+      "width_desc": "Set the width as a percentage of the container.",
+      "height": "Height (px)",
+      "height_desc": "Set the height in pixels.",
+      "crop_fit": "Crop & Fit",
+      "crop_fit_desc": "Control how the image fits within its container.",
+      "fit": {
+        "cover": "Cover (crop to fill)",
+        "contain": "Contain (fit entire image)",
+        "fill": "Fill (stretch to fit)",
+        "scale_down": "Scale Down",
+        "none": "None (original size)"
+      },
+      "border_radius": "Border Radius",
+      "border_radius_desc": "Control the rounded corners of the image.",
+      "tap_actions": "Tap Actions",
+      "filters": "Filters",
+      "filter": {
+        "blur": "Blur",
+        "blur_desc": "Apply a blur effect to your image.",
+        "brightness": "Brightness (%)",
+        "brightness_desc": "Adjust the brightness of your image.",
+        "contrast": "Contrast (%)",
+        "contrast_desc": "Modify the contrast of your image.",
+        "saturation": "Saturation (%)",
+        "saturation_desc": "Adjust the saturation of your image."
+      },
+      "hover": {
+        "title": "Hover Effects",
+        "effect_type": "Effect Type",
+        "effect_type_desc": "Choose the type of hover effect.",
+        "scale": "Scale (zoom in/out)",
+        "rotate": "Rotate",
+        "fade": "Fade (opacity change)",
+        "blur": "Blur",
+        "brightness": "Brightness",
+        "glow": "Glow (box shadow)",
+        "slide": "Slide (translate)",
+        "scale_amount": "Scale (%)",
+        "scale_amount_desc": "Adjust the scale of the image on hover.",
+        "rotate_amount": "Rotation (°)",
+        "rotate_amount_desc": "Rotate the image on hover.",
+        "opacity": "Opacity (%)",
+        "opacity_desc": "Change the opacity of the image on hover.",
+        "blur_amount": "Blur (px)",
+        "blur_amount_desc": "Apply a blur effect to the image on hover.",
+        "brightness_amount": "Brightness (%)",
+        "brightness_amount_desc": "Adjust the brightness of the image on hover.",
+        "glow_intensity": "Glow Intensity",
+        "glow_intensity_desc": "Choose the intensity of the glow effect on hover.",
+        "glow_light": "Light Glow",
+        "glow_medium": "Medium Glow",
+        "glow_heavy": "Heavy Glow",
+        "glow_custom": "Custom Shadow",
+        "translate_x": "Horizontal (px)",
+        "translate_x_desc": "Translate the image horizontally on hover.",
+        "translate_y": "Vertical (px)",
+        "translate_y_desc": "Translate the image vertically on hover."
+      },
+      "alt": "Image",
+      "no_source": "No image source configured"
+    },
+    "graphs": {
+      "chart_type": {
+        "title": "Chart Type",
+        "type": "Type",
+        "desc": "Select the visualization style for your data."
+      },
+      "types": {
+        "line": "Line Chart",
+        "bar": "Bar Chart",
+        "pie": "Pie Chart",
+        "donut": "Donut Chart"
+      },
+      "data_sources": {
+        "title": "Data Sources",
+        "no_entities": "No entities added",
+        "add_first_entity": "Add your first entity to create a chart",
+        "add_entity": "Add Entity"
+      },
+      "entity": "Entity",
+      "line": {
+        "show_points": "Show Points",
+        "fill_area": "Fill Area",
+        "line_width": "Line Width",
+        "line_style": "Line Style"
+      },
+      "line_styles": {
+        "solid": "Solid",
+        "dashed": "Dashed",
+        "dotted": "Dotted"
+      },
+      "display": {
+        "title": "Display Options",
+        "show_title": "Show Graph Title",
+        "show_value": "Show Graph Value",
+        "chart_title": "Chart Title",
+        "chart_title_placeholder": "Enter chart title",
+        "time_period": "Time Period",
+        "time_period_desc": "How much historical data to show.",
+        "normalize_values": "Normalize values to same scale",
+        "normalize_desc": "Useful when comparing entities with different units (e.g., % vs miles)",
+        "chart_height": "Chart Height",
+        "chart_width": "Chart Width (%)",
+        "chart_width_desc": "Percentage of the module's available width. Alignment controls placement.",
+        "chart_alignment": "Chart Alignment",
+        "chart_alignment_desc": "Alignment of the chart within its container.",
+        "info_position": "Info Position",
+        "info_position_desc": "Position of the overlay showing name/value.",
+        "legend_position": "Legend Position",
+        "legend_position_desc": "Where to place the legend when enabled.",
+        "background_color": "Background Colour",
+        "chart_options": "Chart Options",
+        "show_legend": "Show Legend",
+        "show_grid": "Show Grid",
+        "smooth_lines": "Smooth Lines",
+        "show_tooltips": "Show Tooltips",
+        "add_slice_gap": "Add Slice Gap"
+      },
+      "agg": {
+        "mean": "Average",
+        "sum": "Sum",
+        "min": "Minimum",
+        "max": "Maximum",
+        "median": "Median",
+        "first": "First Value",
+        "last": "Last Value",
+        "count": "Count",
+        "delta": "Change"
+      },
+      "position": {
+        "top": "Top",
+        "bottom": "Bottom",
+        "left": "Left",
+        "right": "Right",
+        "hidden": "Hidden",
+        "top_left": "Top Left",
+        "top_right": "Top Right",
+        "bottom_left": "Bottom Left",
+        "bottom_right": "Bottom Right",
+        "middle": "Center",
+        "center": "Center"
+      },
+      "pie": {
+        "show_title": "Show Title in Slice",
+        "show_value": "Show Value in Slice"
+      },
+      "period": {
+        "1h": "Last Hour",
+        "3h": "Last 3 Hours",
+        "6h": "Last 6 Hours",
+        "12h": "Last 12 Hours",
+        "24h": "Last 24 Hours",
+        "2d": "Last 2 Days",
+        "7d": "Last Week",
+        "30d": "Last Month",
+        "90d": "Last 3 Months",
+        "365d": "Last Year"
+      },
+      "reset_345": "Reset to default (345px)",
+      "reset_100": "Reset to default (100%)",
+      "entity_desc": "Select an entity to plot.",
+      "display_name_optional": "Display name (optional)",
+      "use_as_card_info": "Use as card info",
+      "attribute": "Attribute",
+      "attribute_desc": "Use entity state or select a specific attribute to track.",
+      "attribute_state_default": "State (default)",
+      "show_points": "Show Points",
+      "fill_area": "Fill Area",
+      "line_style": "Line Style",
+      "line_solid": "Solid",
+      "line_dashed": "Dashed",
+      "line_dotted": "Dotted",
+      "pie_show_title": "Show Title in Slice",
+      "pie_show_value": "Show Value in Slice",
+      "expand_options": "Expand Options",
+      "no_entities": "No entities added",
+      "add_first_entity": "Add your first entity to create a chart",
+      "add_entity": "Add Entity",
+      "display_options": {
+        "title": "Display Options"
+      },
+      "show_title": "Show Graph Title",
+      "show_value": "Show Graph Value",
+      "chart_title": "Chart Title",
+      "chart_title_placeholder": "Enter chart title",
+      "time_period": "Time Period",
+      "time_period_desc": "How much historical data to show.",
+      "normalize_values": "Normalize values to same scale",
+      "normalize_desc": "Useful when comparing entities with different units (e.g., % vs miles)",
+      "chart_height": "Chart Height",
+      "chart_width": "Chart Width (%)"
+    },
+    "info": {
+      "entity_section": {
+        "title": "ENTITY CONFIGURATION"
+      },
+      "entity": "Entity",
+      "entity_desc": "Select the entity to display",
+      "icon_section": {
+        "title": "Icon Settings"
+      },
+      "show_icon": "Show Icon",
+      "show_icon_desc": "Display an icon next to the entity value",
+      "icon": "Icon",
+      "icon_desc": "Choose an icon to display",
+      "icon_color": "Icon Colour",
+      "name_section": {
+        "title": "Name Settings"
+      },
+      "show_name": "Show Name",
+      "show_name_desc": "Display the entity name above the value",
+      "custom_name": "Custom Name",
+      "custom_name_desc": "Override the entity name with a custom name",
+      "name_color": "Name Colour",
+      "state_section": {
+        "title": "State Settings"
+      },
+      "show_state": "Show State",
+      "show_state_desc": "Display the entity state/value",
+      "show_units": "Show Units",
+      "show_units_desc": "Display the unit of measurement (if available)",
+      "state_color": "State Colour",
+      "template": {
+        "title": "Template Mode",
+        "desc": "Use a template to format the entity value. Templates allow you to use Home Assistant templating syntax for complex formatting.",
+        "mode": "Template Mode",
+        "mode_desc": "Use Home Assistant templating syntax to format the value",
+        "value": "Value Template",
+        "value_desc": "Template to format the entity value using Jinja2 syntax"
+      },
+      "size_section": {
+        "title": "Size Settings"
+      },
+      "icon_size": "Icon Size",
+      "icon_size_desc": "Size of the icon in pixels",
+      "name_size": "Name Size",
+      "name_size_desc": "Size of the entity name text in pixels",
+      "value_size": "Value Size",
+      "value_size_desc": "Size of the entity value text in pixels",
+      "icon_gap": "Icon Gap",
+      "icon_gap_desc": "Space between the icon and content in pixels",
+      "layout_section": {
+        "title": "Layout & Positioning"
+      },
+      "icon_position": "Icon Position",
+      "overall_alignment": "Overall Alignment",
+      "icon_alignment": "Icon Alignment",
+      "content_alignment": "Content Alignment",
+      "examples_title": "Common Examples:",
+      "example_basic": "Basic value",
+      "example_units": "With units",
+      "example_round": "Round to 1 decimal"
+    },
+    "button": {
+      "basic": {
+        "title": "Basic Settings",
+        "desc": "Configure the button appearance and text content."
+      },
+      "text": {
+        "title": "Button Text",
+        "desc": "Text to display on the button (leave blank for icon-only)."
+      },
+      "style": {
+        "title": "Button Style",
+        "desc": "Visual style of the button"
+      },
+      "alignment": {
+        "title": "Alignment",
+        "desc": "How the button is aligned within its container"
+      },
+      "styles": {
+        "flat": "Flat (Default)",
+        "glossy": "Glossy",
+        "embossed": "Embossed",
+        "inset": "Inset",
+        "gradient_overlay": "Gradient Overlay",
+        "neon_glow": "Neon Glow",
+        "outline": "Outline",
+        "glass": "Glass",
+        "metallic": "Metallic"
+      },
+      "align": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right",
+        "justify": "Justify (Full Width)"
+      },
+      "icon": {
+        "title": "Icon Settings",
+        "desc": "Configure icon display and positioning for the button.",
+        "before": "Before Text",
+        "after": "After Text",
+        "enable_toggle_desc": "Enable the toggle above to configure icon settings"
+      },
+      "icon_field": "Icon",
+      "show_icon": "Show Icon",
+      "show_icon_desc": "Display an icon on the button",
+      "icon_desc": "Icon to display (e.g., mdi:home)",
+      "icon_position": "Icon Position",
+      "icon_position_desc": "Position of the icon relative to text",
+      "colors": {
+        "title": "Colors",
+        "background": "Background Colour",
+        "text": "Text Colour"
+      },
+      "hover": {
+        "title": "Hover Effects",
+        "effect_type": "Effect Type",
+        "effect_type_desc": "Choose the hover effect for this button.",
+        "none": "None",
+        "color": "Colour Change",
+        "scale": "Scale",
+        "glow": "Glow",
+        "lift": "Lift (translate Y)",
+        "hover_color": "Hover Colour",
+        "glow_color": "Glow Colour",
+        "enable_toggle_desc": "Enable the toggle above to configure hover effects"
+      },
+      "actions": {
+        "type": "Action Type",
+        "type_desc": "Choose what happens when the button is clicked",
+        "entity": "Entity",
+        "entity_desc": "Select the entity to interact with",
+        "navigation_path": "Navigation Path",
+        "navigation_path_desc": "Path to navigate to (e.g., /dashboard/energy)",
+        "service": "Service",
+        "service_desc": "Service to call (e.g., light.turn_on)",
+        "service_data": "Service Data (JSON)",
+        "service_data_desc": "Optional data to pass to the service (JSON format)"
+      },
+      "tap": {
+        "title": "Tap Action",
+        "desc": "Action to perform when button is tapped"
+      },
+      "hold": {
+        "title": "Hold Action",
+        "desc": "Action to perform when button is held down"
+      },
+      "double": {
+        "title": "Double Tap Action",
+        "desc": "Action to perform when button is double-tapped"
+      }
+    },
+    "layout_extra": {
+      "module_name": "Module Name:",
+      "module_name_placeholder": "Give this module a custom name to make it easier to identify in the editor.",
+      "module_name_help": "Give this module a custom name to make it easier to identify in the editor."
+    },
+    "camera": {
+      "config": {
+        "title": "Camera Configuration",
+        "desc": "Configure the camera entity and display settings."
+      },
+      "entity": "Camera Entity",
+      "entity_desc": "Select the camera entity to display. This should be a camera or mjpeg entity from Home Assistant.",
+      "name": "Camera Name",
+      "name_desc": "Custom name for the camera. Leave empty to use entity name.",
+      "show_name": "Show Camera Name",
+      "show_name_desc": "Display the camera name on the feed",
+      "show_name_toggle": {
+        "enable_toggle_desc": "Enable the toggle above to configure camera name display"
+      },
+      "name_position": {
+        "group_title": "Camera Name Position",
+        "title": "Name Position",
+        "desc": "Choose where the camera name appears as an overlay on the camera image.",
+        "options": {
+          "top_left": "Top Left",
+          "top_right": "Top Right",
+          "center": "Center",
+          "bottom_left": "Bottom Left",
+          "bottom_right": "Bottom Right"
+        }
+      },
+      "display": {
+        "title": "Display Settings"
+      },
+      "live_view": {
+        "title": "Live View",
+        "desc": "Enable to show live camera stream (requires stream integration). When disabled, shows still image snapshots."
+      },
+      "auto_refresh": {
+        "section_title": "Auto Refresh Settings",
+        "title": "Auto Refresh",
+        "desc": "Automatically refresh the camera image at regular intervals"
+      },
+      "refresh_interval": {
+        "title": "Refresh Interval (seconds)",
+        "desc": "How often to refresh the camera image automatically."
+      },
+      "dimensions": {
+        "title": "Dimensions"
+      },
+      "width": "Width (px)",
+      "width_desc": "Set the width of the camera display. Range: 100-1000px",
+      "height": "Height (px)",
+      "height_desc": "Set the height of the camera display. Range: 100-1000px",
+      "link_aspect": "Link aspect ratio",
+      "unlink_aspect": "Unlink aspect ratio",
+      "aspect_linked": {
+        "title": "Aspect Ratio Linked",
+        "desc": "Dimensions maintain {ratio}:1 ratio. Adjusting one dimension automatically updates the other to maintain proportions."
+      },
+      "aspect_independent": {
+        "title": "Independent Dimensions",
+        "desc": "Width and height can be adjusted independently. Click the link button above to maintain aspect ratio."
+      },
+      "crop": {
+        "title": "Crop & Position",
+        "desc": "Adjust the crop and position of the camera view. Useful for focusing on specific areas or removing unwanted edges.",
+        "left_title": "Left Crop (%)",
+        "left_desc": "Crop from the left edge. Higher values show less of the left side.",
+        "right_title": "Right Crop (%)",
+        "right_desc": "Crop from the right edge. Higher values show less of the right side.",
+        "top_title": "Top Crop (%)",
+        "top_desc": "Crop from the top edge. Higher values show less of the top area.",
+        "bottom_title": "Bottom Crop (%)",
+        "bottom_desc": "Crop from the bottom edge. Higher values show less of the bottom area.",
+        "active_applied": "Active Crops Applied",
+        "reset_all": "Reset All Crops"
+      },
+      "template": {
+        "title": "Template Mode",
+        "desc": "Use a template to dynamically set the camera entity. Templates allow you to use Home Assistant templating syntax for conditional camera selection.",
+        "mode_label": "Template Mode",
+        "mode_desc": "Use Home Assistant templating syntax to dynamically select camera entity",
+        "camera_template_label": "Camera Template",
+        "camera_template_desc": "Template to dynamically set the camera entity using Jinja2 syntax",
+        "examples_title": "Common Examples:",
+        "example1_desc": "Show camera when weather is sunny",
+        "example2_desc": "Switch between cameras based on input boolean",
+        "example3_desc": "Use input select to choose camera entity"
+      }
+    },
+    "separator": {
+      "config": {
+        "title": "Separator Configuration"
+      },
+      "style": {
+        "title": "Separator Style",
+        "desc": "Choose the visual style of the separator line."
+      },
+      "options": {
+        "solid": "Solid Line",
+        "double": "Double Line",
+        "dotted": "Dotted Line",
+        "double_dotted": "Double Dotted",
+        "shadow": "Shadow",
+        "blank": "Blank Space"
+      },
+      "appearance": {
+        "title": "Appearance"
+      },
+      "thickness": "Thickness (px)",
+      "thickness_desc": "Thickness of the separator line.",
+      "width": "Width (%)",
+      "width_desc": "Width of the separator as percentage of container.",
+      "color": {
+        "title": "Colour",
+        "desc": "Colour of the separator line."
+      },
+      "show_title": "Show Title",
+      "show_title_desc": "Add text in the middle of the separator line (e.g., ------ Text ------)",
+      "show_title_toggle": {
+        "enable_toggle_desc": "Enable the toggle above to configure title settings"
+      },
+      "text_content": {
+        "title": "Text Content",
+        "desc": "Text to display in the middle of the separator."
+      },
+      "font_size": "Font Size",
+      "font_size_desc": "Size of the text in pixels.",
+      "text_color": {
+        "title": "Text Colour",
+        "desc": "Colour of the separator text."
+      },
+      "text_format": {
+        "title": "Text Formatting",
+        "desc": "Apply formatting styles to the separator text.",
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "uppercase": "Uppercase",
+        "strikethrough": "Strikethrough"
+      },
+      "spacer": {
+        "title": "Spacer Height"
+      },
+      "height": "Height (px)",
+      "height_desc": "Controls the visual gap for Blank Space."
+    },
+    "design": {
+      "copy": "Copy",
+      "paste": "Paste",
+      "reset_all": "Reset All",
+      "copy_tooltip": "Copy current design settings (works across all Ultra Cards)",
+      "paste_tooltip_has": "Paste copied design settings (from cross-card clipboard)",
+      "paste_tooltip_none": "No design settings in cross-card clipboard",
+      "reset_all_tooltip": "Reset all design settings to default",
+      "text_section": "Text",
+      "text_color": "Text Colour",
+      "alignment": "Alignment",
+      "inherit_alignment": "Inherit (no alignment)",
+      "font_size": "Font Size",
+      "font_size_placeholder": "16px (default), 1.2rem, max(1rem, 1.5vw)",
+      "reset_font_size": "Reset font size to default",
+      "line_height": "Line Height",
+      "line_height_placeholder": "0 (default), 28px, 1.7",
+      "reset_line_height": "Reset line height to default",
+      "letter_spacing": "Letter Spacing",
+      "letter_spacing_placeholder": "auto (default), 1px, -0.04em",
+      "reset_letter_spacing": "Reset letter spacing to default",
+      "font": "Font",
+      "font_weight": "Font Weight",
+      "text_transform": "Text Transform",
+      "font_style": "Font Style",
+      "default_option": "– Default –",
+      "weight_thin": "100 - Thin",
+      "weight_light": "300 - Light",
+      "weight_normal": "400 - Normal",
+      "weight_medium": "500 - Medium",
+      "weight_semi_bold": "600 - Semi Bold",
+      "weight_bold": "700 - Bold",
+      "weight_black": "900 - Black",
+      "transform_none": "None",
+      "transform_uppercase": "UPPERCASE",
+      "transform_lowercase": "lowercase",
+      "transform_capitalize": "Capitalize",
+      "style_normal": "Normal",
+      "style_italic": "Italic",
+      "style_oblique": "Oblique",
+      "background_section": "Background",
+      "background_color": "Background Colour",
+      "background_image_type": "Background Image Type",
+      "bg_none": "None",
+      "bg_upload": "Upload Image",
+      "bg_entity": "Entity Image",
+      "bg_url": "Image URL",
+      "sizes_section": "Sizes",
+      "spacing_section": "Spacing",
+      "border_section": "Border",
+      "text_shadow_section": "Text Shadow",
+      "box_shadow_section": "Box Shadow",
+      "position_section": "Position",
+      "overflow_section": "Overflow",
+      "animations_section": "Animations",
+      "width": "Width",
+      "height": "Height",
+      "max_width": "Max Width",
+      "max_height": "Max Height",
+      "min_width": "Min Width",
+      "min_height": "Min Height",
+      "border_radius": "Border Radius",
+      "border_style": "Border Style",
+      "border_width": "Border Width",
+      "border_color": "Border Colour",
+      "margin": "Margin",
+      "padding": "Padding",
+      "top": "Top",
+      "right": "Right",
+      "bottom": "Bottom",
+      "left": "Left",
+      "unlock_sides": "Unlock to edit sides independently",
+      "lock_sides": "Lock to edit all sides together",
+      "horizontal_shift": "Horizontal Shift",
+      "vertical_shift": "Vertical Shift",
+      "blur": "Blur",
+      "text_shadow_color": "Text Shadow Colour",
+      "box_shadow_color": "Box Shadow Colour",
+      "overflow": "Overflow",
+      "clip_path": "Clip-path",
+      "upload_bg_image": "Upload Background Image",
+      "bg_image_entity": "Background Image Entity",
+      "bg_image_url": "Background Image URL",
+      "choose_file": "Choose File",
+      "no_file_chosen": "No file chosen",
+      "backdrop_filter": "Backdrop Filter",
+      "spread": "Spread",
+      "visible_default": "Visible (Default)",
+      "examples": "Examples",
+      "state_based_animation": "State-based Animation",
+      "animation_type": "Animation Type",
+      "animation_duration": "Animation Duration",
+      "animation_duration_desc": "Duration for the animation (e.g., 2s, 500ms, 1.5s)",
+      "intro_outro_animations": "Intro & Outro Animations",
+      "intro_animation": "Intro Animation",
+      "outro_animation": "Outro Animation",
+      "duration": "Duration",
+      "delay": "Delay",
+      "timing": "Timing",
+      "none": "None",
+      "ease": "Ease",
+      "border_style_none": "None",
+      "border_style_solid": "Solid",
+      "border_style_dashed": "Dashed",
+      "border_style_dotted": "Dotted",
+      "border_style_double": "Double",
+      "position_default": "– Default –",
+      "position_static": "Static",
+      "position_relative": "Relative",
+      "position_absolute": "Absolute",
+      "position_fixed": "Fixed",
+      "position_sticky": "Sticky"
+    },
+    "modules": {
+      "text": "Text Module",
+      "image": "Image Module",
+      "icon": "Icon Module",
+      "bar": "Bar Module",
+      "info": "Info Module",
+      "button": "Button Module",
+      "separator": "Separator Module",
+      "markdown": "Markdown Module",
+      "camera": "Camera Module",
+      "graphs": "Graphs Module",
+      "no_text_configured": "No text configured",
+      "no_image_configured": "No image configured",
+      "uploaded_image": "Uploaded image",
+      "icons_configured": "{count} icons configured",
+      "no_icons_configured": "No icons configured",
+      "default_entity_suggestion": "Entity: sensor.battery_level",
+      "sample_text": "Sample Text"
+    }
+  }
+}

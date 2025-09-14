@@ -49,3 +49,11 @@ Testing should focus on verifying:
 2. Icon rows can be reordered in the Icons tab with visual feedback
 3. Changes made in any tab are properly reflected when switching to another tab
 4. Edits to properties work correctly after reordering elements
+
+## Actions UI Verification (Required)
+
+- [ ] Actions tabs for modules, rows, and columns render using Home Assistant's `ui_action` selector
+- [ ] `tap_action`, `hold_action`, and `double_tap_action` default to `{ action: 'default' }` when missing
+- [ ] No usage of `UltraLinkComponent` for the actions selector UI
+- [ ] Setting actions to `perform-action` (or legacy `service`) persists after save + reload
+- [ ] Dropdowns open correctly and show expected HA-provided options

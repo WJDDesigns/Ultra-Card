@@ -90,6 +90,43 @@ export { version, setVersion };`;
   fs.writeFileSync(versionJsPath, distVersionContent);
   console.log(`Generated version.js with version ${version}`);
   console.log('Version files are ready. Continuing with build...');
+
+  // Enforce Actions UI layout invariants to prevent regressions
+  try {
+    const actionsTabPath = path.resolve(__dirname, 'src/tabs/global-actions-tab.ts');
+    const actionsTabContent = fs.readFileSync(actionsTabPath, 'utf8');
+
+    // Must use HA ui_action selector
+    const hasUiAction = /ui_action\s*:\s*\{/.test(actionsTabContent);
+    if (!hasUiAction) {
+      throw new Error(
+        "[Guard] Actions UI regression: src/tabs/global-actions-tab.ts must use Home Assistant's ui_action selector."
+      );
+    }
+
+    // Must NOT reintroduce UltraLinkComponent for actions UI
+    const mentionsUltraLink = /UltraLinkComponent/.test(actionsTabContent);
+    if (mentionsUltraLink) {
+      throw new Error(
+        '[Guard] Actions UI regression: src/tabs/global-actions-tab.ts should not import or reference UltraLinkComponent for action selection.'
+      );
+    }
+
+    // Ensure all three action slots are present
+    const requires = ['tap_action', 'hold_action', 'double_tap_action'];
+    for (const key of requires) {
+      if (!actionsTabContent.includes(key)) {
+        throw new Error(
+          `[Guard] Actions UI regression: Missing required action key: ${key} in src/tabs/global-actions-tab.ts`
+        );
+      }
+    }
+
+    console.log('Actions UI guard passed.');
+  } catch (err) {
+    console.error(String(err));
+    process.exit(1);
+  }
 }
 
 /**

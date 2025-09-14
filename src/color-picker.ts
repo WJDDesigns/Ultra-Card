@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('ultra-legacy-color-picker')
 export class UltraVehicleColorPicker extends LitElement {
-  @property() public value?: string;
+  @property({ type: String, reflect: true }) public value?: string;
   @property() public label?: string;
 
   // Convert CSS variables to displayable colors
@@ -34,6 +34,8 @@ export class UltraVehicleColorPicker extends LitElement {
     e.stopPropagation();
     const input = e.target as HTMLInputElement;
     const value = input.value;
+    this.value = value; // Update the property to trigger re-render
+    this.requestUpdate(); // Force re-render
     this.dispatchEvent(new CustomEvent('value-changed', { detail: { value } }));
   }
 
@@ -48,6 +50,7 @@ export class UltraVehicleColorPicker extends LitElement {
           .value=${displayColor}
           @change=${this._colorChanged}
           class="color-input"
+          style="background-color: ${displayColor};"
         />
       </div>
     `;

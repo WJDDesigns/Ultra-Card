@@ -1,0 +1,1209 @@
+{
+  "editor": {
+    "tabs": {
+      "layout": "Layoutbygger",
+      "settings": "Innstillinger",
+      "about": "Om"
+    },
+    "settings": {
+      "title": "Kortinnstillinger",
+      "description": "Konfigurer global kortutseende og oppførsel."
+    },
+    "appearance": {
+      "title": "Utseende",
+      "description": "Kontroller det visuelle utseendet til kortet ditt"
+    },
+    "spacing": {
+      "title": "Avstand",
+      "description": "Kontroller avstanden og posisjoneringen til kortet ditt"
+    },
+    "fields": {
+      "card_background_color": "Kort bakgrunnsfarge",
+      "card_background_color_desc": "Bakgrunnsfargen til hele kortet",
+      "border_radius": "Kantradius",
+      "border_radius_desc": "Avrundede hjørner for kortet (i piksler)",
+      "card_padding": "Kort polstring",
+      "card_padding_desc": "Intern avstand innenfor kortet",
+      "card_margin": "Kort marg",
+      "card_margin_desc": "Ekstern avstand rundt kortet",
+      "unit_px": "px",
+      "reset_default": "Tilbakestill til standard",
+      "reset_default_value": "Tilbakestill til standard ({value})"
+    },
+    "tooltips": {
+      "enter_fullscreen": "Gå til fullskjerm",
+      "return_dashboard": "Tilbake til dashbord",
+      "dashboard": "Dashbord"
+    },
+    "layout": {
+      "live_preview": "Live forhåndsvisning",
+      "toggle_preview": "Veksle forhåndsvisning",
+      "drag_to_move_module": "Dra for å flytte modul",
+      "edit_module": "Rediger modul",
+      "duplicate_module": "Dupliser modul",
+      "delete_module": "Slett modul",
+      "drag_to_move_layout": "Dra for å flytte layoutmodul",
+      "horizontal_layout": "Horisontal layout",
+      "vertical_layout": "Vertikal layout",
+      "add_module_to_layout": "Legg til modul i layout",
+      "layout_settings": "Layoutinnstillinger",
+      "duplicate_layout": "Dupliser layout",
+      "delete_layout": "Slett layout",
+      "click_to_add_module": "Klikk for å legge til en modul",
+      "drop_modules_here": "Slipp moduler her",
+      "drag_to_reorder": "Dra for å endre rekkefølge",
+      "edit_child_module": "Rediger undermodul",
+      "duplicate_child_module": "Dupliser undermodul",
+      "delete_child_module": "Slett undermodul",
+      "module_settings_title": "Modulinnstillinger",
+      "general_tab": "Generelt",
+      "actions_tab": "Handlinger",
+      "other_tab": "Annet",
+      "logic_tab": "Logikk",
+      "design_tab": "Design",
+      "drag_to_resize": "Dra for å endre størrelse",
+      "hidden_by_logic": "Skjult av logikk",
+      "child_module_settings_title": "Undermodulinnstillinger",
+      "add_row": "Legg til rad",
+      "add_row_tooltip": "Legg til en ny rad til layoutet ditt",
+      "row_settings": "Radinnstillinger",
+      "column_settings": "Kolonneinnstillinger",
+      "row_background_color": "Rad bakgrunnsfarge",
+      "column_gap": "Kolonneavstand (px)",
+      "vertical_alignment": "Vertikal justering",
+      "horizontal_alignment": "Horisontal justering",
+      "column_preview": "Kolonneforhåndsvisning",
+      "modules_count": "{count} moduler",
+      "alignment_top": "Topp",
+      "alignment_center": "Senter",
+      "alignment_bottom": "Bunn",
+      "alignment_stretch": "Strekk",
+      "alignment_left": "Venstre",
+      "alignment_right": "Høyre"
+    },
+    "about": {
+      "developed_by": "Utviklet av",
+      "desc1": "En kraftig modulær kortbygger for Home Assistant",
+      "desc2": "Lag tilpassede layouter med et profesjonelt sidebygger-grensesnitt",
+      "desc3": "Modulært layoutsystem med betinget logikk og profesjonelle designverktøy",
+      "github_repo": "GitHub-repositorium",
+      "version": "Versjon",
+      "join_discord": "Bli med på vår Discord",
+      "support_title": "Støtt Ultra Card",
+      "support_desc": "Dine sjenerøse tips driver utviklingen av fantastiske funksjoner for dette kortet! Uten støtte fra brukere som deg, ville fortsatt innovasjon ikke vært mulig.",
+      "leave_tip": "GI ET TIPS (PAYPAL)"
+    },
+    "actions": {
+      "title": "Handlingskonfigurasjon",
+      "description": "Konfigurer hvordan denne modulen reagerer på brukerinteraksjoner. Bruker Home Assistants innebygde handlingssystem for konsistent oppførsel på dashbordet ditt.",
+      "tap_action": "Trykk-handling",
+      "tap_action_desc": "Handling utført ved å trykke/klikke på modulen",
+      "hold_action": "Hold-handling",
+      "hold_action_desc": "Handling utført ved å holde nede på modulen",
+      "double_tap_action": "Dobbelttrykk-handling",
+      "double_tap_action_desc": "Handling utført ved dobbelttrykking på modulen",
+      "tap_behavior": "Trykk-oppførsel",
+      "tap_behavior_desc": "Handling å utføre når elementet trykkes/klikkes.",
+      "hold_behavior": "Hold-oppførsel",
+      "hold_behavior_desc": "Handling å utføre når elementet trykkes og holdes.",
+      "double_tap_behavior": "Dobbelttrykk-oppførsel",
+      "double_tap_behavior_desc": "Handling å utføre når elementet dobbeltrykkes/klikkes."
+    },
+    "icon": {
+      "entity_config": {
+        "title": "ENTITETSKONFIGURASJON",
+        "desc": "Konfigurer entiteten og aktive/inaktive tilstander"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Velg entiteten dette ikonet representerer",
+      "inactive_state": "Inaktiv tilstand",
+      "inactive_state_desc": "Tilstandsverdi ansett som \"inaktiv\" (la stå tom for å bruke faktisk entitetstilstand)",
+      "active_state": "Aktiv tilstand",
+      "active_state_desc": "Tilstandsverdi ansett som \"aktiv\" (la stå tom for å bruke faktisk entitetstilstand)",
+      "active_animation": "Aktiv animasjon",
+      "active_animation_desc": "Animasjon når ikon er aktiv",
+      "active_icon": "Aktivt ikon",
+      "active_icon_background": "Aktivt ikon bakgrunn",
+      "active_icon_background_color": "Aktivt ikon bakgrunnsfarge",
+      "active_icon_color": "Aktivt ikon farge",
+      "active_icon_desc": "Ikon å vise når aktiv",
+      "active_name": "Aktivt navn",
+      "active_name_color": "Aktivt navn farge",
+      "active_name_desc": "Tilpasset navn når aktiv",
+      "active_state_color": "Aktiv tilstandsfarge",
+      "active_state_text": "Aktiv tilstandstekst",
+      "animation_bounce": "Hopp",
+      "animation_fade": "Fade",
+      "animation_flash": "Blink",
+      "animation_none": "Ingen",
+      "animation_pulse": "Puls",
+      "animation_rotate_left": "Roter venstre",
+      "animation_rotate_right": "Roter høyre",
+      "animation_scale": "Skaler",
+      "animation_section": {
+        "desc": "Konfigurer animasjoner for aktive og inaktive tilstander",
+        "title": "Ikonanimasjon"
+      },
+      "animation_shake": "Rist",
+      "animation_spin": "Snurr",
+      "animation_tada": "Tada",
+      "animation_vibrate": "Vibrer",
+      "background_color_active": "Bakgrunnsfarge når aktiv",
+      "background_color_inactive": "Bakgrunnsfarge når inaktiv",
+      "background_section": {
+        "desc": "Konfigurer inaktive bakgrunnsinnstillinger",
+        "title": "Inaktiv bakgrunn"
+      },
+      "background_shape_active": "Bakgrunnsform når aktiv",
+      "background_shape_inactive": "Bakgrunnsform når inaktiv",
+      "custom_active_name": "Tilpasset aktivt navn",
+      "custom_active_name_desc": "Overstyr entitetsnavn når aktiv (la stå tom for å bruke entitetsnavn)",
+      "custom_active_state": "Tilpasset aktiv tilstand",
+      "custom_active_state_desc": "Tilpasset tekst når aktiv (la stå tom for å bruke faktisk tilstand)",
+      "custom_inactive_name": "Tilpasset inaktivt navn",
+      "custom_inactive_name_desc": "Overstyr entitetsnavn når inaktiv (la stå tom for å bruke entitetsnavn)",
+      "custom_inactive_state": "Tilpasset inaktiv tilstand",
+      "custom_inactive_state_desc": "Tilpasset tekst når inaktiv (la stå tom for å bruke faktisk tilstand)",
+      "icon_color_active": "Farge når aktiv",
+      "icon_color_inactive": "Farge når inaktiv",
+      "icon_section": {
+        "title": "Ikonkonfigurasjon"
+      },
+      "icon_size_active": "Ikonstørrelse når aktiv",
+      "icon_size_inactive": "Ikonstørrelse når inaktiv",
+      "inactive_animation": "Inaktiv animasjon",
+      "inactive_animation_desc": "Animasjon når ikon er inaktiv",
+      "inactive_icon": "Inaktivt ikon",
+      "inactive_icon_background": "Inaktivt ikon bakgrunn",
+      "inactive_icon_background_color": "Inaktivt ikon bakgrunnsfarge",
+      "inactive_icon_color": "Inaktivt ikon farge",
+      "inactive_icon_config": "Konfigurasjon av inaktivt ikon",
+      "inactive_icon_config_desc": "Konfigurer innstillinger for inaktivt ikon",
+      "inactive_icon_desc": "Ikon å vise når inaktiv",
+      "inactive_name": "Inaktivt navn",
+      "inactive_name_color": "Inaktivt navn farge",
+      "inactive_name_config": "Konfigurasjon av inaktivt navn",
+      "inactive_name_config_desc": "Konfigurer innstillinger for inaktivt navn",
+      "inactive_name_desc": "Tilpasset navn når inaktiv",
+      "inactive_state_color": "Inaktiv tilstandsfarge",
+      "inactive_state_config": "Konfigurasjon av inaktiv tilstand",
+      "inactive_state_config_desc": "Konfigurer innstillinger for inaktiv tilstand",
+      "inactive_state_text": "Inaktiv tilstandstekst",
+      "name_color_active": "Navnefarge når aktiv",
+      "name_color_inactive": "Navnefarge når inaktiv",
+      "name_section": {
+        "title": "Navnekonfigurasjon"
+      },
+      "name_size_active": "Navnetekststørrelse når aktiv",
+      "name_size_inactive": "Navnetekststørrelse når inaktiv",
+      "state_color_active": "Tilstandsfarge når aktiv",
+      "state_color_inactive": "Tilstandsfarge når inaktiv",
+      "state_section": {
+        "title": "Tilstandskonfigurasjon"
+      },
+      "state_size_active": "Tilstandstekststørrelse når aktiv",
+      "state_size_inactive": "Tilstandstekststørrelse når inaktiv",
+      "template": "Mal",
+      "template_mode": "Avansert malmodus",
+      "template_section": {
+        "desc": "Bruk Jinja2-maler for avansert ikonkontroll. Maler kan kontrollere synlighet (sant/usant for å vise/skjule ikoner) og tilpasse tilstandstekst. Returner tilpasset tekst for aktiv tilstand, returner faktisk entitetstilstand for inaktiv tilstand.",
+        "title": "Avansert malmodus"
+      }
+    },
+    "text": {
+      "content_section": {
+        "title": "Innholdskonfigurasjon",
+        "desc": "Konfigurer tekstinnholdet og grunnleggende innstillinger for denne modulen."
+      },
+      "text_content": "Tekstinnhold",
+      "text_content_desc": "Skriv inn tekstinnholdet som skal vises i denne modulen.",
+      "icon_section": {
+        "title": "Ikonkonfigurasjon",
+        "desc": "Velg et ikon som skal vises sammen med tekstinnholdet."
+      },
+      "icon": "Ikon",
+      "icon_desc": "Velg et ikon som skal vises sammen med teksten. La stå tom for ingen ikon.",
+      "icon_position": "Ikonposisjon",
+      "icon_position_desc": "Velg hvor ikonet skal plasseres i forhold til teksten.",
+      "before_text": "Før tekst",
+      "after_text": "Etter tekst",
+      "template_mode": "Malmodus",
+      "template_mode_desc": "Bruk Home Assistant-malsyntaks for å gjengi tekst",
+      "value_template": "Verdimal",
+      "value_template_desc": "Mal for å gjengi teksten ved hjelp av Jinja2-syntaks",
+      "examples_title": "Vanlige eksempler:",
+      "example_basic": "Grunnverdi",
+      "example_percent": "Med prosent"
+    },
+    "bar": {
+      "bar_settings": {
+        "title": "Stolpeinnstillinger",
+        "desc": "Konfigurer hvordan stolpeprosenten beregnes og vises."
+      },
+      "perc_type": {
+        "entity": "Entitet (0-100)",
+        "attribute": "Entitetsattributt",
+        "difference": "Forskjell",
+        "template": "Mal"
+      },
+      "attribute_section": {
+        "title": "Konfigurasjon av entitetsattributt",
+        "desc": "Konfigurer entitetsattributtinnstillinger"
+      },
+      "attribute_entity": "Attributtentitet",
+      "attribute_entity_desc": "Velg entiteten som inneholder attributtet med prosentverdien",
+      "attribute_name": "Attributtnavn",
+      "attribute_name_desc": "Skriv inn navnet på attributtet som inneholder prosentverdien (f.eks. \"battery_level\")",
+      "diff_section": {
+        "title": "Konfigurasjon av forskjellsberegning",
+        "desc": "Konfigurer innstillinger for forskjellsberegning"
+      },
+      "current_entity": "Nåværende verdi-entitet",
+      "current_entity_desc": "Entitet som representerer nåværende/brukt mengde (f.eks. brukt drivstoff, forbrukt batteri)",
+      "total_entity": "Total verdi-entitet",
+      "total_entity_desc": "Entitet som representerer total/maksimal mengde (f.eks. drivstoffkapasitet, batterikapasitet)",
+      "template_section": {
+        "title": "Malkonfigurasjon",
+        "desc": "Konfigurer malinnstillinger"
+      },
+      "percentage_template": "Prosentmal",
+      "percentage_template_desc": "Skriv inn en Jinja2-mal som returnerer et tall mellom 0-100 for prosenten. Eksempel: {{ (states('sensor.battery_level') | float) * 100 }}",
+      "animation": {
+        "desc": "Animer stolpefyllet ved hjelp av forhåndsinnstillinger som ladestiper, puls, glød og mer. Du kan utløse animasjoner basert på en entitets tilstand eller attributt, og eventuelt overstyre animasjonen når en annen betingelse er oppfylt.",
+        "override": {
+          "attribute_name_desc": "Attributtnavn å sammenligne",
+          "desc": "Velg en handlingsentitet og tilstand for å definere når denne animasjonen skal overstyre den vanlige animasjonen",
+          "entity_desc": "Entitet å evaluere for overstyring av utløser",
+          "match_value": "Overstyr samsvarverdi",
+          "match_value_desc": "Tekstsammenligning mot tilstand eller attributt",
+          "title": "Overstyring av handlingsanimasjon",
+          "type": "Overstyr animasjonstype",
+          "type_desc": "Animasjon å bruke når overstyringsbetingelsen samsvarer."
+        },
+        "title": "Stolpeanimasjon",
+        "trigger": {
+          "attribute_name_desc": "Attributtnavn å sammenligne (f.eks. charging_status)",
+          "desc": "Velg en entitet å overvåke og definer verdien + animasjonen å bruke når den samsvarer.",
+          "entity_desc": "Entitet å evaluere for animasjonsutløser",
+          "match_value": "Samsvarverdi",
+          "match_value_desc": "Tekst å sammenligne mot tilstand eller attributt (sammenligning er tekstbasert).",
+          "title": "Animasjonsutløser",
+          "type": "Utløsertype",
+          "type_desc": "Velg om du vil sammenligne entitetstilstand eller et attributt"
+        },
+        "type": "Animasjonstype",
+        "type_desc": "Velg hvordan stolpen skal animeres når utløst.",
+        "types": {
+          "blinking": "Blinkende",
+          "bouncing": "Hoppende",
+          "bubbles": "Bobler",
+          "charging": "Lading (diagonale linjer)",
+          "fill": "Fyll",
+          "flicker": "Flimmer",
+          "glow": "Glød",
+          "heartbeat": "Hjerteslag",
+          "pulse": "Puls",
+          "rainbow": "Regnbue",
+          "ripple": "Krusning",
+          "shimmer": "Skimmer",
+          "traffic": "Trafikk (barberstang)",
+          "vibrate": "Vibrer"
+        }
+      },
+      "appearance": {
+        "alignment": "Stolpejustering",
+        "alignment_desc": "Velg hvordan stolpen skal justeres når den er mindre enn 100% bredde.",
+        "border_radius": "Kantradius",
+        "border_radius_desc": "Kontroller de avrundede hjørnene til stolpen.",
+        "height": "Stolpehøyde",
+        "height_desc": "Juster tykkelsen til fremdriftsstolpen i piksler.",
+        "style": "Stolpestil",
+        "style_dashed": "Stiplet",
+        "style_desc": "Velg den visuelle stilen til fremdriftsstolpen.",
+        "style_dots": "Dots",
+        "style_embossed": "Preget",
+        "style_flat": "Flat (standard)",
+        "style_glass": "Glass",
+        "style_glossy": "Blank",
+        "style_gradient": "Gradientoverlegg",
+        "style_inset": "Innfelt",
+        "style_metallic": "Metallisk",
+        "style_neon": "Neonglød",
+        "style_neumorphic": "Neumorfisk",
+        "style_outline": "Omriss",
+        "title": "Stolpeutseende",
+        "width": "Stolpebredde",
+        "width_desc": "Sett stolpebredden som prosent av beholder."
+      },
+      "attr_config": {
+        "attribute_entity": "Attributtentitet",
+        "attribute_entity_desc": "Velg entiteten som inneholder attributtet med prosentverdien",
+        "attribute_name": "Attributtnavn",
+        "attribute_name_desc": "Skriv inn navnet på attributtet som inneholder prosentverdien (f.eks. \"battery_level\")",
+        "desc": "Konfigurer entitetsattributtinnstillinger",
+        "title": "Konfigurasjon av entitetsattributt"
+      },
+      "colors": {
+        "background_color": "Bakgrunnsfarge",
+        "bar_color": "Stolpefarge",
+        "border_color": "Kantfarge",
+        "left_side": "Venstre side farger",
+        "limit_indicator": "Grenseindikator",
+        "percentage_text": "Prosenttekst",
+        "right_side": "Høyre side farger",
+        "title": "Farger",
+        "title_color": "Tittelfarge",
+        "value_color": "Verdifarge"
+      },
+      "diff_config": {
+        "current_entity": "Nåværende verdi-entitet",
+        "current_entity_desc": "Entitet som representerer nåværende/brukt mengde (f.eks. brukt drivstoff, forbrukt batteri)",
+        "desc": "Konfigurer innstillinger for forskjellsberegning",
+        "title": "Konfigurasjon av forskjellsberegning",
+        "total_entity": "Total verdi-entitet",
+        "total_entity_desc": "Entitet som representerer total/maksimal mengde (f.eks. drivstoffkapasitet, batterikapasitet)"
+      },
+      "entity": {
+        "desc_empty": "Velg en entitet som gir en prosentverdi (0-100). Batterisensorer er ideelle for stolper.",
+        "desc_present": "Entiteten som gir prosentverdien for stolpen.",
+        "no_entity_warning": "Ingen entitet valgt - Velg en sensor med verdier mellom 0-100",
+        "title": "Stolpe prosent-entitet"
+      },
+      "gradient": {
+        "cropped": "Beskåret",
+        "desc": "Bruk en fargegradient på stolpefyllet. Når aktivert, velg hvordan gradienten vises og tilpass fargestopp nedenfor.",
+        "full": "Full",
+        "title": "Gradientmodus",
+        "value_based": "Verdibasert"
+      },
+      "labels": {
+        "alignment": "Etikettjustering",
+        "alignment_desc": "Kontroller hvordan venstre og høyre etiketter er posisjonert."
+      },
+      "left": {
+        "desc": "Konfigurer tittelen og entitetsverdien vist på venstre side av stolpen. Dette er nyttig for å vise etiketter som 'Rekkevidde' eller 'Batteri' sammen med deres verdier.",
+        "enable_toggle": "Aktiver bryteren over for å konfigurere venstre side innstillinger",
+        "template_desc": "Bruk en mal for å formatere den viste verdien. Maler bruker Home Assistants Jinja2-syntaks.",
+        "template_mode": "Malmodus",
+        "title": "Venstre side",
+        "title_size": "Tittelstørrelse",
+        "value_size": "Verdistørrelse",
+        "value_template": "Verdimal",
+        "value_template_desc": "Mal for å formatere venstre side verdien ved hjelp av Jinja2-syntaks"
+      },
+      "limit_entity": {
+        "desc": "Valgfritt: Legg til en vertikal indikatorlinje på stolpen (f.eks. ladegrense for EV-batteri).",
+        "title": "Grenseverdi-entitet (valgfritt)"
+      },
+      "percentage": {
+        "desc": "Kontroller synligheten og utseendet til prosentverdier vist direkte på stolpen. Disse tallene gir en klar visuell indikator for nåværende nivå.",
+        "text_alignment": "Prosenttekst justering",
+        "text_size": "Tekststørrelse",
+        "text_size_desc": "Juster størrelsen på prosenttekst vist på stolpen.",
+        "title": "Prosenttekst visning"
+      },
+      "right": {
+        "desc": "Konfigurer tittelen og entitetsverdien vist på høyre side av stolpen. Dette er ideelt for utfyllende informasjon som 'Tid til full' eller sekundære målinger.",
+        "enable_toggle": "Aktiver bryteren over for å konfigurere høyre side innstillinger",
+        "template_desc": "Bruk en mal for å formatere den viste verdien. Maler bruker Home Assistants Jinja2-syntaks.",
+        "template_mode": "Malmodus",
+        "title": "Høyre side",
+        "title_size": "Tittelstørrelse",
+        "value_size": "Verdistørrelse",
+        "value_template": "Verdimal",
+        "value_template_desc": "Mal for å formatere høyre side verdien ved hjelp av Jinja2-syntaks"
+      },
+      "template_config": {
+        "desc": "Konfigurer malinnstillinger",
+        "percentage_template": "Prosentmal",
+        "percentage_template_desc": "Skriv inn en Jinja2-mal som returnerer et tall mellom 0-100 for prosenten. Eksempel: {{ (states('sensor.battery_level') | float) * 100 }}",
+        "title": "Malkonfigurasjon"
+      }
+    },
+    "image": {
+      "settings": "Bildeinnstillinger",
+      "source_type": "Bildekildetype",
+      "source_type_desc": "Velg hvordan du vil spesifisere bildekilden.",
+      "source": {
+        "default": "Standardbilde",
+        "url": "Bilde-URL",
+        "upload": "Last opp bilde",
+        "entity": "Entitetsbilde",
+        "attribute": "Entitetsattributt"
+      },
+      "url_section": {
+        "title": "Konfigurasjon av bilde-URL"
+      },
+      "image_url": "Bilde-URL",
+      "image_url_desc": "Skriv inn den direkte URL-en til bildet du vil vise.",
+      "upload_section": {
+        "title": "Konfigurasjon av bildeopplasting"
+      },
+      "upload": "Last opp bilde",
+      "upload_desc": "Klikk for å laste opp en bildefil fra enheten din.",
+      "entity_section": {
+        "title": "Konfigurasjon av entitetsbilde"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Velg en entitet som har et bilde (f.eks. person, kameraentiteter).",
+      "attribute_section": {
+        "title": "Konfigurasjon av entitetsattributt"
+      },
+      "entity_attr_desc": "Velg entiteten som inneholder bilde-URL-en i et av sine attributter.",
+      "attribute_name": "Attributtnavn",
+      "attribute_name_desc": "Skriv inn attributtstien som inneholder bilde-URL-en (punktnotasjon støttet, f.eks. vehicle_data.vehicleDetails.generalDashboard).",
+      "width": "Bredde (%)",
+      "width_desc": "Sett bredden som en prosent av beholderen.",
+      "height": "Høyde (px)",
+      "height_desc": "Sett høyden i piksler.",
+      "crop_fit": "Beskjær og tilpass",
+      "crop_fit_desc": "Kontroller hvordan bildet passer innenfor sin beholder.",
+      "fit": {
+        "cover": "Dekk (beskjær for å fylle)",
+        "contain": "Innhold (tilpass hele bildet)",
+        "fill": "Fyll (strekk for å passe)",
+        "scale_down": "Skaler ned",
+        "none": "Ingen (original størrelse)"
+      },
+      "border_radius": "Kantradius",
+      "border_radius_desc": "Kontroller de avrundede hjørnene til bildet.",
+      "tap_actions": "Trykk-handlinger",
+      "filters": "Filtre",
+      "filter": {
+        "blur": "Uskarphet",
+        "blur_desc": "Bruk en uskarphet-effekt på bildet ditt.",
+        "brightness": "Lysstyrke (%)",
+        "brightness_desc": "Juster lysstyrken til bildet ditt.",
+        "contrast": "Kontrast (%)",
+        "contrast_desc": "Endre kontrasten til bildet ditt.",
+        "saturation": "Metning (%)",
+        "saturation_desc": "Juster metningen til bildet ditt."
+      },
+      "hover": {
+        "title": "Hover-effekter",
+        "effect_type": "Effekttype",
+        "effect_type_desc": "Velg typen hover-effekt.",
+        "scale": "Skaler (zoom inn/ut)",
+        "rotate": "Roter",
+        "fade": "Fade (gjennomsiktighetendring)",
+        "blur": "Uskarphet",
+        "brightness": "Lysstyrke",
+        "glow": "Glød (boksskygge)",
+        "slide": "Gli (oversett)",
+        "scale_amount": "Skaler (%)",
+        "scale_amount_desc": "Juster skaleringen av bildet ved hover.",
+        "rotate_amount": "Rotasjon (°)",
+        "rotate_amount_desc": "Roter bildet ved hover.",
+        "opacity": "Gjennomsiktighet (%)",
+        "opacity_desc": "Endre gjennomsiktigheten til bildet ved hover.",
+        "blur_amount": "Uskarphet (px)",
+        "blur_amount_desc": "Bruk en uskarphet-effekt på bildet ved hover.",
+        "brightness_amount": "Lysstyrke (%)",
+        "brightness_amount_desc": "Juster lysstyrken til bildet ved hover.",
+        "glow_intensity": "Glødintensitet",
+        "glow_intensity_desc": "Velg intensiteten til glødeffekten ved hover.",
+        "glow_light": "Lett glød",
+        "glow_medium": "Medium glød",
+        "glow_heavy": "Kraftig glød",
+        "glow_custom": "Tilpasset skygge",
+        "translate_x": "Horisontal (px)",
+        "translate_x_desc": "Oversett bildet horisontalt ved hover.",
+        "translate_y": "Vertikal (px)",
+        "translate_y_desc": "Oversett bildet vertikalt ved hover."
+      },
+      "alt": "Bilde",
+      "no_source": "Ingen bildekilde konfigurert"
+    },
+    "graphs": {
+      "chart_type": {
+        "title": "Diagramtype",
+        "type": "Type",
+        "desc": "Velg visualiseringsstilen for dataene dine."
+      },
+      "types": {
+        "line": "Linjediagram",
+        "bar": "Stolpediagram",
+        "pie": "Sektordiagram",
+        "donut": "Smultringdiagram"
+      },
+      "data_sources": {
+        "title": "Datakilder",
+        "add_entity": "Add Entity",
+        "add_first_entity": "Legg til din første entitet for å lage et diagram",
+        "no_entities": "Ingen entiteter lagt til"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Velg en entitet å plotte.",
+      "display_name_optional": "Visningsnavn (valgfritt)",
+      "use_as_card_info": "Bruk som kortinfo",
+      "attribute": "Attributt",
+      "attribute_desc": "Bruk entitetstilstand eller velg et spesifikt attributt å spore.",
+      "attribute_state_default": "Tilstand (standard)",
+      "show_points": "Vis punkter",
+      "fill_area": "Fyll område",
+      "line_style": "Linjestil",
+      "line_solid": "Hel",
+      "line_dashed": "Stiplet",
+      "line_dotted": "Prikket",
+      "pie_show_title": "Vis tittel i utsnitt",
+      "pie_show_value": "Vis verdi i utsnitt",
+      "expand_options": "Utvid alternativer",
+      "no_entities": "Ingen entiteter lagt til",
+      "add_first_entity": "Legg til din første entitet for å lage et diagram",
+      "add_entity": "Add Entity",
+      "display_options": {
+        "title": "Visningsalternativer"
+      },
+      "show_title": "Vis diagramtittel",
+      "show_value": "Vis diagramverdi",
+      "chart_title": "Diagramtittel",
+      "chart_title_placeholder": "Skriv inn diagramtittel",
+      "time_period": "Tidsperiode",
+      "time_period_desc": "Hvor mye historisk data som skal vises.",
+      "period": {
+        "1h": "Siste time",
+        "3h": "Siste 3 timer",
+        "6h": "Siste 6 timer",
+        "12h": "Siste 12 timer",
+        "24h": "Siste 24 timer",
+        "2d": "Siste 2 dager",
+        "7d": "Siste uke",
+        "30d": "Siste måned",
+        "90d": "Siste 3 måneder",
+        "365d": "Siste år"
+      },
+      "normalize_values": "Normaliser verdier til samme skala",
+      "normalize_desc": "Nyttig når du sammenligner entiteter med forskjellige enheter (f.eks. % vs mil)",
+      "chart_height": "Diagramhøyde",
+      "reset_345": "Tilbakestill til standard (345px)",
+      "chart_width": "Diagrambredde (%)",
+      "reset_100": "Tilbakestill til standard (100%)",
+      "agg": {
+        "count": "Antall",
+        "delta": "Endring",
+        "first": "Første verdi",
+        "last": "Siste verdi",
+        "max": "Maksimum",
+        "mean": "Gjennomsnitt",
+        "median": "Median",
+        "min": "Minimum",
+        "sum": "Sum"
+      },
+      "display": {
+        "add_slice_gap": "Legg til utsnittgap",
+        "background_color": "Bakgrunnsfarge",
+        "chart_alignment": "Diagramjustering",
+        "chart_alignment_desc": "Justering av diagrammet innenfor sin beholder.",
+        "chart_height": "Diagramhøyde",
+        "chart_options": "Diagramalternativer",
+        "chart_title": "Diagramtittel",
+        "chart_title_placeholder": "Skriv inn diagramtittel",
+        "chart_width": "Diagrambredde (%)",
+        "chart_width_desc": "Prosent av modulens tilgjengelige bredde. Justering styrer plassering.",
+        "info_position": "Infoposisjon",
+        "info_position_desc": "Posisjon til overlegget som viser navn/verdi.",
+        "legend_position": "Legendeposisjon",
+        "legend_position_desc": "Hvor legenden skal plasseres når aktivert.",
+        "normalize_desc": "Nyttig når du sammenligner entiteter med forskjellige enheter (f.eks. % vs mil)",
+        "normalize_values": "Normaliser verdier til samme skala",
+        "show_grid": "Vis rutenett",
+        "show_legend": "Vis legende",
+        "show_title": "Vis diagramtittel",
+        "show_tooltips": "Vis verktøytips",
+        "show_value": "Vis diagramverdi",
+        "smooth_lines": "Glatte linjer",
+        "time_period": "Tidsperiode",
+        "time_period_desc": "Hvor mye historisk data som skal vises.",
+        "title": "Visningsalternativer"
+      },
+      "line": {
+        "fill_area": "Fyll område",
+        "line_style": "Linjestil",
+        "line_width": "Linjebredde",
+        "show_points": "Vis punkter"
+      },
+      "line_styles": {
+        "dashed": "Stiplet",
+        "dotted": "Prikket",
+        "solid": "Hel"
+      },
+      "pie": {
+        "show_title": "Vis tittel i utsnitt",
+        "show_value": "Vis verdi i utsnitt"
+      },
+      "position": {
+        "bottom": "Bunn",
+        "bottom_left": "Nederst til venstre",
+        "bottom_right": "Nederst til høyre",
+        "center": "Senter",
+        "hidden": "Skjult",
+        "left": "Venstre",
+        "middle": "Senter",
+        "right": "Høyre",
+        "top": "Topp",
+        "top_left": "Øverst til venstre",
+        "top_right": "Øverst til høyre"
+      }
+    },
+    "button": {
+      "basic": {
+        "title": "Grunninnstillinger",
+        "desc": "Konfigurer knappens utseende og tekstinnhold."
+      },
+      "text": {
+        "title": "Knapptekst",
+        "desc": "Tekst som skal vises på knappen (la stå tom for kun ikon)."
+      },
+      "style": {
+        "title": "Knappstil",
+        "desc": "Visuell stil for knappen"
+      },
+      "alignment": {
+        "title": "Justering",
+        "desc": "Hvordan knappen er justert innenfor sin beholder"
+      },
+      "styles": {
+        "flat": "Flat (standard)",
+        "glossy": "Blank",
+        "embossed": "Preget",
+        "inset": "Innfelt",
+        "gradient_overlay": "Gradientoverlegg",
+        "neon_glow": "Neonglød",
+        "outline": "Omriss",
+        "glass": "Glass",
+        "metallic": "Metallisk"
+      },
+      "align": {
+        "left": "Venstre",
+        "center": "Senter",
+        "right": "Høyre",
+        "justify": "Juster (full bredde)"
+      },
+      "icon": {
+        "title": "Ikoninnstillinger",
+        "desc": "Konfigurer ikonvisning og posisjonering for knappen.",
+        "before": "Før tekst",
+        "after": "Etter tekst",
+        "enable_toggle_desc": "Aktiver bryteren over for å konfigurere ikoninnstillinger"
+      },
+      "colors": {
+        "title": "Farger",
+        "background": "Bakgrunnsfarge",
+        "text": "Tekstfarge"
+      },
+      "hover": {
+        "effect_type": "Effekttype",
+        "effect_type_desc": "Velg hover-effekten for denne knappen.",
+        "none": "Ingen",
+        "color": "Fargeendring",
+        "scale": "Skaler",
+        "glow": "Glød",
+        "lift": "Løft (oversett Y)",
+        "hover_color": "Hover-farge",
+        "glow_color": "Glødfarge",
+        "title": "Hover-effekter",
+        "enable_toggle_desc": "Aktiver bryteren over for å konfigurere hover-effekter"
+      },
+      "actions": {
+        "type": "Handlingstype",
+        "type_desc": "Velg hva som skjer når knappen klikkes",
+        "entity": "Entitet",
+        "entity_desc": "Velg entiteten å samhandle med",
+        "navigation_path": "Navigasjonsbane",
+        "navigation_path_desc": "Bane å navigere til (f.eks. /dashboard/energy)",
+        "service": "Tjeneste",
+        "service_desc": "Tjeneste å kalle (f.eks. light.turn_on)",
+        "service_data": "Tjenestedata (JSON)",
+        "service_data_desc": "Valgfrie data å sende til tjenesten (JSON-format)"
+      },
+      "tap": {
+        "title": "Trykk-handling",
+        "desc": "Handling å utføre når knappen trykkes"
+      },
+      "hold": {
+        "title": "Hold-handling",
+        "desc": "Handling å utføre når knappen holdes nede"
+      },
+      "double": {
+        "title": "Dobbelttrykk-handling",
+        "desc": "Handling å utføre når knappen dobbeltrykkes"
+      },
+      "show_icon": "Vis ikon",
+      "show_icon_desc": "Vis et ikon på knappen",
+      "icon_desc": "Ikon som skal vises (f.eks. mdi:home)",
+      "icon_position": "Ikonposisjon",
+      "icon_position_desc": "Posisjon til ikonet relativt til tekst",
+      "icon_field": "Ikon"
+    },
+    "info": {
+      "entity_section": {
+        "title": "ENTITETSKONFIGURASJON"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Velg entiteten som skal vises",
+      "icon_section": {
+        "title": "Ikoninnstillinger"
+      },
+      "show_icon": "Vis ikon",
+      "show_icon_desc": "Vis et ikon ved siden av entitetsverdien",
+      "icon": "Ikon",
+      "icon_desc": "Velg et ikon som skal vises",
+      "icon_color": "Ikonfarge",
+      "name_section": {
+        "title": "Navneinnstillinger"
+      },
+      "show_name": "Vis navn",
+      "show_name_desc": "Vis entitetsnavnet over verdien",
+      "custom_name": "Tilpasset navn",
+      "custom_name_desc": "Overstyr entitetsnavnet med et tilpasset navn",
+      "name_color": "Navnefarge",
+      "state_section": {
+        "title": "Tilstandsinnstillinger"
+      },
+      "show_state": "Vis tilstand",
+      "show_state_desc": "Vis entitetstilstand/verdi",
+      "show_units": "Vis enheter",
+      "show_units_desc": "Vis måleenheten (hvis tilgjengelig)",
+      "state_color": "Tilstandsfarge",
+      "template": {
+        "title": "Malmodus",
+        "desc": "Bruk en mal for å formatere entitetsverdien. Maler lar deg bruke Home Assistants malsyntaks for kompleks formatering.",
+        "mode": "Malmodus",
+        "mode_desc": "Bruk Home Assistants malsyntaks for å formatere verdien",
+        "value": "Verdimal",
+        "value_desc": "Mal for å formatere entitetsverdien ved hjelp av Jinja2-syntaks"
+      },
+      "size_section": {
+        "title": "Størrelsesinnstillinger"
+      },
+      "icon_size": "Ikonstørrelse",
+      "icon_size_desc": "Størrelse på ikonet i piksler",
+      "name_size": "Navnestørrelse",
+      "name_size_desc": "Størrelse på entitetsnavnteksten i piksler",
+      "value_size": "Verdistørrelse",
+      "value_size_desc": "Størrelse på entitetsverditeksten i piksler",
+      "icon_gap": "Ikonavstand",
+      "icon_gap_desc": "Avstand mellom ikon og innhold i piksler",
+      "layout_section": {
+        "title": "Layout og posisjonering"
+      },
+      "icon_position": "Ikonposisjon",
+      "overall_alignment": "Overordnet justering",
+      "icon_alignment": "Ikonjustering",
+      "content_alignment": "Innholdsjustering",
+      "examples_title": "Vanlige eksempler:",
+      "example_basic": "Grunnverdi",
+      "example_units": "Med enheter",
+      "example_round": "Avrund til 1 desimal"
+    },
+    "camera": {
+      "config": {
+        "title": "Kamerakonfigurasjon",
+        "desc": "Konfigurer kameraentiteten og visningsinnstillinger."
+      },
+      "entity": "Kameraentitet",
+      "entity_desc": "Velg kameraentiteten som skal vises. Dette bør være en kamera- eller mjpeg-entitet fra Home Assistant.",
+      "name": "Kameranavn",
+      "name_desc": "Tilpasset navn for kameraet. La stå tom for å bruke entitetsnavn.",
+      "show_name": "Vis kameranavn",
+      "show_name_desc": "Vis kameranavnet på feeden",
+      "name_position": {
+        "group_title": "Kameranavn posisjon",
+        "title": "Navneposisjon",
+        "desc": "Velg hvor kameranavnet vises som et overlegg på kamerabildet.",
+        "options": {
+          "top_left": "Øverst til venstre",
+          "top_right": "Øverst til høyre",
+          "center": "Senter",
+          "bottom_left": "Nederst til venstre",
+          "bottom_right": "Nederst til høyre"
+        }
+      },
+      "display": {
+        "title": "Visningsinnstillinger"
+      },
+      "live_view": {
+        "title": "Live visning",
+        "desc": "Aktiver for å vise live kamerastrøm (krever strøm-integrasjon). Når deaktivert, vises stillbildeøyeblikksbilder."
+      },
+      "auto_refresh": {
+        "section_title": "Automatiske oppdateringsinnstillinger",
+        "title": "Automatisk oppdatering",
+        "desc": "Oppdater automatisk kamerabildet med jevne mellomrom"
+      },
+      "refresh_interval": {
+        "title": "Oppdateringsintervall (sekunder)",
+        "desc": "Hvor ofte kamerabildet skal oppdateres automatisk."
+      },
+      "dimensions": {
+        "title": "Dimensjoner"
+      },
+      "width": "Bredde (px)",
+      "width_desc": "Sett bredden på kameravisningen. Område: 100-1000px",
+      "height": "Høyde (px)",
+      "height_desc": "Sett høyden på kameravisningen. Område: 100-1000px",
+      "link_aspect": "Koble størrelsesforhold",
+      "unlink_aspect": "Frakoble størrelsesforhold",
+      "aspect_linked": {
+        "title": "Størrelsesforhold koblet",
+        "desc": "Dimensjoner opprettholder {ratio}:1 forhold. Justering av en dimensjon oppdaterer automatisk den andre for å opprettholde proporsjoner."
+      },
+      "aspect_independent": {
+        "title": "Uavhengige dimensjoner",
+        "desc": "Bredde og høyde kan justeres uavhengig. Klikk på koblingknappen over for å opprettholde størrelsesforhold."
+      },
+      "crop": {
+        "title": "Beskjær og posisjon",
+        "desc": "Juster beskjæringen og posisjonen til kameravisningen. Nyttig for å fokusere på spesifikke områder eller fjerne uønskede kanter.",
+        "left_title": "Venstre beskjæring (%)",
+        "left_desc": "Beskjær fra venstre kant. Høyere verdier viser mindre av venstre side.",
+        "right_title": "Høyre beskjæring (%)",
+        "right_desc": "Beskjær fra høyre kant. Høyere verdier viser mindre av høyre side.",
+        "top_title": "Topp beskjæring (%)",
+        "top_desc": "Beskjær fra topp kant. Høyere verdier viser mindre av toppområdet.",
+        "bottom_title": "Bunn beskjæring (%)",
+        "bottom_desc": "Beskjær fra bunn kant. Høyere verdier viser mindre av bunnområdet.",
+        "active_applied": "Aktive beskjæringer anvendt",
+        "reset_all": "Tilbakestill alle beskjæringer"
+      },
+      "template": {
+        "title": "Malmodus",
+        "desc": "Bruk en mal for å dynamisk sette kameraentiteten. Maler lar deg bruke Home Assistants malsyntaks for betinget kameravalg.",
+        "mode_label": "Malmodus",
+        "mode_desc": "Bruk Home Assistants malsyntaks for å dynamisk velge kameraentitet",
+        "camera_template_label": "Kameramal",
+        "camera_template_desc": "Mal for å dynamisk sette kameraentiteten ved hjelp av Jinja2-syntaks",
+        "examples_title": "Vanlige eksempler:",
+        "example1_desc": "Vis kamera når været er solrikt",
+        "example2_desc": "Bytt mellom kameraer basert på input boolean",
+        "example3_desc": "Bruk input select for å velge kameraentitet"
+      },
+      "show_name_toggle": {
+        "enable_toggle_desc": "Aktiver bryteren over for å konfigurere kameranavn visning"
+      }
+    },
+    "separator": {
+      "config": {
+        "title": "Separatorkonfigurasjon"
+      },
+      "style": {
+        "title": "Separatorstil",
+        "desc": "Velg den visuelle stilen til separatorlinjen."
+      },
+      "options": {
+        "solid": "Hel linje",
+        "double": "Dobbel linje",
+        "dotted": "Prikket linje",
+        "double_dotted": "Dobbel prikket",
+        "shadow": "Skygge",
+        "blank": "Tomt rom"
+      },
+      "appearance": {
+        "title": "Utseende"
+      },
+      "thickness": "Tykkelse (px)",
+      "thickness_desc": "Tykkelse på separatorlinjen.",
+      "width": "Bredde (%)",
+      "width_desc": "Bredde på separatoren som prosent av beholder.",
+      "color": {
+        "title": "Farge",
+        "desc": "Farge på separatorlinjen."
+      },
+      "show_title": "Vis tittel",
+      "show_title_desc": "Legg til tekst i midten av separatorlinjen (f.eks. ------ Tekst ------)",
+      "text_content": {
+        "title": "Tekstinnhold",
+        "desc": "Tekst som skal vises i midten av separatoren."
+      },
+      "font_size": "Skriftstørrelse",
+      "font_size_desc": "Størrelse på teksten i piksler.",
+      "text_color": {
+        "title": "Tekstfarge",
+        "desc": "Farge på separatorteksten."
+      },
+      "text_format": {
+        "title": "Tekstformatering",
+        "desc": "Bruk formateringsstiler på separatorteksten.",
+        "bold": "Fet",
+        "italic": "Kursiv",
+        "underline": "Understreking",
+        "uppercase": "Store bokstaver",
+        "strikethrough": "Gjennomstreking"
+      },
+      "spacer": {
+        "title": "Avstandshøyde"
+      },
+      "height": "Høyde (px)",
+      "height_desc": "Styrer det visuelle gapet for tomt rom.",
+      "show_title_toggle": {
+        "enable_toggle_desc": "Aktiver bryteren over for å konfigurere tittelinnstillinger"
+      }
+    },
+    "layout_extra": {
+      "module_name": "Modulnavn:",
+      "module_name_placeholder": "Gi denne modulen et tilpasset navn for å gjøre det lettere å identifisere i redigereren.",
+      "module_name_help": "Gi denne modulen et tilpasset navn for å gjøre det lettere å identifisere i redigereren."
+    },
+    "layout_logic": {
+      "display_title": "Vis dette elementet",
+      "display_desc": "Kontroller når dette elementet vises. Velg \"Alltid\" for å holde det synlig. Velg \"Hvis ALLE betingelser nedenfor er oppfylt\" eller \"Hvis NOEN betingelse nedenfor er oppfylt\" for å vise det bare når betingelsene du legger til nedenfor evalueres som sanne.",
+      "always": "Alltid",
+      "every": "Hvis ALLE betingelser nedenfor er oppfylt",
+      "any": "Hvis NOEN betingelse nedenfor er oppfylt",
+      "conditions": "Betingelser",
+      "add_condition": "Legg til betingelse",
+      "no_conditions": "Ingen betingelser lagt til ennå. Klikk \"Legg til betingelse\" for å komme i gang.",
+      "condition_types": {
+        "entity_state": "Entitetstilstand",
+        "entity_attribute": "Entitetsattributt",
+        "time": "Tidsområde",
+        "template": "Mal"
+      },
+      "condition_fields": {
+        "entity": "Entitet",
+        "operator": "Operator",
+        "value": "Verdi",
+        "attribute": "Attributt",
+        "time_from": "Fra",
+        "time_to": "Til",
+        "template": "Mal"
+      },
+      "condition_header": "Betingelse",
+      "custom_name": "Tilpasset navn",
+      "custom_name_desc": "Valgfritt: Gi denne betingelsen et tilpasset navn for enklere identifikasjon",
+      "condition_type": "Betingelsestype"
+    },
+    "hover_effects": {
+      "title": "Hover-effekter",
+      "description": "Konfigurer visuelle effekter som vises når du hover over denne modulen, raden eller kolonnen.",
+      "effect": "Hover-effekt",
+      "effect_desc": "Velg den visuelle effekten som skal brukes ved hovring",
+      "effects": {
+        "none": "Ingen",
+        "highlight": "Uthev",
+        "outline": "Kontur",
+        "grow": "Voks",
+        "shrink": "Krympe",
+        "pulse": "Pulsere",
+        "bounce": "Sprette",
+        "float": "Flyte",
+        "glow": "Gløde",
+        "shadow": "Skygge",
+        "rotate": "Rotere",
+        "skew": "Skjevt",
+        "wobble": "Vakle",
+        "buzz": "Vibrere",
+        "fade": "Falme"
+      }
+    },
+    "design": {
+      "copy": "Kopier",
+      "paste": "Lim inn",
+      "reset_all": "Tilbakestill alt",
+      "copy_tooltip": "Kopier nåværende designinnstillinger (virker på tvers av alle Ultra Cards)",
+      "paste_tooltip_has": "Lim inn kopierte designinnstillinger (fra tverrkort-utklippstavle)",
+      "paste_tooltip_none": "Ingen designinnstillinger i tverrkort-utklippstavle",
+      "reset_all_tooltip": "Tilbakestill alle designinnstillinger til standard",
+      "text_section": "Tekst",
+      "text_color": "Tekstfarge",
+      "alignment": "Justering",
+      "inherit_alignment": "Arv (ingen justering)",
+      "font_size": "Skriftstørrelse",
+      "font_size_placeholder": "16px (standard), 1.2rem, max(1rem, 1.5vw)",
+      "reset_font_size": "Tilbakestill skriftstørrelse til standard",
+      "line_height": "Linjehøyde",
+      "line_height_placeholder": "0 (standard), 28px, 1.7",
+      "reset_line_height": "Tilbakestill linjehøyde til standard",
+      "letter_spacing": "Bokstavavstand",
+      "letter_spacing_placeholder": "auto (standard), 1px, -0.04em",
+      "reset_letter_spacing": "Tilbakestill bokstavavstand til standard",
+      "font": "Skrifttype",
+      "font_weight": "Skriftvekt",
+      "text_transform": "Teksttransformasjon",
+      "font_style": "Skriftstil",
+      "default_option": "– Standard –",
+      "weight_thin": "100 - Tynn",
+      "weight_light": "300 - Lett",
+      "weight_normal": "400 - Normal",
+      "weight_medium": "500 - Medium",
+      "weight_semi_bold": "600 - Halvfet",
+      "weight_bold": "700 - Fet",
+      "weight_black": "900 - Svart",
+      "transform_none": "Ingen",
+      "transform_uppercase": "STORE BOKSTAVER",
+      "transform_lowercase": "små bokstaver",
+      "transform_capitalize": "Stor forbokstav",
+      "style_normal": "Normal",
+      "style_italic": "Kursiv",
+      "style_oblique": "Skrå",
+      "background_section": "Bakgrunn",
+      "background_color": "Bakgrunnsfarge",
+      "background_image_type": "Bakgrunnsbilde type",
+      "bg_none": "Ingen",
+      "bg_upload": "Last opp bilde",
+      "bg_entity": "Entitetsbilde",
+      "bg_url": "Bilde-URL",
+      "sizes_section": "Størrelser",
+      "spacing_section": "Avstand",
+      "border_section": "Kant",
+      "text_shadow_section": "Tekstskygge",
+      "box_shadow_section": "Boksskygge",
+      "position_section": "Posisjon",
+      "overflow_section": "Overflyt",
+      "animations_section": "Animasjoner",
+      "width": "Bredde",
+      "height": "Høyde",
+      "max_width": "Maks bredde",
+      "max_height": "Maks høyde",
+      "min_width": "Min bredde",
+      "min_height": "Min høyde",
+      "border_radius": "Kantradius",
+      "border_style": "Kantstil",
+      "border_width": "Kantbredde",
+      "border_color": "Kantfarge",
+      "margin": "Margin",
+      "padding": "Polstring",
+      "top": "Topp",
+      "right": "Høyre",
+      "bottom": "Bunn",
+      "left": "Venstre",
+      "unlock_sides": "Lås opp for å redigere sider uavhengig",
+      "lock_sides": "Lås for å redigere alle sider sammen",
+      "horizontal_shift": "Horisontal forskyvning",
+      "vertical_shift": "Vertikal forskyvning",
+      "blur": "Uskarphet",
+      "text_shadow_color": "Tekstskygge farge",
+      "box_shadow_color": "Boksskygge farge",
+      "overflow": "Overflyt",
+      "clip_path": "Klippebane",
+      "upload_bg_image": "Last opp bakgrunnsbilde",
+      "bg_image_entity": "Bakgrunnsbilde-entitet",
+      "bg_image_url": "Bakgrunnsbilde-URL",
+      "choose_file": "Velg fil",
+      "no_file_chosen": "Ingen fil valgt",
+      "backdrop_filter": "Bakgrunnsfilter",
+      "spread": "Spredning",
+      "visible_default": "Synlig (standard)",
+      "examples": "Eksempler",
+      "state_based_animation": "Tilstandsbasert animasjon",
+      "animation_type": "Animasjonstype",
+      "animation_duration": "Animation Duration",
+      "animation_duration_desc": "Varighet for animasjonen (f.eks. 2s, 500ms, 1.5s)",
+      "intro_outro_animations": "Intro- og outro-animasjoner",
+      "intro_animation": "Intro-animasjon",
+      "outro_animation": "Outro-animasjon",
+      "duration": "Varighet",
+      "delay": "Forsinkelse",
+      "timing": "Timing",
+      "none": "Ingen",
+      "ease": "Ease",
+      "border_style_none": "Ingen",
+      "border_style_solid": "Hel",
+      "border_style_dashed": "Stiplet",
+      "border_style_dotted": "Prikket",
+      "border_style_double": "Double",
+      "position_default": "– Standard –",
+      "position_static": "Statisk",
+      "position_relative": "Relativ",
+      "position_absolute": "Absolutt",
+      "position_fixed": "Fast",
+      "position_sticky": "Klebrig"
+    },
+    "modules": {
+      "text": "Tekstmodul",
+      "image": "Bildemodul",
+      "icon": "Ikonmodul",
+      "bar": "Stolpemodul",
+      "info": "Infomodul",
+      "button": "Knappmodul",
+      "separator": "Separatormodul",
+      "markdown": "Markdown-modul",
+      "camera": "Kameramodul",
+      "graphs": "Grafmodul",
+      "no_text_configured": "Ingen tekst konfigurert",
+      "no_image_configured": "Ingen bilde konfigurert",
+      "uploaded_image": "Opplastet bilde",
+      "icons_configured": "{count} ikoner konfigurert",
+      "no_icons_configured": "Ingen ikoner konfigurert",
+      "default_entity_suggestion": "Entitet: sensor.battery_level",
+      "sample_text": "Eksempeltekst"
+    },
+    "common": {
+      "attribute": "Attributt",
+      "attribute_name": "Attributtnavn",
+      "baseline": "Grunnlinje",
+      "bottom": "Bunn",
+      "center": "Senter",
+      "entity": "Entitet",
+      "justify": "Juster",
+      "left": "Venstre",
+      "none": "Ingen",
+      "right": "Høyre",
+      "space_around": "Plass rundt",
+      "space_between": "Plass mellom",
+      "state": "Tilstand",
+      "stretch": "Strekk",
+      "top": "Topp"
+    },
+    "horizontal": {
+      "alignment": {
+        "horizontal": "Horisontal justering",
+        "horizontal_desc": "Velg hvordan elementer justeres horisontalt innenfor beholderen.",
+        "vertical": "Vertikal justering",
+        "vertical_desc": "Velg hvordan elementer justeres vertikalt innenfor beholderen."
+      },
+      "empty": {
+        "add_modules": "Legg til moduler i layoutbyggeren for å se dem her",
+        "no_modules": "Ingen moduler lagt til ennå"
+      },
+      "gap": {
+        "between_items": "Avstand mellom elementer",
+        "desc": "Sett avstanden mellom horisontale elementer (i rem-enheter). Bruk negative verdier for å overlappe elementer.",
+        "title": "Avstandskonfigurasjon"
+      },
+      "layout": {
+        "desc": "Konfigurer hvordan elementer arrangeres horisontalt innenfor beholderen.",
+        "title": "Layoutkonfigurasjon"
+      },
+      "wrapping": {
+        "desc": "Tillat elementer å bryte til neste linje når de overskrider beholderbredden.",
+        "title": "Tillat ombrytning"
+      }
+    },
+    "markdown": {
+      "code_highlighting": "Kodemarkering",
+      "code_highlighting_desc": "Syntaksmarkering for kodeblokker",
+      "content": {
+        "desc": "Skriv inn ditt markdown-innhold med full formateringsstøtte",
+        "label": "Innhold",
+        "title": "Markdown-innhold"
+      },
+      "enable_html": "Aktiver HTML",
+      "enable_html_desc": "Tillat HTML-tagger i markdown-innhold",
+      "enable_tables": "Aktiver tabeller",
+      "enable_tables_desc": "Støtte for markdown-tabellsyntaks",
+      "features": {
+        "title": "Markdown-funksjoner"
+      }
+    },
+    "vertical": {
+      "alignment": {
+        "vertical": "Vertikal justering",
+        "vertical_desc": "Velg hvordan elementer justeres vertikalt innenfor beholderen."
+      },
+      "empty": {
+        "add_modules": "Legg til moduler i layoutbyggeren for å se dem her",
+        "no_modules": "Ingen moduler lagt til ennå"
+      },
+      "gap": {
+        "between_items": "Avstand mellom elementer",
+        "desc": "Sett avstanden mellom vertikale elementer (i rem-enheter). Bruk negative verdier for å overlappe elementer.",
+        "title": "Avstandskonfigurasjon"
+      },
+      "layout": {
+        "desc": "Konfigurer hvordan elementer arrangeres vertikalt innenfor beholderen.",
+        "title": "Layoutkonfigurasjon"
+      }
+    }
+  }
+}

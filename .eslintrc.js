@@ -9,11 +9,34 @@ module.exports = {
   env: {
     browser: true,
     es6: true,
+    node: true,
   },
   rules: {
-    '@typescript-eslint/no-explicit-any': 'warn',
+    // Relax some rules for alpha release
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        ignoreRestSiblings: true,
+      },
+    ],
+    '@typescript-eslint/no-explicit-any': 'warn', // Change from error to warning
+    'no-console': 'warn', // Allow console for debugging in alpha
+    'no-case-declarations': 'off', // Disable this rule temporarily
+    'no-self-assign': 'error', // Keep this as it's a real bug
+    'no-useless-escape': 'warn', // Change to warning
+
+    // TypeScript specific
+    '@typescript-eslint/no-inferrable-types': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
-    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'warn',
+
+    // General code quality
+    'prefer-const': 'error',
+    'no-var': 'error',
+    eqeqeq: 'error',
   },
-  ignorePatterns: ['dist/', 'node_modules/'],
+  ignorePatterns: ['dist/', 'node_modules/', '--help/', '*.js'],
 };

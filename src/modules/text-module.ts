@@ -2,8 +2,13 @@ import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, TextModule, UltraCardConfig } from '../types';
-import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
-import { FormUtils } from '../utils/form-utils';
+import { UltraLinkComponent } from '../components/ultra-link';
+import { UcFormUtils } from '../utils/uc-form-utils';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { TemplateService } from '../services/template-service';
+import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { localize } from '../localize/localize';
 
 export class UltraTextModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -18,8 +23,9 @@ export class UltraTextModule extends BaseUltraModule {
   };
 
   private clickTimeout: any = null;
+  private _templateService?: TemplateService;
 
-  createDefault(id?: string): TextModule {
+  createDefault(id?: string, hass?: HomeAssistant): TextModule {
     return {
       id: id || this.generateId('text'),
       type: 'text',
@@ -28,13 +34,26 @@ export class UltraTextModule extends BaseUltraModule {
       link: '',
       hide_if_no_link: false,
       // Global link configuration
-      tap_action: { action: 'default' },
-      hold_action: { action: 'default' },
-      double_tap_action: { action: 'default' },
+      tap_action: { action: 'nothing' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
       icon: '',
       icon_position: 'before',
       template_mode: false,
       template: '',
+      // Hover configuration
+      enable_hover_effect: true,
+      hover_background_color: 'var(--divider-color)',
+      // Default styling for new text modules
+      font_size: 26,
+      // alignment: undefined, // No default alignment to allow Global Design tab control
+      font_weight: '700',
+      text_transform: 'uppercase',
+      // No default design overrides; allow layout containers and design tab to control
+      design: {},
+      // Logic (visibility) defaults
+      display_mode: 'always',
+      display_conditions: [],
     };
   }
 
@@ -45,56 +64,34 @@ export class UltraTextModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const textModule = module as TextModule;
+    const lang = hass?.locale?.language || 'en';
 
     return html`
-      ${FormUtils.injectCleanFormStyles()}
+      ${this.injectUcFormStyles()}
       <div class="module-general-settings">
         <!-- Content Configuration -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
-          >
-            Content Configuration
-          </div>
-
-          <!-- Text Content -->
-          ${FormUtils.renderField(
-            'Text Content',
-            'Enter the text content to display in this module.',
-            hass,
-            { text: textModule.text || '' },
-            [FormUtils.createSchemaItem('text', { text: {} })],
-            (e: CustomEvent) => updateModule({ text: e.detail.value.text })
-          )}
-        </div>
-
-        <!-- Link Configuration -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
-        >
-          ${UltraLinkComponent.render(
-            hass,
+        ${this.renderSettingsSection(
+          localize('editor.text.content_section.title', lang, 'Content Configuration'),
+          localize(
+            'editor.text.content_section.desc',
+            lang,
+            'Configure the text content and basic settings for this module.'
+          ),
+          [
             {
-              tap_action: textModule.tap_action || { action: 'default' },
-              hold_action: textModule.hold_action || { action: 'default' },
-              double_tap_action: textModule.double_tap_action || { action: 'default' },
+              title: localize('editor.text.text_content', lang, 'Text Content'),
+              description: localize(
+                'editor.text.text_content_desc',
+                lang,
+                'Enter the text content to display in this module.'
+              ),
+              hass,
+              data: { text: textModule.text || '' },
+              schema: [this.textField('text')],
+              onChange: (e: CustomEvent) => updateModule(e.detail.value),
             },
-            (updates: Partial<UltraLinkConfig>) => {
-              const moduleUpdates: Partial<TextModule> = {};
-              if (updates.tap_action) moduleUpdates.tap_action = updates.tap_action;
-              if (updates.hold_action) moduleUpdates.hold_action = updates.hold_action;
-              if (updates.double_tap_action)
-                moduleUpdates.double_tap_action = updates.double_tap_action;
-              updateModule(moduleUpdates);
-            },
-            'Link Configuration'
-          )}
-        </div>
+          ]
+        )}
 
         <!-- Icon Configuration -->
         <div
@@ -103,76 +100,99 @@ export class UltraTextModule extends BaseUltraModule {
         >
           <div
             class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
-            Icon Configuration
+            ${localize('editor.text.icon_section.title', lang, 'Icon Configuration')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.text.icon_section.desc',
+              lang,
+              'Choose an icon to display alongside the text content.'
+            )}
           </div>
 
-          <!-- Icon Selection -->
-          ${FormUtils.renderField(
-            'Icon',
-            'Choose an icon to display alongside the text. Leave empty for no icon.',
+          ${UcFormUtils.renderFieldSection(
+            localize('editor.text.icon', lang, 'Icon'),
+            localize(
+              'editor.text.icon_desc',
+              lang,
+              'Choose an icon to display alongside the text. Leave empty for no icon.'
+            ),
             hass,
             { icon: textModule.icon || '' },
-            [FormUtils.createSchemaItem('icon', { icon: {} })],
-            (e: CustomEvent) => updateModule({ icon: e.detail.value.icon })
+            [this.iconField('icon')],
+            (e: CustomEvent) => updateModule(e.detail.value)
           )}
           ${textModule.icon && textModule.icon.trim() !== ''
             ? html`
                 <div style="margin-top: 24px;">
-                  ${this.renderConditionalFieldsGroup(
-                    'Icon Position',
-                    html`
-                      <div
-                        class="field-title"
-                        style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                  <div
+                    class="field-title"
+                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                  >
+                    ${localize('editor.text.icon_position', lang, 'Icon Position')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+                  >
+                    ${localize(
+                      'editor.text.icon_position_desc',
+                      lang,
+                      'Choose where to position the icon relative to the text.'
+                    )}
+                  </div>
+                  <div
+                    style="display: flex; gap: 8px; justify-content: flex-start; flex-wrap: wrap;"
+                  >
+                    <button
+                      type="button"
+                      style="padding: 8px 12px; border: 2px solid ${(textModule.icon_position ||
+                        'before') === 'before'
+                        ? 'var(--primary-color)'
+                        : 'var(--divider-color)'}; background: ${(textModule.icon_position ||
+                        'before') === 'before'
+                        ? 'var(--primary-color)'
+                        : 'transparent'}; color: ${(textModule.icon_position || 'before') ===
+                      'before'
+                        ? 'white'
+                        : 'var(--primary-text-color)'}; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; box-sizing: border-box;"
+                      @click=${() => updateModule({ icon_position: 'before' })}
+                    >
+                      <ha-icon
+                        icon="mdi:format-align-left"
+                        style="font-size: 16px; flex-shrink: 0;"
+                      ></ha-icon>
+                      <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        >${localize('editor.text.before_text', lang, 'Before Text')}</span
                       >
-                        Icon Position
-                      </div>
-                      <div
-                        class="field-description"
-                        style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+                    </button>
+                    <button
+                      type="button"
+                      style="padding: 8px 12px; border: 2px solid ${(textModule.icon_position ||
+                        'before') === 'after'
+                        ? 'var(--primary-color)'
+                        : 'var(--divider-color)'}; background: ${(textModule.icon_position ||
+                        'before') === 'after'
+                        ? 'var(--primary-color)'
+                        : 'transparent'}; color: ${(textModule.icon_position || 'before') ===
+                      'after'
+                        ? 'white'
+                        : 'var(--primary-text-color)'}; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; box-sizing: border-box;"
+                      @click=${() => updateModule({ icon_position: 'after' })}
+                    >
+                      <ha-icon
+                        icon="mdi:format-align-right"
+                        style="font-size: 16px; flex-shrink: 0;"
+                      ></ha-icon>
+                      <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        >${localize('editor.text.after_text', lang, 'After Text')}</span
                       >
-                        Choose where to position the icon relative to the text.
-                      </div>
-                      <div style="display: flex; gap: 8px; justify-content: flex-start;">
-                        <button
-                          type="button"
-                          style="padding: 8px 12px; border: 2px solid ${(textModule.icon_position ||
-                            'before') === 'before'
-                            ? 'var(--primary-color)'
-                            : 'var(--divider-color)'}; background: ${(textModule.icon_position ||
-                            'before') === 'before'
-                            ? 'var(--primary-color)'
-                            : 'transparent'}; color: ${(textModule.icon_position || 'before') ===
-                          'before'
-                            ? 'white'
-                            : 'var(--primary-text-color)'}; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
-                          @click=${() => updateModule({ icon_position: 'before' })}
-                        >
-                          <ha-icon icon="mdi:format-align-left" style="font-size: 16px;"></ha-icon>
-                          Before Text
-                        </button>
-                        <button
-                          type="button"
-                          style="padding: 8px 12px; border: 2px solid ${(textModule.icon_position ||
-                            'before') === 'after'
-                            ? 'var(--primary-color)'
-                            : 'var(--divider-color)'}; background: ${(textModule.icon_position ||
-                            'before') === 'after'
-                            ? 'var(--primary-color)'
-                            : 'transparent'}; color: ${(textModule.icon_position || 'before') ===
-                          'after'
-                            ? 'white'
-                            : 'var(--primary-text-color)'}; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;"
-                          @click=${() => updateModule({ icon_position: 'after' })}
-                        >
-                          <ha-icon icon="mdi:format-align-right" style="font-size: 16px;"></ha-icon>
-                          After Text
-                        </button>
-                      </div>
-                    `
-                  )}
+                    </button>
+                  </div>
                 </div>
               `
             : ''}
@@ -180,51 +200,130 @@ export class UltraTextModule extends BaseUltraModule {
 
         <!-- Template Configuration -->
         <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 0;"
+          class="settings-section template-mode-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
         >
           <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
-            >
-              Template Configuration
-            </div>
-            ${FormUtils.renderCleanForm(
-              hass,
-              { template_mode: textModule.template_mode || false },
-              [FormUtils.createSchemaItem('template_mode', { boolean: {} })],
-              (e: CustomEvent) => updateModule({ template_mode: e.detail.value.template_mode })
+            ${localize('editor.text.template_mode', lang, 'Template Mode')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+          >
+            ${localize(
+              'editor.text.template_mode_desc',
+              lang,
+              'Use Home Assistant templating syntax to render text'
             )}
           </div>
 
+          <div class="field-group" style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ template_mode: textModule.template_mode || false }}
+              .schema=${[
+                {
+                  name: 'template_mode',
+                  label: localize('editor.text.template_mode', lang, 'Template Mode'),
+                  description: localize(
+                    'editor.text.template_mode_desc',
+                    lang,
+                    'Use Home Assistant templating syntax to render text'
+                  ),
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ template_mode: e.detail.value.template_mode })}
+            ></ha-form>
+          </div>
+
           ${textModule.template_mode
-            ? this.renderConditionalFieldsGroup(
-                'Template Settings',
-                html`
-                  ${FormUtils.renderField(
-                    'Template Code',
-                    "Enter the Jinja2 template code. Example: {{ states('sensor.temperature') }}°C",
-                    hass,
-                    { template: textModule.template || '' },
-                    [FormUtils.createSchemaItem('template', { text: { multiline: true } })],
-                    (e: CustomEvent) => updateModule({ template: e.detail.value.template })
-                  )}
-                `
-              )
-            : html`
-                <div
-                  style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
-                >
-                  Enable template mode to use dynamic content
+            ? html`
+                <div class="field-group" style="margin-bottom: 16px;">
+                  <ha-form
+                    .hass=${hass}
+                    .data=${{ template: textModule.template || '' }}
+                    .schema=${[
+                      {
+                        name: 'template',
+                        label: localize('editor.text.value_template', lang, 'Value Template'),
+                        description: localize(
+                          'editor.text.value_template_desc',
+                          lang,
+                          'Template to render the text using Jinja2 syntax'
+                        ),
+                        selector: { text: { multiline: true } },
+                      },
+                    ]}
+                    .computeLabel=${(schema: any) => schema.label || schema.name}
+                    .computeDescription=${(schema: any) => schema.description || ''}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateModule({ template: e.detail.value.template })}
+                  ></ha-form>
                 </div>
-              `}
+
+                <div class="template-examples">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+                  >
+                    ${localize('editor.text.examples_title', lang, 'Common Examples:')}
+                  </div>
+
+                  <div class="example-item" style="margin-bottom: 16px;">
+                    <div
+                      class="example-code"
+                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
+                    >
+                      {{ states('sensor.example') }}
+                    </div>
+                    <div
+                      class="example-description"
+                      style="font-size: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize('editor.text.example_basic', lang, 'Basic value')}
+                    </div>
+                  </div>
+
+                  <div class="example-item" style="margin-bottom: 16px;">
+                    <div
+                      class="example-code"
+                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
+                    >
+                      {{ states('sensor.example') | int(default=0) }}%
+                    </div>
+                    <div
+                      class="example-description"
+                      style="font-size: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize('editor.text.example_percent', lang, 'With percent')}
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''}
         </div>
+
+        <!-- Text Alignment moved to Design tab per spec -->
       </div>
     `;
   }
+
+  renderActionsTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalActionsTab.render(module as TextModule, hass, updates => updateModule(updates));
+  }
+  // Removed bespoke action editor helpers to rely on GlobalActionsTab
 
   renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     const textModule = module as TextModule;
@@ -234,41 +333,115 @@ export class UltraTextModule extends BaseUltraModule {
       return html`<div class="text-module-hidden">Hidden (no link)</div>`;
     }
 
-    // Apply design properties with priority - design tab overrides module-specific properties
+    // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = textModule as any;
+    const designProperties = (textModule as any).design || {};
 
-    // Use design properties with fallback to default values
+    // Design properties are now properly merged
+
+    // Use design properties with inheritance-friendly defaults - prioritize design properties
+    const chosenAlign = (() => {
+      const dp = designProperties.text_align;
+      if (dp && dp !== 'inherit') return dp;
+      const topLevelTextAlign = (moduleWithDesign as any).text_align; // from layout inheritance
+      if (topLevelTextAlign && topLevelTextAlign !== 'inherit') return topLevelTextAlign;
+      if (moduleWithDesign.alignment && moduleWithDesign.alignment !== 'inherit')
+        return moduleWithDesign.alignment;
+      return 'center'; // Default to center alignment for text modules
+    })();
+    const justifyMap: Record<string, string> = {
+      left: 'flex-start',
+      center: 'center',
+      right: 'flex-end',
+    };
+
     const textStyles = {
-      fontSize: moduleWithDesign.font_size ? `${moduleWithDesign.font_size}px` : '16px',
-      fontFamily: moduleWithDesign.font_family || 'Roboto',
-      color: moduleWithDesign.color || 'var(--primary-text-color)',
-      textAlign: moduleWithDesign.text_align || 'center',
-      fontWeight: moduleWithDesign.font_weight || 'normal',
-      fontStyle: moduleWithDesign.font_style || 'normal',
-      textTransform: moduleWithDesign.text_transform || 'none',
+      fontSize: (() => {
+        if (designProperties.font_size)
+          return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
+        if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
+        // Default font size for text modules
+        return '26px';
+      })(),
+      fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
+      color: designProperties.color || moduleWithDesign.color || 'inherit',
+      textAlign: chosenAlign,
+      fontWeight: (() => {
+        if (designProperties.font_weight) return designProperties.font_weight;
+        if (moduleWithDesign.font_weight !== undefined) return moduleWithDesign.font_weight;
+        // Default font weight for text modules
+        return '700';
+      })(),
+      fontStyle: designProperties.font_style || moduleWithDesign.font_style || 'inherit',
+      textTransform: (() => {
+        if (designProperties.text_transform) return designProperties.text_transform;
+        if (moduleWithDesign.text_transform !== undefined) return moduleWithDesign.text_transform;
+        // Default text transform for text modules
+        return 'uppercase';
+      })(),
       textDecoration: 'none',
-      lineHeight: moduleWithDesign.line_height || '1.4',
-      letterSpacing: moduleWithDesign.letter_spacing || 'normal',
+      lineHeight: designProperties.line_height || moduleWithDesign.line_height || 'inherit',
+      letterSpacing:
+        designProperties.letter_spacing || moduleWithDesign.letter_spacing || 'inherit',
       margin: '0',
 
       display: 'flex',
       alignItems: 'center',
-      justifyContent: moduleWithDesign.text_align || 'center',
+      justifyContent: justifyMap[chosenAlign] || 'center',
       gap: '8px',
+      width: '100%',
       // Shadow effects
       textShadow:
-        moduleWithDesign.text_shadow_h && moduleWithDesign.text_shadow_v
-          ? `${moduleWithDesign.text_shadow_h || '0'} ${moduleWithDesign.text_shadow_v || '0'} ${moduleWithDesign.text_shadow_blur || '0'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,0.5)'}`
-          : 'none',
+        designProperties.text_shadow_h && designProperties.text_shadow_v
+          ? `${designProperties.text_shadow_h || '0'} ${designProperties.text_shadow_v || '0'} ${designProperties.text_shadow_blur || '0'} ${designProperties.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+          : moduleWithDesign.text_shadow_h && moduleWithDesign.text_shadow_v
+            ? `${moduleWithDesign.text_shadow_h || '0'} ${moduleWithDesign.text_shadow_v || '0'} ${moduleWithDesign.text_shadow_blur || '0'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+            : 'none',
       boxShadow:
-        moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
-          ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
-          : 'none',
+        designProperties.box_shadow_h && designProperties.box_shadow_v
+          ? `${designProperties.box_shadow_h || '0'} ${designProperties.box_shadow_v || '0'} ${designProperties.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || '0'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
+            ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+            : 'none',
       // Note: Sizing and positioning properties are handled by containerStyles for design tab functionality
-    };
+    } as Record<string, string>;
 
     const iconElement = textModule.icon ? html`<ha-icon icon="${textModule.icon}"></ha-icon>` : '';
-    const textElement = html`<span>${textModule.text || 'Sample Text'}</span>`;
+
+    // Determine display text: prefer template result if template_mode is enabled
+    let displayText: string = textModule.text || 'Sample Text';
+    if (textModule.template_mode && textModule.template) {
+      // Initialize template service
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      // Ensure template string cache exists on hass
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(textModule.template);
+        const templateKey = `state_text_text_${textModule.id}_${templateHash}`; // prefix to preserve string
+
+        // Subscribe if needed
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          this._templateService.subscribeToTemplate(textModule.template, templateKey, () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
+          });
+        }
+
+        // Use latest rendered string if available
+        const rendered = hass.__uvc_template_strings?.[templateKey];
+        if (rendered !== undefined && String(rendered).trim() !== '') {
+          displayText = String(rendered);
+        }
+      }
+    }
+
+    const textElement = html`<span>${displayText}</span>`;
 
     let content;
     if (textModule.icon_position === 'before' || !textModule.icon_position) {
@@ -282,8 +455,8 @@ export class UltraTextModule extends BaseUltraModule {
     // Wrap in link or add click handlers if provided
     const element = this.hasActiveLink(textModule)
       ? html`<div
-          class="text-module-clickable"
-          style="color: inherit; text-decoration: inherit; cursor: pointer;"
+          class="${GlobalActionsTab.getClickableClass(textModule)}"
+          style="${GlobalActionsTab.getClickableStyle(textModule)}"
           @click=${(e: Event) => this.handleClick(e, textModule, hass)}
           @dblclick=${(e: Event) => this.handleDoubleClick(e, textModule, hass)}
           @mousedown=${(e: Event) => this.handleMouseDown(e, textModule, hass)}
@@ -296,58 +469,76 @@ export class UltraTextModule extends BaseUltraModule {
         </div>`
       : content;
 
-    // Container styles for margin and positioning
+    // Container styles for margin and positioning - prioritize design properties
     const containerStyles = {
       padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
         moduleWithDesign.padding_top ||
         moduleWithDesign.padding_bottom ||
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
-          ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '8px 0',
       margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
         moduleWithDesign.margin_top ||
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
           : '0',
       // Only apply container-level design properties if specifically configured
       background:
-        moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
-          ? moduleWithDesign.background_color
-          : 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(moduleWithDesign, hass),
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
+        designProperties.background_color || moduleWithDesign.background_color || 'inherit',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
       border:
-        moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none'
-          ? `${moduleWithDesign.border_width || '1px'} ${moduleWithDesign.border_style} ${moduleWithDesign.border_color || 'var(--divider-color)'}`
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${designProperties.border_width || moduleWithDesign.border_width || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
           : 'none',
-      borderRadius: this.addPixelUnit(moduleWithDesign.border_radius) || '0',
-      position: moduleWithDesign.position || 'static',
-      top: moduleWithDesign.top || 'auto',
-      bottom: moduleWithDesign.bottom || 'auto',
-      left: moduleWithDesign.left || 'auto',
-      right: moduleWithDesign.right || 'auto',
-      zIndex: moduleWithDesign.z_index || 'auto',
-      // Sizing - apply to container for design tab functionality
-      width: moduleWithDesign.width || '100%',
-      height: moduleWithDesign.height || 'auto',
-      maxWidth: moduleWithDesign.max_width || 'none',
-      maxHeight: moduleWithDesign.max_height || 'none',
-      minWidth: moduleWithDesign.min_width || 'none',
-      minHeight: moduleWithDesign.min_height || 'auto',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) ||
+        'inherit',
+      position: designProperties.position || moduleWithDesign.position || 'static',
+      top: designProperties.top || moduleWithDesign.top || 'auto',
+      bottom: designProperties.bottom || moduleWithDesign.bottom || 'auto',
+      left: designProperties.left || moduleWithDesign.left || 'auto',
+      right: designProperties.right || moduleWithDesign.right || 'auto',
+      zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
+      // Sizing - apply to container for design tab functionality (use auto for proper alignment)
+      width: designProperties.width || moduleWithDesign.width || 'auto',
+      height: designProperties.height || moduleWithDesign.height || 'auto',
+      maxWidth: designProperties.max_width || moduleWithDesign.max_width || 'none',
+      maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
+      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'auto',
+      minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
       // Effects
-      overflow: moduleWithDesign.overflow || 'visible',
-      clipPath: moduleWithDesign.clip_path || 'none',
-      backdropFilter: moduleWithDesign.backdrop_filter || 'none',
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
+      backdropFilter:
+        designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
       // Shadow
       boxShadow:
-        moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
-          ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
-          : 'none',
+        designProperties.box_shadow_h && designProperties.box_shadow_v
+          ? `${designProperties.box_shadow_h || '0'} ${designProperties.box_shadow_v || '0'} ${designProperties.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || '0'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
+            ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+            : 'none',
       boxSizing: 'border-box',
     };
 
@@ -356,6 +547,16 @@ export class UltraTextModule extends BaseUltraModule {
         <div class="text-module-preview" style=${this.styleObjectToCss(textStyles)}>${element}</div>
       </div>
     `;
+  }
+
+  // Explicit Logic tab renderer (some editors call this directly)
+  renderLogicTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -459,8 +660,8 @@ export class UltraTextModule extends BaseUltraModule {
         }
         break;
       case 'perform-action':
-        if (!action.service) {
-          errors.push('Service is required for perform-action');
+        if (!action.perform_action && !action.service) {
+          errors.push('Action is required for perform-action');
         }
         break;
     }
@@ -554,7 +755,11 @@ export class UltraTextModule extends BaseUltraModule {
       textModule.tap_action.action !== 'default' &&
       textModule.tap_action.action !== 'nothing'
     ) {
-      UltraLinkComponent.handleAction(textModule.tap_action, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(
+        textModule.tap_action as any,
+        hass,
+        event.target as HTMLElement
+      );
     }
   }
 
@@ -565,7 +770,7 @@ export class UltraTextModule extends BaseUltraModule {
       textModule.double_tap_action.action !== 'nothing'
     ) {
       UltraLinkComponent.handleAction(
-        textModule.double_tap_action,
+        textModule.double_tap_action as any,
         hass,
         event.target as HTMLElement
       );
@@ -578,7 +783,11 @@ export class UltraTextModule extends BaseUltraModule {
       textModule.hold_action.action !== 'default' &&
       textModule.hold_action.action !== 'nothing'
     ) {
-      UltraLinkComponent.handleAction(textModule.hold_action, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(
+        textModule.hold_action as any,
+        hass,
+        event.target as HTMLElement
+      );
     }
   }
 
@@ -602,7 +811,7 @@ export class UltraTextModule extends BaseUltraModule {
       .field-title {
         font-size: 16px !important;
         font-weight: 600 !important;
-        color: var(--primary-text-color) !important;
+ 
         margin-bottom: 4px !important;
         display: block !important;
       }
@@ -696,6 +905,9 @@ export class UltraTextModule extends BaseUltraModule {
         font-size: 0.9em;
         color: var(--primary-color);
       }
+
+      /* Clickable text hover styles */
+      ${GlobalActionsTab.getHoverStyles()}
     `;
   }
 
@@ -812,5 +1024,16 @@ export class UltraTextModule extends BaseUltraModule {
 
     // Otherwise return as-is (already has units like px, em, %, etc.)
     return value;
+  }
+
+  // Simple, stable string hash for template keys
+  private _hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      const chr = str.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
   }
 }

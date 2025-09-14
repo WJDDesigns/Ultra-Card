@@ -91,6 +91,9 @@ export class UCGradientEditor extends LitElement {
   @property({ type: String }) barRadius: 'round' | 'square' | 'rounded-square' = 'round';
   @property({ type: String }) barStyle: string = 'flat';
   @state() private _draggedIndex: number | null = null;
+  @state() private _colorPickerOpen: boolean = false;
+  @state() private _colorPickerStopId: string | null = null;
+  @state() private _colorPickerCurrentColor: string = '#000000';
 
   static styles = css`
     :host {
@@ -334,24 +337,83 @@ export class UCGradientEditor extends LitElement {
     .stops-list.drag-active .stop-item:not(.dragging) {
       transition: transform 0.2s ease;
     }
+
+    /* Color Circle Styling */
+    .color-circle {
+      border: 3px solid var(--divider-color);
+      transition: all 0.2s ease;
+    }
+
+    .color-circle:hover {
+      border-color: var(--primary-color);
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Color Picker Popup */
+    .color-picker-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(2px);
+    }
+
+    .color-picker-popup {
+      background: var(--card-background-color);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--divider-color);
+    }
+
+    .color-picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--divider-color);
+    }
+
+    .color-picker-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+      background: var(--divider-color);
+      color: var(--primary-text-color);
+    }
   `;
 
   render(): TemplateResult {
     const sortedStops = [...this.stops].sort((a, b) => a.position - b.position);
-    const gradientString = generateGradientString(sortedStops);
 
     return html`
-      <!-- Gradient Preview -->
-      <div
-        class="gradient-preview bar-size-${this.barSize} bar-radius-${this
-          .barRadius} bar-style-${this.barStyle}"
-      >
-        <div
-          class="gradient-preview-fill bar-style-${this.barStyle}"
-          style="background: linear-gradient(to right, ${gradientString})"
-        ></div>
-      </div>
-
       <!-- Action Buttons -->
       <div class="buttons-row">
         <button class="add-button" @click=${this._addStop}>
@@ -378,6 +440,25 @@ export class UCGradientEditor extends LitElement {
           (stop, index) => this._renderStopItem(stop, index, sortedStops.length)
         )}
       </div>
+
+      <!-- Color Picker Popup -->
+      ${this._colorPickerOpen
+        ? html`
+            <div class="color-picker-overlay" @click=${this._closeColorPicker}>
+              <div class="color-picker-popup" @click=${(e: Event) => e.stopPropagation()}>
+                <div class="color-picker-header">
+                  <h3>Choose Color</h3>
+                  <button class="close-btn" @click=${this._closeColorPicker}>×</button>
+                </div>
+                <ultra-color-picker
+                  .value=${this._colorPickerCurrentColor}
+                  .defaultValue=${this._colorPickerCurrentColor}
+                  @value-changed=${this._handleColorPickerChange}
+                ></ultra-color-picker>
+              </div>
+            </div>
+          `
+        : ''}
     `;
   }
 
@@ -405,15 +486,11 @@ export class UCGradientEditor extends LitElement {
         </div>
 
         <!-- Color Preview & Picker -->
-        <div class="color-preview" style="background-color: ${stop.color}">
-          <ultra-color-picker
-            .value=${stop.color}
-            .defaultValue=${stop.color}
-            .showResetButton=${false}
-            style="width: 100%; height: 100%; border-radius: 50%; overflow: hidden;"
-            @value-changed=${(e: CustomEvent) => this._handleColorChange(stop.id, e.detail.value)}
-          ></ultra-color-picker>
-        </div>
+        <div
+          class="color-preview color-circle"
+          style="background-color: ${stop.color}; cursor: pointer;"
+          @click=${() => this._openColorPicker(stop.id, stop.color)}
+        ></div>
 
         <!-- Percentage Input -->
         <input
@@ -478,6 +555,24 @@ export class UCGradientEditor extends LitElement {
   private _handleColorChange(stopId: string, newColor: string): void {
     this.stops = this.stops.map(stop => (stop.id === stopId ? { ...stop, color: newColor } : stop));
     this._notifyChange();
+  }
+
+  private _openColorPicker(stopId: string, currentColor: string): void {
+    this._colorPickerStopId = stopId;
+    this._colorPickerCurrentColor = currentColor;
+    this._colorPickerOpen = true;
+  }
+
+  private _closeColorPicker(): void {
+    this._colorPickerOpen = false;
+    this._colorPickerStopId = null;
+  }
+
+  private _handleColorPickerChange(e: CustomEvent): void {
+    if (this._colorPickerStopId) {
+      this._handleColorChange(this._colorPickerStopId, e.detail.value);
+      this._colorPickerCurrentColor = e.detail.value;
+    }
   }
 
   private _handlePositionChange(stopId: string, newPosition: number): void {

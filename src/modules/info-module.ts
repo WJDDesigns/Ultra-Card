@@ -2,6 +2,14 @@ import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, InfoModule, InfoEntityConfig, UltraCardConfig } from '../types';
+import { UltraLinkComponent } from '../components/ultra-link';
+import { formatEntityState } from '../utils/number-format';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { EntityIconService } from '../services/entity-icon-service';
+import { TemplateService } from '../services/template-service';
+import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
 
 export class UltraInfoModule extends BaseUltraModule {
@@ -16,21 +24,25 @@ export class UltraInfoModule extends BaseUltraModule {
     tags: ['info', 'entity', 'data', 'sensors'],
   };
 
-  createDefault(id?: string): InfoModule {
+  private _templateService?: TemplateService;
+
+  createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
       id: id || this.generateId('info'),
       type: 'info',
       info_entities: [
         {
           id: this.generateId('entity'),
-          entity: '',
-          name: 'Entity Name',
-          icon: '',
+          entity: 'weather.forecast_home',
+          name: 'Temperature',
+          icon: 'mdi:thermometer',
           show_icon: true,
           show_name: true,
+          show_state: true,
+          show_units: true,
           text_size: 14,
           name_size: 12,
-          icon_size: 18,
+          icon_size: 26,
           text_bold: false,
           text_italic: false,
           text_uppercase: false,
@@ -42,6 +54,7 @@ export class UltraInfoModule extends BaseUltraModule {
           icon_color: 'var(--primary-color)',
           name_color: 'var(--secondary-text-color)',
           text_color: 'var(--primary-text-color)',
+          state_color: 'var(--primary-text-color)',
           click_action: 'more-info',
           navigation_path: '',
           url: '',
@@ -61,11 +74,18 @@ export class UltraInfoModule extends BaseUltraModule {
           icon_gap: 8,
         },
       ],
-      alignment: 'left',
-      vertical_alignment: 'center',
+      // alignment: undefined, // No default alignment to allow Global Design tab control
+      // vertical_alignment: undefined, // No default alignment to allow Global Design tab control
       columns: 1,
       gap: 12,
       allow_wrap: true,
+      // Global action configuration
+      tap_action: { action: 'nothing' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
+      // Logic (visibility) defaults
+      display_mode: 'always',
+      display_conditions: [],
     };
   }
 
@@ -76,194 +96,343 @@ export class UltraInfoModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const infoModule = module as InfoModule;
-    const entity = infoModule.info_entities[0] || this.createDefault().info_entities[0];
+    const lang = hass?.locale?.language || 'en';
+    const defaultEntity = this.createDefault().info_entities[0];
+    let entity = infoModule.info_entities[0]
+      ? { ...defaultEntity, ...infoModule.info_entities[0] }
+      : defaultEntity;
+
+    // Ensure all required properties have default values - update the entity variable
+    entity = {
+      ...entity,
+      icon_position: entity.icon_position || 'left',
+      overall_alignment: entity.overall_alignment || 'center',
+      icon_alignment: entity.icon_alignment || 'center',
+      content_alignment: entity.content_alignment || 'start',
+    };
 
     return html`
+      ${this.injectUcFormStyles()}
       <div class="module-general-settings">
         <!-- Entity Configuration -->
-        <div class="settings-section">
-          <ha-form
-            .hass=${hass}
-            .data=${{ entity: entity.entity || '' }}
-            .schema=${[
-              {
-                name: 'entity',
-                label: 'Entity',
-                description: 'Select the entity to display',
-                selector: { entity: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || schema.name}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) =>
-              this._handleEntityChange(infoModule, 0, e.detail.value.entity, hass, updateModule)}
-          ></ha-form>
-        </div>
-
-        <!-- Custom Name -->
-        <div class="settings-section">
-          <ha-form
-            .hass=${hass}
-            .data=${{ name: entity.name || '' }}
-            .schema=${[
-              {
-                name: 'name',
-                label: 'Name',
-                description: 'Custom display name for this entity',
-                selector: { text: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || schema.name}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) =>
-              this._updateEntity(infoModule, 0, { name: e.detail.value.name }, updateModule)}
-          ></ha-form>
-        </div>
-
-        <!-- Show Icon -->
-        <div class="settings-section">
-          <ha-form
-            .hass=${hass}
-            .data=${{ show_icon: entity.show_icon !== false }}
-            .schema=${[
-              {
-                name: 'show_icon',
-                label: 'Show Icon',
-                description: 'Display an icon next to the entity value',
-                selector: { boolean: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || schema.name}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) =>
-              this._updateEntity(
-                infoModule,
-                0,
-                { show_icon: e.detail.value.show_icon },
-                updateModule
-              )}
-          ></ha-form>
-        </div>
-
-        <!-- Icon Selection -->
-        ${entity.show_icon !== false
-          ? html`
-              <div class="settings-section">
-                <ha-form
-                  .hass=${hass}
-                  .data=${{ icon: entity.icon || '' }}
-                  .schema=${[
-                    {
-                      name: 'icon',
-                      label: 'Icon',
-                      description: 'Choose an icon to display',
-                      selector: { icon: {} },
-                    },
-                  ]}
-                  .computeLabel=${(schema: any) => schema.label || schema.name}
-                  .computeDescription=${(schema: any) => schema.description || ''}
-                  @value-changed=${(e: CustomEvent) =>
-                    this._updateEntity(infoModule, 0, { icon: e.detail.value.icon }, updateModule)}
-                ></ha-form>
-              </div>
-            `
-          : ''}
-
-        <!-- Show Name -->
-        <div class="settings-section">
-          <ha-form
-            .hass=${hass}
-            .data=${{ show_name: entity.show_name !== false }}
-            .schema=${[
-              {
-                name: 'show_name',
-                label: 'Show Name',
-                description: 'Display the entity name above the value',
-                selector: { boolean: {} },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || schema.name}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) =>
-              this._updateEntity(
-                infoModule,
-                0,
-                { show_name: e.detail.value.show_name },
-                updateModule
-              )}
-          ></ha-form>
-        </div>
-
-        <!-- Click Action -->
-        <div class="settings-section">
-          <ha-form
-            .hass=${hass}
-            .data=${{ click_action: entity.click_action || 'more-info' }}
-            .schema=${[
-              {
-                name: 'click_action',
-                label: 'Click Action',
-                description: 'Action to perform when clicking the entity',
-                selector: {
-                  select: {
-                    options: [
-                      { value: 'none', label: 'No Action' },
-                      { value: 'more-info', label: 'More Info' },
-                      { value: 'toggle', label: 'Toggle' },
-                      { value: 'navigate', label: 'Navigate' },
-                      { value: 'url', label: 'Open URL' },
-                      { value: 'service', label: 'Call Service' },
-                    ],
-                    mode: 'dropdown',
-                  },
-                },
-              },
-            ]}
-            .computeLabel=${(schema: any) => schema.label || schema.name}
-            .computeDescription=${(schema: any) => schema.description || ''}
-            @value-changed=${(e: CustomEvent) =>
-              this._updateEntity(
-                infoModule,
-                0,
-                { click_action: e.detail.value.click_action },
-                updateModule
-              )}
-          ></ha-form>
-        </div>
-
-        <!-- Icon Color -->
-        ${entity.show_icon !== false
-          ? html`
-              <div class="settings-section">
-                <div
-                  class="field-title"
-                  style="font-size: 16px !important; font-weight: 600 !important;"
-                >
-                  Icon Color
-                </div>
-                <ultra-color-picker
-                  .value=${entity.icon_color || ''}
-                  .defaultValue=${'var(--primary-color)'}
-                  .hass=${hass}
-                  @value-changed=${(e: CustomEvent) =>
-                    this._updateEntity(infoModule, 0, { icon_color: e.detail.value }, updateModule)}
-                ></ultra-color-picker>
-              </div>
-            `
-          : ''}
-
-        <!-- Entity Color -->
-        <div class="settings-section">
-          <div class="field-title" style="font-size: 16px !important; font-weight: 600 !important;">
-            Entity Color
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+          >
+            ${localize('editor.info.entity_section.title', lang, 'ENTITY CONFIGURATION')}
           </div>
-          <ultra-color-picker
-            .value=${entity.text_color || ''}
-            .defaultValue=${'var(--primary-text-color)'}
-            .hass=${hass}
-            @value-changed=${(e: CustomEvent) =>
-              this._updateEntity(infoModule, 0, { text_color: e.detail.value }, updateModule)}
-          ></ultra-color-picker>
+
+          <div style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ entity: entity.entity || '' }}
+              .schema=${[
+                {
+                  name: 'entity',
+                  label: localize('editor.info.entity', lang, 'Entity'),
+                  description: localize(
+                    'editor.info.entity_desc',
+                    lang,
+                    'Select the entity to display'
+                  ),
+                  selector: { entity: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                this._handleEntityChange(infoModule, 0, e.detail.value.entity, hass, updateModule)}
+            ></ha-form>
+          </div>
+        </div>
+
+        <!-- Icon Settings -->
+        <div
+          class="settings-section icon-settings"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+          >
+            ${localize('editor.info.icon_section.title', lang, 'Icon Settings')}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ show_icon: entity.show_icon !== false }}
+              .schema=${[
+                {
+                  name: 'show_icon',
+                  label: localize('editor.info.show_icon', lang, 'Show Icon'),
+                  description: localize(
+                    'editor.info.show_icon_desc',
+                    lang,
+                    'Display an icon next to the entity value'
+                  ),
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { show_icon: e.detail.value.show_icon },
+                  updateModule
+                )}
+            ></ha-form>
+          </div>
+
+          ${entity.show_icon !== false
+            ? html`
+                <div style="margin-bottom: 16px;">
+                  <ha-form
+                    .hass=${hass}
+                    .data=${{ icon: entity.icon || '' }}
+                    .schema=${[
+                      {
+                        name: 'icon',
+                        label: localize('editor.info.icon', lang, 'Icon'),
+                        description: localize(
+                          'editor.info.icon_desc',
+                          lang,
+                          'Choose an icon to display'
+                        ),
+                        selector: { icon: {} },
+                      },
+                    ]}
+                    .computeLabel=${(schema: any) => schema.label || schema.name}
+                    .computeDescription=${(schema: any) => schema.description || ''}
+                    @value-changed=${(e: CustomEvent) =>
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { icon: e.detail.value.icon },
+                        updateModule
+                      )}
+                  ></ha-form>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+                  >
+                    ${localize('editor.info.icon_color', lang, 'Icon Color')}
+                  </div>
+                  <ultra-color-picker
+                    .value=${entity.icon_color || ''}
+                    .defaultValue=${'var(--primary-color)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) =>
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { icon_color: e.detail.value },
+                        updateModule
+                      )}
+                  ></ultra-color-picker>
+                </div>
+              `
+            : ''}
+        </div>
+
+        <!-- Name Settings -->
+        <div
+          class="settings-section name-settings"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+          >
+            ${localize('editor.info.name_section.title', lang, 'Name Settings')}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ show_name: entity.show_name !== false }}
+              .schema=${[
+                {
+                  name: 'show_name',
+                  label: localize('editor.info.show_name', lang, 'Show Name'),
+                  description: localize(
+                    'editor.info.show_name_desc',
+                    lang,
+                    'Display the entity name above the value'
+                  ),
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { show_name: e.detail.value.show_name },
+                  updateModule
+                )}
+            ></ha-form>
+          </div>
+
+          ${entity.show_name !== false
+            ? html`
+                <div style="margin-bottom: 16px;">
+                  <ha-form
+                    .hass=${hass}
+                    .data=${{ name: infoModule.info_entities[0]?.name ?? '' }}
+                    .schema=${[
+                      {
+                        name: 'name',
+                        label: localize('editor.info.custom_name', lang, 'Custom Name'),
+                        description: localize(
+                          'editor.info.custom_name_desc',
+                          lang,
+                          'Override the entity name with a custom name'
+                        ),
+                        selector: { text: {} },
+                      },
+                    ]}
+                    .computeLabel=${(schema: any) => schema.label || schema.name}
+                    .computeDescription=${(schema: any) => schema.description || ''}
+                    @value-changed=${(e: CustomEvent) =>
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { name: e.detail.value.name },
+                        updateModule
+                      )}
+                  ></ha-form>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+                  >
+                    ${localize('editor.info.name_color', lang, 'Name Color')}
+                  </div>
+                  <ultra-color-picker
+                    .value=${entity.name_color || ''}
+                    .defaultValue=${'var(--secondary-text-color)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) =>
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { name_color: e.detail.value },
+                        updateModule
+                      )}
+                  ></ultra-color-picker>
+                </div>
+              `
+            : ''}
+        </div>
+
+        <!-- State Settings -->
+        <div
+          class="settings-section state-settings"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+          >
+            ${localize('editor.info.state_section.title', lang, 'State Settings')}
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ show_state: entity.show_state !== false }}
+              .schema=${[
+                {
+                  name: 'show_state',
+                  label: localize('editor.info.show_state', lang, 'Show State'),
+                  description: localize(
+                    'editor.info.show_state_desc',
+                    lang,
+                    'Display the entity state/value'
+                  ),
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                this._updateEntity(
+                  infoModule,
+                  0,
+                  { show_state: e.detail.value.show_state },
+                  updateModule
+                )}
+            ></ha-form>
+          </div>
+
+          ${entity.show_state !== false
+            ? html`
+                <div style="margin-bottom: 16px;">
+                  <ha-form
+                    .hass=${hass}
+                    .data=${{ show_units: entity.show_units !== false }}
+                    .schema=${[
+                      {
+                        name: 'show_units',
+                        label: localize('editor.info.show_units', lang, 'Show Units'),
+                        description: localize(
+                          'editor.info.show_units_desc',
+                          lang,
+                          'Display the unit of measurement (if available)'
+                        ),
+                        selector: { boolean: {} },
+                      },
+                    ]}
+                    .computeLabel=${(schema: any) => schema.label || schema.name}
+                    .computeDescription=${(schema: any) => schema.description || ''}
+                    @value-changed=${(e: CustomEvent) =>
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { show_units: e.detail.value.show_units },
+                        updateModule
+                      )}
+                  ></ha-form>
+                </div>
+              `
+            : ''}
+          ${entity.show_state !== false
+            ? html`
+                <div style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+                  >
+                    ${localize('editor.info.state_color', lang, 'State Color')}
+                  </div>
+                  <ultra-color-picker
+                    .value=${entity.state_color || ''}
+                    .defaultValue=${'var(--primary-text-color)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) =>
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { state_color: e.detail.value },
+                        updateModule
+                      )}
+                  ></ultra-color-picker>
+                </div>
+              `
+            : ''}
         </div>
 
         <!-- Template Mode Section -->
@@ -275,14 +444,17 @@ export class UltraInfoModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
-            Template Mode
+            ${localize('editor.info.template.title', lang, 'Template Mode')}
           </div>
           <div
             class="field-description"
             style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
           >
-            Use a template to format the entity value. Templates allow you to use Home Assistant
-            templating syntax for complex formatting.
+            ${localize(
+              'editor.info.template.desc',
+              lang,
+              'Use a template to format the entity value. Templates allow you to use Home Assistant templating syntax for complex formatting.'
+            )}
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
@@ -292,8 +464,12 @@ export class UltraInfoModule extends BaseUltraModule {
               .schema=${[
                 {
                   name: 'template_mode',
-                  label: 'Template Mode',
-                  description: 'Use Home Assistant templating syntax to format the value',
+                  label: localize('editor.info.template.mode', lang, 'Template Mode'),
+                  description: localize(
+                    'editor.info.template.mode_desc',
+                    lang,
+                    'Use Home Assistant templating syntax to format the value'
+                  ),
                   selector: { boolean: {} },
                 },
               ]}
@@ -318,20 +494,27 @@ export class UltraInfoModule extends BaseUltraModule {
                     .schema=${[
                       {
                         name: 'template',
-                        label: 'Value Template',
-                        description: 'Template to format the entity value using Jinja2 syntax',
+                        label: localize('editor.info.template.value', lang, 'Value Template'),
+                        description: localize(
+                          'editor.info.template.value_desc',
+                          lang,
+                          'Template to format the entity value using Jinja2 syntax'
+                        ),
                         selector: { text: { multiline: true } },
                       },
                     ]}
                     .computeLabel=${(schema: any) => schema.label || schema.name}
                     .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
+                    @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { template: e.detail.value.template },
                         updateModule
-                      )}
+                      );
+                      // Immediately evaluate for editor live preview responsiveness
+                      this._handleTemplateChange(e.detail.value.template, infoModule, 0, hass);
+                    }}
                   ></ha-form>
                 </div>
 
@@ -340,7 +523,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     class="field-title"
                     style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
                   >
-                    Common Examples:
+                    ${localize('editor.info.examples_title', lang, 'Common Examples:')}
                   </div>
 
                   <div class="example-item" style="margin-bottom: 16px;">
@@ -354,7 +537,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       class="example-description"
                       style="font-size: 12px; color: var(--secondary-text-color);"
                     >
-                      Basic value
+                      ${localize('editor.info.example_basic', lang, 'Basic value')}
                     </div>
                   </div>
 
@@ -370,7 +553,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       class="example-description"
                       style="font-size: 12px; color: var(--secondary-text-color);"
                     >
-                      With units
+                      ${localize('editor.info.example_units', lang, 'With units')}
                     </div>
                   </div>
 
@@ -386,7 +569,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       class="example-description"
                       style="font-size: 12px; color: var(--secondary-text-color);"
                     >
-                      Round to 1 decimal
+                      ${localize('editor.info.example_round', lang, 'Round to 1 decimal')}
                     </div>
                   </div>
                 </div>
@@ -403,113 +586,294 @@ export class UltraInfoModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
-            Size Settings
+            ${localize('editor.info.size_section.title', lang, 'Size Settings')}
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 20px;">
             ${entity.show_icon !== false
               ? html`
-                  <div class="field-group">
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{ icon_size: Number(entity.icon_size) || 18 }}
-                      .schema=${[
-                        {
-                          name: 'icon_size',
-                          label: 'Icon Size',
-                          description: 'Size of the icon in pixels',
-                          selector: { number: { min: 12, max: 48, step: 1, mode: 'slider' } },
-                        },
-                      ]}
-                      .computeLabel=${(schema: any) => schema.label || schema.name}
-                      .computeDescription=${(schema: any) => schema.description || ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { icon_size: Number(e.detail.value.icon_size) },
-                          updateModule
-                        )}
-                    ></ha-form>
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">
+                      ${localize('editor.info.icon_size', lang, 'Icon Size')}
+                    </div>
+                    <div class="field-description">
+                      ${localize('editor.info.icon_size_desc', lang, 'Size of the icon in pixels')}
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="12"
+                        max="48"
+                        step="1"
+                        .value="${Number(entity.icon_size) || 26}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          this._updateEntity(infoModule, 0, { icon_size: value }, updateModule);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="12"
+                        max="48"
+                        step="1"
+                        .value="${Number(entity.icon_size) || 26}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          if (!isNaN(value)) {
+                            this._updateEntity(infoModule, 0, { icon_size: value }, updateModule);
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = Number(target.value) || 26;
+                            const increment = e.key === 'ArrowUp' ? 1 : -1;
+                            const newValue = Math.max(12, Math.min(48, currentValue + increment));
+                            this._updateEntity(
+                              infoModule,
+                              0,
+                              { icon_size: newValue },
+                              updateModule
+                            );
+                          }
+                        }}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${() =>
+                          this._updateEntity(infoModule, 0, { icon_size: 26 }, updateModule)}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '26')}"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `
               : ''}
             ${entity.show_name !== false
               ? html`
-                  <div class="field-group">
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{ name_size: entity.name_size || 12 }}
-                      .schema=${[
-                        {
-                          name: 'name_size',
-                          label: 'Name Size',
-                          description: 'Size of the entity name text in pixels',
-                          selector: { number: { min: 8, max: 32, step: 1, mode: 'slider' } },
-                        },
-                      ]}
-                      .computeLabel=${(schema: any) => schema.label || schema.name}
-                      .computeDescription=${(schema: any) => schema.description || ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { name_size: e.detail.value.name_size },
-                          updateModule
-                        )}
-                    ></ha-form>
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">
+                      ${localize('editor.info.name_size', lang, 'Name Size')}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.info.name_size_desc',
+                        lang,
+                        'Size of the entity name text in pixels'
+                      )}
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="8"
+                        max="32"
+                        step="1"
+                        .value="${entity.name_size || 12}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          this._updateEntity(infoModule, 0, { name_size: value }, updateModule);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="8"
+                        max="32"
+                        step="1"
+                        .value="${entity.name_size || 12}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          if (!isNaN(value)) {
+                            this._updateEntity(infoModule, 0, { name_size: value }, updateModule);
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = Number(target.value) || 12;
+                            const increment = e.key === 'ArrowUp' ? 1 : -1;
+                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
+                            this._updateEntity(
+                              infoModule,
+                              0,
+                              { name_size: newValue },
+                              updateModule
+                            );
+                          }
+                        }}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${() =>
+                          this._updateEntity(infoModule, 0, { name_size: 12 }, updateModule)}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '12')}"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `
               : ''}
 
-            <div class="field-group">
-              <ha-form
-                .hass=${hass}
-                .data=${{ text_size: entity.text_size || 14 }}
-                .schema=${[
-                  {
-                    name: 'text_size',
-                    label: 'Value Size',
-                    description: 'Size of the entity value text in pixels',
-                    selector: { number: { min: 8, max: 32, step: 1, mode: 'slider' } },
-                  },
-                ]}
-                .computeLabel=${(schema: any) => schema.label || schema.name}
-                .computeDescription=${(schema: any) => schema.description || ''}
-                @value-changed=${(e: CustomEvent) =>
-                  this._updateEntity(
-                    infoModule,
-                    0,
-                    { text_size: e.detail.value.text_size },
-                    updateModule
-                  )}
-              ></ha-form>
+            <div class="field-container" style="margin-bottom: 24px;">
+              <div class="field-title">
+                ${localize('editor.info.value_size', lang, 'Value Size')}
+              </div>
+              <div class="field-description">
+                ${localize(
+                  'editor.info.value_size_desc',
+                  lang,
+                  'Size of the entity value text in pixels'
+                )}
+              </div>
+              <div
+                class="gap-control-container"
+                style="display: flex; align-items: center; gap: 12px;"
+              >
+                <input
+                  type="range"
+                  class="gap-slider"
+                  min="8"
+                  max="32"
+                  step="1"
+                  .value="${entity.text_size || 14}"
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = Number(target.value);
+                    this._updateEntity(infoModule, 0, { text_size: value }, updateModule);
+                  }}
+                />
+                <input
+                  type="number"
+                  class="gap-input"
+                  min="8"
+                  max="32"
+                  step="1"
+                  .value="${entity.text_size || 14}"
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = Number(target.value);
+                    if (!isNaN(value)) {
+                      this._updateEntity(infoModule, 0, { text_size: value }, updateModule);
+                    }
+                  }}
+                  @keydown=${(e: KeyboardEvent) => {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      const target = e.target as HTMLInputElement;
+                      const currentValue = Number(target.value) || 14;
+                      const increment = e.key === 'ArrowUp' ? 1 : -1;
+                      const newValue = Math.max(8, Math.min(32, currentValue + increment));
+                      this._updateEntity(infoModule, 0, { text_size: newValue }, updateModule);
+                    }
+                  }}
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateEntity(infoModule, 0, { text_size: 14 }, updateModule)}
+                  title="${localize(
+                    'editor.fields.reset_default_value',
+                    lang,
+                    'Reset to default ({value})'
+                  ).replace('{value}', '14')}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             ${entity.show_icon !== false
               ? html`
-                  <div class="field-group">
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{ icon_gap: entity.icon_gap || 8 }}
-                      .schema=${[
-                        {
-                          name: 'icon_gap',
-                          label: 'Icon Gap',
-                          description: 'Space between the icon and content in pixels',
-                          selector: { number: { min: 0, max: 32, step: 1, mode: 'slider' } },
-                        },
-                      ]}
-                      .computeLabel=${(schema: any) => schema.label || schema.name}
-                      .computeDescription=${(schema: any) => schema.description || ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        this._updateEntity(
-                          infoModule,
-                          0,
-                          { icon_gap: e.detail.value.icon_gap },
-                          updateModule
-                        )}
-                    ></ha-form>
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">
+                      ${localize('editor.info.icon_gap', lang, 'Icon Gap')}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.info.icon_gap_desc',
+                        lang,
+                        'Space between the icon and content in pixels'
+                      )}
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="0"
+                        max="32"
+                        step="1"
+                        .value="${entity.icon_gap || 8}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          this._updateEntity(infoModule, 0, { icon_gap: value }, updateModule);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="0"
+                        max="32"
+                        step="1"
+                        .value="${entity.icon_gap || 8}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          if (!isNaN(value)) {
+                            this._updateEntity(infoModule, 0, { icon_gap: value }, updateModule);
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = Number(target.value) || 8;
+                            const increment = e.key === 'ArrowUp' ? 1 : -1;
+                            const newValue = Math.max(0, Math.min(32, currentValue + increment));
+                            this._updateEntity(infoModule, 0, { icon_gap: newValue }, updateModule);
+                          }
+                        }}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${() =>
+                          this._updateEntity(infoModule, 0, { icon_gap: 8 }, updateModule)}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '8')}"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `
               : ''}
@@ -525,7 +889,7 @@ export class UltraInfoModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
           >
-            Layout & Positioning
+            ${localize('editor.info.layout_section.title', lang, 'Layout & Positioning')}
           </div>
 
           <!-- Icon Position -->
@@ -534,24 +898,22 @@ export class UltraInfoModule extends BaseUltraModule {
               class="field-title"
               style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
             >
-              Icon Position
+              ${localize('editor.info.icon_position', lang, 'Icon Position')}
             </div>
             <div
               class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0px; max-width: 240px;"
+              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;"
             >
               ${[
-                { value: 'left', icon: 'mdi:format-align-left' },
-                { value: 'top', icon: 'mdi:format-align-top' },
-                { value: 'right', icon: 'mdi:format-align-right' },
-                { value: 'bottom', icon: 'mdi:format-align-bottom' },
+                { value: 'left', icon: 'mdi:arrow-left' },
+                { value: 'top', icon: 'mdi:arrow-up' },
+                { value: 'right', icon: 'mdi:arrow-right' },
+                { value: 'bottom', icon: 'mdi:arrow-down' },
               ].map(
                 position => html`
                   <button
                     type="button"
-                    class="control-btn ${(entity.icon_position || 'left') === position.value
-                      ? 'active'
-                      : ''}"
+                    class="control-btn ${entity.icon_position === position.value ? 'active' : ''}"
                     @click=${() =>
                       this._updateEntity(
                         infoModule,
@@ -574,11 +936,11 @@ export class UltraInfoModule extends BaseUltraModule {
               class="field-title"
               style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
             >
-              Overall Alignment
+              ${localize('editor.info.overall_alignment', lang, 'Overall Alignment')}
             </div>
             <div
               class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0px; max-width: 180px;"
+              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%;"
             >
               ${[
                 { value: 'left', icon: 'mdi:format-align-left' },
@@ -588,7 +950,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 alignment => html`
                   <button
                     type="button"
-                    class="control-btn ${(entity.overall_alignment || 'center') === alignment.value
+                    class="control-btn ${entity.overall_alignment === alignment.value
                       ? 'active'
                       : ''}"
                     @click=${() =>
@@ -608,18 +970,20 @@ export class UltraInfoModule extends BaseUltraModule {
           </div>
 
           <!-- Icon and Content Alignment Side by Side -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px;"
+          >
             <!-- Icon Alignment -->
             <div class="field-group">
               <div
                 class="field-title"
                 style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
               >
-                Icon Alignment
+                ${localize('editor.info.icon_alignment', lang, 'Icon Alignment')}
               </div>
               <div
                 class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0px;"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
               >
                 ${[
                   { value: 'start', icon: 'mdi:format-align-left' },
@@ -629,7 +993,7 @@ export class UltraInfoModule extends BaseUltraModule {
                   alignment => html`
                     <button
                       type="button"
-                      class="control-btn ${(entity.icon_alignment || 'center') === alignment.value
+                      class="control-btn ${entity.icon_alignment === alignment.value
                         ? 'active'
                         : ''}"
                       @click=${() =>
@@ -654,11 +1018,11 @@ export class UltraInfoModule extends BaseUltraModule {
                 class="field-title"
                 style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
               >
-                Content Alignment
+                ${localize('editor.info.content_alignment', lang, 'Content Alignment')}
               </div>
               <div
                 class="control-button-group"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0px;"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
               >
                 ${[
                   { value: 'start', icon: 'mdi:format-align-left' },
@@ -668,7 +1032,7 @@ export class UltraInfoModule extends BaseUltraModule {
                   alignment => html`
                     <button
                       type="button"
-                      class="control-btn ${(entity.content_alignment || 'start') === alignment.value
+                      class="control-btn ${entity.content_alignment === alignment.value
                         ? 'active'
                         : ''}"
                       @click=${() =>
@@ -692,56 +1056,261 @@ export class UltraInfoModule extends BaseUltraModule {
     `;
   }
 
+  renderActionsTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const infoModule = module as InfoModule;
+    const entity = infoModule.info_entities[0] || this.createDefault().info_entities[0];
+
+    return GlobalActionsTab.render(infoModule as any, hass, updates => updateModule(updates));
+  }
+
+  // Explicit Logic tab renderer (some editors call this directly)
+  renderLogicTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
+  }
+
+  private renderInfoActionConfig(
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<InfoModule>) => void
+  ): TemplateResult {
+    return html`
+      ${this.renderSingleActionConfig(
+        'Tap Action',
+        'Action when tapping this info entity',
+        (infoModule.tap_action || { action: 'nothing' }) as any,
+        hass,
+        action => updateModule({ tap_action: action })
+      )}
+      ${this.renderSingleActionConfig(
+        'Hold Action',
+        'Action when holding this info entity',
+        (infoModule.hold_action || { action: 'nothing' }) as any,
+        hass,
+        action => updateModule({ hold_action: action })
+      )}
+      ${this.renderSingleActionConfig(
+        'Double Tap Action',
+        'Action when double-tapping this info entity',
+        (infoModule.double_tap_action || { action: 'nothing' }) as any,
+        hass,
+        action => updateModule({ double_tap_action: action })
+      )}
+    `;
+  }
+
+  private renderSingleActionConfig(
+    label: string,
+    description: string,
+    action: any,
+    hass: HomeAssistant,
+    updateAction: (action: any) => void
+  ): TemplateResult {
+    const schema = [
+      {
+        name: 'action_config',
+        label: '',
+        selector: {
+          ui_action: {
+            actions: [
+              'default',
+              'more-info',
+              'toggle',
+              'navigate',
+              'url',
+              'perform-action',
+              'assist',
+            ],
+          },
+        },
+      },
+    ];
+
+    const data = {
+      action_config: action?.action === 'nothing' ? { ...action, action: 'default' } : action,
+    };
+
+    return html`
+      <div style="margin-bottom: 16px;">
+        <ha-form
+          .hass=${hass}
+          .data=${data}
+          .schema=${schema}
+          .computeLabel=${(schema: any) => schema.label || ''}
+          @value-changed=${(e: CustomEvent) => {
+            const newAction = e.detail.value?.action_config;
+            if (newAction) {
+              updateAction(newAction);
+            }
+          }}
+        ></ha-form>
+      </div>
+    `;
+  }
+
   renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     const infoModule = module as InfoModule;
 
-    // Apply design properties with priority
+    // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = infoModule as any;
+    const designProperties = (infoModule as any).design || {};
 
-    // Container styles for design system
+    // Helper function to safely add px units to font size
+    const getFontSizeWithUnits = (designSize?: number | string, fallbackSize?: number | string) => {
+      if (designSize !== undefined && designSize !== null && designSize !== '') {
+        // If it's already a string with units, return as-is
+        if (typeof designSize === 'string' && designSize.includes('px')) {
+          return designSize;
+        }
+        // Otherwise add px
+        return `${designSize}px`;
+      }
+      if (fallbackSize !== undefined && fallbackSize !== null) {
+        return typeof fallbackSize === 'string' && fallbackSize.includes('px')
+          ? fallbackSize
+          : `${fallbackSize}px`;
+      }
+      return 'inherit';
+    };
+
+    // Helper function for icon size - only use design font_size if it's a number (no units)
+    const getIconSizeWithUnits = (designSize?: number | string, fallbackSize?: number | string) => {
+      // Only use design size for icons if it's a number (26) not a string with units (26px)
+      if (
+        designSize !== undefined &&
+        designSize !== null &&
+        designSize !== '' &&
+        typeof designSize === 'number'
+      ) {
+        return `${designSize}px`;
+      }
+      if (fallbackSize !== undefined && fallbackSize !== null) {
+        return typeof fallbackSize === 'string' && fallbackSize.includes('px')
+          ? fallbackSize
+          : `${fallbackSize}px`;
+      }
+      return '26px';
+    };
+
+    // Get text alignment from design properties with priority.
+    // Fallback order: design.text_align → entity.content_alignment → entity.overall_alignment → 'center'
+    const getTextAlignment = (entity: any) => {
+      if (designProperties.text_align && designProperties.text_align !== 'inherit') {
+        return designProperties.text_align;
+      }
+      const contentAlignment: string | undefined = entity.content_alignment;
+      if (contentAlignment === 'start') return 'left';
+      if (contentAlignment === 'end') return 'right';
+      if (contentAlignment === 'center') return 'center';
+
+      // If content alignment is not set, mirror overall alignment for a cohesive look
+      const overallAlignment: string | undefined = entity.overall_alignment;
+      if (!contentAlignment && overallAlignment) {
+        if (overallAlignment === 'left') return 'left';
+        if (overallAlignment === 'right') return 'right';
+        if (overallAlignment === 'center') return 'center';
+      }
+
+      return 'center';
+    };
+
+    // Compute flex alignment used for the content container cross-axis alignment
+    const getFlexAlignment = (entity: any) => {
+      if (designProperties.text_align && designProperties.text_align !== 'inherit') {
+        return designProperties.text_align === 'left'
+          ? 'flex-start'
+          : designProperties.text_align === 'right'
+            ? 'flex-end'
+            : 'center';
+      }
+      const contentAlignment: string | undefined = entity.content_alignment;
+      if (contentAlignment === 'start') return 'flex-start';
+      if (contentAlignment === 'end') return 'flex-end';
+      if (contentAlignment === 'center') return 'center';
+
+      // Mirror overall alignment if content alignment is not set
+      const overallAlignment: string | undefined = entity.overall_alignment;
+      if (!contentAlignment && overallAlignment) {
+        if (overallAlignment === 'left') return 'flex-start';
+        if (overallAlignment === 'right') return 'flex-end';
+        if (overallAlignment === 'center') return 'center';
+      }
+
+      return 'center';
+    };
+
+    // Container styles for design system with proper priority: design properties override module properties
     const containerStyles = {
       padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
         moduleWithDesign.padding_top ||
         moduleWithDesign.padding_bottom ||
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
-          ? `${moduleWithDesign.padding_top || '8'}px ${moduleWithDesign.padding_right || '0'}px ${moduleWithDesign.padding_bottom || '8'}px ${moduleWithDesign.padding_left || '0'}px`
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '8px 0',
       margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
         moduleWithDesign.margin_top ||
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${moduleWithDesign.margin_top || '0'}px ${moduleWithDesign.margin_right || '0'}px ${moduleWithDesign.margin_bottom || '0'}px ${moduleWithDesign.margin_left || '0'}px`
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
           : '0',
-      background: moduleWithDesign.background_color || 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(moduleWithDesign, hass),
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
+      background:
+        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
       border:
-        moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none'
-          ? `${moduleWithDesign.border_width || '1px'} ${moduleWithDesign.border_style} ${moduleWithDesign.border_color || 'var(--divider-color)'}`
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${designProperties.border_width || moduleWithDesign.border_width || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
           : 'none',
-      borderRadius: this.addPixelUnit(moduleWithDesign.border_radius) || '0',
-      position: moduleWithDesign.position || 'relative',
-      top: moduleWithDesign.top || 'auto',
-      bottom: moduleWithDesign.bottom || 'auto',
-      left: moduleWithDesign.left || 'auto',
-      right: moduleWithDesign.right || 'auto',
-      zIndex: moduleWithDesign.z_index || 'auto',
-      width: moduleWithDesign.width || '100%',
-      height: moduleWithDesign.height || 'auto',
-      maxWidth: moduleWithDesign.max_width || '100%',
-      maxHeight: moduleWithDesign.max_height || 'none',
-      minWidth: moduleWithDesign.min_width || 'none',
-      minHeight: moduleWithDesign.min_height || 'auto',
-      overflow: moduleWithDesign.overflow || 'visible',
-      clipPath: moduleWithDesign.clip_path || 'none',
-      backdropFilter: moduleWithDesign.backdrop_filter || 'none',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
+      position: designProperties.position || moduleWithDesign.position || 'relative',
+      top: designProperties.top || moduleWithDesign.top || 'auto',
+      bottom: designProperties.bottom || moduleWithDesign.bottom || 'auto',
+      left: designProperties.left || moduleWithDesign.left || 'auto',
+      right: designProperties.right || moduleWithDesign.right || 'auto',
+      zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
+      width: designProperties.width || moduleWithDesign.width || 'auto',
+      height: designProperties.height || moduleWithDesign.height || 'auto',
+      maxWidth: designProperties.max_width || moduleWithDesign.max_width || 'none',
+      maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
+      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
+      backdropFilter:
+        designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
       boxShadow:
-        moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
-          ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+        (designProperties.box_shadow_h || moduleWithDesign.box_shadow_h) &&
+        (designProperties.box_shadow_v || moduleWithDesign.box_shadow_v)
+          ? `${designProperties.box_shadow_h || moduleWithDesign.box_shadow_h || '0'} ${designProperties.box_shadow_v || moduleWithDesign.box_shadow_v || '0'} ${designProperties.box_shadow_blur || moduleWithDesign.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || moduleWithDesign.box_shadow_spread || '0'} ${designProperties.box_shadow_color || moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
           : 'none',
       boxSizing: 'border-box',
     };
@@ -755,111 +1324,264 @@ export class UltraInfoModule extends BaseUltraModule {
             display: grid;
             grid-template-columns: repeat(${infoModule.columns || 1}, 1fr);
             gap: ${infoModule.gap || 12}px;
-            justify-content: ${infoModule.alignment || 'left'};
+            ${infoModule.info_entities[0]?.overall_alignment
+              ? `justify-content: ${
+                  infoModule.info_entities[0].overall_alignment === 'left'
+                    ? 'start'
+                    : infoModule.info_entities[0].overall_alignment === 'right'
+                      ? 'end'
+                      : 'center'
+                };`
+              : '/* No justify-content - allow Global Design tab control */'}
+            ${infoModule.info_entities[0]?.overall_alignment
+              ? `justify-items: ${
+                  infoModule.info_entities[0].overall_alignment === 'left'
+                    ? 'start'
+                    : infoModule.info_entities[0].overall_alignment === 'right'
+                      ? 'end'
+                      : 'center'
+                };`
+              : '/* No justify-items - allow Global Design tab control */'}
           "
           >
-            ${infoModule.info_entities.slice(0, 3).map(entity => {
+            ${infoModule.info_entities.slice(0, 3).map((originalEntity, index) => {
+              // Ensure entity has default values merged for consistent rendering
+              const defaultEntity = this.createDefault().info_entities[0];
+              let entity = { ...defaultEntity, ...originalEntity };
+              entity = {
+                ...entity,
+                icon_position: entity.icon_position || 'left',
+                overall_alignment: entity.overall_alignment || 'center',
+                icon_alignment: entity.icon_alignment || 'center',
+                content_alignment: entity.content_alignment || 'start',
+              };
+
               const entityState = hass?.states[entity.entity];
-              const displayValue = entityState ? entityState.state : 'N/A';
-              const displayName =
-                entity.name || entityState?.attributes?.friendly_name || entity.entity;
+
+              // Process template if template_mode is enabled
+              let displayValue: string;
+              if (entity.template_mode && entity.template) {
+                // Initialize template service
+                if (!this._templateService && hass) {
+                  this._templateService = new TemplateService(hass);
+                }
+
+                // Ensure template string cache exists on hass
+                if (hass) {
+                  if (!hass.__uvc_template_strings) {
+                    hass.__uvc_template_strings = {};
+                  }
+                  const templateHash = this._hashString(entity.template);
+                  // Use a stable key based on module id and index to avoid re-render key churn
+                  const stableKeyBase = infoModule.id ? `${infoModule.id}_${index}` : `${index}`;
+                  const templateKey = `info_entity_${stableKeyBase}_${templateHash}`;
+
+                  // Subscribe if needed
+                  if (
+                    this._templateService &&
+                    !this._templateService.hasTemplateSubscription(templateKey)
+                  ) {
+                    this._templateService.subscribeToTemplate(entity.template, templateKey, () => {
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      }
+                    });
+                  }
+
+                  // Use latest rendered string if available
+                  const rendered = hass.__uvc_template_strings?.[templateKey];
+                  if (rendered !== undefined && String(rendered).trim() !== '') {
+                    displayValue = String(rendered);
+                  } else {
+                    displayValue = entityState ? entityState.state : 'N/A';
+                  }
+                }
+              } else {
+                // Non-template path: use precision-aware formatter
+                if (entityState) {
+                  displayValue = formatEntityState(hass, entity.entity, {
+                    includeUnit: entity.show_units !== false,
+                  });
+                } else {
+                  displayValue = 'N/A';
+                }
+              }
+              const hasCustomName =
+                originalEntity.name !== undefined &&
+                originalEntity.name !== null &&
+                String(originalEntity.name).trim() !== '';
+              const displayName = hasCustomName
+                ? String(originalEntity.name)
+                : entityState?.attributes?.friendly_name || entity.entity;
               const displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
 
               const iconPosition = entity.icon_position || 'left';
               const iconAlignment = entity.icon_alignment || 'center';
-              const contentAlignment = entity.content_alignment || 'start';
+              const contentAlignment = entity.content_alignment || 'center';
               const overallAlignment = entity.overall_alignment || 'center';
               const iconGap = entity.icon_gap || 8;
 
-              const iconElement = entity.show_icon
-                ? html`
-                    <ha-icon
-                      icon="${displayIcon}"
-                      class="entity-icon"
-                      style="color: ${entity.icon_color ||
-                      'var(--primary-color)'}; font-size: ${Number(entity.icon_size) || 18}px;"
-                    ></ha-icon>
-                  `
-                : '';
+              const iconElement =
+                entity.show_icon !== false
+                  ? html`
+                      <ha-icon
+                        icon="${displayIcon}"
+                        class="entity-icon"
+                        style="color: ${designProperties.color ||
+                        entity.icon_color ||
+                        'var(--primary-color)'}; --mdc-icon-size: ${getIconSizeWithUnits(
+                          designProperties.font_size,
+                          entity.icon_size || 26
+                        )};"
+                      ></ha-icon>
+                    `
+                  : '';
 
               const contentElement = html`
                 <div
                   class="entity-content"
                   style="
-                  align-items: ${contentAlignment === 'start'
-                    ? 'flex-start'
-                    : contentAlignment === 'end'
-                      ? 'flex-end'
-                      : 'center'};
-                  text-align: ${contentAlignment === 'start'
-                    ? 'left'
-                    : contentAlignment === 'end'
-                      ? 'right'
-                      : 'center'};
+                  align-items: ${getFlexAlignment(entity)};
+                  text-align: ${getTextAlignment(entity)};
                 "
                 >
-                  ${entity.show_name
+                  ${entity.show_name !== false
                     ? html`
                         <div
                           class="entity-name"
                           style="
-                    color: ${entity.name_color || 'var(--secondary-text-color)'};
-                    font-size: ${entity.name_size || 12}px;
-                    font-weight: ${entity.name_bold ? 'bold' : 'normal'};
-                    font-style: ${entity.name_italic ? 'italic' : 'normal'};
-                    text-transform: ${entity.name_uppercase ? 'uppercase' : 'none'};
+                    color: ${designProperties.color ||
+                          entity.name_color ||
+                          'var(--secondary-text-color)'};
+                    font-size: ${getFontSizeWithUnits(
+                            designProperties.font_size,
+                            entity.name_size || 12
+                          )};
+                    font-weight: ${designProperties.font_weight ||
+                          (entity.name_bold ? 'bold' : 'normal')};
+                    font-style: ${designProperties.font_style ||
+                          (entity.name_italic ? 'italic' : 'normal')};
+                    text-transform: ${designProperties.text_transform ||
+                          (entity.name_uppercase ? 'uppercase' : 'none')};
                     text-decoration: ${entity.name_strikethrough ? 'line-through' : 'none'};
+                    font-family: ${designProperties.font_family || 'inherit'};
+                    line-height: ${designProperties.line_height || 'inherit'};
+                    letter-spacing: ${designProperties.letter_spacing || 'inherit'};
+                    text-align: ${getTextAlignment(entity)};
                   "
                         >
                           ${displayName}
                         </div>
                       `
                     : ''}
+                  ${entity.show_state !== false
+                    ? html`
+                        <div
+                          class="entity-value"
+                          style="
+                        color: ${designProperties.color ||
+                          entity.state_color ||
+                          entity.text_color ||
+                          'var(--primary-text-color)'};
+                        font-size: ${getFontSizeWithUnits(
+                            designProperties.font_size,
+                            entity.text_size || 14
+                          )};
+                        font-weight: ${designProperties.font_weight ||
+                          (entity.text_bold ? 'bold' : 'normal')};
+                        font-style: ${designProperties.font_style ||
+                          (entity.text_italic ? 'italic' : 'normal')};
+                        text-transform: ${designProperties.text_transform ||
+                          (entity.text_uppercase ? 'uppercase' : 'none')};
+                        text-decoration: ${entity.text_strikethrough ? 'line-through' : 'none'};
+                        font-family: ${designProperties.font_family || 'inherit'};
+                        line-height: ${designProperties.line_height || 'inherit'};
+                        letter-spacing: ${designProperties.letter_spacing || 'inherit'};
+                        text-align: ${getTextAlignment(entity)};
+                      "
+                        >
+                          ${displayValue}
+                        </div>
+                      `
+                    : ''}
+                </div>
+              `;
 
-                  <div
-                    class="entity-value"
+              // Get hover effect configuration from module design
+              const hoverEffect = (infoModule as any).design?.hover_effect;
+              const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
+              // Wrap in clickable element if actions are configured
+              const element = ((m: any) =>
+                (m?.tap_action && m.tap_action.action !== 'nothing') ||
+                (m?.hold_action && m.hold_action.action !== 'nothing') ||
+                (m?.double_tap_action && m.double_tap_action.action !== 'nothing'))(infoModule)
+                ? html`<div
+                    class="info-entity-clickable position-${iconPosition} ${hoverEffectClass}"
                     style="
-                  color: ${entity.text_color || 'var(--primary-text-color)'};
-                  font-size: ${entity.text_size || 14}px;
-                  font-weight: ${entity.text_bold ? 'bold' : 'normal'};
-                  font-style: ${entity.text_italic ? 'italic' : 'normal'};
-                  text-transform: ${entity.text_uppercase ? 'uppercase' : 'none'};
-                  text-decoration: ${entity.text_strikethrough ? 'line-through' : 'none'};
-                "
+                    display: flex;
+                    flex-direction: ${iconPosition === 'top' || iconPosition === 'bottom'
+                      ? 'column'
+                      : 'row'};
+                    align-items: ${iconAlignment === 'start'
+                      ? 'flex-start'
+                      : iconAlignment === 'end'
+                        ? 'flex-end'
+                        : 'center'};
+                    justify-content: ${overallAlignment === 'left'
+                      ? 'flex-start'
+                      : overallAlignment === 'right'
+                        ? 'flex-end'
+                        : 'center'};
+                    gap: ${iconGap}px;
+                    padding: 4px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    -moz-user-select: none;
+                    -ms-user-select: none;
+                  "
+                    @click=${(e: Event) => this.handleClick(e, infoModule, hass)}
+                    @dblclick=${(e: Event) => this.handleDoubleClick(e, infoModule, hass)}
+                    @mousedown=${(e: Event) => this.handleMouseDown(e, infoModule, hass)}
+                    @mouseup=${(e: Event) => this.handleMouseUp(e, infoModule, hass)}
+                    @mouseleave=${(e: Event) => this.handleMouseLeave(e, infoModule, hass)}
+                    @touchstart=${(e: Event) => this.handleTouchStart(e, infoModule, hass)}
+                    @touchend=${(e: Event) => this.handleTouchEnd(e, infoModule, hass)}
                   >
-                    ${displayValue}${entityState?.attributes?.unit_of_measurement || ''}
-                  </div>
-                </div>
-              `;
+                    ${iconPosition === 'left' || iconPosition === 'top'
+                      ? html`${iconElement}${contentElement}`
+                      : html`${contentElement}${iconElement}`}
+                  </div>`
+                : html`<div
+                    class="info-entity-item position-${iconPosition} ${hoverEffectClass}"
+                    style="
+                    display: flex;
+                    flex-direction: ${iconPosition === 'top' || iconPosition === 'bottom'
+                      ? 'column'
+                      : 'row'};
+                    align-items: ${iconAlignment === 'start'
+                      ? 'flex-start'
+                      : iconAlignment === 'end'
+                        ? 'flex-end'
+                        : 'center'};
+                    justify-content: ${overallAlignment === 'left'
+                      ? 'flex-start'
+                      : overallAlignment === 'right'
+                        ? 'flex-end'
+                        : 'center'};
+                    gap: ${iconGap}px;
+                    padding: 4px;
+                    border-radius: 4px;
+                  "
+                  >
+                    ${iconPosition === 'left' || iconPosition === 'top'
+                      ? html`${iconElement}${contentElement}`
+                      : html`${contentElement}${iconElement}`}
+                  </div>`;
 
-              return html`
-                <div
-                  class="info-entity-item position-${iconPosition}"
-                  style="
-                  display: flex;
-                  flex-direction: ${iconPosition === 'top' || iconPosition === 'bottom'
-                    ? 'column'
-                    : 'row'};
-                  align-items: ${iconAlignment === 'start'
-                    ? 'flex-start'
-                    : iconAlignment === 'end'
-                      ? 'flex-end'
-                      : 'center'};
-                  justify-content: ${overallAlignment === 'left'
-                    ? 'flex-start'
-                    : overallAlignment === 'right'
-                      ? 'flex-end'
-                      : 'center'};
-                  gap: ${iconGap}px;
-                  padding: 4px;
-                  border-radius: 4px;
-                "
-                >
-                  ${iconPosition === 'left' || iconPosition === 'top'
-                    ? html`${iconElement}${contentElement}`
-                    : html`${contentElement}${iconElement}`}
-                </div>
-              `;
+              return element;
             })}
             ${infoModule.info_entities.length > 3
               ? html`
@@ -1094,7 +1816,243 @@ export class UltraInfoModule extends BaseUltraModule {
       .position-bottom {
         flex-direction: column-reverse;
       }
+
+      /* Gap control styles */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
+      }
+
+      /* Legacy hover effects removed - now handled by new hover effects system */
     `;
+  }
+
+  // Action handling properties
+  private clickTimeout: any = null;
+  private holdTimeout: any = null;
+  private isHolding = false;
+
+  // Check if the info module has any active actions
+  private hasActiveActions(infoModule: InfoModule): boolean {
+    const hasTapAction =
+      infoModule.tap_action &&
+      infoModule.tap_action.action !== 'default' &&
+      infoModule.tap_action.action !== 'nothing';
+    const hasHoldAction =
+      infoModule.hold_action &&
+      infoModule.hold_action.action !== 'default' &&
+      infoModule.hold_action.action !== 'nothing';
+    const hasDoubleAction =
+      infoModule.double_tap_action &&
+      infoModule.double_tap_action.action !== 'default' &&
+      infoModule.double_tap_action.action !== 'nothing';
+
+    return hasTapAction || hasHoldAction || hasDoubleAction;
+  }
+
+  // Event handlers for info module interactions
+  private handleClick(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    event.preventDefault();
+
+    // Clear any existing timeout
+    if (this.clickTimeout) {
+      clearTimeout(this.clickTimeout);
+    }
+
+    // Set a timeout to handle single click with delay
+    this.clickTimeout = setTimeout(() => {
+      this.handleTapAction(event, infoModule, hass);
+    }, 300); // 300ms delay to allow for double-click detection
+  }
+
+  private handleDoubleClick(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    event.preventDefault();
+
+    // Clear the single click timeout
+    if (this.clickTimeout) {
+      clearTimeout(this.clickTimeout);
+      this.clickTimeout = null;
+    }
+
+    // Handle double-click action
+    this.handleDoubleAction(event, infoModule, hass);
+  }
+
+  private handleMouseDown(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    this.startHold(event, infoModule, hass);
+  }
+
+  private handleMouseUp(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    this.endHold(event, infoModule, hass);
+  }
+
+  private handleMouseLeave(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    this.endHold(event, infoModule, hass);
+  }
+
+  private handleTouchStart(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    this.startHold(event, infoModule, hass);
+  }
+
+  private handleTouchEnd(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    this.endHold(event, infoModule, hass);
+  }
+
+  private startHold(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    this.isHolding = false;
+    this.holdTimeout = setTimeout(() => {
+      this.isHolding = true;
+      this.handleHoldAction(event, infoModule, hass);
+    }, 500); // 500ms hold time
+  }
+
+  private endHold(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    if (this.holdTimeout) {
+      clearTimeout(this.holdTimeout);
+      this.holdTimeout = null;
+    }
+    this.isHolding = false;
+  }
+
+  private handleTapAction(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    // Don't trigger tap action if we're in the middle of a hold
+    if (this.isHolding) return;
+
+    if (
+      infoModule.tap_action &&
+      infoModule.tap_action.action !== 'default' &&
+      infoModule.tap_action.action !== 'nothing'
+    ) {
+      UltraLinkComponent.handleAction(
+        infoModule.tap_action as any,
+        hass,
+        event.target as HTMLElement
+      );
+    }
+  }
+
+  private handleDoubleAction(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    if (
+      infoModule.double_tap_action &&
+      infoModule.double_tap_action.action !== 'default' &&
+      infoModule.double_tap_action.action !== 'nothing'
+    ) {
+      UltraLinkComponent.handleAction(
+        infoModule.double_tap_action as any,
+        hass,
+        event.target as HTMLElement
+      );
+    }
+  }
+
+  private handleHoldAction(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+    if (
+      infoModule.hold_action &&
+      infoModule.hold_action.action !== 'default' &&
+      infoModule.hold_action.action !== 'nothing'
+    ) {
+      UltraLinkComponent.handleAction(
+        infoModule.hold_action as any,
+        hass,
+        event.target as HTMLElement
+      );
+    }
   }
 
   private _addEntity(
@@ -1103,14 +2061,15 @@ export class UltraInfoModule extends BaseUltraModule {
   ): void {
     const newEntity: InfoEntityConfig = {
       id: this.generateId('entity'),
-      entity: '',
-      name: 'Entity Name',
-      icon: '',
+      entity: 'weather.forecast_home',
+      name: 'Temperature',
+      icon: 'mdi:thermometer',
       show_icon: true,
       show_name: true,
+      show_state: true,
       text_size: 14,
       name_size: 12,
-      icon_size: 18,
+      icon_size: 26,
       text_bold: false,
       text_italic: false,
       text_uppercase: false,
@@ -1122,6 +2081,7 @@ export class UltraInfoModule extends BaseUltraModule {
       icon_color: 'var(--primary-color)',
       name_color: 'var(--secondary-text-color)',
       text_color: 'var(--primary-text-color)',
+      state_color: 'var(--primary-text-color)',
       click_action: 'more-info',
       navigation_path: '',
       url: '',
@@ -1165,19 +2125,20 @@ export class UltraInfoModule extends BaseUltraModule {
   ): void {
     const updates: Partial<InfoEntityConfig> = { entity: entityId };
 
-    // Auto-populate name from entity's friendly name if name is empty or default
+    // Auto-populate name and icon from entity when switching
     if (entityId && hass?.states[entityId]) {
       const entityState = hass.states[entityId];
       const friendlyName = entityState.attributes?.friendly_name || entityId.split('.').pop() || '';
 
-      // Get current entity to check if name should be updated
-      const currentEntity = infoModule.info_entities?.[index];
-      if (
-        !currentEntity?.name ||
-        currentEntity.name === 'Entity Name' ||
-        currentEntity.name === currentEntity.entity
-      ) {
-        updates.name = friendlyName;
+      // Use the centralized icon service
+      const entityIcon = EntityIconService.getEntityIcon(entityId, hass);
+
+      // Always update name when switching entities
+      updates.name = friendlyName;
+
+      // Always update icon when switching entities if available
+      if (entityIcon) {
+        updates.icon = entityIcon;
       }
     }
 
@@ -1293,5 +2254,46 @@ export class UltraInfoModule extends BaseUltraModule {
 
     // Otherwise return as-is (already has units like px, em, %, etc.)
     return value;
+  }
+
+  private _hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      const chr = str.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  }
+
+  private async _handleTemplateChange(
+    template: string,
+    infoModule: InfoModule,
+    entityIndex: number,
+    hass: HomeAssistant
+  ): Promise<void> {
+    if (!template || !hass) return;
+
+    try {
+      // Evaluate template immediately for snappy live preview
+      const result = await hass.callApi<string>('POST', 'template', { template });
+
+      // Store result in template cache with the same key format used by subscriptions
+      if (!hass.__uvc_template_strings) {
+        hass.__uvc_template_strings = {} as any;
+      }
+
+      const templateHash = this._hashString(template);
+      const stableKeyBase = infoModule.id ? `${infoModule.id}_${entityIndex}` : `${entityIndex}`;
+      const templateKey = `info_entity_${stableKeyBase}_${templateHash}`;
+      hass.__uvc_template_strings[templateKey] = result;
+
+      // Trigger UI update for any listeners (editor popup + main card)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+      }
+    } catch (error) {
+      // Silent fail - template may be incomplete while typing
+    }
   }
 }

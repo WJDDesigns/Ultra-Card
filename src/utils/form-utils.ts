@@ -49,6 +49,8 @@ export class FormUtils {
           .hass=${hass}
           .data=${data}
           .schema=${schema}
+          .computeLabel=${() => ''}
+          .computeDescription=${() => ''}
           @value-changed=${(e: CustomEvent) => {
             onChange(e);
             // Immediate cleanup after value changes
@@ -366,7 +368,7 @@ export class FormUtils {
       .field-title {
         font-size: 16px !important;
         font-weight: 600 !important;
-        color: var(--primary-text-color) !important;
+       
         margin-bottom: 4px !important;
         display: block !important;
       }

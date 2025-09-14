@@ -1,0 +1,1209 @@
+{
+  "editor": {
+    "tabs": {
+      "layout": "Konstruktor rozvržení",
+      "settings": "Nastavení",
+      "about": "O aplikaci"
+    },
+    "settings": {
+      "title": "Nastavení karty",
+      "description": "Konfigurace globálního vzhledu a chování karty."
+    },
+    "appearance": {
+      "title": "Vzhled",
+      "description": "Ovládání vizuálního vzhledu vaší karty"
+    },
+    "spacing": {
+      "title": "Rozestupy",
+      "description": "Ovládání rozestupů a umístění vaší karty"
+    },
+    "fields": {
+      "card_background_color": "Barva pozadí karty",
+      "card_background_color_desc": "Barva pozadí celé karty",
+      "border_radius": "Poloměr ohraničení",
+      "border_radius_desc": "Zaoblené rohy karty (v pixelech)",
+      "card_padding": "Vnitřní okraje karty",
+      "card_padding_desc": "Vnitřní rozestupy uvnitř karty",
+      "card_margin": "Vnější okraje karty",
+      "card_margin_desc": "Vnější rozestupy kolem karty",
+      "unit_px": "px",
+      "reset_default": "Obnovit výchozí",
+      "reset_default_value": "Obnovit výchozí ({value})"
+    },
+    "tooltips": {
+      "enter_fullscreen": "Přejít na celou obrazovku",
+      "return_dashboard": "Návrat na nástěnku",
+      "dashboard": "Nástěnka"
+    },
+    "layout": {
+      "live_preview": "Živý náhled",
+      "toggle_preview": "Přepnout náhled",
+      "drag_to_move_module": "Přetáhněte pro přesun modulu",
+      "edit_module": "Upravit modul",
+      "duplicate_module": "Duplikovat modul",
+      "delete_module": "Smazat modul",
+      "drag_to_move_layout": "Přetáhněte pro přesun modulu rozvržení",
+      "horizontal_layout": "Horizontální rozvržení",
+      "vertical_layout": "Vertikální rozvržení",
+      "add_module_to_layout": "Přidat modul do rozvržení",
+      "layout_settings": "Nastavení rozvržení",
+      "duplicate_layout": "Duplikovat rozvržení",
+      "delete_layout": "Smazat rozvržení",
+      "click_to_add_module": "Klikněte pro přidání modulu",
+      "drop_modules_here": "Přetáhněte moduly sem",
+      "drag_to_reorder": "Přetáhněte pro změnu pořadí",
+      "edit_child_module": "Upravit podřízený modul",
+      "duplicate_child_module": "Duplikovat podřízený modul",
+      "delete_child_module": "Smazat podřízený modul",
+      "module_settings_title": "Nastavení modulu",
+      "general_tab": "Obecné",
+      "actions_tab": "Akce",
+      "other_tab": "Ostatní",
+      "logic_tab": "Logika",
+      "design_tab": "Vzhled",
+      "drag_to_resize": "Přetáhněte pro změnu velikosti",
+      "hidden_by_logic": "Skryto logikou",
+      "child_module_settings_title": "Nastavení podřízeného modulu",
+      "add_row": "Přidat řádek",
+      "add_row_tooltip": "Přidejte nový řádek do vašeho rozvržení",
+      "row_settings": "Nastavení řádku",
+      "column_settings": "Nastavení sloupce",
+      "row_background_color": "Barva pozadí řádku",
+      "column_gap": "Mezera mezi sloupci (px)",
+      "vertical_alignment": "Vertikální zarovnání",
+      "horizontal_alignment": "Horizontální zarovnání",
+      "column_preview": "Náhled sloupce",
+      "modules_count": "{count} modulů",
+      "alignment_top": "Nahoře",
+      "alignment_center": "Střed",
+      "alignment_bottom": "Dole",
+      "alignment_stretch": "Roztáhnout",
+      "alignment_left": "Vlevo",
+      "alignment_right": "Vpravo"
+    },
+    "about": {
+      "developed_by": "Vyvinuto",
+      "desc1": "Výkonný modulární stavitel karet pro Home Assistant",
+      "desc2": "Vytvářejte vlastní rozvržení s profesionálním rozhraním pro tvorbu stránek",
+      "desc3": "Modulární systém rozvržení s podmíněnou logikou a profesionálními nástroji pro design",
+      "github_repo": "GitHub repozitář",
+      "version": "Verze",
+      "join_discord": "Připojte se k našemu Discordu",
+      "support_title": "Podpořte Ultra Card",
+      "support_desc": "Vaše štědré příspěvky podporují vývoj úžasných funkcí pro tuto kartu! Bez podpory uživatelů jako jste vy by pokračující inovace nebyly možné.",
+      "leave_tip": "ZANECHAT PŘÍSPĚVEK (PAYPAL)"
+    },
+    "actions": {
+      "title": "Konfigurace akcí",
+      "description": "Konfigurujte, jak tento modul reaguje na interakce uživatelů. Používá nativní systém akcí Home Assistantu pro konzistentní chování na vašem dashboardu.",
+      "tap_action": "Akce při klepnutí",
+      "tap_action_desc": "Akce provedená při klepnutí/kliknutí na modul",
+      "hold_action": "Akce při podržení",
+      "hold_action_desc": "Akce provedená při podržení modulu",
+      "double_tap_action": "Akce při dvojitém klepnutí",
+      "double_tap_action_desc": "Akce provedená při dvojitém klepnutí na modul",
+      "tap_behavior": "Chování při klepnutí",
+      "tap_behavior_desc": "Akce k provedení při klepnutí/kliknutí na prvek.",
+      "hold_behavior": "Chování při podržení",
+      "hold_behavior_desc": "Akce k provedení při stisknutí a podržení prvku.",
+      "double_tap_behavior": "Chování při dvojitém klepnutí",
+      "double_tap_behavior_desc": "Akce k provedení při dvojitém klepnutí/kliknutí na prvek."
+    },
+    "icon": {
+      "entity_config": {
+        "title": "KONFIGURACE ENTITY",
+        "desc": "Konfigurace entity a aktivních/neaktivních stavů"
+      },
+      "entity": "Entita",
+      "entity_desc": "Vyberte entitu, kterou tato ikona představuje",
+      "inactive_state": "Neaktivní stav",
+      "inactive_state_desc": "Hodnota stavu považovaná za \"neaktivní\" (ponechte prázdné pro použití skutečného stavu entity)",
+      "active_state": "Aktivní stav",
+      "active_state_desc": "Hodnota stavu považovaná za \"aktivní\" (ponechte prázdné pro použití skutečného stavu entity)",
+      "active_animation": "Aktivní animace",
+      "active_animation_desc": "Animace při aktivní ikoně",
+      "active_icon": "Aktivní ikona",
+      "active_icon_background": "Pozadí aktivní ikony",
+      "active_icon_background_color": "Barva pozadí aktivní ikony",
+      "active_icon_color": "Barva aktivní ikony",
+      "active_icon_desc": "Ikona zobrazovaná při aktivním stavu",
+      "active_name": "Aktivní název",
+      "active_name_color": "Barva aktivního názvu",
+      "active_name_desc": "Vlastní název při aktivním stavu",
+      "active_state_color": "Barva aktivního stavu",
+      "active_state_text": "Text aktivního stavu",
+      "animation_bounce": "Poskakování",
+      "animation_fade": "Mizení",
+      "animation_flash": "Blikání",
+      "animation_none": "Žádný",
+      "animation_pulse": "Pulsování",
+      "animation_rotate_left": "Rotace vlevo",
+      "animation_rotate_right": "Rotace vpravo",
+      "animation_scale": "Škálování",
+      "animation_section": {
+        "desc": "Konfigurace animací pro aktivní a neaktivní stavy",
+        "title": "Animace ikony"
+      },
+      "animation_shake": "Třesení",
+      "animation_spin": "Otáčení",
+      "animation_tada": "Tada",
+      "animation_vibrate": "Vibrace",
+      "background_color_active": "Barva pozadí při aktivním stavu",
+      "background_color_inactive": "Barva pozadí při neaktivním stavu",
+      "background_section": {
+        "desc": "Konfigurace nastavení neaktivního pozadí",
+        "title": "Neaktivní pozadí"
+      },
+      "background_shape_active": "Tvar pozadí při aktivním stavu",
+      "background_shape_inactive": "Tvar pozadí při neaktivním stavu",
+      "custom_active_name": "Vlastní aktivní název",
+      "custom_active_name_desc": "Přepsat název entity při aktivním stavu (ponechte prázdné pro použití názvu entity)",
+      "custom_active_state": "Vlastní aktivní stav",
+      "custom_active_state_desc": "Vlastní text při aktivním stavu (ponechte prázdné pro skutečný stav)",
+      "custom_inactive_name": "Vlastní neaktivní název",
+      "custom_inactive_name_desc": "Přepsat název entity při neaktivním stavu (ponechte prázdné pro použití názvu entity)",
+      "custom_inactive_state": "Vlastní neaktivní stav",
+      "custom_inactive_state_desc": "Vlastní text při neaktivním stavu (ponechte prázdné pro skutečný stav)",
+      "icon_color_active": "Barva při aktivním stavu",
+      "icon_color_inactive": "Barva při neaktivním stavu",
+      "icon_section": {
+        "title": "Konfigurace ikony"
+      },
+      "icon_size_active": "Velikost ikony při aktivním stavu",
+      "icon_size_inactive": "Velikost ikony při neaktivním stavu",
+      "inactive_animation": "Neaktivní animace",
+      "inactive_animation_desc": "Animace při neaktivní ikoně",
+      "inactive_icon": "Neaktivní ikona",
+      "inactive_icon_background": "Pozadí neaktivní ikony",
+      "inactive_icon_background_color": "Barva pozadí neaktivní ikony",
+      "inactive_icon_color": "Barva neaktivní ikony",
+      "inactive_icon_config": "Konfigurace neaktivní ikony",
+      "inactive_icon_config_desc": "Konfigurace nastavení neaktivní ikony",
+      "inactive_icon_desc": "Ikona zobrazovaná při neaktivním stavu",
+      "inactive_name": "Neaktivní název",
+      "inactive_name_color": "Barva neaktivního názvu",
+      "inactive_name_config": "Konfigurace neaktivního názvu",
+      "inactive_name_config_desc": "Konfigurace nastavení neaktivního názvu",
+      "inactive_name_desc": "Vlastní název při neaktivním stavu",
+      "inactive_state_color": "Barva neaktivního stavu",
+      "inactive_state_config": "Konfigurace neaktivního stavu",
+      "inactive_state_config_desc": "Konfigurace nastavení neaktivního stavu",
+      "inactive_state_text": "Text neaktivního stavu",
+      "name_color_active": "Barva názvu při aktivním stavu",
+      "name_color_inactive": "Barva názvu při neaktivním stavu",
+      "name_section": {
+        "title": "Konfigurace názvu"
+      },
+      "name_size_active": "Velikost textu názvu při aktivním stavu",
+      "name_size_inactive": "Velikost textu názvu při neaktivním stavu",
+      "state_color_active": "Barva stavu při aktivním stavu",
+      "state_color_inactive": "Barva stavu při neaktivním stavu",
+      "state_section": {
+        "title": "Konfigurace stavu"
+      },
+      "state_size_active": "Velikost textu stavu při aktivním stavu",
+      "state_size_inactive": "Velikost textu stavu při neaktivním stavu",
+      "template": "Šablona",
+      "template_mode": "Pokročilý režim šablony",
+      "template_section": {
+        "desc": "Použijte šablony Jinja2 pro pokročilé ovládání ikon. Šablony mohou ovládat viditelnost (true/false pro zobrazení/skrytí ikon) a přizpůsobit text stavu. Vraťte vlastní text pro aktivní stav, vraťte skutečný stav entity pro neaktivní stav.",
+        "title": "Pokročilý režim šablony"
+      }
+    },
+    "text": {
+      "content_section": {
+        "title": "Konfigurace obsahu",
+        "desc": "Konfigurace textového obsahu a základních nastavení pro tento modul."
+      },
+      "text_content": "Textový obsah",
+      "text_content_desc": "Zadejte textový obsah k zobrazení v tomto modulu.",
+      "icon_section": {
+        "title": "Konfigurace ikony",
+        "desc": "Vyberte ikonu k zobrazení vedle textového obsahu."
+      },
+      "icon": "Ikona",
+      "icon_desc": "Vyberte ikonu k zobrazení vedle textu. Ponechte prázdné pro žádnou ikonu.",
+      "icon_position": "Pozice ikony",
+      "icon_position_desc": "Vyberte, kde umístit ikonu vzhledem k textu.",
+      "before_text": "Před textem",
+      "after_text": "Za textem",
+      "template_mode": "Režim šablony",
+      "template_mode_desc": "Použijte syntaxi šablon Home Assistantu pro vykreslení textu",
+      "value_template": "Šablona hodnoty",
+      "value_template_desc": "Šablona pro vykreslení textu pomocí syntaxe Jinja2",
+      "examples_title": "Běžné příklady:",
+      "example_basic": "Základní hodnota",
+      "example_percent": "S procenty"
+    },
+    "bar": {
+      "bar_settings": {
+        "title": "Nastavení pruhu",
+        "desc": "Konfigurace způsobu výpočtu a zobrazení procent pruhu."
+      },
+      "perc_type": {
+        "entity": "Entita (0-100)",
+        "attribute": "Atribut entity",
+        "difference": "Rozdíl",
+        "template": "Šablona"
+      },
+      "attribute_section": {
+        "title": "Konfigurace atributu entity",
+        "desc": "Konfigurace nastavení atributu entity"
+      },
+      "attribute_entity": "Entita atributu",
+      "attribute_entity_desc": "Vyberte entitu obsahující atribut s procentuální hodnotou",
+      "attribute_name": "Název atributu",
+      "attribute_name_desc": "Zadejte název atributu obsahujícího procentuální hodnotu (např. \"battery_level\")",
+      "diff_section": {
+        "title": "Konfigurace výpočtu rozdílu",
+        "desc": "Konfigurace nastavení výpočtu rozdílu"
+      },
+      "current_entity": "Entita aktuální hodnoty",
+      "current_entity_desc": "Entita představující aktuální/spotřebované množství (např. spotřebované palivo, vybité baterie)",
+      "total_entity": "Entita celkové hodnoty",
+      "total_entity_desc": "Entita představující celkové/maximální množství (např. kapacita nádrže, kapacita baterie)",
+      "template_section": {
+        "title": "Konfigurace šablony",
+        "desc": "Konfigurace nastavení šablony"
+      },
+      "percentage_template": "Šablona procent",
+      "percentage_template_desc": "Zadejte šablonu Jinja2, která vrací číslo mezi 0-100 pro procenta. Příklad: {{ (states('sensor.battery_level') | float) * 100 }}",
+      "animation": {
+        "desc": "Animujte výplň pruhu pomocí předvoleb jako nabíjecí pruhy, pulsování, záře a další. Můžete spustit animace na základě stavu nebo atributu entity a volitelně přepsat animaci při splnění jiné podmínky.",
+        "override": {
+          "attribute_name_desc": "Název atributu k porovnání",
+          "desc": "Vyberte akční entitu a stav pro definování, kdy má tato animace přepsat běžnou animaci",
+          "entity_desc": "Entita k vyhodnocení pro přepsání spouštěče",
+          "match_value": "Hodnota shody přepsání",
+          "match_value_desc": "Textové porovnání se stavem nebo atributem",
+          "title": "Přepsání animace akce",
+          "type": "Typ přepsání animace",
+          "type_desc": "Animace k použití při shodě podmínky přepsání."
+        },
+        "title": "Animace pruhu",
+        "trigger": {
+          "attribute_name_desc": "Název atributu k porovnání (např. charging_status)",
+          "desc": "Vyberte entitu ke sledování a definujte hodnotu + animaci k použití při shodě.",
+          "entity_desc": "Entita k vyhodnocení pro spouštěč animace",
+          "match_value": "Hodnota shody",
+          "match_value_desc": "Text k porovnání se stavem nebo atributem (porovnání je textové).",
+          "title": "Spouštěč animace",
+          "type": "Typ spouštěče",
+          "type_desc": "Vyberte, zda porovnávat stav entity nebo atribut"
+        },
+        "type": "Typ animace",
+        "type_desc": "Vyberte, jak se má pruh animovat při spuštění.",
+        "types": {
+          "blinking": "Blikání",
+          "bouncing": "Poskakování",
+          "bubbles": "Bubliny",
+          "charging": "Nabíjení (diagonální čáry)",
+          "fill": "Plnění",
+          "flicker": "Třepotání",
+          "glow": "Záře",
+          "heartbeat": "Tlukot srdce",
+          "pulse": "Pulsování",
+          "rainbow": "Duha",
+          "ripple": "Vlnění",
+          "shimmer": "Třpyt",
+          "traffic": "Provoz (holičský sloup)",
+          "vibrate": "Vibrace"
+        }
+      },
+      "appearance": {
+        "alignment": "Zarovnání pruhu",
+        "alignment_desc": "Vyberte způsob zarovnání pruhu, když je šířka menší než 100%.",
+        "border_radius": "Poloměr ohraničení",
+        "border_radius_desc": "Ovládání zaoblených rohů pruhu.",
+        "height": "Výška pruhu",
+        "height_desc": "Upravte tloušťku indikátoru průběhu v pixelech.",
+        "style": "Styl pruhu",
+        "style_dashed": "Čárkovaný",
+        "style_desc": "Vyberte vizuální styl indikátoru průběhu.",
+        "style_dots": "Tečky",
+        "style_embossed": "Reliéfní",
+        "style_flat": "Plochý (výchozí)",
+        "style_glass": "Sklo",
+        "style_glossy": "Lesklý",
+        "style_gradient": "Gradientní překrytí",
+        "style_inset": "Zapuštěný",
+        "style_metallic": "Kovový",
+        "style_neon": "Neonová záře",
+        "style_neumorphic": "Neumorfní",
+        "style_outline": "Obrys",
+        "title": "Vzhled pruhu",
+        "width": "Šířka pruhu",
+        "width_desc": "Nastavte šířku pruhu jako procento kontejneru."
+      },
+      "attr_config": {
+        "attribute_entity": "Entita atributu",
+        "attribute_entity_desc": "Vyberte entitu obsahující atribut s procentuální hodnotou",
+        "attribute_name": "Název atributu",
+        "attribute_name_desc": "Zadejte název atributu obsahujícího procentuální hodnotu (např. \"battery_level\")",
+        "desc": "Konfigurace nastavení atributu entity",
+        "title": "Konfigurace atributu entity"
+      },
+      "colors": {
+        "background_color": "Barva pozadí",
+        "bar_color": "Barva pruhu",
+        "border_color": "Barva ohraničení",
+        "left_side": "Barvy levé strany",
+        "limit_indicator": "Indikátor limitu",
+        "percentage_text": "Text procent",
+        "right_side": "Barvy pravé strany",
+        "title": "Barvy",
+        "title_color": "Barva nadpisu",
+        "value_color": "Barva hodnoty"
+      },
+      "diff_config": {
+        "current_entity": "Entita aktuální hodnoty",
+        "current_entity_desc": "Entita představující aktuální/spotřebované množství (např. spotřebované palivo, vybité baterie)",
+        "desc": "Konfigurace nastavení výpočtu rozdílu",
+        "title": "Konfigurace výpočtu rozdílu",
+        "total_entity": "Entita celkové hodnoty",
+        "total_entity_desc": "Entita představující celkové/maximální množství (např. kapacita nádrže, kapacita baterie)"
+      },
+      "entity": {
+        "desc_empty": "Vyberte entitu poskytující procentuální hodnotu (0-100). Senzory baterie jsou ideální pro pruhy.",
+        "desc_present": "Entita poskytující procentuální hodnotu pro pruh.",
+        "no_entity_warning": "Žádná entita nevybrána - Vyberte prosím senzor s hodnotami mezi 0-100",
+        "title": "Entita procent pruhu"
+      },
+      "gradient": {
+        "cropped": "Oříznutý",
+        "desc": "Použijte barevný gradient na výplň pruhu. Po aktivaci vyberte způsob zobrazení gradientu a přizpůsobte body barev níže.",
+        "full": "Plný",
+        "title": "Režim gradientu",
+        "value_based": "Založený na hodnotě"
+      },
+      "labels": {
+        "alignment": "Zarovnání štítku",
+        "alignment_desc": "Ovládání umístění levých a pravých štítků."
+      },
+      "left": {
+        "desc": "Konfigurace nadpisu a hodnoty entity zobrazené na levé straně pruhu. To je užitečné pro zobrazení štítků jako 'Dosah' nebo 'Baterie' spolu s jejich hodnotami.",
+        "enable_toggle": "Aktivujte přepínač výše pro konfiguraci nastavení levé strany",
+        "template_desc": "Použijte šablonu pro formátování zobrazené hodnoty. Šablony používají syntaxi Jinja2 Home Assistantu.",
+        "template_mode": "Režim šablony",
+        "title": "Levá strana",
+        "title_size": "Velikost nadpisu",
+        "value_size": "Velikost hodnoty",
+        "value_template": "Šablona hodnoty",
+        "value_template_desc": "Šablona pro formátování hodnoty levé strany pomocí syntaxe Jinja2"
+      },
+      "limit_entity": {
+        "desc": "Volitelné: Přidejte vertikální indikátorovou čáru na pruh (např. limit nabití pro EV baterii).",
+        "title": "Entita limitní hodnoty (volitelné)"
+      },
+      "percentage": {
+        "desc": "Ovládání viditelnosti a vzhledu procentuálních hodnot zobrazených přímo na pruhu. Tato čísla poskytují jasný vizuální indikátor aktuální úrovně.",
+        "text_alignment": "Zarovnání textu procent",
+        "text_size": "Velikost textu",
+        "text_size_desc": "Upravte velikost textu procent zobrazeného na pruhu.",
+        "title": "Zobrazení textu procent"
+      },
+      "right": {
+        "desc": "Konfigurace nadpisu a hodnoty entity zobrazené na pravé straně pruhu. To je ideální pro doplňující informace jako 'Čas do plného nabití' nebo sekundární měření.",
+        "enable_toggle": "Aktivujte přepínač výše pro konfiguraci nastavení pravé strany",
+        "template_desc": "Použijte šablonu pro formátování zobrazené hodnoty. Šablony používají syntaxi Jinja2 Home Assistantu.",
+        "template_mode": "Režim šablony",
+        "title": "Pravá strana",
+        "title_size": "Velikost nadpisu",
+        "value_size": "Velikost hodnoty",
+        "value_template": "Šablona hodnoty",
+        "value_template_desc": "Šablona pro formátování hodnoty pravé strany pomocí syntaxe Jinja2"
+      },
+      "template_config": {
+        "desc": "Konfigurace nastavení šablony",
+        "percentage_template": "Šablona procent",
+        "percentage_template_desc": "Zadejte šablonu Jinja2, která vrací číslo mezi 0-100 pro procenta. Příklad: {{ (states('sensor.battery_level') | float) * 100 }}",
+        "title": "Konfigurace šablony"
+      }
+    },
+    "image": {
+      "settings": "Nastavení obrázku",
+      "source_type": "Typ zdroje obrázku",
+      "source_type_desc": "Vyberte způsob specifikace zdroje obrázku.",
+      "source": {
+        "default": "Výchozí obrázek",
+        "url": "URL obrázku",
+        "upload": "Nahrát obrázek",
+        "entity": "Obrázek entity",
+        "attribute": "Atribut entity"
+      },
+      "url_section": {
+        "title": "Konfigurace URL obrázku"
+      },
+      "image_url": "URL obrázku",
+      "image_url_desc": "Zadejte přímou URL obrázku, který chcete zobrazit.",
+      "upload_section": {
+        "title": "Konfigurace nahrání obrázku"
+      },
+      "upload": "Nahrát obrázek",
+      "upload_desc": "Klikněte pro nahrání souboru obrázku z vašeho zařízení.",
+      "entity_section": {
+        "title": "Konfigurace obrázku entity"
+      },
+      "entity": "Entita",
+      "entity_desc": "Vyberte entitu s obrázkem (např. osoba, kamery).",
+      "attribute_section": {
+        "title": "Konfigurace atributu entity"
+      },
+      "entity_attr_desc": "Vyberte entitu obsahující URL obrázku v jednom ze svých atributů.",
+      "attribute_name": "Název atributu",
+      "attribute_name_desc": "Zadejte cestu atributu obsahující URL obrázku (podporována tečková notace, např. vehicle_data.vehicleDetails.generalDashboard).",
+      "width": "Šířka (%)",
+      "width_desc": "Nastavte šířku jako procento kontejneru.",
+      "height": "Výška (px)",
+      "height_desc": "Nastavte výšku v pixelech.",
+      "crop_fit": "Ořez a přizpůsobení",
+      "crop_fit_desc": "Ovládání způsobu, jak se obrázek vejde do kontejneru.",
+      "fit": {
+        "cover": "Pokrýt (oříznout pro vyplnění)",
+        "contain": "Obsahovat (vejde celý obrázek)",
+        "fill": "Vyplnit (roztáhnout pro přizpůsobení)",
+        "scale_down": "Zmenšit",
+        "none": "Žádné (původní velikost)"
+      },
+      "border_radius": "Poloměr ohraničení",
+      "border_radius_desc": "Ovládání zaoblených rohů obrázku.",
+      "tap_actions": "Akce klepnutí",
+      "filters": "Filtry",
+      "filter": {
+        "blur": "Rozmazání",
+        "blur_desc": "Použijte efekt rozmazání na váš obrázek.",
+        "brightness": "Jas (%)",
+        "brightness_desc": "Upravte jas vašeho obrázku.",
+        "contrast": "Kontrast (%)",
+        "contrast_desc": "Upravte kontrast vašeho obrázku.",
+        "saturation": "Sytost (%)",
+        "saturation_desc": "Upravte sytost vašeho obrázku."
+      },
+      "hover": {
+        "title": "Efekty při najetí",
+        "effect_type": "Typ efektu",
+        "effect_type_desc": "Vyberte typ efektu při najetí.",
+        "scale": "Škálování (přiblížení/oddálení)",
+        "rotate": "Rotace",
+        "fade": "Mizení (změna průhlednosti)",
+        "blur": "Rozmazání",
+        "brightness": "Jas",
+        "glow": "Záře (stín rámečku)",
+        "slide": "Posouvání (překlad)",
+        "scale_amount": "Škálování (%)",
+        "scale_amount_desc": "Upravte škálování obrázku při najetí.",
+        "rotate_amount": "Rotace (°)",
+        "rotate_amount_desc": "Rotujte obrázek při najetí.",
+        "opacity": "Průhlednost (%)",
+        "opacity_desc": "Změňte průhlednost obrázku při najetí.",
+        "blur_amount": "Rozmazání (px)",
+        "blur_amount_desc": "Použijte efekt rozmazání na obrázek při najetí.",
+        "brightness_amount": "Jas (%)",
+        "brightness_amount_desc": "Upravte jas obrázku při najetí.",
+        "glow_intensity": "Intenzita záře",
+        "glow_intensity_desc": "Vyberte intenzitu efektu záře při najetí.",
+        "glow_light": "Slabá záře",
+        "glow_medium": "Střední záře",
+        "glow_heavy": "Silná záře",
+        "glow_custom": "Vlastní stín",
+        "translate_x": "Horizontální (px)",
+        "translate_x_desc": "Posuňte obrázek horizontálně při najetí.",
+        "translate_y": "Vertikální (px)",
+        "translate_y_desc": "Posuňte obrázek vertikálně při najetí."
+      },
+      "alt": "Obrázek",
+      "no_source": "Žádný zdroj obrázku nenakonfigurován"
+    },
+    "graphs": {
+      "chart_type": {
+        "title": "Typ grafu",
+        "type": "Typ",
+        "desc": "Vyberte styl vizualizace pro vaše data."
+      },
+      "types": {
+        "line": "Čárový graf",
+        "bar": "Sloupcový graf",
+        "pie": "Koláčový graf",
+        "donut": "Kobliha graf"
+      },
+      "data_sources": {
+        "title": "Zdroje dat",
+        "add_entity": "Přidat entitu",
+        "add_first_entity": "Přidejte svou první entitu pro vytvoření grafu",
+        "no_entities": "Žádné entity nepřidány"
+      },
+      "entity": "Entita",
+      "entity_desc": "Vyberte entitu k zobrazení.",
+      "display_name_optional": "Zobrazovaný název (volitelný)",
+      "use_as_card_info": "Použít jako informace karty",
+      "attribute": "Atribut",
+      "attribute_desc": "Použijte stav entity nebo vyberte konkrétní atribut ke sledování.",
+      "attribute_state_default": "Stav (výchozí)",
+      "show_points": "Zobrazit body",
+      "fill_area": "Vyplnit oblast",
+      "line_style": "Styl čáry",
+      "line_solid": "Plná",
+      "line_dashed": "Čárkovaný",
+      "line_dotted": "Tečkovaná",
+      "pie_show_title": "Zobrazit nadpis v sekci",
+      "pie_show_value": "Zobrazit hodnotu v sekci",
+      "expand_options": "Rozbalit možnosti",
+      "no_entities": "Žádné entity nepřidány",
+      "add_first_entity": "Přidejte svou první entitu pro vytvoření grafu",
+      "add_entity": "Přidat entitu",
+      "display_options": {
+        "title": "Možnosti zobrazení"
+      },
+      "show_title": "Zobrazit nadpis grafu",
+      "show_value": "Zobrazit hodnotu grafu",
+      "chart_title": "Nadpis grafu",
+      "chart_title_placeholder": "Zadejte nadpis grafu",
+      "time_period": "Časové období",
+      "time_period_desc": "Kolik historických dat zobrazit.",
+      "period": {
+        "1h": "Poslední hodina",
+        "3h": "Poslední 3 hodiny",
+        "6h": "Poslední 6 hodin",
+        "12h": "Poslední 12 hodin",
+        "24h": "Poslední 24 hodin",
+        "2d": "Poslední 2 dny",
+        "7d": "Poslední týden",
+        "30d": "Poslední měsíc",
+        "90d": "Poslední 3 měsíce",
+        "365d": "Poslední rok"
+      },
+      "normalize_values": "Normalizovat hodnoty na stejnou škálu",
+      "normalize_desc": "Užitečné při porovnávání entit s různými jednotkami (např. % vs míle)",
+      "chart_height": "Výška grafu",
+      "reset_345": "Obnovit výchozí (345px)",
+      "chart_width": "Šířka grafu (%)",
+      "reset_100": "Obnovit výchozí (100%)",
+      "agg": {
+        "count": "Počet",
+        "delta": "Změna",
+        "first": "První hodnota",
+        "last": "Poslední hodnota",
+        "max": "Maximum",
+        "mean": "Průměr",
+        "median": "Medián",
+        "min": "Minimum",
+        "sum": "Součet"
+      },
+      "display": {
+        "add_slice_gap": "Přidat mezeru mezi sekcemi",
+        "background_color": "Barva pozadí",
+        "chart_alignment": "Zarovnání grafu",
+        "chart_alignment_desc": "Zarovnání grafu v jeho kontejneru.",
+        "chart_height": "Výška grafu",
+        "chart_options": "Možnosti grafu",
+        "chart_title": "Nadpis grafu",
+        "chart_title_placeholder": "Zadejte nadpis grafu",
+        "chart_width": "Šířka grafu (%)",
+        "chart_width_desc": "Procento dostupné šířky modulu. Zarovnání ovládá umístění.",
+        "info_position": "Pozice informací",
+        "info_position_desc": "Pozice překrytí zobrazující název/hodnotu.",
+        "legend_position": "Pozice legendy",
+        "legend_position_desc": "Kde umístit legendu při aktivaci.",
+        "normalize_desc": "Užitečné při porovnávání entit s různými jednotkami (např. % vs míle)",
+        "normalize_values": "Normalizovat hodnoty na stejnou škálu",
+        "show_grid": "Zobrazit mřížku",
+        "show_legend": "Zobrazit legendu",
+        "show_title": "Zobrazit nadpis grafu",
+        "show_tooltips": "Zobrazit nápovědy",
+        "show_value": "Zobrazit hodnotu grafu",
+        "smooth_lines": "Hladké čáry",
+        "time_period": "Časové období",
+        "time_period_desc": "Kolik historických dat zobrazit.",
+        "title": "Možnosti zobrazení"
+      },
+      "line": {
+        "fill_area": "Vyplnit oblast",
+        "line_style": "Styl čáry",
+        "line_width": "Šířka čáry",
+        "show_points": "Zobrazit body"
+      },
+      "line_styles": {
+        "dashed": "Čárkovaný",
+        "dotted": "Tečkovaná",
+        "solid": "Plná"
+      },
+      "pie": {
+        "show_title": "Zobrazit nadpis v sekci",
+        "show_value": "Zobrazit hodnotu v sekci"
+      },
+      "position": {
+        "bottom": "Dole",
+        "bottom_left": "Vlevo dole",
+        "bottom_right": "Vpravo dole",
+        "center": "Střed",
+        "hidden": "Skrytý",
+        "left": "Vlevo",
+        "middle": "Střed",
+        "right": "Vpravo",
+        "top": "Nahoře",
+        "top_left": "Vlevo nahoře",
+        "top_right": "Vpravo nahoře"
+      }
+    },
+    "button": {
+      "basic": {
+        "title": "Základní nastavení",
+        "desc": "Konfigurace vzhledu tlačítka a textového obsahu."
+      },
+      "text": {
+        "title": "Text tlačítka",
+        "desc": "Text zobrazovaný na tlačítku (ponechte prázdné pouze pro ikonu)."
+      },
+      "style": {
+        "title": "Styl tlačítka",
+        "desc": "Vizuální styl tlačítka"
+      },
+      "alignment": {
+        "title": "Zarovnání",
+        "desc": "Způsob zarovnání tlačítka v jeho kontejneru"
+      },
+      "styles": {
+        "flat": "Plochý (výchozí)",
+        "glossy": "Lesklý",
+        "embossed": "Reliéfní",
+        "inset": "Zapuštěný",
+        "gradient_overlay": "Gradientní překrytí",
+        "neon_glow": "Neonová záře",
+        "outline": "Obrys",
+        "glass": "Sklo",
+        "metallic": "Kovový"
+      },
+      "align": {
+        "left": "Vlevo",
+        "center": "Střed",
+        "right": "Vpravo",
+        "justify": "Zarovnat (plná šířka)"
+      },
+      "icon": {
+        "title": "Nastavení ikony",
+        "desc": "Konfigurace zobrazení a umístění ikony pro tlačítko.",
+        "before": "Před textem",
+        "after": "Za textem",
+        "enable_toggle_desc": "Aktivujte přepínač výše pro konfiguraci nastavení ikony"
+      },
+      "colors": {
+        "title": "Barvy",
+        "background": "Barva pozadí",
+        "text": "Barva textu"
+      },
+      "hover": {
+        "effect_type": "Typ efektu",
+        "effect_type_desc": "Vyberte efekt při najetí pro toto tlačítko.",
+        "none": "Žádný",
+        "color": "Změna barvy",
+        "scale": "Škálování",
+        "glow": "Záře",
+        "lift": "Zvednutí (překlad Y)",
+        "hover_color": "Barva při najetí",
+        "glow_color": "Barva záře",
+        "title": "Efekty při najetí",
+        "enable_toggle_desc": "Aktivujte přepínač výše pro konfiguraci efektů při najetí"
+      },
+      "actions": {
+        "type": "Typ akce",
+        "type_desc": "Vyberte, co se stane při kliknutí na tlačítko",
+        "entity": "Entita",
+        "entity_desc": "Vyberte entitu pro interakci",
+        "navigation_path": "Navigační cesta",
+        "navigation_path_desc": "Cesta pro navigaci (např. /dashboard/energy)",
+        "service": "Služba",
+        "service_desc": "Služba k volání (např. light.turn_on)",
+        "service_data": "Data služby (JSON)",
+        "service_data_desc": "Volitelná data předaná službě (formát JSON)"
+      },
+      "tap": {
+        "title": "Akce při klepnutí",
+        "desc": "Akce k provedení při klepnutí na tlačítko"
+      },
+      "hold": {
+        "title": "Akce při podržení",
+        "desc": "Akce k provedení při podržení tlačítka"
+      },
+      "double": {
+        "title": "Akce při dvojitém klepnutí",
+        "desc": "Akce k provedení při dvojitém klepnutí na tlačítko"
+      },
+      "show_icon": "Zobrazit ikonu",
+      "show_icon_desc": "Zobrazit ikonu na tlačítku",
+      "icon_desc": "Ikona k zobrazení (např. mdi:home)",
+      "icon_position": "Pozice ikony",
+      "icon_position_desc": "Pozice ikony vzhledem k textu",
+      "icon_field": "Ikona"
+    },
+    "info": {
+      "entity_section": {
+        "title": "KONFIGURACE ENTITY"
+      },
+      "entity": "Entita",
+      "entity_desc": "Vyberte entitu k zobrazení",
+      "icon_section": {
+        "title": "Nastavení ikony"
+      },
+      "show_icon": "Zobrazit ikonu",
+      "show_icon_desc": "Zobrazit ikonu vedle hodnoty entity",
+      "icon": "Ikona",
+      "icon_desc": "Vyberte ikonu k zobrazení",
+      "icon_color": "Barva ikony",
+      "name_section": {
+        "title": "Nastavení názvu"
+      },
+      "show_name": "Zobrazit název",
+      "show_name_desc": "Zobrazit název entity nad hodnotou",
+      "custom_name": "Vlastní název",
+      "custom_name_desc": "Přepsat název entity vlastním názvem",
+      "name_color": "Barva názvu",
+      "state_section": {
+        "title": "Nastavení stavu"
+      },
+      "show_state": "Zobrazit stav",
+      "show_state_desc": "Zobrazit stav/hodnotu entity",
+      "show_units": "Zobrazit jednotky",
+      "show_units_desc": "Zobrazit měrnou jednotku (pokud je dostupná)",
+      "state_color": "Barva stavu",
+      "template": {
+        "title": "Režim šablony",
+        "desc": "Použijte šablonu pro formátování hodnoty entity. Šablony umožňují použít syntaxi šablon Home Assistantu pro složité formátování.",
+        "mode": "Režim šablony",
+        "mode_desc": "Použijte syntaxi šablon Home Assistantu pro formátování hodnoty",
+        "value": "Šablona hodnoty",
+        "value_desc": "Šablona pro formátování hodnoty entity pomocí syntaxe Jinja2"
+      },
+      "size_section": {
+        "title": "Nastavení velikosti"
+      },
+      "icon_size": "Velikost ikony",
+      "icon_size_desc": "Velikost ikony v pixelech",
+      "name_size": "Velikost názvu",
+      "name_size_desc": "Velikost textu názvu entity v pixelech",
+      "value_size": "Velikost hodnoty",
+      "value_size_desc": "Velikost textu hodnoty entity v pixelech",
+      "icon_gap": "Mezera ikony",
+      "icon_gap_desc": "Mezera mezi ikonou a obsahem v pixelech",
+      "layout_section": {
+        "title": "Rozvržení a umístění"
+      },
+      "icon_position": "Pozice ikony",
+      "overall_alignment": "Celkové zarovnání",
+      "icon_alignment": "Zarovnání ikony",
+      "content_alignment": "Zarovnání obsahu",
+      "examples_title": "Běžné příklady:",
+      "example_basic": "Základní hodnota",
+      "example_units": "S jednotkami",
+      "example_round": "Zaokrouhlit na 1 desetinné místo"
+    },
+    "camera": {
+      "config": {
+        "title": "Konfigurace kamery",
+        "desc": "Konfigurace entity kamery a nastavení zobrazení."
+      },
+      "entity": "Entita kamery",
+      "entity_desc": "Vyberte entitu kamery k zobrazení. Měla by to být entita kamery nebo mjpeg z Home Assistantu.",
+      "name": "Název kamery",
+      "name_desc": "Vlastní název pro kameru. Ponechte prázdné pro použití názvu entity.",
+      "show_name": "Zobrazit název kamery",
+      "show_name_desc": "Zobrazit název kamery v kanálu",
+      "name_position": {
+        "group_title": "Pozice názvu kamery",
+        "title": "Pozice názvu",
+        "desc": "Vyberte, kde se název kamery objeví jako překrytí na obrázku kamery.",
+        "options": {
+          "top_left": "Vlevo nahoře",
+          "top_right": "Vpravo nahoře",
+          "center": "Střed",
+          "bottom_left": "Vlevo dole",
+          "bottom_right": "Vpravo dole"
+        }
+      },
+      "display": {
+        "title": "Nastavení zobrazení"
+      },
+      "live_view": {
+        "title": "Živý náhled",
+        "desc": "Aktivujte pro zobrazení živého streamu kamery (vyžaduje integraci stream). Při deaktivaci zobrazuje statické snímky."
+      },
+      "auto_refresh": {
+        "section_title": "Nastavení automatického obnovení",
+        "title": "Automatické obnovení",
+        "desc": "Automaticky obnovovat obrázek kamery v pravidelných intervalech"
+      },
+      "refresh_interval": {
+        "title": "Interval obnovení (sekundy)",
+        "desc": "Jak často automaticky obnovovat obrázek kamery."
+      },
+      "dimensions": {
+        "title": "Rozměry"
+      },
+      "width": "Šířka (px)",
+      "width_desc": "Nastavte šířku zobrazení kamery. Rozsah: 100-1000px",
+      "height": "Výška (px)",
+      "height_desc": "Nastavte výšku zobrazení kamery. Rozsah: 100-1000px",
+      "link_aspect": "Propojit poměr stran",
+      "unlink_aspect": "Odpojit poměr stran",
+      "aspect_linked": {
+        "title": "Poměr stran propojen",
+        "desc": "Rozměry udržují poměr {ratio}:1. Úprava jednoho rozměru automaticky aktualizuje druhý pro zachování proporcí."
+      },
+      "aspect_independent": {
+        "title": "Nezávislé rozměry",
+        "desc": "Šířka a výška mohou být upraveny nezávisle. Klikněte na tlačítko propojení výše pro zachování poměru stran."
+      },
+      "crop": {
+        "title": "Ořez a pozice",
+        "desc": "Upravte ořez a pozici zobrazení kamery. Užitečné pro zaměření na konkrétní oblasti nebo odstranění nežádoucích okrajů.",
+        "left_title": "Levý ořez (%)",
+        "left_desc": "Ořez z levého okraje. Vyšší hodnoty zobrazují méně z levé strany.",
+        "right_title": "Pravý ořez (%)",
+        "right_desc": "Ořez z pravého okraje. Vyšší hodnoty zobrazují méně z pravé strany.",
+        "top_title": "Horní ořez (%)",
+        "top_desc": "Ořez z horního okraje. Vyšší hodnoty zobrazují méně z horní oblasti.",
+        "bottom_title": "Dolní ořez (%)",
+        "bottom_desc": "Ořez z dolního okraje. Vyšší hodnoty zobrazují méně z dolní oblasti.",
+        "active_applied": "Aktivní ořezy použity",
+        "reset_all": "Obnovit všechny ořezy"
+      },
+      "template": {
+        "title": "Režim šablony",
+        "desc": "Použijte šablonu pro dynamické nastavení entity kamery. Šablony umožňují použít syntaxi šablon Home Assistantu pro podmíněný výběr kamery.",
+        "mode_label": "Režim šablony",
+        "mode_desc": "Použijte syntaxi šablon Home Assistantu pro dynamický výběr entity kamery",
+        "camera_template_label": "Šablona kamery",
+        "camera_template_desc": "Šablona pro dynamické nastavení entity kamery pomocí syntaxe Jinja2",
+        "examples_title": "Běžné příklady:",
+        "example1_desc": "Zobrazit kameru při slunečném počasí",
+        "example2_desc": "Přepínat mezi kamerami na základě vstupního boolean",
+        "example3_desc": "Použít input select pro výběr entity kamery"
+      },
+      "show_name_toggle": {
+        "enable_toggle_desc": "Aktivujte přepínač výše pro konfiguraci zobrazení názvu kamery"
+      }
+    },
+    "separator": {
+      "config": {
+        "title": "Konfigurace oddělovače"
+      },
+      "style": {
+        "title": "Styl oddělovače",
+        "desc": "Vyberte vizuální styl oddělovací čáry."
+      },
+      "options": {
+        "solid": "Plná čára",
+        "double": "Dvojitá čára",
+        "dotted": "Tečkovaná čára",
+        "double_dotted": "Dvojitě tečkovaná",
+        "shadow": "Stín",
+        "blank": "Prázdné místo"
+      },
+      "appearance": {
+        "title": "Vzhled"
+      },
+      "thickness": "Tloušťka (px)",
+      "thickness_desc": "Tloušťka oddělovací čáry.",
+      "width": "Šířka (%)",
+      "width_desc": "Šířka oddělovače jako procento kontejneru.",
+      "color": {
+        "title": "Barva",
+        "desc": "Barva oddělovací čáry."
+      },
+      "show_title": "Zobrazit nadpis",
+      "show_title_desc": "Přidejte text do středu oddělovací čáry (např. ------ Text ------)",
+      "text_content": {
+        "title": "Textový obsah",
+        "desc": "Text zobrazovaný ve středu oddělovače."
+      },
+      "font_size": "Velikost písma",
+      "font_size_desc": "Velikost textu v pixelech.",
+      "text_color": {
+        "title": "Barva textu",
+        "desc": "Barva textu oddělovače."
+      },
+      "text_format": {
+        "title": "Formátování textu",
+        "desc": "Použijte styly formátování na text oddělovače.",
+        "bold": "Tučné",
+        "italic": "Kurzíva",
+        "underline": "Podtržené",
+        "uppercase": "Velká písmena",
+        "strikethrough": "Přeškrtnuté"
+      },
+      "spacer": {
+        "title": "Výška rozestupu"
+      },
+      "height": "Výška (px)",
+      "height_desc": "Ovládá vizuální mezeru pro prázdné místo.",
+      "show_title_toggle": {
+        "enable_toggle_desc": "Aktivujte přepínač výše pro konfiguraci nastavení nadpisu"
+      }
+    },
+    "layout_extra": {
+      "module_name": "Název modulu:",
+      "module_name_placeholder": "Dejte tomuto modulu vlastní název, aby se lépe identifikoval v editoru.",
+      "module_name_help": "Dejte tomuto modulu vlastní název, aby se lépe identifikoval v editoru."
+    },
+    "layout_logic": {
+      "display_title": "Zobrazit tento prvek",
+      "display_desc": "Ovládání, kdy je tento prvek zobrazen. Vyberte \"Vždy\" pro zachování viditelnosti. Vyberte \"Pokud jsou splněny VŠECHNY podmínky níže\" nebo \"Pokud je splněna JAKÁKOLI podmínka níže\" pro zobrazení pouze když podmínky, které přidáte níže, jsou vyhodnoceny jako pravdivé.",
+      "always": "Vždy",
+      "every": "Pokud jsou splněny VŠECHNY podmínky níže",
+      "any": "Pokud je splněna JAKÁKOLI podmínka níže",
+      "conditions": "Podmínky",
+      "add_condition": "Přidat podmínku",
+      "no_conditions": "Zatím nejsou přidány žádné podmínky. Klikněte na \"Přidat podmínku\" pro začátek.",
+      "condition_types": {
+        "entity_state": "Stav entity",
+        "entity_attribute": "Atribut entity",
+        "time": "Časový rozsah",
+        "template": "Šablona"
+      },
+      "condition_fields": {
+        "entity": "Entita",
+        "operator": "Operátor",
+        "value": "Hodnota",
+        "attribute": "Atribut",
+        "time_from": "Od",
+        "time_to": "Do",
+        "template": "Šablona"
+      },
+      "condition_header": "Podmínka",
+      "custom_name": "Vlastní název",
+      "custom_name_desc": "Volitelné: Dejte této podmínce vlastní název pro snadnější identifikaci",
+      "condition_type": "Typ podmínky"
+    },
+    "hover_effects": {
+      "title": "Efekty při najetí",
+      "description": "Konfigurujte vizuální efekty, které se zobrazí při najetí myší na tento modul, řádek nebo sloupec.",
+      "effect": "Efekt při najetí",
+      "effect_desc": "Vyberte vizuální efekt, který se použije při najetí myší",
+      "effects": {
+        "none": "Žádný",
+        "highlight": "Zvýraznění",
+        "outline": "Obrys",
+        "grow": "Zvětšení",
+        "shrink": "Zmenšení",
+        "pulse": "Pulsování",
+        "bounce": "Odskok",
+        "float": "Plavání",
+        "glow": "Záření",
+        "shadow": "Stín",
+        "rotate": "Rotace",
+        "skew": "Naklonění",
+        "wobble": "Kolísání",
+        "buzz": "Vibrace",
+        "fade": "Miznění"
+      }
+    },
+    "design": {
+      "copy": "Kopírovat",
+      "paste": "Vložit",
+      "reset_all": "Obnovit vše",
+      "copy_tooltip": "Kopírovat aktuální nastavení vzhledu (funguje napříč všemi Ultra kartami)",
+      "paste_tooltip_has": "Vložit zkopírovaná nastavení vzhledu (z mezikarty schránky)",
+      "paste_tooltip_none": "Žádná nastavení vzhledu v mezikarty schránce",
+      "reset_all_tooltip": "Obnovit všechna nastavení vzhledu na výchozí",
+      "text_section": "Text",
+      "text_color": "Barva textu",
+      "alignment": "Zarovnání",
+      "inherit_alignment": "Zdědit (bez zarovnání)",
+      "font_size": "Velikost písma",
+      "font_size_placeholder": "16px (výchozí), 1.2rem, max(1rem, 1.5vw)",
+      "reset_font_size": "Obnovit velikost písma na výchozí",
+      "line_height": "Výška řádku",
+      "line_height_placeholder": "0 (výchozí), 28px, 1.7",
+      "reset_line_height": "Obnovit výšku řádku na výchozí",
+      "letter_spacing": "Rozestup písmen",
+      "letter_spacing_placeholder": "auto (výchozí), 1px, -0.04em",
+      "reset_letter_spacing": "Obnovit rozestup písmen na výchozí",
+      "font": "Písmo",
+      "font_weight": "Tloušťka písma",
+      "text_transform": "Transformace textu",
+      "font_style": "Styl písma",
+      "default_option": "– Výchozí –",
+      "weight_thin": "100 - Tenké",
+      "weight_light": "300 - Světlé",
+      "weight_normal": "400 - Normální",
+      "weight_medium": "500 - Střední",
+      "weight_semi_bold": "600 - Polo tučné",
+      "weight_bold": "700 - Tučné",
+      "weight_black": "900 - Černé",
+      "transform_none": "Žádný",
+      "transform_uppercase": "VELKÁ PÍSMENA",
+      "transform_lowercase": "malá písmena",
+      "transform_capitalize": "Velká první písmena",
+      "style_normal": "Normální",
+      "style_italic": "Kurzíva",
+      "style_oblique": "Šikmé",
+      "background_section": "Pozadí",
+      "background_color": "Barva pozadí",
+      "background_image_type": "Typ obrázku pozadí",
+      "bg_none": "Žádný",
+      "bg_upload": "Nahrát obrázek",
+      "bg_entity": "Obrázek entity",
+      "bg_url": "URL obrázku",
+      "sizes_section": "Velikosti",
+      "spacing_section": "Rozestupy",
+      "border_section": "Ohraničení",
+      "text_shadow_section": "Stín textu",
+      "box_shadow_section": "Stín rámečku",
+      "position_section": "Pozice",
+      "overflow_section": "Přetečení",
+      "animations_section": "Animace",
+      "width": "Šířka",
+      "height": "Výška",
+      "max_width": "Maximální šířka",
+      "max_height": "Maximální výška",
+      "min_width": "Minimální šířka",
+      "min_height": "Minimální výška",
+      "border_radius": "Poloměr ohraničení",
+      "border_style": "Styl ohraničení",
+      "border_width": "Šířka ohraničení",
+      "border_color": "Barva ohraničení",
+      "margin": "Okraj",
+      "padding": "Vnitřní okraj",
+      "top": "Nahoře",
+      "right": "Vpravo",
+      "bottom": "Dole",
+      "left": "Vlevo",
+      "unlock_sides": "Odemknout pro nezávislé úpravy stran",
+      "lock_sides": "Zamknout pro společné úpravy všech stran",
+      "horizontal_shift": "Horizontální posun",
+      "vertical_shift": "Vertikální posun",
+      "blur": "Rozmazání",
+      "text_shadow_color": "Barva stínu textu",
+      "box_shadow_color": "Barva stínu rámečku",
+      "overflow": "Přetečení",
+      "clip_path": "Cesta ořezu",
+      "upload_bg_image": "Nahrát obrázek pozadí",
+      "bg_image_entity": "Entita obrázku pozadí",
+      "bg_image_url": "URL obrázku pozadí",
+      "choose_file": "Vybrat soubor",
+      "no_file_chosen": "Žádný soubor nevybrán",
+      "backdrop_filter": "Filtr pozadí",
+      "spread": "Rozšíření",
+      "visible_default": "Viditelné (výchozí)",
+      "examples": "Příklady",
+      "state_based_animation": "Animace založená na stavu",
+      "animation_type": "Typ animace",
+      "animation_duration": "Doba trvání animace",
+      "animation_duration_desc": "Doba trvání animace (např. 2s, 500ms, 1.5s)",
+      "intro_outro_animations": "Úvodní a závěrečné animace",
+      "intro_animation": "Úvodní animace",
+      "outro_animation": "Závěrečná animace",
+      "duration": "Doba trvání",
+      "delay": "Zpoždění",
+      "timing": "Načasování",
+      "none": "Žádný",
+      "ease": "Zmírnění",
+      "border_style_none": "Žádný",
+      "border_style_solid": "Plná",
+      "border_style_dashed": "Čárkovaný",
+      "border_style_dotted": "Tečkovaná",
+      "border_style_double": "Double",
+      "position_default": "– Výchozí –",
+      "position_static": "Statická",
+      "position_relative": "Relativní",
+      "position_absolute": "Absolutní",
+      "position_fixed": "Pevná",
+      "position_sticky": "Lepkavá"
+    },
+    "modules": {
+      "text": "Textový modul",
+      "image": "Obrázkový modul",
+      "icon": "Ikonový modul",
+      "bar": "Sloupcový modul",
+      "info": "Informační modul",
+      "button": "Tlačítkový modul",
+      "separator": "Modul oddělovače",
+      "markdown": "Markdown modul",
+      "camera": "Kamerový modul",
+      "graphs": "Modul grafů",
+      "no_text_configured": "Žádný text nenakonfigurován",
+      "no_image_configured": "Žádný obrázek nenakonfigurován",
+      "uploaded_image": "Nahraný obrázek",
+      "icons_configured": "{count} ikon nakonfigurováno",
+      "no_icons_configured": "Žádné ikony nenakonfigurovány",
+      "default_entity_suggestion": "Entita: sensor.battery_level",
+      "sample_text": "Ukázkový text"
+    },
+    "common": {
+      "attribute": "Atribut",
+      "attribute_name": "Název atributu",
+      "baseline": "Základní linie",
+      "bottom": "Dole",
+      "center": "Střed",
+      "entity": "Entita",
+      "justify": "Zarovnat",
+      "left": "Vlevo",
+      "none": "Žádný",
+      "right": "Vpravo",
+      "space_around": "Mezera kolem",
+      "space_between": "Mezera mezi",
+      "state": "Stav",
+      "stretch": "Roztáhnout",
+      "top": "Nahoře"
+    },
+    "horizontal": {
+      "alignment": {
+        "horizontal": "Horizontální zarovnání",
+        "horizontal_desc": "Vyberte způsob horizontálního zarovnání prvků v kontejneru.",
+        "vertical": "Vertikální zarovnání",
+        "vertical_desc": "Vyberte způsob vertikálního zarovnání prvků v kontejneru."
+      },
+      "empty": {
+        "add_modules": "Přidejte moduly v konstruktoru rozvržení pro jejich zobrazení zde",
+        "no_modules": "Zatím nejsou přidány žádné moduly"
+      },
+      "gap": {
+        "between_items": "Mezera mezi položkami",
+        "desc": "Nastavte rozestupy mezi horizontálními prvky (v jednotkách rem). Použijte záporné hodnoty pro překrývání prvků.",
+        "title": "Konfigurace mezer"
+      },
+      "layout": {
+        "desc": "Konfigurace způsobu horizontálního uspořádání prvků v kontejneru.",
+        "title": "Konfigurace rozvržení"
+      },
+      "wrapping": {
+        "desc": "Povolit prvkům přejít na další řádek při překročení šířky kontejneru.",
+        "title": "Povolit zalamování"
+      }
+    },
+    "markdown": {
+      "code_highlighting": "Zvýraznění kódu",
+      "code_highlighting_desc": "Zvýraznění syntaxe pro bloky kódu",
+      "content": {
+        "desc": "Zadejte váš markdown obsah s plnou podporou formátování",
+        "label": "Obsah",
+        "title": "Markdown obsah"
+      },
+      "enable_html": "Povolit HTML",
+      "enable_html_desc": "Povolit HTML tagy v markdown obsahu",
+      "enable_tables": "Povolit tabulky",
+      "enable_tables_desc": "Podpora syntaxe markdown tabulek",
+      "features": {
+        "title": "Funkce Markdown"
+      }
+    },
+    "vertical": {
+      "alignment": {
+        "vertical": "Vertikální zarovnání",
+        "vertical_desc": "Vyberte způsob vertikálního zarovnání prvků v kontejneru."
+      },
+      "empty": {
+        "add_modules": "Přidejte moduly v konstruktoru rozvržení pro jejich zobrazení zde",
+        "no_modules": "Zatím nejsou přidány žádné moduly"
+      },
+      "gap": {
+        "between_items": "Mezera mezi položkami",
+        "desc": "Nastavte rozestupy mezi vertikálními prvky (v jednotkách rem). Použijte záporné hodnoty pro překrývání prvků.",
+        "title": "Konfigurace mezer"
+      },
+      "layout": {
+        "desc": "Konfigurace způsobu vertikálního uspořádání prvků v kontejneru.",
+        "title": "Konfigurace rozvržení"
+      }
+    }
+  }
+}

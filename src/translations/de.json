@@ -1,0 +1,1209 @@
+{
+  "editor": {
+    "tabs": {
+      "layout": "Layout-Builder",
+      "settings": "Einstellungen",
+      "about": "Über"
+    },
+    "settings": {
+      "title": "Karten-Einstellungen",
+      "description": "Konfigurieren Sie das globale Erscheinungsbild und Verhalten der Karte."
+    },
+    "appearance": {
+      "title": "Erscheinungsbild",
+      "description": "Steuern Sie das visuelle Erscheinungsbild Ihrer Karte"
+    },
+    "spacing": {
+      "title": "Abstand",
+      "description": "Steuern Sie den Abstand und die Positionierung Ihrer Karte"
+    },
+    "fields": {
+      "card_background_color": "Karten-Hintergrundfarbe",
+      "card_background_color_desc": "Die Hintergrundfarbe der gesamten Karte",
+      "border_radius": "Rahmen-Radius",
+      "border_radius_desc": "Abgerundete Ecken für die Karte (in Pixeln)",
+      "card_padding": "Karten-Innenabstand",
+      "card_padding_desc": "Interner Abstand innerhalb der Karte",
+      "card_margin": "Karten-Außenabstand",
+      "card_margin_desc": "Externer Abstand um die Karte",
+      "unit_px": "px",
+      "reset_default": "Auf Standard zurücksetzen",
+      "reset_default_value": "Auf Standard zurücksetzen ({value})"
+    },
+    "tooltips": {
+      "enter_fullscreen": "Vollbild aktivieren",
+      "return_dashboard": "Zurück zum Dashboard",
+      "dashboard": "Dashboard"
+    },
+    "common": {
+      "left": "Links",
+      "center": "Mitte",
+      "right": "Rechts",
+      "top": "Oben",
+      "bottom": "Unten",
+      "none": "Keine",
+      "state": "Zustand",
+      "attribute": "Attribut",
+      "attribute_name": "Attributname",
+      "entity": "Entität",
+      "space_between": "Abstand zwischen",
+      "space_around": "Abstand um",
+      "justify": "Ausrichten",
+      "stretch": "Strecken",
+      "baseline": "Grundlinie"
+    },
+    "horizontal": {
+      "layout": {
+        "title": "Layout-Konfiguration",
+        "desc": "Konfigurieren Sie, wie Elemente horizontal im Container angeordnet werden."
+      },
+      "alignment": {
+        "horizontal": "Horizontale Ausrichtung",
+        "horizontal_desc": "Wählen Sie, wie Elemente horizontal im Container ausgerichtet werden.",
+        "vertical": "Vertikale Ausrichtung",
+        "vertical_desc": "Wählen Sie, wie Elemente vertikal im Container ausgerichtet werden."
+      },
+      "wrapping": {
+        "title": "Umbruch erlauben",
+        "desc": "Erlaubt Elementen, zur nächsten Zeile zu wechseln, wenn sie die Container-Breite überschreiten."
+      },
+      "gap": {
+        "title": "Abstand-Konfiguration",
+        "between_items": "Abstand zwischen Elementen",
+        "desc": "Setzen Sie den Abstand zwischen horizontalen Elementen (in rem-Einheiten). Verwenden Sie negative Werte zum Überlappen von Elementen."
+      },
+      "empty": {
+        "no_modules": "Noch keine Module hinzugefügt",
+        "add_modules": "Fügen Sie Module im Layout-Builder hinzu, um sie hier zu sehen"
+      }
+    },
+    "vertical": {
+      "layout": {
+        "title": "Layout-Konfiguration",
+        "desc": "Konfigurieren Sie, wie Elemente vertikal im Container angeordnet werden."
+      },
+      "alignment": {
+        "vertical": "Vertikale Ausrichtung",
+        "vertical_desc": "Wählen Sie, wie Elemente vertikal im Container ausgerichtet werden."
+      },
+      "gap": {
+        "title": "Abstand-Konfiguration",
+        "between_items": "Abstand zwischen Elementen",
+        "desc": "Setzen Sie den Abstand zwischen vertikalen Elementen (in rem-Einheiten). Verwenden Sie negative Werte zum Überlappen von Elementen."
+      },
+      "empty": {
+        "no_modules": "Noch keine Module hinzugefügt",
+        "add_modules": "Fügen Sie Module im Layout-Builder hinzu, um sie hier zu sehen"
+      }
+    },
+    "layout": {
+      "live_preview": "Live-Vorschau",
+      "toggle_preview": "Vorschau umschalten",
+      "drag_to_move_module": "Ziehen zum Verschieben des Moduls",
+      "edit_module": "Modul bearbeiten",
+      "duplicate_module": "Modul duplizieren",
+      "delete_module": "Modul löschen",
+      "drag_to_move_layout": "Ziehen zum Verschieben des Layout-Moduls",
+      "horizontal_layout": "Horizontales Layout",
+      "vertical_layout": "Vertikales Layout",
+      "add_module_to_layout": "Modul zum Layout hinzufügen",
+      "layout_settings": "Layout-Einstellungen",
+      "duplicate_layout": "Layout duplizieren",
+      "delete_layout": "Layout löschen",
+      "click_to_add_module": "Klicken zum Hinzufügen eines Moduls",
+      "drop_modules_here": "Module hier ablegen",
+      "drag_to_reorder": "Ziehen zum Neuordnen",
+      "edit_child_module": "Untermodul bearbeiten",
+      "duplicate_child_module": "Untermodul duplizieren",
+      "delete_child_module": "Untermodul löschen",
+      "module_settings_title": "Modul-Einstellungen",
+      "child_module_settings_title": "Untermodul-Einstellungen",
+      "general_tab": "Allgemein",
+      "actions_tab": "Aktionen",
+      "other_tab": "Andere",
+      "logic_tab": "Logik",
+      "design_tab": "Design",
+      "drag_to_resize": "Ziehen zum Ändern der Größe",
+      "hidden_by_logic": "Durch Logik verborgen",
+      "add_row": "Zeile hinzufügen",
+      "add_row_tooltip": "Eine neue Zeile zu Ihrem Layout hinzufügen",
+      "row_settings": "Zeilen-Einstellungen",
+      "column_settings": "Spalten-Einstellungen",
+      "row_background_color": "Zeilen-Hintergrundfarbe",
+      "column_gap": "Spaltenabstand (px)",
+      "vertical_alignment": "Vertikale Ausrichtung",
+      "horizontal_alignment": "Horizontale Ausrichtung",
+      "column_preview": "Spalten-Vorschau",
+      "modules_count": "{count} Module",
+      "alignment_top": "Oben",
+      "alignment_center": "Mitte",
+      "alignment_bottom": "Unten",
+      "alignment_stretch": "Strecken",
+      "alignment_left": "Links",
+      "alignment_right": "Rechts"
+    },
+    "layout_logic": {
+      "display_title": "Dieses Element anzeigen",
+      "display_desc": "Steuern Sie, wann dieses Element angezeigt wird. Wählen Sie \"Immer\" um es sichtbar zu halten. Wählen Sie \"Wenn ALLE Bedingungen erfüllt sind\" oder \"Wenn EINE Bedingung erfüllt ist\" um es nur anzuzeigen, wenn die hinzugefügten Bedingungen als wahr bewertet werden.",
+      "always": "Immer",
+      "every": "Wenn ALLE Bedingungen erfüllt sind",
+      "any": "Wenn EINE Bedingung erfüllt ist",
+      "conditions": "Bedingungen",
+      "add_condition": "Bedingung hinzufügen",
+      "no_conditions": "Noch keine Bedingungen hinzugefügt. Klicken Sie auf \"Bedingung hinzufügen\" um zu beginnen.",
+      "condition_types": {
+        "entity_state": "Entitätszustand",
+        "entity_attribute": "Entitätsattribut",
+        "time": "Zeitbereich",
+        "template": "Vorlage"
+      },
+      "condition_fields": {
+        "entity": "Entität",
+        "operator": "Operator",
+        "value": "Wert",
+        "attribute": "Attribut",
+        "time_from": "Von",
+        "time_to": "Bis",
+        "template": "Vorlage"
+      },
+      "condition_header": "Bedingung",
+      "custom_name": "Benutzerdefinierter Name",
+      "custom_name_desc": "Optional: Geben Sie dieser Bedingung einen benutzerdefinierten Namen zur leichteren Identifikation",
+      "condition_type": "Bedingungstyp"
+    },
+    "hover_effects": {
+      "title": "Hover-Effekte",
+      "description": "Konfigurieren Sie visuelle Effekte, die beim Bewegen des Mauszeigers über dieses Modul, diese Zeile oder Spalte angezeigt werden.",
+      "effect": "Hover-Effekt",
+      "effect_desc": "Wählen Sie den visuellen Effekt aus, der beim Hovern angewendet werden soll",
+      "effects": {
+        "none": "Keine",
+        "highlight": "Hervorheben",
+        "outline": "Umriss",
+        "grow": "Vergrößern",
+        "shrink": "Verkleinern",
+        "pulse": "Pulsieren",
+        "bounce": "Springen",
+        "float": "Schweben",
+        "glow": "Leuchten",
+        "shadow": "Schatten",
+        "rotate": "Drehen",
+        "skew": "Neigen",
+        "wobble": "Wackeln",
+        "buzz": "Vibrieren",
+        "fade": "Ausblenden"
+      }
+    },
+    "about": {
+      "developed_by": "Entwickelt von",
+      "desc1": "Ein leistungsstarker modularer Karten-Builder für Home Assistant",
+      "desc2": "Erstellen Sie benutzerdefinierte Layouts mit einer professionellen Page-Builder-Oberfläche",
+      "desc3": "Modulares Layout-System mit bedingter Logik und professionellen Design-Tools",
+      "github_repo": "Besuchen Sie unser Github",
+      "join_discord": "Unserem Discord beitreten",
+      "support_title": "Ultra Card unterstützen",
+      "support_desc": "Ihre großzügigen Spenden fördern die Entwicklung erstaunlicher Funktionen für diese Karte! Ohne die Unterstützung von Benutzern wie Ihnen wäre kontinuierliche Innovation nicht möglich.",
+      "leave_tip": "TRINKGELD GEBEN (PAYPAL)",
+      "version": "Version"
+    },
+    "actions": {
+      "title": "Link-Konfiguration",
+      "description": "Konfigurieren Sie, was passiert, wenn Benutzer mit diesem Element interagieren. Wählen Sie verschiedene Aktionen für Tippen, Halten und Doppeltippen.",
+      "tap_action": "Tipp-Aktion",
+      "tap_action_desc": "Aktion, die beim Tippen/Klicken auf das Modul ausgeführt wird",
+      "hold_action": "Halte-Aktion",
+      "hold_action_desc": "Aktion, die beim Gedrückthalten des Moduls ausgeführt wird",
+      "double_tap_action": "Doppeltipp-Aktion",
+      "double_tap_action_desc": "Aktion, die beim Doppeltippen auf das Modul ausgeführt wird",
+      "tap_behavior": "Tipp-Verhalten",
+      "tap_behavior_desc": "Aktion, die ausgeführt wird, wenn das Element getippt/geklickt wird.",
+      "hold_behavior": "Halte-Verhalten",
+      "hold_behavior_desc": "Aktion, die ausgeführt wird, wenn das Element gedrückt und gehalten wird.",
+      "double_tap_behavior": "Doppeltipp-Verhalten",
+      "double_tap_behavior_desc": "Aktion, die ausgeführt wird, wenn das Element doppelt getippt/geklickt wird."
+    },
+    "icon": {
+      "entity_config": {
+        "title": "ENTITÄTS-KONFIGURATION",
+        "desc": "Konfigurieren Sie die Entität und aktive/inaktive Zustände"
+      },
+      "entity": "Entität",
+      "entity_desc": "Wählen Sie die Entität aus, die dieses Symbol repräsentiert",
+      "inactive_state": "Inaktiver Zustand",
+      "inactive_state_desc": "Zustandswert gilt als \"inaktiv\" (leer lassen, um den tatsächlichen Entitätszustand zu verwenden)",
+      "active_state": "Aktiver Zustand",
+      "active_state_desc": "Zustandswert gilt als \"aktiv\" (leer lassen, um den tatsächlichen Entitätszustand zu verwenden)",
+      "icon_section": {
+        "title": "Symbol-Konfiguration"
+      },
+      "inactive_icon": "Inaktives Symbol",
+      "inactive_icon_desc": "Symbol, das bei Inaktivität angezeigt wird",
+      "inactive_icon_config": "Inaktive Symbol-Konfiguration",
+      "inactive_icon_config_desc": "Konfigurieren Sie die Einstellungen für inaktive Symbole",
+      "active_icon": "Aktives Symbol",
+      "active_icon_desc": "Symbol, das bei Aktivität angezeigt wird",
+      "icon_color_inactive": "Farbe bei Inaktivität",
+      "icon_color_active": "Farbe bei Aktivität",
+      "background_shape_inactive": "Hintergrundform bei Inaktivität",
+      "background_shape_active": "Hintergrundform bei Aktivität",
+      "background_color_inactive": "Hintergrundfarbe bei Inaktivität",
+      "background_color_active": "Hintergrundfarbe bei Aktivität",
+      "icon_size_inactive": "Symbolgröße bei Inaktivität",
+      "icon_size_active": "Symbolgröße bei Aktivität",
+      "inactive_icon_color": "Inaktive Symbolfarbe",
+      "active_icon_color": "Aktive Symbolfarbe",
+      "inactive_icon_background": "Inaktiver Symbolhintergrund",
+      "active_icon_background": "Aktiver Symbolhintergrund",
+      "inactive_icon_background_color": "Inaktive Symbolhintergrundfarbe",
+      "active_icon_background_color": "Aktive Symbolhintergrundfarbe",
+      "name_section": {
+        "title": "Name-Konfiguration"
+      },
+      "inactive_name": "Inaktiver Name",
+      "inactive_name_desc": "Benutzerdefinierter Name bei Inaktivität",
+      "inactive_name_config": "Inaktive Name-Konfiguration",
+      "inactive_name_config_desc": "Konfigurieren Sie die Einstellungen für inaktive Namen",
+      "active_name": "Aktiver Name",
+      "active_name_desc": "Benutzerdefinierter Name bei Aktivität",
+      "custom_inactive_name": "Benutzerdefinierter inaktiver Name",
+      "custom_inactive_name_desc": "Entitätsname bei Inaktivität überschreiben (leer lassen, um Entitätsname zu verwenden)",
+      "custom_active_name": "Benutzerdefinierter aktiver Name",
+      "custom_active_name_desc": "Entitätsname bei Aktivität überschreiben (leer lassen, um Entitätsname zu verwenden)",
+      "name_color_inactive": "Namefarbe bei Inaktivität",
+      "name_color_active": "Namefarbe bei Aktivität",
+      "name_size_inactive": "Nametextgröße bei Inaktivität",
+      "name_size_active": "Nametextgröße bei Aktivität",
+      "inactive_name_color": "Inaktive Namefarbe",
+      "active_name_color": "Aktive Namefarbe",
+      "state_section": {
+        "title": "Zustand-Konfiguration"
+      },
+      "inactive_state_color": "Inaktive Zustandsfarbe",
+      "active_state_color": "Aktive Zustandsfarbe",
+      "inactive_state_text": "Inaktiver Zustandstext",
+      "active_state_text": "Aktiver Zustandstext",
+      "inactive_state_config": "Inaktive Zustand-Konfiguration",
+      "inactive_state_config_desc": "Konfigurieren Sie die Einstellungen für inaktive Zustände",
+      "custom_inactive_state": "Benutzerdefinierter inaktiver Zustand",
+      "custom_inactive_state_desc": "Benutzerdefinierter Text bei Inaktivität (leer lassen, um tatsächlichen Zustand zu verwenden)",
+      "custom_active_state": "Benutzerdefinierter aktiver Zustand",
+      "custom_active_state_desc": "Benutzerdefinierter Text bei Aktivität (leer lassen, um tatsächlichen Zustand zu verwenden)",
+      "state_color_inactive": "Zustandsfarbe bei Inaktivität",
+      "state_color_active": "Zustandsfarbe bei Aktivität",
+      "state_size_inactive": "Zustandstextgröße bei Inaktivität",
+      "state_size_active": "Zustandstextgröße bei Aktivität",
+      "background_section": {
+        "title": "Inaktiver Hintergrund",
+        "desc": "Konfigurieren Sie die Einstellungen für inaktive Hintergründe"
+      },
+      "template_section": {
+        "title": "Erweiterter Vorlagen-Modus",
+        "desc": "Verwenden Sie Jinja2-Vorlagen für erweiterte Symbolsteuerung. Vorlagen können die Sichtbarkeit steuern (wahr/falsch zum Ein-/Ausblenden von Symbolen) und Zustandstext anpassen. Geben Sie benutzerdefinierten Text für aktiven Zustand zurück, geben Sie tatsächlichen Entitätszustand für inaktiven Zustand zurück."
+      },
+      "template_mode": "Erweiterter Vorlagen-Modus",
+      "template": "Vorlage",
+      "animation_section": {
+        "title": "Symbol-Animation",
+        "desc": "Konfigurieren Sie Animationen für aktive und inaktive Zustände"
+      },
+      "active_animation": "Aktive Animation",
+      "active_animation_desc": "Animation wenn Symbol aktiv ist",
+      "inactive_animation": "Inaktive Animation",
+      "inactive_animation_desc": "Animation wenn Symbol inaktiv ist",
+      "animation_none": "Keine",
+      "animation_pulse": "Pulsieren",
+      "animation_spin": "Drehen",
+      "animation_bounce": "Springen",
+      "animation_flash": "Blitzen",
+      "animation_shake": "Schütteln",
+      "animation_vibrate": "Vibrieren",
+      "animation_rotate_left": "Links drehen",
+      "animation_rotate_right": "Rechts drehen",
+      "animation_fade": "Ausblenden",
+      "animation_scale": "Skalieren",
+      "animation_tada": "Tada"
+    },
+    "text": {
+      "content_section": {
+        "title": "Inhalts-Konfiguration",
+        "desc": "Konfigurieren Sie den Textinhalt und die Grundeinstellungen für dieses Modul."
+      },
+      "text_content": "Textinhalt",
+      "text_content_desc": "Geben Sie den Textinhalt ein, der in diesem Modul angezeigt werden soll.",
+      "icon_section": {
+        "title": "Symbol-Konfiguration",
+        "desc": "Wählen Sie ein Symbol, das neben dem Textinhalt angezeigt werden soll."
+      },
+      "icon": "Symbol",
+      "icon_desc": "Wählen Sie ein Symbol, das neben dem Text angezeigt werden soll. Lassen Sie es leer für kein Symbol.",
+      "icon_position": "Symbol-Position",
+      "icon_position_desc": "Wählen Sie, wo das Symbol relativ zum Text positioniert werden soll.",
+      "before_text": "Vor dem Text",
+      "after_text": "Nach dem Text",
+      "template_mode": "Vorlagen-Modus",
+      "template_mode_desc": "Verwenden Sie die Home Assistant Vorlagen-Syntax zum Rendern von Text",
+      "value_template": "Wert-Vorlage",
+      "value_template_desc": "Vorlage zum Rendern des Textes mit Jinja2-Syntax",
+      "examples_title": "Häufige Beispiele:",
+      "example_basic": "Grundwert",
+      "example_percent": "Mit Prozent"
+    },
+    "markdown": {
+      "content": {
+        "title": "Markdown-Inhalt",
+        "label": "Inhalt",
+        "desc": "Geben Sie Ihren Markdown-Inhalt mit vollständiger Formatierungsunterstützung ein"
+      },
+      "features": {
+        "title": "Markdown-Funktionen"
+      },
+      "enable_html": "HTML aktivieren",
+      "enable_html_desc": "HTML-Tags im Markdown-Inhalt erlauben",
+      "enable_tables": "Tabellen aktivieren",
+      "enable_tables_desc": "Unterstützung für Markdown-Tabellensyntax",
+      "code_highlighting": "Code-Hervorhebung",
+      "code_highlighting_desc": "Syntaxhervorhebung für Codeblöcke"
+    },
+    "bar": {
+      "bar_settings": {
+        "title": "Balken-Einstellungen",
+        "desc": "Konfigurieren Sie, wie der Balkenprozentsatz berechnet und angezeigt wird."
+      },
+      "perc_type": {
+        "entity": "Entität (0–100)",
+        "attribute": "Entitätsattribut",
+        "difference": "Differenz",
+        "template": "Vorlage"
+      },
+      "attribute_section": {
+        "title": "Entitätsattribut-Konfiguration",
+        "desc": "Entitätsattribut-Einstellungen konfigurieren"
+      },
+      "attribute_entity": "Attribut-Entität",
+      "attribute_entity_desc": "Wählen Sie die Entität aus, die das Attribut mit dem Prozentwert enthält",
+      "attribute_name": "Attributname",
+      "attribute_name_desc": "Geben Sie den Namen des Attributs ein, das den Prozentwert enthält (z. B. \"battery_level\")",
+      "diff_section": {
+        "title": "Konfiguration der Differenzberechnung",
+        "desc": "Einstellungen der Differenzberechnung konfigurieren"
+      },
+      "current_entity": "Entität für aktuellen Wert",
+      "current_entity_desc": "Entität, die den aktuellen/genutzten Betrag darstellt (z. B. verbrauchter Kraftstoff, verbrauchte Batterie)",
+      "total_entity": "Entität für Gesamtwert",
+      "total_entity_desc": "Entität, die den Gesamt-/Maximalwert darstellt (z. B. Tankkapazität, Batteriekapazität)",
+      "template_section": {
+        "title": "Vorlagen-Konfiguration",
+        "desc": "Vorlageneinstellungen konfigurieren"
+      },
+      "percentage_template": "Prozent-Vorlage",
+      "percentage_template_desc": "Geben Sie eine Jinja2-Vorlage ein, die eine Zahl zwischen 0–100 für den Prozentwert zurückgibt. Beispiel: {{ (states('sensor.battery_level') | float) * 100 }}",
+      "attr_config": {
+        "title": "Entitätsattribut-Konfiguration",
+        "desc": "Entitätsattribut-Einstellungen konfigurieren",
+        "attribute_entity": "Attribut-Entität",
+        "attribute_entity_desc": "Wählen Sie die Entität aus, die das Attribut mit dem Prozentwert enthält",
+        "attribute_name": "Attributname",
+        "attribute_name_desc": "Geben Sie den Namen des Attributs ein, das den Prozentwert enthält (z. B. \"battery_level\")"
+      },
+      "diff_config": {
+        "title": "Konfiguration der Differenzberechnung",
+        "desc": "Einstellungen der Differenzberechnung konfigurieren",
+        "current_entity": "Entität für aktuellen Wert",
+        "current_entity_desc": "Entität, die den aktuellen/genutzten Betrag darstellt (z. B. verbrauchter Kraftstoff, verbrauchte Batterie)",
+        "total_entity": "Entität für Gesamtwert",
+        "total_entity_desc": "Entität, die den Gesamt-/Maximalwert darstellt (z. B. Tankkapazität, Batteriekapazität)"
+      },
+      "template_config": {
+        "title": "Vorlagen-Konfiguration",
+        "desc": "Vorlageneinstellungen konfigurieren",
+        "percentage_template": "Prozent-Vorlage",
+        "percentage_template_desc": "Geben Sie eine Jinja2-Vorlage ein, die eine Zahl zwischen 0–100 für den Prozentwert zurückgibt. Beispiel: {{ (states('sensor.battery_level') | float) * 100 }}"
+      },
+      "entity": {
+        "title": "Prozent-Entität des Balkens",
+        "desc_present": "Die Entität, die den Prozentwert für den Balken liefert.",
+        "desc_empty": "Wählen Sie eine Entität, die einen Prozentwert (0–100) liefert. Batteriesensoren eignen sich ideal für Balken.",
+        "no_entity_warning": "Keine Entität ausgewählt – Bitte wählen Sie einen Sensor mit Werten zwischen 0–100"
+      },
+      "limit_entity": {
+        "title": "Grenzwert-Entität (optional)",
+        "desc": "Optional: Fügen Sie eine vertikale Indikatorlinie auf dem Balken hinzu (z. B. Ladungsgrenze für EV-Batterie)."
+      },
+      "appearance": {
+        "title": "Balken-Erscheinungsbild",
+        "height": "Balkenhöhe",
+        "height_desc": "Passen Sie die Dicke des Fortschrittsbalkens in Pixeln an.",
+        "border_radius": "Rahmen-Radius",
+        "border_radius_desc": "Steuern Sie die abgerundeten Ecken des Balkens.",
+        "style": "Balkenstil",
+        "style_desc": "Wählen Sie den visuellen Stil des Fortschrittsbalkens.",
+        "style_flat": "Flach (Standard)",
+        "style_glossy": "Glänzend",
+        "style_embossed": "Geprägt",
+        "style_inset": "Vertieft",
+        "style_gradient": "Farbverlauf-Überlagerung",
+        "style_neon": "Neon-Leuchten",
+        "style_outline": "Umriss",
+        "style_glass": "Glas",
+        "style_metallic": "Metallisch",
+        "style_neumorphic": "Neumorph",
+        "style_dashed": "Gestrichelt",
+        "style_dots": "Punkte",
+        "width": "Balkenbreite",
+        "width_desc": "Legen Sie die Balkenbreite als Prozentsatz des Containers fest.",
+        "alignment": "Balkenausrichtung",
+        "alignment_desc": "Wählen Sie, wie der Balken ausgerichtet wird, wenn er weniger als 100 % Breite hat."
+      },
+      "labels": {
+        "alignment": "Beschriftungsausrichtung",
+        "alignment_desc": "Steuern Sie, wie linke und rechte Beschriftungen positioniert werden."
+      },
+      "percentage": {
+        "title": "Anzeige von Prozenttext",
+        "desc": "Steuern Sie die Sichtbarkeit und das Erscheinungsbild der Prozentwerte, die direkt auf dem Balken angezeigt werden. Diese Zahlen liefern einen klaren visuellen Indikator für den aktuellen Stand.",
+        "text_size": "Textgröße",
+        "text_size_desc": "Passen Sie die Größe des Prozenttextes auf dem Balken an.",
+        "text_alignment": "Ausrichtung des Prozenttexts"
+      },
+      "left": {
+        "title": "Linke Seite",
+        "desc": "Konfigurieren Sie den Titel und den Entitätswert, der auf der linken Seite des Balkens angezeigt wird. Dies ist nützlich, um Beschriftungen wie 'Reichweite' oder 'Batterie' zusammen mit ihren Werten anzuzeigen.",
+        "title_size": "Titelgröße",
+        "value_size": "Wertgröße",
+        "template_mode": "Vorlagen-Modus",
+        "template_desc": "Verwenden Sie eine Vorlage, um den angezeigten Wert zu formatieren. Vorlagen verwenden die Jinja2-Syntax von Home Assistant.",
+        "value_template": "Wert-Vorlage",
+        "value_template_desc": "Vorlage zur Formatierung des Werts auf der linken Seite mit Jinja2-Syntax",
+        "enable_toggle": "Aktivieren Sie den Schalter oben, um die Einstellungen für die linke Seite zu konfigurieren"
+      },
+      "right": {
+        "title": "Rechte Seite",
+        "desc": "Konfigurieren Sie den Titel und den Entitätswert, der auf der rechten Seite des Balkens angezeigt wird. Dies ist ideal für ergänzende Informationen wie 'Zeit bis voll' oder sekundäre Messwerte.",
+        "title_size": "Titelgröße",
+        "value_size": "Wertgröße",
+        "template_mode": "Vorlagen-Modus",
+        "template_desc": "Verwenden Sie eine Vorlage, um den angezeigten Wert zu formatieren. Vorlagen verwenden die Jinja2-Syntax von Home Assistant.",
+        "value_template": "Wert-Vorlage",
+        "value_template_desc": "Vorlage zur Formatierung des Werts auf der rechten Seite mit Jinja2-Syntax",
+        "enable_toggle": "Aktivieren Sie den Schalter oben, um die Einstellungen für die rechte Seite zu konfigurieren"
+      },
+      "colors": {
+        "title": "Farben",
+        "bar_color": "Balkenfarbe",
+        "background_color": "Hintergrundfarbe",
+        "border_color": "Randfarbe",
+        "limit_indicator": "Grenzwertanzeige",
+        "percentage_text": "Prozenttext",
+        "left_side": "Farben der linken Seite",
+        "right_side": "Farben der rechten Seite",
+        "title_color": "Titelfarbe",
+        "value_color": "Wertfarbe"
+      },
+      "gradient": {
+        "title": "Farbverlaufsmodus",
+        "desc": "Wenden Sie einen Farbverlauf auf die Balkenfüllung an. Wenn aktiviert, wählen Sie, wie der Verlauf angezeigt wird, und passen Sie unten die Farbstopps an.",
+        "full": "Voll",
+        "cropped": "Zugeschnitten",
+        "value_based": "Wertbasiert"
+      },
+      "animation": {
+        "title": "Balkenanimation",
+        "desc": "Animieren Sie die Balkenfüllung mit Presets wie Lade-Streifen, Pulsieren, Leuchten und mehr. Sie können Animationen basierend auf dem Zustand oder einem Attribut einer Entität auslösen und optional die Animation überschreiben, wenn eine andere Bedingung erfüllt ist.",
+        "trigger": {
+          "title": "Animationsauslöser",
+          "desc": "Wählen Sie eine Entität aus und definieren Sie den Wert + die Animation, die angewendet werden soll, wenn dieser übereinstimmt.",
+          "entity_desc": "Entität für Animationsauslöser",
+          "type": "Auslösertype",
+          "type_desc": "Wählen Sie, ob der Entitätszustand oder ein Attribut verglichen werden soll",
+          "attribute_name_desc": "Attributname zum Vergleichen (z. B. charging_status)",
+          "match_value": "Vergleichswert",
+          "match_value_desc": "Text zum Vergleich mit Zustand oder Attribut (Vergleich ist textbasiert)."
+        },
+        "type": "Animationstyp",
+        "type_desc": "Wählen Sie, wie der Balken animiert werden soll, wenn er ausgelöst wird.",
+        "types": {
+          "charging": "Laden (diagonale Linien)",
+          "pulse": "Pulsieren",
+          "blinking": "Blinken",
+          "bouncing": "Springen",
+          "glow": "Leuchten",
+          "rainbow": "Regenbogen",
+          "bubbles": "Blasen",
+          "fill": "Füllen",
+          "ripple": "Wellen",
+          "traffic": "Laufband (Barber Pole)",
+          "heartbeat": "Herzschlag",
+          "flicker": "Flackern",
+          "shimmer": "Schimmern",
+          "vibrate": "Vibrieren"
+        },
+        "override": {
+          "title": "Aktions-Animations-Override",
+          "desc": "Wählen Sie eine Aktions-Entität und einen Zustand, um festzulegen, wann diese Animation die reguläre Animation überschreiben soll",
+          "entity_desc": "Entität zur Auswertung für den Override-Auslöser",
+          "type_desc": "Animation, die verwendet wird, wenn die Override-Bedingung erfüllt ist.",
+          "attribute_name_desc": "Attributname zum Vergleichen",
+          "match_value": "Override-Vergleichswert",
+          "match_value_desc": "Textvergleich mit Zustand oder Attribut",
+          "type": "Override-Animationstyp"
+        }
+      }
+    },
+    "image": {
+      "settings": "Bildeinstellungen",
+      "source_type": "Bildquellentyp",
+      "source_type_desc": "Wählen Sie aus, wie Sie die Bildquelle angeben möchten.",
+      "source": {
+        "default": "Standardbild",
+        "url": "Bild-URL",
+        "upload": "Bild hochladen",
+        "entity": "Entitätsbild",
+        "attribute": "Entitätsattribut"
+      },
+      "url_section": {
+        "title": "Konfiguration der Bild-URL"
+      },
+      "image_url": "Bild-URL",
+      "image_url_desc": "Geben Sie die direkte URL zu dem Bild ein, das Sie anzeigen möchten.",
+      "upload_section": {
+        "title": "Konfiguration Bild-Upload"
+      },
+      "upload": "Bild hochladen",
+      "upload_desc": "Klicken Sie, um eine Bilddatei von Ihrem Gerät hochzuladen.",
+      "entity_section": {
+        "title": "Konfiguration Entitätsbild"
+      },
+      "entity": "Entität",
+      "entity_desc": "Wählen Sie eine Entität mit Bild (z. B. Personen- oder Kamera-Entitäten).",
+      "attribute_section": {
+        "title": "Entitätsattribut-Konfiguration"
+      },
+      "entity_attr_desc": "Wählen Sie die Entität aus, die die Bild-URL in einem ihrer Attribute enthält.",
+      "attribute_name": "Attributname",
+      "attribute_name_desc": "Geben Sie den Attributpfad ein, der die Bild-URL enthält (Punktnotation wird unterstützt, z. B. vehicle_data.vehicleDetails.generalDashboard).",
+      "width": "Breite (%)",
+      "width_desc": "Legen Sie die Breite als Prozentsatz des Containers fest.",
+      "height": "Höhe (px)",
+      "height_desc": "Legen Sie die Höhe in Pixeln fest.",
+      "crop_fit": "Zuschneiden & Anpassen",
+      "crop_fit_desc": "Steuern Sie, wie das Bild in seinen Container passt.",
+      "fit": {
+        "cover": "Abdecken (zum Füllen zuschneiden)",
+        "contain": "Einpassen (gesamtes Bild anzeigen)",
+        "fill": "Füllen (zum Anpassen strecken)",
+        "scale_down": "Herunterskalieren",
+        "none": "Keine (Originalgröße)"
+      },
+      "border_radius": "Rahmen-Radius",
+      "border_radius_desc": "Steuern Sie die abgerundeten Ecken des Bildes.",
+      "tap_actions": "Tipp-Aktionen",
+      "filters": "Filter",
+      "filter": {
+        "blur": "Weichzeichnen",
+        "blur_desc": "Wenden Sie einen Weichzeichnungseffekt auf Ihr Bild an.",
+        "brightness": "Helligkeit (%)",
+        "brightness_desc": "Passen Sie die Helligkeit Ihres Bildes an.",
+        "contrast": "Kontrast (%)",
+        "contrast_desc": "Ändern Sie den Kontrast Ihres Bildes.",
+        "saturation": "Sättigung (%)",
+        "saturation_desc": "Passen Sie die Sättigung Ihres Bildes an."
+      },
+      "hover": {
+        "title": "Hover-Effekte",
+        "effect_type": "Effekttyp",
+        "effect_type_desc": "Wählen Sie den Typ des Hover-Effekts.",
+        "scale": "Skalieren (heran-/herauszoomen)",
+        "rotate": "Drehen",
+        "fade": "Überblenden (Deckkraftänderung)",
+        "blur": "Weichzeichnen",
+        "brightness": "Helligkeit",
+        "glow": "Leuchten (Schlagschatten)",
+        "slide": "Verschieben (Translate)",
+        "scale_amount": "Skalierung (%)",
+        "scale_amount_desc": "Passen Sie die Skalierung des Bildes beim Hover an.",
+        "rotate_amount": "Rotation (°)",
+        "rotate_amount_desc": "Rotieren Sie das Bild beim Hover.",
+        "opacity": "Deckkraft (%)",
+        "opacity_desc": "Ändern Sie die Deckkraft des Bildes beim Hover.",
+        "blur_amount": "Weichzeichnen (px)",
+        "blur_amount_desc": "Wenden Sie beim Hover einen Weichzeichnungseffekt auf das Bild an.",
+        "brightness_amount": "Helligkeit (%)",
+        "brightness_amount_desc": "Passen Sie die Helligkeit des Bildes beim Hover an.",
+        "glow_intensity": "Leuchtintensität",
+        "glow_intensity_desc": "Wählen Sie die Intensität des Leuchteffekts beim Hover.",
+        "glow_light": "Leichtes Leuchten",
+        "glow_medium": "Mittleres Leuchten",
+        "glow_heavy": "Starkes Leuchten",
+        "glow_custom": "Benutzerdefinierter Schatten",
+        "translate_x": "Horizontal (px)",
+        "translate_x_desc": "Verschieben Sie das Bild beim Hover horizontal.",
+        "translate_y": "Vertikal (px)",
+        "translate_y_desc": "Verschieben Sie das Bild beim Hover vertikal."
+      },
+      "alt": "Bild",
+      "no_source": "Keine Bildquelle konfiguriert"
+    },
+    "graphs": {
+      "chart_type": {
+        "title": "Diagrammtyp",
+        "type": "Typ",
+        "desc": "Wählen Sie den Visualisierungsstil für Ihre Daten."
+      },
+      "types": {
+        "line": "Liniendiagramm",
+        "bar": "Balkendiagramm",
+        "pie": "Kreisdiagramm",
+        "donut": "Donut-Diagramm"
+      },
+      "data_sources": {
+        "title": "Datenquellen",
+        "no_entities": "Keine Entitäten hinzugefügt",
+        "add_first_entity": "Fügen Sie Ihre erste Entität hinzu, um ein Diagramm zu erstellen",
+        "add_entity": "Entität hinzufügen"
+      },
+      "entity": "Entität",
+      "line": {
+        "show_points": "Punkte anzeigen",
+        "fill_area": "Fläche füllen",
+        "line_width": "Linienbreite",
+        "line_style": "Linienstil"
+      },
+      "line_styles": {
+        "solid": "Durchgezogen",
+        "dashed": "Gestrichelt",
+        "dotted": "Gepunktet"
+      },
+      "display": {
+        "title": "Anzeigeoptionen",
+        "show_title": "Diagrammtitel anzeigen",
+        "show_value": "Diagrammwert anzeigen",
+        "chart_title": "Diagrammtitel",
+        "chart_title_placeholder": "Diagrammtitel eingeben",
+        "time_period": "Zeitraum",
+        "time_period_desc": "Wie viele historische Daten angezeigt werden sollen.",
+        "normalize_values": "Werte auf gleiche Skala normalisieren",
+        "normalize_desc": "Nützlich beim Vergleich von Entitäten mit unterschiedlichen Einheiten (z. B. % vs. Meilen)",
+        "chart_height": "Diagrammhöhe",
+        "chart_width": "Diagrammbreite (%)",
+        "chart_width_desc": "Prozentsatz der verfügbaren Modulbreite. Ausrichtung steuert die Platzierung.",
+        "chart_alignment": "Diagrammausrichtung",
+        "chart_alignment_desc": "Ausrichtung des Diagramms innerhalb seines Containers.",
+        "info_position": "Info-Position",
+        "info_position_desc": "Position der Überlagerung mit Name/Wert.",
+        "legend_position": "Legendenposition",
+        "legend_position_desc": "Position der Legende, wenn aktiviert.",
+        "background_color": "Hintergrundfarbe",
+        "chart_options": "Diagrammoptionen",
+        "show_legend": "Legende anzeigen",
+        "show_grid": "Gitter anzeigen",
+        "smooth_lines": "Linien glätten",
+        "show_tooltips": "Tooltips anzeigen",
+        "add_slice_gap": "Segmentabstand hinzufügen"
+      },
+      "agg": {
+        "mean": "Durchschnitt",
+        "sum": "Summe",
+        "min": "Minimum",
+        "max": "Maximum",
+        "median": "Median",
+        "first": "Erster Wert",
+        "last": "Letzter Wert",
+        "count": "Anzahl",
+        "delta": "Änderung"
+      },
+      "position": {
+        "top": "Oben",
+        "bottom": "Unten",
+        "left": "Links",
+        "right": "Rechts",
+        "hidden": "Ausgeblendet",
+        "top_left": "Oben links",
+        "top_right": "Oben rechts",
+        "bottom_left": "Unten links",
+        "bottom_right": "Unten rechts",
+        "middle": "Mitte",
+        "center": "Mitte"
+      },
+      "pie": {
+        "show_title": "Titel im Segment anzeigen",
+        "show_value": "Wert im Segment anzeigen"
+      },
+      "period": {
+        "1h": "Letzte Stunde",
+        "3h": "Letzte 3 Stunden",
+        "6h": "Letzte 6 Stunden",
+        "12h": "Letzte 12 Stunden",
+        "24h": "Letzte 24 Stunden",
+        "2d": "Letzte 2 Tage",
+        "7d": "Letzte Woche",
+        "30d": "Letzter Monat",
+        "90d": "Letzte 3 Monate",
+        "365d": "Letztes Jahr"
+      },
+      "reset_345": "Auf Standard zurücksetzen (345px)",
+      "reset_100": "Auf Standard zurücksetzen (100%)",
+      "entity_desc": "Wählen Sie eine Entität zum Plotten.",
+      "display_name_optional": "Anzeigename (optional)",
+      "use_as_card_info": "Als Karteninfo verwenden",
+      "attribute": "Attribut",
+      "attribute_desc": "Entitätszustand verwenden oder ein bestimmtes Attribut zum Verfolgen auswählen.",
+      "attribute_state_default": "Zustand (Standard)",
+      "show_points": "Punkte anzeigen",
+      "fill_area": "Fläche füllen",
+      "line_style": "Linienstil",
+      "line_solid": "Durchgezogen",
+      "line_dashed": "Gestrichelt",
+      "line_dotted": "Gepunktet",
+      "pie_show_title": "Titel im Segment anzeigen",
+      "pie_show_value": "Wert im Segment anzeigen",
+      "expand_options": "Optionen erweitern",
+      "no_entities": "Keine Entitäten hinzugefügt",
+      "add_first_entity": "Fügen Sie Ihre erste Entität hinzu, um ein Diagramm zu erstellen",
+      "add_entity": "Entität hinzufügen",
+      "display_options": {
+        "title": "Anzeigeoptionen"
+      },
+      "show_title": "Diagrammtitel anzeigen",
+      "show_value": "Diagrammwert anzeigen",
+      "chart_title": "Diagrammtitel",
+      "chart_title_placeholder": "Diagrammtitel eingeben",
+      "time_period": "Zeitraum",
+      "time_period_desc": "Wie viele historische Daten angezeigt werden sollen.",
+      "normalize_values": "Werte auf gleiche Skala normalisieren",
+      "normalize_desc": "Nützlich beim Vergleich von Entitäten mit unterschiedlichen Einheiten (z. B. % vs. Meilen)",
+      "chart_height": "Diagrammhöhe",
+      "chart_width": "Diagrammbreite (%)"
+    },
+    "info": {
+      "entity_section": {
+        "title": "ENTITÄTS-KONFIGURATION"
+      },
+      "entity": "Entität",
+      "entity_desc": "Wählen Sie die anzuzeigende Entität aus",
+      "icon_section": {
+        "title": "Symbol-Einstellungen"
+      },
+      "show_icon": "Symbol anzeigen",
+      "show_icon_desc": "Ein Symbol neben dem Entitätswert anzeigen",
+      "icon": "Symbol",
+      "icon_desc": "Wählen Sie ein anzuzeigendes Symbol",
+      "icon_color": "Symbolfarbe",
+      "name_section": {
+        "title": "Name-Einstellungen"
+      },
+      "show_name": "Name anzeigen",
+      "show_name_desc": "Den Entitätsnamen über dem Wert anzeigen",
+      "custom_name": "Benutzerdefinierter Name",
+      "custom_name_desc": "Den Entitätsnamen durch einen benutzerdefinierten Namen ersetzen",
+      "name_color": "Farbe des Namens",
+      "state_section": {
+        "title": "Zustandseinstellungen"
+      },
+      "show_state": "Zustand anzeigen",
+      "show_state_desc": "Den Entitätszustand/-wert anzeigen",
+      "show_units": "Einheiten anzeigen",
+      "show_units_desc": "Die Maßeinheit anzeigen (falls verfügbar)",
+      "state_color": "Zustandsfarbe",
+      "template": {
+        "title": "Vorlagen-Modus",
+        "desc": "Verwenden Sie eine Vorlage, um den Entitätswert zu formatieren. Vorlagen ermöglichen die Verwendung der Home-Assistant-Templating-Syntax für komplexe Formatierungen.",
+        "mode": "Vorlagen-Modus",
+        "mode_desc": "Verwenden Sie die Home-Assistant-Templating-Syntax zur Formatierung des Werts",
+        "value": "Wert-Vorlage",
+        "value_desc": "Vorlage zur Formatierung des Entitätswerts mit Jinja2-Syntax"
+      },
+      "size_section": {
+        "title": "Größeneinstellungen"
+      },
+      "icon_size": "Symbolgröße",
+      "icon_size_desc": "Größe des Symbols in Pixeln",
+      "name_size": "Namensgröße",
+      "name_size_desc": "Größe des Entitätsnamens in Pixeln",
+      "value_size": "Wertgröße",
+      "value_size_desc": "Größe des Entitätswerts in Pixeln",
+      "icon_gap": "Symbolabstand",
+      "icon_gap_desc": "Abstand zwischen Symbol und Inhalt in Pixeln",
+      "layout_section": {
+        "title": "Layout & Positionierung"
+      },
+      "icon_position": "Symbol-Position",
+      "overall_alignment": "Gesamtausrichtung",
+      "icon_alignment": "Symbolausrichtung",
+      "content_alignment": "Inhaltsausrichtung",
+      "examples_title": "Häufige Beispiele:",
+      "example_basic": "Grundwert",
+      "example_units": "Mit Einheiten",
+      "example_round": "Auf 1 Dezimalstelle runden"
+    },
+    "button": {
+      "basic": {
+        "title": "Grundeinstellungen",
+        "desc": "Konfigurieren Sie das Erscheinungsbild der Schaltfläche und den Textinhalt."
+      },
+      "text": {
+        "title": "Schaltflächentext",
+        "desc": "Text, der auf der Schaltfläche angezeigt wird (leer lassen für nur Symbol)."
+      },
+      "style": {
+        "title": "Schaltflächenstil",
+        "desc": "Visueller Stil der Schaltfläche"
+      },
+      "alignment": {
+        "title": "Ausrichtung",
+        "desc": "Wie die Schaltfläche in ihrem Container ausgerichtet ist"
+      },
+      "styles": {
+        "flat": "Flach (Standard)",
+        "glossy": "Glänzend",
+        "embossed": "Geprägt",
+        "inset": "Vertieft",
+        "gradient_overlay": "Farbverlauf-Überlagerung",
+        "neon_glow": "Neon-Leuchten",
+        "outline": "Umriss",
+        "glass": "Glas",
+        "metallic": "Metallisch"
+      },
+      "align": {
+        "left": "Links",
+        "center": "Mitte",
+        "right": "Rechts",
+        "justify": "Auffüllen (volle Breite)"
+      },
+      "icon": {
+        "title": "Symboleinstellungen",
+        "desc": "Anzeige und Positionierung des Symbols für die Schaltfläche konfigurieren.",
+        "before": "Vor dem Text",
+        "after": "Nach dem Text",
+        "enable_toggle_desc": "Aktivieren Sie den Schalter oben, um die Symboleinstellungen zu konfigurieren"
+      },
+      "icon_field": "Symbol",
+      "show_icon": "Symbol anzeigen",
+      "show_icon_desc": "Ein Symbol auf der Schaltfläche anzeigen",
+      "icon_desc": "Anzuzeigendes Symbol (z. B. mdi:home)",
+      "icon_position": "Symbol-Position",
+      "icon_position_desc": "Position des Symbols relativ zum Text",
+      "colors": {
+        "title": "Farben",
+        "background": "Hintergrundfarbe",
+        "text": "Textfarbe"
+      },
+      "hover": {
+        "title": "Hover-Effekte",
+        "effect_type": "Effekttyp",
+        "effect_type_desc": "Wählen Sie den Hover-Effekt für diese Schaltfläche.",
+        "none": "Keine",
+        "color": "Farbänderung",
+        "scale": "Skalieren",
+        "glow": "Leuchten",
+        "lift": "Anheben (translate Y)",
+        "hover_color": "Hover-Farbe",
+        "glow_color": "Leuchtfarbe",
+        "enable_toggle_desc": "Aktivieren Sie den Schalter oben, um die Hover-Effekte zu konfigurieren"
+      },
+      "actions": {
+        "type": "Aktionstyp",
+        "type_desc": "Wählen Sie, was beim Klick auf die Schaltfläche passiert",
+        "entity": "Entität",
+        "entity_desc": "Wählen Sie die Entität für die Interaktion",
+        "navigation_path": "Navigationspfad",
+        "navigation_path_desc": "Pfad zum Navigieren (z. B. /dashboard/energy)",
+        "service": "Dienst",
+        "service_desc": "Aufzurufender Dienst (z. B. light.turn_on)",
+        "service_data": "Servicedaten (JSON)",
+        "service_data_desc": "Optionale Daten, die an den Dienst übergeben werden (JSON-Format)"
+      },
+      "tap": {
+        "title": "Tipp-Aktion",
+        "desc": "Aktion, die beim Tippen ausgeführt wird"
+      },
+      "hold": {
+        "title": "Halte-Aktion",
+        "desc": "Aktion, die beim Gedrückthalten ausgeführt wird"
+      },
+      "double": {
+        "title": "Doppeltipp-Aktion",
+        "desc": "Aktion, die beim Doppeltippen ausgeführt wird"
+      }
+    },
+    "layout_extra": {
+      "module_name": "Modulname:",
+      "module_name_placeholder": "Geben Sie diesem Modul einen benutzerdefinierten Namen, um es im Editor leichter zu identifizieren.",
+      "module_name_help": "Geben Sie diesem Modul einen benutzerdefinierten Namen, um es im Editor leichter zu identifizieren."
+    },
+    "camera": {
+      "config": {
+        "title": "Kamera-Konfiguration",
+        "desc": "Konfigurieren Sie die Kamera-Entität und Anzeigeeinstellungen."
+      },
+      "entity": "Kamera-Entität",
+      "entity_desc": "Wählen Sie die anzuzeigende Kamera-Entität. Dies sollte eine Kamera- oder MJPEG-Entität aus Home Assistant sein.",
+      "name": "Kameraname",
+      "name_desc": "Benutzerdefinierter Name für die Kamera. Leer lassen, um den Entitätsnamen zu verwenden.",
+      "show_name": "Kameranamen anzeigen",
+      "show_name_desc": "Den Kameranamen im Feed anzeigen",
+      "show_name_toggle": {
+        "enable_toggle_desc": "Aktivieren Sie den obigen Schalter, um die Anzeige des Kameranamens zu konfigurieren"
+      },
+      "name_position": {
+        "group_title": "Position des Kameranamens",
+        "title": "Namensposition",
+        "desc": "Wählen Sie, wo der Kameraname als Overlay auf dem Kamerabild erscheint.",
+        "options": {
+          "top_left": "Oben links",
+          "top_right": "Oben rechts",
+          "center": "Mitte",
+          "bottom_left": "Unten links",
+          "bottom_right": "Unten rechts"
+        }
+      },
+      "display": {
+        "title": "Anzeigeeinstellungen"
+      },
+      "live_view": {
+        "title": "Live-Ansicht",
+        "desc": "Aktivieren, um den Live-Kamerastream anzuzeigen (erfordert Stream-Integration). Wenn deaktiviert, werden Standbilder angezeigt."
+      },
+      "auto_refresh": {
+        "section_title": "Automatische Aktualisierung",
+        "title": "Automatisch aktualisieren",
+        "desc": "Das Kamerabild in regelmäßigen Abständen automatisch aktualisieren"
+      },
+      "refresh_interval": {
+        "title": "Aktualisierungsintervall (Sekunden)",
+        "desc": "Wie oft das Kamerabild automatisch aktualisiert werden soll."
+      },
+      "dimensions": {
+        "title": "Abmessungen"
+      },
+      "width": "Breite (px)",
+      "width_desc": "Legen Sie die Breite der Kameraanzeige fest. Bereich: 100–1000 px",
+      "height": "Höhe (px)",
+      "height_desc": "Legen Sie die Höhe der Kameraanzeige fest. Bereich: 100–1000 px",
+      "link_aspect": "Seitenverhältnis verknüpfen",
+      "unlink_aspect": "Seitenverhältnis lösen",
+      "aspect_linked": {
+        "title": "Seitenverhältnis verknüpft",
+        "desc": "Abmessungen behalten das Verhältnis {ratio}:1 bei. Das Anpassen einer Abmessung aktualisiert automatisch die andere, um die Proportionen beizubehalten."
+      },
+      "aspect_independent": {
+        "title": "Unabhängige Abmessungen",
+        "desc": "Breite und Höhe können unabhängig angepasst werden. Klicken Sie oben auf Verknüpfen, um das Seitenverhältnis beizubehalten."
+      },
+      "crop": {
+        "title": "Zuschnitt & Position",
+        "desc": "Passen Sie Zuschnitt und Position der Kameraansicht an. Nützlich, um bestimmte Bereiche zu fokussieren oder unerwünschte Ränder zu entfernen.",
+        "left_title": "Zuschnitt links (%)",
+        "left_desc": "Vom linken Rand zuschneiden. Höhere Werte zeigen weniger von der linken Seite.",
+        "right_title": "Zuschnitt rechts (%)",
+        "right_desc": "Vom rechten Rand zuschneiden. Höhere Werte zeigen weniger von der rechten Seite.",
+        "top_title": "Zuschnitt oben (%)",
+        "top_desc": "Vom oberen Rand zuschneiden. Höhere Werte zeigen weniger vom oberen Bereich.",
+        "bottom_title": "Zuschnitt unten (%)",
+        "bottom_desc": "Vom unteren Rand zuschneiden. Höhere Werte zeigen weniger vom unteren Bereich.",
+        "active_applied": "Aktive Zuschnitte angewendet",
+        "reset_all": "Alle Zuschnitte zurücksetzen"
+      },
+      "template": {
+        "title": "Vorlagen-Modus",
+        "desc": "Verwenden Sie eine Vorlage, um die Kamera-Entität dynamisch festzulegen. Vorlagen erlauben die Home-Assistant-Templating-Syntax für bedingte Kameraauswahl.",
+        "mode_label": "Vorlagen-Modus",
+        "mode_desc": "Verwenden Sie die Home-Assistant-Templating-Syntax, um die Kamera-Entität dynamisch zu wählen",
+        "camera_template_label": "Kamera-Vorlage",
+        "camera_template_desc": "Vorlage zum dynamischen Setzen der Kamera-Entität mittels Jinja2-Syntax",
+        "examples_title": "Häufige Beispiele:",
+        "example1_desc": "Kamera anzeigen, wenn das Wetter sonnig ist",
+        "example2_desc": "Zwischen Kameras basierend auf einem Input-Bool wechseln",
+        "example3_desc": "Input Select verwenden, um die Kamera-Entität zu wählen"
+      }
+    },
+    "separator": {
+      "config": {
+        "title": "Trennzeichen-Konfiguration"
+      },
+      "style": {
+        "title": "Trennzeichenstil",
+        "desc": "Wählen Sie den visuellen Stil der Trennlinie."
+      },
+      "options": {
+        "solid": "Durchgezogene Linie",
+        "double": "Doppellinie",
+        "dotted": "Gepunktete Linie",
+        "double_dotted": "Doppelt gepunktet",
+        "shadow": "Schatten",
+        "blank": "Leerraum"
+      },
+      "appearance": {
+        "title": "Erscheinungsbild"
+      },
+      "thickness": "Dicke (px)",
+      "thickness_desc": "Dicke der Trennlinie.",
+      "width": "Breite (%)",
+      "width_desc": "Breite des Trennzeichens als Prozentsatz des Containers.",
+      "color": {
+        "title": "Farbe",
+        "desc": "Farbe der Trennlinie."
+      },
+      "show_title": "Titel anzeigen",
+      "show_title_desc": "Fügen Sie Text in der Mitte der Trennlinie hinzu (z. B. ------ Text ------)",
+      "show_title_toggle": {
+        "enable_toggle_desc": "Aktivieren Sie den obigen Schalter, um die Titel-Einstellungen zu konfigurieren"
+      },
+      "text_content": {
+        "title": "Textinhalt",
+        "desc": "Text, der in der Mitte des Trennzeichens angezeigt wird."
+      },
+      "font_size": "Schriftgröße",
+      "font_size_desc": "Größe des Textes in Pixeln.",
+      "text_color": {
+        "title": "Textfarbe",
+        "desc": "Farbe des Trennzeichen-Textes."
+      },
+      "text_format": {
+        "title": "Textformatierung",
+        "desc": "Formatierungsstile auf den Trennzeichen-Text anwenden.",
+        "bold": "Fett",
+        "italic": "Kursiv",
+        "underline": "Unterstreichen",
+        "uppercase": "Großbuchstaben",
+        "strikethrough": "Durchgestrichen"
+      },
+      "spacer": {
+        "title": "Abstandshöhe"
+      },
+      "height": "Höhe (px)",
+      "height_desc": "Steuert den sichtbaren Abstand für Leerraum."
+    },
+    "design": {
+      "copy": "Kopieren",
+      "paste": "Einfügen",
+      "reset_all": "Alle zurücksetzen",
+      "copy_tooltip": "Aktuelle Design-Einstellungen kopieren (funktioniert kartenübergreifend)",
+      "paste_tooltip_has": "Kopierte Design-Einstellungen einfügen (aus der kartenübergreifenden Zwischenablage)",
+      "paste_tooltip_none": "Keine Design-Einstellungen in der kartenübergreifenden Zwischenablage",
+      "reset_all_tooltip": "Alle Design-Einstellungen auf Standard zurücksetzen",
+      "text_section": "Text",
+      "text_color": "Textfarbe",
+      "alignment": "Ausrichtung",
+      "inherit_alignment": "Vererben (keine Ausrichtung)",
+      "font_size": "Schriftgröße",
+      "font_size_placeholder": "16px (Standard), 1.2rem, max(1rem, 1.5vw)",
+      "reset_font_size": "Schriftgröße auf Standard zurücksetzen",
+      "line_height": "Zeilenhöhe",
+      "line_height_placeholder": "0 (Standard), 28px, 1.7",
+      "reset_line_height": "Zeilenhöhe auf Standard zurücksetzen",
+      "letter_spacing": "Buchstabenabstand",
+      "letter_spacing_placeholder": "auto (Standard), 1px, -0.04em",
+      "reset_letter_spacing": "Buchstabenabstand auf Standard zurücksetzen",
+      "font": "Schriftart",
+      "font_weight": "Schriftstärke",
+      "text_transform": "Texttransformation",
+      "font_style": "Schriftstil",
+      "default_option": "– Standard –",
+      "weight_thin": "100 - Dünn",
+      "weight_light": "300 - Leicht",
+      "weight_normal": "400 - Normal",
+      "weight_medium": "500 - Mittel",
+      "weight_semi_bold": "600 - Halb-fett",
+      "weight_bold": "700 - Fett",
+      "weight_black": "900 - Schwarz",
+      "transform_none": "Keine",
+      "transform_uppercase": "GROßBUCHSTABEN",
+      "transform_lowercase": "kleinschreibung",
+      "transform_capitalize": "Großschreibung",
+      "style_normal": "Normal",
+      "style_italic": "Kursiv",
+      "style_oblique": "Schräg",
+      "background_section": "Hintergrund",
+      "background_color": "Hintergrundfarbe",
+      "background_image_type": "Hintergrundbild-Typ",
+      "bg_none": "Keine",
+      "bg_upload": "Bild hochladen",
+      "bg_entity": "Entitätsbild",
+      "bg_url": "Bild-URL",
+      "sizes_section": "Größen",
+      "spacing_section": "Abstand",
+      "border_section": "Rahmen",
+      "text_shadow_section": "Textschatten",
+      "box_shadow_section": "Boxschatten",
+      "position_section": "Position",
+      "overflow_section": "Überlauf",
+      "animations_section": "Animationen",
+      "width": "Breite",
+      "height": "Höhe",
+      "max_width": "Maximale Breite",
+      "max_height": "Maximale Höhe",
+      "min_width": "Minimale Breite",
+      "min_height": "Minimale Höhe",
+      "border_radius": "Rahmen-Radius",
+      "border_style": "Rahmenstil",
+      "border_width": "Rahmenbreite",
+      "border_color": "Rahmenfarbe",
+      "margin": "Außenabstand",
+      "padding": "Innenabstand",
+      "top": "Oben",
+      "right": "Rechts",
+      "bottom": "Unten",
+      "left": "Links",
+      "unlock_sides": "Entsperren, um Seiten unabhängig zu bearbeiten",
+      "lock_sides": "Sperren, um alle Seiten gemeinsam zu bearbeiten",
+      "horizontal_shift": "Horizontalverschiebung",
+      "vertical_shift": "Vertikalverschiebung",
+      "blur": "Weichzeichnen",
+      "text_shadow_color": "Textschattenfarbe",
+      "box_shadow_color": "Boxschattenfarbe",
+      "overflow": "Überlauf",
+      "clip_path": "Clip-Pfad",
+      "upload_bg_image": "Hintergrundbild hochladen",
+      "bg_image_entity": "Hintergrundbild-Entität",
+      "bg_image_url": "Hintergrundbild-URL",
+      "choose_file": "Datei auswählen",
+      "no_file_chosen": "Keine Datei ausgewählt",
+      "backdrop_filter": "Hintergrundfilter",
+      "spread": "Ausbreitung",
+      "visible_default": "Sichtbar (Standard)",
+      "examples": "Beispiele",
+      "state_based_animation": "Zustandsbasierte Animation",
+      "animation_type": "Animationstyp",
+      "animation_duration": "Animationsdauer",
+      "animation_duration_desc": "Dauer der Animation (z. B. 2s, 500ms, 1.5s)",
+      "intro_outro_animations": "Intro- & Outro-Animationen",
+      "intro_animation": "Intro-Animation",
+      "outro_animation": "Outro-Animation",
+      "duration": "Dauer",
+      "delay": "Verzögerung",
+      "timing": "Timing",
+      "none": "Keine",
+      "ease": "Ease",
+      "border_style_none": "Keine",
+      "border_style_solid": "Durchgezogen",
+      "border_style_dashed": "Gestrichelt",
+      "border_style_dotted": "Gepunktet",
+      "border_style_double": "Doppelt",
+      "position_default": "– Standard –",
+      "position_static": "Statisch",
+      "position_relative": "Relativ",
+      "position_absolute": "Absolut",
+      "position_fixed": "Fixiert",
+      "position_sticky": "Sticky"
+    },
+    "modules": {
+      "text": "Text-Modul",
+      "image": "Bild-Modul",
+      "icon": "Symbol-Modul",
+      "bar": "Balken-Modul",
+      "info": "Info-Modul",
+      "button": "Button-Modul",
+      "separator": "Trennzeichen-Modul",
+      "markdown": "Markdown-Modul",
+      "camera": "Kamera-Modul",
+      "graphs": "Diagramm-Modul",
+      "no_text_configured": "Kein Text konfiguriert",
+      "no_image_configured": "Kein Bild konfiguriert",
+      "uploaded_image": "Hochgeladenes Bild",
+      "icons_configured": "{count} Symbole konfiguriert",
+      "no_icons_configured": "Keine Symbole konfiguriert",
+      "default_entity_suggestion": "Entität: sensor.battery_level",
+      "sample_text": "Beispieltext"
+    }
+  }
+}

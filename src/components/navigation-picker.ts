@@ -23,7 +23,7 @@ export class NavigationPicker extends LitElement {
 
   protected render() {
     // Use Home Assistant's native navigation selector if available
-    // This should render exactly like Mushroom's navigation selector
+    // This should render exactly like native Home Assistant navigation selector
     return html`
       <div class="navigation-picker">
         ${this.label ? html`<label class="label">${this.label}</label>` : ''}

@@ -47,17 +47,8 @@ export class LogicService {
       return true;
     }
 
-    // Filter enabled conditions
-    const enabledConditions = conditions.filter(condition => condition.enabled !== false);
-
-    if (enabledConditions.length === 0) {
-      return true; // Show if no enabled conditions
-    }
-
-    // Evaluate each condition
-    const conditionResults = enabledConditions.map(condition =>
-      this.evaluateSingleCondition(condition)
-    );
+    // Evaluate each condition (conditions are always active)
+    const conditionResults = conditions.map(condition => this.evaluateSingleCondition(condition));
 
     // Apply display mode logic
     switch (displayMode) {
@@ -88,7 +79,6 @@ export class LogicService {
         id: `template_${module.id}`,
         type: 'template',
         template: module.template,
-        enabled: true,
       };
       return this.evaluateTemplateCondition(condition);
     }
@@ -118,7 +108,6 @@ export class LogicService {
         id: `template_${row.id}`,
         type: 'template',
         template: row.template,
-        enabled: true,
       };
       return this.evaluateTemplateCondition(condition);
     }
@@ -148,7 +137,6 @@ export class LogicService {
         id: `template_${column.id}`,
         type: 'template',
         template: column.template,
-        enabled: true,
       };
       return this.evaluateTemplateCondition(condition);
     }
@@ -164,7 +152,8 @@ export class LogicService {
    * Evaluate a single display condition
    */
   private evaluateSingleCondition(condition: DisplayCondition): boolean {
-    if (!condition.enabled) {
+    // Treat undefined enabled as true; only skip when explicitly false
+    if (condition.enabled === false) {
       return true; // Disabled conditions are considered "passed"
     }
 
@@ -179,7 +168,6 @@ export class LogicService {
         return this.evaluateTemplateCondition(condition);
       // Legacy support for old 'entity' type - treat as entity_state
       case 'entity' as any:
-        console.log('[LogicService] Migrating legacy entity condition to entity_state');
         return this.evaluateEntityStateCondition(condition);
       default:
         console.warn('[LogicService] Unknown condition type:', condition.type);
@@ -450,7 +438,6 @@ export class LogicService {
         }
       }
 
-      console.log(`[LogicService] Template condition evaluation fallback for: ${template}`);
       return true; // Default to true for unrecognized patterns
     } catch (error) {
       console.warn('[LogicService] Error evaluating template condition:', error);
@@ -495,7 +482,6 @@ export class LogicService {
       attribute: properties.logic_attribute,
       operator: (properties.logic_operator as any) || '=',
       value: properties.logic_value,
-      enabled: true,
     };
 
     return this.evaluateSingleCondition(condition);

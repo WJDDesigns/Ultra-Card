@@ -15,6 +15,8 @@
     "dev": "webpack serve --mode development --open",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
+    "validate:translations": "node scripts/validate-translations.js",
+    "translations:stats": "node scripts/translation-stats.js",
     "version:update": "node prepare-build.js --set-version",
     "version:bump": "npm version patch",
     "release": "node create-release.js"

@@ -2,143 +2,124 @@
 
 # Ultra Card
 
-A powerful modular card builder for Home Assistant that lets you create custom layouts with a professional page-builder interface.
+Ultra Card is a modular card builder for Home Assistant Dashboard UI.
 
-## ✨ Features
+Ultra Card mission is to provide an easy-to-use visual editor to build custom Home Assistant dashboard cards.
 
-### 🏗️ **Modular Layout System**
+## Features
 
-- **Visual Layout Builder** - Drag-and-drop interface for creating custom card layouts
-- **Flexible Row & Column System** - Create complex layouts with multiple columns and responsive design
-- **Professional Module Types** - Text, separators, images, info entities, progress bars, icons, and layout containers
+- 🛠 **Visual editor** for all modules and options (no need to edit yaml)
+- 🎨 **Drag-and-drop interface** for building layouts
+- 🎯 **4-tab module settings** - General, Actions, Logic, and Design
+- 🧩 **12 module types** for any dashboard need
+- 🔧 **Conditional logic** - show/hide elements based on states, time, templates
+- 🎭 **Animation system** - icons, bars, and hover effects
+- 🌈 **Professional design controls** - typography, colors, spacing, borders
+- 🌓 **Light and dark theme** support
+- 🌎 **Internationalization** - 14 languages supported
+- 📱 **Mobile optimized** - responsive layouts for all devices
 
-### 🎨 **WPBakery-Style Interface**
+The goal of Ultra Card is to make dashboard creation accessible to everyone through visual tools instead of YAML configuration.
 
-- **3-Tab Settings** - General, Logic, and Design tabs for every element
-- **Professional Spacing Controls** - Margin and padding with visual controls
-- **Conditional Display Logic** - Show/hide elements based on entity states, templates, time ranges, and more
-- **Real-time Preview** - See changes instantly as you build
+## Installation
 
-### 🔧 **Module Types**
+### HACS
 
-- **Text Module** - Custom text with full typography controls
-- **Separator Module** - Visual dividers with multiple styles
-- **Image Module** - Display images with responsive sizing
-- **Info Module** - Entity information with dynamic templates
-- **Bar Module** - Progress bars for sensors
-- **Icon Module** - Status icons with click actions
-- **Layout Modules** - Horizontal and vertical containers
+Ultra Card is available in HACS (Home Assistant Community Store).
 
-### 🎯 **Conditional Logic**
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=Ultra-Card&category=plugin)
 
-- **Entity State Conditions** - Show based on entity values
-- **Template Conditions** - Full Jinja2 template support
-- **Time Range Conditions** - Display during specific hours
-- **Numeric Conditions** - Compare sensor values
-- **Device Tracker Conditions** - Show based on presence
-- **Multiple Logic Modes** - Always, AND logic, OR logic
+_or_
 
-## 🚀 Installation
+1. Install HACS if you don't have it already
+2. Open HACS in Home Assistant
+3. Go to "Frontend"
+4. Click the menu (three dots) and select "Custom repositories"
+5. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Lovelace" repository
+6. Install "Ultra Card"
+7. Restart Home Assistant
 
-### HACS (Recommended)
+### Manual
 
-1. Open HACS in Home Assistant
-2. Go to "Frontend"
-3. Click the menu (three dots) and select "Custom repositories"
-4. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Lovelace" repository
-5. Install "Ultra Card"
-6. Restart Home Assistant
+1. Download `ultra-card.js` file from the [latest release](https://github.com/WJDDesigns/Ultra-Card/releases).
+2. Put `ultra-card.js` file into your `config/www` folder.
+3. Add reference to `ultra-card.js` in Dashboard. There's two ways to do that:
+   - **Using UI:** _Settings_ → _Dashboards_ → _More Options icon_ → _Resources_ → _Add Resource_ → Set _Url_ as `/local/ultra-card.js` → Set _Resource type_ as `JavaScript Module`.
+     **Note:** If you do not see the Resources menu, you will need to enable _Advanced Mode_ in your _User Profile_
+   - **Using YAML:** Add following code to `lovelace` section.
+     ```yaml
+     resources:
+       - url: /local/ultra-card.js
+         type: module
+     ```
 
-### Manual Installation
+## Usage
 
-1. Download the latest release from GitHub
-2. Copy `ultra-card.js` to your `www/community/ultra-card/` directory
-3. Add the resource in your Lovelace configuration:
+All Ultra Card layouts can be configured using Dashboard UI editor.
 
-```yaml
-resources:
-  - url: /local/community/ultra-card/ultra-card.js
-    type: module
-```
+1. In Dashboard UI, click 3 dots in top right corner.
+2. Click _Edit Dashboard_.
+3. Click Plus button to add a new card.
+4. Find _Custom: Ultra Card_ in the list.
+5. Use the _Layout Builder_ tab to drag and drop modules.
 
-## 📖 Usage
+## Modules
 
-1. **Add the Card** - In Lovelace, add a new card and select "Ultra Card"
-2. **Layout Builder** - Use the visual layout builder to create your design
-3. **Add Modules** - Click "+" to add text, images, info, bars, icons, and more
-4. **Configure Settings** - Each module has General, Logic, and Design tabs
-5. **Set Conditions** - Add conditional logic to show/hide elements dynamically
+Different modules are available for different content types:
 
-### Basic Example
+- 📝 **Text module** - Custom text with template support
+- 🖼️ **Image module** - Responsive images with hover effects
+- 🎯 **Icon module** - Interactive status icons with animations
+- 📊 **Bar module** - Animated progress bars with gradients
+- ℹ️ **Info module** - Entity information with custom formatting
+- 🔘 **Button module** - Action buttons with multiple styles
+- ➖ **Separator module** - Visual dividers and spacers
+- 📖 **Markdown module** - Rich text with HTML support
+- 📹 **Camera module** - Live camera feeds with controls
+- 📈 **Graphs module** - Historical data visualization
+- ↔️ **Horizontal layout** - Arrange modules side by side
+- ↕️ **Vertical layout** - Stack modules vertically
 
-```yaml
-type: custom:ultra-card
-layout:
-  rows:
-    - id: row1
-      columns:
-        - id: col1
-          modules:
-            - type: text
-              text: 'Welcome Home'
-              font_size: 24
-              color: '#2196f3'
-            - type: separator
-              style: line
-            - type: info
-              info_entities:
-                - entity: sensor.temperature
-                  name: 'Temperature'
-                  show_icon: true
-```
+## Module Settings
 
-### Advanced Example with Conditions
+Each module has 4 tabs for configuration:
 
-```yaml
-type: custom:ultra-card
-layout:
-  rows:
-    - id: row1
-      columns:
-        - id: col1
-          modules:
-            - type: text
-              text: 'Good Morning!'
-              display_mode: every
-              display_conditions:
-                - type: time
-                  time_from: '06:00'
-                  time_to: '12:00'
-```
-
-## 🎨 Customization
-
-### Module Settings
-
-Each module has three tabs:
-
-- **General** - Module-specific settings (text, entity, appearance)
+- **General** - Module content and basic settings
+- **Actions** - Tap, hold, and double-tap behaviors
 - **Logic** - Conditional display rules
-- **Design** - Typography, colors, spacing, borders
+- **Design** - Typography, colors, spacing, animations
 
-### Column Layouts
+## Translations
 
-Choose from pre-built column layouts:
+Ultra Card supports multiple languages:
 
-- Single column (100%)
-- Two columns (50/50, 30/70, 70/30, 40/60, 60/40)
-- Three columns (33/33/33, 25/50/25, 20/60/20)
-- Four columns (25/25/25/25)
+🇺🇸 English • 🇩🇪 German • 🇫🇷 French • 🇪🇸 Spanish • 🇮🇹 Italian • 🇳🇱 Dutch • 🇳🇴 Norwegian • 🇩🇰 Danish • 🇨🇿 Czech • 🇵🇱 Polish • 🇸🇪 Swedish
 
-## 🤝 Contributing
+### Help Translate
+
+We welcome translation contributions! See our [Translation Guide](CONTRIBUTING_TRANSLATIONS.md) for details on how to:
+
+- Update existing translations
+- Add new languages
+- Test your translations
+
+**Quick start**: Edit translation files directly on GitHub in [`src/translations/`](https://github.com/WJDDesigns/Ultra-Card/tree/main/src/translations) and create a pull request.
+
+## Community & Support
+
+- **Discord**: [Join our Discord](https://discord.com/invite/5SkUf6Ch) for help and discussion
+- **GitHub**: [Report issues](https://github.com/WJDDesigns/Ultra-Card/issues) or contribute code
+- **Support**: [Leave a tip](https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=4JVCZ46FZPUTG&clickref=1101lAycwnhU&gad_source=7&pid=328130457&dclid=CjgKEAjwh_i_BhCRhu7RxN_14hYSJACbYkcgx98-Vsb49UI4imjGhPA2lwk73DpbbgCri-G8TCTB9PD_BwE&ssrt=1744735247042) if you find Ultra Card useful
+
+## Contributing
 
 We welcome contributions! Please see our contributing guidelines for more details.
 
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details.
 
-## 🙏 Credits
+## Credits
 
 Created by **WJD Designs**
 

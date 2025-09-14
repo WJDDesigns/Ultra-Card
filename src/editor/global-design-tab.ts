@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ultra-color-picker';
 import { uploadImage } from '../utils/image-upload';
+import { localize } from '../localize/localize';
 
 export interface DesignProperties {
   color?: string;
@@ -18,6 +19,18 @@ export interface DesignProperties {
   background_image?: string;
   background_image_type?: 'none' | 'upload' | 'entity' | 'url';
   background_image_entity?: string;
+  background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+  background_position?:
+    | 'left top'
+    | 'left center'
+    | 'left bottom'
+    | 'center top'
+    | 'center center'
+    | 'center bottom'
+    | 'right top'
+    | 'right center'
+    | 'right bottom';
+  background_size?: 'cover' | 'contain' | 'auto' | string;
   backdrop_filter?: string;
   width?: string;
   height?: string;
@@ -203,29 +216,25 @@ export class GlobalDesignTab extends LitElement {
     this.requestUpdate();
   }
 
-  private _updateProperty(property: keyof DesignProperties, value: string): void {
-    const updates = { [property]: value };
+  private _updateProperty(property: keyof DesignProperties, value: any): void {
+    const updates: Partial<DesignProperties> = { [property]: value } as any;
 
-    console.log(`🔧 GlobalDesignTab: Updating property ${property} =`, value);
-    console.log(`🔧 GlobalDesignTab: onUpdate callback exists:`, !!this.onUpdate);
+    // Update local state immediately so UI reflects the change
+    this.designProperties = { ...(this.designProperties || {}), [property]: value } as any;
+    this.requestUpdate();
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
-      console.log(`🔧 GlobalDesignTab: Using callback approach for property update`);
       this.onUpdate(updates);
     } else {
-      console.log(`🔧 GlobalDesignTab: Using event approach for property update`);
       // Dispatch event for event-listener based integrations
       const event = new CustomEvent('design-changed', {
         detail: updates,
         bubbles: true,
         composed: true,
       });
-      console.log(`🔧 GlobalDesignTab: Dispatching design-changed event:`, event);
       this.dispatchEvent(event);
     }
-
-    console.log(`🔧 GlobalDesignTab: Property update complete for ${property}`);
   }
 
   private _updateSpacing(
@@ -249,29 +258,65 @@ export class GlobalDesignTab extends LitElement {
       updates = { [`${type}_${side}`]: value };
     }
 
-    console.log(
-      `🔧 GlobalDesignTab: Updating spacing ${type}-${side} =`,
-      value,
-      `(locked: ${isLocked})`
-    );
-    console.log(`🔧 GlobalDesignTab: Spacing updates:`, updates);
-    console.log(`🔧 GlobalDesignTab: onUpdate callback exists:`, !!this.onUpdate);
-
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
-      console.log(`🔧 GlobalDesignTab: Using callback approach for spacing update`);
       this.onUpdate(updates);
     } else {
-      console.log(`🔧 GlobalDesignTab: Using event approach for spacing update`);
       // Dispatch event for event-listener based integrations
       const event = new CustomEvent('design-changed', {
         detail: updates,
         bubbles: true,
         composed: true,
       });
-      console.log(`🔧 GlobalDesignTab: Dispatching spacing design-changed event:`, event);
       this.dispatchEvent(event);
     }
+  }
+
+  private _createRobustInputHandler(
+    property: string,
+    updateCallback: (value: string) => void
+  ): (e: Event) => void {
+    return (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const value = target.value;
+
+      // Store cursor position before any processing
+      const cursorPosition = target.selectionStart;
+      const cursorEnd = target.selectionEnd;
+
+      // Prevent any browser auto-formatting by preserving the exact user input
+      e.stopPropagation();
+      e.preventDefault(); // Also prevent default to stop any browser processing
+
+      // Update the value first
+      updateCallback(value);
+
+      // Restore cursor position after any potential re-rendering
+      requestAnimationFrame(() => {
+        if (target && typeof cursorPosition === 'number') {
+          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+        }
+      });
+    };
+  }
+
+  private _createProtectedKeydownHandler(
+    property: string,
+    getCurrentValue: () => string,
+    updateCallback: (newValue: string) => void
+  ): (e: KeyboardEvent) => void {
+    return (e: KeyboardEvent) => {
+      const target = e.target as HTMLInputElement;
+
+      // Only handle arrow keys for numeric stepping, let everything else pass through
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        this._handleNumericKeydown(e, getCurrentValue(), updateCallback);
+        return;
+      }
+
+      // For any other key, just let it pass through naturally
+      // This prevents interference with normal typing, including adding negative signs
+    };
   }
 
   private _handleNumericKeydown(
@@ -340,9 +385,6 @@ export class GlobalDesignTab extends LitElement {
 
   private _resetSection(section: string): void {
     // Add debugging to help track reset actions
-    console.log(`🔄 GlobalDesignTab: RESET SECTION CALLED for: ${section}`);
-    console.log(`🔄 GlobalDesignTab: Current designProperties:`, this.designProperties);
-    console.log(`🔄 GlobalDesignTab: onUpdate callback exists:`, !!this.onUpdate);
 
     // Create a reset object that explicitly removes properties
     const resetProperties: Record<string, undefined> = {};
@@ -364,6 +406,9 @@ export class GlobalDesignTab extends LitElement {
         resetProperties.background_image = undefined;
         resetProperties.background_image_type = undefined;
         resetProperties.background_image_entity = undefined;
+        resetProperties.background_size = undefined;
+        resetProperties.background_repeat = undefined;
+        resetProperties.background_position = undefined;
         resetProperties.backdrop_filter = undefined;
         break;
       case 'sizes':
@@ -429,41 +474,34 @@ export class GlobalDesignTab extends LitElement {
         break;
     }
 
-    console.log(`🔄 GlobalDesignTab: Reset properties for ${section}:`, resetProperties);
+    // Update local state immediately so UI reflects the reset
+    this.designProperties = { ...(this.designProperties || {}), ...resetProperties } as any;
+    this.requestUpdate();
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
-      console.log(`🔄 GlobalDesignTab: Using callback approach for section reset`);
       try {
         this.onUpdate(resetProperties);
-        console.log(`🔄 GlobalDesignTab: Callback executed successfully for ${section}`);
       } catch (error) {
         console.error(`🔄 GlobalDesignTab: Callback error for ${section}:`, error);
       }
     } else {
-      console.log(`🔄 GlobalDesignTab: Using event approach for section reset`);
       // Dispatch event for event-listener based integrations
       const event = new CustomEvent('design-changed', {
         detail: resetProperties,
         bubbles: true,
         composed: true,
       });
-      console.log(`🔄 GlobalDesignTab: Dispatching reset design-changed event:`, event);
       const dispatched = this.dispatchEvent(event);
-      console.log(`🔄 GlobalDesignTab: Event dispatched successfully:`, dispatched);
     }
 
     // Force component re-render to update UI indicators after a small delay
-    console.log(`🔄 GlobalDesignTab: Requesting update for section ${section}`);
     this.requestUpdate();
 
     // Schedule another update to ensure UI indicators refresh after parent updates designProperties
     setTimeout(() => {
-      console.log(`🔄 GlobalDesignTab: Delayed update for section ${section} UI indicators`);
       this.requestUpdate();
     }, 50);
-
-    console.log(`✅ GlobalDesignTab: Reset complete for ${section}`);
   }
 
   private _copyDesign(): void {
@@ -477,7 +515,6 @@ export class GlobalDesignTab extends LitElement {
     ).length;
 
     // Show feedback to user
-    console.log(`Design properties copied to cross-card clipboard (${propertyCount} properties)`);
 
     // Trigger a visual feedback
     this.requestUpdate();
@@ -503,18 +540,12 @@ export class GlobalDesignTab extends LitElement {
           })
         );
       }
-
-      console.log('Design properties pasted from cross-card clipboard');
     } else {
-      console.log('No design properties in cross-card clipboard');
     }
   }
 
   private _resetAllDesign(): void {
     // Reset all design properties to undefined values
-    console.log('🔄 GlobalDesignTab: RESET ALL DESIGN CALLED');
-    console.log('🔄 GlobalDesignTab: Current designProperties:', this.designProperties);
-    console.log('🔄 GlobalDesignTab: onUpdate callback exists:', !!this.onUpdate);
 
     const resetProperties: Record<string, undefined> = {
       // Text properties
@@ -587,47 +618,35 @@ export class GlobalDesignTab extends LitElement {
       animation_timing: undefined,
     };
 
-    console.log('🔄 GlobalDesignTab: Reset properties for ALL sections:', resetProperties);
-
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
-      console.log('🔄 GlobalDesignTab: Using callback approach for reset all');
       try {
         this.onUpdate(resetProperties);
-        console.log('🔄 GlobalDesignTab: Reset all callback executed successfully');
       } catch (error) {
         console.error('🔄 GlobalDesignTab: Reset all callback error:', error);
       }
     } else {
-      console.log('🔄 GlobalDesignTab: Using event approach for reset all');
       // Dispatch event for event-listener based integrations
       const event = new CustomEvent('design-changed', {
         detail: resetProperties,
         bubbles: true,
         composed: true,
       });
-      console.log('🔄 GlobalDesignTab: Dispatching reset all design-changed event:', event);
       const dispatched = this.dispatchEvent(event);
-      console.log('🔄 GlobalDesignTab: Reset all event dispatched successfully:', dispatched);
     }
 
     // Force component re-render to update UI indicators after a small delay
-    console.log('🔄 GlobalDesignTab: Requesting update for reset all');
     this.requestUpdate();
 
     // Schedule another update to ensure UI indicators refresh after parent updates designProperties
     setTimeout(() => {
-      console.log('🔄 GlobalDesignTab: Delayed update for reset all UI indicators');
       this.requestUpdate();
     }, 50);
-
-    console.log('✅ GlobalDesignTab: All design properties reset to default');
   }
 
   private _clearClipboard(): void {
     this._clipboardProperties = null;
     this._clearClipboardFromStorage();
-    console.log('Cross-card clipboard cleared');
     this.requestUpdate();
   }
 
@@ -760,6 +779,9 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.background_image) ||
           hasValue(props.background_image_type) ||
           hasValue(props.background_image_entity) ||
+          hasValue(props.background_size) ||
+          hasValue(props.background_repeat) ||
+          hasValue(props.background_position) ||
           hasValue(props.backdrop_filter)
         );
       case 'sizes':
@@ -875,6 +897,7 @@ export class GlobalDesignTab extends LitElement {
   }
 
   protected render(): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
     return html`
       <div class="global-design-tab">
         <!-- Design Actions Toolbar -->
@@ -882,10 +905,14 @@ export class GlobalDesignTab extends LitElement {
           <button
             class="toolbar-button copy-button"
             @click=${this._copyDesign}
-            title="Copy current design settings (works across all Ultra Cards)"
+            title="${localize(
+              'editor.design.copy_tooltip',
+              lang,
+              'Copy current design settings (works across all Ultra Cards)'
+            )}"
           >
             <ha-icon icon="mdi:content-copy"></ha-icon>
-            <span>Copy</span>
+            <span>${localize('editor.design.copy', lang, 'Copy')}</span>
           </button>
 
           <button
@@ -893,29 +920,41 @@ export class GlobalDesignTab extends LitElement {
             @click=${this._pasteDesign}
             ?disabled=${!this._clipboardProperties}
             title="${this._clipboardProperties
-              ? 'Paste copied design settings (from cross-card clipboard)'
-              : 'No design settings in cross-card clipboard'}"
+              ? localize(
+                  'editor.design.paste_tooltip_has',
+                  lang,
+                  'Paste copied design settings (from cross-card clipboard)'
+                )
+              : localize(
+                  'editor.design.paste_tooltip_none',
+                  lang,
+                  'No design settings in cross-card clipboard'
+                )}"
           >
             <ha-icon icon="mdi:content-paste"></ha-icon>
-            <span>Paste</span>
+            <span>${localize('editor.design.paste', lang, 'Paste')}</span>
           </button>
 
           <button
             class="toolbar-button reset-all-button"
             @click=${this._resetAllDesign}
-            title="Reset all design settings to default"
+            title="${localize(
+              'editor.design.reset_all_tooltip',
+              lang,
+              'Reset all design settings to default'
+            )}"
           >
             <ha-icon icon="mdi:refresh"></ha-icon>
-            <span>Reset All</span>
+            <span>${localize('editor.design.reset_all', lang, 'Reset All')}</span>
           </button>
         </div>
 
         ${this._renderAccordion(
-          'Text',
+          localize('editor.design.text_section', lang, 'Text'),
           html`
             <div class="property-group">
               <ultra-color-picker
-                .label=${'Text Color'}
+                .label=${localize('editor.design.text_color', lang, 'Text Color')}
                 .value=${this.designProperties.color || ''}
                 .defaultValue=${'var(--primary-text-color)'}
                 .hass=${this.hass}
@@ -924,17 +963,35 @@ export class GlobalDesignTab extends LitElement {
             </div>
 
             <div class="property-group">
-              <label>Alignment:</label>
+              <label>${localize('editor.design.alignment', lang, 'Alignment:')}:</label>
               <div class="button-group">
-                ${['left', 'center', 'right', 'justify'].map(
-                  align => html`
+                ${[
+                  { value: 'inherit', icon: 'mdi:circle-off-outline' },
+                  { value: 'left', icon: 'mdi:format-align-left' },
+                  { value: 'center', icon: 'mdi:format-align-center' },
+                  { value: 'right', icon: 'mdi:format-align-right' },
+                  { value: 'justify', icon: 'mdi:format-align-justify' },
+                ].map(
+                  opt => html`
                     <button
-                      class="property-btn ${this.designProperties.text_align === align
+                      class="property-btn ${(this.designProperties.text_align || 'inherit') ===
+                      opt.value
                         ? 'active'
                         : ''}"
-                      @click=${() => this._updateProperty('text_align', align)}
+                      @click=${() =>
+                        this._updateProperty(
+                          'text_align',
+                          opt.value === 'inherit' ? undefined : (opt.value as any)
+                        )}
+                      title=${opt.value === 'inherit'
+                        ? localize(
+                            'editor.design.inherit_alignment',
+                            lang,
+                            'Inherit (no alignment)'
+                          )
+                        : opt.value}
                     >
-                      <ha-icon icon="mdi:format-align-${align}"></ha-icon>
+                      <ha-icon icon="${opt.icon}"></ha-icon>
                     </button>
                   `
                 )}
@@ -942,50 +999,103 @@ export class GlobalDesignTab extends LitElement {
             </div>
 
             <div class="property-group">
-              <label>Font Size:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.font_size || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('font_size', (e.target as HTMLInputElement).value)}
-                placeholder="16px, 1.2rem, max(1rem, 1.5vw)"
-                class="property-input"
-              />
+              <label>${localize('editor.design.font_size', lang, 'Font Size:')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.font_size || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('font_size', (e.target as HTMLInputElement).value)}
+                  placeholder="${localize(
+                    'editor.design.font_size_placeholder',
+                    lang,
+                    '16px (default), 1.2rem, max(1rem, 1.5vw)'
+                  )}"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_size', '')}
+                  title="${localize(
+                    'editor.design.reset_font_size',
+                    lang,
+                    'Reset font size to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Line Height:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.line_height || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('line_height', (e.target as HTMLInputElement).value)}
-                placeholder="28px, 1.7"
-                class="property-input"
-              />
+              <label>${localize('editor.design.line_height', lang, 'Line Height:')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.line_height || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('line_height', (e.target as HTMLInputElement).value)}
+                  placeholder="${localize(
+                    'editor.design.line_height_placeholder',
+                    lang,
+                    '0 (default), 28px, 1.7'
+                  )}"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('line_height', '')}
+                  title="${localize(
+                    'editor.design.reset_line_height',
+                    lang,
+                    'Reset line height to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Letter Spacing:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.letter_spacing || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('letter_spacing', (e.target as HTMLInputElement).value)}
-                placeholder="1px, -0.04em"
-                class="property-input"
-              />
+              <label>${localize('editor.design.letter_spacing', lang, 'Letter Spacing:')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.letter_spacing || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('letter_spacing', (e.target as HTMLInputElement).value)}
+                  placeholder="${localize(
+                    'editor.design.letter_spacing_placeholder',
+                    lang,
+                    'auto (default), 1px, -0.04em'
+                  )}"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('letter_spacing', '')}
+                  title="${localize(
+                    'editor.design.reset_letter_spacing',
+                    lang,
+                    'Reset letter spacing to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Font:</label>
+              <label>${localize('editor.design.font', lang, 'Font')}:</label>
               <select
                 .value=${this.designProperties.font_family || ''}
                 @change=${(e: Event) =>
                   this._updateProperty('font_family', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
+                <option value="">
+                  ${localize('editor.design.default_option', lang, '– Default –')}
+                </option>
                 <option value="Arial, sans-serif">Arial</option>
                 <option value="Helvetica, sans-serif">Helvetica</option>
                 <option value="Times New Roman, serif">Times New Roman</option>
@@ -995,63 +1105,97 @@ export class GlobalDesignTab extends LitElement {
             </div>
 
             <div class="property-group">
-              <label>Font Weight:</label>
+              <label>${localize('editor.design.font_weight', lang, 'Font Weight')}:</label>
               <select
                 .value=${this.designProperties.font_weight || ''}
                 @change=${(e: Event) =>
                   this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
-                <option value="100">100 - Thin</option>
-                <option value="300">300 - Light</option>
-                <option value="400">400 - Normal</option>
-                <option value="500">500 - Medium</option>
-                <option value="600">600 - Semi Bold</option>
-                <option value="700">700 - Bold</option>
-                <option value="900">900 - Black</option>
+                <option value="">
+                  ${localize('editor.design.default_option', lang, '– Default –')}
+                </option>
+                <option value="100">
+                  ${localize('editor.design.weight_thin', lang, '100 - Thin')}
+                </option>
+                <option value="300">
+                  ${localize('editor.design.weight_light', lang, '300 - Light')}
+                </option>
+                <option value="400">
+                  ${localize('editor.design.weight_normal', lang, '400 - Normal')}
+                </option>
+                <option value="500">
+                  ${localize('editor.design.weight_medium', lang, '500 - Medium')}
+                </option>
+                <option value="600">
+                  ${localize('editor.design.weight_semi_bold', lang, '600 - Semi Bold')}
+                </option>
+                <option value="700">
+                  ${localize('editor.design.weight_bold', lang, '700 - Bold')}
+                </option>
+                <option value="900">
+                  ${localize('editor.design.weight_black', lang, '900 - Black')}
+                </option>
               </select>
             </div>
 
             <div class="property-group">
-              <label>Text Transform:</label>
+              <label>${localize('editor.design.text_transform', lang, 'Text Transform')}:</label>
               <select
                 .value=${this.designProperties.text_transform || ''}
                 @change=${(e: Event) =>
                   this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
-                <option value="none">None</option>
-                <option value="uppercase">UPPERCASE</option>
-                <option value="lowercase">lowercase</option>
-                <option value="capitalize">Capitalize</option>
+                <option value="">
+                  ${localize('editor.design.default_option', lang, '– Default –')}
+                </option>
+                <option value="none">
+                  ${localize('editor.design.transform_none', lang, 'None')}
+                </option>
+                <option value="uppercase">
+                  ${localize('editor.design.transform_uppercase', lang, 'UPPERCASE')}
+                </option>
+                <option value="lowercase">
+                  ${localize('editor.design.transform_lowercase', lang, 'lowercase')}
+                </option>
+                <option value="capitalize">
+                  ${localize('editor.design.transform_capitalize', lang, 'Capitalize')}
+                </option>
               </select>
             </div>
 
             <div class="property-group">
-              <label>Font Style:</label>
+              <label>${localize('editor.design.font_style', lang, 'Font Style')}:</label>
               <select
                 .value=${this.designProperties.font_style || ''}
                 @change=${(e: Event) =>
                   this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
-                <option value="normal">Normal</option>
-                <option value="italic">Italic</option>
-                <option value="oblique">Oblique</option>
+                <option value="">
+                  ${localize('editor.design.default_option', lang, '– Default –')}
+                </option>
+                <option value="normal">
+                  ${localize('editor.design.style_normal', lang, 'Normal')}
+                </option>
+                <option value="italic">
+                  ${localize('editor.design.style_italic', lang, 'Italic')}
+                </option>
+                <option value="oblique">
+                  ${localize('editor.design.style_oblique', lang, 'Oblique')}
+                </option>
               </select>
             </div>
           `,
           'text'
         )}
         ${this._renderAccordion(
-          'Background',
+          localize('editor.design.background_section', lang, 'Background'),
           html`
             <div class="property-group">
               <ultra-color-picker
-                .label=${'Background Color'}
+                .label=${localize('editor.design.background_color', lang, 'Background Color')}
                 .value=${this.designProperties.background_color || ''}
                 .defaultValue=${'transparent'}
                 .hass=${this.hass}
@@ -1061,7 +1205,13 @@ export class GlobalDesignTab extends LitElement {
             </div>
 
             <div class="property-group">
-              <label>Background Image Type:</label>
+              <label
+                >${localize(
+                  'editor.design.background_image_type',
+                  lang,
+                  'Background Image Type'
+                )}:</label
+              >
               <select
                 .value=${this.designProperties.background_image_type || 'none'}
                 @change=${(e: Event) =>
@@ -1071,23 +1221,35 @@ export class GlobalDesignTab extends LitElement {
                   )}
                 class="property-select"
               >
-                <option value="none">None</option>
-                <option value="upload">Upload Image</option>
-                <option value="entity">Entity Image</option>
-                <option value="url">Image URL</option>
+                <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
+                <option value="upload">
+                  ${localize('editor.design.bg_upload', lang, 'Upload Image')}
+                </option>
+                <option value="entity">
+                  ${localize('editor.design.bg_entity', lang, 'Entity Image')}
+                </option>
+                <option value="url">${localize('editor.design.bg_url', lang, 'Image URL')}</option>
               </select>
             </div>
 
             ${this.designProperties.background_image_type === 'upload'
               ? html`
                   <div class="property-group">
-                    <label>Upload Background Image:</label>
+                    <label
+                      >${localize(
+                        'editor.design.upload_bg_image',
+                        lang,
+                        'Upload Background Image'
+                      )}:</label
+                    >
                     <div class="upload-container">
                       <div class="file-upload-row">
                         <label class="file-upload-button">
                           <div class="button-content">
                             <ha-icon icon="mdi:upload"></ha-icon>
-                            <span class="button-label">Choose File</span>
+                            <span class="button-label"
+                              >${localize('editor.design.choose_file', lang, 'Choose File')}</span
+                            >
                           </div>
                           <input
                             type="file"
@@ -1104,7 +1266,13 @@ export class GlobalDesignTab extends LitElement {
                               >
                                 ${this._truncatePath(this.designProperties.background_image)}
                               </span>`
-                            : html`<span class="no-file">No file chosen</span>`}
+                            : html`<span class="no-file"
+                                >${localize(
+                                  'editor.design.no_file_chosen',
+                                  lang,
+                                  'No file chosen'
+                                )}</span
+                              >`}
                         </div>
                       </div>
                     </div>
@@ -1114,7 +1282,13 @@ export class GlobalDesignTab extends LitElement {
             ${this.designProperties.background_image_type === 'entity'
               ? html`
                   <div class="property-group">
-                    <label>Background Image Entity:</label>
+                    <label
+                      >${localize(
+                        'editor.design.bg_image_entity',
+                        lang,
+                        'Background Image Entity'
+                      )}:</label
+                    >
                     <ha-entity-picker
                       .hass=${this.hass}
                       .value=${this.designProperties.background_image_entity || ''}
@@ -1129,7 +1303,13 @@ export class GlobalDesignTab extends LitElement {
             ${this.designProperties.background_image_type === 'url'
               ? html`
                   <div class="property-group">
-                    <label>Background Image URL:</label>
+                    <label
+                      >${localize(
+                        'editor.design.bg_image_url',
+                        lang,
+                        'Background Image URL'
+                      )}:</label
+                    >
                     <input
                       type="text"
                       .value=${this.designProperties.background_image || ''}
@@ -1144,9 +1324,130 @@ export class GlobalDesignTab extends LitElement {
                   </div>
                 `
               : ''}
+            ${this.designProperties.background_image_type &&
+            this.designProperties.background_image_type !== 'none'
+              ? html`
+                  <div class="property-group">
+                    <label>Background Size:</label>
+                    <select
+                      .value=${this._getBackgroundSizeDropdownValue(
+                        this.designProperties.background_size
+                      )}
+                      @change=${(e: Event) =>
+                        this._updateProperty(
+                          'background_size',
+                          (e.target as HTMLSelectElement).value
+                        )}
+                      class="property-select"
+                    >
+                      <option value="cover">Cover</option>
+                      <option value="contain">Contain</option>
+                      <option value="auto">Auto</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+
+                  ${this._getBackgroundSizeDropdownValue(this.designProperties.background_size) ===
+                  'custom'
+                    ? html`
+                        <div class="property-group">
+                          <label>Custom Width:</label>
+                          <input
+                            type="text"
+                            .value=${this._getCustomSizeValue(
+                              this.designProperties.background_size,
+                              'width'
+                            )}
+                            @input=${(e: Event) => {
+                              const width = (e.target as HTMLInputElement).value;
+                              const height = this._getCustomSizeValue(
+                                this.designProperties.background_size,
+                                'height'
+                              );
+                              const customSize =
+                                width && height ? `${width} ${height}` : width || height || 'auto';
+                              this._updateProperty('background_size', customSize);
+                            }}
+                            placeholder="100px, 50%, auto"
+                            class="property-input"
+                          />
+                        </div>
+                        <div class="property-group">
+                          <label>Custom Height:</label>
+                          <input
+                            type="text"
+                            .value=${this._getCustomSizeValue(
+                              this.designProperties.background_size,
+                              'height'
+                            )}
+                            @input=${(e: Event) => {
+                              const height = (e.target as HTMLInputElement).value;
+                              const width = this._getCustomSizeValue(
+                                this.designProperties.background_size,
+                                'width'
+                              );
+                              const customSize =
+                                width && height ? `${width} ${height}` : width || height || 'auto';
+                              this._updateProperty('background_size', customSize);
+                            }}
+                            placeholder="100px, 50%, auto"
+                            class="property-input"
+                          />
+                        </div>
+                      `
+                    : ''}
+
+                  <div class="property-group">
+                    <label>Background Repeat:</label>
+                    <select
+                      .value=${this.designProperties.background_repeat || 'no-repeat'}
+                      @change=${(e: Event) =>
+                        this._updateProperty(
+                          'background_repeat',
+                          (e.target as HTMLSelectElement).value
+                        )}
+                      class="property-select"
+                    >
+                      <option value="no-repeat">No Repeat</option>
+                      <option value="repeat">Repeat</option>
+                      <option value="repeat-x">Repeat X</option>
+                      <option value="repeat-y">Repeat Y</option>
+                    </select>
+                  </div>
+
+                  <div class="property-group">
+                    <label>Background Position:</label>
+                    <select
+                      .value=${this.designProperties.background_position || 'center center'}
+                      @change=${(e: Event) =>
+                        this._updateProperty(
+                          'background_position',
+                          (e.target as HTMLSelectElement).value
+                        )}
+                      class="property-select"
+                    >
+                      <option value="left top">Left Top</option>
+                      <option value="left center">Left Center</option>
+                      <option value="left bottom">Left Bottom</option>
+                      <option value="center top">Center Top</option>
+                      <option value="center center">Center</option>
+                      <option value="center bottom">Center Bottom</option>
+                      <option value="right top">Right Top</option>
+                      <option value="right center">Right Center</option>
+                      <option value="right bottom">Right Bottom</option>
+                    </select>
+                  </div>
+                `
+              : ''}
 
             <div class="property-group">
-              <label>Backdrop Filter:</label>
+              <label
+                >${localize(
+                  'editor.design.backdrop_filter',
+                  this.hass?.locale?.language || 'en',
+                  'Backdrop Filter'
+                )}:</label
+              >
               <input
                 type="text"
                 .value=${this.designProperties.backdrop_filter || ''}
@@ -1160,100 +1461,161 @@ export class GlobalDesignTab extends LitElement {
           'background'
         )}
         ${this._renderAccordion(
-          'Sizes',
+          localize('editor.design.sizes_section', lang, 'Sizes'),
           html`
             <div class="property-group">
-              <label>Width:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.width || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('width', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.width || '', value =>
+              <label>${localize('editor.design.width', lang, 'Width')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.width || ''}
+                  @input=${this._createRobustInputHandler('width', (value: string) =>
                     this._updateProperty('width', value)
                   )}
-                placeholder="200px, 100%, 14rem, 10vw"
-                class="property-input"
-              />
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.width || '', value =>
+                      this._updateProperty('width', value)
+                    )}
+                  placeholder="auto (default), 200px, 100%, 14rem, 10vw"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('width', '')}
+                  title="Reset width to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Height:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.height || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('height', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.height || '', value =>
-                    this._updateProperty('height', value)
-                  )}
-                placeholder="200px, 15rem, 10vh"
-                class="property-input"
-              />
+              <label>${localize('editor.design.height', lang, 'Height')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.height || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('height', (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.height || '', value =>
+                      this._updateProperty('height', value)
+                    )}
+                  placeholder="auto (default), 200px, 15rem, 10vh"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('height', '')}
+                  title="Reset height to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Max Width:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.max_width || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('max_width', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.max_width || '', value =>
-                    this._updateProperty('max_width', value)
-                  )}
-                placeholder="200px, 100%, 14rem, 10vw"
-                class="property-input"
-              />
+              <label>${localize('editor.design.max_width', lang, 'Max Width')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.max_width || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('max_width', (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.max_width || '', value =>
+                      this._updateProperty('max_width', value)
+                    )}
+                  placeholder="200px, 100%, 14rem, 10vw"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('max_width', '')}
+                  title="Reset max width to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Max Height:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.max_height || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('max_height', (e.target as HTMLInputElement).value)}
-                placeholder="200px, 15rem, 10vh"
-                class="property-input"
-              />
+              <label>${localize('editor.design.max_height', lang, 'Max Height')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.max_height || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('max_height', (e.target as HTMLInputElement).value)}
+                  placeholder="200px, 15rem, 10vh"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('max_height', '')}
+                  title="Reset max height to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Min Width:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.min_width || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('min_width', (e.target as HTMLInputElement).value)}
-                placeholder="200px, 100%, 14rem, 10vw"
-                class="property-input"
-              />
+              <label>${localize('editor.design.min_width', lang, 'Min Width')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.min_width || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('min_width', (e.target as HTMLInputElement).value)}
+                  placeholder="200px, 100%, 14rem, 10vw"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('min_width', '')}
+                  title="Reset min width to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Min Height:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.min_height || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('min_height', (e.target as HTMLInputElement).value)}
-                placeholder="200px, 15rem, 10vh"
-                class="property-input"
-              />
+              <label>${localize('editor.design.min_height', lang, 'Min Height')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.min_height || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('min_height', (e.target as HTMLInputElement).value)}
+                  placeholder="200px, 15rem, 10vh"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('min_height', '')}
+                  title="Reset min height to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
           `,
           'sizes'
         )}
         ${this._renderAccordion(
-          'Spacing',
+          localize('editor.design.spacing_section', lang, 'Spacing'),
           html`
             <div class="spacing-group">
               <div class="spacing-header">
-                <h4>Margin</h4>
+                <h4>
+                  ${localize('editor.design.margin', this.hass?.locale?.language || 'en', 'Margin')}
+                </h4>
                 <button
                   type="button"
                   class="lock-button ${this._marginLocked ? 'locked' : ''}"
@@ -1272,12 +1634,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_top || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('margin', 'top', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(e, this.designProperties.margin_top || '', value =>
-                        this._updateSpacing('margin', 'top', value)
-                      )}
+                    @input=${this._createRobustInputHandler('margin_top', (value: string) =>
+                      this._updateSpacing('margin', 'top', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'margin_top',
+                      () => this.designProperties.margin_top || '',
+                      (value: string) => this._updateSpacing('margin', 'top', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1287,14 +1655,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_right || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('margin', 'right', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.margin_right || '',
-                        value => this._updateSpacing('margin', 'right', value)
-                      )}
+                    @input=${this._createRobustInputHandler('margin_right', (value: string) =>
+                      this._updateSpacing('margin', 'right', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'margin_right',
+                      () => this.designProperties.margin_right || '',
+                      (value: string) => this._updateSpacing('margin', 'right', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1304,14 +1676,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_bottom || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('margin', 'bottom', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.margin_bottom || '',
-                        value => this._updateSpacing('margin', 'bottom', value)
-                      )}
+                    @input=${this._createRobustInputHandler('margin_bottom', (value: string) =>
+                      this._updateSpacing('margin', 'bottom', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'margin_bottom',
+                      () => this.designProperties.margin_bottom || '',
+                      (value: string) => this._updateSpacing('margin', 'bottom', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1321,14 +1697,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.margin_left || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('margin', 'left', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.margin_left || '',
-                        value => this._updateSpacing('margin', 'left', value)
-                      )}
+                    @input=${this._createRobustInputHandler('margin_left', (value: string) =>
+                      this._updateSpacing('margin', 'left', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'margin_left',
+                      () => this.designProperties.margin_left || '',
+                      (value: string) => this._updateSpacing('margin', 'left', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1356,14 +1736,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_top || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('padding', 'top', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.padding_top || '',
-                        value => this._updateSpacing('padding', 'top', value)
-                      )}
+                    @input=${this._createRobustInputHandler('padding_top', (value: string) =>
+                      this._updateSpacing('padding', 'top', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'padding_top',
+                      () => this.designProperties.padding_top || '',
+                      (value: string) => this._updateSpacing('padding', 'top', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1373,14 +1757,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_right || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('padding', 'right', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.padding_right || '',
-                        value => this._updateSpacing('padding', 'right', value)
-                      )}
+                    @input=${this._createRobustInputHandler('padding_right', (value: string) =>
+                      this._updateSpacing('padding', 'right', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'padding_right',
+                      () => this.designProperties.padding_right || '',
+                      (value: string) => this._updateSpacing('padding', 'right', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1390,18 +1778,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_bottom || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing(
-                        'padding',
-                        'bottom',
-                        (e.target as HTMLInputElement).value
-                      )}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.padding_bottom || '',
-                        value => this._updateSpacing('padding', 'bottom', value)
-                      )}
+                    @input=${this._createRobustInputHandler('padding_bottom', (value: string) =>
+                      this._updateSpacing('padding', 'bottom', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'padding_bottom',
+                      () => this.designProperties.padding_bottom || '',
+                      (value: string) => this._updateSpacing('padding', 'bottom', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1411,14 +1799,18 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_left || ''}
-                    @input=${(e: Event) =>
-                      this._updateSpacing('padding', 'left', (e.target as HTMLInputElement).value)}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this._handleNumericKeydown(
-                        e,
-                        this.designProperties.padding_left || '',
-                        value => this._updateSpacing('padding', 'left', value)
-                      )}
+                    @input=${this._createRobustInputHandler('padding_left', (value: string) =>
+                      this._updateSpacing('padding', 'left', value)
+                    )}
+                    @keydown=${this._createProtectedKeydownHandler(
+                      'padding_left',
+                      () => this.designProperties.padding_left || '',
+                      (value: string) => this._updateSpacing('padding', 'left', value)
+                    )}
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     class="spacing-input"
                   />
                 </div>
@@ -1428,59 +1820,109 @@ export class GlobalDesignTab extends LitElement {
           'spacing'
         )}
         ${this._renderAccordion(
-          'Border',
+          localize('editor.design.border_section', lang, 'Border'),
           html`
             <div class="property-group">
-              <label>Border Radius:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.border_radius || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('border_radius', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.border_radius || '', value =>
-                    this._updateProperty('border_radius', value)
-                  )}
-                placeholder="5px, 50%, 0.3em, 12px 0"
-                class="property-input"
-              />
+              <label>${localize('editor.design.border_radius', lang, 'Border Radius')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.border_radius || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('border_radius', (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.border_radius || '',
+                      value => this._updateProperty('border_radius', value)
+                    )}
+                  placeholder="5px, 50%, 0.3em, 12px 0"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('border_radius', '')}
+                  title="Reset border radius to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Border Style:</label>
+              <label>${localize('editor.design.border_style', lang, 'Border Style')}:</label>
               <select
                 .value=${this.designProperties.border_style || ''}
                 @change=${(e: Event) =>
                   this._updateProperty('border_style', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">None</option>
-                <option value="solid">Solid</option>
-                <option value="dashed">Dashed</option>
-                <option value="dotted">Dotted</option>
-                <option value="double">Double</option>
+                <option value="">
+                  ${localize(
+                    'editor.design.border_style_none',
+                    this.hass?.locale?.language || 'en',
+                    'None'
+                  )}
+                </option>
+                <option value="solid">
+                  ${localize(
+                    'editor.design.border_style_solid',
+                    this.hass?.locale?.language || 'en',
+                    'Solid'
+                  )}
+                </option>
+                <option value="dashed">
+                  ${localize(
+                    'editor.design.border_style_dashed',
+                    this.hass?.locale?.language || 'en',
+                    'Dashed'
+                  )}
+                </option>
+                <option value="dotted">
+                  ${localize(
+                    'editor.design.border_style_dotted',
+                    this.hass?.locale?.language || 'en',
+                    'Dotted'
+                  )}
+                </option>
+                <option value="double">
+                  ${localize(
+                    'editor.design.border_style_double',
+                    this.hass?.locale?.language || 'en',
+                    'Double'
+                  )}
+                </option>
               </select>
             </div>
 
             <div class="property-group">
-              <label>Border Width:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.border_width || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('border_width', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.border_width || '', value =>
-                    this._updateProperty('border_width', value)
-                  )}
-                placeholder="1px, 2px, 0.125rem"
-                class="property-input"
-              />
+              <label>${localize('editor.design.border_width', lang, 'Border Width')}:</label>
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.border_width || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('border_width', (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.border_width || '', value =>
+                      this._updateProperty('border_width', value)
+                    )}
+                  placeholder="1px, 2px, 0.125rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('border_width', '')}
+                  title="Reset border width to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <ultra-color-picker
-                .label=${'Border Color'}
+                .label=${localize('editor.design.border_color', lang, 'Border Color')}
                 .value=${this.designProperties.border_color || ''}
                 .defaultValue=${'var(--divider-color)'}
                 .hass=${this.hass}
@@ -1492,22 +1934,64 @@ export class GlobalDesignTab extends LitElement {
           'border'
         )}
         ${this._renderAccordion(
-          'Position',
+          localize('editor.design.position_section', lang, 'Position'),
           html`
             <div class="property-group">
-              <label>Position:</label>
+              <label
+                >${localize(
+                  'editor.design.position',
+                  this.hass?.locale?.language || 'en',
+                  'Position'
+                )}:</label
+              >
               <select
                 .value=${this.designProperties.position || ''}
                 @change=${(e: Event) =>
                   this._updateProperty('position', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
-                <option value="static">Static</option>
-                <option value="relative">Relative</option>
-                <option value="absolute">Absolute</option>
-                <option value="fixed">Fixed</option>
-                <option value="sticky">Sticky</option>
+                <option value="">
+                  ${localize(
+                    'editor.design.position_default',
+                    this.hass?.locale?.language || 'en',
+                    '– Default –'
+                  )}
+                </option>
+                <option value="static">
+                  ${localize(
+                    'editor.design.position_static',
+                    this.hass?.locale?.language || 'en',
+                    'Static'
+                  )}
+                </option>
+                <option value="relative">
+                  ${localize(
+                    'editor.design.position_relative',
+                    this.hass?.locale?.language || 'en',
+                    'Relative'
+                  )}
+                </option>
+                <option value="absolute">
+                  ${localize(
+                    'editor.design.position_absolute',
+                    this.hass?.locale?.language || 'en',
+                    'Absolute'
+                  )}
+                </option>
+                <option value="fixed">
+                  ${localize(
+                    'editor.design.position_fixed',
+                    this.hass?.locale?.language || 'en',
+                    'Fixed'
+                  )}
+                </option>
+                <option value="sticky">
+                  ${localize(
+                    'editor.design.position_sticky',
+                    this.hass?.locale?.language || 'en',
+                    'Sticky'
+                  )}
+                </option>
               </select>
             </div>
 
@@ -1584,61 +2068,112 @@ export class GlobalDesignTab extends LitElement {
           'position'
         )}
         ${this._renderAccordion(
-          'Text Shadow',
+          localize('editor.design.text_shadow_section', lang, 'Text Shadow'),
           html`
             <div class="property-group">
-              <label>Horizontal Shift:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.text_shadow_h || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('text_shadow_h', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.text_shadow_h || '', value =>
+              <label
+                >${localize(
+                  'editor.design.horizontal_shift',
+                  this.hass?.locale?.language || 'en',
+                  'Horizontal Shift'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.text_shadow_h || ''}
+                  @input=${this._createRobustInputHandler('text_shadow_h', (value: string) =>
                     this._updateProperty('text_shadow_h', value)
                   )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.text_shadow_h || '',
+                      value => this._updateProperty('text_shadow_h', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('text_shadow_h', '')}
+                  title="Reset horizontal shadow to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Vertical Shift:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.text_shadow_v || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('text_shadow_v', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.text_shadow_v || '', value =>
+              <label
+                >${localize(
+                  'editor.design.vertical_shift',
+                  this.hass?.locale?.language || 'en',
+                  'Vertical Shift'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.text_shadow_v || ''}
+                  @input=${this._createRobustInputHandler('text_shadow_v', (value: string) =>
                     this._updateProperty('text_shadow_v', value)
                   )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.text_shadow_v || '',
+                      value => this._updateProperty('text_shadow_v', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('text_shadow_v', '')}
+                  title="Reset vertical shadow to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Blur:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.text_shadow_blur || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('text_shadow_blur', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(
-                    e,
-                    this.designProperties.text_shadow_blur || '',
-                    value => this._updateProperty('text_shadow_blur', value)
-                  )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+              <label
+                >${localize(
+                  'editor.design.blur',
+                  this.hass?.locale?.language || 'en',
+                  'Blur'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.text_shadow_blur || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('text_shadow_blur', (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.text_shadow_blur || '',
+                      value => this._updateProperty('text_shadow_blur', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('text_shadow_blur', '')}
+                  title="Reset shadow blur to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <ultra-color-picker
-                .label=${'Text Shadow Color'}
+                .label=${localize('editor.design.text_shadow_color', lang, 'Text Shadow Color')}
                 .value=${this.designProperties.text_shadow_color || ''}
                 .defaultValue=${'rgba(0,0,0,0.5)'}
                 .hass=${this.hass}
@@ -1650,79 +2185,142 @@ export class GlobalDesignTab extends LitElement {
           'text-shadow'
         )}
         ${this._renderAccordion(
-          'Box Shadow',
+          localize('editor.design.box_shadow_section', lang, 'Box Shadow'),
           html`
             <div class="property-group">
-              <label>Horizontal Shift:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.box_shadow_h || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('box_shadow_h', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.box_shadow_h || '', value =>
+              <label
+                >${localize(
+                  'editor.design.horizontal_shift',
+                  this.hass?.locale?.language || 'en',
+                  'Horizontal Shift'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.box_shadow_h || ''}
+                  @input=${this._createRobustInputHandler('box_shadow_h', (value: string) =>
                     this._updateProperty('box_shadow_h', value)
                   )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.box_shadow_h || '', value =>
+                      this._updateProperty('box_shadow_h', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('box_shadow_h', '')}
+                  title="Reset horizontal box shadow to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Vertical Shift:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.box_shadow_v || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('box_shadow_v', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(e, this.designProperties.box_shadow_v || '', value =>
+              <label
+                >${localize(
+                  'editor.design.vertical_shift',
+                  this.hass?.locale?.language || 'en',
+                  'Vertical Shift'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.box_shadow_v || ''}
+                  @input=${this._createRobustInputHandler('box_shadow_v', (value: string) =>
                     this._updateProperty('box_shadow_v', value)
                   )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.box_shadow_v || '', value =>
+                      this._updateProperty('box_shadow_v', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('box_shadow_v', '')}
+                  title="Reset vertical box shadow to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Blur:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.box_shadow_blur || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('box_shadow_blur', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(
-                    e,
-                    this.designProperties.box_shadow_blur || '',
-                    value => this._updateProperty('box_shadow_blur', value)
-                  )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+              <label
+                >${localize(
+                  'editor.design.blur',
+                  this.hass?.locale?.language || 'en',
+                  'Blur'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.box_shadow_blur || ''}
+                  @input=${(e: Event) =>
+                    this._updateProperty('box_shadow_blur', (e.target as HTMLInputElement).value)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.box_shadow_blur || '',
+                      value => this._updateProperty('box_shadow_blur', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('box_shadow_blur', '')}
+                  title="Reset box shadow blur to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
-              <label>Spread:</label>
-              <input
-                type="text"
-                .value=${this.designProperties.box_shadow_spread || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('box_shadow_spread', (e.target as HTMLInputElement).value)}
-                @keydown=${(e: KeyboardEvent) =>
-                  this._handleNumericKeydown(
-                    e,
-                    this.designProperties.box_shadow_spread || '',
-                    value => this._updateProperty('box_shadow_spread', value)
+              <label
+                >${localize(
+                  'editor.design.spread',
+                  this.hass?.locale?.language || 'en',
+                  'Spread'
+                )}:</label
+              >
+              <div class="input-with-reset">
+                <input
+                  type="text"
+                  .value=${this.designProperties.box_shadow_spread || ''}
+                  @input=${this._createRobustInputHandler('box_shadow_spread', (value: string) =>
+                    this._updateProperty('box_shadow_spread', value)
                   )}
-                placeholder="0, 3px, 0.05em, 2rem"
-                class="property-input"
-              />
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(
+                      e,
+                      this.designProperties.box_shadow_spread || '',
+                      value => this._updateProperty('box_shadow_spread', value)
+                    )}
+                  placeholder="0, 3px, 0.05em, 2rem"
+                  class="property-input"
+                />
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('box_shadow_spread', '')}
+                  title="Reset box shadow spread to default"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <ultra-color-picker
-                .label=${'Box Shadow Color'}
+                .label=${localize('editor.design.box_shadow_color', lang, 'Box Shadow Color')}
                 .value=${this.designProperties.box_shadow_color || ''}
                 .defaultValue=${'rgba(0,0,0,0.1)'}
                 .hass=${this.hass}
@@ -1734,18 +2332,17 @@ export class GlobalDesignTab extends LitElement {
           'box-shadow'
         )}
         ${this._renderAccordion(
-          'Overflow',
+          localize('editor.design.overflow_section', lang, 'Overflow'),
           html`
             <div class="property-group">
-              <label>Overflow:</label>
+              <label>${localize('editor.design.overflow', lang, 'Overflow')}:</label>
               <select
-                .value=${this.designProperties.overflow || ''}
+                .value=${this.designProperties.overflow || 'visible'}
                 @change=${(e: Event) =>
                   this._updateProperty('overflow', (e.target as HTMLSelectElement).value)}
                 class="property-select"
               >
-                <option value="">– Default –</option>
-                <option value="visible">Visible</option>
+                <option value="visible">Visible (Default)</option>
                 <option value="hidden">Hidden</option>
                 <option value="scroll">Scroll</option>
                 <option value="auto">Auto</option>
@@ -1753,7 +2350,7 @@ export class GlobalDesignTab extends LitElement {
             </div>
 
             <div class="property-group">
-              <label>Clip-path:</label>
+              <label>${localize('editor.design.clip_path', lang, 'Clip-path')}:</label>
               <input
                 type="text"
                 .value=${this.designProperties.clip_path || ''}
@@ -1773,20 +2370,34 @@ export class GlobalDesignTab extends LitElement {
           'overflow'
         )}
         ${this._renderAccordion(
-          'Animations',
+          localize('editor.design.animations_section', lang, 'Animations'),
           html`
             <!-- State-based Animation -->
             <div class="property-section">
-              <h5>State-based Animation</h5>
+              <h5>
+                ${localize(
+                  'editor.design.state_based_animation',
+                  this.hass?.locale?.language || 'en',
+                  'State-based Animation'
+                )}
+              </h5>
               <div class="property-group">
-                <label>Animation Type:</label>
+                <label
+                  >${localize(
+                    'editor.design.animation_type',
+                    this.hass?.locale?.language || 'en',
+                    'Animation Type'
+                  )}:</label
+                >
                 <select
                   .value=${this.designProperties.animation_type || 'none'}
                   @change=${(e: Event) =>
                     this._updateProperty('animation_type', (e.target as HTMLSelectElement).value)}
                   class="property-select"
                 >
-                  <option value="none">None</option>
+                  <option value="none">
+                    ${localize('editor.design.none', this.hass?.locale?.language || 'en', 'None')}
+                  </option>
                   <option value="pulse">Pulse</option>
                   <option value="vibrate">Vibrate</option>
                   <option value="rotate-left">Rotate Left</option>
@@ -1801,7 +2412,13 @@ export class GlobalDesignTab extends LitElement {
               </div>
 
               <div class="property-group">
-                <label>Animation Duration:</label>
+                <label
+                  >${localize(
+                    'editor.design.animation_duration',
+                    this.hass?.locale?.language || 'en',
+                    'Animation Duration'
+                  )}:</label
+                >
                 <input
                   type="text"
                   .value=${this.designProperties.animation_duration || '2s'}
@@ -1814,7 +2431,11 @@ export class GlobalDesignTab extends LitElement {
                   class="property-input"
                 />
                 <small class="property-hint">
-                  Duration for the animation (e.g., 2s, 500ms, 1.5s)
+                  ${localize(
+                    'editor.design.animation_duration_desc',
+                    this.hass?.locale?.language || 'en',
+                    'Duration for the animation (e.g., 2s, 500ms, 1.5s)'
+                  )}
                 </small>
               </div>
 
@@ -1830,6 +2451,7 @@ export class GlobalDesignTab extends LitElement {
                           {
                             name: 'entity',
                             selector: { entity: {} },
+                            label: 'Entity',
                           },
                         ]}
                         @value-changed=${(e: CustomEvent) =>
@@ -1848,8 +2470,6 @@ export class GlobalDesignTab extends LitElement {
                                 const triggerType = (e.target as HTMLSelectElement).value as
                                   | 'state'
                                   | 'attribute';
-
-                                console.log('Animation trigger type changing to:', triggerType);
 
                                 // Create an update object
                                 const updates: Partial<DesignProperties> = {
@@ -1914,18 +2534,8 @@ export class GlobalDesignTab extends LitElement {
                               this.designProperties.animation_trigger_type || 'state';
                             const isAttributeMode = currentTriggerType === 'attribute';
 
-                            console.log('TRIGGER TYPE DETECTION:', {
-                              currentTriggerType,
-                              isAttributeMode,
-                              entitySelected: !!this.designProperties.animation_entity,
-                              attributeSelected: !!this.designProperties.animation_attribute,
-                              stateValue: this.designProperties.animation_state,
-                            });
-
                             // Render attribute mode UI when trigger type is 'attribute'
                             if (isAttributeMode) {
-                              console.log('🟢 RENDERING ATTRIBUTE MODE UI');
-                              console.log('Rendering attribute mode UI');
                               return html`
                                 <div class="property-group attribute-mode-container">
                                   <div class="property-group">
@@ -1938,15 +2548,6 @@ export class GlobalDesignTab extends LitElement {
                                       .value=${this.designProperties.animation_attribute || ''}
                                       @input=${(e: Event) => {
                                         const attribute = (e.target as HTMLInputElement).value;
-                                        console.log('Animation attribute changed to:', attribute);
-                                        console.log(
-                                          'Current entity:',
-                                          this.designProperties.animation_entity
-                                        );
-                                        console.log(
-                                          'Current trigger type:',
-                                          this.designProperties.animation_trigger_type
-                                        );
 
                                         // Reference to the input element for visual feedback
                                         const inputElement = e.target as HTMLInputElement;
@@ -1975,30 +2576,18 @@ export class GlobalDesignTab extends LitElement {
 
                                         // Progressive UI refresh strategy with cascading timeouts
                                         setTimeout(() => {
-                                          console.log(
-                                            'First UI refresh after attribute change (50ms)'
-                                          );
                                           this.requestUpdate();
                                         }, 50);
 
                                         setTimeout(() => {
-                                          console.log(
-                                            'Second UI refresh after attribute change (150ms)'
-                                          );
                                           this.requestUpdate();
                                         }, 150);
 
                                         setTimeout(() => {
-                                          console.log(
-                                            'Third UI refresh after attribute change (300ms)'
-                                          );
                                           this.requestUpdate();
                                         }, 300);
 
                                         setTimeout(() => {
-                                          console.log(
-                                            'Final UI refresh after attribute change (500ms)'
-                                          );
                                           this.requestUpdate();
 
                                           // Remove the success class after animation completes
@@ -2037,7 +2626,6 @@ export class GlobalDesignTab extends LitElement {
                                 </div>
                               `;
                             } else {
-                              console.log('🔵 RENDERING STATE MODE UI');
                               return html`
                                 <div
                                   class="property-group state-value-container"
@@ -2096,10 +2684,22 @@ export class GlobalDesignTab extends LitElement {
 
             <!-- Intro/Outro Animations -->
             <div class="property-section">
-              <h5>Intro & Outro Animations</h5>
+              <h5>
+                ${localize(
+                  'editor.design.intro_outro_animations',
+                  this.hass?.locale?.language || 'en',
+                  'Intro & Outro Animations'
+                )}
+              </h5>
               <div class="two-column-grid">
                 <div class="property-group">
-                  <label>Intro Animation:</label>
+                  <label
+                    >${localize(
+                      'editor.design.intro_animation',
+                      this.hass?.locale?.language || 'en',
+                      'Intro Animation'
+                    )}:</label
+                  >
                   <select
                     .value=${this.designProperties.intro_animation || 'none'}
                     @change=${(e: Event) =>
@@ -2109,7 +2709,9 @@ export class GlobalDesignTab extends LitElement {
                       )}
                     class="property-select"
                   >
-                    <option value="none">None</option>
+                    <option value="none">
+                      ${localize('editor.design.none', this.hass?.locale?.language || 'en', 'None')}
+                    </option>
                     <option value="fadeIn">Fade In</option>
                     <option value="slideInUp">Slide In Up</option>
                     <option value="slideInDown">Slide In Down</option>
@@ -2124,7 +2726,13 @@ export class GlobalDesignTab extends LitElement {
                 </div>
 
                 <div class="property-group">
-                  <label>Outro Animation:</label>
+                  <label
+                    >${localize(
+                      'editor.design.outro_animation',
+                      this.hass?.locale?.language || 'en',
+                      'Outro Animation'
+                    )}:</label
+                  >
                   <select
                     .value=${this.designProperties.outro_animation || 'none'}
                     @change=${(e: Event) =>
@@ -2134,7 +2742,9 @@ export class GlobalDesignTab extends LitElement {
                       )}
                     class="property-select"
                   >
-                    <option value="none">None</option>
+                    <option value="none">
+                      ${localize('editor.design.none', this.hass?.locale?.language || 'en', 'None')}
+                    </option>
                     <option value="fadeOut">Fade Out</option>
                     <option value="slideOutUp">Slide Out Up</option>
                     <option value="slideOutDown">Slide Out Down</option>
@@ -2152,7 +2762,13 @@ export class GlobalDesignTab extends LitElement {
               <!-- Animation Settings -->
               <div class="three-column-grid">
                 <div class="property-group">
-                  <label>Duration:</label>
+                  <label
+                    >${localize(
+                      'editor.design.duration',
+                      this.hass?.locale?.language || 'en',
+                      'Duration'
+                    )}:</label
+                  >
                   <input
                     type="text"
                     .value=${this.designProperties.animation_duration || ''}
@@ -2167,7 +2783,13 @@ export class GlobalDesignTab extends LitElement {
                 </div>
 
                 <div class="property-group">
-                  <label>Delay:</label>
+                  <label
+                    >${localize(
+                      'editor.design.delay',
+                      this.hass?.locale?.language || 'en',
+                      'Delay'
+                    )}:</label
+                  >
                   <input
                     type="text"
                     .value=${this.designProperties.animation_delay || ''}
@@ -2179,7 +2801,13 @@ export class GlobalDesignTab extends LitElement {
                 </div>
 
                 <div class="property-group">
-                  <label>Timing:</label>
+                  <label
+                    >${localize(
+                      'editor.design.timing',
+                      this.hass?.locale?.language || 'en',
+                      'Timing'
+                    )}:</label
+                  >
                   <select
                     .value=${this.designProperties.animation_timing || 'ease'}
                     @change=${(e: Event) =>
@@ -2189,7 +2817,9 @@ export class GlobalDesignTab extends LitElement {
                       )}
                     class="property-select"
                   >
-                    <option value="ease">Ease</option>
+                    <option value="ease">
+                      ${localize('editor.design.ease', this.hass?.locale?.language || 'en', 'Ease')}
+                    </option>
                     <option value="linear">Linear</option>
                     <option value="ease-in">Ease In</option>
                     <option value="ease-out">Ease Out</option>
@@ -3434,6 +4064,82 @@ export class GlobalDesignTab extends LitElement {
         animation: rotateOut var(--animation-duration, 0.6s) var(--animation-timing, ease)
           var(--animation-delay, 0s) both;
       }
+
+      /* Input with reset button styles */
+      .input-with-reset {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .input-with-reset .property-input {
+        flex: 1;
+      }
+
+      .reset-btn {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
+      }
     `;
+  }
+
+  private _getBackgroundSizeDropdownValue(backgroundSize: string | undefined): string {
+    if (!backgroundSize) {
+      return 'cover';
+    }
+
+    // If it's one of the preset values, return it as-is
+    if (['cover', 'contain', 'auto'].includes(backgroundSize)) {
+      return backgroundSize;
+    }
+
+    // If it's 'custom' or any other custom value, return 'custom'
+    return 'custom';
+  }
+
+  private _getCustomSizeValue(
+    backgroundSize: string | undefined,
+    dimension: 'width' | 'height'
+  ): string {
+    if (!backgroundSize || ['cover', 'contain', 'auto'].includes(backgroundSize)) {
+      return '';
+    }
+
+    // If it's just 'custom' without actual values, return empty
+    if (backgroundSize === 'custom') {
+      return '';
+    }
+
+    // Parse custom size value like "100px 200px" or "50% auto"
+    const parts = backgroundSize.split(' ');
+    if (dimension === 'width') {
+      return parts[0] || '';
+    } else if (dimension === 'height') {
+      return parts[1] || parts[0] || '';
+    }
+    return '';
   }
 }

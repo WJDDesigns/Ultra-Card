@@ -1,5 +1,6 @@
-import { TemplateResult, html } from 'lit';
+import { LitElement, html, css, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
+import { localize } from '../localize/localize';
 
 export interface UltraLinkConfig {
   tap_action?: TapActionConfig;
@@ -20,8 +21,14 @@ export interface TapActionConfig {
   entity?: string;
   navigation_path?: string;
   url_path?: string;
+  // Modern perform-action property (preferred)
+  perform_action?: string;
+  // Legacy service property (for backward compatibility)
   service?: string;
-  service_data?: Record<string, any>;
+  target?: Record<string, any>; // Home Assistant action target
+  data?: Record<string, any>; // Modern data property for perform-action
+  service_data?: Record<string, any>; // Legacy service data property
+  [key: string]: any; // Allow additional HA action properties
 }
 
 export class UltraLinkComponent {
@@ -29,93 +36,100 @@ export class UltraLinkComponent {
     hass: HomeAssistant,
     config: UltraLinkConfig,
     updateConfig: (updates: Partial<UltraLinkConfig>) => void,
-    title: string = 'Link Configuration'
+    title?: string
   ): TemplateResult {
+    const lang = hass.locale?.language || 'en';
+    const localizedTitle = title || localize('editor.actions.title', lang, 'Link Configuration');
     return html`
-      <div class="ultra-link-component">
+      <div class="ultra-link-config">
         <style>
-          /* Hide redundant field labels from ha-form */
-          .ultra-clean-form ha-form .mdc-form-field > label,
-          .ultra-clean-form ha-form .mdc-text-field > label,
-          .ultra-clean-form ha-form .mdc-floating-label,
-          .ultra-clean-form ha-form .mdc-notched-outline__leading,
-          .ultra-clean-form ha-form .mdc-notched-outline__notch,
-          .ultra-clean-form ha-form .mdc-notched-outline__trailing,
-          .ultra-clean-form ha-form .mdc-floating-label--float-above,
-          .ultra-clean-form ha-form label[for],
-          .ultra-clean-form ha-form .ha-form-label {
-            display: none !important;
+          .ultra-link-config {
+            padding: 16px;
           }
 
-          /* Style the form inputs without labels */
-          .ultra-clean-form ha-form .mdc-text-field,
-          .ultra-clean-form ha-form .mdc-select,
-          .ultra-clean-form ha-form ha-entity-picker,
-          .ultra-clean-form ha-form ha-icon-picker {
-            margin-top: 0 !important;
-          }
-
-          /* Ensure input fields have proper spacing */
-          .ultra-clean-form ha-form .mdc-text-field--outlined .mdc-notched-outline {
-            border-radius: 8px;
-          }
-
-          /* Remove any default margins from form elements */
-          .ultra-clean-form ha-form > * {
-            margin: 0 !important;
-          }
-
-          /* Style field titles and descriptions */
           .field-title {
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            color: var(--primary-text-color) !important;
-            margin-bottom: 4px !important;
-            display: block !important;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
           }
 
           .field-description {
-            font-size: 13px !important;
-            color: var(--secondary-text-color) !important;
-            margin-bottom: 12px !important;
-            display: block !important;
-            opacity: 0.8 !important;
-            line-height: 1.4 !important;
+            font-size: 13px;
+            font-weight: 400;
+            margin-bottom: 16px;
+            color: var(--secondary-text-color);
+            line-height: 1.4;
           }
 
-          .section-title {
-            font-size: 18px !important;
-            font-weight: 700 !important;
-            color: var(--primary-color) !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
+          .behavior-group {
+            margin-bottom: 24px;
+          }
+
+          /* Hide unwanted form elements */
+          .ultra-link-config ha-form {
+            display: block;
+            margin: 0;
+            padding: 0;
+          }
+
+          /* Hide redundant labels */
+          .ultra-link-config ha-form .mdc-form-field > label,
+          .ultra-link-config ha-form .mdc-text-field > label,
+          .ultra-link-config ha-form .mdc-floating-label,
+          .ultra-link-config ha-form .mdc-notched-outline__leading,
+          .ultra-link-config ha-form .mdc-notched-outline__notch,
+          .ultra-link-config ha-form .mdc-notched-outline__trailing,
+          .ultra-link-config ha-form .mdc-floating-label--float-above,
+          .ultra-link-config ha-form label[for],
+          .ultra-link-config ha-form .ha-form-label,
+          .ultra-link-config ha-form .form-label {
+            display: none !important;
+          }
+
+          /* Hide labels containing underscores */
+          .ultra-link-config ha-form label[data-label*='_'],
+          .ultra-link-config ha-form .label-text:contains('_'),
+          .ultra-link-config label:contains('_') {
+            display: none !important;
+          }
+
+          /* Additional safeguards for underscore labels */
+          .ultra-link-config ha-form .mdc-text-field-character-counter,
+          .ultra-link-config ha-form .mdc-text-field-helper-text,
+          .ultra-link-config ha-form mwc-formfield,
+          .ultra-link-config ha-form .formfield {
+            display: none !important;
           }
         </style>
 
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
-        >
-          ${title}
+        <div class="field-title" style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">
+          ${localizedTitle}
         </div>
         <div
           class="field-description"
           style="font-size: 13px; font-weight: 400; margin-bottom: 16px; color: var(--secondary-text-color);"
         >
-          Configure what happens when users interact with this element. Choose different actions for
-          tap, hold, and double-tap gestures.
+          ${localize(
+            'editor.actions.description',
+            lang,
+            'Configure what happens when users interact with this element. Choose different actions for tap, hold, and double-tap gestures.'
+          )}
         </div>
 
         <!-- Tap Behavior -->
         <div class="tap-behavior-group" style="margin-bottom: 24px;">
           <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-            Tap Behavior
+            ${localize('editor.actions.tap_behavior', lang, 'Tap Behavior')}
           </div>
           <div
             class="field-description"
             style="font-size: 13px; font-weight: 400; margin-bottom: 12px; color: var(--secondary-text-color);"
           >
-            Action to perform when the element is tapped/clicked.
+            ${localize(
+              'editor.actions.tap_behavior_desc',
+              lang,
+              'Action to perform when the element is tapped/clicked.'
+            )}
           </div>
           ${UltraLinkComponent.renderCleanForm(
             hass,
@@ -126,14 +140,13 @@ export class UltraLinkComponent {
                 selector: {
                   select: {
                     options: [
-                      { value: 'default', label: 'Default' },
+                      { value: 'nothing', label: 'Nothing' },
                       { value: 'more-info', label: 'More info' },
                       { value: 'toggle', label: 'Toggle' },
                       { value: 'navigate', label: 'Navigate' },
                       { value: 'url', label: 'URL' },
                       { value: 'perform-action', label: 'Perform action' },
                       { value: 'assist', label: 'Assist' },
-                      { value: 'nothing', label: 'Nothing' },
                     ],
                     mode: 'dropdown',
                   },
@@ -147,7 +160,7 @@ export class UltraLinkComponent {
           )}
           ${UltraLinkComponent.renderActionFields(
             hass,
-            config.tap_action || { action: 'default' },
+            config.tap_action || { action: 'nothing' },
             updates => {
               const newTapAction = { ...config.tap_action, ...updates };
               updateConfig({ tap_action: newTapAction });
@@ -158,13 +171,17 @@ export class UltraLinkComponent {
         <!-- Hold Behavior -->
         <div class="hold-behavior-group" style="margin-bottom: 24px;">
           <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-            Hold Behavior
+            ${localize('editor.actions.hold_behavior', lang, 'Hold Behavior')}
           </div>
           <div
             class="field-description"
             style="font-size: 13px; font-weight: 400; margin-bottom: 12px; color: var(--secondary-text-color);"
           >
-            Action to perform when the element is pressed and held.
+            ${localize(
+              'editor.actions.hold_behavior_desc',
+              lang,
+              'Action to perform when the element is pressed and held.'
+            )}
           </div>
           ${UltraLinkComponent.renderCleanForm(
             hass,
@@ -175,14 +192,13 @@ export class UltraLinkComponent {
                 selector: {
                   select: {
                     options: [
-                      { value: 'default', label: 'Default' },
+                      { value: 'nothing', label: 'Nothing' },
                       { value: 'more-info', label: 'More info' },
                       { value: 'toggle', label: 'Toggle' },
                       { value: 'navigate', label: 'Navigate' },
                       { value: 'url', label: 'URL' },
                       { value: 'perform-action', label: 'Perform action' },
                       { value: 'assist', label: 'Assist' },
-                      { value: 'nothing', label: 'Nothing' },
                     ],
                     mode: 'dropdown',
                   },
@@ -196,7 +212,7 @@ export class UltraLinkComponent {
           )}
           ${UltraLinkComponent.renderActionFields(
             hass,
-            config.hold_action || { action: 'default' },
+            config.hold_action || { action: 'nothing' },
             updates => {
               const newHoldAction = { ...config.hold_action, ...updates };
               updateConfig({ hold_action: newHoldAction });
@@ -207,13 +223,17 @@ export class UltraLinkComponent {
         <!-- Double Tap Behavior -->
         <div class="double-tap-behavior-group">
           <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-            Double Tap Behavior
+            ${localize('editor.actions.double_tap_behavior', lang, 'Double Tap Behavior')}
           </div>
           <div
             class="field-description"
             style="font-size: 13px; font-weight: 400; margin-bottom: 12px; color: var(--secondary-text-color);"
           >
-            Action to perform when the element is double-tapped/clicked.
+            ${localize(
+              'editor.actions.double_tap_behavior_desc',
+              lang,
+              'Action to perform when the element is double-tapped/clicked.'
+            )}
           </div>
           ${UltraLinkComponent.renderCleanForm(
             hass,
@@ -224,14 +244,13 @@ export class UltraLinkComponent {
                 selector: {
                   select: {
                     options: [
-                      { value: 'default', label: 'Default' },
+                      { value: 'nothing', label: 'Nothing' },
                       { value: 'more-info', label: 'More info' },
                       { value: 'toggle', label: 'Toggle' },
                       { value: 'navigate', label: 'Navigate' },
                       { value: 'url', label: 'URL' },
                       { value: 'perform-action', label: 'Perform action' },
                       { value: 'assist', label: 'Assist' },
-                      { value: 'nothing', label: 'Nothing' },
                     ],
                     mode: 'dropdown',
                   },
@@ -248,7 +267,7 @@ export class UltraLinkComponent {
           )}
           ${UltraLinkComponent.renderActionFields(
             hass,
-            config.double_tap_action || { action: 'default' },
+            config.double_tap_action || { action: 'nothing' },
             updates => {
               const newDoubleAction = { ...config.double_tap_action, ...updates };
               updateConfig({ double_tap_action: newDoubleAction });
@@ -286,6 +305,9 @@ export class UltraLinkComponent {
     updateAction: (updates: Partial<TapActionConfig>) => void
   ): TemplateResult {
     switch (action.action) {
+      case 'default':
+        // No-op; default platform behavior or nothing
+        break;
       case 'more-info':
       case 'toggle':
         return html`
@@ -307,6 +329,7 @@ export class UltraLinkComponent {
                 {
                   name: 'entity',
                   selector: { entity: {} },
+                  label: 'Entity',
                 },
               ],
               (e: CustomEvent) => updateAction({ entity: e.detail.value.entity })
@@ -368,7 +391,7 @@ export class UltraLinkComponent {
               class="field-description"
               style="font-size: 12px; font-weight: 400; margin-bottom: 8px; color: var(--secondary-text-color);"
             >
-              Enter the service to call (e.g., light.turn_on).
+              Choose the service to call or enter a custom service.
             </div>
             ${UltraLinkComponent.renderCleanForm(
               hass,
@@ -376,11 +399,118 @@ export class UltraLinkComponent {
               [
                 {
                   name: 'service',
-                  selector: { text: {} },
+                  selector: {
+                    select: {
+                      options: [
+                        // Home Assistant Core Services
+                        { value: 'homeassistant.restart', label: 'Restart Home Assistant' },
+                        { value: 'homeassistant.stop', label: 'Stop Home Assistant' },
+                        { value: 'homeassistant.reload_core_config', label: 'Reload Core Config' },
+                        {
+                          value: 'homeassistant.reload_config_entry',
+                          label: 'Reload Config Entry',
+                        },
+                        { value: 'homeassistant.update_entity', label: 'Update Entity' },
+
+                        // System Services
+                        { value: 'system_log.clear', label: 'Clear System Log' },
+                        { value: 'recorder.purge', label: 'Purge Recorder' },
+                        { value: 'hassio.host_reboot', label: 'Reboot Host System' },
+                        { value: 'hassio.host_shutdown', label: 'Shutdown Host System' },
+
+                        // Light Services
+                        { value: 'light.turn_on', label: 'Turn On Light' },
+                        { value: 'light.turn_off', label: 'Turn Off Light' },
+                        { value: 'light.toggle', label: 'Toggle Light' },
+
+                        // Switch Services
+                        { value: 'switch.turn_on', label: 'Turn On Switch' },
+                        { value: 'switch.turn_off', label: 'Turn Off Switch' },
+                        { value: 'switch.toggle', label: 'Toggle Switch' },
+
+                        // Climate Services
+                        { value: 'climate.set_temperature', label: 'Set Temperature' },
+                        { value: 'climate.turn_on', label: 'Turn On Climate' },
+                        { value: 'climate.turn_off', label: 'Turn Off Climate' },
+
+                        // Media Player Services
+                        { value: 'media_player.play_media', label: 'Play Media' },
+                        { value: 'media_player.media_play', label: 'Media Play' },
+                        { value: 'media_player.media_pause', label: 'Media Pause' },
+                        { value: 'media_player.media_stop', label: 'Media Stop' },
+                        { value: 'media_player.volume_set', label: 'Set Volume' },
+
+                        // Automation Services
+                        { value: 'automation.trigger', label: 'Trigger Automation' },
+                        { value: 'automation.turn_on', label: 'Enable Automation' },
+                        { value: 'automation.turn_off', label: 'Disable Automation' },
+
+                        // Script Services
+                        { value: 'script.turn_on', label: 'Run Script' },
+
+                        // Scene Services
+                        { value: 'scene.turn_on', label: 'Activate Scene' },
+
+                        // Cover Services
+                        { value: 'cover.open_cover', label: 'Open Cover' },
+                        { value: 'cover.close_cover', label: 'Close Cover' },
+                        { value: 'cover.toggle', label: 'Toggle Cover' },
+
+                        // Lock Services
+                        { value: 'lock.lock', label: 'Lock' },
+                        { value: 'lock.unlock', label: 'Unlock' },
+
+                        // Notify Services
+                        { value: 'notify.persistent_notification', label: 'Send Notification' },
+
+                        // Input Services
+                        { value: 'input_boolean.toggle', label: 'Toggle Input Boolean' },
+                        { value: 'input_select.select_option', label: 'Select Input Option' },
+
+                        // Custom option
+                        { value: 'custom', label: 'Custom Service...' },
+                      ],
+                      mode: 'dropdown',
+                      custom_value: true,
+                    },
+                  },
                 },
               ],
-              (e: CustomEvent) => updateAction({ service: e.detail.value.service })
+              (e: CustomEvent) => {
+                const serviceValue = e.detail.value?.service || e.detail.value;
+                updateAction({ service: serviceValue });
+              }
             )}
+
+            <div style="margin-top: 12px;">
+              <div
+                class="field-title"
+                style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
+              >
+                Target Entity (optional)
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 12px; font-weight: 400; margin-bottom: 8px; color: var(--secondary-text-color);"
+              >
+                Choose an entity to target with this service call.
+              </div>
+              ${UltraLinkComponent.renderCleanForm(
+                hass,
+                { entity: action.entity || '' },
+                [
+                  {
+                    name: 'entity',
+                    selector: { entity: {} },
+                    label: 'Entity',
+                  },
+                ],
+                (e: CustomEvent) => {
+                  const entityValue = e.detail.value?.entity || e.detail.value;
+                  updateAction({ entity: entityValue });
+                }
+              )}
+            </div>
 
             <div style="margin-top: 12px;">
               <div
@@ -480,13 +610,16 @@ export class UltraLinkComponent {
 
   static getDefaultConfig(): UltraLinkConfig {
     return {
-      tap_action: { action: 'default' },
-      hold_action: { action: 'default' },
-      double_tap_action: { action: 'default' },
+      tap_action: { action: 'nothing' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
     };
   }
 
   static handleAction(action: TapActionConfig, hass: HomeAssistant, element?: HTMLElement): void {
+    // Home Assistant stores perform-action services under 'perform_action' key
+    const serviceToCall = action.service || action.perform_action;
+
     switch (action.action) {
       case 'more-info':
         if (action.entity) {
@@ -501,7 +634,30 @@ export class UltraLinkComponent {
 
       case 'toggle':
         if (action.entity) {
+          // Legacy entity-based toggle
           hass.callService('homeassistant', 'toggle', { entity_id: action.entity });
+        } else if (action.target) {
+          // Modern target-based toggle (supports device_id, area_id, etc.)
+          const serviceData: any = {};
+
+          // Handle different target types
+          if (action.target.entity_id) {
+            serviceData.entity_id = action.target.entity_id;
+          }
+          if (action.target.device_id) {
+            serviceData.device_id = action.target.device_id;
+          }
+          if (action.target.area_id) {
+            serviceData.area_id = action.target.area_id;
+          }
+          if (action.target.floor_id) {
+            serviceData.floor_id = action.target.floor_id;
+          }
+          if (action.target.label_id) {
+            serviceData.label_id = action.target.label_id;
+          }
+
+          hass.callService('homeassistant', 'toggle', serviceData);
         }
         break;
 
@@ -524,11 +680,53 @@ export class UltraLinkComponent {
         break;
 
       case 'perform-action':
-        if (action.service) {
-          const [domain, service] = action.service.split('.');
+        if (serviceToCall) {
+          const [domain, service] = serviceToCall.split('.');
           if (domain && service) {
-            hass.callService(domain, service, action.service_data || {});
+            // Enhanced service data handling for better target support
+            // Support both modern 'data' and legacy 'service_data' properties
+            let serviceData = { ...(action.data || action.service_data) };
+
+            // If entity is specified but not in service_data, add it
+            if (action.entity && !serviceData.entity_id) {
+              serviceData.entity_id = action.entity;
+            }
+
+            // Handle all target types from HA action system
+            if (action.target) {
+              if (action.target.entity_id && !serviceData.entity_id) {
+                serviceData.entity_id = action.target.entity_id;
+              }
+              if (action.target.device_id && !serviceData.device_id) {
+                serviceData.device_id = action.target.device_id;
+              }
+              if (action.target.area_id && !serviceData.area_id) {
+                serviceData.area_id = action.target.area_id;
+              }
+              if (action.target.floor_id && !serviceData.floor_id) {
+                serviceData.floor_id = action.target.floor_id;
+              }
+              if (action.target.label_id && !serviceData.label_id) {
+                serviceData.label_id = action.target.label_id;
+              }
+            }
+
+            try {
+              hass.callService(domain, service, serviceData);
+            } catch (error) {
+              console.error(`❌ Ultra Card: Failed to execute service ${serviceToCall}:`, error);
+            }
+          } else {
+            console.warn(
+              `⚠️ Ultra Card: Invalid service format "${serviceToCall}". Expected format: domain.service`
+            );
           }
+        } else {
+          console.warn(`⚠️ Ultra Card: No service specified for perform-action`, {
+            action: action,
+            serviceProperty: action.service,
+            performActionProperty: action.perform_action,
+          });
         }
         break;
 
@@ -541,7 +739,6 @@ export class UltraLinkComponent {
         break;
 
       case 'nothing':
-      case 'default':
       default:
         // Do nothing
         break;

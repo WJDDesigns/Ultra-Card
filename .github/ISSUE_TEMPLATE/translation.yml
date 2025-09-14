@@ -1,0 +1,54 @@
+name: Translation Request/Issue
+description: Request a new language or report translation issues
+title: '[Translation] '
+labels: ['translation', 'community']
+body:
+  - type: dropdown
+    id: request-type
+    attributes:
+      label: Request Type
+      description: What type of translation request is this?
+      options:
+        - New language request
+        - Translation error/fix
+        - Translation improvement
+        - Translation question
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Which language is this about?
+      placeholder: e.g., Portuguese, Russian, Japanese
+    validations:
+      required: true
+
+  - type: input
+    id: language-code
+    attributes:
+      label: Language Code
+      description: ISO 639-1 language code
+      placeholder: e.g., pt, ru, ja
+    validations:
+      required: false
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Provide details about your request or the translation issue
+      placeholder: Describe what needs to be translated, corrected, or improved
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: volunteer
+    attributes:
+      label: Contribution
+      description: Are you volunteering to help?
+      options:
+        - label: I can help translate this language
+        - label: I am a native speaker
+        - label: I have experience with Home Assistant terminology

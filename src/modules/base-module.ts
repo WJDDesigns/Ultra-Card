@@ -1,6 +1,10 @@
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig } from '../types';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { GlobalDesignTab } from '../tabs/global-design-tab';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { UcFormUtils } from '../utils/uc-form-utils';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -20,7 +24,7 @@ export interface UltraModule {
   metadata: ModuleMetadata;
 
   // Create a default instance of this module
-  createDefault(id?: string): CardModule;
+  createDefault(id?: string, hass?: HomeAssistant): CardModule;
 
   // Render the module's general settings tab
   renderGeneralTab(
@@ -46,6 +50,14 @@ export interface UltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult;
 
+  // Optional: Render the module's design settings tab
+  renderDesignTab?(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult;
+
   // Render the module preview/content
   renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
 
@@ -63,7 +75,7 @@ export interface UltraModule {
 export abstract class BaseUltraModule implements UltraModule {
   abstract metadata: ModuleMetadata;
 
-  abstract createDefault(id?: string): CardModule;
+  abstract createDefault(id?: string, hass?: HomeAssistant): CardModule;
   abstract renderGeneralTab(
     module: CardModule,
     hass: HomeAssistant,
@@ -71,6 +83,36 @@ export abstract class BaseUltraModule implements UltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult;
   abstract renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+
+  // Default Actions tab implementation - can be overridden
+  renderActionsTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalActionsTab.render(module, hass, updates => updateModule(updates));
+  }
+
+  // Default Other/Logic tab implementation - can be overridden
+  renderOtherTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalLogicTab.render(module, hass, updates => updateModule(updates));
+  }
+
+  // Default Design tab implementation - can be overridden
+  renderDesignTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalDesignTab.render(module, hass, updates => updateModule(updates));
+  }
 
   // Default validation - can be overridden
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -134,19 +176,25 @@ export abstract class BaseUltraModule implements UltraModule {
     label: string,
     value: number,
     onChange: (value: number) => void,
-    options: { min?: number; max?: number; step?: number } = {},
+    options: { min?: number; max?: number; step?: number; defaultValue?: number } = {},
     description?: string
   ): TemplateResult {
+    const defaultVal = options.defaultValue ?? 0;
     return this.renderFormField(
       label,
       html`
         <input
           type="number"
-          .value=${value || 0}
+          .value=${value ?? ''}
+          placeholder=${defaultVal.toString()}
           min=${options.min || 0}
           max=${options.max || 1000}
           step=${options.step || 1}
-          @input=${(e: Event) => onChange(Number((e.target as HTMLInputElement).value))}
+          @input=${(e: Event) => {
+            const target = e.target as HTMLInputElement;
+            const inputValue = target.value.trim();
+            onChange(inputValue === '' ? defaultVal : Number(inputValue));
+          }}
         />
       `,
       description
@@ -344,4 +392,62 @@ export abstract class BaseUltraModule implements UltraModule {
       </div>
     `;
   }
+
+  // ======== ULTRA CARD FORM UTILITIES ========
+  // Clean form rendering without CSS label hiding
+
+  /**
+   * Ultra Card form renderer
+   */
+  protected renderUcForm = (
+    hass: HomeAssistant,
+    data: Record<string, any>,
+    schema: any[],
+    onChange: (e: CustomEvent) => void,
+    hideLabels: boolean = true
+  ) => UcFormUtils.renderForm(hass, data, schema, onChange, hideLabels);
+
+  /**
+   * Field section with custom title/description + clean form
+   */
+  protected renderFieldSection = (
+    title: string,
+    description: string,
+    hass: HomeAssistant,
+    data: Record<string, any>,
+    schema: any[],
+    onChange: (e: CustomEvent) => void
+  ) => UcFormUtils.renderFieldSection(title, description, hass, data, schema, onChange);
+
+  /**
+   * Settings section with multiple fields
+   */
+  protected renderSettingsSection = (
+    title: string,
+    description: string,
+    fields: Array<{
+      title: string;
+      description: string;
+      hass: HomeAssistant;
+      data: Record<string, any>;
+      schema: any[];
+      onChange: (e: CustomEvent) => void;
+    }>
+  ) => UcFormUtils.renderSettingsSection(title, description, fields);
+
+  /**
+   * Inject clean form styles
+   */
+  protected injectUcFormStyles = () => UcFormUtils.injectCleanFormStyles();
+
+  // Schema shortcuts for common field types
+  protected entityField = UcFormUtils.entity;
+  protected textField = UcFormUtils.text;
+  protected selectField = UcFormUtils.select;
+  protected iconField = UcFormUtils.icon;
+  protected booleanField = UcFormUtils.boolean;
+  protected numberField = UcFormUtils.number;
+  protected colorField = UcFormUtils.color;
+  protected gridField = UcFormUtils.grid;
+  protected expandableField = UcFormUtils.expandable;
 }

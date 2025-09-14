@@ -2,7 +2,13 @@ import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig } from '../types';
+import { UltraLinkComponent } from '../components/ultra-link';
+import { getImageUrl } from '../utils/image-upload';
 import { getModuleRegistry } from './module-registry';
+import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { localize } from '../localize/localize';
+import { logicService } from '../services/logic-service';
 
 // Use the existing HorizontalModule interface from types
 import { HorizontalModule } from '../types';
@@ -11,22 +17,31 @@ export class UltraHorizontalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'horizontal',
     title: 'Horizontal Layout',
-    description: 'Arrange modules in rows',
-    author: 'Ultra Card Team',
+    description:
+      'Arrange modules in rows with flexible horizontal and vertical alignment and spacing',
+    author: 'WJD Designs',
     version: '1.0.0',
-    icon: 'mdi:view-sequential',
+    icon: 'mdi:view-column',
     category: 'layout',
-    tags: ['layout', 'horizontal', 'alignment', 'container'],
+    tags: ['layout', 'horizontal', 'vertical', 'alignment', 'container', 'flexbox'],
   };
 
-  createDefault(id?: string): HorizontalModule {
+  createDefault(id?: string, hass?: HomeAssistant): HorizontalModule {
     return {
       id: id || this.generateId('horizontal'),
       type: 'horizontal',
-      alignment: 'left',
+      alignment: 'center', // Default horizontal alignment to center
+      vertical_alignment: 'center', // Default vertical alignment to center
       gap: 0.7,
       wrap: false,
       modules: [],
+      // Global action configuration
+      tap_action: { action: 'nothing' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
+      // Logic (visibility) defaults
+      display_mode: 'always',
+      display_conditions: [],
     };
   }
 
@@ -37,126 +52,447 @@ export class UltraHorizontalModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const horizontalModule = module as HorizontalModule;
-
-    const alignmentOptions = [
-      { value: 'left', label: 'Left' },
-      { value: 'center', label: 'Center' },
-      { value: 'right', label: 'Right' },
-      { value: 'space-between', label: 'Space Between' },
-      { value: 'space-around', label: 'Space Around' },
-      { value: 'justify', label: 'Justify' },
-    ];
-
-    const gapOptions = [
-      { value: '0', label: '0rem' },
-      { value: '0.2', label: '0.2rem' },
-      { value: '0.4', label: '0.4rem' },
-      { value: '0.6', label: '0.6rem' },
-      { value: '0.7', label: '0.7rem' },
-      { value: '0.8', label: '0.8rem' },
-      { value: '1.0', label: '1.0rem' },
-      { value: '1.2', label: '1.2rem' },
-      { value: '1.5', label: '1.5rem' },
-      { value: '2.0', label: '2.0rem' },
-    ];
+    const lang = hass?.locale?.language || 'en';
 
     return html`
-      <div class="module-general-settings">
-        <!-- Horizontal Alignment -->
-        <div class="form-group">
-          <label class="form-label">Items Horizontal Alignment</label>
-          <div class="alignment-buttons horizontal-alignment">
-            ${alignmentOptions.map(
-              option => html`
-                <button
-                  type="button"
-                  class="alignment-button ${horizontalModule.alignment === option.value
-                    ? 'active'
-                    : ''}"
-                  @click=${() => updateModule({ alignment: option.value as any })}
-                  title="${option.label}"
-                >
-                  ${this.getHorizontalAlignmentIcon(option.value)}
-                </button>
-              `
-            )}
-          </div>
-        </div>
+      ${this.injectUcFormStyles()}
 
-        <!-- Gap between Items -->
-        <div class="form-group">
-          <label class="form-label">Gap between Items</label>
-          <div class="gap-control">
-            ${this.renderSelect(
-              '',
-              horizontalModule.gap?.toString() || '0.7',
-              gapOptions,
-              value => updateModule({ gap: parseFloat(value) }),
-              'Space between horizontal items'
-            )}
-            <div class="gap-slider">
-              <input
-                type="range"
-                min="0"
-                max="3"
-                step="0.1"
-                .value=${horizontalModule.gap.toString()}
-                @input=${(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  updateModule({ gap: parseFloat(target.value) });
+      <div class="module-general-settings">
+        <!-- Layout Configuration Section -->
+        ${this.renderSettingsSection(
+          localize('editor.horizontal.layout.title', lang, 'Layout Configuration'),
+          localize(
+            'editor.horizontal.layout.desc',
+            lang,
+            'Configure how items are arranged horizontally within the container.'
+          ),
+          [
+            {
+              title: localize(
+                'editor.horizontal.alignment.horizontal',
+                lang,
+                'Horizontal Alignment'
+              ),
+              description: localize(
+                'editor.horizontal.alignment.horizontal_desc',
+                lang,
+                'Choose how items are aligned horizontally within the container.'
+              ),
+              hass,
+              data: { alignment: horizontalModule.alignment || 'center' },
+              schema: [
+                this.selectField('alignment', [
+                  { value: 'left', label: localize('editor.common.left', lang, 'Left') },
+                  { value: 'center', label: localize('editor.common.center', lang, 'Center') },
+                  { value: 'right', label: localize('editor.common.right', lang, 'Right') },
+                  {
+                    value: 'space-between',
+                    label: localize('editor.common.space_between', lang, 'Space Between'),
+                  },
+                  {
+                    value: 'space-around',
+                    label: localize('editor.common.space_around', lang, 'Space Around'),
+                  },
+                  { value: 'justify', label: localize('editor.common.justify', lang, 'Justify') },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+            },
+            {
+              title: localize('editor.horizontal.alignment.vertical', lang, 'Vertical Alignment'),
+              description: localize(
+                'editor.horizontal.alignment.vertical_desc',
+                lang,
+                'Choose how items are aligned vertically within the container.'
+              ),
+              hass,
+              data: { vertical_alignment: horizontalModule.vertical_alignment || 'center' },
+              schema: [
+                this.selectField('vertical_alignment', [
+                  { value: 'top', label: localize('editor.common.top', lang, 'Top') },
+                  { value: 'center', label: localize('editor.common.center', lang, 'Center') },
+                  { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
+                  { value: 'stretch', label: localize('editor.common.stretch', lang, 'Stretch') },
+                  {
+                    value: 'baseline',
+                    label: localize('editor.common.baseline', lang, 'Baseline'),
+                  },
+                ]),
+              ],
+              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+            },
+          ]
+        )}
+
+        <!-- Allow Wrapping Toggle -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        >
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1;">
+              <div
+                class="field-title"
+                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+              >
+                ${localize('editor.horizontal.wrapping.title', lang, 'Allow Wrapping')}
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
+              >
+                ${localize(
+                  'editor.horizontal.wrapping.desc',
+                  lang,
+                  'Allow items to wrap to the next line when they exceed the container width.'
+                )}
+              </div>
+            </div>
+            <div style="margin-left: 16px;">
+              <ha-switch
+                .checked=${horizontalModule.wrap || false}
+                @change=${(e: Event) => {
+                  const target = e.target as any;
+                  updateModule({ wrap: target.checked });
                 }}
-                class="gap-range"
-              />
+              ></ha-switch>
             </div>
           </div>
         </div>
 
-        <!-- Allow Wrap -->
-        ${this.renderCheckbox(
-          'Allow move items to the next line',
-          horizontalModule.wrap || false,
-          checked => updateModule({ wrap: checked }),
-          "Allow items to wrap to the next line if they don't fit"
-        )}
+        <!-- Gap Between Items Field with Custom Slider -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.horizontal.gap.title', lang, 'Gap Configuration')}
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+            >
+              ${localize('editor.horizontal.gap.between_items', lang, 'Gap Between Items')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+            >
+              ${localize(
+                'editor.horizontal.gap.desc',
+                lang,
+                'Set the spacing between horizontal items (in rem units). Use negative values to overlap items.'
+              )}
+            </div>
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
+              <input
+                type="range"
+                class="gap-slider"
+                min="-5"
+                max="10"
+                step="0.1"
+                .value="${horizontalModule.gap || 0.7}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = parseFloat(target.value);
+                  updateModule({ gap: value });
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
+                min="-5"
+                max="10"
+                step="0.1"
+                .value="${horizontalModule.gap || 0.7}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = parseFloat(target.value);
+                  if (!isNaN(value)) {
+                    updateModule({ gap: value });
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const target = e.target as HTMLInputElement;
+                    const currentValue = parseFloat(target.value) || 0.7;
+                    const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
+                    const newValue = Math.max(-5, Math.min(10, currentValue + increment));
+                    const roundedValue = Math.round(newValue * 10) / 10;
+                    updateModule({ gap: roundedValue });
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => updateModule({ gap: 0.7 })}
+                title="${localize(
+                  'editor.fields.reset_default_value',
+                  lang,
+                  'Reset to default ({value})'
+                ).replace('{value}', '0.7')}"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
 
   renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     const horizontalModule = module as HorizontalModule;
+    const lang = hass?.locale?.language || 'en';
+    const moduleWithDesign = horizontalModule as any;
+    // Merge global design properties over module props for container rendering
+    const effective = { ...moduleWithDesign, ...(moduleWithDesign.design || {}) } as any;
     const hasChildren = horizontalModule.modules && horizontalModule.modules.length > 0;
+    // Wrapping should use flexbox wrap, not force column mode
+
+    // Container styles for positioning and effects
+    const gapValue = horizontalModule.gap || 0.7;
+    // Prefer centered horizontal alignment by default
+    const horizontalAlign =
+      horizontalModule.alignment !== undefined && horizontalModule.alignment !== null
+        ? horizontalModule.alignment
+        : 'center';
+
+    const containerStyles = {
+      padding: this.getPaddingCSS(effective),
+      margin: this.getMarginCSS(effective),
+      background: this.getBackgroundCSS(effective),
+      backgroundImage: this.getBackgroundImageCSS(effective, hass),
+      backgroundSize: effective.background_size || 'cover',
+      backgroundPosition: effective.background_position || 'center',
+      backgroundRepeat: effective.background_repeat || 'no-repeat',
+      border: effective.border_width ? this.getBorderCSS(effective) : 'none',
+      borderRadius: this.addPixelUnit(effective.border_radius) || '0',
+      // Respect explicit positioning/z-index so the entire row can overlay siblings (e.g., camera)
+      // If a z-index is provided but no position, use relative so z-index takes effect
+      position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
+      zIndex: (effective as any).z_index || 'auto',
+      // Respect sizing controls from design/global design
+      width: (effective as any).width || '100%',
+      height: (effective as any).height || undefined,
+      maxWidth: (effective as any).max_width || undefined,
+      minWidth: (effective as any).min_width || undefined,
+      maxHeight: (effective as any).max_height || undefined,
+      boxShadow: (effective as any).box_shadow || undefined,
+      backdropFilter: (effective as any).backdrop_filter || undefined,
+      clipPath: (effective as any).clip_path || undefined,
+      display: 'flex',
+      // Always use row direction for horizontal layout
+      flexDirection: 'row',
+      // Use horizontal alignment for main axis (justify-content)
+      justifyContent: this.getJustifyContent(horizontalAlign || 'center'),
+      // Only use gap for positive values, use negative margins for negative values
+      gap: gapValue >= 0 ? `${gapValue}rem` : '0',
+      // Enable wrapping when wrap option is true
+      flexWrap: horizontalModule.wrap ? 'wrap' : 'nowrap',
+      // Use vertical alignment for cross-axis (align-items)
+      alignItems: this.getAlignItems(horizontalModule.vertical_alignment || 'center'),
+      // width is set above via design props with sensible default
+      // Allow fully collapsed layouts when designers set 0 padding/margin
+      minHeight: (effective as any).min_height || '60px',
+      // Allow overlaps (e.g., negative margins) to render across siblings
+      overflowX: 'visible',
+      overflowY: 'visible',
+      boxSizing: 'border-box',
+    };
+
+    // Gesture handling variables
+    let clickTimeout: any = null;
+    let holdTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    // Handle gesture events for tap, hold, double-tap actions
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      isHolding = false;
+
+      // Start hold timer
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (horizontalModule.hold_action && horizontalModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            horizontalModule.hold_action as any,
+            hass,
+            e.target as HTMLElement
+          );
+        }
+      }, 500); // 500ms hold threshold
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Clear hold timer
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      // If this was a hold gesture, don't process as click
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      // Double click detection (within 300ms)
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        // This is a double click
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (
+          horizontalModule.double_tap_action &&
+          horizontalModule.double_tap_action.action !== 'nothing'
+        ) {
+          UltraLinkComponent.handleAction(
+            horizontalModule.double_tap_action as any,
+            hass,
+            e.target as HTMLElement
+          );
+        }
+      } else {
+        // This might be a single click, but wait to see if double click follows
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          // This is a single click
+          clickCount = 0;
+
+          // Execute tap action
+          if (horizontalModule.tap_action && horizontalModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              horizontalModule.tap_action as any,
+              hass,
+              e.target as HTMLElement
+            );
+          }
+        }, 300); // Wait 300ms to see if double click follows
+      }
+    };
+
+    // Get hover effect configuration from module design
+    const hoverEffect = (horizontalModule as any).design?.hover_effect;
+    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
     return html`
+      <style>
+        ${this.getStyles()}
+      </style>
       <div class="horizontal-module-preview">
         <div
-          class="horizontal-preview-content"
-          style="
-            display: flex;
-            flex-direction: row;
-            justify-content: ${this.getJustifyContent(horizontalModule.alignment)};
-            gap: ${horizontalModule.gap || 0.7}rem;
-            flex-wrap: ${horizontalModule.wrap ? 'wrap' : 'nowrap'};
-            align-items: flex-start;
-            width: 100%;
-            min-height: 60px;
-            padding: 8px;
-          "
+          class="horizontal-preview-content ${hoverEffectClass}"
+          style="${this.styleObjectToCss(
+            containerStyles
+          )}; cursor: ${(horizontalModule.tap_action &&
+            horizontalModule.tap_action.action !== 'nothing') ||
+          (horizontalModule.hold_action && horizontalModule.hold_action.action !== 'nothing') ||
+          (horizontalModule.double_tap_action &&
+            horizontalModule.double_tap_action.action !== 'nothing')
+            ? 'pointer'
+            : 'default'};"
+          data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
+          @pointerdown=${handlePointerDown}
+          @pointerup=${handlePointerUp}
         >
           ${hasChildren
-            ? horizontalModule.modules!.map(
-                (childModule, index) => html`
-                  <div
-                    class="child-module-preview"
-                    style="max-width: 100%; overflow: hidden; flex-shrink: 1;"
-                  >
-                    ${this._renderChildModulePreview(childModule, hass)}
-                  </div>
-                `
-              )
+            ? (() => {
+                logicService.setHass(hass);
+                const visibleChildren = horizontalModule.modules!.filter(cm => {
+                  const m: any = cm as any;
+                  const visibleByModule = logicService.evaluateModuleVisibility(m);
+                  const visibleByGlobal = logicService.evaluateLogicProperties({
+                    logic_entity: m?.design?.logic_entity,
+                    logic_attribute: m?.design?.logic_attribute,
+                    logic_operator: m?.design?.logic_operator,
+                    logic_value: m?.design?.logic_value,
+                  });
+                  return visibleByModule && visibleByGlobal;
+                });
+                return visibleChildren.map((childModule, index) => {
+                  // Apply negative margin for overlapping when gap is negative
+                  const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
+                  const isNegativeGap = gapValue < 0;
+
+                  // In horizontal layouts we want bars to take remaining width while
+                  // icons and other modules keep their natural width. If alignment is
+                  // 'justify' then allow all children to grow evenly.
+                  const isBar = (childModule as any)?.type === 'bar';
+                  const allowGrowForAll = horizontalModule.alignment === 'justify';
+                  const flexGrow = isBar ? 1 : allowGrowForAll ? 1 : 0;
+                  const flexShrink = isBar ? 1 : 0; // keep icons/text stable
+                  // Use content-based sizing for non-bar modules so they size to their content
+                  const flexBasis = isBar ? '0' : 'content';
+                  // Ensure bars always remain visible even if a sibling tries to expand
+                  const minWidth = isBar ? '80px' : '0';
+                  const childWidth = 'auto';
+                  const alignSelf = 'auto';
+
+                  return html`
+                    <div
+                      class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                      style="
+                          overflow: visible;
+                          flex-grow: ${flexGrow};
+                          flex-shrink: ${flexShrink};
+                          flex-basis: ${flexBasis};
+                          min-width: ${minWidth};
+                          width: ${childWidth};
+                          align-self: ${alignSelf};
+                          box-sizing: border-box;
+                          margin: ${childMargin};
+                          ${isNegativeGap
+                        ? 'padding: 0; border: none; background: transparent;'
+                        : ''}
+                        "
+                    >
+                      ${this._renderChildModulePreview(childModule, hass, moduleWithDesign)}
+                    </div>
+                  `;
+                });
+              })()
             : html`
                 <div class="empty-layout-message">
-                  <span>No modules added yet</span>
-                  <small>Add modules in the layout builder to see them here</small>
+                  <span
+                    >${localize(
+                      'editor.horizontal.empty.no_modules',
+                      lang,
+                      'No modules added yet'
+                    )}</span
+                  >
+                  <small
+                    >${localize(
+                      'editor.horizontal.empty.add_modules',
+                      lang,
+                      'Add modules in the layout builder to see them here'
+                    )}</small
+                  >
                 </div>
               `}
         </div>
@@ -164,44 +500,189 @@ export class UltraHorizontalModule extends BaseUltraModule {
     `;
   }
 
-  private _renderChildModulePreview(childModule: CardModule, hass: HomeAssistant): TemplateResult {
+  private _renderChildModulePreview(
+    childModule: CardModule,
+    hass: HomeAssistant,
+    layoutDesign?: any
+  ): TemplateResult {
+    // Apply layout design properties to child modules by creating a merged module
+    let moduleToRender = childModule;
+
+    if (layoutDesign) {
+      moduleToRender = this.applyLayoutDesignToChild(childModule, layoutDesign);
+    }
+
+    // Pass the horizontal layout's alignment to child modules if they don't have their own
+    const horizontalModule = layoutDesign as any;
+    if (horizontalModule && horizontalModule.alignment) {
+      const childAsAny = moduleToRender as any;
+      // Only override child alignment if it's not explicitly set
+      if (!childAsAny.alignment) {
+        childAsAny.alignment = horizontalModule.alignment;
+      }
+    }
+
+    // Respect logic visibility for child modules (same rules as top-level)
+    logicService.setHass(hass);
+    const childWithDesign: any = moduleToRender as any;
+    const shouldShow = logicService.evaluateModuleVisibility(childWithDesign);
+    const globalLogicVisible = logicService.evaluateLogicProperties({
+      logic_entity: childWithDesign?.design?.logic_entity,
+      logic_attribute: childWithDesign?.design?.logic_attribute,
+      logic_operator: childWithDesign?.design?.logic_operator,
+      logic_value: childWithDesign?.design?.logic_value,
+    });
+
+    if (!shouldShow || !globalLogicVisible) {
+      return html``;
+    }
+
     // Render actual module content using the registry
     const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(childModule.type);
+    const moduleHandler = registry.getModule(moduleToRender.type);
 
     if (moduleHandler) {
-      return moduleHandler.renderPreview(childModule, hass);
+      const moduleContent = moduleHandler.renderPreview(moduleToRender, hass);
+
+      // Apply state-based animation wrapper for child modules when configured
+      const m: any = moduleToRender as any;
+      const animationType = m.animation_type || m.design?.animation_type;
+
+      if (animationType && animationType !== 'none') {
+        const animationDuration = m.animation_duration || m.design?.animation_duration || '2s';
+        const animationDelay = m.animation_delay || m.design?.animation_delay || '0s';
+        const animationTiming = m.animation_timing || m.design?.animation_timing || 'ease';
+
+        // Evaluate entity condition if provided; otherwise always animate
+        const entityId = m.animation_entity || m.design?.animation_entity;
+        const triggerType = m.animation_trigger_type || m.design?.animation_trigger_type || 'state';
+        const attribute = m.animation_attribute || m.design?.animation_attribute;
+        const targetState = m.animation_state || m.design?.animation_state;
+
+        let shouldAnimate = false;
+        if (!entityId) {
+          shouldAnimate = true;
+        } else if (targetState && hass && hass.states[entityId]) {
+          const entity = hass.states[entityId];
+          if (triggerType === 'attribute' && attribute) {
+            shouldAnimate = String(entity.attributes[attribute]) === targetState;
+          } else {
+            shouldAnimate = entity.state === targetState;
+          }
+        }
+
+        if (shouldAnimate) {
+          return html`
+            <div
+              class="module-animation-wrapper animation-${animationType}"
+              style="
+                --animation-duration: ${animationDuration};
+                --animation-delay: ${animationDelay};
+                --animation-timing: ${animationTiming};
+              "
+            >
+              ${moduleContent}
+            </div>
+          `;
+        }
+      }
+
+      return moduleContent;
     }
 
     // Fallback for unknown module types
     return html`
       <div class="unknown-child-module">
         <ha-icon icon="mdi:help-circle"></ha-icon>
-        <span>Unknown Module: ${childModule.type}</span>
+        <span>Unknown Module: ${moduleToRender.type}</span>
       </div>
     `;
   }
 
-  private _getModuleTitle(module: CardModule): string {
-    const moduleAny = module as any;
-    if (moduleAny.name) return moduleAny.name;
-    if (moduleAny.text)
-      return moduleAny.text.length > 15 ? `${moduleAny.text.substring(0, 15)}...` : moduleAny.text;
-    return `${module.type.charAt(0).toUpperCase() + module.type.slice(1)} Module`;
+  /**
+   * Apply layout module design properties to child modules
+   * Layout properties override child module properties
+   */
+  private applyLayoutDesignToChild(childModule: CardModule, layoutDesign: any): CardModule {
+    const mergedModule = { ...childModule } as any;
+
+    // Apply text properties if they exist in layout design
+    if (layoutDesign.color) mergedModule.color = layoutDesign.color;
+    if (layoutDesign.font_size) mergedModule.font_size = layoutDesign.font_size;
+    if (layoutDesign.font_family) mergedModule.font_family = layoutDesign.font_family;
+    if (layoutDesign.font_weight) mergedModule.font_weight = layoutDesign.font_weight;
+    if (layoutDesign.text_align) mergedModule.text_align = layoutDesign.text_align;
+    if (layoutDesign.line_height) mergedModule.line_height = layoutDesign.line_height;
+    if (layoutDesign.letter_spacing) mergedModule.letter_spacing = layoutDesign.letter_spacing;
+    if (layoutDesign.text_transform) mergedModule.text_transform = layoutDesign.text_transform;
+    if (layoutDesign.font_style) mergedModule.font_style = layoutDesign.font_style;
+
+    // Do NOT propagate container background styling to children.
+    // Backgrounds belong to the container surface. If we pass them down,
+    // child modules (e.g., icons) get their own backgrounds unintentionally.
+    // Keeping children transparent allows the container background to show
+    // through naturally without overwriting child design.
+    // Intentionally skip: background_color, background_image, backdrop_filter
+
+    // IMPORTANT: Do not propagate container sizing/spacing/positioning to children.
+    // These cause double-negative margins and width constraints on child modules.
+    // Intentionally skip width/height/max/min, margins, padding, absolute offsets, z-index, etc.
+
+    // Do NOT propagate borders to children. Border radii and borders define the
+    // container shape; copying them to children causes double rounding and
+    // visual artifacts. Children should control their own borders.
+    // Intentionally skip: border_radius, border_style, border_width, border_color
+
+    // Allow text shadows/box shadows to pass through for consistent style
+    if (layoutDesign.text_shadow_h) mergedModule.text_shadow_h = layoutDesign.text_shadow_h;
+    if (layoutDesign.text_shadow_v) mergedModule.text_shadow_v = layoutDesign.text_shadow_v;
+    if (layoutDesign.text_shadow_blur)
+      mergedModule.text_shadow_blur = layoutDesign.text_shadow_blur;
+    if (layoutDesign.text_shadow_color)
+      mergedModule.text_shadow_color = layoutDesign.text_shadow_color;
+    if (layoutDesign.box_shadow_h) mergedModule.box_shadow_h = layoutDesign.box_shadow_h;
+    if (layoutDesign.box_shadow_v) mergedModule.box_shadow_v = layoutDesign.box_shadow_v;
+    if (layoutDesign.box_shadow_blur) mergedModule.box_shadow_blur = layoutDesign.box_shadow_blur;
+    if (layoutDesign.box_shadow_spread)
+      mergedModule.box_shadow_spread = layoutDesign.box_shadow_spread;
+    if (layoutDesign.box_shadow_color)
+      mergedModule.box_shadow_color = layoutDesign.box_shadow_color;
+
+    // Skip propagating overflow/clip-path to avoid clipping child interactions
+
+    // Apply animation properties
+    if (layoutDesign.animation_type) mergedModule.animation_type = layoutDesign.animation_type;
+    if (layoutDesign.animation_entity)
+      mergedModule.animation_entity = layoutDesign.animation_entity;
+    if (layoutDesign.animation_trigger_type)
+      mergedModule.animation_trigger_type = layoutDesign.animation_trigger_type;
+    if (layoutDesign.animation_attribute)
+      mergedModule.animation_attribute = layoutDesign.animation_attribute;
+    if (layoutDesign.animation_state) mergedModule.animation_state = layoutDesign.animation_state;
+    if (layoutDesign.intro_animation) mergedModule.intro_animation = layoutDesign.intro_animation;
+    if (layoutDesign.outro_animation) mergedModule.outro_animation = layoutDesign.outro_animation;
+    if (layoutDesign.animation_duration)
+      mergedModule.animation_duration = layoutDesign.animation_duration;
+    if (layoutDesign.animation_delay) mergedModule.animation_delay = layoutDesign.animation_delay;
+    if (layoutDesign.animation_timing)
+      mergedModule.animation_timing = layoutDesign.animation_timing;
+
+    // Apply alignment inheritance - horizontal layout alignment overrides child module alignment
+    if (layoutDesign.alignment) {
+      mergedModule.alignment = layoutDesign.alignment;
+    }
+
+    return mergedModule;
   }
 
-  private _getModuleIcon(moduleType: string): string {
-    const iconMap: Record<string, string> = {
-      text: 'mdi:text',
-      image: 'mdi:image',
-      icon: 'mdi:star',
-      bar: 'mdi:chart-box',
-      button: 'mdi:gesture-tap-button',
-      separator: 'mdi:minus',
-      info: 'mdi:information',
-      markdown: 'mdi:language-markdown',
-    };
-    return iconMap[moduleType] || 'mdi:puzzle';
+  // Explicit Logic tab renderer (some editors call this directly)
+  renderLogicTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -209,12 +690,22 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const horizontalModule = module as HorizontalModule;
     const errors = [...baseValidation.errors];
 
-    // Validate gap value
-    if (horizontalModule.gap && (horizontalModule.gap < 0 || horizontalModule.gap > 10)) {
-      errors.push('Gap must be between 0 and 10 rem');
+    // Validate gap value - allow negative values for overlapping
+    if (horizontalModule.gap && (horizontalModule.gap < -5 || horizontalModule.gap > 10)) {
+      errors.push('Gap must be between -5 and 10 rem');
     }
 
-    // Validate nested modules to prevent horizontal inside vertical and vice versa
+    // Validate vertical alignment value
+    if (
+      horizontalModule.vertical_alignment &&
+      !['top', 'center', 'bottom', 'stretch', 'baseline'].includes(
+        horizontalModule.vertical_alignment
+      )
+    ) {
+      errors.push('Vertical alignment must be one of: top, center, bottom, stretch, baseline');
+    }
+
+    // Validate nested modules to prevent infinite nesting
     if (horizontalModule.modules && horizontalModule.modules.length > 0) {
       for (const childModule of horizontalModule.modules) {
         if (childModule.type === 'vertical') {
@@ -234,19 +725,112 @@ export class UltraHorizontalModule extends BaseUltraModule {
     };
   }
 
-  private getHorizontalAlignmentIcon(alignment: string): TemplateResult {
-    switch (alignment) {
-      case 'left':
-        return html`<ha-icon icon="mdi:format-align-left"></ha-icon>`;
-      case 'center':
-        return html`<ha-icon icon="mdi:format-align-center"></ha-icon>`;
-      case 'right':
-        return html`<ha-icon icon="mdi:format-align-right"></ha-icon>`;
-      case 'justify':
-        return html`<ha-icon icon="mdi:format-align-justify"></ha-icon>`;
-      default:
-        return html`<ha-icon icon="mdi:format-align-left"></ha-icon>`;
+  // Helper methods for style conversion and design properties
+  private styleObjectToCss(styles: Record<string, string>): string {
+    return Object.entries(styles)
+      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
+      .join('; ');
+  }
+
+  private camelToKebab(str: string): string {
+    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+  }
+
+  private addPixelUnit(value: string | undefined): string | undefined {
+    if (!value) return value;
+    if (/^\d+$/.test(value)) return `${value}px`;
+    if (/^[\d\s]+$/.test(value)) {
+      return value
+        .split(' ')
+        .map(v => (v.trim() ? `${v}px` : v))
+        .join(' ');
     }
+    return value;
+  }
+
+  private getPaddingCSS(moduleWithDesign: any): string {
+    return moduleWithDesign.padding_top ||
+      moduleWithDesign.padding_bottom ||
+      moduleWithDesign.padding_left ||
+      moduleWithDesign.padding_right
+      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '8px'}`
+      : '8px';
+  }
+
+  private getMarginCSS(moduleWithDesign: any): string {
+    return moduleWithDesign.margin_top ||
+      moduleWithDesign.margin_bottom ||
+      moduleWithDesign.margin_left ||
+      moduleWithDesign.margin_right
+      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0'}`
+      : '0';
+  }
+
+  private getBackgroundCSS(moduleWithDesign: any): string {
+    return moduleWithDesign.background_color || 'transparent';
+  }
+
+  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+    if (
+      !moduleWithDesign.background_image_type ||
+      moduleWithDesign.background_image_type === 'none'
+    ) {
+      // Fallback to legacy background_image if present
+      if (moduleWithDesign.background_image) {
+        return `url("${moduleWithDesign.background_image}")`;
+      }
+      return 'none';
+    }
+
+    switch (moduleWithDesign.background_image_type) {
+      case 'upload': {
+        if (moduleWithDesign.background_image) {
+          const resolved = getImageUrl(hass, moduleWithDesign.background_image);
+          return `url("${resolved}")`;
+        }
+        break;
+      }
+      case 'url': {
+        if (moduleWithDesign.background_image) {
+          return `url("${moduleWithDesign.background_image}")`;
+        }
+        break;
+      }
+
+      case 'entity':
+        if (
+          moduleWithDesign.background_image_entity &&
+          hass?.states[moduleWithDesign.background_image_entity]
+        ) {
+          const entityState = hass.states[moduleWithDesign.background_image_entity];
+          let imageUrl = '';
+
+          if (entityState.attributes?.entity_picture) {
+            imageUrl = entityState.attributes.entity_picture;
+          } else if (entityState.attributes?.image) {
+            imageUrl = entityState.attributes.image;
+          } else if (entityState.state && typeof entityState.state === 'string') {
+            if (entityState.state.startsWith('/') || entityState.state.startsWith('http')) {
+              imageUrl = entityState.state;
+            }
+          }
+
+          if (imageUrl) {
+            const resolved = getImageUrl(hass, imageUrl);
+            return `url("${resolved}")`;
+          }
+        }
+        break;
+    }
+
+    return 'none';
+  }
+
+  private getBorderCSS(moduleWithDesign: any): string {
+    const width = this.addPixelUnit(moduleWithDesign.border_width) || '0';
+    const style = moduleWithDesign.border_style || 'solid';
+    const color = moduleWithDesign.border_color || 'transparent';
+    return `${width} ${style} ${color}`;
   }
 
   private getJustifyContent(alignment: string): string {
@@ -257,6 +841,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
         return 'center';
       case 'right':
         return 'flex-end';
+      case 'space-between':
+        return 'space-between';
+      case 'space-around':
+        return 'space-around';
       case 'justify':
         return 'space-between';
       default:
@@ -264,485 +852,60 @@ export class UltraHorizontalModule extends BaseUltraModule {
     }
   }
 
-  private getAlignItems(alignment: string): string {
-    switch (alignment) {
+  private getAlignItems(verticalAlignment: string): string {
+    switch (verticalAlignment) {
       case 'top':
         return 'flex-start';
       case 'center':
         return 'center';
       case 'bottom':
         return 'flex-end';
+      case 'stretch':
+        return 'stretch';
+      case 'baseline':
+        return 'baseline';
       default:
         return 'flex-start';
     }
   }
 
-  // Drag and drop event handlers
-  private _onDragOver(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  private _onDragEnter(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  private _onDragLeave(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  private _onDrop(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    // TODO: Implement module drop logic
-    console.log('Module dropped into horizontal layout');
-  }
-
-  private _onModuleDragStart(e: DragEvent, index: number): void {
-    e.stopPropagation();
-    // TODO: Implement module drag start logic
-    console.log('Module drag started:', index);
-  }
-
-  private _onDragEnd(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    // TODO: Implement drag end logic
-    console.log('Drag ended');
-  }
-
-  private _onAddModuleClick(e: Event): void {
-    e.preventDefault();
-    e.stopPropagation();
-    // TODO: Implement add module logic - should open module selector
-    console.log('Add module clicked');
-  }
-
   getStyles(): string {
     return `
-      /* Container Module Specific Variables */
-      .container-module {
-        --container-primary-color: #9c27b0; /* Purple for layout modules */
-        --container-secondary-color: #e1bee7; /* Light purple */
-        --container-accent-color: #7b1fa2; /* Dark purple */
-        --container-border-color: #ba68c8; /* Medium purple */
-      }
-      
-      .horizontal-module-preview.container-module {
-        border: 2px solid var(--container-border-color);
-        border-radius: 8px;
-        background: var(--card-background-color);
-        overflow: hidden;
-        position: relative;
-      }
-      
-      .container-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 16px;
-        background: var(--container-primary-color);
-        color: white;
-        font-weight: 500;
-        border-bottom: 2px solid var(--container-primary-color);
-      }
-      
-      .container-drag-handle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
-        color: rgba(255, 255, 255, 0.8);
-        cursor: grab;
-        transition: opacity 0.2s ease;
-        --mdc-icon-size: 16px;
-      }
-      
-      .container-drag-handle:hover {
-        color: white;
-      }
-      
-      .container-drag-handle:active {
-        cursor: grabbing;
-      }
-      
-      .container-badge {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-left: auto;
-      }
-      
-      .container-content {
-        padding: 16px;
-        min-height: 120px;
-        display: flex;
-        border: 2px dashed var(--container-secondary-color);
-        margin: 8px;
-        border-radius: 6px;
-        background: rgba(156, 39, 176, 0.05);
-      }
-      
-      .horizontal-preview {
-        flex-direction: row;
-        width: 100%;
-      }
-      
-      .container-child-item {
-        position: relative;
-        padding: 8px;
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid var(--container-border-color);
-        border-radius: 4px;
-        transition: all 0.2s ease;
-      }
-      
-      .container-child-item:hover {
-        background: white;
-        border-color: var(--container-primary-color);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.2);
-      }
-      
-      .child-module-preview {
-        padding: 4px;
-      }
-      
-      .child-module-summary {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-      }
-      
-      .child-module-title {
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-      
-
-      
-      .container-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        color: var(--container-primary-color);
-        font-size: 14px;
-        width: 100%;
-        min-height: 80px;
-        text-align: center;
-      }
-      
-      .container-placeholder ha-icon {
-        --mdc-icon-size: 32px;
-        opacity: 0.7;
-      }
-      
-      .container-placeholder small {
-        font-size: 12px;
-        opacity: 0.8;
-        color: var(--secondary-text-color);
-      }
-      
-
-      
-      /* Form Styling */
-      .alignment-buttons {
-        display: flex;
-        gap: 4px;
-        background: var(--secondary-background-color);
-        padding: 4px;
-        border-radius: 8px;
-        border: 1px solid var(--divider-color);
-      }
-      
-      .alignment-button {
-        flex: 1;
-        padding: 8px 12px;
-        border: none;
-        background: transparent;
-        border-radius: 4px;
-        cursor: pointer;
-        color: var(--secondary-text-color);
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .alignment-button:hover {
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-      }
-      
-      .alignment-button.active {
-        background: var(--container-primary-color);
-        color: white;
-      }
-      
-      .gap-control {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      
-      .gap-slider {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      
-      .gap-range {
-        flex: 1;
-        height: 6px;
-        border-radius: 3px;
-        background: var(--secondary-background-color);
-        outline: none;
-        appearance: none;
-      }
-      
-      .gap-range::-webkit-slider-thumb {
-        appearance: none;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--container-primary-color);
-        cursor: pointer;
-        border: 2px solid var(--card-background-color);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      }
-      
-      .gap-range::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--container-primary-color);
-        cursor: pointer;
-        border: 2px solid var(--card-background-color);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      }
-      
-      .form-group {
-        margin-bottom: 16px;
-      }
-      
-      .form-label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-      
-      /* Layout Module Container - Styled like columns in layout builder */
-      .layout-module-container {
-        border: 2px solid var(--accent-color, var(--orange-color, #ff9800));
-        border-radius: 6px;
-        background: var(--card-background-color);
-        width: 100%;
-        box-sizing: border-box;
-        overflow: visible;
-        margin-bottom: 8px;
-      }
-      
-      .layout-module-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 14px;
-        font-weight: 500;
-        padding: 8px 12px;
-        background: var(--accent-color, var(--orange-color, #ff9800));
-        color: white;
-        border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));
-        border-radius: 6px 6px 0px 0px;
-      }
-      
-      .layout-module-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      .layout-module-drag-handle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        color: rgba(255, 255, 255, 0.7);
-        cursor: grab;
-        opacity: 0.8;
-        transition: opacity 0.2s ease;
-        --mdc-icon-size: 14px;
-      }
-      
-      .layout-module-drag-handle:hover {
-        opacity: 1;
-      }
-      
-      .layout-module-drag-handle:active {
-        cursor: grabbing;
-      }
-      
-      .layout-module-actions {
-        display: flex;
-        gap: 4px;
-        align-items: center;
-      }
-      
-      .layout-module-settings-btn {
-        background: none;
-        border: none;
-        color: rgba(255, 255, 255, 0.9);
-        cursor: pointer;
-        padding: 6px 8px;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-        font-size: 12px;
-        min-width: 28px;
-        min-height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        --mdc-icon-size: 16px;
-      }
-      
-      .layout-module-settings-btn:hover {
-        background: rgba(255, 255, 255, 0.25);
-        color: white;
-        transform: scale(1.05);
-      }
-      
-      .layout-modules-container {
-        display: flex;
-        gap: 6px;
-        width: 100%;
-        box-sizing: border-box;
-        padding: 12px;
-        background: var(--card-background-color);
-        border: 1px solid var(--secondary-color, var(--accent-color, #ff9800));
-        border-top: none;
-        border-radius: 0px 0px 6px 6px;
-        margin-top: 0;
-        min-height: 100px;
-        position: relative;
-        overflow: visible;
-      }
-      
-      .layout-modules-container.drop-target {
-        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));
-        border-color: var(--primary-color);
-      }
-      
-      .layout-module-item {
-        position: relative;
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-      }
-      
-      .layout-module-item:hover {
-        border-color: var(--primary-color);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transform: translateY(-1px);
-      }
-      
-      .layout-module-item.dragging {
-        opacity: 0.6;
-        transform: scale(0.95);
-      }
-      
-      .layout-module-content {
-        padding: 8px;
-      }
-      
-      .layout-module-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        color: var(--secondary-text-color);
-        font-style: italic;
-        padding: 20px;
-        border: 2px dashed var(--divider-color);
-        border-radius: 6px;
-        text-align: center;
-        flex: 1;
-        min-height: 60px;
-      }
-      
-      .layout-module-placeholder ha-icon {
-        --mdc-icon-size: 24px;
-        opacity: 0.7;
-      }
-      
-      .layout-add-module-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 8px 12px;
-        background: none;
-        border: 2px dashed var(--divider-color);
-        border-radius: 6px;
-        cursor: pointer;
-        color: var(--secondary-text-color);
-        font-size: 12px;
-        transition: all 0.2s ease;
-        min-width: 80px;
-        min-height: 40px;
-        flex-shrink: 0;
-      }
-      
-      .layout-add-module-btn:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));
-      }
-      
-      .layout-add-module-btn ha-icon {
-        --mdc-icon-size: 16px;
-      }
-      
-      /* Clean Preview Styles */
+      /* Horizontal Module Styles */
       .horizontal-module-preview {
         width: 100%;
-        min-height: 60px;
+        min-height: 60px; /* Minimum height to make vertical alignment visible */
       }
-      
+
       .horizontal-preview-content {
-        background: var(--secondary-background-color);
+        background: transparent;
         border-radius: 6px;
-        border: 1px solid var(--divider-color);
-      }
-      
-      .child-module-preview {
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        padding: 6px;
+        border: none;
         transition: all 0.2s ease;
       }
-      
-      .child-module-preview:hover {
-        border-color: var(--primary-color);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      .child-module-preview {
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        padding: 0;
+        transition: all 0.2s ease;
+        /* Ensure modules maintain readable size */
+        min-width: max-content;
+        min-height: 0;
+        overflow: visible;
+        box-sizing: border-box;
       }
-      
+
+      .child-module-preview.negative-gap {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Legacy hover effects removed - now handled by new hover effects system */
+
       .empty-layout-message {
         display: flex;
         flex-direction: column;
@@ -755,15 +918,238 @@ export class UltraHorizontalModule extends BaseUltraModule {
         width: 100%;
         padding: 20px;
       }
-      
+
       .empty-layout-message span {
         font-size: 14px;
         font-weight: 500;
       }
-      
+
       .empty-layout-message small {
         font-size: 12px;
         opacity: 0.8;
+      }
+
+      .unknown-child-module {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+
+      /* Ensure module defaults play nicely in a horizontal row */
+      .child-module-preview .icon-module-preview {
+        /* Icon modules should size to content in rows */
+        width: auto !important;
+        max-width: 100% !important;
+      }
+
+      .child-module-preview .icon-module-container {
+        /* Override any inline width from icon module when inside horizontal rows */
+        width: auto !important;
+        max-width: 100% !important;
+        flex: 0 0 auto !important;
+      }
+
+      .child-module-preview .bar-module-preview {
+        /* Bars should expand to available space in rows */
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* When wrapping is enabled, allow items to maintain their natural size */
+      .horizontal-preview-content[data-wrap="true"] .child-module-preview {
+        flex-shrink: 1;
+        min-width: 0;
+      }
+
+      /* When wrapping is disabled, compress items to fit in one line */
+      .horizontal-preview-content:not([data-wrap="true"]) .child-module-preview {
+        flex-shrink: 1;
+        min-width: 0;
+      }
+
+      /* Standard field styling */
+      .field-title {
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        
+        margin-bottom: 4px !important;
+      }
+
+      .field-description {
+        font-size: 13px !important;
+        color: var(--secondary-text-color) !important;
+        margin-bottom: 12px !important;
+        opacity: 0.8 !important;
+        line-height: 1.4 !important;
+      }
+
+      .section-title {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        color: var(--primary-color) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+      }
+
+      /* Custom Range Slider Styling */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--disabled-color);
+        outline: none;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      input[type="range"]:hover {
+        opacity: 1;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+
+      input[type="range"]::-moz-range-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      input[type="range"]::-moz-range-track {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--disabled-color);
+        border: none;
+      }
+
+      /* Gap control styles */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
       }
     `;
   }

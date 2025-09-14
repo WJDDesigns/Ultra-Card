@@ -1,0 +1,1209 @@
+{
+  "editor": {
+    "tabs": {
+      "layout": "Costruttore di layout",
+      "settings": "Impostazioni",
+      "about": "Informazioni"
+    },
+    "settings": {
+      "title": "Impostazioni carta",
+      "description": "Configura l'aspetto globale e il comportamento della carta."
+    },
+    "appearance": {
+      "title": "Aspetto",
+      "description": "Controlla l'aspetto visivo della tua scheda"
+    },
+    "spacing": {
+      "title": "Spaziatura",
+      "description": "Controlla la spaziatura e il posizionamento della tua scheda"
+    },
+    "fields": {
+      "card_background_color": "Colore di sfondo della scheda",
+      "card_background_color_desc": "Il colore di sfondo dell'intera scheda",
+      "border_radius": "Raggio del bordo",
+      "border_radius_desc": "Angoli arrotondati della scheda (in pixel)",
+      "card_padding": "Imbottitura della scheda",
+      "card_padding_desc": "Spaziatura interna all'interno della scheda",
+      "card_margin": "Margine della scheda",
+      "card_margin_desc": "Spaziatura esterna intorno alla scheda",
+      "unit_px": "px",
+      "reset_default": "Ripristina predefinito",
+      "reset_default_value": "Ripristina predefinito ({value})"
+    },
+    "tooltips": {
+      "enter_fullscreen": "Schermo intero",
+      "return_dashboard": "Torna alla dashboard",
+      "dashboard": "Dashboard"
+    },
+    "common": {
+      "left": "Sinistra",
+      "center": "Centro",
+      "right": "Destra",
+      "top": "Alto",
+      "bottom": "Basso",
+      "none": "Nessuno",
+      "state": "Stato",
+      "attribute": "Attributo",
+      "attribute_name": "Nome attributo",
+      "entity": "Entità",
+      "space_between": "Spazio tra",
+      "space_around": "Spazio intorno",
+      "justify": "Giustifica",
+      "stretch": "Allunga",
+      "baseline": "Linea di base"
+    },
+    "horizontal": {
+      "layout": {
+        "title": "Configurazione layout",
+        "desc": "Configura come gli elementi sono disposti orizzontalmente all'interno del contenitore."
+      },
+      "alignment": {
+        "horizontal": "Allineamento orizzontale",
+        "horizontal_desc": "Scegli come allineare gli elementi orizzontalmente nel contenitore.",
+        "vertical": "Allineamento verticale",
+        "vertical_desc": "Scegli come allineare gli elementi verticalmente nel contenitore."
+      },
+      "wrapping": {
+        "title": "Consenti a capo",
+        "desc": "Consenti agli elementi di andare a capo quando superano la larghezza del contenitore."
+      },
+      "gap": {
+        "title": "Configurazione spaziatura",
+        "between_items": "Spazio tra elementi",
+        "desc": "Imposta la spaziatura tra gli elementi orizzontali (in unità rem). Usa valori negativi per sovrapporre gli elementi."
+      },
+      "empty": {
+        "no_modules": "Nessun modulo aggiunto",
+        "add_modules": "Aggiungi moduli nel costruttore di layout per vederli qui"
+      }
+    },
+    "vertical": {
+      "layout": {
+        "title": "Configurazione layout",
+        "desc": "Configura come gli elementi sono disposti verticalmente all'interno del contenitore."
+      },
+      "alignment": {
+        "vertical": "Allineamento verticale",
+        "vertical_desc": "Scegli come allineare gli elementi verticalmente nel contenitore."
+      },
+      "gap": {
+        "title": "Configurazione spaziatura",
+        "between_items": "Spazio tra elementi",
+        "desc": "Imposta la spaziatura tra gli elementi verticali (in unità rem). Usa valori negativi per sovrapporre gli elementi."
+      },
+      "empty": {
+        "no_modules": "Nessun modulo aggiunto",
+        "add_modules": "Aggiungi moduli nel costruttore di layout per vederli qui"
+      }
+    },
+    "layout": {
+      "live_preview": "Anteprima dal vivo",
+      "toggle_preview": "Attiva/disattiva anteprima",
+      "drag_to_move_module": "Trascina per spostare il modulo",
+      "edit_module": "Modifica modulo",
+      "duplicate_module": "Duplica modulo",
+      "delete_module": "Elimina modulo",
+      "drag_to_move_layout": "Trascina per spostare il layout",
+      "horizontal_layout": "Layout orizzontale",
+      "vertical_layout": "Layout verticale",
+      "add_module_to_layout": "Aggiungi modulo al layout",
+      "layout_settings": "Impostazioni layout",
+      "duplicate_layout": "Duplica layout",
+      "delete_layout": "Elimina layout",
+      "click_to_add_module": "Clicca per aggiungere un modulo",
+      "drop_modules_here": "Rilascia i moduli qui",
+      "drag_to_reorder": "Trascina per riordinare",
+      "edit_child_module": "Modifica modulo figlio",
+      "duplicate_child_module": "Duplica modulo figlio",
+      "delete_child_module": "Elimina modulo figlio",
+      "module_settings_title": "Impostazioni modulo",
+      "child_module_settings_title": "Impostazioni modulo figlio",
+      "general_tab": "Generale",
+      "actions_tab": "Azioni",
+      "other_tab": "Altro",
+      "logic_tab": "Logica",
+      "design_tab": "Design",
+      "drag_to_resize": "Trascina per ridimensionare",
+      "hidden_by_logic": "Nascosto dalla logica",
+      "add_row": "Aggiungi riga",
+      "add_row_tooltip": "Aggiungi una nuova riga al tuo layout",
+      "row_settings": "Impostazioni riga",
+      "column_settings": "Impostazioni colonna",
+      "row_background_color": "Colore sfondo riga",
+      "column_gap": "Spazio tra colonne (px)",
+      "vertical_alignment": "Allineamento verticale",
+      "horizontal_alignment": "Allineamento orizzontale",
+      "column_preview": "Anteprima colonna",
+      "modules_count": "{count} moduli",
+      "alignment_top": "Alto",
+      "alignment_center": "Centro",
+      "alignment_bottom": "Basso",
+      "alignment_stretch": "Allunga",
+      "alignment_left": "Sinistra",
+      "alignment_right": "Destra"
+    },
+    "layout_logic": {
+      "display_title": "Mostra questo elemento",
+      "display_desc": "Controlla quando viene mostrato questo elemento. Scegli \"Sempre\" per mantenerlo visibile. Seleziona \"Se TUTTE le condizioni qui sotto sono soddisfatte\" oppure \"Se QUALSIASI condizione qui sotto è soddisfatta\" per visualizzarlo solo quando le condizioni aggiunte risultano vere.",
+      "always": "Sempre",
+      "every": "Se TUTTE le condizioni qui sotto sono soddisfatte",
+      "any": "Se QUALSIASI condizione qui sotto è soddisfatta",
+      "conditions": "Condizioni",
+      "add_condition": "Aggiungi condizione",
+      "no_conditions": "Nessuna condizione aggiunta. Clicca \"Aggiungi condizione\" per iniziare.",
+      "condition_types": {
+        "entity_state": "Stato entità",
+        "entity_attribute": "Attributo entità",
+        "time": "Intervallo di tempo",
+        "template": "Modello"
+      },
+      "condition_fields": {
+        "entity": "Entità",
+        "operator": "Operatore",
+        "value": "Valore",
+        "attribute": "Attributo",
+        "time_from": "Da",
+        "time_to": "A",
+        "template": "Modello"
+      },
+      "condition_header": "Condizione",
+      "custom_name": "Nome personalizzato",
+      "custom_name_desc": "Opzionale: assegna un nome personalizzato a questa condizione per identificarla più facilmente",
+      "condition_type": "Tipo di condizione"
+    },
+    "hover_effects": {
+      "title": "Effetti al passaggio del mouse",
+      "description": "Configura gli effetti visivi che compaiono quando passi il mouse su questo modulo, riga o colonna.",
+      "effect": "Effetto hover",
+      "effect_desc": "Seleziona l'effetto visivo da applicare al passaggio del mouse",
+      "effects": {
+        "none": "Nessuno",
+        "highlight": "Evidenzia",
+        "outline": "Contorno",
+        "grow": "Cresci",
+        "shrink": "Riduci",
+        "pulse": "Impulso",
+        "bounce": "Rimbalzo",
+        "float": "Fluttuare",
+        "glow": "Bagliore",
+        "shadow": "Ombra",
+        "rotate": "Ruota",
+        "skew": "Inclina",
+        "wobble": "Oscilla",
+        "buzz": "Vibra",
+        "fade": "Dissolvenza"
+      }
+    },
+    "about": {
+      "developed_by": "Sviluppato da",
+      "desc1": "Un potente generatore di schede modulari per Home Assistant",
+      "desc2": "Crea layout personalizzati con un'interfaccia professionale di page builder",
+      "desc3": "Sistema di layout modulare con logica condizionale e strumenti di design professionali",
+      "github_repo": "Visita il nostro GitHub",
+      "join_discord": "Unisciti al nostro Discord",
+      "support_title": "Sostieni Ultra Card",
+      "support_desc": "Le tue generose donazioni alimentano lo sviluppo di funzionalità straordinarie per questa scheda! Senza il supporto di utenti come te, l'innovazione continua non sarebbe possibile.",
+      "leave_tip": "FAI UNA DONAZIONE (PAYPAL)",
+      "version": "Versione"
+    },
+    "actions": {
+      "title": "Configurazione azioni",
+      "description": "Configura cosa accade quando gli utenti interagiscono con questo elemento. Scegli azioni diverse per tocco, pressione prolungata e doppio tocco.",
+      "tap_action": "Azione al tocco",
+      "tap_action_desc": "Azione eseguita toccando/facendo clic sul modulo",
+      "hold_action": "Azione alla pressione",
+      "hold_action_desc": "Azione eseguita tenendo premuto sul modulo",
+      "double_tap_action": "Azione al doppio tocco",
+      "double_tap_action_desc": "Azione eseguita al doppio tocco sul modulo",
+      "tap_behavior": "Comportamento al tocco",
+      "tap_behavior_desc": "Azione da eseguire quando l'elemento viene toccato/cliccato.",
+      "hold_behavior": "Comportamento alla pressione",
+      "hold_behavior_desc": "Azione da eseguire quando l'elemento viene premuto e tenuto.",
+      "double_tap_behavior": "Comportamento al doppio tocco",
+      "double_tap_behavior_desc": "Azione da eseguire quando l'elemento viene toccato/cliccato due volte."
+    },
+    "icon": {
+      "entity_config": {
+        "title": "CONFIGURAZIONE ENTITÀ",
+        "desc": "Configura l'entità e gli stati attivo/inattivo"
+      },
+      "entity": "Entità",
+      "entity_desc": "Seleziona l'entità che questa icona rappresenta",
+      "inactive_state": "Stato inattivo",
+      "inactive_state_desc": "Valore di stato considerato \"inattivo\" (lascia vuoto per usare lo stato reale dell'entità)",
+      "active_state": "Stato attivo",
+      "active_state_desc": "Valore di stato considerato \"attivo\" (lascia vuoto per usare lo stato reale dell'entità)",
+      "icon_section": {
+        "title": "Configurazione icona"
+      },
+      "inactive_icon": "Icona inattiva",
+      "inactive_icon_desc": "Icona da mostrare quando inattivo",
+      "inactive_icon_config": "Configurazione icona inattiva",
+      "inactive_icon_config_desc": "Configura le impostazioni dell'icona inattiva",
+      "active_icon": "Icona attiva",
+      "active_icon_desc": "Icona da mostrare quando attivo",
+      "icon_color_inactive": "Colore quando inattivo",
+      "icon_color_active": "Colore quando attivo",
+      "background_shape_inactive": "Forma sfondo quando inattivo",
+      "background_shape_active": "Forma sfondo quando attivo",
+      "background_color_inactive": "Colore sfondo quando inattivo",
+      "background_color_active": "Colore sfondo quando attivo",
+      "icon_size_inactive": "Dimensione icona quando inattivo",
+      "icon_size_active": "Dimensione icona quando attivo",
+      "inactive_icon_color": "Colore icona inattiva",
+      "active_icon_color": "Colore icona attiva",
+      "inactive_icon_background": "Sfondo icona inattiva",
+      "active_icon_background": "Sfondo icona attiva",
+      "inactive_icon_background_color": "Colore sfondo icona inattiva",
+      "active_icon_background_color": "Colore sfondo icona attiva",
+      "name_section": {
+        "title": "Configurazione nome"
+      },
+      "inactive_name": "Nome inattivo",
+      "inactive_name_desc": "Nome personalizzato quando inattivo",
+      "inactive_name_config": "Configurazione nome inattivo",
+      "inactive_name_config_desc": "Configura le impostazioni del nome inattivo",
+      "active_name": "Nome attivo",
+      "active_name_desc": "Nome personalizzato quando attivo",
+      "custom_inactive_name": "Nome inattivo personalizzato",
+      "custom_inactive_name_desc": "Sostituisci il nome dell'entità quando inattivo (lascia vuoto per usare il nome dell'entità)",
+      "custom_active_name": "Nome attivo personalizzato",
+      "custom_active_name_desc": "Sostituisci il nome dell'entità quando attivo (lascia vuoto per usare il nome dell'entità)",
+      "name_color_inactive": "Colore nome quando inattivo",
+      "name_color_active": "Colore nome quando attivo",
+      "name_size_inactive": "Dimensione testo nome quando inattivo",
+      "name_size_active": "Dimensione testo nome quando attivo",
+      "inactive_name_color": "Colore nome inattivo",
+      "active_name_color": "Colore nome attivo",
+      "state_section": {
+        "title": "Configurazione stato"
+      },
+      "inactive_state_color": "Colore stato inattivo",
+      "active_state_color": "Colore stato attivo",
+      "inactive_state_text": "Testo stato inattivo",
+      "active_state_text": "Testo stato attivo",
+      "inactive_state_config": "Configurazione stato inattivo",
+      "inactive_state_config_desc": "Configura le impostazioni dello stato inattivo",
+      "custom_inactive_state": "Stato inattivo personalizzato",
+      "custom_inactive_state_desc": "Testo personalizzato quando inattivo (lascia vuoto per usare lo stato reale)",
+      "custom_active_state": "Stato attivo personalizzato",
+      "custom_active_state_desc": "Testo personalizzato quando attivo (lascia vuoto per usare lo stato reale)",
+      "state_color_inactive": "Colore stato quando inattivo",
+      "state_color_active": "Colore stato quando attivo",
+      "state_size_inactive": "Dimensione testo stato quando inattivo",
+      "state_size_active": "Dimensione testo stato quando attivo",
+      "background_section": {
+        "title": "Sfondo inattivo",
+        "desc": "Configura le impostazioni dello sfondo inattivo"
+      },
+      "template_section": {
+        "title": "Modalità modello avanzata",
+        "desc": "Usa modelli Jinja2 per un controllo avanzato delle icone. I modelli possono controllare la visibilità (vero/falso per mostrare/nascondere le icone) e personalizzare il testo dello stato. Restituisci testo personalizzato per lo stato attivo, restituisci lo stato reale dell'entità per lo stato inattivo."
+      },
+      "template_mode": "Modalità modello avanzata",
+      "template": "Modello",
+      "animation_section": {
+        "title": "Animazione icona",
+        "desc": "Configura le animazioni per gli stati attivo e inattivo"
+      },
+      "active_animation": "Animazione attiva",
+      "active_animation_desc": "Animazione quando l'icona è attiva",
+      "inactive_animation": "Animazione inattiva",
+      "inactive_animation_desc": "Animazione quando l'icona è inattiva",
+      "animation_none": "Nessuno",
+      "animation_pulse": "Impulso",
+      "animation_spin": "Rotazione",
+      "animation_bounce": "Rimbalzo",
+      "animation_flash": "Lampeggio",
+      "animation_shake": "Scuotere",
+      "animation_vibrate": "Vibrare",
+      "animation_rotate_left": "Ruota a sinistra",
+      "animation_rotate_right": "Ruota a destra",
+      "animation_fade": "Dissolvenza",
+      "animation_scale": "Scala",
+      "animation_tada": "Tada"
+    },
+    "text": {
+      "content_section": {
+        "title": "Configurazione contenuto",
+        "desc": "Configura il contenuto testuale e le impostazioni di base per questo modulo."
+      },
+      "text_content": "Contenuto del testo",
+      "text_content_desc": "Inserisci il contenuto testuale da visualizzare in questo modulo.",
+      "icon_section": {
+        "title": "Configurazione icona",
+        "desc": "Scegli un'icona da visualizzare accanto al contenuto testuale."
+      },
+      "icon": "Icona",
+      "icon_desc": "Scegli un'icona da visualizzare accanto al testo. Lascia vuoto per nessuna icona.",
+      "icon_position": "Posizione icona",
+      "icon_position_desc": "Scegli dove posizionare l'icona rispetto al testo.",
+      "before_text": "Prima del testo",
+      "after_text": "Dopo il testo",
+      "template_mode": "Modalità modello",
+      "template_mode_desc": "Usa la sintassi di templating di Home Assistant per renderizzare il testo",
+      "value_template": "Modello valore",
+      "value_template_desc": "Modello per renderizzare il testo usando la sintassi Jinja2",
+      "examples_title": "Esempi comuni:",
+      "example_basic": "Valore base",
+      "example_percent": "Con percentuale"
+    },
+    "markdown": {
+      "content": {
+        "title": "Contenuto Markdown",
+        "label": "Contenuto",
+        "desc": "Inserisci il contenuto Markdown con pieno supporto alla formattazione"
+      },
+      "features": {
+        "title": "Funzionalità Markdown"
+      },
+      "enable_html": "Abilita HTML",
+      "enable_html_desc": "Consenti tag HTML nel contenuto Markdown",
+      "enable_tables": "Abilita tabelle",
+      "enable_tables_desc": "Supporto per la sintassi delle tabelle in Markdown",
+      "code_highlighting": "Evidenziazione del codice",
+      "code_highlighting_desc": "Evidenziazione della sintassi per i blocchi di codice"
+    },
+    "bar": {
+      "bar_settings": {
+        "title": "Impostazioni barra",
+        "desc": "Configura come viene calcolata e visualizzata la percentuale della barra."
+      },
+      "perc_type": {
+        "entity": "Entità (0-100)",
+        "attribute": "Attributo entità",
+        "difference": "Differenza",
+        "template": "Modello"
+      },
+      "attribute_section": {
+        "title": "Configurazione attributo entità",
+        "desc": "Configura le impostazioni dell'attributo dell'entità"
+      },
+      "attribute_entity": "Entità attributo",
+      "attribute_entity_desc": "Seleziona l'entità che contiene l'attributo con il valore percentuale",
+      "attribute_name": "Nome attributo",
+      "attribute_name_desc": "Inserisci il nome dell'attributo che contiene il valore percentuale (es., \"battery_level\")",
+      "diff_section": {
+        "title": "Configurazione calcolo differenza",
+        "desc": "Configura le impostazioni del calcolo della differenza"
+      },
+      "current_entity": "Entità valore attuale",
+      "current_entity_desc": "Entità che rappresenta la quantità attuale/utilizzata (es., carburante usato, batteria consumata)",
+      "total_entity": "Entità valore totale",
+      "total_entity_desc": "Entità che rappresenta la quantità totale/massima (es., capacità serbatoio, capacità batteria)",
+      "template_section": {
+        "title": "Configurazione modello",
+        "desc": "Configura le impostazioni del modello"
+      },
+      "percentage_template": "Modello percentuale",
+      "percentage_template_desc": "Inserisci un modello Jinja2 che restituisca un numero tra 0 e 100 per la percentuale. Esempio: {{ (states('sensor.battery_level') | float) * 100 }}",
+      "attr_config": {
+        "title": "Configurazione attributo entità",
+        "desc": "Configura le impostazioni dell'attributo dell'entità",
+        "attribute_entity": "Entità attributo",
+        "attribute_entity_desc": "Seleziona l'entità che contiene l'attributo con il valore percentuale",
+        "attribute_name": "Nome attributo",
+        "attribute_name_desc": "Inserisci il nome dell'attributo che contiene il valore percentuale (es., \"battery_level\")"
+      },
+      "diff_config": {
+        "title": "Configurazione calcolo differenza",
+        "desc": "Configura le impostazioni del calcolo della differenza",
+        "current_entity": "Entità valore attuale",
+        "current_entity_desc": "Entità che rappresenta la quantità attuale/utilizzata (es., carburante usato, batteria consumata)",
+        "total_entity": "Entità valore totale",
+        "total_entity_desc": "Entità che rappresenta la quantità totale/massima (es., capacità serbatoio, capacità batteria)"
+      },
+      "template_config": {
+        "title": "Configurazione modello",
+        "desc": "Configura le impostazioni del modello",
+        "percentage_template": "Modello percentuale",
+        "percentage_template_desc": "Inserisci un modello Jinja2 che restituisca un numero tra 0 e 100 per la percentuale. Esempio: {{ (states('sensor.battery_level') | float) * 100 }}"
+      },
+      "entity": {
+        "title": "Entità percentuale barra",
+        "desc_present": "L'entità che fornisce il valore percentuale per la barra.",
+        "desc_empty": "Seleziona un'entità che fornisce un valore percentuale (0-100). I sensori batteria sono ideali.",
+        "no_entity_warning": "Nessuna entità selezionata - Scegli un sensore con valori tra 0 e 100"
+      },
+      "limit_entity": {
+        "title": "Entità valore limite (facoltativa)",
+        "desc": "Facoltativo: aggiungi una linea indicatrice verticale sulla barra (es. limite di carica per batteria EV)."
+      },
+      "appearance": {
+        "title": "Aspetto barra",
+        "height": "Altezza barra",
+        "height_desc": "Regola lo spessore della barra di avanzamento in pixel.",
+        "border_radius": "Raggio del bordo",
+        "border_radius_desc": "Controlla gli angoli arrotondati della barra.",
+        "style": "Stile barra",
+        "style_desc": "Scegli lo stile visivo della barra di avanzamento.",
+        "style_flat": "Piatto (predefinito)",
+        "style_glossy": "Lucido",
+        "style_embossed": "Rilievo",
+        "style_inset": "Incassato",
+        "style_gradient": "Sovrapposizione gradiente",
+        "style_neon": "Bagliore neon",
+        "style_outline": "Contorno",
+        "style_glass": "Vetro",
+        "style_metallic": "Metallico",
+        "style_neumorphic": "Neumorfico",
+        "style_dashed": "Tratteggiato",
+        "style_dots": "Punti",
+        "width": "Larghezza barra",
+        "width_desc": "Imposta la larghezza della barra come percentuale del contenitore.",
+        "alignment": "Allineamento barra",
+        "alignment_desc": "Scegli come allineare la barra quando è inferiore al 100% di larghezza."
+      },
+      "labels": {
+        "alignment": "Allineamento etichette",
+        "alignment_desc": "Controlla come sono posizionate le etichette di sinistra e destra."
+      },
+      "percentage": {
+        "title": "Visualizzazione testo percentuale",
+        "desc": "Controlla visibilità e aspetto dei valori percentuali mostrati direttamente sulla barra. Questi numeri forniscono un chiaro indicatore del livello attuale.",
+        "text_size": "Dimensione testo",
+        "text_size_desc": "Regola la dimensione del testo percentuale mostrato sulla barra.",
+        "text_alignment": "Allineamento testo percentuale"
+      },
+      "left": {
+        "title": "Lato sinistro",
+        "desc": "Configura il titolo e il valore dell'entità mostrati sul lato sinistro della barra. Utile per etichette come 'Autonomia' o 'Batteria' insieme ai loro valori.",
+        "title_size": "Dimensione titolo",
+        "value_size": "Dimensione valore",
+        "template_mode": "Modalità modello",
+        "template_desc": "Usa un modello per formattare il valore mostrato. I modelli usano la sintassi Jinja2 di Home Assistant.",
+        "value_template": "Modello valore",
+        "value_template_desc": "Modello per formattare il valore del lato sinistro usando la sintassi Jinja2",
+        "enable_toggle": "Abilita l'interruttore sopra per configurare le impostazioni del lato sinistro"
+      },
+      "right": {
+        "title": "Lato destro",
+        "desc": "Configura il titolo e il valore dell'entità mostrati sul lato destro della barra. Ideale per informazioni complementari come 'Tempo al pieno' o misurazioni secondarie.",
+        "title_size": "Dimensione titolo",
+        "value_size": "Dimensione valore",
+        "template_mode": "Modalità modello",
+        "template_desc": "Usa un modello per formattare il valore mostrato. I modelli usano la sintassi Jinja2 di Home Assistant.",
+        "value_template": "Modello valore",
+        "value_template_desc": "Modello per formattare il valore del lato destro usando la sintassi Jinja2",
+        "enable_toggle": "Abilita l'interruttore sopra per configurare le impostazioni del lato destro"
+      },
+      "colors": {
+        "title": "Colori",
+        "bar_color": "Colore barra",
+        "background_color": "Colore sfondo",
+        "border_color": "Colore bordo",
+        "limit_indicator": "Indicatore limite",
+        "percentage_text": "Testo percentuale",
+        "left_side": "Colori lato sinistro",
+        "right_side": "Colori lato destro",
+        "title_color": "Colore titolo",
+        "value_color": "Colore valore"
+      },
+      "gradient": {
+        "title": "Modalità gradiente",
+        "desc": "Applica un gradiente di colore al riempimento della barra. Quando abilitato, scegli come visualizzare il gradiente e personalizza i punti colore qui sotto.",
+        "full": "Completo",
+        "cropped": "Ritagliato",
+        "value_based": "Basato sul valore"
+      },
+      "animation": {
+        "title": "Animazione barra",
+        "desc": "Anima il riempimento della barra usando preset come strisce di carica, impulso, bagliore e altro. Puoi attivare animazioni in base allo stato o all'attributo di un'entità e, facoltativamente, sovrascrivere l'animazione quando si verifica un'altra condizione.",
+        "trigger": {
+          "title": "Trigger animazione",
+          "desc": "Seleziona un'entità da osservare e definisci valore + animazione da applicare quando corrisponde.",
+          "entity_desc": "Entità da valutare per il trigger dell'animazione",
+          "type": "Tipo di trigger",
+          "type_desc": "Scegli se confrontare lo stato dell'entità o un attributo",
+          "attribute_name_desc": "Nome attributo da confrontare (es., charging_status)",
+          "match_value": "Valore di corrispondenza",
+          "match_value_desc": "Testo da confrontare con stato o attributo (il confronto è testuale)."
+        },
+        "type": "Tipo di animazione",
+        "type_desc": "Seleziona come deve animarsi la barra quando attivata.",
+        "types": {
+          "charging": "Carica (linee diagonali)",
+          "pulse": "Impulso",
+          "blinking": "Lampeggiante",
+          "bouncing": "Rimbalzante",
+          "glow": "Bagliore",
+          "rainbow": "Arcobaleno",
+          "bubbles": "Bolle",
+          "fill": "Riempimento",
+          "ripple": "Increspatura",
+          "traffic": "Traffic (asta da barbiere)",
+          "heartbeat": "Battito cardiaco",
+          "flicker": "Sfarfallio",
+          "shimmer": "Sbrilluccichio",
+          "vibrate": "Vibrare"
+        },
+        "override": {
+          "title": "Sostituzione animazione dell'azione",
+          "desc": "Seleziona un'entità azione e uno stato per definire quando questa animazione deve sostituire quella normale",
+          "entity_desc": "Entità da valutare per il trigger di sostituzione",
+          "type_desc": "Animazione da usare quando la condizione di sostituzione corrisponde.",
+          "attribute_name_desc": "Nome attributo da confrontare",
+          "match_value": "Valore di corrispondenza per sostituzione",
+          "match_value_desc": "Confronto testuale con stato o attributo",
+          "type": "Tipo di animazione di sostituzione"
+        }
+      }
+    },
+    "image": {
+      "settings": "Impostazioni immagine",
+      "source_type": "Tipo di sorgente immagine",
+      "source_type_desc": "Scegli come specificare la sorgente dell'immagine.",
+      "source": {
+        "default": "Immagine predefinita",
+        "url": "URL immagine",
+        "upload": "Carica immagine",
+        "entity": "Immagine entità",
+        "attribute": "Attributo entità"
+      },
+      "url_section": {
+        "title": "Configurazione URL immagine"
+      },
+      "image_url": "URL immagine",
+      "image_url_desc": "Inserisci l'URL diretto dell'immagine che vuoi visualizzare.",
+      "upload_section": {
+        "title": "Configurazione caricamento immagine"
+      },
+      "upload": "Carica immagine",
+      "upload_desc": "Clicca per caricare un file immagine dal tuo dispositivo.",
+      "entity_section": {
+        "title": "Configurazione immagine entità"
+      },
+      "entity": "Entità",
+      "entity_desc": "Seleziona un'entità che abbia un'immagine (es., persona, camera).",
+      "attribute_section": {
+        "title": "Configurazione attributo entità"
+      },
+      "entity_attr_desc": "Seleziona l'entità che contiene l'URL dell'immagine in uno dei suoi attributi.",
+      "attribute_name": "Nome attributo",
+      "attribute_name_desc": "Inserisci il percorso dell'attributo che contiene l'URL dell'immagine (supportata notazione a punti, es., vehicle_data.vehicleDetails.generalDashboard).",
+      "width": "Larghezza (%)",
+      "width_desc": "Imposta la larghezza come percentuale del contenitore.",
+      "height": "Altezza (px)",
+      "height_desc": "Imposta l'altezza in pixel.",
+      "crop_fit": "Ritaglia e adatta",
+      "crop_fit_desc": "Controlla come l'immagine si adatta al suo contenitore.",
+      "fit": {
+        "cover": "Copri (ritaglia per riempire)",
+        "contain": "Contieni (adatta l'intera immagine)",
+        "fill": "Riempi (stira per adattare)",
+        "scale_down": "Riduci",
+        "none": "Nessuno (dimensione originale)"
+      },
+      "border_radius": "Raggio del bordo",
+      "border_radius_desc": "Controlla gli angoli arrotondati dell'immagine.",
+      "tap_actions": "Azioni al tocco",
+      "filters": "Filtri",
+      "filter": {
+        "blur": "Sfocatura",
+        "blur_desc": "Applica un effetto di sfocatura alla tua immagine.",
+        "brightness": "Luminosità (%)",
+        "brightness_desc": "Regola la luminosità della tua immagine.",
+        "contrast": "Contrasto (%)",
+        "contrast_desc": "Modifica il contrasto della tua immagine.",
+        "saturation": "Saturazione (%)",
+        "saturation_desc": "Regola la saturazione della tua immagine."
+      },
+      "hover": {
+        "title": "Effetti hover",
+        "effect_type": "Tipo di effetto",
+        "effect_type_desc": "Scegli il tipo di effetto hover.",
+        "scale": "Scala (zoom avanti/indietro)",
+        "rotate": "Ruota",
+        "fade": "Dissolvenza (variazione opacità)",
+        "blur": "Sfocatura",
+        "brightness": "Luminosità",
+        "glow": "Bagliore (ombra)",
+        "slide": "Scorri (traslazione)",
+        "scale_amount": "Scala (%)",
+        "scale_amount_desc": "Regola la scala dell'immagine al passaggio del mouse.",
+        "rotate_amount": "Rotazione (°)",
+        "rotate_amount_desc": "Ruota l'immagine al passaggio del mouse.",
+        "opacity": "Opacità (%)",
+        "opacity_desc": "Cambia l'opacità dell'immagine al passaggio del mouse.",
+        "blur_amount": "Sfocatura (px)",
+        "blur_amount_desc": "Applica un effetto di sfocatura all'immagine al passaggio del mouse.",
+        "brightness_amount": "Luminosità (%)",
+        "brightness_amount_desc": "Regola la luminosità dell'immagine al passaggio del mouse.",
+        "glow_intensity": "Intensità bagliore",
+        "glow_intensity_desc": "Scegli l'intensità dell'effetto bagliore al passaggio del mouse.",
+        "glow_light": "Bagliore leggero",
+        "glow_medium": "Bagliore medio",
+        "glow_heavy": "Bagliore intenso",
+        "glow_custom": "Ombra personalizzata",
+        "translate_x": "Orizzontale (px)",
+        "translate_x_desc": "Trasla l'immagine orizzontalmente al passaggio del mouse.",
+        "translate_y": "Verticale (px)",
+        "translate_y_desc": "Trasla l'immagine verticalmente al passaggio del mouse."
+      },
+      "alt": "Immagine",
+      "no_source": "Nessuna sorgente immagine configurata"
+    },
+    "graphs": {
+      "chart_type": {
+        "title": "Tipo di grafico",
+        "type": "Tipo",
+        "desc": "Seleziona lo stile di visualizzazione per i tuoi dati."
+      },
+      "types": {
+        "line": "Grafico a linee",
+        "bar": "Grafico a barre",
+        "pie": "Grafico a torta",
+        "donut": "Grafico ad anello"
+      },
+      "data_sources": {
+        "title": "Sorgenti dati",
+        "no_entities": "Nessuna entità aggiunta",
+        "add_first_entity": "Aggiungi la tua prima entità per creare un grafico",
+        "add_entity": "Aggiungi entità"
+      },
+      "entity": "Entità",
+      "line": {
+        "show_points": "Mostra punti",
+        "fill_area": "Riempimento area",
+        "line_width": "Spessore linea",
+        "line_style": "Stile linea"
+      },
+      "line_styles": {
+        "solid": "Pieno",
+        "dashed": "Tratteggiato",
+        "dotted": "Punteggiato"
+      },
+      "display": {
+        "title": "Opzioni di visualizzazione",
+        "show_title": "Mostra titolo grafico",
+        "show_value": "Mostra valore grafico",
+        "chart_title": "Titolo grafico",
+        "chart_title_placeholder": "Inserisci il titolo del grafico",
+        "time_period": "Periodo",
+        "time_period_desc": "Quanti dati storici mostrare.",
+        "normalize_values": "Normalizza i valori sulla stessa scala",
+        "normalize_desc": "Utile quando si confrontano entità con unità diverse (es., % vs miglia)",
+        "chart_height": "Altezza grafico",
+        "chart_width": "Larghezza grafico (%)",
+        "chart_width_desc": "Percentuale della larghezza disponibile del modulo. L'allineamento controlla il posizionamento.",
+        "chart_alignment": "Allineamento grafico",
+        "chart_alignment_desc": "Allineamento del grafico all'interno del suo contenitore.",
+        "info_position": "Posizione info",
+        "info_position_desc": "Posizione della sovrapposizione che mostra nome/valore.",
+        "legend_position": "Posizione legenda",
+        "legend_position_desc": "Dove posizionare la legenda quando abilitata.",
+        "background_color": "Colore sfondo",
+        "chart_options": "Opzioni grafico",
+        "show_legend": "Mostra legenda",
+        "show_grid": "Mostra griglia",
+        "smooth_lines": "Linee smussate",
+        "show_tooltips": "Mostra suggerimenti",
+        "add_slice_gap": "Aggiungi spazio tra le fette"
+      },
+      "agg": {
+        "mean": "Media",
+        "sum": "Somma",
+        "min": "Minimo",
+        "max": "Massimo",
+        "median": "Mediana",
+        "first": "Primo valore",
+        "last": "Ultimo valore",
+        "count": "Conteggio",
+        "delta": "Variazione"
+      },
+      "position": {
+        "top": "Alto",
+        "bottom": "Basso",
+        "left": "Sinistra",
+        "right": "Destra",
+        "hidden": "Nascosto",
+        "top_left": "In alto a sinistra",
+        "top_right": "In alto a destra",
+        "bottom_left": "In basso a sinistra",
+        "bottom_right": "In basso a destra",
+        "middle": "Centro",
+        "center": "Centro"
+      },
+      "pie": {
+        "show_title": "Mostra titolo nella fetta",
+        "show_value": "Mostra valore nella fetta"
+      },
+      "period": {
+        "1h": "Ultima ora",
+        "3h": "Ultime 3 ore",
+        "6h": "Ultime 6 ore",
+        "12h": "Ultime 12 ore",
+        "24h": "Ultime 24 ore",
+        "2d": "Ultimi 2 giorni",
+        "7d": "Ultima settimana",
+        "30d": "Ultimo mese",
+        "90d": "Ultimi 3 mesi",
+        "365d": "Ultimo anno"
+      },
+      "reset_345": "Ripristina predefinito (345px)",
+      "reset_100": "Ripristina predefinito (100%)",
+      "entity_desc": "Seleziona un'entità da tracciare.",
+      "display_name_optional": "Nome visualizzato (facoltativo)",
+      "use_as_card_info": "Usa come info scheda",
+      "attribute": "Attributo",
+      "attribute_desc": "Usa lo stato dell'entità o seleziona un attributo specifico da tracciare.",
+      "attribute_state_default": "Stato (predefinito)",
+      "show_points": "Mostra punti",
+      "fill_area": "Riempimento area",
+      "line_style": "Stile linea",
+      "line_solid": "Pieno",
+      "line_dashed": "Tratteggiato",
+      "line_dotted": "Punteggiato",
+      "pie_show_title": "Mostra titolo nella fetta",
+      "pie_show_value": "Mostra valore nella fetta",
+      "expand_options": "Espandi opzioni",
+      "no_entities": "Nessuna entità aggiunta",
+      "add_first_entity": "Aggiungi la tua prima entità per creare un grafico",
+      "add_entity": "Aggiungi entità",
+      "display_options": {
+        "title": "Opzioni di visualizzazione"
+      },
+      "show_title": "Mostra titolo grafico",
+      "show_value": "Mostra valore grafico",
+      "chart_title": "Titolo grafico",
+      "chart_title_placeholder": "Inserisci il titolo del grafico",
+      "time_period": "Periodo",
+      "time_period_desc": "Quanti dati storici mostrare.",
+      "normalize_values": "Normalizza i valori sulla stessa scala",
+      "normalize_desc": "Utile quando si confrontano entità con unità diverse (es., % vs miglia)",
+      "chart_height": "Altezza grafico",
+      "chart_width": "Larghezza grafico (%)"
+    },
+    "info": {
+      "entity_section": {
+        "title": "CONFIGURAZIONE ENTITÀ"
+      },
+      "entity": "Entità",
+      "entity_desc": "Seleziona l'entità da visualizzare",
+      "icon_section": {
+        "title": "Impostazioni icona"
+      },
+      "show_icon": "Mostra icona",
+      "show_icon_desc": "Mostra un'icona accanto al valore dell'entità",
+      "icon": "Icona",
+      "icon_desc": "Scegli un'icona da visualizzare",
+      "icon_color": "Colore icona",
+      "name_section": {
+        "title": "Impostazioni nome"
+      },
+      "show_name": "Mostra nome",
+      "show_name_desc": "Mostra il nome dell'entità sopra il valore",
+      "custom_name": "Nome personalizzato",
+      "custom_name_desc": "Sostituisci il nome dell'entità con un nome personalizzato",
+      "name_color": "Colore nome",
+      "state_section": {
+        "title": "Impostazioni stato"
+      },
+      "show_state": "Mostra stato",
+      "show_state_desc": "Mostra lo stato/valore dell'entità",
+      "show_units": "Mostra unità",
+      "show_units_desc": "Mostra l'unità di misura (se disponibile)",
+      "state_color": "Colore stato",
+      "template": {
+        "title": "Modalità modello",
+        "desc": "Usa un modello per formattare il valore dell'entità. I modelli consentono di utilizzare la sintassi di templating di Home Assistant per formattazioni complesse.",
+        "mode": "Modalità modello",
+        "mode_desc": "Usa la sintassi di templating di Home Assistant per formattare il valore",
+        "value": "Modello valore",
+        "value_desc": "Modello per formattare il valore dell'entità usando la sintassi Jinja2"
+      },
+      "size_section": {
+        "title": "Impostazioni dimensioni"
+      },
+      "icon_size": "Dimensione icona",
+      "icon_size_desc": "Dimensione dell'icona in pixel",
+      "name_size": "Dimensione nome",
+      "name_size_desc": "Dimensione del testo del nome dell'entità in pixel",
+      "value_size": "Dimensione valore",
+      "value_size_desc": "Dimensione del testo del valore dell'entità in pixel",
+      "icon_gap": "Spazio icona",
+      "icon_gap_desc": "Spazio tra icona e contenuto in pixel",
+      "layout_section": {
+        "title": "Layout e posizionamento"
+      },
+      "icon_position": "Posizione icona",
+      "overall_alignment": "Allineamento generale",
+      "icon_alignment": "Allineamento icona",
+      "content_alignment": "Allineamento contenuto",
+      "examples_title": "Esempi comuni:",
+      "example_basic": "Valore base",
+      "example_units": "Con unità",
+      "example_round": "Arrotonda a 1 decimale"
+    },
+    "button": {
+      "basic": {
+        "title": "Impostazioni di base",
+        "desc": "Configura l'aspetto del pulsante e il contenuto del testo."
+      },
+      "text": {
+        "title": "Testo pulsante",
+        "desc": "Testo da visualizzare sul pulsante (lascia vuoto per solo icona)."
+      },
+      "style": {
+        "title": "Stile pulsante",
+        "desc": "Stile visivo del pulsante"
+      },
+      "alignment": {
+        "title": "Allineamento",
+        "desc": "Come il pulsante è allineato nel suo contenitore"
+      },
+      "styles": {
+        "flat": "Piatto (predefinito)",
+        "glossy": "Lucido",
+        "embossed": "In rilievo",
+        "inset": "Incassato",
+        "gradient_overlay": "Sovrapposizione gradiente",
+        "neon_glow": "Bagliore neon",
+        "outline": "Contorno",
+        "glass": "Vetro",
+        "metallic": "Metallico"
+      },
+      "align": {
+        "left": "Sinistra",
+        "center": "Centro",
+        "right": "Destra",
+        "justify": "Giustifica (larghezza piena)"
+      },
+      "icon": {
+        "title": "Impostazioni icona",
+        "desc": "Configura visualizzazione e posizionamento dell'icona per il pulsante.",
+        "before": "Prima del testo",
+        "after": "Dopo il testo",
+        "enable_toggle_desc": "Abilita l'interruttore sopra per configurare le impostazioni dell'icona"
+      },
+      "icon_field": "Icona",
+      "show_icon": "Mostra icona",
+      "show_icon_desc": "Mostra un'icona sul pulsante",
+      "icon_desc": "Icona da visualizzare (es., mdi:home)",
+      "icon_position": "Posizione icona",
+      "icon_position_desc": "Posizione dell'icona rispetto al testo",
+      "colors": {
+        "title": "Colori",
+        "background": "Colore sfondo",
+        "text": "Colore testo"
+      },
+      "hover": {
+        "title": "Effetti hover",
+        "effect_type": "Tipo di effetto",
+        "effect_type_desc": "Scegli l'effetto hover per questo pulsante.",
+        "none": "Nessuno",
+        "color": "Cambio colore",
+        "scale": "Scala",
+        "glow": "Bagliore",
+        "lift": "Sollevamento (traslazione Y)",
+        "hover_color": "Colore hover",
+        "glow_color": "Colore bagliore",
+        "enable_toggle_desc": "Abilita l'interruttore sopra per configurare gli effetti hover"
+      },
+      "actions": {
+        "type": "Tipo di azione",
+        "type_desc": "Scegli cosa accade quando si clicca il pulsante",
+        "entity": "Entità",
+        "entity_desc": "Seleziona l'entità con cui interagire",
+        "navigation_path": "Percorso di navigazione",
+        "navigation_path_desc": "Percorso verso cui navigare (es., /dashboard/energy)",
+        "service": "Servizio",
+        "service_desc": "Servizio da chiamare (es., light.turn_on)",
+        "service_data": "Dati servizio (JSON)",
+        "service_data_desc": "Dati facoltativi da passare al servizio (formato JSON)"
+      },
+      "tap": {
+        "title": "Azione al tocco",
+        "desc": "Azione da eseguire quando si tocca il pulsante"
+      },
+      "hold": {
+        "title": "Azione alla pressione",
+        "desc": "Azione da eseguire quando il pulsante è tenuto premuto"
+      },
+      "double": {
+        "title": "Azione al doppio tocco",
+        "desc": "Azione da eseguire quando il pulsante viene toccato due volte"
+      }
+    },
+    "layout_extra": {
+      "module_name": "Nome del modulo:",
+      "module_name_placeholder": "Assegna un nome personalizzato a questo modulo per identificarlo più facilmente nell'editor.",
+      "module_name_help": "Assegna un nome personalizzato a questo modulo per identificarlo più facilmente nell'editor."
+    },
+    "camera": {
+      "config": {
+        "title": "Configurazione telecamera",
+        "desc": "Configura l'entità telecamera e le impostazioni di visualizzazione."
+      },
+      "entity": "Entità telecamera",
+      "entity_desc": "Seleziona l'entità telecamera da visualizzare. Dovrebbe essere un'entità camera o mjpeg da Home Assistant.",
+      "name": "Nome telecamera",
+      "name_desc": "Nome personalizzato per la telecamera. Lascia vuoto per usare il nome dell'entità.",
+      "show_name": "Mostra nome telecamera",
+      "show_name_desc": "Visualizza il nome della telecamera nel feed",
+      "show_name_toggle": {
+        "enable_toggle_desc": "Abilita l'interruttore sopra per configurare la visualizzazione del nome della telecamera"
+      },
+      "name_position": {
+        "group_title": "Posizione nome telecamera",
+        "title": "Posizione nome",
+        "desc": "Scegli dove il nome della telecamera appare come sovrapposizione sull'immagine della telecamera.",
+        "options": {
+          "top_left": "In alto a sinistra",
+          "top_right": "In alto a destra",
+          "center": "Centro",
+          "bottom_left": "In basso a sinistra",
+          "bottom_right": "In basso a destra"
+        }
+      },
+      "display": {
+        "title": "Impostazioni visualizzazione"
+      },
+      "live_view": {
+        "title": "Vista dal vivo",
+        "desc": "Abilita per mostrare lo stream della telecamera dal vivo (richiede integrazione stream). Quando disabilitato, mostra istantanee di immagini fisse."
+      },
+      "auto_refresh": {
+        "section_title": "Impostazioni aggiornamento automatico",
+        "title": "Aggiornamento automatico",
+        "desc": "Aggiorna automaticamente l'immagine della telecamera a intervalli regolari"
+      },
+      "refresh_interval": {
+        "title": "Intervallo di aggiornamento (secondi)",
+        "desc": "Quanto spesso aggiornare automaticamente l'immagine della telecamera."
+      },
+      "dimensions": {
+        "title": "Dimensioni"
+      },
+      "width": "Larghezza (px)",
+      "width_desc": "Imposta la larghezza del display della telecamera. Intervallo: 100-1000px",
+      "height": "Altezza (px)",
+      "height_desc": "Imposta l'altezza del display della telecamera. Intervallo: 100-1000px",
+      "link_aspect": "Collega rapporto d'aspetto",
+      "unlink_aspect": "Scollega rapporto d'aspetto",
+      "aspect_linked": {
+        "title": "Rapporto d'aspetto collegato",
+        "desc": "Le dimensioni mantengono un rapporto {ratio}:1. Regolare una dimensione aggiorna automaticamente l'altra per mantenere le proporzioni."
+      },
+      "aspect_independent": {
+        "title": "Dimensioni indipendenti",
+        "desc": "Larghezza e altezza possono essere regolate indipendentemente. Clicca il pulsante di collegamento sopra per mantenere il rapporto d'aspetto."
+      },
+      "crop": {
+        "title": "Ritaglia e posizione",
+        "desc": "Regola il ritaglio e la posizione della vista della telecamera. Utile per focalizzare su aree specifiche o rimuovere bordi indesiderati.",
+        "left_title": "Ritaglio sinistro (%)",
+        "left_desc": "Ritaglia dal bordo sinistro. Valori più alti mostrano meno del lato sinistro.",
+        "right_title": "Ritaglio destro (%)",
+        "right_desc": "Ritaglia dal bordo destro. Valori più alti mostrano meno del lato destro.",
+        "top_title": "Ritaglio superiore (%)",
+        "top_desc": "Ritaglia dal bordo superiore. Valori più alti mostrano meno dell'area superiore.",
+        "bottom_title": "Ritaglio inferiore (%)",
+        "bottom_desc": "Ritaglia dal bordo inferiore. Valori più alti mostrano meno dell'area inferiore.",
+        "active_applied": "Ritagli attivi applicati",
+        "reset_all": "Reimposta tutti i ritagli"
+      },
+      "template": {
+        "title": "Modalità modello",
+        "desc": "Usa un modello per impostare dinamicamente l'entità telecamera. I modelli permettono di usare la sintassi di templating di Home Assistant per la selezione condizionale della telecamera.",
+        "mode_label": "Modalità modello",
+        "mode_desc": "Usa la sintassi di templating di Home Assistant per selezionare dinamicamente l'entità telecamera",
+        "camera_template_label": "Modello telecamera",
+        "camera_template_desc": "Modello per impostare dinamicamente l'entità telecamera usando la sintassi Jinja2",
+        "examples_title": "Esempi comuni:",
+        "example1_desc": "Mostra telecamera quando il tempo è soleggiato",
+        "example2_desc": "Cambia tra telecamere basato su input boolean",
+        "example3_desc": "Usa input select per scegliere l'entità telecamera"
+      }
+    },
+    "separator": {
+      "config": {
+        "title": "Configurazione separatore"
+      },
+      "style": {
+        "title": "Stile separatore",
+        "desc": "Scegli lo stile visivo della linea di separazione."
+      },
+      "options": {
+        "solid": "Linea continua",
+        "double": "Doppia linea",
+        "dotted": "Linea tratteggiata",
+        "double_dotted": "Doppio tratteggio",
+        "shadow": "Ombra",
+        "blank": "Spazio vuoto"
+      },
+      "appearance": {
+        "title": "Aspetto"
+      },
+      "thickness": "Spessore (px)",
+      "thickness_desc": "Spessore della linea di separazione.",
+      "width": "Larghezza (%)",
+      "width_desc": "Larghezza del separatore come percentuale del contenitore.",
+      "color": {
+        "title": "Colore",
+        "desc": "Colore della linea di separazione."
+      },
+      "show_title": "Mostra titolo",
+      "show_title_desc": "Aggiungi testo al centro della linea di separazione (es., ------ Testo ------)",
+      "show_title_toggle": {
+        "enable_toggle_desc": "Abilita l'interruttore sopra per configurare le impostazioni del titolo"
+      },
+      "text_content": {
+        "title": "Contenuto testo",
+        "desc": "Testo da visualizzare al centro del separatore."
+      },
+      "font_size": "Dimensione carattere",
+      "font_size_desc": "Dimensione del testo in pixel.",
+      "text_color": {
+        "title": "Colore testo",
+        "desc": "Colore del testo del separatore."
+      },
+      "text_format": {
+        "title": "Formattazione testo",
+        "desc": "Applica stili di formattazione al testo del separatore.",
+        "bold": "Grassetto",
+        "italic": "Corsivo",
+        "underline": "Sottolineato",
+        "uppercase": "Maiuscolo",
+        "strikethrough": "Barrato"
+      },
+      "spacer": {
+        "title": "Altezza spazio"
+      },
+      "height": "Altezza (px)",
+      "height_desc": "Controlla lo spazio visivo per Spazio vuoto."
+    },
+    "design": {
+      "copy": "Copia",
+      "paste": "Incolla",
+      "reset_all": "Reimposta tutto",
+      "copy_tooltip": "Copia le impostazioni di design correnti (funziona su tutte le Ultra Card)",
+      "paste_tooltip_has": "Incolla le impostazioni di design copiate (dal clipboard tra schede)",
+      "paste_tooltip_none": "Nessuna impostazione di design nel clipboard tra schede",
+      "reset_all_tooltip": "Reimposta tutte le impostazioni di design ai valori predefiniti",
+      "text_section": "Testo",
+      "text_color": "Colore testo",
+      "alignment": "Allineamento",
+      "inherit_alignment": "Eredita (nessun allineamento)",
+      "font_size": "Dimensione carattere",
+      "font_size_placeholder": "16px (predefinito), 1.2rem, max(1rem, 1.5vw)",
+      "reset_font_size": "Reimposta dimensione carattere predefinita",
+      "line_height": "Interlinea",
+      "line_height_placeholder": "0 (predefinito), 28px, 1.7",
+      "reset_line_height": "Reimposta interlinea predefinita",
+      "letter_spacing": "Spaziatura lettere",
+      "letter_spacing_placeholder": "auto (predefinito), 1px, -0.04em",
+      "reset_letter_spacing": "Reimposta spaziatura lettere predefinita",
+      "font": "Carattere",
+      "font_weight": "Spessore carattere",
+      "text_transform": "Trasformazione testo",
+      "font_style": "Stile carattere",
+      "default_option": "– Predefinito –",
+      "weight_thin": "100 - Sottile",
+      "weight_light": "300 - Leggero",
+      "weight_normal": "400 - Normale",
+      "weight_medium": "500 - Medio",
+      "weight_semi_bold": "600 - Semi grassetto",
+      "weight_bold": "700 - Grassetto",
+      "weight_black": "900 - Nero",
+      "transform_none": "Nessuno",
+      "transform_uppercase": "MAIUSCOLO",
+      "transform_lowercase": "minuscolo",
+      "transform_capitalize": "Iniziale maiuscola",
+      "style_normal": "Normale",
+      "style_italic": "Corsivo",
+      "style_oblique": "Obliquo",
+      "background_section": "Sfondo",
+      "background_color": "Colore sfondo",
+      "background_image_type": "Tipo immagine di sfondo",
+      "bg_none": "Nessuno",
+      "bg_upload": "Carica immagine",
+      "bg_entity": "Immagine entità",
+      "bg_url": "URL immagine",
+      "sizes_section": "Dimensioni",
+      "spacing_section": "Spaziatura",
+      "border_section": "Bordo",
+      "text_shadow_section": "Ombra testo",
+      "box_shadow_section": "Ombra del riquadro",
+      "position_section": "Posizione",
+      "overflow_section": "Overflow",
+      "animations_section": "Animazioni",
+      "width": "Larghezza",
+      "height": "Altezza",
+      "max_width": "Larghezza max",
+      "max_height": "Altezza max",
+      "min_width": "Larghezza min",
+      "min_height": "Altezza min",
+      "border_radius": "Raggio del bordo",
+      "border_style": "Stile bordo",
+      "border_width": "Spessore bordo",
+      "border_color": "Colore bordo",
+      "margin": "Margine",
+      "padding": "Spaziatura interna",
+      "top": "Alto",
+      "right": "Destra",
+      "bottom": "Basso",
+      "left": "Sinistra",
+      "unlock_sides": "Sblocca per modificare i lati indipendentemente",
+      "lock_sides": "Blocca per modificare tutti i lati insieme",
+      "horizontal_shift": "Spostamento orizzontale",
+      "vertical_shift": "Spostamento verticale",
+      "blur": "Sfocatura",
+      "text_shadow_color": "Colore ombra testo",
+      "box_shadow_color": "Colore ombra riquadro",
+      "overflow": "Overflow",
+      "clip_path": "Clip-path",
+      "upload_bg_image": "Carica immagine di sfondo",
+      "bg_image_entity": "Entità immagine di sfondo",
+      "bg_image_url": "URL immagine di sfondo",
+      "choose_file": "Scegli file",
+      "no_file_chosen": "Nessun file selezionato",
+      "backdrop_filter": "Filtro sfondo",
+      "spread": "Diffusione",
+      "visible_default": "Visibile (predefinito)",
+      "examples": "Esempi",
+      "state_based_animation": "Animazione basata sullo stato",
+      "animation_type": "Tipo di animazione",
+      "animation_duration": "Durata animazione",
+      "animation_duration_desc": "Durata dell'animazione (es., 2s, 500ms, 1.5s)",
+      "intro_outro_animations": "Animazioni di entrata e uscita",
+      "intro_animation": "Animazione di entrata",
+      "outro_animation": "Animazione di uscita",
+      "duration": "Durata",
+      "delay": "Ritardo",
+      "timing": "Temporizzazione",
+      "none": "Nessuno",
+      "ease": "Ease",
+      "border_style_none": "Nessuno",
+      "border_style_solid": "Pieno",
+      "border_style_dashed": "Tratteggiato",
+      "border_style_dotted": "Punteggiato",
+      "border_style_double": "Doppio",
+      "position_default": "– Predefinito –",
+      "position_static": "Statico",
+      "position_relative": "Relativo",
+      "position_absolute": "Assoluto",
+      "position_fixed": "Fisso",
+      "position_sticky": "Adesivo"
+    },
+    "modules": {
+      "text": "Modulo testo",
+      "image": "Modulo immagine",
+      "icon": "Modulo icona",
+      "bar": "Modulo barra",
+      "info": "Modulo info",
+      "button": "Modulo pulsante",
+      "separator": "Modulo separatore",
+      "markdown": "Modulo Markdown",
+      "camera": "Modulo telecamera",
+      "graphs": "Modulo grafici",
+      "no_text_configured": "Nessun testo configurato",
+      "no_image_configured": "Nessuna immagine configurata",
+      "uploaded_image": "Immagine caricata",
+      "icons_configured": "{count} icone configurate",
+      "no_icons_configured": "Nessuna icona configurata",
+      "default_entity_suggestion": "Entità: sensor.battery_level",
+      "sample_text": "Testo di esempio"
+    }
+  }
+}

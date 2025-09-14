@@ -1,6 +1,25 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { LinkAction } from './services/link-service';
 
+// Action type definition (without 'default')
+export type ActionType =
+  | 'more-info'
+  | 'toggle'
+  | 'navigate'
+  | 'url'
+  | 'perform-action'
+  | 'assist'
+  | 'nothing';
+
+export interface ModuleActionConfig {
+  action: ActionType;
+  entity?: string;
+  navigation_path?: string;
+  url_path?: string;
+  service?: string;
+  service_data?: Record<string, any>;
+}
+
 // MODULAR LAYOUT SYSTEM TYPES
 // ============================
 
@@ -42,7 +61,8 @@ export interface BaseModule {
     | 'vertical'
     | 'button'
     | 'markdown'
-    | 'camera';
+    | 'camera'
+    | 'graphs';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -52,6 +72,19 @@ export interface BaseModule {
   background_image?: string;
   background_image_type?: 'none' | 'upload' | 'entity' | 'url';
   background_image_entity?: string;
+  background_size?: 'cover' | 'contain' | 'auto' | string; // string to allow custom values like '100px 200px'
+  background_position?:
+    | 'left top'
+    | 'left center'
+    | 'left bottom'
+    | 'center top'
+    | 'center center'
+    | 'center bottom'
+    | 'right top'
+    | 'right center'
+    | 'right bottom'
+    | string; // string to allow custom values
+  background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
   margin?: {
     top?: number;
     bottom?: number;
@@ -184,6 +217,11 @@ export interface TextModule extends BaseModule {
   font_style?: 'normal' | 'italic' | 'oblique';
   template_mode?: boolean;
   template?: string;
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+  hover_effect?: 'none' | 'color' | 'scale' | 'glow' | 'lift';
+  hover_glow_color?: string;
 }
 
 // Separator Module
@@ -202,6 +240,58 @@ export interface SeparatorModule extends BaseModule {
   title_uppercase?: boolean;
   title_strikethrough?: boolean;
   title_underline?: boolean;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Image Module
@@ -309,6 +399,9 @@ export interface ImageModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Info Entity Configuration
@@ -319,6 +412,8 @@ export interface InfoEntityConfig {
   icon?: string;
   show_icon?: boolean;
   show_name?: boolean;
+  show_state?: boolean;
+  show_units?: boolean;
   text_size?: number;
   name_size?: number;
   icon_size?: number;
@@ -333,6 +428,7 @@ export interface InfoEntityConfig {
   icon_color?: string;
   name_color?: string;
   text_color?: string;
+  state_color?: string;
   click_action?: 'none' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'service';
   navigation_path?: string;
   url?: string;
@@ -350,6 +446,9 @@ export interface InfoEntityConfig {
   content_alignment?: 'start' | 'center' | 'end';
   overall_alignment?: 'left' | 'center' | 'right';
   icon_gap?: number;
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Info Module
@@ -361,6 +460,58 @@ export interface InfoModule extends BaseModule {
   columns?: number;
   gap?: number;
   allow_wrap?: boolean;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Bar Module
@@ -399,7 +550,8 @@ export interface BarModule extends BaseModule {
     | 'glass'
     | 'metallic'
     | 'neumorphic'
-    | 'dashed';
+    | 'dashed'
+    | 'dots';
   bar_width?: number; // Now a percentage number instead of string
   bar_alignment?: 'left' | 'center' | 'right';
   height?: number;
@@ -409,6 +561,7 @@ export interface BarModule extends BaseModule {
   label_alignment?: 'left' | 'center' | 'right' | 'space-between';
   show_percentage?: boolean;
   percentage_text_size?: number;
+  percentage_text_alignment?: 'left' | 'center' | 'right';
   show_value?: boolean;
   value_position?: 'inside' | 'outside' | 'none';
 
@@ -448,7 +601,7 @@ export interface BarModule extends BaseModule {
 
   // Gradient Configuration
   use_gradient?: boolean;
-  gradient_display_mode?: 'full' | 'cropped';
+  gradient_display_mode?: 'full' | 'cropped' | 'value-based';
   gradient_stops?: Array<{
     id: string;
     position: number;
@@ -463,6 +616,106 @@ export interface BarModule extends BaseModule {
   animation?: boolean;
   template_mode?: boolean;
   template?: string;
+
+  // Bar Animation (state/attribute triggered)
+  bar_animation_enabled?: boolean;
+  bar_animation_entity?: string;
+  bar_animation_trigger_type?: 'state' | 'attribute';
+  bar_animation_attribute?: string;
+  bar_animation_value?: string;
+  bar_animation_type?:
+    | 'none'
+    | 'charging'
+    | 'pulse'
+    | 'blinking'
+    | 'bouncing'
+    | 'glow'
+    | 'rainbow'
+    | 'bubbles'
+    | 'fill'
+    | 'ripple'
+    | 'traffic'
+    | 'traffic_flow'
+    | 'heartbeat'
+    | 'flicker'
+    | 'shimmer'
+    | 'vibrate';
+
+  // Bar Animation Override (takes precedence over the regular animation)
+  bar_animation_override_entity?: string;
+  bar_animation_override_trigger_type?: 'state' | 'attribute';
+  bar_animation_override_attribute?: string;
+  bar_animation_override_value?: string;
+  bar_animation_override_type?:
+    | 'none'
+    | 'charging'
+    | 'pulse'
+    | 'blinking'
+    | 'bouncing'
+    | 'glow'
+    | 'rainbow'
+    | 'bubbles'
+    | 'fill'
+    | 'ripple'
+    | 'traffic'
+    | 'traffic_flow'
+    | 'heartbeat'
+    | 'flicker'
+    | 'shimmer'
+    | 'vibrate';
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Icon Configuration
@@ -478,6 +731,8 @@ export interface IconConfig {
   active_state?: string;
   custom_inactive_state_text?: string;
   custom_active_state_text?: string;
+  custom_inactive_name_text?: string;
+  custom_active_name_text?: string;
 
   // Template modes for state evaluation
   inactive_template_mode?: boolean;
@@ -515,18 +770,58 @@ export interface IconConfig {
   // Other display options
   show_units?: boolean;
 
+  // Hover effects
+  enable_hover_effect?: boolean;
+
   // Sizing
   icon_size?: number;
   text_size?: number;
+  name_icon_gap?: number;
+  name_state_gap?: number;
+  icon_state_gap?: number;
 
   // Active/Inactive specific sizing
   active_icon_size?: number;
   inactive_icon_size?: number;
+  active_text_size?: number;
+  inactive_text_size?: number;
+  state_size?: number;
+  active_state_size?: number;
+  inactive_state_size?: number;
+
+  // Size lock mechanism (individual locks for each size)
+  icon_size_locked?: boolean;
+  text_size_locked?: boolean;
+  state_size_locked?: boolean;
+
+  // Field lock mechanism (locks for active fields to inherit from inactive)
+  active_icon_locked?: boolean;
+  active_icon_color_locked?: boolean;
+  active_icon_background_locked?: boolean;
+  active_icon_background_color_locked?: boolean;
+  active_name_locked?: boolean;
+  active_name_color_locked?: boolean;
+  active_state_locked?: boolean;
+  active_state_color_locked?: boolean;
 
   // Icon background
   icon_background?: 'none' | 'rounded-square' | 'circle';
   use_entity_color_for_icon_background?: boolean;
   icon_background_color?: string;
+
+  // Container background image controls (optional per-icon override)
+  background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+  background_position?:
+    | 'left top'
+    | 'left center'
+    | 'left bottom'
+    | 'center top'
+    | 'center center'
+    | 'center bottom'
+    | 'right top'
+    | 'right center'
+    | 'right bottom';
+  background_size?: 'cover' | 'contain' | 'auto' | string;
 
   // Active/Inactive specific icon backgrounds
   active_icon_background?: 'none' | 'rounded-square' | 'circle';
@@ -566,6 +861,7 @@ export interface IconConfig {
   vertical_alignment?: 'top' | 'center' | 'bottom';
   container_width?: number; // Changed from string to number for slider
   container_background_shape?: 'none' | 'rounded' | 'square' | 'circle';
+  container_background_color?: string;
 
   // Link/Action Configuration (using UltraLink pattern)
   tap_action?: {
@@ -645,6 +941,58 @@ export interface IconModule extends BaseModule {
   vertical_alignment?: 'top' | 'center' | 'bottom';
   columns?: number;
   gap?: number;
+  // Global action configuration (for the module container)
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover effects
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Horizontal Layout Module
@@ -652,9 +1000,58 @@ export interface HorizontalModule extends BaseModule {
   type: 'horizontal';
   modules: CardModule[];
   alignment?: 'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'justify';
+  vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch' | 'baseline';
   gap?: number;
   wrap?: boolean;
-  mobile_single_column?: boolean;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
 }
 
 // Vertical Layout Module
@@ -662,14 +1059,66 @@ export interface VerticalModule extends BaseModule {
   type: 'vertical';
   modules: CardModule[];
   alignment?: 'top' | 'center' | 'bottom' | 'space-between' | 'space-around';
+  // New: Horizontal alignment controls how items are aligned in the single column
+  // Backward-compatible addition; UI will prefer this over legacy vertical alignment for cross-axis
+  horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
   gap?: number;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
 }
 
 // Button Module
 export interface ButtonModule extends BaseModule {
   type: 'button';
   label: string;
-  action?: LinkAction;
+  action?: LinkAction; // Legacy support
   style?:
     | 'flat'
     | 'glossy'
@@ -681,20 +1130,73 @@ export interface ButtonModule extends BaseModule {
     | 'glass'
     | 'metallic'
     | 'neumorphic'
-    | 'dashed';
+    | 'dashed'
+    | 'dots';
   alignment?: 'left' | 'center' | 'right' | 'justify';
   show_icon?: boolean;
   icon?: string;
   icon_position?: 'before' | 'after';
   background_color?: string;
   text_color?: string;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Markdown Module
 export interface MarkdownModule extends BaseModule {
   type: 'markdown';
   markdown_content: string;
-  link?: string;
+  link?: string; // Legacy support
   hide_if_no_link?: boolean;
   template_mode?: boolean;
   template?: string;
@@ -711,6 +1213,58 @@ export interface MarkdownModule extends BaseModule {
   enable_code_highlighting?: boolean;
   max_height?: string;
   overflow_behavior?: 'scroll' | 'hidden' | 'visible';
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Camera Module
@@ -721,11 +1275,21 @@ export interface CameraModule extends BaseModule {
   entity: string;
   camera_name?: string;
   show_name?: boolean;
+  name_position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
 
   // Display settings
-  aspect_ratio?: '16:9' | '4:3' | '1:1' | 'auto';
+  width?: number;
+  height?: number;
+  aspect_ratio_linked?: boolean;
+  aspect_ratio_value?: number; // Stored as width/height ratio
   image_fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
   border_radius?: string;
+
+  // Crop settings (percentage values)
+  crop_left?: number;
+  crop_top?: number;
+  crop_right?: number;
+  crop_bottom?: number;
 
   // Camera controls
   show_controls?: boolean;
@@ -795,6 +1359,237 @@ export interface CameraModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// Graph Entity Configuration
+export interface GraphEntityConfig {
+  id: string;
+  entity: string;
+  name?: string;
+  attribute?: string;
+  color?: string;
+  chart_type_override?: string;
+  show_points?: boolean;
+  fill_area?: boolean;
+  line_width?: number;
+  line_style?: 'solid' | 'dashed' | 'dotted';
+  // When true, this entity provides the header/icon/value for the card
+  is_primary?: boolean;
+  // Pie/Donut: whether to show the entity name inside its slice
+  label_show_name?: boolean;
+  // Pie/Donut: whether to show the entity value inside its slice
+  label_show_value?: boolean;
+}
+
+// Graphs Module
+export interface GraphsModule extends BaseModule {
+  type: 'graphs';
+
+  // Chart configuration
+  chart_type:
+    | 'line'
+    | 'bar'
+    | 'area'
+    | 'scatter'
+    | 'bubble'
+    | 'pie'
+    | 'donut'
+    | 'radar'
+    | 'histogram'
+    | 'heatmap'
+    | 'waterfall'
+    | 'combo';
+  entities: GraphEntityConfig[];
+
+  // Time period
+  time_period: '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';
+  custom_time_start?: string;
+  custom_time_end?: string;
+
+  // Chart appearance
+  show_title?: boolean;
+  title?: string;
+  title_size?: number;
+  title_color?: string;
+  // Alignment of chart within its container
+  chart_alignment?: 'left' | 'center' | 'right';
+
+  show_legend?: boolean;
+
+  // Scale options
+  normalize_values?: boolean;
+  legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
+
+  show_grid?: boolean;
+  grid_color?: string;
+
+  background_color?: string;
+  // Width can be CSS length or percentage (e.g., '100%', 'auto', '320px')
+  chart_width?: string;
+  chart_height?: number;
+
+  // Header/info overlay position
+  info_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'middle';
+  // Toggle whether to render info overlay at all
+  show_info_overlay?: boolean;
+  // Control individual parts of the overlay
+  show_display_name?: boolean;
+  show_entity_value?: boolean;
+
+  // Axis configuration
+  show_x_axis?: boolean;
+  x_axis_label?: string;
+  x_axis_color?: string;
+  x_axis_grid?: boolean;
+
+  show_y_axis?: boolean;
+  y_axis_label?: string;
+  y_axis_color?: string;
+  y_axis_min?: number;
+  y_axis_max?: number;
+  y_axis_grid?: boolean;
+
+  // Data configuration
+  data_aggregation?:
+    | 'mean'
+    | 'sum'
+    | 'min'
+    | 'max'
+    | 'median'
+    | 'first'
+    | 'last'
+    | 'count'
+    | 'delta';
+  data_points_limit?: number;
+  smooth_curves?: boolean;
+
+  // Animation
+  enable_animation?: boolean;
+  animation_duration?: string;
+
+  // Interactivity
+  enable_zoom?: boolean;
+  enable_pan?: boolean;
+  show_tooltips?: boolean;
+  // Control labels inside slices globally is deprecated in favor of per-entity
+  // show_slice_labels?: boolean;
+
+  // Chart-specific options
+  // Line/Area
+  line_tension?: number;
+  fill_opacity?: number;
+  show_points?: boolean;
+  point_radius?: number;
+
+  // Bar/Histogram
+  bar_width?: number;
+  bar_spacing?: number;
+  stacked?: boolean;
+  horizontal?: boolean;
+
+  // Pie/Donut
+  inner_radius?: number;
+  start_angle?: number;
+  show_percentages?: boolean;
+  explode_slices?: boolean;
+  // Gap between slices (in degrees or px-equivalent)
+  slice_gap?: number;
+  // Show labels inside slices (name and value)
+  show_slice_labels?: boolean;
+
+  // Scatter/Bubble
+  point_size?: number;
+  point_opacity?: number;
+  show_regression?: boolean;
+  bubble_scale?: number;
+
+  // Radar
+  scale_min?: number;
+  scale_max?: number;
+  grid_levels?: number;
+  point_style?: 'circle' | 'triangle' | 'rect' | 'star';
+
+  // Heatmap
+  cell_padding?: number;
+  color_scheme?: 'viridis' | 'plasma' | 'inferno' | 'magma' | 'blues' | 'reds' | 'greens' | 'greys';
+  show_values?: boolean;
+  value_format?: string;
+
+  // Waterfall
+  positive_color?: string;
+  negative_color?: string;
+  total_color?: string;
+  connector_color?: string;
+
+  // Combo
+  primary_axis?: 'left' | 'right';
+  secondary_axis?: 'left' | 'right' | 'none';
+  sync_axes?: boolean;
+
+  // Auto-refresh
+  auto_refresh?: boolean;
+  refresh_interval?: number;
+
+  // Templates
+  template_mode?: boolean;
+  template?: string;
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }
 
 // Union type for all module types
@@ -809,7 +1604,44 @@ export type CardModule =
   | VerticalModule
   | ButtonModule
   | MarkdownModule
-  | CameraModule;
+  | CameraModule
+  | GraphsModule;
+
+// Hover effects configuration
+export interface HoverEffectConfig {
+  effect?:
+    | 'none'
+    | 'highlight'
+    | 'outline'
+    | 'grow'
+    | 'shrink'
+    | 'pulse'
+    | 'bounce'
+    | 'float'
+    | 'glow'
+    | 'shadow'
+    | 'rotate'
+    | 'skew'
+    | 'wobble'
+    | 'buzz'
+    | 'fade';
+  duration?: number; // Duration in milliseconds (default: 300)
+  timing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
+  delay?: number; // Delay before effect starts in milliseconds (default: 0)
+  // Color settings for specific effects
+  highlight_color?: string; // For 'highlight' effect
+  outline_color?: string; // For 'outline' effect
+  outline_width?: number; // For 'outline' effect (default: 2px)
+  glow_color?: string; // For 'glow' effect
+  shadow_color?: string; // For 'shadow' effect
+  // Transform settings
+  scale?: number; // For 'grow'/'shrink' effects (default: 1.05 for grow, 0.95 for shrink)
+  translate_x?: number; // For 'float' effect
+  translate_y?: number; // For 'float' effect
+  rotate_degrees?: number; // For 'rotate' effect
+  // Animation intensity
+  intensity?: 'subtle' | 'normal' | 'strong'; // Affects magnitude of effects
+}
 
 // Design properties interface that can be shared
 export interface SharedDesignProperties {
@@ -826,6 +1658,19 @@ export interface SharedDesignProperties {
   // Background properties
   background_color?: string;
   background_image?: string;
+  // New: background image rendering controls
+  background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+  background_position?:
+    | 'left top'
+    | 'left center'
+    | 'left bottom'
+    | 'center top'
+    | 'center center'
+    | 'center bottom'
+    | 'right top'
+    | 'right center'
+    | 'right bottom';
+  background_size?: 'cover' | 'contain' | 'auto' | string; // string to allow custom values like '100% 100%'
   backdrop_filter?: string;
   // Size properties
   width?: string;
@@ -919,6 +1764,8 @@ export interface SharedDesignProperties {
     | 'ease-out'
     | 'ease-in-out'
     | 'cubic-bezier(0.25,0.1,0.25,1)';
+  // Hover effects
+  hover_effect?: HoverEffectConfig;
   // Logic properties
   logic_entity?: string;
   logic_attribute?: string;
@@ -992,6 +1839,8 @@ export interface CardRow {
     | '20-60-20'
     | '25-25-25-25';
   gap?: number;
+  column_alignment?: 'top' | 'middle' | 'bottom';
+  content_alignment?: 'start' | 'end' | 'center' | 'stretch';
   background_color?: string;
   padding?: number;
   margin?: number;

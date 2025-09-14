@@ -1,0 +1,1209 @@
+{
+  "editor": {
+    "tabs": {
+      "layout": "Layoutbyggare",
+      "settings": "Inställningar",
+      "about": "Om"
+    },
+    "settings": {
+      "title": "Kortinställningar",
+      "description": "Konfigurera global kortutseende och beteende."
+    },
+    "appearance": {
+      "title": "Utseende",
+      "description": "Kontrollera det visuella utseendet på ditt kort"
+    },
+    "spacing": {
+      "title": "Avstånd",
+      "description": "Kontrollera avståndet och positioneringen av ditt kort"
+    },
+    "fields": {
+      "card_background_color": "Kortbakgrundsfärg",
+      "card_background_color_desc": "Bakgrundsfärgen för hela kortet",
+      "border_radius": "Kantradius",
+      "border_radius_desc": "Rundade hörn för kortet (i pixlar)",
+      "card_padding": "Kortutfyllnad",
+      "card_padding_desc": "Internt avstånd inom kortet",
+      "card_margin": "Kortmarginal",
+      "card_margin_desc": "Externt avstånd runt kortet",
+      "unit_px": "px",
+      "reset_default": "Återställ till standard",
+      "reset_default_value": "Återställ till standard ({value})"
+    },
+    "tooltips": {
+      "enter_fullscreen": "Gå till helskärm",
+      "return_dashboard": "Återgå till instrumentpanel",
+      "dashboard": "Instrumentpanel"
+    },
+    "layout": {
+      "live_preview": "Live förhandsvisning",
+      "toggle_preview": "Växla förhandsvisning",
+      "drag_to_move_module": "Dra för att flytta modul",
+      "edit_module": "Redigera modul",
+      "duplicate_module": "Duplicera modul",
+      "delete_module": "Ta bort modul",
+      "drag_to_move_layout": "Dra för att flytta layoutmodul",
+      "horizontal_layout": "Horisontell layout",
+      "vertical_layout": "Vertikal layout",
+      "add_module_to_layout": "Lägg till modul i layout",
+      "layout_settings": "Layoutinställningar",
+      "duplicate_layout": "Duplicera layout",
+      "delete_layout": "Ta bort layout",
+      "click_to_add_module": "Klicka för att lägga till en modul",
+      "drop_modules_here": "Släpp moduler här",
+      "drag_to_reorder": "Dra för att ändra ordning",
+      "edit_child_module": "Redigera undermodul",
+      "duplicate_child_module": "Duplicera undermodul",
+      "delete_child_module": "Ta bort undermodul",
+      "module_settings_title": "Modulinställningar",
+      "general_tab": "Allmänt",
+      "actions_tab": "Åtgärder",
+      "other_tab": "Annat",
+      "logic_tab": "Logik",
+      "design_tab": "Design",
+      "drag_to_resize": "Dra för att ändra storlek",
+      "hidden_by_logic": "Dold av logik",
+      "child_module_settings_title": "Undermodulinställningar",
+      "add_row": "Lägg till rad",
+      "add_row_tooltip": "Lägg till en ny rad till din layout",
+      "row_settings": "Radinställningar",
+      "column_settings": "Kolumninställningar",
+      "row_background_color": "Radbakgrundsfärg",
+      "column_gap": "Kolumnavstånd (px)",
+      "vertical_alignment": "Vertikal justering",
+      "horizontal_alignment": "Horisontell justering",
+      "column_preview": "Kolumnförhandsvisning",
+      "modules_count": "{count} moduler",
+      "alignment_top": "Topp",
+      "alignment_center": "Centrum",
+      "alignment_bottom": "Botten",
+      "alignment_stretch": "Sträck",
+      "alignment_left": "Vänster",
+      "alignment_right": "Höger"
+    },
+    "about": {
+      "developed_by": "Utvecklad av",
+      "desc1": "En kraftfull modulär kortbyggare för Home Assistant",
+      "desc2": "Skapa anpassade layouter med ett professionellt sidbyggargränssnitt",
+      "desc3": "Modulärt layoutsystem med villkorlig logik och professionella designverktyg",
+      "github_repo": "GitHub-förråd",
+      "version": "Version",
+      "join_discord": "Gå med i vår Discord",
+      "support_title": "Stöd Ultra Card",
+      "support_desc": "Dina generösa tips driver utvecklingen av fantastiska funktioner för detta kort! Utan stöd från användare som du skulle fortsatt innovation inte vara möjlig.",
+      "leave_tip": "LÄMNA ETT TIPS (PAYPAL)"
+    },
+    "actions": {
+      "title": "Åtgärdskonfiguration",
+      "description": "Konfigurera hur denna modul svarar på användarinteraktioner. Använder Home Assistants inbyggda åtgärdssystem för konsekvent beteende över din instrumentpanel.",
+      "tap_action": "Tryckåtgärd",
+      "tap_action_desc": "Åtgärd som utförs vid tryck/klick på modulen",
+      "hold_action": "Håll-åtgärd",
+      "hold_action_desc": "Åtgärd som utförs vid nedtryckning av modulen",
+      "double_tap_action": "Dubbeltryck-åtgärd",
+      "double_tap_action_desc": "Åtgärd som utförs vid dubbeltryck på modulen",
+      "tap_behavior": "Tryckbeteende",
+      "tap_behavior_desc": "Åtgärd att utföra när elementet trycks/klickas.",
+      "hold_behavior": "Håll-beteende",
+      "hold_behavior_desc": "Åtgärd att utföra när elementet trycks och hålls.",
+      "double_tap_behavior": "Dubbeltryck-beteende",
+      "double_tap_behavior_desc": "Åtgärd att utföra när elementet dubbeltrycks/klickas."
+    },
+    "icon": {
+      "entity_config": {
+        "title": "ENTITETSKONFIGURATION",
+        "desc": "Konfigurera entiteten och aktiva/inaktiva tillstånd"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Välj entiteten som denna ikon representerar",
+      "inactive_state": "Inaktivt tillstånd",
+      "inactive_state_desc": "Tillståndsvärde som anses \"inaktivt\" (lämna tomt för att använda faktiskt entitetstillstånd)",
+      "active_state": "Aktivt tillstånd",
+      "active_state_desc": "Tillståndsvärde som anses \"aktivt\" (lämna tomt för att använda faktiskt entitetstillstånd)",
+      "active_animation": "Aktiv animation",
+      "active_animation_desc": "Animation när ikon är aktiv",
+      "active_icon": "Aktiv ikon",
+      "active_icon_background": "Aktiv ikon bakgrund",
+      "active_icon_background_color": "Aktiv ikon bakgrundsfärg",
+      "active_icon_color": "Aktiv ikon färg",
+      "active_icon_desc": "Ikon att visa när aktiv",
+      "active_name": "Aktivt namn",
+      "active_name_color": "Aktivt namn färg",
+      "active_name_desc": "Anpassat namn när aktiv",
+      "active_state_color": "Aktiv tillståndsfärg",
+      "active_state_text": "Aktiv tillståndstext",
+      "animation_bounce": "Studsa",
+      "animation_fade": "Tona",
+      "animation_flash": "Blinka",
+      "animation_none": "Ingen",
+      "animation_pulse": "Pulsera",
+      "animation_rotate_left": "Rotera vänster",
+      "animation_rotate_right": "Rotera höger",
+      "animation_scale": "Skala",
+      "animation_section": {
+        "desc": "Konfigurera animationer för aktiva och inaktiva tillstånd",
+        "title": "Ikonanimation"
+      },
+      "animation_shake": "Skaka",
+      "animation_spin": "Snurra",
+      "animation_tada": "Tada",
+      "animation_vibrate": "Vibrera",
+      "background_color_active": "Bakgrundsfärg när aktiv",
+      "background_color_inactive": "Bakgrundsfärg när inaktiv",
+      "background_section": {
+        "desc": "Konfigurera inaktiva bakgrundsinställningar",
+        "title": "Inaktiv bakgrund"
+      },
+      "background_shape_active": "Bakgrundsform när aktiv",
+      "background_shape_inactive": "Bakgrundsform när inaktiv",
+      "custom_active_name": "Anpassat aktivt namn",
+      "custom_active_name_desc": "Åsidosätt entitetsnamn när aktiv (lämna tomt för att använda entitetsnamn)",
+      "custom_active_state": "Anpassat aktivt tillstånd",
+      "custom_active_state_desc": "Anpassad text när aktiv (lämna tomt för att använda faktiskt tillstånd)",
+      "custom_inactive_name": "Anpassat inaktivt namn",
+      "custom_inactive_name_desc": "Åsidosätt entitetsnamn när inaktiv (lämna tomt för att använda entitetsnamn)",
+      "custom_inactive_state": "Anpassat inaktivt tillstånd",
+      "custom_inactive_state_desc": "Anpassad text när inaktiv (lämna tomt för att använda faktiskt tillstånd)",
+      "icon_color_active": "Färg när aktiv",
+      "icon_color_inactive": "Färg när inaktiv",
+      "icon_section": {
+        "title": "Ikonkonfiguration"
+      },
+      "icon_size_active": "Ikonstorlek när aktiv",
+      "icon_size_inactive": "Ikonstorlek när inaktiv",
+      "inactive_animation": "Inaktiv animation",
+      "inactive_animation_desc": "Animation när ikon är inaktiv",
+      "inactive_icon": "Inaktiv ikon",
+      "inactive_icon_background": "Inaktiv ikon bakgrund",
+      "inactive_icon_background_color": "Inaktiv ikon bakgrundsfärg",
+      "inactive_icon_color": "Inaktiv ikon färg",
+      "inactive_icon_config": "Inaktiv ikonkonfiguration",
+      "inactive_icon_config_desc": "Konfigurera inaktiva ikoninställningar",
+      "inactive_icon_desc": "Ikon att visa när inaktiv",
+      "inactive_name": "Inaktivt namn",
+      "inactive_name_color": "Inaktivt namn färg",
+      "inactive_name_config": "Inaktiv namnkonfiguration",
+      "inactive_name_config_desc": "Konfigurera inaktiva namninställningar",
+      "inactive_name_desc": "Anpassat namn när inaktiv",
+      "inactive_state_color": "Inaktiv tillståndsfärg",
+      "inactive_state_config": "Inaktiv tillståndskonfiguration",
+      "inactive_state_config_desc": "Konfigurera inaktiva tillståndsinställningar",
+      "inactive_state_text": "Inaktiv tillståndstext",
+      "name_color_active": "Namnfärg när aktiv",
+      "name_color_inactive": "Namnfärg när inaktiv",
+      "name_section": {
+        "title": "Namnkonfiguration"
+      },
+      "name_size_active": "Namntextstorlek när aktiv",
+      "name_size_inactive": "Namntextstorlek när inaktiv",
+      "state_color_active": "Tillståndsfärg när aktiv",
+      "state_color_inactive": "Tillståndsfärg när inaktiv",
+      "state_section": {
+        "title": "Tillståndskonfiguration"
+      },
+      "state_size_active": "Tillståndstextstorlek när aktiv",
+      "state_size_inactive": "Tillståndstextstorlek när inaktiv",
+      "template": "Mall",
+      "template_mode": "Avancerat mallläge",
+      "template_section": {
+        "desc": "Använd Jinja2-mallar för avancerad ikonkontroll. Mallar kan kontrollera synlighet (sant/falskt för att visa/dölja ikoner) och anpassa tillståndstext. Returnera anpassad text för aktivt tillstånd, returnera faktiskt entitetstillstånd för inaktivt tillstånd.",
+        "title": "Avancerat mallläge"
+      }
+    },
+    "text": {
+      "content_section": {
+        "title": "Innehållskonfiguration",
+        "desc": "Konfigurera textinnehållet och grundläggande inställningar för denna modul."
+      },
+      "text_content": "Textinnehåll",
+      "text_content_desc": "Ange textinnehållet som ska visas i denna modul.",
+      "icon_section": {
+        "title": "Ikonkonfiguration",
+        "desc": "Välj en ikon att visa tillsammans med textinnehållet."
+      },
+      "icon": "Ikon",
+      "icon_desc": "Välj en ikon att visa tillsammans med texten. Lämna tom för ingen ikon.",
+      "icon_position": "Ikonposition",
+      "icon_position_desc": "Välj var ikonen ska placeras i förhållande till texten.",
+      "before_text": "Före text",
+      "after_text": "Efter text",
+      "template_mode": "Mallläge",
+      "template_mode_desc": "Använd Home Assistant mallsyntax för att rendera text",
+      "value_template": "Värdemall",
+      "value_template_desc": "Mall för att rendera texten med Jinja2-syntax",
+      "examples_title": "Vanliga exempel:",
+      "example_basic": "Grundvärde",
+      "example_percent": "Med procent"
+    },
+    "bar": {
+      "bar_settings": {
+        "title": "Stapellinställningar",
+        "desc": "Konfigurera hur stapelns procent beräknas och visas."
+      },
+      "perc_type": {
+        "entity": "Entitet (0-100)",
+        "attribute": "Entitetsattribut",
+        "difference": "Skillnad",
+        "template": "Mall"
+      },
+      "attribute_section": {
+        "title": "Entitetsattributkonfiguration",
+        "desc": "Konfigurera entitetsattributinställningar"
+      },
+      "attribute_entity": "Attributentitet",
+      "attribute_entity_desc": "Välj entiteten som innehåller attributet med procentvärdet",
+      "attribute_name": "Attributnamn",
+      "attribute_name_desc": "Ange namnet på attributet som innehåller procentvärdet (t.ex. \"battery_level\")",
+      "diff_section": {
+        "title": "Skillnadsberäkningskonfiguration",
+        "desc": "Konfigurera skillnadsberäkningsinställningar"
+      },
+      "current_entity": "Nuvarande värdeentitet",
+      "current_entity_desc": "Entitet som representerar nuvarande/använd mängd (t.ex. använt bränsle, förbrukat batteri)",
+      "total_entity": "Total värdeentitet",
+      "total_entity_desc": "Entitet som representerar total/maximal mängd (t.ex. bränslekapacitet, batterikapacitet)",
+      "template_section": {
+        "title": "Mallkonfiguration",
+        "desc": "Konfigurera mallinställningar"
+      },
+      "percentage_template": "Procentmall",
+      "percentage_template_desc": "Ange en Jinja2-mall som returnerar ett nummer mellan 0-100 för procenten. Exempel: {{ (states('sensor.battery_level') | float) * 100 }}",
+      "animation": {
+        "desc": "Animera stapelfyllningen med förinställningar som laddningsränder, puls, glöd och mer. Du kan utlösa animationer baserat på en entitets tillstånd eller attribut, och valfritt åsidosätta animationen när ett annat villkor uppfylls.",
+        "override": {
+          "attribute_name_desc": "Attributnamn att jämföra",
+          "desc": "Välj en åtgärdsentitet och tillstånd för att definiera när denna animation ska åsidosätta den vanliga animationen",
+          "entity_desc": "Entitet att utvärdera för åsidosättningsutlösare",
+          "match_value": "Åsidosätt matchvärde",
+          "match_value_desc": "Textjämförelse mot tillstånd eller attribut",
+          "title": "Åtgärdsanimation åsidosättning",
+          "type": "Åsidosätt animationstyp",
+          "type_desc": "Animation att använda när åsidosättningsvillkor matchar."
+        },
+        "title": "Stapelanimation",
+        "trigger": {
+          "attribute_name_desc": "Attributnamn att jämföra (t.ex. charging_status)",
+          "desc": "Välj en entitet att övervaka och definiera värdet + animation att tillämpa när det matchar.",
+          "entity_desc": "Entitet att utvärdera för animationsutlösare",
+          "match_value": "Matchvärde",
+          "match_value_desc": "Text att jämföra mot tillstånd eller attribut (jämförelse är textbaserad).",
+          "title": "Animationsutlösare",
+          "type": "Utlösartyp",
+          "type_desc": "Välj om entitetstillstånd eller ett attribut ska jämföras"
+        },
+        "type": "Animationstyp",
+        "type_desc": "Välj hur stapeln ska animeras när den utlöses.",
+        "types": {
+          "blinking": "Blinkande",
+          "bouncing": "Studsande",
+          "bubbles": "Bubblor",
+          "charging": "Laddning (diagonala linjer)",
+          "fill": "Fyll",
+          "flicker": "Flimmer",
+          "glow": "Glöd",
+          "heartbeat": "Hjärtslag",
+          "pulse": "Pulsera",
+          "rainbow": "Regnbåge",
+          "ripple": "Krusning",
+          "shimmer": "Skimmer",
+          "traffic": "Trafik (barberarpelare)",
+          "vibrate": "Vibrera"
+        }
+      },
+      "appearance": {
+        "alignment": "Stapeljustering",
+        "alignment_desc": "Välj hur stapeln ska justeras när den är mindre än 100% bredd.",
+        "border_radius": "Kantradius",
+        "border_radius_desc": "Kontrollera stapelns rundade hörn.",
+        "height": "Stapelhöjd",
+        "height_desc": "Justera tjockleken på förloppsstapeln i pixlar.",
+        "style": "Stapelstil",
+        "style_dashed": "Streckad",
+        "style_desc": "Välj den visuella stilen för förloppsstapeln.",
+        "style_dots": "Prickar",
+        "style_embossed": "Präglad",
+        "style_flat": "Platt (standard)",
+        "style_glass": "Glas",
+        "style_glossy": "Blank",
+        "style_gradient": "Gradientöverlägg",
+        "style_inset": "Infälld",
+        "style_metallic": "Metallisk",
+        "style_neon": "Neonglöd",
+        "style_neumorphic": "Neumorfisk",
+        "style_outline": "Kontur",
+        "title": "Stapelutseende",
+        "width": "Stapelbredd",
+        "width_desc": "Ställ in stapelbredden som procent av behållaren."
+      },
+      "attr_config": {
+        "attribute_entity": "Attributentitet",
+        "attribute_entity_desc": "Välj entiteten som innehåller attributet med procentvärdet",
+        "attribute_name": "Attributnamn",
+        "attribute_name_desc": "Ange namnet på attributet som innehåller procentvärdet (t.ex. \"battery_level\")",
+        "desc": "Konfigurera entitetsattributinställningar",
+        "title": "Entitetsattributkonfiguration"
+      },
+      "colors": {
+        "background_color": "Bakgrundsfärg",
+        "bar_color": "Stapelfärg",
+        "border_color": "Kantfärg",
+        "left_side": "Vänster sida färger",
+        "limit_indicator": "Gränsindikator",
+        "percentage_text": "Procenttext",
+        "right_side": "Höger sida färger",
+        "title": "Färger",
+        "title_color": "Titelfärg",
+        "value_color": "Värdefärg"
+      },
+      "diff_config": {
+        "current_entity": "Nuvarande värdeentitet",
+        "current_entity_desc": "Entitet som representerar nuvarande/använd mängd (t.ex. använt bränsle, förbrukat batteri)",
+        "desc": "Konfigurera skillnadsberäkningsinställningar",
+        "title": "Skillnadsberäkningskonfiguration",
+        "total_entity": "Total värdeentitet",
+        "total_entity_desc": "Entitet som representerar total/maximal mängd (t.ex. bränslekapacitet, batterikapacitet)"
+      },
+      "entity": {
+        "desc_empty": "Välj en entitet som ger ett procentvärde (0-100). Batterisensorer är idealiska för staplar.",
+        "desc_present": "Entiteten som ger procentvärdet för stapeln.",
+        "no_entity_warning": "Ingen entitet vald - Välj en sensor med värden mellan 0-100",
+        "title": "Stapel procententitet"
+      },
+      "gradient": {
+        "cropped": "Beskuren",
+        "desc": "Tillämpa en färggradient på stapelfyllningen. När aktiverad, välj hur gradienten visas och anpassa färgstopp nedan.",
+        "full": "Full",
+        "title": "Gradientläge",
+        "value_based": "Värdebaserad"
+      },
+      "labels": {
+        "alignment": "Etikettjustering",
+        "alignment_desc": "Kontrollera hur vänster och höger etiketter positioneras."
+      },
+      "left": {
+        "desc": "Konfigurera titeln och entitetsvärdet som visas på vänster sida av stapeln. Detta är användbart för att visa etiketter som 'Räckvidd' eller 'Batteri' tillsammans med deras värden.",
+        "enable_toggle": "Aktivera växeln ovan för att konfigurera vänster sida inställningar",
+        "template_desc": "Använd en mall för att formatera det visade värdet. Mallar använder Home Assistants Jinja2-syntax.",
+        "template_mode": "Mallläge",
+        "title": "Vänster sida",
+        "title_size": "Titelstorlek",
+        "value_size": "Värdestorlek",
+        "value_template": "Värdemall",
+        "value_template_desc": "Mall för att formatera vänster sida värdet med Jinja2-syntax"
+      },
+      "limit_entity": {
+        "desc": "Valfritt: Lägg till en vertikal indikatorlinje på stapeln (t.ex. laddningsgräns för EV-batteri).",
+        "title": "Gränsvärdesentitet (valfritt)"
+      },
+      "percentage": {
+        "desc": "Kontrollera synligheten och utseendet av procentvärden som visas direkt på stapeln. Dessa siffror ger en tydlig visuell indikator för nuvarande nivå.",
+        "text_alignment": "Procenttext justering",
+        "text_size": "Textstorlek",
+        "text_size_desc": "Justera storleken på procenttext som visas på stapeln.",
+        "title": "Procenttext visning"
+      },
+      "right": {
+        "desc": "Konfigurera titeln och entitetsvärdet som visas på höger sida av stapeln. Detta är idealiskt för kompletterande information som 'Tid till full' eller sekundära mätningar.",
+        "enable_toggle": "Aktivera växeln ovan för att konfigurera höger sida inställningar",
+        "template_desc": "Använd en mall för att formatera det visade värdet. Mallar använder Home Assistants Jinja2-syntax.",
+        "template_mode": "Mallläge",
+        "title": "Höger sida",
+        "title_size": "Titelstorlek",
+        "value_size": "Värdestorlek",
+        "value_template": "Värdemall",
+        "value_template_desc": "Mall för att formatera höger sida värdet med Jinja2-syntax"
+      },
+      "template_config": {
+        "desc": "Konfigurera mallinställningar",
+        "percentage_template": "Procentmall",
+        "percentage_template_desc": "Ange en Jinja2-mall som returnerar ett nummer mellan 0-100 för procenten. Exempel: {{ (states('sensor.battery_level') | float) * 100 }}",
+        "title": "Mallkonfiguration"
+      }
+    },
+    "image": {
+      "settings": "Bildinställningar",
+      "source_type": "Bildkälltyp",
+      "source_type_desc": "Välj hur du vill ange bildkällan.",
+      "source": {
+        "default": "Standardbild",
+        "url": "Bild-URL",
+        "upload": "Ladda upp bild",
+        "entity": "Entitetsbild",
+        "attribute": "Entitetsattribut"
+      },
+      "url_section": {
+        "title": "Bild-URL konfiguration"
+      },
+      "image_url": "Bild-URL",
+      "image_url_desc": "Ange den direkta URL:en till bilden du vill visa.",
+      "upload_section": {
+        "title": "Uppladdning av bildkonfiguration"
+      },
+      "upload": "Ladda upp bild",
+      "upload_desc": "Klicka för att ladda upp en bildfil från din enhet.",
+      "entity_section": {
+        "title": "Entitetsbildkonfiguration"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Välj en entitet som har en bild (t.ex. person, kameraentiteter).",
+      "attribute_section": {
+        "title": "Entitetsattributkonfiguration"
+      },
+      "entity_attr_desc": "Välj entiteten som innehåller bild-URL:en i ett av sina attribut.",
+      "attribute_name": "Attributnamn",
+      "attribute_name_desc": "Ange attributsökvägen som innehåller bild-URL:en (punktnotation stöds, t.ex. vehicle_data.vehicleDetails.generalDashboard).",
+      "width": "Bredd (%)",
+      "width_desc": "Ställ in bredden som en procent av behållaren.",
+      "height": "Höjd (px)",
+      "height_desc": "Ställ in höjden i pixlar.",
+      "crop_fit": "Beskär och anpassa",
+      "crop_fit_desc": "Kontrollera hur bilden passar inom sin behållare.",
+      "fit": {
+        "cover": "Täck (beskär för att fylla)",
+        "contain": "Innehåll (anpassa hela bilden)",
+        "fill": "Fyll (sträck för att passa)",
+        "scale_down": "Skala ner",
+        "none": "Ingen (originalstorlek)"
+      },
+      "border_radius": "Kantradius",
+      "border_radius_desc": "Kontrollera bildens rundade hörn.",
+      "tap_actions": "Tryckåtgärder",
+      "filters": "Filter",
+      "filter": {
+        "blur": "Oskärpa",
+        "blur_desc": "Tillämpa en oskärpeeffekt på din bild.",
+        "brightness": "Ljusstyrka (%)",
+        "brightness_desc": "Justera ljusstyrkan på din bild.",
+        "contrast": "Kontrast (%)",
+        "contrast_desc": "Ändra kontrasten på din bild.",
+        "saturation": "Mättnad (%)",
+        "saturation_desc": "Justera mättnaden på din bild."
+      },
+      "hover": {
+        "title": "Hover-effekter",
+        "effect_type": "Effekttyp",
+        "effect_type_desc": "Välj typ av hover-effekt.",
+        "scale": "Skala (zooma in/ut)",
+        "rotate": "Rotera",
+        "fade": "Tona (opacitetsändring)",
+        "blur": "Oskärpa",
+        "brightness": "Ljusstyrka",
+        "glow": "Glöd (boxskugga)",
+        "slide": "Glid (översätt)",
+        "scale_amount": "Skala (%)",
+        "scale_amount_desc": "Justera skalan på bilden vid hover.",
+        "rotate_amount": "Rotation (°)",
+        "rotate_amount_desc": "Rotera bilden vid hover.",
+        "opacity": "Opacitet (%)",
+        "opacity_desc": "Ändra opaciteten på bilden vid hover.",
+        "blur_amount": "Oskärpa (px)",
+        "blur_amount_desc": "Tillämpa en oskärpeeffekt på bilden vid hover.",
+        "brightness_amount": "Ljusstyrka (%)",
+        "brightness_amount_desc": "Justera ljusstyrkan på bilden vid hover.",
+        "glow_intensity": "Glödintensitet",
+        "glow_intensity_desc": "Välj intensiteten på glödeffekten vid hover.",
+        "glow_light": "Ljus glöd",
+        "glow_medium": "Medium glöd",
+        "glow_heavy": "Kraftig glöd",
+        "glow_custom": "Anpassad skugga",
+        "translate_x": "Horisontell (px)",
+        "translate_x_desc": "Översätt bilden horisontellt vid hover.",
+        "translate_y": "Vertikal (px)",
+        "translate_y_desc": "Översätt bilden vertikalt vid hover."
+      },
+      "alt": "Bild",
+      "no_source": "Ingen bildkälla konfigurerad"
+    },
+    "graphs": {
+      "chart_type": {
+        "title": "Diagramtyp",
+        "type": "Typ",
+        "desc": "Välj visualiseringsstil för dina data."
+      },
+      "types": {
+        "line": "Linjediagram",
+        "bar": "Stapeldiagram",
+        "pie": "Cirkeldiagram",
+        "donut": "Munkdiagram"
+      },
+      "data_sources": {
+        "title": "Datakällor",
+        "add_entity": "Lägg till entitet",
+        "add_first_entity": "Lägg till din första entitet för att skapa ett diagram",
+        "no_entities": "Inga entiteter tillagda"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Välj en entitet att plotta.",
+      "display_name_optional": "Visningsnamn (valfritt)",
+      "use_as_card_info": "Använd som kortinfo",
+      "attribute": "Attribut",
+      "attribute_desc": "Använd entitetstillstånd eller välj ett specifikt attribut att spåra.",
+      "attribute_state_default": "Tillstånd (standard)",
+      "show_points": "Visa punkter",
+      "fill_area": "Fyll område",
+      "line_style": "Linjestil",
+      "line_solid": "Heldragen",
+      "line_dashed": "Streckad",
+      "line_dotted": "Prickad",
+      "pie_show_title": "Visa titel i sektor",
+      "pie_show_value": "Visa värde i sektor",
+      "expand_options": "Expandera alternativ",
+      "no_entities": "Inga entiteter tillagda",
+      "add_first_entity": "Lägg till din första entitet för att skapa ett diagram",
+      "add_entity": "Lägg till entitet",
+      "display_options": {
+        "title": "Visningsalternativ"
+      },
+      "show_title": "Visa diagramtitel",
+      "show_value": "Visa diagramvärde",
+      "chart_title": "Diagramtitel",
+      "chart_title_placeholder": "Ange diagramtitel",
+      "time_period": "Tidsperiod",
+      "time_period_desc": "Hur mycket historisk data som ska visas.",
+      "period": {
+        "1h": "Senaste timmen",
+        "3h": "Senaste 3 timmarna",
+        "6h": "Senaste 6 timmarna",
+        "12h": "Senaste 12 timmarna",
+        "24h": "Senaste 24 timmarna",
+        "2d": "Senaste 2 dagarna",
+        "7d": "Senaste veckan",
+        "30d": "Senaste månaden",
+        "90d": "Senaste 3 månaderna",
+        "365d": "Senaste året"
+      },
+      "normalize_values": "Normalisera värden till samma skala",
+      "normalize_desc": "Användbart vid jämförelse av entiteter med olika enheter (t.ex. % vs mil)",
+      "chart_height": "Diagramhöjd",
+      "reset_345": "Återställ till standard (345px)",
+      "chart_width": "Diagrambredd (%)",
+      "reset_100": "Återställ till standard (100%)",
+      "agg": {
+        "count": "Antal",
+        "delta": "Ändring",
+        "first": "Första värdet",
+        "last": "Sista värdet",
+        "max": "Maximum",
+        "mean": "Medelvärde",
+        "median": "Median",
+        "min": "Minimum",
+        "sum": "Summa"
+      },
+      "display": {
+        "add_slice_gap": "Lägg till sektormellanrum",
+        "background_color": "Bakgrundsfärg",
+        "chart_alignment": "Diagramjustering",
+        "chart_alignment_desc": "Justering av diagrammet inom sin behållare.",
+        "chart_height": "Diagramhöjd",
+        "chart_options": "Diagramalternativ",
+        "chart_title": "Diagramtitel",
+        "chart_title_placeholder": "Ange diagramtitel",
+        "chart_width": "Diagrambredd (%)",
+        "chart_width_desc": "Procent av modulens tillgängliga bredd. Justering styr placering.",
+        "info_position": "Infoposition",
+        "info_position_desc": "Position för överlägg som visar namn/värde.",
+        "legend_position": "Legendposition",
+        "legend_position_desc": "Var legenden ska placeras när aktiverad.",
+        "normalize_desc": "Användbart vid jämförelse av entiteter med olika enheter (t.ex. % vs mil)",
+        "normalize_values": "Normalisera värden till samma skala",
+        "show_grid": "Visa rutnät",
+        "show_legend": "Visa legend",
+        "show_title": "Visa diagramtitel",
+        "show_tooltips": "Visa verktygstips",
+        "show_value": "Visa diagramvärde",
+        "smooth_lines": "Mjuka linjer",
+        "time_period": "Tidsperiod",
+        "time_period_desc": "Hur mycket historisk data som ska visas.",
+        "title": "Visningsalternativ"
+      },
+      "line": {
+        "fill_area": "Fyll område",
+        "line_style": "Linjestil",
+        "line_width": "Linjebredd",
+        "show_points": "Visa punkter"
+      },
+      "line_styles": {
+        "dashed": "Streckad",
+        "dotted": "Prickad",
+        "solid": "Heldragen"
+      },
+      "pie": {
+        "show_title": "Visa titel i sektor",
+        "show_value": "Visa värde i sektor"
+      },
+      "position": {
+        "bottom": "Botten",
+        "bottom_left": "Nedre vänster",
+        "bottom_right": "Nedre höger",
+        "center": "Centrum",
+        "hidden": "Dold",
+        "left": "Vänster",
+        "middle": "Centrum",
+        "right": "Höger",
+        "top": "Topp",
+        "top_left": "Övre vänster",
+        "top_right": "Övre höger"
+      }
+    },
+    "button": {
+      "basic": {
+        "title": "Grundinställningar",
+        "desc": "Konfigurera knappens utseende och textinnehåll."
+      },
+      "text": {
+        "title": "Knapptext",
+        "desc": "Text att visa på knappen (lämna tom för endast ikon)."
+      },
+      "style": {
+        "title": "Knappstil",
+        "desc": "Visuell stil för knappen"
+      },
+      "alignment": {
+        "title": "Justering",
+        "desc": "Hur knappen är justerad inom sin behållare"
+      },
+      "styles": {
+        "flat": "Platt (standard)",
+        "glossy": "Blank",
+        "embossed": "Präglad",
+        "inset": "Infälld",
+        "gradient_overlay": "Gradientöverlägg",
+        "neon_glow": "Neonglöd",
+        "outline": "Kontur",
+        "glass": "Glas",
+        "metallic": "Metallisk"
+      },
+      "align": {
+        "left": "Vänster",
+        "center": "Centrum",
+        "right": "Höger",
+        "justify": "Justera (full bredd)"
+      },
+      "icon": {
+        "title": "Ikoninställningar",
+        "desc": "Konfigurera ikonvisning och positionering för knappen.",
+        "before": "Före text",
+        "after": "Efter text",
+        "enable_toggle_desc": "Aktivera växeln ovan för att konfigurera ikoninställningar"
+      },
+      "colors": {
+        "title": "Färger",
+        "background": "Bakgrundsfärg",
+        "text": "Textfärg"
+      },
+      "hover": {
+        "effect_type": "Effekttyp",
+        "effect_type_desc": "Välj hover-effekt för denna knapp.",
+        "none": "Ingen",
+        "color": "Färgändring",
+        "scale": "Skala",
+        "glow": "Glöd",
+        "lift": "Lyft (översätt Y)",
+        "hover_color": "Hover-färg",
+        "glow_color": "Glödfärg",
+        "title": "Hover-effekter",
+        "enable_toggle_desc": "Aktivera växeln ovan för att konfigurera hover-effekter"
+      },
+      "actions": {
+        "type": "Åtgärdstyp",
+        "type_desc": "Välj vad som händer när knappen klickas",
+        "entity": "Entitet",
+        "entity_desc": "Välj entiteten att interagera med",
+        "navigation_path": "Navigeringssökväg",
+        "navigation_path_desc": "Sökväg att navigera till (t.ex. /dashboard/energy)",
+        "service": "Tjänst",
+        "service_desc": "Tjänst att anropa (t.ex. light.turn_on)",
+        "service_data": "Tjänstdata (JSON)",
+        "service_data_desc": "Valfri data att skicka till tjänsten (JSON-format)"
+      },
+      "tap": {
+        "title": "Tryckåtgärd",
+        "desc": "Åtgärd att utföra när knappen trycks"
+      },
+      "hold": {
+        "title": "Håll-åtgärd",
+        "desc": "Åtgärd att utföra när knappen hålls nere"
+      },
+      "double": {
+        "title": "Dubbeltryck-åtgärd",
+        "desc": "Åtgärd att utföra när knappen dubbeltrycks"
+      },
+      "show_icon": "Visa ikon",
+      "show_icon_desc": "Visa en ikon på knappen",
+      "icon_desc": "Ikon att visa (t.ex. mdi:home)",
+      "icon_position": "Ikonposition",
+      "icon_position_desc": "Position för ikonen i förhållande till text",
+      "icon_field": "Ikon"
+    },
+    "info": {
+      "entity_section": {
+        "title": "ENTITETSKONFIGURATION"
+      },
+      "entity": "Entitet",
+      "entity_desc": "Välj entiteten att visa",
+      "icon_section": {
+        "title": "Ikoninställningar"
+      },
+      "show_icon": "Visa ikon",
+      "show_icon_desc": "Visa en ikon bredvid entitetsvärdet",
+      "icon": "Ikon",
+      "icon_desc": "Välj en ikon att visa",
+      "icon_color": "Ikonfärg",
+      "name_section": {
+        "title": "Namninställningar"
+      },
+      "show_name": "Visa namn",
+      "show_name_desc": "Visa entitetsnamnet ovanför värdet",
+      "custom_name": "Anpassat namn",
+      "custom_name_desc": "Åsidosätt entitetsnamnet med ett anpassat namn",
+      "name_color": "Namnfärg",
+      "state_section": {
+        "title": "Tillståndsinställningar"
+      },
+      "show_state": "Visa tillstånd",
+      "show_state_desc": "Visa entitetstillstånd/värde",
+      "show_units": "Visa enheter",
+      "show_units_desc": "Visa måttenheten (om tillgänglig)",
+      "state_color": "Tillståndsfärg",
+      "template": {
+        "title": "Mallläge",
+        "desc": "Använd en mall för att formatera entitetsvärdet. Mallar låter dig använda Home Assistants mallsyntax för komplex formatering.",
+        "mode": "Mallläge",
+        "mode_desc": "Använd Home Assistants mallsyntax för att formatera värdet",
+        "value": "Värdemall",
+        "value_desc": "Mall för att formatera entitetsvärdet med Jinja2-syntax"
+      },
+      "size_section": {
+        "title": "Storleksinställningar"
+      },
+      "icon_size": "Ikonstorlek",
+      "icon_size_desc": "Storlek på ikonen i pixlar",
+      "name_size": "Namnstorlek",
+      "name_size_desc": "Storlek på entitetsnamnstexten i pixlar",
+      "value_size": "Värdestorlek",
+      "value_size_desc": "Storlek på entitetsvärdestexten i pixlar",
+      "icon_gap": "Ikonavstånd",
+      "icon_gap_desc": "Utrymme mellan ikon och innehåll i pixlar",
+      "layout_section": {
+        "title": "Layout och positionering"
+      },
+      "icon_position": "Ikonposition",
+      "overall_alignment": "Övergripande justering",
+      "icon_alignment": "Ikonjustering",
+      "content_alignment": "Innehållsjustering",
+      "examples_title": "Vanliga exempel:",
+      "example_basic": "Grundvärde",
+      "example_units": "Med enheter",
+      "example_round": "Avrunda till 1 decimal"
+    },
+    "camera": {
+      "config": {
+        "title": "Kamerakonfiguration",
+        "desc": "Konfigurera kameraentiteten och visningsinställningar."
+      },
+      "entity": "Kameraentitet",
+      "entity_desc": "Välj kameraentiteten att visa. Detta bör vara en kamera- eller mjpeg-entitet från Home Assistant.",
+      "name": "Kameranamn",
+      "name_desc": "Anpassat namn för kameran. Lämna tomt för att använda entitetsnamn.",
+      "show_name": "Visa kameranamn",
+      "show_name_desc": "Visa kameranamnet på flödet",
+      "name_position": {
+        "group_title": "Kameranamnposition",
+        "title": "Namnposition",
+        "desc": "Välj var kameranamnet visas som ett överlägg på kamerabilden.",
+        "options": {
+          "top_left": "Övre vänster",
+          "top_right": "Övre höger",
+          "center": "Centrum",
+          "bottom_left": "Nedre vänster",
+          "bottom_right": "Nedre höger"
+        }
+      },
+      "display": {
+        "title": "Visningsinställningar"
+      },
+      "live_view": {
+        "title": "Livevisning",
+        "desc": "Aktivera för att visa live kameraström (kräver strömintegration). När inaktiverad visas stillbildsögonblicksbilder."
+      },
+      "auto_refresh": {
+        "section_title": "Automatiska uppdateringsinställningar",
+        "title": "Automatisk uppdatering",
+        "desc": "Uppdatera automatiskt kamerabilden med jämna mellanrum"
+      },
+      "refresh_interval": {
+        "title": "Uppdateringsintervall (sekunder)",
+        "desc": "Hur ofta kamerabilden ska uppdateras automatiskt."
+      },
+      "dimensions": {
+        "title": "Dimensioner"
+      },
+      "width": "Bredd (px)",
+      "width_desc": "Ställ in bredden på kameravisningen. Intervall: 100-1000px",
+      "height": "Höjd (px)",
+      "height_desc": "Ställ in höjden på kameravisningen. Intervall: 100-1000px",
+      "link_aspect": "Länka bildförhållande",
+      "unlink_aspect": "Avlänka bildförhållande",
+      "aspect_linked": {
+        "title": "Bildförhållande länkat",
+        "desc": "Dimensioner behåller {ratio}:1 förhållande. Justering av en dimension uppdaterar automatiskt den andra för att behålla proportioner."
+      },
+      "aspect_independent": {
+        "title": "Oberoende dimensioner",
+        "desc": "Bredd och höjd kan justeras oberoende. Klicka på länkknappen ovan för att behålla bildförhållande."
+      },
+      "crop": {
+        "title": "Beskär och position",
+        "desc": "Justera beskärningen och positionen för kameravyn. Användbart för att fokusera på specifika områden eller ta bort oönskade kanter.",
+        "left_title": "Vänster beskärning (%)",
+        "left_desc": "Beskär från vänster kant. Högre värden visar mindre av vänster sida.",
+        "right_title": "Höger beskärning (%)",
+        "right_desc": "Beskär från höger kant. Högre värden visar mindre av höger sida.",
+        "top_title": "Övre beskärning (%)",
+        "top_desc": "Beskär från övre kant. Högre värden visar mindre av det övre området.",
+        "bottom_title": "Nedre beskärning (%)",
+        "bottom_desc": "Beskär från nedre kant. Högre värden visar mindre av det nedre området.",
+        "active_applied": "Aktiva beskärningar tillämpade",
+        "reset_all": "Återställ alla beskärningar"
+      },
+      "template": {
+        "title": "Mallläge",
+        "desc": "Använd en mall för att dynamiskt ställa in kameraentiteten. Mallar låter dig använda Home Assistants mallsyntax för villkorlig kameraval.",
+        "mode_label": "Mallläge",
+        "mode_desc": "Använd Home Assistants mallsyntax för att dynamiskt välja kameraentitet",
+        "camera_template_label": "Kameramall",
+        "camera_template_desc": "Mall för att dynamiskt ställa in kameraentiteten med Jinja2-syntax",
+        "examples_title": "Vanliga exempel:",
+        "example1_desc": "Visa kamera när vädret är soligt",
+        "example2_desc": "Växla mellan kameror baserat på input boolean",
+        "example3_desc": "Använd input select för att välja kameraentitet"
+      },
+      "show_name_toggle": {
+        "enable_toggle_desc": "Aktivera växeln ovan för att konfigurera kamerananvisning"
+      }
+    },
+    "separator": {
+      "config": {
+        "title": "Separatorkonfiguration"
+      },
+      "style": {
+        "title": "Separatorstil",
+        "desc": "Välj den visuella stilen för separatorlinjen."
+      },
+      "options": {
+        "solid": "Heldragen linje",
+        "double": "Dubbel linje",
+        "dotted": "Prickad linje",
+        "double_dotted": "Dubbel prickad",
+        "shadow": "Skugga",
+        "blank": "Tomt utrymme"
+      },
+      "appearance": {
+        "title": "Utseende"
+      },
+      "thickness": "Tjocklek (px)",
+      "thickness_desc": "Tjocklek på separatorlinjen.",
+      "width": "Bredd (%)",
+      "width_desc": "Bredd på separatorn som procent av behållaren.",
+      "color": {
+        "title": "Färg",
+        "desc": "Färg på separatorlinjen."
+      },
+      "show_title": "Visa titel",
+      "show_title_desc": "Lägg till text i mitten av separatorlinjen (t.ex. ------ Text ------)",
+      "text_content": {
+        "title": "Textinnehåll",
+        "desc": "Text att visa i mitten av separatorn."
+      },
+      "font_size": "Teckenstorlek",
+      "font_size_desc": "Storlek på texten i pixlar.",
+      "text_color": {
+        "title": "Textfärg",
+        "desc": "Färg på separatortexten."
+      },
+      "text_format": {
+        "title": "Textformatering",
+        "desc": "Tillämpa formateringsstilar på separatortexten.",
+        "bold": "Fet",
+        "italic": "Kursiv",
+        "underline": "Understruken",
+        "uppercase": "Versaler",
+        "strikethrough": "Genomstruken"
+      },
+      "spacer": {
+        "title": "Avståndshöjd"
+      },
+      "height": "Höjd (px)",
+      "height_desc": "Kontrollerar det visuella gapet för tomt utrymme.",
+      "show_title_toggle": {
+        "enable_toggle_desc": "Aktivera växeln ovan för att konfigurera titelinställningar"
+      }
+    },
+    "layout_extra": {
+      "module_name": "Modulnamn:",
+      "module_name_placeholder": "Ge denna modul ett anpassat namn för att göra det lättare att identifiera i redigeraren.",
+      "module_name_help": "Ge denna modul ett anpassat namn för att göra det lättare att identifiera i redigeraren."
+    },
+    "layout_logic": {
+      "display_title": "Visa detta element",
+      "display_desc": "Kontrollera när detta element visas. Välj \"Alltid\" för att hålla det synligt. Välj \"Om ALLA villkor nedan uppfylls\" eller \"Om NÅGOT villkor nedan uppfylls\" för att visa det endast när villkoren du lägger till nedan utvärderas som sanna.",
+      "always": "Alltid",
+      "every": "Om ALLA villkor nedan uppfylls",
+      "any": "Om NÅGOT villkor nedan uppfylls",
+      "conditions": "Villkor",
+      "add_condition": "Lägg till villkor",
+      "no_conditions": "Inga villkor tillagda än. Klicka \"Lägg till villkor\" för att komma igång.",
+      "condition_types": {
+        "entity_state": "Entitetstillstånd",
+        "entity_attribute": "Entitetsattribut",
+        "time": "Tidsintervall",
+        "template": "Mall"
+      },
+      "condition_fields": {
+        "entity": "Entitet",
+        "operator": "Operator",
+        "value": "Värde",
+        "attribute": "Attribut",
+        "time_from": "Från",
+        "time_to": "Till",
+        "template": "Mall"
+      },
+      "condition_header": "Villkor",
+      "custom_name": "Anpassat namn",
+      "custom_name_desc": "Valfritt: Ge detta villkor ett anpassat namn för enklare identifiering",
+      "condition_type": "Villkorstyp"
+    },
+    "hover_effects": {
+      "title": "Hover-effekter",
+      "description": "Konfigurera visuella effekter som visas när du hovrar över denna modul, rad eller kolumn.",
+      "effect": "Hover-effekt",
+      "effect_desc": "Välj den visuella effekten som ska tillämpas vid hovring",
+      "effects": {
+        "none": "Ingen",
+        "highlight": "Markera",
+        "outline": "Kontur",
+        "grow": "Växa",
+        "shrink": "Krympa",
+        "pulse": "Pulsera",
+        "bounce": "Studsa",
+        "float": "Sväva",
+        "glow": "Glöda",
+        "shadow": "Skugga",
+        "rotate": "Rotera",
+        "skew": "Snedställa",
+        "wobble": "Vackla",
+        "buzz": "Vibrera",
+        "fade": "Tona"
+      }
+    },
+    "design": {
+      "copy": "Kopiera",
+      "paste": "Klistra in",
+      "reset_all": "Återställ alla",
+      "copy_tooltip": "Kopiera nuvarande designinställningar (fungerar över alla Ultra Cards)",
+      "paste_tooltip_has": "Klistra in kopierade designinställningar (från korskort-urklipp)",
+      "paste_tooltip_none": "Inga designinställningar i korskort-urklipp",
+      "reset_all_tooltip": "Återställ alla designinställningar till standard",
+      "text_section": "Text",
+      "text_color": "Textfärg",
+      "alignment": "Justering",
+      "inherit_alignment": "Ärv (ingen justering)",
+      "font_size": "Teckenstorlek",
+      "font_size_placeholder": "16px (standard), 1.2rem, max(1rem, 1.5vw)",
+      "reset_font_size": "Återställ teckenstorlek till standard",
+      "line_height": "Radhöjd",
+      "line_height_placeholder": "0 (standard), 28px, 1.7",
+      "reset_line_height": "Återställ radhöjd till standard",
+      "letter_spacing": "Teckenavstånd",
+      "letter_spacing_placeholder": "auto (standard), 1px, -0.04em",
+      "reset_letter_spacing": "Återställ teckenavstånd till standard",
+      "font": "Teckensnitt",
+      "font_weight": "Teckensnittsvikt",
+      "text_transform": "Texttransform",
+      "font_style": "Teckensnittsstil",
+      "default_option": "– Standard –",
+      "weight_thin": "100 - Tunn",
+      "weight_light": "300 - Ljus",
+      "weight_normal": "400 - Normal",
+      "weight_medium": "500 - Medium",
+      "weight_semi_bold": "600 - Halvfet",
+      "weight_bold": "700 - Fet",
+      "weight_black": "900 - Svart",
+      "transform_none": "Ingen",
+      "transform_uppercase": "VERSALER",
+      "transform_lowercase": "gemener",
+      "transform_capitalize": "Versalisera",
+      "style_normal": "Normal",
+      "style_italic": "Kursiv",
+      "style_oblique": "Sned",
+      "background_section": "Bakgrund",
+      "background_color": "Bakgrundsfärg",
+      "background_image_type": "Bakgrundsbildtyp",
+      "bg_none": "Ingen",
+      "bg_upload": "Ladda upp bild",
+      "bg_entity": "Entitetsbild",
+      "bg_url": "Bild-URL",
+      "sizes_section": "Storlekar",
+      "spacing_section": "Avstånd",
+      "border_section": "Kant",
+      "text_shadow_section": "Textskugga",
+      "box_shadow_section": "Boxskugga",
+      "position_section": "Position",
+      "overflow_section": "Överflöde",
+      "animations_section": "Animationer",
+      "width": "Bredd",
+      "height": "Höjd",
+      "max_width": "Max bredd",
+      "max_height": "Max höjd",
+      "min_width": "Min bredd",
+      "min_height": "Min höjd",
+      "border_radius": "Kantradius",
+      "border_style": "Kantstil",
+      "border_width": "Kantbredd",
+      "border_color": "Kantfärg",
+      "margin": "Marginal",
+      "padding": "Utfyllnad",
+      "top": "Topp",
+      "right": "Höger",
+      "bottom": "Botten",
+      "left": "Vänster",
+      "unlock_sides": "Lås upp för att redigera sidor oberoende",
+      "lock_sides": "Lås för att redigera alla sidor tillsammans",
+      "horizontal_shift": "Horisontell förskjutning",
+      "vertical_shift": "Vertikal förskjutning",
+      "blur": "Oskärpa",
+      "text_shadow_color": "Textskuggfärg",
+      "box_shadow_color": "Boxskuggfärg",
+      "overflow": "Överflöde",
+      "clip_path": "Klippbana",
+      "upload_bg_image": "Ladda upp bakgrundsbild",
+      "bg_image_entity": "Bakgrundsbildentitet",
+      "bg_image_url": "Bakgrundsbild-URL",
+      "choose_file": "Välj fil",
+      "no_file_chosen": "Ingen fil vald",
+      "backdrop_filter": "Bakgrundsfilter",
+      "spread": "Spridning",
+      "visible_default": "Synlig (standard)",
+      "examples": "Exempel",
+      "state_based_animation": "Tillståndsbaserad animation",
+      "animation_type": "Animationstyp",
+      "animation_duration": "Animation Duration",
+      "animation_duration_desc": "Varaktighet för animationen (t.ex. 2s, 500ms, 1.5s)",
+      "intro_outro_animations": "Intro- och outro-animationer",
+      "intro_animation": "Intro-animation",
+      "outro_animation": "Outro-animation",
+      "duration": "Varaktighet",
+      "delay": "Fördröjning",
+      "timing": "Timing",
+      "none": "Ingen",
+      "ease": "Ease",
+      "border_style_none": "Ingen",
+      "border_style_solid": "Heldragen",
+      "border_style_dashed": "Streckad",
+      "border_style_dotted": "Prickad",
+      "border_style_double": "Double",
+      "position_default": "– Standard –",
+      "position_static": "Statisk",
+      "position_relative": "Relativ",
+      "position_absolute": "Absolut",
+      "position_fixed": "Fast",
+      "position_sticky": "Klibbig"
+    },
+    "modules": {
+      "text": "Textmodul",
+      "image": "Bildmodul",
+      "icon": "Ikonmodul",
+      "bar": "Stapelmodul",
+      "info": "Infomodul",
+      "button": "Knappmodul",
+      "separator": "Separatormodul",
+      "markdown": "Markdown-modul",
+      "camera": "Kameramodul",
+      "graphs": "Grafmodul",
+      "no_text_configured": "Ingen text konfigurerad",
+      "no_image_configured": "Ingen bild konfigurerad",
+      "uploaded_image": "Uppladdad bild",
+      "icons_configured": "{count} ikoner konfigurerade",
+      "no_icons_configured": "Inga ikoner konfigurerade",
+      "default_entity_suggestion": "Entitet: sensor.battery_level",
+      "sample_text": "Exempeltext"
+    },
+    "common": {
+      "attribute": "Attribut",
+      "attribute_name": "Attributnamn",
+      "baseline": "Baslinje",
+      "bottom": "Botten",
+      "center": "Centrum",
+      "entity": "Entitet",
+      "justify": "Justera",
+      "left": "Vänster",
+      "none": "Ingen",
+      "right": "Höger",
+      "space_around": "Utrymme runt",
+      "space_between": "Utrymme mellan",
+      "state": "Tillstånd",
+      "stretch": "Sträck",
+      "top": "Topp"
+    },
+    "horizontal": {
+      "alignment": {
+        "horizontal": "Horisontell justering",
+        "horizontal_desc": "Välj hur element justeras horisontellt inom behållaren.",
+        "vertical": "Vertikal justering",
+        "vertical_desc": "Välj hur element justeras vertikalt inom behållaren."
+      },
+      "empty": {
+        "add_modules": "Lägg till moduler i layoutbyggaren för att se dem här",
+        "no_modules": "Inga moduler tillagda än"
+      },
+      "gap": {
+        "between_items": "Mellanrum mellan objekt",
+        "desc": "Ställ in avståndet mellan horisontella element (i rem-enheter). Använd negativa värden för att överlappa element.",
+        "title": "Mellanrumskonfiguration"
+      },
+      "layout": {
+        "desc": "Konfigurera hur element arrangeras horisontellt inom behållaren.",
+        "title": "Layoutkonfiguration"
+      },
+      "wrapping": {
+        "desc": "Tillåt element att brytas till nästa rad när de överskrider behållarbredden.",
+        "title": "Tillåt radbrytning"
+      }
+    },
+    "markdown": {
+      "code_highlighting": "Kodmarkering",
+      "code_highlighting_desc": "Syntaxmarkering för kodblock",
+      "content": {
+        "desc": "Ange ditt markdown-innehåll med fullständigt formateringsstöd",
+        "label": "Innehåll",
+        "title": "Markdown-innehåll"
+      },
+      "enable_html": "Aktivera HTML",
+      "enable_html_desc": "Tillåt HTML-taggar i markdown-innehåll",
+      "enable_tables": "Aktivera tabeller",
+      "enable_tables_desc": "Stöd för markdown-tabellsyntax",
+      "features": {
+        "title": "Markdown-funktioner"
+      }
+    },
+    "vertical": {
+      "alignment": {
+        "vertical": "Vertikal justering",
+        "vertical_desc": "Välj hur element justeras vertikalt inom behållaren."
+      },
+      "empty": {
+        "add_modules": "Lägg till moduler i layoutbyggaren för att se dem här",
+        "no_modules": "Inga moduler tillagda än"
+      },
+      "gap": {
+        "between_items": "Mellanrum mellan objekt",
+        "desc": "Ställ in avståndet mellan vertikala element (i rem-enheter). Använd negativa värden för att överlappa element.",
+        "title": "Mellanrumskonfiguration"
+      },
+      "layout": {
+        "desc": "Konfigurera hur element arrangeras vertikalt inom behållaren.",
+        "title": "Layoutkonfiguration"
+      }
+    }
+  }
+}
