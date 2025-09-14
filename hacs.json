@@ -3,6 +3,5 @@
   "render_readme": true,
   "filename": "ultra-card.js",
   "content_in_root": true,
-  "iot_class": "Local Polling",
   "homeassistant": "2023.4.0"
 }
