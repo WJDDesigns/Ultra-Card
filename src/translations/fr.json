@@ -469,6 +469,15 @@
         "text_size_desc": "Ajustez la taille du texte de pourcentage affiché sur la barre.",
         "text_alignment": "Alignement du texte de pourcentage"
       },
+      "text_display": {
+        "title": "Affichage du texte",
+        "desc": "Contrôlez la visibilité et l'apparence des valeurs de texte affichées directement sur la barre. Pour les modes différence et modèle, vous pouvez choisir d'afficher les valeurs d'entité brutes au lieu des pourcentages.",
+        "show_value": "Afficher la valeur au lieu du pourcentage",
+        "show_value_desc": "Lorsque activé, affiche la valeur réelle de l'entité au lieu du pourcentage. Utile pour afficher des valeurs de capteur brutes comme \"45 kWh\" au lieu de \"75%\".",
+        "text_size": "Taille du texte",
+        "text_size_desc": "Ajustez la taille du texte affiché sur la barre.",
+        "text_alignment": "Alignement du texte"
+      },
       "left": {
         "title": "Côté gauche",
         "desc": "Configurez le titre et la valeur d'entité affichés sur le côté gauche de la barre. Ceci est utile pour afficher des étiquettes comme 'Portée' ou 'Batterie' avec leurs valeurs.",
@@ -498,6 +507,8 @@
         "border_color": "Couleur de bordure",
         "limit_indicator": "Indicateur de limite",
         "percentage_text": "Texte du pourcentage",
+        "text_color": "Couleur du texte",
+        "text_color_desc": "Choisissez la couleur pour le texte affiché sur la barre.",
         "left_side": "Couleurs du côté gauche",
         "right_side": "Couleurs du côté droit",
         "title_color": "Couleur du titre",

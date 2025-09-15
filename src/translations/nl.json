@@ -357,7 +357,9 @@
         "right_side": "Rechterkant kleuren",
         "title": "Kleuren",
         "title_color": "Titelkleur",
-        "value_color": "Waardekleur"
+        "value_color": "Waardekleur",
+        "text_color": "Tekstkleur",
+        "text_color_desc": "Kies de kleur voor de tekst die op de balk wordt weergegeven."
       },
       "diff_config": {
         "current_entity": "Huidige waarde entiteit",
@@ -422,6 +424,15 @@
         "percentage_template": "Percentage sjabloon",
         "percentage_template_desc": "Voer een Jinja2-sjabloon in die een getal tussen 0-100 retourneert voor het percentage. Voorbeeld: {{ (states('sensor.battery_level') | float) * 100 }}",
         "title": "Sjabloon configuratie"
+      },
+      "text_display": {
+        "title": "Tekstweergave",
+        "desc": "Beheer de zichtbaarheid en het uiterlijk van tekstwaarden die direct op de balk worden weergegeven. Voor verschil- en sjabloonmodi kun je kiezen om ruwe entiteitswaarden te tonen in plaats van percentages.",
+        "show_value": "Toon waarde in plaats van percentage",
+        "show_value_desc": "Wanneer ingeschakeld, toont het de werkelijke entiteitswaarde in plaats van percentage. Handig voor het weergeven van ruwe sensorwaarden zoals \"45 kWh\" in plaats van \"75%\".",
+        "text_size": "Tekstgrootte",
+        "text_size_desc": "Pas de grootte aan van de tekst die op de balk wordt weergegeven.",
+        "text_alignment": "Tekstuitlijning"
       }
     },
     "image": {

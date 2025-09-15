@@ -501,7 +501,9 @@
         "left_side": "Left Side Colors",
         "right_side": "Right Side Colors",
         "title_color": "Title Colour",
-        "value_color": "Value Colour"
+        "value_color": "Value Colour",
+        "text_color": "Text Colour",
+        "text_color_desc": "Choose the colour for the text displayed on the bar."
       },
       "gradient": {
         "title": "Gradient Mode",
@@ -551,6 +553,15 @@
           "match_value_desc": "Text comparison against state or attribute",
           "type": "Override Animation Type"
         }
+      },
+      "text_display": {
+        "title": "Text Display",
+        "desc": "Control the visibility and appearance of text values shown directly on the bar. For difference and template modes, you can choose to display raw entity values instead of percentages.",
+        "show_value": "Show Value Instead of Percentage",
+        "show_value_desc": "When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like \"45 kWh\" instead of \"75%\".",
+        "text_size": "Text Size",
+        "text_size_desc": "Adjust the size of the text displayed on the bar.",
+        "text_alignment": "Text Alignment"
       }
     },
     "image": {

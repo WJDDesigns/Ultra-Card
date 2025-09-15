@@ -357,7 +357,9 @@
         "right_side": "Barvy pravé strany",
         "title": "Barvy",
         "title_color": "Barva nadpisu",
-        "value_color": "Barva hodnoty"
+        "value_color": "Barva hodnoty",
+        "text_color": "Barva textu",
+        "text_color_desc": "Vyberte barvu pro text zobrazovaný na pruhu."
       },
       "diff_config": {
         "current_entity": "Entita aktuální hodnoty",
@@ -422,6 +424,15 @@
         "percentage_template": "Šablona procent",
         "percentage_template_desc": "Zadejte šablonu Jinja2, která vrací číslo mezi 0-100 pro procenta. Příklad: {{ (states('sensor.battery_level') | float) * 100 }}",
         "title": "Konfigurace šablony"
+      },
+      "text_display": {
+        "title": "Zobrazení textu",
+        "desc": "Ovládejte viditelnost a vzhled textových hodnot zobrazených přímo na pruhu. Pro rozdílové a šablonové režimy můžete zvolit zobrazení surových hodnot entit místo procent.",
+        "show_value": "Zobrazit hodnotu místo procenta",
+        "show_value_desc": "Když je povoleno, zobrazuje skutečnou hodnotu entity místo procenta. Užitečné pro zobrazování surových hodnot senzorů jako \"45 kWh\" místo \"75%\".",
+        "text_size": "Velikost textu",
+        "text_size_desc": "Upravte velikost textu zobrazovaného na pruhu.",
+        "text_alignment": "Zarovnání textu"
       }
     },
     "image": {

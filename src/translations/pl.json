@@ -357,7 +357,9 @@
         "right_side": "Kolory prawej strony",
         "title": "Kolory",
         "title_color": "Kolor tytułu",
-        "value_color": "Kolor wartości"
+        "value_color": "Kolor wartości",
+        "text_color": "Kolor tekstu",
+        "text_color_desc": "Wybierz kolor tekstu wyświetlanego na pasku."
       },
       "diff_config": {
         "current_entity": "Encja bieżącej wartości",
@@ -422,6 +424,15 @@
         "percentage_template": "Szablon procentowy",
         "percentage_template_desc": "Wprowadź szablon Jinja2 zwracający liczbę między 0-100 dla procentu. Przykład: {{ (states('sensor.battery_level') | float) * 100 }}",
         "title": "Konfiguracja szablonu"
+      },
+      "text_display": {
+        "title": "Wyświetlanie tekstu",
+        "desc": "Kontroluj widoczność i wygląd wartości tekstowych wyświetlanych bezpośrednio na pasku. Dla trybów różnicy i szablonu możesz wybrać wyświetlanie surowych wartości encji zamiast procentów.",
+        "show_value": "Pokaż wartość zamiast procentu",
+        "show_value_desc": "Gdy włączone, pokazuje rzeczywistą wartość encji zamiast procentu. Przydatne do wyświetlania surowych wartości czujników jak \"45 kWh\" zamiast \"75%\".",
+        "text_size": "Rozmiar tekstu",
+        "text_size_desc": "Dostosuj rozmiar tekstu wyświetlanego na pasku.",
+        "text_alignment": "Wyrównanie tekstu"
       }
     },
     "image": {

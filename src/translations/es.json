@@ -506,7 +506,9 @@
         "left_side": "Colores del lado izquierdo",
         "right_side": "Colores del lado derecho",
         "title_color": "Color del título",
-        "value_color": "Color del valor"
+        "value_color": "Color del valor",
+        "text_color": "Color del texto",
+        "text_color_desc": "Elige el color para el texto mostrado en la barra."
       },
       "gradient": {
         "title": "Modo gradiente",
@@ -556,6 +558,15 @@
           "match_value_desc": "Comparación de texto contra estado o atributo",
           "type": "Tipo de animación de anulación"
         }
+      },
+      "text_display": {
+        "title": "Visualización de texto",
+        "desc": "Controla la visibilidad y apariencia de los valores de texto mostrados directamente en la barra. Para los modos de diferencia y plantilla, puedes elegir mostrar valores de entidad sin procesar en lugar de porcentajes.",
+        "show_value": "Mostrar valor en lugar de porcentaje",
+        "show_value_desc": "Cuando está habilitado, muestra el valor real de la entidad en lugar del porcentaje. Útil para mostrar valores de sensor sin procesar como \"45 kWh\" en lugar de \"75%\".",
+        "text_size": "Tamaño del texto",
+        "text_size_desc": "Ajusta el tamaño del texto mostrado en la barra.",
+        "text_alignment": "Alineación del texto"
       }
     },
     "image": {

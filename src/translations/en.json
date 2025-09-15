@@ -469,6 +469,15 @@
         "text_size_desc": "Adjust the size of percentage text shown on the bar.",
         "text_alignment": "Percentage Text Alignment"
       },
+      "text_display": {
+        "title": "Text Display",
+        "desc": "Control the visibility and appearance of text values shown directly on the bar. For difference and template modes, you can choose to display raw entity values instead of percentages.",
+        "show_value": "Show Value Instead of Percentage",
+        "show_value_desc": "When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like \"45 kWh\" instead of \"75%\".",
+        "text_size": "Text Size",
+        "text_size_desc": "Adjust the size of the text displayed on the bar.",
+        "text_alignment": "Text Alignment"
+      },
       "left": {
         "title": "Left Side",
         "desc": "Configure the title and entity value shown on the left side of the bar. This is useful for displaying labels like 'Range' or 'Battery' alongside their values.",
@@ -498,6 +507,8 @@
         "border_color": "Border Color",
         "limit_indicator": "Limit Indicator",
         "percentage_text": "Percentage Text",
+        "text_color": "Text Color",
+        "text_color_desc": "Choose the color for the text displayed on the bar.",
         "left_side": "Left Side Colors",
         "right_side": "Right Side Colors",
         "title_color": "Title Color",

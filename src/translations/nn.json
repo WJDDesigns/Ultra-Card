@@ -357,7 +357,9 @@
         "right_side": "Fargar høgre side",
         "title": "Fargar",
         "title_color": "Tittelfarge",
-        "value_color": "Verdifarge"
+        "value_color": "Verdifarge",
+        "text_color": "Tekstfarge",
+        "text_color_desc": "Velg fargen for teksten vist på stolpen."
       },
       "diff_config": {
         "current_entity": "Entitet for noverdi",
@@ -422,6 +424,15 @@
         "percentage_template": "Prosentmal",
         "percentage_template_desc": "Skriv ein Jinja2-mal som returnerer eit tal mellom 0–100 for prosent. Døme: {{ (states('sensor.battery_level') | float) * 100 }}",
         "title": "Malkonfigurasjon"
+      },
+      "text_display": {
+        "title": "Tekstvisning",
+        "desc": "Kontroller synlegheita og utsjånaden til tekstverdiar viste direkte på stolpen. For forskjells- og malmodusar kan du velje å vise rå einingsverdi i staden for prosentar.",
+        "show_value": "Vis verdi i staden for prosent",
+        "show_value_desc": "Når aktivert, viser den faktiske einingsverdi i staden for prosent. Nyttig for å vise rå sensorverdiar som \"45 kWh\" i staden for \"75%\".",
+        "text_size": "Tekststorleik",
+        "text_size_desc": "Juster storleiken på teksten vist på stolpen.",
+        "text_alignment": "Tekstjustering"
       }
     },
     "image": {

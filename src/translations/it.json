@@ -501,7 +501,9 @@
         "left_side": "Colori lato sinistro",
         "right_side": "Colori lato destro",
         "title_color": "Colore titolo",
-        "value_color": "Colore valore"
+        "value_color": "Colore valore",
+        "text_color": "Colore testo",
+        "text_color_desc": "Scegli il colore per il testo mostrato sulla barra."
       },
       "gradient": {
         "title": "Modalità gradiente",
@@ -551,6 +553,15 @@
           "match_value_desc": "Confronto testuale con stato o attributo",
           "type": "Tipo di animazione di sostituzione"
         }
+      },
+      "text_display": {
+        "title": "Visualizzazione testo",
+        "desc": "Controlla la visibilità e l'aspetto dei valori di testo mostrati direttamente sulla barra. Per le modalità differenza e modello, puoi scegliere di mostrare valori di entità grezzi invece delle percentuali.",
+        "show_value": "Mostra valore invece della percentuale",
+        "show_value_desc": "Quando abilitato, mostra il valore effettivo dell'entità invece della percentuale. Utile per mostrare valori di sensore grezzi come \"45 kWh\" invece di \"75%\".",
+        "text_size": "Dimensione testo",
+        "text_size_desc": "Regola la dimensione del testo mostrato sulla barra.",
+        "text_alignment": "Allineamento testo"
       }
     },
     "image": {

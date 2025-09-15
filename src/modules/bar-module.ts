@@ -70,9 +70,9 @@ export class UltraBarModule extends BaseUltraModule {
       // Text Display
       label_alignment: 'space-between',
       show_percentage: true,
+      show_value: false, // Default to percentage, not value
       percentage_text_size: 14,
       percentage_text_alignment: 'center',
-      show_value: true,
       value_position: 'inside',
 
       // Left Side Configuration
@@ -1113,7 +1113,7 @@ export class UltraBarModule extends BaseUltraModule {
               class="section-title"
               style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px; margin: 0;"
             >
-              ${localize('editor.bar.percentage.title', lang, 'Percentage Text Display')}
+              ${localize('editor.bar.text_display.title', lang, 'Text Display')}
             </div>
             <ha-switch
               .checked=${barModule.show_percentage !== false}
@@ -1124,7 +1124,7 @@ export class UltraBarModule extends BaseUltraModule {
             class="field-description"
             style="font-size: 13px; font-weight: 400; margin-bottom: 16px;"
           >
-            ${localize('editor.bar.percentage.desc', lang, 'Control the visibility and appearance of percentage values shown directly on the bar. These numbers provide a clear visual indicator of the current level.')}
+            ${localize('editor.bar.text_display.desc', lang, 'Control the visibility and appearance of text values shown directly on the bar. For difference and template modes, you can choose to display raw entity values instead of percentages.')}
           </div>
 
           
@@ -1132,15 +1132,55 @@ export class UltraBarModule extends BaseUltraModule {
           ${
             barModule.show_percentage !== false
               ? html`
+                  <!-- Display Type Toggle - Only show for difference and template types -->
+                  ${barModule.percentage_type === 'difference' ||
+                  barModule.percentage_type === 'template'
+                    ? html`
+                        <div
+                          class="field-group"
+                          style="margin-bottom: 16px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                        >
+                          <div
+                            class="field-title"
+                            style="font-size: 16px !important; font-weight: 600 !important; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                          >
+                            ${localize(
+                              'editor.bar.text_display.show_value',
+                              lang,
+                              'Show Value Instead of Percentage'
+                            )}
+                          </div>
+                          <ha-switch
+                            style="justify-self: end;"
+                            .checked=${barModule.show_value || false}
+                            @change=${(e: Event) =>
+                              updateModule({
+                                show_value: (e.target as HTMLInputElement).checked,
+                              })}
+                          ></ha-switch>
+                        </div>
+                        <div
+                          class="field-description"
+                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                        >
+                          ${localize(
+                            'editor.bar.text_display.show_value_desc',
+                            lang,
+                            'When enabled, shows the actual entity value instead of percentage. Useful for displaying raw sensor values like "45 kWh" instead of "75%".'
+                          )}
+                        </div>
+                      `
+                    : ''}
+
                   <div class="field-container" style="margin-bottom: 24px;">
                     <div class="field-title">
-                      ${localize('editor.bar.percentage.text_size', lang, 'Text Size')}
+                      ${localize('editor.bar.text_display.text_size', lang, 'Text Size')}
                     </div>
                     <div class="field-description">
                       ${localize(
-                        'editor.bar.percentage.text_size_desc',
+                        'editor.bar.text_display.text_size_desc',
                         lang,
-                        'Adjust the size of the percentage text displayed on the bar.'
+                        'Adjust the size of the text displayed on the bar.'
                       )}
                     </div>
                     <div class="number-range-control">
@@ -1197,11 +1237,7 @@ export class UltraBarModule extends BaseUltraModule {
                   </div>
                   <div class="field-group" style="margin-bottom: 16px;">
                     <div class="field-title">
-                      ${localize(
-                        'editor.bar.percentage.text_alignment',
-                        lang,
-                        'Percentage Text Alignment'
-                      )}
+                      ${localize('editor.bar.text_display.text_alignment', lang, 'Text Alignment')}
                     </div>
                     <ha-form
                       .hass=${hass}
@@ -1239,6 +1275,28 @@ export class UltraBarModule extends BaseUltraModule {
                           percentage_text_alignment: e.detail.value.percentage_text_alignment,
                         })}
                     ></ha-form>
+                  </div>
+
+                  <!-- Text Color -->
+                  <div class="field-container" style="margin-bottom: 16px;">
+                    <div class="field-title">
+                      ${localize('editor.bar.colors.text_color', lang, 'Text Color')}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.colors.text_color_desc',
+                        lang,
+                        'Choose the color for the text displayed on the bar.'
+                      )}
+                    </div>
+                    <ultra-color-picker
+                      style="width: 100%;"
+                      .value=${barModule.percentage_text_color || ''}
+                      .defaultValue=${'var(--primary-text-color)'}
+                      .hass=${hass}
+                      @value-changed=${(e: CustomEvent) =>
+                        updateModule({ percentage_text_color: e.detail.value })}
+                    ></ultra-color-picker>
                   </div>
                 `
               : ''
@@ -1849,21 +1907,6 @@ export class UltraBarModule extends BaseUltraModule {
                 ></ultra-color-picker>
               </div>
 
-              <div class="color-item">
-                <div
-                  class="field-title"
-                  style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
-                >
-                  ${localize('editor.bar.colors.percentage_text', lang, 'Percentage Text')}
-                </div>
-                <ultra-color-picker style="width: 100%;"
-                  .value=${barModule.percentage_text_color || ''}
-                  .defaultValue=${'var(--primary-text-color)'}
-                  .hass=${hass}
-                  @value-changed=${(e: CustomEvent) =>
-                    updateModule({ percentage_text_color: e.detail.value })}
-                ></ultra-color-picker>
-              </div>
 
               ${
                 barModule.bar_style === 'minimal'
@@ -4057,7 +4100,58 @@ export class UltraBarModule extends BaseUltraModule {
                     white-space: nowrap;
                   "
                     >
-                      ${Math.round(percentage)}%
+                      ${(() => {
+                        if (barModule.show_value) {
+                          // Show entity value instead of percentage based on percentage_type
+                          if (isPreviewMode) {
+                            return '65 kWh'; // Demo value for preview
+                          }
+
+                          const pctType = (barModule as any).percentage_type || 'entity';
+
+                          if (pctType === 'difference') {
+                            // For difference mode, show the current value from percentage_current_entity
+                            const currentEntity = (barModule as any).percentage_current_entity;
+                            if (currentEntity && hass?.states[currentEntity]) {
+                              const currentState = hass.states[currentEntity];
+                              try {
+                                return formatEntityState(hass, currentEntity, {
+                                  includeUnit: true,
+                                });
+                              } catch (_e) {
+                                return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
+                              }
+                            }
+                          } else if (pctType === 'template') {
+                            // For template mode, show the template result (raw value)
+                            const template = (barModule as any).percentage_template;
+                            if (template && hass) {
+                              if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+                              const key = `bar_percentage_${barModule.id}_${this._hashString(template)}`;
+                              const rendered = hass.__uvc_template_strings?.[key];
+                              if (rendered !== undefined) {
+                                return String(rendered);
+                              }
+                            }
+                          }
+
+                          // Fallback to main entity
+                          const entityState = hass?.states[barModule.entity];
+                          if (entityState) {
+                            try {
+                              return formatEntityState(hass, barModule.entity, {
+                                includeUnit: true,
+                              });
+                            } catch (_e) {
+                              return `${entityState.state}${entityState.attributes?.unit_of_measurement || ''}`;
+                            }
+                          }
+                          return 'N/A';
+                        } else {
+                          // Show percentage (default behavior)
+                          return `${Math.round(percentage)}%`;
+                        }
+                      })()}
                     </div>
                   `
                 : ''

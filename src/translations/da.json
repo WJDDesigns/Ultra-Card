@@ -357,7 +357,9 @@
         "right_side": "Højre side farver",
         "title": "Farver",
         "title_color": "Titelfarve",
-        "value_color": "Værdifarve"
+        "value_color": "Værdifarve",
+        "text_color": "Tekstfarve",
+        "text_color_desc": "Vælg farven for teksten vist på bjælken."
       },
       "diff_config": {
         "current_entity": "Nuværende værdi-entitet",
@@ -422,6 +424,15 @@
         "percentage_template": "Procentskabelon",
         "percentage_template_desc": "Indtast en Jinja2-skabelon der returnerer et tal mellem 0-100 for procenten. Eksempel: {{ (states('sensor.battery_level') | float) * 100 }}",
         "title": "Skabelonkonfiguration"
+      },
+      "text_display": {
+        "title": "Tekstvisning",
+        "desc": "Kontroller synligheden og udseendet af tekstværdier vist direkte på bjælken. For forskel- og skabelontilstande kan du vælge at vise rå entitetsværdier i stedet for procenter.",
+        "show_value": "Vis værdi i stedet for procent",
+        "show_value_desc": "Når aktiveret, viser den faktiske entitetsværdi i stedet for procent. Nyttig til visning af rå sensorværdier som \"45 kWh\" i stedet for \"75%\".",
+        "text_size": "Tekststørrelse",
+        "text_size_desc": "Juster størrelsen på teksten vist på bjælken.",
+        "text_alignment": "Tekstjustering"
       }
     },
     "image": {

@@ -357,7 +357,9 @@
         "right_side": "Höger sida färger",
         "title": "Färger",
         "title_color": "Titelfärg",
-        "value_color": "Värdefärg"
+        "value_color": "Värdefärg",
+        "text_color": "Textfärg",
+        "text_color_desc": "Välj färgen för texten som visas på stapeln."
       },
       "diff_config": {
         "current_entity": "Nuvarande värdeentitet",
@@ -422,6 +424,15 @@
         "percentage_template": "Procentmall",
         "percentage_template_desc": "Ange en Jinja2-mall som returnerar ett nummer mellan 0-100 för procenten. Exempel: {{ (states('sensor.battery_level') | float) * 100 }}",
         "title": "Mallkonfiguration"
+      },
+      "text_display": {
+        "title": "Textvisning",
+        "desc": "Kontrollera synligheten och utseendet på textvärden som visas direkt på stapeln. För skillnads- och malllägen kan du välja att visa råa entitetsvärden istället för procent.",
+        "show_value": "Visa värde istället för procent",
+        "show_value_desc": "När aktiverat visar det det faktiska entitetsvärdet istället för procent. Användbart för att visa råa sensorvärden som \"45 kWh\" istället för \"75%\".",
+        "text_size": "Textstorlek",
+        "text_size_desc": "Justera storleken på texten som visas på stapeln.",
+        "text_alignment": "Textjustering"
       }
     },
     "image": {

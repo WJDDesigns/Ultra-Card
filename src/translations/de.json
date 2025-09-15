@@ -469,6 +469,15 @@
         "text_size_desc": "Passen Sie die Größe des Prozenttextes auf dem Balken an.",
         "text_alignment": "Ausrichtung des Prozenttexts"
       },
+      "text_display": {
+        "title": "Textanzeige",
+        "desc": "Steuern Sie die Sichtbarkeit und das Erscheinungsbild der Textwerte, die direkt auf dem Balken angezeigt werden. Bei Differenz- und Vorlagenmodi können Sie wählen, ob Rohentitätswerte anstelle von Prozentsätzen angezeigt werden sollen.",
+        "show_value": "Wert statt Prozentsatz anzeigen",
+        "show_value_desc": "Wenn aktiviert, wird der tatsächliche Entitätswert anstelle des Prozentsatzes angezeigt. Nützlich für die Anzeige von Rohsensorwerten wie \"45 kWh\" anstelle von \"75%\".",
+        "text_size": "Textgröße",
+        "text_size_desc": "Passen Sie die Größe des auf dem Balken angezeigten Textes an.",
+        "text_alignment": "Textausrichtung"
+      },
       "left": {
         "title": "Linke Seite",
         "desc": "Konfigurieren Sie den Titel und den Entitätswert, der auf der linken Seite des Balkens angezeigt wird. Dies ist nützlich, um Beschriftungen wie 'Reichweite' oder 'Batterie' zusammen mit ihren Werten anzuzeigen.",
@@ -498,6 +507,8 @@
         "border_color": "Randfarbe",
         "limit_indicator": "Grenzwertanzeige",
         "percentage_text": "Prozenttext",
+        "text_color": "Textfarbe",
+        "text_color_desc": "Wählen Sie die Farbe für den auf dem Balken angezeigten Text.",
         "left_side": "Farben der linken Seite",
         "right_side": "Farben der rechten Seite",
         "title_color": "Titelfarbe",
