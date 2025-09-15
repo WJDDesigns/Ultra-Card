@@ -24,11 +24,24 @@ jobs:
 
           # Check if this is a manual trigger (workflow_dispatch)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger detected - using test data"
-            NAME="Test Discord Integration"
+            echo "Manual trigger detected - announcing v1.1.0-beta5 release"
+            NAME="Ultra Card 1.1.0-beta5"
             TAG="v1.1.0-beta5"
             URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
-            BODY="This is a test of the Discord webhook integration. The workflow is working correctly!"
+            BODY="🎨 Enhanced Icon Module Features
+
+✨ New: Use State Color Toggle
+- Automatically extracts colors from entity attributes (RGB, HS, color names, hex)
+- Perfect for RGB lights, colored sensors, and smart devices
+- Intelligent fallbacks for binary sensors
+
+🔧 New: Dynamic Icon Color Template
+- Jinja2-compatible color templates with real-time evaluation
+- Full CSS color format support
+- Live preview updates
+
+🔄 Enhanced color priority system with seamless integration
+🛠️ Technical improvements and comprehensive TypeScript support"
             IS_PRE="true"
           else
             # Pull data from the release event JSON
@@ -38,7 +51,7 @@ jobs:
             BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
             IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
           fi
-          
+
           REPO="${GITHUB_REPOSITORY#*/}"
 
           # Fallback title if .name is empty
@@ -101,7 +114,7 @@ jobs:
           echo "Name: $NAME"
           echo "Is Pre-release: $IS_PRE"
           echo ""
-          
+
           echo "Sending payload to Discord:"
           echo "$PAYLOAD" | jq .
           echo ""
