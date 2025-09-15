@@ -69,6 +69,8 @@ All Ultra Card layouts can be configured using Dashboard UI editor.
 
 Different modules are available for different content types:
 
+<img width="812" height="814" alt="modules" src="https://github.com/user-attachments/assets/b8208e40-e0c4-43c6-afa3-eba61aa22485" />
+
 - 📝 [Text module](docs/modules/text.md)
 - 🖼️ [Image module](docs/modules/image.md)
 - 🎯 [Icon module](docs/modules/icon.md)
@@ -85,6 +87,8 @@ Different modules are available for different content types:
 ## Module Settings
 
 Each module has 4 tabs for configuration:
+
+<img width="698" height="754" alt="tabs-view" src="https://github.com/user-attachments/assets/b65cc607-e914-4d0a-88fa-2d07dfbafba3" />
 
 - **General** - Module content and basic settings
 - **Actions** - Tap, hold, and double-tap behaviors
