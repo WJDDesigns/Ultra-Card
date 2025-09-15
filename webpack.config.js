@@ -82,6 +82,12 @@ module.exports = (env, argv) => {
             to: path.resolve(__dirname, 'assets'),
             noErrorOnMissing: true,
           },
+          // Copy individual assets to root for HACS serving
+          {
+            from: path.resolve(__dirname, 'src/assets/Ultra.jpg'),
+            to: path.resolve(__dirname, 'Ultra.jpg'),
+            noErrorOnMissing: true,
+          },
         ],
       }),
       // Define environment variables
