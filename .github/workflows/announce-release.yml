@@ -24,11 +24,15 @@ jobs:
 
           # Check if this is a manual trigger (workflow_dispatch)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger detected - announcing v1.1.0-beta5 release"
-            NAME="Ultra Card 1.1.0-beta5"
-            TAG="v1.1.0-beta5"
-            URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
-            BODY="📋 Changelog Summary for v1.1.0-beta5:\\n🎨 Enhanced Icon Module Features\\n✨ New: Use State Color Toggle\\nAutomatically extracts colors from entity attributes (RGB, HS, color names, hex)\\nPerfect for RGB lights, colored sensors, and smart devices\\nIntelligent fallbacks for binary sensors\\n🔧 New: Dynamic Icon Color Template\\nJinja2-compatible color templates with real-time evaluation\\nFull CSS color format support\\nLive preview updates\\n🔄 Enhanced color priority system with seamless integration\\n🛠️ Technical improvements and comprehensive TypeScript support"
+            echo "Manual trigger detected - using test data"
+            NAME="Test Discord Integration"
+            TAG="v1.1.0-test"
+            URL="https://github.com/${{ github.repository }}/releases"
+            BODY="🧪 This is a test of the Discord webhook integration.
+
+✅ The workflow is working correctly!
+🎯 Future releases will be announced automatically.
+🚀 Ready for production use!"
             IS_PRE="true"
           else
             # Pull data from the release event JSON
@@ -37,6 +41,11 @@ jobs:
             URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
             BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
             IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
+            
+            echo "Release event detected"
+            echo "Release name: $NAME"
+            echo "Tag: $TAG"
+            echo "Is prerelease: $IS_PRE"
           fi
 
           REPO="${GITHUB_REPOSITORY#*/}"
@@ -46,8 +55,8 @@ jobs:
             NAME="Release $TAG"
           fi
 
-          # Trim body to fit Discord embed description (~2048 chars); keep some headroom
-          DESC=$(printf "%s" "$BODY" | head -c 1900)
+          # Convert literal \n to actual newlines and trim to fit Discord embed description (~2048 chars)
+          DESC=$(printf "%b" "$BODY" | head -c 1900)
 
           # Color: purple for prerelease, blue for stable
           if [ "$IS_PRE" = "true" ]; then
