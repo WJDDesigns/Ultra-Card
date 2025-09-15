@@ -50,5 +50,13 @@ export declare class UltraIconModule extends BaseUltraModule {
      * Format entity state value with units if show_units is enabled
      */
     private _formatValueWithUnits;
+    /**
+     * Extract color from entity state attributes
+     */
+    private _getEntityStateColor;
+    /**
+     * Convert HSV to RGB
+     */
+    private _hsToRgb;
     private _injectKeyframesIntoHaIcon;
 }

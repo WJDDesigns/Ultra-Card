@@ -260,7 +260,7 @@ export class UltraImageModule extends BaseUltraModule {
               )
             : ''}
 
-          <div class="field-group" style="margin-bottom: 16px;">
+          <div class="field-group" style="margin-bottom: 16px; margin-top: 32px;">
             ${FormUtils.renderField(
               localize('editor.image.width', lang, 'Width (%)'),
               localize(

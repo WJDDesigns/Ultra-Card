@@ -184,6 +184,8 @@ export class UltraIconModule extends BaseUltraModule {
 
           // Entity color options
           use_entity_color_for_icon: false,
+          use_state_color_for_inactive_icon: false,
+          use_state_color_for_active_icon: false,
 
           // Color configuration
           color_inactive: 'var(--secondary-text-color)',
@@ -519,6 +521,35 @@ export class UltraIconModule extends BaseUltraModule {
                               ></ultra-color-picker>
                             </div>
 
+                            <div class="field-container" style="margin-bottom: 16px;">
+                              <div class="field-title">
+                                ${localize(
+                                  'editor.icon.use_state_color_inactive',
+                                  lang,
+                                  'Use State Color'
+                                )}
+                              </div>
+                              <div class="field-description">
+                                ${localize(
+                                  'editor.icon.use_state_color_inactive_desc',
+                                  lang,
+                                  'Use the entity state color (RGB attributes) for inactive icon color'
+                                )}
+                              </div>
+                              <ha-switch
+                                .checked=${icon.use_state_color_for_inactive_icon || false}
+                                @change=${(e: Event) => {
+                                  const target = e.target as any;
+                                  this._updateIcon(
+                                    iconModule,
+                                    index,
+                                    { use_state_color_for_inactive_icon: target.checked },
+                                    updateModule
+                                  );
+                                }}
+                              ></ha-switch>
+                            </div>
+
                             ${this.renderSettingsSection(
                               localize(
                                 'editor.icon.background_section.title',
@@ -703,6 +734,34 @@ export class UltraIconModule extends BaseUltraModule {
                                 'inactive_icon_color',
                                 icon.active_icon_color || 'var(--primary-color)',
                                 'color',
+                                hass
+                              )}
+                            </div>
+
+                            <div class="field-container" style="margin-bottom: 16px;">
+                              <div class="field-title">
+                                ${localize(
+                                  'editor.icon.use_state_color_active',
+                                  lang,
+                                  'Use State Color'
+                                )}
+                              </div>
+                              <div class="field-description">
+                                ${localize(
+                                  'editor.icon.use_state_color_active_desc',
+                                  lang,
+                                  'Use the entity state color (RGB attributes) for active icon color'
+                                )}
+                              </div>
+                              ${this._renderFieldWithLock(
+                                iconModule,
+                                index,
+                                updateModule,
+                                'active_state_color_locked',
+                                'use_state_color_for_active_icon',
+                                'use_state_color_for_inactive_icon',
+                                icon.use_state_color_for_active_icon || false,
+                                'toggle',
                                 hass
                               )}
                             </div>
@@ -1429,6 +1488,88 @@ export class UltraIconModule extends BaseUltraModule {
                   : ''}
               </div>
 
+              <!-- Dynamic Icon Color Template Section -->
+              <div class="template-section" style="margin-bottom: 24px;">
+                <div class="template-header">
+                  <div class="switch-container">
+                    <label class="switch-label"
+                      >${localize(
+                        'editor.icon.dynamic_color_template_section.title',
+                        lang,
+                        'Dynamic Icon Color Template'
+                      )}</label
+                    >
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        .checked=${icon.dynamic_color_template_mode || false}
+                        @change=${(e: Event) => {
+                          const checked = (e.target as HTMLInputElement).checked;
+                          this._updateIcon(
+                            iconModule,
+                            index,
+                            { dynamic_color_template_mode: checked },
+                            updateModule
+                          );
+                        }}
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                  </div>
+                  <div class="template-description">
+                    ${localize(
+                      'editor.icon.dynamic_color_template_section.desc',
+                      lang,
+                      'Use Jinja2 templates to dynamically change icon color based on conditions. Return a valid CSS color value (e.g., #FF0000, rgb(255,0,0), red) or empty for default color.'
+                    )}
+                  </div>
+                </div>
+
+                ${icon.dynamic_color_template_mode
+                  ? html`
+                      <div class="template-content">
+                        <textarea
+                          .value=${icon.dynamic_color_template || ''}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { dynamic_color_template: target.value },
+                              updateModule
+                            );
+                          }}
+                          placeholder="{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"
+                          class="template-editor"
+                          rows="4"
+                        ></textarea>
+                        <div class="template-help">
+                          <p><strong>Return a CSS color value:</strong></p>
+                          <ul>
+                            <li><code>#FF0000</code> → Red color in hex</li>
+                            <li><code>rgb(255, 0, 0)</code> → Red color in RGB</li>
+                            <li><code>red</code> → Red color by name</li>
+                            <li>
+                              <code
+                                >{{ states.light.living_room.attributes.rgb_color | join(',') |
+                                format('rgb(%s)') }}</code
+                              >
+                              → Use entity RGB color
+                            </li>
+                          </ul>
+                          <p>
+                            <strong>Example:</strong>
+                            <code
+                              >{% if states('sensor.temperature') | int > 25 %}#FF4444{% else
+                              %}#4444FF{% endif %}</code
+                            >
+                          </p>
+                        </div>
+                      </div>
+                    `
+                  : ''}
+              </div>
+
               <!-- Icon Animation Section -->
               ${this.renderSettingsSection(
                 localize('editor.icon.animation_section.title', lang, 'Icon Animation'),
@@ -1801,15 +1942,21 @@ export class UltraIconModule extends BaseUltraModule {
                 }
               }
 
-              let displayColor = icon.use_entity_color_for_icon
-                ? entityState?.attributes?.rgb_color
-                  ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                  : isActive
-                    ? icon.active_icon_color
-                    : icon.inactive_icon_color
-                : isActive
-                  ? icon.active_icon_color
-                  : icon.inactive_icon_color;
+              let displayColor = isActive
+                ? icon.use_state_color_for_active_icon
+                  ? this._getEntityStateColor(entityState) || icon.active_icon_color
+                  : icon.use_entity_color_for_icon
+                    ? entityState?.attributes?.rgb_color
+                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                      : icon.active_icon_color
+                    : icon.active_icon_color
+                : icon.use_state_color_for_inactive_icon
+                  ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
+                  : icon.use_entity_color_for_icon
+                    ? entityState?.attributes?.rgb_color
+                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                      : icon.inactive_icon_color
+                    : icon.inactive_icon_color;
 
               // Apply dynamic color template if enabled
               if (icon.dynamic_color_template_mode && icon.dynamic_color_template) {
@@ -2596,15 +2743,21 @@ export class UltraIconModule extends BaseUltraModule {
       }
     }
 
-    let displayColor = icon.use_entity_color_for_icon
-      ? entityState?.attributes?.rgb_color
-        ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-        : isActiveState
-          ? icon.active_icon_color
-          : icon.inactive_icon_color
-      : isActiveState
-        ? icon.active_icon_color
-        : icon.inactive_icon_color;
+    let displayColor = isActiveState
+      ? icon.use_state_color_for_active_icon
+        ? this._getEntityStateColor(entityState) || icon.active_icon_color
+        : icon.use_entity_color_for_icon
+          ? entityState?.attributes?.rgb_color
+            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+            : icon.active_icon_color
+          : icon.active_icon_color
+      : icon.use_state_color_for_inactive_icon
+        ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
+        : icon.use_entity_color_for_icon
+          ? entityState?.attributes?.rgb_color
+            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+            : icon.inactive_icon_color
+          : icon.inactive_icon_color;
 
     // Apply dynamic color template if enabled
     if (icon.dynamic_color_template_mode && icon.dynamic_color_template) {
@@ -2927,15 +3080,21 @@ export class UltraIconModule extends BaseUltraModule {
             displayIcon = entityState.attributes.icon;
           }
 
-          const displayColor = icon.use_entity_color_for_icon
-            ? entityState?.attributes?.rgb_color
-              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-              : isActive
-                ? icon.active_icon_color
-                : icon.inactive_icon_color
-            : isActive
-              ? icon.active_icon_color
-              : icon.inactive_icon_color;
+          const displayColor = isActive
+            ? icon.use_state_color_for_active_icon
+              ? this._getEntityStateColor(entityState) || icon.active_icon_color
+              : icon.use_entity_color_for_icon
+                ? entityState?.attributes?.rgb_color
+                  ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                  : icon.active_icon_color
+                : icon.active_icon_color
+            : icon.use_state_color_for_inactive_icon
+              ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
+              : icon.use_entity_color_for_icon
+                ? entityState?.attributes?.rgb_color
+                  ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                  : icon.inactive_icon_color
+                : icon.inactive_icon_color;
 
           const nameColor = isActive ? icon.active_name_color : icon.inactive_name_color;
           const stateColor = isActive ? icon.active_state_color : icon.inactive_state_color;
@@ -4505,6 +4664,8 @@ export class UltraIconModule extends BaseUltraModule {
 
       // Entity color options
       use_entity_color_for_icon: false,
+      use_state_color_for_inactive_icon: false,
+      use_state_color_for_active_icon: false,
 
       // Color configuration
       color_inactive: 'var(--secondary-text-color)',
@@ -4662,6 +4823,10 @@ export class UltraIconModule extends BaseUltraModule {
         active: 'active_icon_background_color',
         lock: 'active_icon_background_color_locked',
       },
+      use_state_color_for_inactive_icon: {
+        active: 'use_state_color_for_active_icon',
+        lock: 'active_state_color_locked',
+      },
     };
 
     const mapping = lockMapping[property as keyof typeof lockMapping];
@@ -4816,7 +4981,7 @@ export class UltraIconModule extends BaseUltraModule {
     activeProperty: string,
     inactiveProperty: string,
     value: any,
-    fieldType: 'icon' | 'color' | 'select' | 'text',
+    fieldType: 'icon' | 'color' | 'select' | 'text' | 'toggle',
     hass: HomeAssistant,
     selectOptions?: { value: string; label: string }[]
   ): TemplateResult {
@@ -4894,30 +5059,48 @@ export class UltraIconModule extends BaseUltraModule {
                       )}
                     </div>
                   `
-                : html`
-                    <div
-                      style="opacity: ${isLocked ? '0.5' : '1'}; pointer-events: ${isLocked
-                        ? 'none'
-                        : 'auto'};"
-                    >
-                      ${this.renderUcForm(
-                        hass,
-                        { [activeProperty]: displayValue },
-                        [this.textField(activeProperty)],
-                        (e: CustomEvent) => {
+                : fieldType === 'toggle'
+                  ? html`
+                      <ha-switch
+                        .checked=${displayValue}
+                        .disabled=${isLocked}
+                        @change=${(e: Event) => {
                           if (!isLocked) {
+                            const target = e.target as any;
                             this._updateIcon(
                               iconModule,
                               index,
-                              { [activeProperty]: e.detail.value[activeProperty] },
+                              { [activeProperty]: target.checked },
                               updateModule
                             );
                           }
-                        },
-                        false
-                      )}
-                    </div>
-                  `}
+                        }}
+                      ></ha-switch>
+                    `
+                  : html`
+                      <div
+                        style="opacity: ${isLocked ? '0.5' : '1'}; pointer-events: ${isLocked
+                          ? 'none'
+                          : 'auto'};"
+                      >
+                        ${this.renderUcForm(
+                          hass,
+                          { [activeProperty]: displayValue },
+                          [this.textField(activeProperty)],
+                          (e: CustomEvent) => {
+                            if (!isLocked) {
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                { [activeProperty]: e.detail.value[activeProperty] },
+                                updateModule
+                              );
+                            }
+                          },
+                          false
+                        )}
+                      </div>
+                    `}
         </div>
         <button
           class="lock-btn ${isLocked ? 'locked' : 'unlocked'}"
@@ -5229,6 +5412,95 @@ export class UltraIconModule extends BaseUltraModule {
       state: value,
       includeUnit: icon.show_units !== false,
     });
+  }
+
+  /**
+   * Extract color from entity state attributes
+   */
+  private _getEntityStateColor(entityState: any): string | null {
+    if (!entityState || !entityState.attributes) return null;
+
+    // Check for RGB color attributes (most common for lights)
+    if (entityState.attributes.rgb_color && Array.isArray(entityState.attributes.rgb_color)) {
+      return `rgb(${entityState.attributes.rgb_color.join(',')})`;
+    }
+
+    // Check for HS color attributes and convert to RGB
+    if (entityState.attributes.hs_color && Array.isArray(entityState.attributes.hs_color)) {
+      const [h, s] = entityState.attributes.hs_color;
+      const rgb = this._hsToRgb(h / 360, s / 100, 1);
+      return `rgb(${rgb.join(',')})`;
+    }
+
+    // Check for color name attribute
+    if (entityState.attributes.color_name) {
+      return entityState.attributes.color_name;
+    }
+
+    // Check for hex color attribute
+    if (entityState.attributes.color && typeof entityState.attributes.color === 'string') {
+      return entityState.attributes.color;
+    }
+
+    // For binary sensors or switches, use state-based colors
+    if (entityState.entity_id) {
+      const domain = entityState.entity_id.split('.')[0];
+      if (domain === 'binary_sensor' || domain === 'switch') {
+        return entityState.state === 'on' ? '#4CAF50' : '#F44336'; // Green for on, red for off
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert HSV to RGB
+   */
+  private _hsToRgb(h: number, s: number, v: number): number[] {
+    let r: number, g: number, b: number;
+
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+
+    switch (i % 6) {
+      case 0:
+        r = v;
+        g = t;
+        b = p;
+        break;
+      case 1:
+        r = q;
+        g = v;
+        b = p;
+        break;
+      case 2:
+        r = p;
+        g = v;
+        b = t;
+        break;
+      case 3:
+        r = p;
+        g = q;
+        b = v;
+        break;
+      case 4:
+        r = t;
+        g = p;
+        b = v;
+        break;
+      case 5:
+        r = v;
+        g = p;
+        b = q;
+        break;
+      default:
+        r = g = b = 0;
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
   }
 
   private _injectKeyframesIntoHaIcon(iconEl: HTMLElement): void {

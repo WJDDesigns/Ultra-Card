@@ -747,6 +747,8 @@ export interface IconConfig {
 
   // Entity color options
   use_entity_color_for_icon?: boolean;
+  use_state_color_for_inactive_icon?: boolean;
+  use_state_color_for_active_icon?: boolean;
 
   // Color configuration
   color_inactive?: string;

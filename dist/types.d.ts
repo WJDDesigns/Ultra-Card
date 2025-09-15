@@ -430,6 +430,8 @@ export interface IconConfig {
     active_template_mode?: boolean;
     active_template?: string;
     use_entity_color_for_icon?: boolean;
+    use_state_color_for_inactive_icon?: boolean;
+    use_state_color_for_active_icon?: boolean;
     color_inactive?: string;
     color_active?: string;
     inactive_icon_color?: string;
