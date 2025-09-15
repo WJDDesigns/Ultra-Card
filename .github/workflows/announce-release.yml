@@ -28,11 +28,7 @@ jobs:
             NAME="Test Discord Integration"
             TAG="v1.1.0-test"
             URL="https://github.com/${{ github.repository }}/releases"
-            BODY="🧪 This is a test of the Discord webhook integration.
-
-✅ The workflow is working correctly!
-🎯 Future releases will be announced automatically.
-🚀 Ready for production use!"
+            BODY="🧪 This is a test of the Discord webhook integration.\n\n✅ The workflow is working correctly!\n🎯 Future releases will be announced automatically.\n🚀 Ready for production use!"
             IS_PRE="true"
           else
             # Pull data from the release event JSON
