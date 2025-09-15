@@ -6,7 +6,7 @@ Ultra Card is a modular card builder for Home Assistant Dashboard UI.
 
 Ultra Card mission is to provide an easy-to-use visual editor to build custom Home Assistant dashboard cards.
 
-<img width="1041" height="889" alt="UltraCard" src="https://github.com/user-attachments/assets/59bb1402-1dc0-4770-aef7-222ba6670320" />
+![preview-uc](https://github.com/user-attachments/assets/869c8d8d-e51f-4c30-b626-b820e4dd5fae)
 
 ## Features
 
