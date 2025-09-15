@@ -6,6 +6,8 @@ Ultra Card is a modular card builder for Home Assistant Dashboard UI.
 
 Ultra Card mission is to provide an easy-to-use visual editor to build custom Home Assistant dashboard cards.
 
+<img width="1041" height="889" alt="UltraCard" src="https://github.com/user-attachments/assets/59bb1402-1dc0-4770-aef7-222ba6670320" />
+
 ## Features
 
 - 🛠 **Visual editor** for all modules and options (no need to edit yaml)
@@ -67,6 +69,8 @@ All Ultra Card layouts can be configured using Dashboard UI editor.
 
 Different modules are available for different content types:
 
+<img width="812" height="814" alt="modules" src="https://github.com/user-attachments/assets/b8208e40-e0c4-43c6-afa3-eba61aa22485" />
+
 - 📝 [Text module](docs/modules/text.md)
 - 🖼️ [Image module](docs/modules/image.md)
 - 🎯 [Icon module](docs/modules/icon.md)
@@ -83,6 +87,8 @@ Different modules are available for different content types:
 ## Module Settings
 
 Each module has 4 tabs for configuration:
+
+<img width="698" height="754" alt="tabs-view" src="https://github.com/user-attachments/assets/b65cc607-e914-4d0a-88fa-2d07dfbafba3" />
 
 - **General** - Module content and basic settings
 - **Actions** - Tap, hold, and double-tap behaviors
