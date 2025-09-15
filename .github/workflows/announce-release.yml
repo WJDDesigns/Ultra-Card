@@ -2,7 +2,7 @@ name: Announce GitHub Releases to Discord
 on:
   release:
     types: [published, prereleased]
-  workflow_dispatch: {}   # allows manual test runs
+  workflow_dispatch: {} # allows manual test runs
 
 jobs:
   announce:
@@ -14,9 +14,9 @@ jobs:
       - name: Build and send Discord embed
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          BOT_NAME: "UpdateBot"
-          # If you keep an avatar image in your repo, use the raw URL below; else swap for any image URL.
-          AVATAR_URL: "https://raw.githubusercontent.com/${{ github.repository }}/main/brand/updatebot.png"
+          BOT_NAME: 'UpdateBot'
+          # Using existing Ultra.jpg as avatar
+          AVATAR_URL: 'https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg'
         run: |
           if [ -z "$DISCORD_WEBHOOK" ]; then
             echo "Missing DISCORD_WEBHOOK secret"; exit 1
@@ -61,7 +61,7 @@ jobs:
             --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg footer "Ultra-Card • $RELEASE_TYPE • $tag" \
             --arg author "WJDDesigns/Ultra-Card" \
-            --arg thumb "https://raw.githubusercontent.com/${{ github.repository }}/main/brand/ultra-card-icon.png" \
+            --arg thumb "https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg" \
             --argjson color $COLOR \
             '{
               "username": $username,
@@ -83,5 +83,16 @@ jobs:
               ]
             }')
 
-          curl -f -X POST -H "Content-Type: application/json" \
-               -d "$PAYLOAD" "$DISCORD_WEBHOOK"
+          echo "Sending payload to Discord:"
+          echo "$PAYLOAD" | jq .
+
+          RESPONSE=$(curl -f -X POST -H "Content-Type: application/json" \
+                          -d "$PAYLOAD" "$DISCORD_WEBHOOK" 2>&1)
+
+          if [ $? -eq 0 ]; then
+            echo "✅ Successfully sent Discord notification"
+          else
+            echo "❌ Failed to send Discord notification:"
+            echo "$RESPONSE"
+            exit 1
+          fi
