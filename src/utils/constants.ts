@@ -1,8 +1,9 @@
 // Path constants
-// Default card image served by HACS.
-// HACS serves files directly from the repo root.
-export const DEFAULT_VEHICLE_IMAGE = '/hacsfiles/Ultra-Card/Ultra.jpg';
-// Fallback for assets subfolder approach.
+// Default card image embedded as base64 data URL - no external files needed!
+import { DEFAULT_VEHICLE_IMAGE_BASE64 } from './image-base64';
+
+export const DEFAULT_VEHICLE_IMAGE = DEFAULT_VEHICLE_IMAGE_BASE64;
+// Fallback paths for development or if base64 fails
 export const DEFAULT_VEHICLE_IMAGE_FALLBACK = '/hacsfiles/Ultra-Card/assets/Ultra.jpg';
 
 // Default configuration values and utilities can be added here
