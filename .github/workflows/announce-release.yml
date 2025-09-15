@@ -28,18 +28,16 @@ jobs:
             NAME="Ultra Card 1.1.0-beta5"
             TAG="v1.1.0-beta5"
             URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
-            BODY="🎨 Enhanced Icon Module Features
-
+            BODY="📋 Changelog Summary for v1.1.0-beta5:
+🎨 Enhanced Icon Module Features
 ✨ New: Use State Color Toggle
-- Automatically extracts colors from entity attributes (RGB, HS, color names, hex)
-- Perfect for RGB lights, colored sensors, and smart devices
-- Intelligent fallbacks for binary sensors
-
+Automatically extracts colors from entity attributes (RGB, HS, color names, hex)
+Perfect for RGB lights, colored sensors, and smart devices
+Intelligent fallbacks for binary sensors
 🔧 New: Dynamic Icon Color Template
-- Jinja2-compatible color templates with real-time evaluation
-- Full CSS color format support
-- Live preview updates
-
+Jinja2-compatible color templates with real-time evaluation
+Full CSS color format support
+Live preview updates
 🔄 Enhanced color priority system with seamless integration
 🛠️ Technical improvements and comprehensive TypeScript support"
             IS_PRE="true"
