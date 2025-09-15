@@ -24,12 +24,18 @@ jobs:
 
           # Check if this is a manual trigger (workflow_dispatch)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger detected - using test data"
-            NAME="Test Discord Integration"
-            TAG="v1.1.0-test"
-            URL="https://github.com/${{ github.repository }}/releases"
-            BODY="🧪 This is a test of the Discord webhook integration.\n\n✅ The workflow is working correctly!\n🎯 Future releases will be announced automatically.\n🚀 Ready for production use!"
-            IS_PRE="true"
+            echo "Manual trigger detected - fetching latest release data"
+            # Fetch the latest release data from GitHub API
+            RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            
+            NAME=$(echo "$RELEASE_DATA" | jq -r '.name // ""')
+            TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+            URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
+            BODY=$(echo "$RELEASE_DATA" | jq -r '.body // ""')
+            IS_PRE=$(echo "$RELEASE_DATA" | jq -r '.prerelease')
+            
+            echo "Fetched latest release: $NAME ($TAG)"
           else
             # Pull data from the release event JSON
             NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
