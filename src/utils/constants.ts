@@ -1,8 +1,8 @@
 // Path constants
 // Default card image served by HACS.
-// Primary path tries the canonical HACS asset location without dist.
+// HACS serves assets directly from the repo's assets folder (no dist/ prefix).
 export const DEFAULT_VEHICLE_IMAGE = '/hacsfiles/Ultra-Card/assets/Ultra.jpg';
-// Fallback path covers builds that copy to dist/assets.
+// Fallback for development or different HACS configurations.
 export const DEFAULT_VEHICLE_IMAGE_FALLBACK = '/hacsfiles/Ultra-Card/dist/assets/Ultra.jpg';
 
 // Default configuration values and utilities can be added here

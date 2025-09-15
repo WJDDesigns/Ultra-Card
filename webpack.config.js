@@ -77,6 +77,11 @@ module.exports = (env, argv) => {
             to: path.resolve(__dirname, 'dist/assets'),
             noErrorOnMissing: true,
           },
+          {
+            from: path.resolve(__dirname, 'src/assets'),
+            to: path.resolve(__dirname, 'assets'),
+            noErrorOnMissing: true,
+          },
         ],
       }),
       // Define environment variables
