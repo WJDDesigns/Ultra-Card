@@ -22,12 +22,23 @@ jobs:
             echo "Missing DISCORD_WEBHOOK secret"; exit 1
           fi
 
-          # Pull data from the release event JSON
-          NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
-          TAG=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH")
-          URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
-          BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
-          IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
+          # Check if this is a manual trigger (workflow_dispatch)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger detected - using test data"
+            NAME="Test Discord Integration"
+            TAG="v1.1.0-beta5"
+            URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
+            BODY="This is a test of the Discord webhook integration. The workflow is working correctly!"
+            IS_PRE="true"
+          else
+            # Pull data from the release event JSON
+            NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
+            TAG=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH")
+            URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
+            BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
+            IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
+          fi
+          
           REPO="${GITHUB_REPOSITORY#*/}"
 
           # Fallback title if .name is empty
@@ -83,16 +94,38 @@ jobs:
               ]
             }')
 
+          echo "Debug info:"
+          echo "Event name: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Tag: $TAG"
+          echo "Name: $NAME"
+          echo "Is Pre-release: $IS_PRE"
+          echo ""
+          
           echo "Sending payload to Discord:"
           echo "$PAYLOAD" | jq .
+          echo ""
 
-          RESPONSE=$(curl -f -X POST -H "Content-Type: application/json" \
-                          -d "$PAYLOAD" "$DISCORD_WEBHOOK" 2>&1)
+          echo "Testing webhook URL accessibility..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DISCORD_WEBHOOK")
+          echo "Webhook HTTP status: $HTTP_STATUS"
+          echo ""
 
-          if [ $? -eq 0 ]; then
+          echo "Sending Discord notification..."
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\n" -X POST -H "Content-Type: application/json" \
+                          -d "$PAYLOAD" "$DISCORD_WEBHOOK")
+
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE:/d')
+
+          echo "HTTP Response Code: $HTTP_CODE"
+          echo "Response Body: $RESPONSE_BODY"
+
+          if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
             echo "✅ Successfully sent Discord notification"
           else
-            echo "❌ Failed to send Discord notification:"
-            echo "$RESPONSE"
+            echo "❌ Failed to send Discord notification"
+            echo "HTTP Code: $HTTP_CODE"
+            echo "Response: $RESPONSE_BODY"
             exit 1
           fi
