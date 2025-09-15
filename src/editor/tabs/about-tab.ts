@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { localize } from '../../localize/localize';
 import { VERSION } from '../../version';
+import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../../utils/constants';
 
 @customElement('ultra-about-tab')
 export class AboutTab extends LitElement {
@@ -13,7 +14,17 @@ export class AboutTab extends LitElement {
     return html`
       <div class="about-tab">
         <div class="about-logo-container">
-          <img src="/hacsfiles/Ultra-Card/assets/Ultra.jpg" alt="Ultra Card" class="about-logo" />
+          <img
+            src="${DEFAULT_VEHICLE_IMAGE}"
+            alt="Ultra Card"
+            class="about-logo"
+            @error=${(e: Event) => {
+              const img = e.currentTarget as HTMLImageElement;
+              if (img && img.src !== DEFAULT_VEHICLE_IMAGE_FALLBACK) {
+                img.src = DEFAULT_VEHICLE_IMAGE_FALLBACK;
+              }
+            }}
+          />
         </div>
 
         <div class="about-developed-by">

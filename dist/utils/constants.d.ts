@@ -1,4 +1,5 @@
-export declare const DEFAULT_VEHICLE_IMAGE = "/hacsfiles/Ultra-Card/assets/default-car.png";
+export declare const DEFAULT_VEHICLE_IMAGE = "/hacsfiles/Ultra-Card/assets/Ultra.jpg";
+export declare const DEFAULT_VEHICLE_IMAGE_FALLBACK = "/hacsfiles/Ultra-Card/dist/assets/Ultra.jpg";
 export declare const DEFAULT_CONFIG: {
     title: string;
     title_alignment: string;

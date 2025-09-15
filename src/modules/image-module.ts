@@ -8,6 +8,7 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { FormUtils } from '../utils/form-utils';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
+import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../utils/constants';
 
 export class UltraImageModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -718,7 +719,7 @@ export class UltraImageModule extends BaseUltraModule {
 
     switch (imageModule.image_type) {
       case 'default':
-        imageUrl = '/hacsfiles/Ultra-Card/assets/Ultra.jpg';
+        imageUrl = DEFAULT_VEHICLE_IMAGE;
         break;
 
       case 'url':
@@ -759,7 +760,7 @@ export class UltraImageModule extends BaseUltraModule {
 
       default:
         // Fallback to default image
-        imageUrl = '/hacsfiles/Ultra-Card/assets/Ultra.jpg';
+        imageUrl = DEFAULT_VEHICLE_IMAGE;
         break;
     }
 
@@ -975,6 +976,12 @@ export class UltraImageModule extends BaseUltraModule {
               ? html`
                   <img
                     src="${imageUrl}"
+                    @error=${(e: Event) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      if (img && img.src !== DEFAULT_VEHICLE_IMAGE_FALLBACK) {
+                        img.src = DEFAULT_VEHICLE_IMAGE_FALLBACK; // swap to fallback if primary not accessible
+                      }
+                    }}
                     alt="${localize('editor.image.alt', hass?.locale?.language || 'en', 'Image')}"
                     style="${imageStyle}"
                     class="${hoverEffectClass}"

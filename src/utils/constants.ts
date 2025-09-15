@@ -1,5 +1,9 @@
 // Path constants
-export const DEFAULT_VEHICLE_IMAGE = '/hacsfiles/Ultra-Card/assets/default-car.png';
+// Default card image served by HACS.
+// Primary path tries the canonical HACS asset location without dist.
+export const DEFAULT_VEHICLE_IMAGE = '/hacsfiles/Ultra-Card/assets/Ultra.jpg';
+// Fallback path covers builds that copy to dist/assets.
+export const DEFAULT_VEHICLE_IMAGE_FALLBACK = '/hacsfiles/Ultra-Card/dist/assets/Ultra.jpg';
 
 // Default configuration values and utilities can be added here
 export const DEFAULT_CONFIG = {
