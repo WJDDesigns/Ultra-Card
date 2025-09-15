@@ -1,0 +1,87 @@
+name: Announce GitHub Releases to Discord
+on:
+  release:
+    types: [published, prereleased]
+  workflow_dispatch: {}   # allows manual test runs
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use repo avatar file (optional)
+        uses: actions/checkout@v4
+
+      - name: Build and send Discord embed
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          BOT_NAME: "UpdateBot"
+          # If you keep an avatar image in your repo, use the raw URL below; else swap for any image URL.
+          AVATAR_URL: "https://raw.githubusercontent.com/${{ github.repository }}/main/brand/updatebot.png"
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "Missing DISCORD_WEBHOOK secret"; exit 1
+          fi
+
+          # Pull data from the release event JSON
+          NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
+          TAG=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH")
+          URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
+          BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
+          IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
+          REPO="${GITHUB_REPOSITORY#*/}"
+
+          # Fallback title if .name is empty
+          if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
+            NAME="Release $TAG"
+          fi
+
+          # Trim body to fit Discord embed description (~2048 chars); keep some headroom
+          DESC=$(printf "%s" "$BODY" | head -c 1900)
+
+          # Color: purple for prerelease, blue for stable
+          if [ "$IS_PRE" = "true" ]; then
+            COLOR=11141290   # 0xAA66DA
+            RELEASE_TYPE="Prerelease"
+          else
+            COLOR=3447003    # 0x3498db
+            RELEASE_TYPE="Release"
+          fi
+
+          # Build JSON payload with jq (avoids escaping headaches)
+          PAYLOAD=$(jq -n \
+            --arg username "$BOT_NAME" \
+            --arg avatar_url "$AVATAR_URL" \
+            --arg title "$NAME" \
+            --arg url "$URL" \
+            --arg desc "$DESC" \
+            --arg repo "$REPO" \
+            --arg tag "$TAG" \
+            --arg rtype "$RELEASE_TYPE" \
+            --arg commit_url "https://github.com/${{ github.repository }}/commits/$TAG" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg footer "Ultra-Card • $RELEASE_TYPE • $tag" \
+            --arg author "WJDDesigns/Ultra-Card" \
+            --arg thumb "https://raw.githubusercontent.com/${{ github.repository }}/main/brand/ultra-card-icon.png" \
+            --argjson color $COLOR \
+            '{
+              "username": $username,
+              "avatar_url": $avatar_url,
+              "embeds": [
+                {
+                  "title": $title,
+                  "url": $url,
+                  "description": $desc,
+                  "color": $color,
+                  "timestamp": $ts,
+                  "author": { "name": $author },
+                  "footer": { "text": $footer },
+                  "fields": [
+                    { "name": "Tag", "value": $tag, "inline": true },
+                    { "name": "Repo", "value": $repo, "inline": true }
+                  ]
+                }
+              ]
+            }')
+
+          curl -f -X POST -H "Content-Type: application/json" \
+               -d "$PAYLOAD" "$DISCORD_WEBHOOK"
