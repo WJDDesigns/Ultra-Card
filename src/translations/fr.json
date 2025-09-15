@@ -1075,7 +1075,13 @@
         "title": "Hauteur de l'espacement"
       },
       "height": "Hauteur (px)",
-      "height_desc": "Contrôle l'espace visuel pour l'Espace vide."
+      "height_desc": "Contrôle l'espace visuel pour l'Espace vide.",
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      }
     },
     "design": {
       "copy": "Copier",

@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 1.1.0-Beta3 (Separator Module Enhancements)
+
+### New Features
+
+- **🔄 Vertical Separator Support**: Separator modules now support both horizontal and vertical orientations
+  - New "Orientation" toggle in separator configuration
+  - Horizontal separators: Use percentage-based width (10-100%)
+  - Vertical separators: Use pixel-based height (50-1000px) for better control
+  - Proper centering and alignment for both orientations
+  - All separator styles work in both orientations (line, double line, dotted, shadow, blank space)
+
+### Bug Fixes
+
+- **Fixed separator visibility**: Improved default colors and thickness for better visibility
+- **Fixed vertical separator centering**: Vertical separators now properly center horizontally
+- **Fixed height limitations**: Vertical separators can now be up to 1000px tall
+- **Fixed container dimensions**: Better minimum dimensions ensure separators are always visible
+
+### Technical Improvements
+
+- Added `height_px` property to SeparatorModule interface for vertical separator sizing
+- Enhanced validation for both horizontal and vertical separator constraints
+- Improved CSS styling for vertical separator layouts
+- Better default values and ranges for separator controls
+
 ## Version 1.1.0-Beta1 (New Minimal Bar Style & Improvements)
 
 ### New Features

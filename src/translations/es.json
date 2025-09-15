@@ -1075,7 +1075,13 @@
         "title": "Altura del espaciador"
       },
       "height": "Altura (px)",
-      "height_desc": "Controla el espacio visual para el espacio en blanco."
+      "height_desc": "Controla el espacio visual para el espacio en blanco.",
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      }
     },
     "design": {
       "copy": "Copiar",

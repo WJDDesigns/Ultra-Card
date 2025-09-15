@@ -1028,6 +1028,12 @@
         "title": "Separator Style",
         "desc": "Choose the visual style of the separator line."
       },
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
       "options": {
         "solid": "Solid Line",
         "double": "Double Line",

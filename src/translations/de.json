@@ -1075,7 +1075,13 @@
         "title": "Abstandshöhe"
       },
       "height": "Höhe (px)",
-      "height_desc": "Steuert den sichtbaren Abstand für Leerraum."
+      "height_desc": "Steuert den sichtbaren Abstand für Leerraum.",
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      }
     },
     "design": {
       "copy": "Kopieren",

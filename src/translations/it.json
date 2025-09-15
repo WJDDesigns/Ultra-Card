@@ -1075,7 +1075,13 @@
         "title": "Altezza spazio"
       },
       "height": "Altezza (px)",
-      "height_desc": "Controlla lo spazio visivo per Spazio vuoto."
+      "height_desc": "Controlla lo spazio visivo per Spazio vuoto.",
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      }
     },
     "design": {
       "copy": "Copia",

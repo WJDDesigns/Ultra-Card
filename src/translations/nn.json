@@ -941,6 +941,12 @@
       "height_desc": "Styrer synleg gap for ‘Blankt mellomrom’.",
       "show_title_toggle": {
         "enable_toggle_desc": "Skru på brytaren over for å konfigurere tittelen"
+      },
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
       }
     },
     "layout_extra": {

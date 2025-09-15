@@ -941,6 +941,12 @@
       "height_desc": "Kontrollerer det visuelle mellemrum for Tomt mellemrum.",
       "show_title_toggle": {
         "enable_toggle_desc": "Aktivér skifteren ovenfor for at konfigurere titelindstillinger"
+      },
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
       }
     },
     "layout_extra": {

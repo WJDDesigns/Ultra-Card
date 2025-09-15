@@ -941,6 +941,12 @@
       "height_desc": "Ovládá vizuální mezeru pro prázdné místo.",
       "show_title_toggle": {
         "enable_toggle_desc": "Aktivujte přepínač výše pro konfiguraci nastavení nadpisu"
+      },
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
       }
     },
     "layout_extra": {

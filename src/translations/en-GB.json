@@ -1075,7 +1075,13 @@
         "title": "Spacer Height"
       },
       "height": "Height (px)",
-      "height_desc": "Controls the visual gap for Blank Space."
+      "height_desc": "Controls the visual gap for Blank Space.",
+      "orientation": {
+        "title": "Orientation",
+        "desc": "Choose whether the separator runs horizontally or vertically.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      }
     },
     "design": {
       "copy": "Copy",

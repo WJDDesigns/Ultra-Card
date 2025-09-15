@@ -25,9 +25,11 @@ export class UltraSeparatorModule extends BaseUltraModule {
       id: id || this.generateId('separator'),
       type: 'separator',
       separator_style: 'line',
-      thickness: 1,
+      orientation: 'horizontal',
+      thickness: 2,
       width_percent: 100,
-      color: 'var(--divider-color)',
+      height_px: 300,
+      color: '#cccccc',
       show_title: false,
       title: '',
       title_size: 14,
@@ -43,7 +45,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       // Hover effects
       enable_hover_effect: true,
-      hover_background_color: 'var(--divider-color)',
+      hover_background_color: 'var(--divider-color, #cccccc)',
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
@@ -142,6 +144,57 @@ export class UltraSeparatorModule extends BaseUltraModule {
               updateModule(updates);
             }}
           ></ha-form>
+
+          <!-- Orientation -->
+          <div
+            class="field-title"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
+          >
+            ${localize('editor.separator.orientation.title', lang, 'Orientation')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+          >
+            ${localize(
+              'editor.separator.orientation.desc',
+              lang,
+              'Choose whether the separator runs horizontally or vertically.'
+            )}
+          </div>
+          <ha-form
+            .hass=${hass}
+            .data=${{ orientation: separatorModule.orientation || 'horizontal' }}
+            .schema=${[
+              {
+                name: 'orientation',
+                selector: {
+                  select: {
+                    options: [
+                      {
+                        value: 'horizontal',
+                        label: localize(
+                          'editor.separator.orientation.horizontal',
+                          lang,
+                          'Horizontal'
+                        ),
+                      },
+                      {
+                        value: 'vertical',
+                        label: localize('editor.separator.orientation.vertical', lang, 'Vertical'),
+                      },
+                    ],
+                    mode: 'dropdown',
+                  },
+                },
+                label: '',
+              },
+            ]}
+            @value-changed=${(e: CustomEvent) => {
+              const newOrientation = e.detail.value.orientation;
+              updateModule({ orientation: newOrientation });
+            }}
+          ></ha-form>
         </div>
 
         <!-- Appearance Configuration -->
@@ -226,78 +279,143 @@ export class UltraSeparatorModule extends BaseUltraModule {
                   </div>
                 </div>
 
-                <!-- Width -->
+                <!-- Width/Height based on orientation -->
                 ${(separatorModule as any).separator_style === 'shadow' ||
                 (separatorModule as any).separator_style === 'blank'
                   ? html``
                   : html`
                       <div class="field-container" style="margin-bottom: 24px;">
                         <div class="field-title">
-                          ${localize('editor.separator.width', lang, 'Width (%)')}
+                          ${separatorModule.orientation === 'vertical'
+                            ? localize('editor.separator.height', lang, 'Height (px)')
+                            : localize('editor.separator.width', lang, 'Width (%)')}
                         </div>
                         <div class="field-description">
-                          ${localize(
-                            'editor.separator.width_desc',
-                            lang,
-                            'Width of the separator as percentage of container.'
-                          )}
+                          ${separatorModule.orientation === 'vertical'
+                            ? localize(
+                                'editor.separator.height_desc',
+                                lang,
+                                'Height of the separator in pixels.'
+                              )
+                            : localize(
+                                'editor.separator.width_desc',
+                                lang,
+                                'Width of the separator as percentage of container.'
+                              )}
                         </div>
                         <div
                           class="gap-control-container"
                           style="display: flex; align-items: center; gap: 12px;"
                         >
-                          <input
-                            type="range"
-                            class="gap-slider"
-                            min="10"
-                            max="100"
-                            step="5"
-                            .value="${separatorModule.width_percent || 100}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const value = parseFloat(target.value);
-                              updateModule({ width_percent: value });
-                            }}
-                          />
-                          <input
-                            type="number"
-                            class="gap-input"
-                            min="10"
-                            max="100"
-                            step="5"
-                            .value="${separatorModule.width_percent || 100}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              const value = parseFloat(target.value);
-                              if (!isNaN(value)) {
-                                updateModule({ width_percent: value });
-                              }
-                            }}
-                            @keydown=${(e: KeyboardEvent) => {
-                              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                const target = e.target as HTMLInputElement;
-                                const currentValue = parseFloat(target.value) || 100;
-                                const increment = e.key === 'ArrowUp' ? 5 : -5;
-                                const newValue = Math.max(
-                                  10,
-                                  Math.min(100, currentValue + increment)
-                                );
-                                updateModule({ width_percent: newValue });
-                              }
-                            }}
-                          />
-                          <button
-                            class="reset-btn"
-                            @click=${() => updateModule({ width_percent: 100 })}
-                            title=${localize(
-                              'editor.fields.reset_default_value',
-                              lang,
-                              'Reset to default ({value})'
-                            ).replace('{value}', '100')}
-                          >
-                            <ha-icon icon="mdi:refresh"></ha-icon>
-                          </button>
+                          ${separatorModule.orientation === 'vertical'
+                            ? html`
+                                <input
+                                  type="range"
+                                  class="gap-slider"
+                                  min="50"
+                                  max="1000"
+                                  step="10"
+                                  .value="${separatorModule.height_px || 300}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    updateModule({ height_px: value });
+                                  }}
+                                />
+                                <input
+                                  type="number"
+                                  class="gap-input"
+                                  min="50"
+                                  max="1000"
+                                  step="10"
+                                  .value="${separatorModule.height_px || 300}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    if (!isNaN(value)) {
+                                      updateModule({ height_px: value });
+                                    }
+                                  }}
+                                  @keydown=${(e: KeyboardEvent) => {
+                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      const target = e.target as HTMLInputElement;
+                                      const currentValue = parseFloat(target.value) || 300;
+                                      const increment = e.key === 'ArrowUp' ? 10 : -10;
+                                      const newValue = Math.max(
+                                        50,
+                                        Math.min(1000, currentValue + increment)
+                                      );
+                                      updateModule({ height_px: newValue });
+                                    }
+                                  }}
+                                />
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => updateModule({ height_px: 300 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '300')}
+                                >
+                                  <ha-icon icon="mdi:refresh"></ha-icon>
+                                </button>
+                              `
+                            : html`
+                                <input
+                                  type="range"
+                                  class="gap-slider"
+                                  min="10"
+                                  max="100"
+                                  step="5"
+                                  .value="${separatorModule.width_percent || 100}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    updateModule({ width_percent: value });
+                                  }}
+                                />
+                                <input
+                                  type="number"
+                                  class="gap-input"
+                                  min="10"
+                                  max="100"
+                                  step="5"
+                                  .value="${separatorModule.width_percent || 100}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    if (!isNaN(value)) {
+                                      updateModule({ width_percent: value });
+                                    }
+                                  }}
+                                  @keydown=${(e: KeyboardEvent) => {
+                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      const target = e.target as HTMLInputElement;
+                                      const currentValue = parseFloat(target.value) || 100;
+                                      const increment = e.key === 'ArrowUp' ? 5 : -5;
+                                      const newValue = Math.max(
+                                        10,
+                                        Math.min(100, currentValue + increment)
+                                      );
+                                      updateModule({ width_percent: newValue });
+                                    }
+                                  }}
+                                />
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => updateModule({ width_percent: 100 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '100')}
+                                >
+                                  <ha-icon icon="mdi:refresh"></ha-icon>
+                                </button>
+                              `}
                         </div>
                       </div>
                     `}
@@ -319,7 +437,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                   <ultra-color-picker
                     .label=${''}
                     .value=${separatorModule.color || ''}
-                    .defaultValue=${'var(--divider-color)'}
+                    .defaultValue=${'var(--divider-color, #cccccc)'}
                     .hass=${hass}
                     @value-changed=${(e: CustomEvent) => {
                       const value = e.detail.value;
@@ -526,7 +644,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                             class="format-btn ${separatorModule.title_bold ? 'active' : ''}"
                             @click=${() =>
                               updateModule({ title_bold: !separatorModule.title_bold })}
-                            style="padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${separatorModule.title_bold
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_bold
                               ? 'var(--primary-color)'
                               : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_bold
                               ? 'white'
@@ -539,7 +657,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                             class="format-btn ${separatorModule.title_italic ? 'active' : ''}"
                             @click=${() =>
                               updateModule({ title_italic: !separatorModule.title_italic })}
-                            style="padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${separatorModule.title_italic
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_italic
                               ? 'var(--primary-color)'
                               : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_italic
                               ? 'white'
@@ -552,7 +670,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                             class="format-btn ${separatorModule.title_underline ? 'active' : ''}"
                             @click=${() =>
                               updateModule({ title_underline: !separatorModule.title_underline })}
-                            style="padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${separatorModule.title_underline
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_underline
                               ? 'var(--primary-color)'
                               : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_underline
                               ? 'white'
@@ -569,7 +687,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                             class="format-btn ${separatorModule.title_uppercase ? 'active' : ''}"
                             @click=${() =>
                               updateModule({ title_uppercase: !separatorModule.title_uppercase })}
-                            style="padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${separatorModule.title_uppercase
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_uppercase
                               ? 'var(--primary-color)'
                               : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_uppercase
                               ? 'white'
@@ -590,7 +708,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                               updateModule({
                                 title_strikethrough: !separatorModule.title_strikethrough,
                               })}
-                            style="padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${separatorModule.title_strikethrough
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_strikethrough
                               ? 'var(--primary-color)'
                               : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_strikethrough
                               ? 'white'
@@ -745,7 +863,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       border:
         (designProperties.border_style || moduleWithDesign.border_style) &&
         (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
-          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
+          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color, #cccccc)'}`
           : 'none',
       borderRadius:
         this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
@@ -756,11 +874,21 @@ export class UltraSeparatorModule extends BaseUltraModule {
       right: designProperties.right || moduleWithDesign.right || 'auto',
       zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
       width: designProperties.width || moduleWithDesign.width || '100%',
-      height: designProperties.height || moduleWithDesign.height || 'auto',
+      height:
+        designProperties.height ||
+        moduleWithDesign.height ||
+        (separatorModule.orientation === 'vertical'
+          ? `${separatorModule.height_px || 300}px`
+          : 'auto'),
       maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
       maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
       minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
-      minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
+      minHeight:
+        designProperties.min_height ||
+        moduleWithDesign.min_height ||
+        (separatorModule.orientation === 'vertical'
+          ? `${Math.min(separatorModule.height_px || 300, 50)}px`
+          : '10px'),
       overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
       backdropFilter:
@@ -775,11 +903,14 @@ export class UltraSeparatorModule extends BaseUltraModule {
     } as Record<string, string>;
 
     if (separatorModule.separator_style === 'blank') {
+      const isVertical = separatorModule.orientation === 'vertical';
       return html`
         <div class="separator-module-container" style=${this.styleObjectToCss(containerStyles)}>
           <div
             class="separator-preview blank-separator"
-            style="height: ${separatorModule.thickness || 1}px;"
+            style="${isVertical
+              ? `width: ${separatorModule.thickness || 1}px; height: ${separatorModule.height_px || 300}px; display: block; margin: 0 auto;`
+              : `height: ${separatorModule.thickness || 1}px; width: 100%;`}"
           ></div>
         </div>
       `;
@@ -886,19 +1017,29 @@ export class UltraSeparatorModule extends BaseUltraModule {
         @pointerdown=${handlePointerDown}
         @pointerup=${handlePointerUp}
       >
-        <div class="separator-preview" style="width: 100%; text-align: center;">
+        <div
+          class="separator-preview ${separatorModule.orientation === 'vertical' ? 'vertical' : ''}"
+          style="width: 100%; text-align: center;"
+        >
           ${separatorModule.show_title && separatorModule.title
             ? html`
                 <div
-                  class="separator-with-title"
-                  style=${this.getTitleContainerStyles((separatorModule as any).design || {})}
+                  class="separator-with-title ${separatorModule.orientation === 'vertical'
+                    ? 'vertical'
+                    : ''}"
+                  style=${this.getTitleContainerStyles(
+                    (separatorModule as any).design || {},
+                    separatorModule.orientation === 'vertical'
+                  )}
                 >
                   <div
                     class="separator-line-left"
                     style=${this.getSeparatorLineStyles(separatorModule, 'left')}
                   ></div>
                   <div
-                    class="separator-title"
+                    class="separator-title ${separatorModule.orientation === 'vertical'
+                      ? 'vertical'
+                      : ''}"
                     style=${this.getTitleStyles(
                       separatorModule,
                       (separatorModule as any).design || {}
@@ -932,6 +1073,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
     const baseValidation = super.validate(module);
     const separatorModule = module as SeparatorModule;
     const errors = [...baseValidation.errors];
+    const isVertical = separatorModule.orientation === 'vertical';
 
     if (separatorModule.separator_style !== 'blank') {
       if (
@@ -945,15 +1087,25 @@ export class UltraSeparatorModule extends BaseUltraModule {
         separatorModule.thickness &&
         (separatorModule.thickness < 1 || separatorModule.thickness > 300)
       ) {
-        errors.push('Spacer height must be between 1 and 300 pixels');
+        const dimensionName = isVertical ? 'width' : 'height';
+        errors.push(`Spacer ${dimensionName} must be between 1 and 300 pixels`);
       }
     }
 
-    if (
-      separatorModule.width_percent &&
-      (separatorModule.width_percent < 1 || separatorModule.width_percent > 100)
-    ) {
-      errors.push('Width must be between 1 and 100 percent');
+    if (isVertical) {
+      if (
+        separatorModule.height_px &&
+        (separatorModule.height_px < 50 || separatorModule.height_px > 1000)
+      ) {
+        errors.push('Height must be between 50 and 1000 pixels');
+      }
+    } else {
+      if (
+        separatorModule.width_percent &&
+        (separatorModule.width_percent < 1 || separatorModule.width_percent > 100)
+      ) {
+        errors.push('Width must be between 1 and 100 percent');
+      }
     }
 
     if (
@@ -961,6 +1113,16 @@ export class UltraSeparatorModule extends BaseUltraModule {
       (!separatorModule.title || separatorModule.title.trim() === '')
     ) {
       errors.push('Title text is required when show title is enabled');
+    }
+
+    // Vertical separators with titles have some additional constraints
+    if (isVertical && separatorModule.show_title && separatorModule.title) {
+      // Warn if title is very long for vertical display
+      if (separatorModule.title.length > 20) {
+        errors.push(
+          'Title text should be shorter for vertical separators (max 20 characters recommended)'
+        );
+      }
     }
 
     return {
@@ -972,9 +1134,18 @@ export class UltraSeparatorModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .separator-preview {
-        min-height: 20px;
+        min-height: 1px;
         display: flex;
         align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+      
+      .separator-preview.vertical {
+        min-width: 1px;
+        min-height: 50px;
+        height: 100%;
+        align-items: stretch;
         justify-content: center;
       }
       
@@ -990,6 +1161,15 @@ export class UltraSeparatorModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         width: 100%;
+        height: 100%;
+      }
+      
+      .separator-with-title.vertical {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: auto;
       }
       
       .separator-title {
@@ -1002,16 +1182,30 @@ export class UltraSeparatorModule extends BaseUltraModule {
         white-space: nowrap;
       }
       
+      .separator-title.vertical {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        padding: 8px 0;
+        white-space: normal;
+      }
+      
       .separator-line,
       .separator-line-left,
       .separator-line-right {
         display: block;
+        background-color: var(--divider-color, #cccccc); /* Fallback color */
       }
       
       .separator-line-left,
       .separator-line-right {
         flex: 1;
       }
+      
+      .separator-line {
+        min-height: 1px;
+        min-width: 1px;
+      }
+      
       
       /* Format button styles */
       .format-buttons {
@@ -1022,7 +1216,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       
       .format-btn {
         padding: 8px;
-        border: 1px solid var(--divider-color);
+        border: 1px solid var(--divider-color, #cccccc);
         border-radius: 4px;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -1088,7 +1282,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .gap-slider {
         flex: 1;
         height: 6px;
-        background: var(--divider-color);
+        background: var(--divider-color, #cccccc);
         border-radius: 3px;
         outline: none;
         appearance: none;
@@ -1137,7 +1331,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
         max-width: 48px !important;
         min-width: 48px !important;
         padding: 4px 6px !important;
-        border: 1px solid var(--divider-color);
+        border: 1px solid var(--divider-color, #cccccc);
         border-radius: 4px;
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
@@ -1158,7 +1352,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
         width: 36px;
         height: 36px;
         padding: 0;
-        border: 1px solid var(--divider-color);
+        border: 1px solid var(--divider-color, #cccccc);
         border-radius: 4px;
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
@@ -1183,41 +1377,74 @@ export class UltraSeparatorModule extends BaseUltraModule {
   }
 
   private getSeparatorStyles(separatorModule: SeparatorModule): string {
-    const styles: Record<string, string> = {
-      width: `${separatorModule.width_percent || 100}%`,
-      height: `${separatorModule.thickness || 1}px`,
-      margin: '0 auto',
-    };
+    const isVertical = separatorModule.orientation === 'vertical';
+    const styles: Record<string, string> = {};
+
+    if (isVertical) {
+      styles.width = `${separatorModule.thickness || 1}px`;
+      styles.height = `${separatorModule.height_px || 300}px`;
+      styles.margin = '0 auto';
+      styles.display = 'block';
+    } else {
+      styles.width = `${separatorModule.width_percent || 100}%`;
+      styles.height = `${separatorModule.thickness || 1}px`;
+      styles.margin = '0 auto';
+    }
 
     // Default to 'line' if style is not set to ensure preview visibility
     const separatorStyleType = separatorModule.separator_style || 'line';
 
     switch (separatorStyleType) {
       case 'line':
-        styles.backgroundColor = separatorModule.color || 'var(--divider-color)';
+        styles.backgroundColor = separatorModule.color || 'var(--divider-color, #cccccc)';
         break;
       case 'double_line':
-        styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
         break;
       case 'dotted':
-        styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.height = '0';
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = '0';
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = '0';
+        }
         break;
       case 'double_dotted':
-        styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
         break;
       case 'shadow': {
         const t = separatorModule.thickness || 1;
-        const h = Math.max(t * 8, 14);
         const cFull = this._colorWithAlpha(separatorModule.color || '#000000', 0.35);
-        styles.width = 'calc(100% + (var(--ha-card-padding, 16px) * 2))';
-        styles.margin = '0 calc(var(--ha-card-padding, 16px) * -1)';
-        styles.height = `${h}px`;
-        styles.background = `linear-gradient(to bottom, ${cFull} 0%, rgba(0,0,0,0) 100%)`;
+        if (isVertical) {
+          const w = Math.max(t * 8, 14);
+          styles.height = 'calc(100% + (var(--ha-card-padding, 16px) * 2))';
+          styles.margin = 'calc(var(--ha-card-padding, 16px) * -1) 0';
+          styles.width = `${w}px`;
+          styles.background = `linear-gradient(to right, ${cFull} 0%, rgba(0,0,0,0) 100%)`;
+        } else {
+          const h = Math.max(t * 8, 14);
+          styles.width = 'calc(100% + (var(--ha-card-padding, 16px) * 2))';
+          styles.margin = '0 calc(var(--ha-card-padding, 16px) * -1)';
+          styles.height = `${h}px`;
+          styles.background = `linear-gradient(to bottom, ${cFull} 0%, rgba(0,0,0,0) 100%)`;
+        }
         break;
       }
     }
@@ -1231,21 +1458,40 @@ export class UltraSeparatorModule extends BaseUltraModule {
     separatorModule: SeparatorModule,
     position: 'left' | 'right'
   ): string {
-    const styles: Record<string, string> = {
-      flex: '1',
-      height: `${separatorModule.thickness || 1}px`,
-      margin: position === 'left' ? '0 8px 0 0' : '0 0 0 8px',
-    };
+    const isVertical = separatorModule.orientation === 'vertical';
+    const styles: Record<string, string> = {};
+
+    if (isVertical) {
+      styles.flex = '1';
+      styles.width = `${separatorModule.thickness || 1}px`;
+      styles.margin = position === 'left' ? '0 0 8px 0' : '8px 0 0 0';
+    } else {
+      styles.flex = '1';
+      styles.height = `${separatorModule.thickness || 1}px`;
+      styles.margin = position === 'left' ? '0 8px 0 0' : '0 0 0 8px';
+    }
 
     // Respect global text alignment by adjusting line flex sizes
     const textAlign = ((separatorModule as any).design || {}).text_align;
     if (textAlign && textAlign !== 'inherit') {
-      if (textAlign === 'left') {
-        styles.flex = position === 'left' ? '0 0 12px' : '1';
-      } else if (textAlign === 'right') {
-        styles.flex = position === 'right' ? '0 0 12px' : '1';
+      if (isVertical) {
+        // For vertical separators, adjust based on vertical alignment
+        if (textAlign === 'top') {
+          styles.flex = position === 'left' ? '0 0 12px' : '1';
+        } else if (textAlign === 'bottom') {
+          styles.flex = position === 'right' ? '0 0 12px' : '1';
+        } else {
+          styles.flex = '1';
+        }
       } else {
-        styles.flex = '1';
+        // For horizontal separators, adjust based on horizontal alignment
+        if (textAlign === 'left') {
+          styles.flex = position === 'left' ? '0 0 12px' : '1';
+        } else if (textAlign === 'right') {
+          styles.flex = position === 'right' ? '0 0 12px' : '1';
+        } else {
+          styles.flex = '1';
+        }
       }
     }
 
@@ -1254,34 +1500,61 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
     switch (separatorStyleType) {
       case 'line':
-        styles.backgroundColor = separatorModule.color || 'var(--divider-color)';
+        styles.backgroundColor = separatorModule.color || 'var(--divider-color, #cccccc)';
         break;
       case 'double_line':
-        styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
         break;
       case 'dotted':
-        styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.height = '0';
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = '0';
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = '0';
+        }
         break;
       case 'double_dotted':
-        styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color)'}`;
-        styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
         break;
       case 'shadow': {
         const t = separatorModule.thickness || 1;
-        const h = Math.max(t * 8, 14);
         const c1 = this._colorWithAlpha(separatorModule.color || '#000000', 0.35);
         const c2 = this._colorWithAlpha(separatorModule.color || '#000000', 0.22);
         const cTop = this._colorWithAlpha(separatorModule.color || '#000000', 0.25);
-        styles.height = `${h}px`;
-        styles.margin = '0';
-        styles.background = `
-          linear-gradient(to bottom, ${cTop}, rgba(0,0,0,0) 66%) top/100% 2px no-repeat,
-          radial-gradient(ellipse at center, ${c1} 0%, ${c2} 55%, rgba(0,0,0,0) 80%) bottom/120% 100% no-repeat
-        `;
+        if (isVertical) {
+          const w = Math.max(t * 8, 14);
+          styles.width = `${w}px`;
+          styles.margin = '0';
+          styles.background = `
+            linear-gradient(to right, ${cTop}, rgba(0,0,0,0) 66%) left/2px 100% no-repeat,
+            radial-gradient(ellipse at center, ${c1} 0%, ${c2} 55%, rgba(0,0,0,0) 80%) right/100% 120% no-repeat
+          `;
+        } else {
+          const h = Math.max(t * 8, 14);
+          styles.height = `${h}px`;
+          styles.margin = '0';
+          styles.background = `
+            linear-gradient(to bottom, ${cTop}, rgba(0,0,0,0) 66%) top/100% 2px no-repeat,
+            radial-gradient(ellipse at center, ${c1} 0%, ${c2} 55%, rgba(0,0,0,0) 80%) bottom/120% 100% no-repeat
+          `;
+        }
         break;
       }
     }
@@ -1291,18 +1564,30 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .join('; ');
   }
 
-  private getTitleContainerStyles(design: any = {}): string {
+  private getTitleContainerStyles(design: any = {}, isVertical: boolean = false): string {
     const textAlign =
       design?.text_align && design.text_align !== 'inherit' ? design.text_align : 'center';
-    const justifyContent =
-      textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center';
+
     const styles: Record<string, string> = {
       position: 'relative',
       display: 'flex',
-      alignItems: 'center',
-      justifyContent,
       width: '100%',
+      height: '100%',
     } as Record<string, string>;
+
+    if (isVertical) {
+      styles.flexDirection = 'column';
+      styles.alignItems = 'center';
+      const justifyContent =
+        textAlign === 'top' ? 'flex-start' : textAlign === 'bottom' ? 'flex-end' : 'center';
+      styles.justifyContent = justifyContent;
+    } else {
+      styles.flexDirection = 'row';
+      styles.alignItems = 'center';
+      const justifyContent =
+        textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center';
+      styles.justifyContent = justifyContent;
+    }
 
     return Object.entries(styles)
       .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
@@ -1310,6 +1595,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
   }
 
   private getTitleStyles(separatorModule: SeparatorModule, design: any = {}): string {
+    const isVertical = separatorModule.orientation === 'vertical';
     const resolveSize = (): string => {
       if (design.font_size !== undefined && design.font_size !== null) {
         return typeof design.font_size === 'number'
@@ -1330,10 +1616,12 @@ export class UltraSeparatorModule extends BaseUltraModule {
       lineHeight: design.line_height || undefined,
       textAlign: design.text_align || undefined,
       margin: '0',
-      padding: '0 8px',
+      padding: isVertical ? '8px 0' : '0 8px',
       backgroundColor: 'transparent',
       position: 'relative',
       zIndex: '1',
+      writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
+      textOrientation: isVertical ? 'mixed' : 'mixed',
     } as Record<string, string>;
 
     const decorations: string[] = [];

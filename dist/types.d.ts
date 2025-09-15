@@ -115,8 +115,10 @@ export interface TextModule extends BaseModule {
 export interface SeparatorModule extends BaseModule {
     type: 'separator';
     separator_style?: 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank';
+    orientation?: 'horizontal' | 'vertical';
     thickness?: number;
     width_percent?: number;
+    height_px?: number;
     color?: string;
     show_title?: boolean;
     title?: string;
