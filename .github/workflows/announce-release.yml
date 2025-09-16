@@ -24,18 +24,22 @@ jobs:
 
           # Check if this is a manual trigger (workflow_dispatch)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger detected - fetching latest release data"
-            # Fetch the latest release data from GitHub API
+            echo "Manual trigger detected - fetching most recent release data (including pre-releases)"
+            
+            # Fetch all releases and get the most recent one (including pre-releases)
             RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+              "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0]')
             
             NAME=$(echo "$RELEASE_DATA" | jq -r '.name // ""')
             TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
             URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
             BODY=$(echo "$RELEASE_DATA" | jq -r '.body // ""')
             IS_PRE=$(echo "$RELEASE_DATA" | jq -r '.prerelease')
+            PUBLISHED_AT=$(echo "$RELEASE_DATA" | jq -r '.published_at')
             
-            echo "Fetched latest release: $NAME ($TAG)"
+            echo "Fetched most recent release: $NAME ($TAG)"
+            echo "Published at: $PUBLISHED_AT"
+            echo "Is pre-release: $IS_PRE"
           else
             # Pull data from the release event JSON
             NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
@@ -69,6 +73,13 @@ jobs:
             RELEASE_TYPE="Release"
           fi
 
+          # Create footer text based on trigger type
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            FOOTER_TEXT="Ultra-Card • $RELEASE_TYPE • $TAG • Manual Announcement"
+          else
+            FOOTER_TEXT="Ultra-Card • $RELEASE_TYPE • $TAG"
+          fi
+
           # Build JSON payload with jq (avoids escaping headaches)
           PAYLOAD=$(jq -n \
             --arg username "$BOT_NAME" \
@@ -81,7 +92,7 @@ jobs:
             --arg rtype "$RELEASE_TYPE" \
             --arg commit_url "https://github.com/${{ github.repository }}/commits/$TAG" \
             --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg footer "Ultra-Card • $RELEASE_TYPE • $tag" \
+            --arg footer "$FOOTER_TEXT" \
             --arg author "WJDDesigns/Ultra-Card" \
             --arg thumb "https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg" \
             --argjson color $COLOR \
