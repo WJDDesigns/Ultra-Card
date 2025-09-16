@@ -59,22 +59,22 @@ jobs:
         id: release_notes
         run: |
           VERSION="${{ github.ref_name }}"
-          
+
           # Create clean release notes based on version
           cat > release_notes.md << 'EOF'
           ## 🔗 Link Updates
-          
+
           - **Updated Support Links**: Updated PayPal tip link to new payment URL
           - **Updated Community Links**: Updated Discord server invitation link
-          
+
           ## 📝 Changes Made
-          
+
           - Updated PayPal tip link in README.md and About tab
           - Updated Discord invitation link in README.md and About tab
-          
+
           These updates ensure users can properly access our support and community channels.
           EOF
-          
+
           # Set the release notes as output
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.md >> $GITHUB_OUTPUT
@@ -92,3 +92,79 @@ jobs:
           files: |
             ultra-card-${{ github.ref_name }}.zip
             ultra-card.js
+
+      - name: Announce to Discord
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          BOT_NAME: 'UpdateBot'
+          AVATAR_URL: 'https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg'
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "Missing DISCORD_WEBHOOK secret - skipping Discord notification"
+            exit 0
+          fi
+
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          TAG="${{ github.ref_name }}"
+          URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
+          REPO="${{ github.repository }}"
+          REPO_NAME="${REPO#*/}"
+          
+          # Use the same release notes we generated
+          DESC="${{ steps.release_notes.outputs.RELEASE_NOTES }}"
+          
+          # Truncate description to fit Discord embed limits
+          DESC=$(echo "$DESC" | head -c 1900)
+          
+          COLOR=3447003    # Blue for stable release
+          RELEASE_TYPE="Release"
+          
+          # Build JSON payload for Discord
+          PAYLOAD=$(jq -n \
+            --arg username "$BOT_NAME" \
+            --arg avatar_url "$AVATAR_URL" \
+            --arg title "What's New in $VERSION" \
+            --arg url "$URL" \
+            --arg desc "$DESC" \
+            --arg repo "$REPO_NAME" \
+            --arg tag "$TAG" \
+            --arg rtype "$RELEASE_TYPE" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg footer "Ultra-Card • $RELEASE_TYPE • $TAG" \
+            --arg author "WJDDesigns/Ultra-Card" \
+            --argjson color $COLOR \
+            '{
+              "username": $username,
+              "avatar_url": $avatar_url,
+              "embeds": [
+                {
+                  "title": $title,
+                  "url": $url,
+                  "description": $desc,
+                  "color": $color,
+                  "timestamp": $ts,
+                  "author": { "name": $author },
+                  "footer": { "text": $footer },
+                  "fields": [
+                    { "name": "Tag", "value": $tag, "inline": true },
+                    { "name": "Repo", "value": $repo, "inline": true }
+                  ]
+                }
+              ]
+            }')
+
+          echo "Sending Discord notification..."
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\n" -X POST -H "Content-Type: application/json" \
+                          -d "$PAYLOAD" "$DISCORD_WEBHOOK")
+
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE:/d')
+
+          echo "HTTP Response Code: $HTTP_CODE"
+          if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Successfully sent Discord notification"
+          else
+            echo "❌ Failed to send Discord notification (HTTP $HTTP_CODE)"
+            echo "Response: $RESPONSE_BODY"
+          fi
