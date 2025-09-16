@@ -23,7 +23,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -880,7 +880,60 @@ export interface GraphsModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule;
+export interface DropdownModule extends BaseModule {
+    type: 'dropdown';
+    placeholder?: string;
+    options: DropdownOption[];
+    current_selection?: string;
+    track_state?: boolean;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+export interface DropdownOption {
+    id: string;
+    label: string;
+    icon?: string;
+    icon_color?: string;
+    use_state_color?: boolean;
+    action: {
+        action: 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+        target?: {
+            entity_id?: string | string[];
+            device_id?: string | string[];
+            area_id?: string | string[];
+        };
+    };
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

@@ -789,6 +789,73 @@
       "chart_height": "Chart Height",
       "chart_width": "Chart Width (%)"
     },
+    "dropdown": {
+      "basic": {
+        "title": "Basic Settings",
+        "desc": "Configure the dropdown appearance and behavior."
+      },
+      "label": {
+        "title": "Label",
+        "desc": "Text label for the dropdown (optional)."
+      },
+      "placeholder": {
+        "title": "Placeholder",
+        "desc": "Text shown when no option is selected."
+      },
+      "keep_selection_state": {
+        "title": "Keep Selection State",
+        "desc": "Remember and display the last selected option (recommended for scene selectors)"
+      },
+      "label_settings": {
+        "title": "Label Settings",
+        "disabled": "Enable the toggle above to configure label settings"
+      },
+      "label_position": {
+        "title": "Label Position",
+        "desc": "Where to position the label relative to the dropdown"
+      },
+      "label_positions": {
+        "top": "Above Dropdown",
+        "left": "Left of Dropdown",
+        "bottom": "Below Dropdown",
+        "right": "Right of Dropdown"
+      },
+      "label_icon": {
+        "title": "Label Icon",
+        "disabled": "Enable the toggle above to configure label icon"
+      },
+      "icon": {
+        "title": "Icon",
+        "desc": "Icon to display (e.g., mdi:menu-down)"
+      },
+      "options": {
+        "title": "Dropdown Options"
+      },
+      "option_number": "Option {number}",
+      "duplicate_option": "Duplicate option",
+      "remove_option": "Remove option",
+      "add_option": "Add Option",
+      "drag_option": "Drag to reorder",
+      "default_badge": "DEFAULT",
+      "option": {
+        "label": "Label",
+        "label_desc": "Display text for this option",
+        "icon": "Icon",
+        "icon_desc": "Optional icon for this option (e.g., mdi:lightbulb)",
+        "icon_color": "Icon Color",
+        "use_state_color": "Use State Color",
+        "use_state_color_desc": "Use the entity state color for the icon (overrides custom color)",
+        "state_color_enabled": "Icon will use entity state color automatically",
+        "action": "Action",
+        "action_desc": "What happens when this option is selected",
+        "more_info_config": "More Info Configuration",
+        "more_info_entity": "Entity",
+        "more_info_entity_desc": "Entity to show more information for",
+        "toggle_config": "Toggle Configuration",
+        "toggle_entity": "Entity",
+        "toggle_entity_desc": "Entity to toggle on/off"
+      }
+    },
     "info": {
       "entity_section": {
         "title": "ENTITY CONFIGURATION"
@@ -1218,6 +1285,7 @@
       "markdown": "Markdown Module",
       "camera": "Camera Module",
       "graphs": "Graphs Module",
+      "dropdown": "Dropdown Module",
       "no_text_configured": "No text configured",
       "no_image_configured": "No image configured",
       "uploaded_image": "Uploaded image",

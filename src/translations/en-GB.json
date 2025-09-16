@@ -1224,7 +1224,169 @@
       "icons_configured": "{count} icons configured",
       "no_icons_configured": "No icons configured",
       "default_entity_suggestion": "Entity: sensor.battery_level",
-      "sample_text": "Sample Text"
+      "sample_text": "Sample Text",
+      "dropdown": "Dropdown Module"
+    },
+    "dropdown": {
+      "basic": {
+        "title": "Basic Settings",
+        "desc": "Configure the dropdown appearance and behavior."
+      },
+      "label": {
+        "title": "Label",
+        "desc": "Text label for the dropdown (optional)."
+      },
+      "placeholder": {
+        "title": "Placeholder",
+        "desc": "Text shown when no option is selected."
+      },
+      "allow_empty": {
+        "title": "Allow Empty Selection",
+        "desc": "Allow users to deselect all options."
+      },
+      "default_value": {
+        "title": "Default Value",
+        "desc": "Option value to select by default (leave empty for none)."
+      },
+      "label_settings": {
+        "title": "Label Settings",
+        "disabled": "Enable the toggle above to configure label settings"
+      },
+      "label_position": {
+        "title": "Label Position",
+        "desc": "Where to position the label relative to the dropdown"
+      },
+      "label_positions": {
+        "top": "Above Dropdown",
+        "left": "Left of Dropdown",
+        "inside": "Inside Dropdown",
+        "bottom": "Below Dropdown",
+        "right": "Right of Dropdown"
+      },
+      "icon_settings": {
+        "title": "Icon Settings",
+        "disabled": "Enable the toggle above to configure icon settings"
+      },
+      "icon": {
+        "title": "Icon",
+        "desc": "Icon to display (e.g., mdi:menu-down)"
+      },
+      "options": {
+        "title": "Dropdown Options"
+      },
+      "option_number": "Option {number}",
+      "duplicate_option": "Duplicate option",
+      "remove_option": "Remove option",
+      "add_option": "Add Option",
+      "option": {
+        "label": "Label",
+        "label_desc": "Display text for this option",
+        "value": "Value",
+        "value_desc": "Internal value for this option",
+        "icon": "Icon",
+        "icon_desc": "Optional icon for this option (e.g., mdi:lightbulb)",
+        "action_type": "Action Type",
+        "action_type_desc": "What happens when this option is selected",
+        "service": "Service",
+        "service_desc": "Service to call (e.g., light.turn_on)",
+        "service_data": "Service Data",
+        "service_data_desc": "Optional data to pass to the service (JSON format)",
+        "entity": "Entity",
+        "entity_desc": "Entity to interact with",
+        "entity_action": "Entity Action",
+        "entity_action_desc": "Action to perform on the entity",
+        "scene_entity": "Scene",
+        "scene_entity_desc": "Scene to activate",
+        "script_entity": "Script",
+        "script_entity_desc": "Script to run",
+        "automation_entity": "Automation",
+        "automation_entity_desc": "Automation to trigger",
+        "custom_service": "Custom Service",
+        "custom_service_desc": "Custom service to call",
+        "custom_service_data": "Custom Service Data",
+        "custom_service_data_desc": "Data to pass to the custom service (JSON format)",
+        "disabled": "Disabled",
+        "disabled_desc": "Disable this option (greyed out, not selectable)",
+        "action": "Action",
+        "action_desc": "What happens when this option is selected",
+        "is_default": "Default Option",
+        "is_default_desc": "Make this the default selected option (shows at top, disables placeholder)",
+        "icon_color": "Icon Color",
+        "use_state_color": "Use State Color",
+        "use_state_color_desc": "Use the entity state color for the icon (overrides custom color)",
+        "state_color_enabled": "Icon will use entity state color automatically",
+        "more_info_config": "More Info Configuration",
+        "more_info_entity": "Entity",
+        "more_info_entity_desc": "Entity to show more information for",
+        "toggle_config": "Toggle Configuration",
+        "toggle_entity": "Entity",
+        "toggle_entity_desc": "Entity to toggle on/off"
+      },
+      "action_types": {
+        "service": "Service Call",
+        "scene": "Activate Scene",
+        "entity": "Entity Action",
+        "script": "Run Script",
+        "automation": "Trigger Automation",
+        "custom": "Custom Service"
+      },
+      "entity_actions": {
+        "toggle": "Toggle",
+        "turn_on": "Turn On",
+        "turn_off": "Turn Off",
+        "more_info": "More Info"
+      },
+      "styling": {
+        "title": "Styling",
+        "desc": "Customize the visual appearance of the dropdown."
+      },
+      "width": {
+        "title": "Width",
+        "desc": "Width of the dropdown (e.g., 100%, 200px, auto)"
+      },
+      "font_size": {
+        "title": "Font Size",
+        "desc": "Text size in pixels"
+      },
+      "colors": {
+        "title": "Colors",
+        "text": "Text Color",
+        "background": "Background Color",
+        "border": "Border Color"
+      },
+      "template_mode": {
+        "title": "Template Mode",
+        "enable": "Template Mode",
+        "enable_desc": "Use Home Assistant templating syntax to dynamically set dropdown options",
+        "template": "Options Template",
+        "template_desc": "Template to generate dropdown options using Jinja2 syntax",
+        "examples": "Common Examples:",
+        "example_scenes": "Generate options from all scenes",
+        "example_lights": "Generate options from all lights",
+        "disabled": "Enable template mode to use dynamic content"
+      },
+      "drag_option": "Drag to reorder",
+      "default_badge": "DEFAULT",
+      "label_icon": {
+        "title": "Label Icon",
+        "disabled": "Enable the toggle above to configure label icon"
+      },
+      "state_tracking": {
+        "title": "Current State Display",
+        "disabled": "Enable to show current entity state as selected option"
+      },
+      "state_entity": {
+        "title": "State Entity",
+        "desc": "Entity to monitor for current state (e.g., input_select.scene_selector)"
+      },
+      "track_state": {
+        "title": "Track Selection State",
+        "desc": "Remember and display the last selected option (recommended for scene selectors)"
+      },
+      "keep_selection_state": {
+        "title": "Keep Selection State",
+        "desc": "Remember and display the last selected option (recommended for scene selectors)"
+      }
     }
   }
 }

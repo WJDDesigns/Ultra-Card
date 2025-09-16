@@ -62,7 +62,8 @@ export interface BaseModule {
     | 'button'
     | 'markdown'
     | 'camera'
-    | 'graphs';
+    | 'graphs'
+    | 'dropdown';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -1599,6 +1600,101 @@ export interface GraphsModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Dropdown Module
+export interface DropdownModule extends BaseModule {
+  type: 'dropdown';
+
+  // Basic Configuration
+  placeholder?: string;
+
+  // Dropdown Options
+  options: DropdownOption[];
+
+  // State Tracking
+  current_selection?: string; // Tracks the currently selected option label
+  track_state?: boolean; // Whether to track and display current selection
+
+  // Visual Configuration (label removed)
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// Dropdown option configuration
+export interface DropdownOption {
+  id: string;
+  label: string;
+  icon?: string;
+  icon_color?: string;
+  use_state_color?: boolean; // Use entity state color for icon
+
+  // Action configuration using Home Assistant's native action system
+  action: {
+    action: 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+    target?: {
+      entity_id?: string | string[];
+      device_id?: string | string[];
+      area_id?: string | string[];
+    };
+  };
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -1612,7 +1708,8 @@ export type CardModule =
   | ButtonModule
   | MarkdownModule
   | CameraModule
-  | GraphsModule;
+  | GraphsModule
+  | DropdownModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

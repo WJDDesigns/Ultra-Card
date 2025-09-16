@@ -110,16 +110,16 @@ jobs:
           URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
           REPO="${{ github.repository }}"
           REPO_NAME="${REPO#*/}"
-          
+
           # Use the same release notes we generated
           DESC="${{ steps.release_notes.outputs.RELEASE_NOTES }}"
-          
+
           # Truncate description to fit Discord embed limits
           DESC=$(echo "$DESC" | head -c 1900)
-          
+
           COLOR=3447003    # Blue for stable release
           RELEASE_TYPE="Release"
-          
+
           # Build JSON payload for Discord
           PAYLOAD=$(jq -n \
             --arg username "$BOT_NAME" \

@@ -1,5 +1,23 @@
 # Release Notes
 
+## Version 1.2.0-Beta1
+
+### New Features
+
+- **New Dropdown Module**: Interactive dropdown selector with Home Assistant actions
+  - Support for More Info, Toggle, Navigate, URL, Perform Action, and Assist actions
+  - Entity picker integration for More Info and Toggle actions
+  - "Keep Selection State" option for scene selectors
+  - Icon support with custom colors or entity state colors
+  - Drag & drop option reordering
+  - Full Global Design Tab compatibility
+
+### Improvements
+
+- Enhanced action system integration
+- Improved editor event handling
+- Better z-index management for dropdown layering
+
 ## Version 1.1.0-Beta3 (Separator Module Enhancements)
 
 ### New Features

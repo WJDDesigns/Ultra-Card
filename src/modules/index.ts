@@ -13,6 +13,9 @@ export * from './button-module';
 export * from './markdown-module';
 export * from './horizontal-module';
 export * from './vertical-module';
+export * from './camera-module';
+export * from './graphs-module';
+export * from './dropdown-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';
