@@ -55,33 +55,40 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          VERSION="${{ github.ref_name }}"
+          
+          # Create clean release notes based on version
+          cat > release_notes.md << 'EOF'
+          ## 🔗 Link Updates
+          
+          - **Updated Support Links**: Updated PayPal tip link to new payment URL
+          - **Updated Community Links**: Updated Discord server invitation link
+          
+          ## 📝 Changes Made
+          
+          - Updated PayPal tip link in README.md and About tab
+          - Updated Discord invitation link in README.md and About tab
+          
+          These updates ensure users can properly access our support and community channels.
+          EOF
+          
+          # Set the release notes as output
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Ultra Card ${{ steps.version.outputs.VERSION }}
+          name: What's New in ${{ steps.version.outputs.VERSION }}
           draft: false
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
-          generate_release_notes: true
+          generate_release_notes: false
+          body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           files: |
             ultra-card-${{ github.ref_name }}.zip
             ultra-card.js
-          body: |
-            ## Ultra Card ${{ steps.version.outputs.VERSION }}
-
-            A powerful modular card builder for Home Assistant with a professional page-builder interface.
-
-            ### Installation
-
-            #### HACS (Recommended)
-            1. Add this repository as a custom repository in HACS
-            2. Install "Ultra Card"
-            3. Restart Home Assistant
-
-            #### Manual Installation
-            1. Download `ultra-card.js` from this release
-            2. Copy to your `www/community/ultra-card/` directory
-            3. Add the resource to your Lovelace configuration
-
-            ### What's New
-            See the release notes below for details on changes in this version.
