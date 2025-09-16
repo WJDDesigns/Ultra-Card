@@ -15966,7 +15966,7 @@
           </p>
 
           <a
-            href="https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=4JVCZ46FZPUTG&clickref=1101lAycwnhU&gad_source=7&pid=328130457&dclid=CjgKEAjwh_i_BhCRhu7RxN_14hYSJACbYkcgx98-Vsb49UI4imjGhPA2lwk73DpbbgCri-G8TCTB9PD_BwE&ssrt=1744735247042"
+            href="https://www.paypal.com/ncp/payment/NLHALFSPA7PUS"
             target="_blank"
             rel="noopener"
             class="about-button paypal"

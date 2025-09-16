@@ -113,9 +113,9 @@ We welcome translation contributions! See our [Translation Guide](CONTRIBUTING_T
 
 ## Community & Support
 
-- **Discord**: [Join our Discord](https://discord.com/invite/5SkUf6Ch) for help and discussion
+- **Discord**: [Join our Discord](https://discord.gg/6xVgHxzzBV) for help and discussion
 - **GitHub**: [Report issues](https://github.com/WJDDesigns/Ultra-Card/issues) or contribute code
-- **Support**: [Leave a tip](https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=4JVCZ46FZPUTG&clickref=1101lAycwnhU&gad_source=7&pid=328130457&dclid=CjgKEAjwh_i_BhCRhu7RxN_14hYSJACbYkcgx98-Vsb49UI4imjGhPA2lwk73DpbbgCri-G8TCTB9PD_BwE&ssrt=1744735247042) if you find Ultra Card useful
+- **Support**: [Leave a tip](https://www.paypal.com/ncp/payment/NLHALFSPA7PUS) if you find Ultra Card useful
 
 ## Contributing
 
