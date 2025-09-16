@@ -60,8 +60,28 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
 
-          # Create clean release notes based on version
-          cat > release_notes.md << 'EOF'
+          # Extract release notes from RELEASE_NOTES.md based on version
+          if [[ "$VERSION" == *"1.2.0-beta1"* ]]; then
+            cat > release_notes.md << 'EOF'
+          ## New Features
+
+          - **New Dropdown Module**: Interactive dropdown selector with Home Assistant actions
+            - Support for More Info, Toggle, Navigate, URL, Perform Action, and Assist actions
+            - Entity picker integration for More Info and Toggle actions
+            - "Keep Selection State" option for scene selectors
+            - Icon support with custom colors or entity state colors
+            - Drag & drop option reordering
+            - Full Global Design Tab compatibility
+
+          ## Improvements
+
+          - Enhanced action system integration
+          - Improved editor event handling
+          - Better z-index management for dropdown layering
+          EOF
+          else
+            # Default release notes for other versions
+            cat > release_notes.md << 'EOF'
           ## 🔗 Link Updates
 
           - **Updated Support Links**: Updated PayPal tip link to new payment URL
@@ -74,6 +94,7 @@ jobs:
 
           These updates ensure users can properly access our support and community channels.
           EOF
+          fi
 
           # Set the release notes as output
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
