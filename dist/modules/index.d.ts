@@ -13,4 +13,5 @@ export * from './vertical-module';
 export * from './camera-module';
 export * from './graphs-module';
 export * from './dropdown-module';
+export * from './light-module';
 export { getModuleRegistry } from './module-registry';

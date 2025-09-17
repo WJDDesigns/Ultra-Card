@@ -23,7 +23,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -913,6 +913,74 @@ export interface DropdownModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
+export interface LightModule extends BaseModule {
+    type: 'light';
+    presets: Array<{
+        id: string;
+        name: string;
+        icon?: string;
+        entities: string[];
+        brightness?: number;
+        color_temp?: number;
+        rgb_color?: number[];
+        hs_color?: number[];
+        xy_color?: number[];
+        rgbw_color?: number[];
+        rgbww_color?: number[];
+        white?: number;
+        effect?: string;
+        effect_speed?: number;
+        effect_intensity?: number;
+        effect_reverse?: boolean;
+        transition_time?: number;
+        text_color?: string;
+        icon_color?: string;
+        button_color?: string;
+        use_light_color_for_icon?: boolean;
+        use_light_color_for_button?: boolean;
+        use_icon_color_for_text?: boolean;
+        smart_color?: boolean;
+        button_style?: 'filled' | 'outlined' | 'text';
+        show_label?: boolean;
+        border_radius?: number;
+    }>;
+    layout?: 'buttons' | 'grid';
+    button_alignment?: 'left' | 'center' | 'right' | 'space-between' | 'space-around' | 'space-evenly';
+    allow_wrapping?: boolean;
+    button_gap?: number;
+    columns?: number;
+    show_labels?: boolean;
+    button_style?: 'filled' | 'outlined' | 'text';
+    default_transition_time?: number;
+    confirm_actions?: boolean;
+    show_feedback?: boolean;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
 export interface DropdownOption {
     id: string;
     label: string;
@@ -933,7 +1001,7 @@ export interface DropdownOption {
         };
     };
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

@@ -63,7 +63,8 @@ export interface BaseModule {
     | 'markdown'
     | 'camera'
     | 'graphs'
-    | 'dropdown';
+    | 'dropdown'
+    | 'light';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -1671,6 +1672,120 @@ export interface DropdownModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Light Module
+export interface LightModule extends BaseModule {
+  type: 'light';
+
+  // Presets Configuration
+  presets: Array<{
+    id: string;
+    name: string; // Display name/label for the preset
+    icon?: string; // Optional icon for button/icon display
+    entities: string[]; // Entities this preset applies to
+    brightness?: number; // 0-255
+    color_temp?: number; // Mired value
+    rgb_color?: number[]; // [r, g, b]
+    hs_color?: number[]; // [hue, saturation]
+    xy_color?: number[]; // [x, y]
+    rgbw_color?: number[]; // [r, g, b, w]
+    rgbww_color?: number[]; // [r, g, b, ww, cw]
+    white?: number; // White value 0-255
+    effect?: string; // Effect name
+    effect_speed?: number; // Effect speed (WLED: 0-255)
+    effect_intensity?: number; // Effect intensity (WLED: 0-255)
+    effect_reverse?: boolean; // Reverse effect direction (WLED)
+    transition_time?: number; // Override transition time for this preset
+    // Visual customization
+    text_color?: string; // Custom text color
+    icon_color?: string; // Custom icon color
+    button_color?: string; // Custom button background color
+    use_light_color_for_icon?: boolean; // Use current light color for icon
+    use_light_color_for_button?: boolean; // Use current light color for button
+    use_icon_color_for_text?: boolean; // Use icon color for text
+    smart_color?: boolean; // Auto-contrast text based on button background
+    // Per-preset styling
+    button_style?: 'filled' | 'outlined' | 'text'; // Button visual style for this preset
+    show_label?: boolean; // Show preset name for this preset
+    border_radius?: number; // Button border radius (0-50)
+  }>;
+
+  // Display Configuration
+  layout?: 'buttons' | 'grid'; // How to display presets
+  button_alignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'space-between'
+    | 'space-around'
+    | 'space-evenly'; // Button alignment
+  allow_wrapping?: boolean; // Allow buttons to wrap to next line
+  button_gap?: number; // Gap between buttons in rem
+  columns?: number; // Number of columns for grid layout
+  show_labels?: boolean; // Show preset names (global fallback)
+  button_style?: 'filled' | 'outlined' | 'text'; // Button visual style (global fallback)
+
+  // Global Settings
+  default_transition_time?: number; // Default transition time for all presets
+
+  // Advanced Options
+  confirm_actions?: boolean; // Show confirmation before applying presets
+  show_feedback?: boolean; // Show visual feedback when presets are applied
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+
+  // Hover effects
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
 // Dropdown option configuration
 export interface DropdownOption {
   id: string;
@@ -1709,7 +1824,8 @@ export type CardModule =
   | MarkdownModule
   | CameraModule
   | GraphsModule
-  | DropdownModule;
+  | DropdownModule
+  | LightModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

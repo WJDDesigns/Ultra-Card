@@ -12,6 +12,7 @@ import { UltraVerticalModule } from './vertical-module';
 import { UltraCameraModule } from './camera-module';
 import { UltraGraphsModule } from './graphs-module';
 import { UltraDropdownModule } from './dropdown-module';
+import { UltraLightModule } from './light-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -47,6 +48,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraCameraModule());
     this.registerModule(new UltraGraphsModule());
     this.registerModule(new UltraDropdownModule());
+    this.registerModule(new UltraLightModule());
   }
 
   // Register a new module (for core modules or third-party modules)
