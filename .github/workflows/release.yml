@@ -61,7 +61,32 @@ jobs:
           VERSION="${{ github.ref_name }}"
 
           # Extract release notes from RELEASE_NOTES.md based on version
-          if [[ "$VERSION" == *"1.2.0-beta1"* ]]; then
+          if [[ "$VERSION" == *"1.2.0-beta2"* ]]; then
+            cat > release_notes.md << 'EOF'
+          ## 🎆 Light Module Effects System Improvements
+
+          ### ✨ New Features
+          - **Modern Searchable Effects Dropdown**: Beautiful, searchable interface with real-time filtering
+          - **Smart Device Filtering**: Only shows effects that work on ALL selected devices
+          - **Improved WLED & Govee Compatibility**: Enhanced support for different light types
+
+          ### 🔧 Fixes  
+          - **Fixed Effects Saving**: Effects now save and apply reliably across all device types
+          - **Fixed Preset Button Colors**: Buttons show configured colors, not live light state
+          - **Fixed WLED Effect Parameters**: Removed unsupported parameters causing service errors
+          - **Case-Insensitive Effect Matching**: Better cross-device effect compatibility
+
+          ### 🎨 UI Improvements
+          - **Simplified Effects Controls**: Removed complex speed/intensity/direction parameters
+          - **Better UX Messages**: Clear feedback when no shared effects are available
+          - **Reliable Dropdown**: Replaced problematic HA components with native elements
+
+          ### 🏠 Device Support
+          - **WLED Devices**: Full effect support with proper parameter handling
+          - **Govee Devices**: Complete effect and color compatibility  
+          - **Mixed Setups**: Smart fallback effects when devices have different capabilities
+          EOF
+          elif [[ "$VERSION" == *"1.2.0-beta1"* ]]; then
             cat > release_notes.md << 'EOF'
           ## New Features
 
