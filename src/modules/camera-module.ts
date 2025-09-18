@@ -70,8 +70,10 @@ export class UltraCameraModule extends BaseUltraModule {
       template_mode: false,
       template: '',
 
-      // Global design defaults for camera module
+      // Global design defaults for camera module - responsive by default
       design: {
+        width: '100%', // Responsive width by default
+        max_width: '500px', // Reasonable max width to prevent oversizing
         border_radius: '20px',
       },
       // Logic (visibility) defaults
@@ -314,9 +316,20 @@ export class UltraCameraModule extends BaseUltraModule {
           <div style="margin-bottom: 32px;">
             <div
               class="field-title"
-              style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--primary-color);"
+              style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--primary-color);"
             >
               ${localize('editor.camera.dimensions.title', lang, 'Dimensions')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 6px; border-left: 4px solid var(--primary-color);"
+            >
+              <ha-icon icon="mdi:information" style="font-size: 14px; margin-right: 6px;"></ha-icon>
+              ${localize(
+                'editor.camera.dimensions.responsive_note',
+                lang,
+                'Camera now uses responsive sizing by default (100% width). Use the Design tab for full control over dimensions, or adjust these fallback pixel dimensions for specific use cases.'
+              )}
             </div>
 
             <style>
@@ -1274,35 +1287,46 @@ export class UltraCameraModule extends BaseUltraModule {
     const cropTop = cameraModule.crop_top || 0;
     const cropBottom = cameraModule.crop_bottom || 0;
 
-    // Calculate actual container dimensions based on crop
-    const originalWidth = cameraModule.width || 320;
-    const originalHeight = cameraModule.height || 180;
+    // Get dimensions - prioritize global design properties over module properties
+    const hasGlobalWidth = designProperties.width && designProperties.width !== '';
+    const hasGlobalHeight = designProperties.height && designProperties.height !== '';
 
-    // Reduce container size based on crop percentages
+    // Use fallback pixel dimensions only when no global design dimensions are set
+    const fallbackWidth = cameraModule.width || 320;
+    const fallbackHeight = cameraModule.height || 180;
+
+    // For cropping calculations, we need pixel values - convert or use fallbacks
+    const originalWidth = hasGlobalWidth ? fallbackWidth : fallbackWidth; // Use fallback for crop calculations
+    const originalHeight = hasGlobalHeight ? fallbackHeight : fallbackHeight; // Use fallback for crop calculations
+
+    // Reduce container size based on crop percentages (only affects fallback sizing)
     const croppedWidth = (originalWidth * (100 - cropLeft - cropRight)) / 100;
     const croppedHeight = (originalHeight * (100 - cropTop - cropBottom)) / 100;
 
-    // Calculate image positioning to show the correct portion
-    const imageOffsetX = -((originalWidth * cropLeft) / 100);
-    const imageOffsetY = -((originalHeight * cropTop) / 100);
+    // Calculate image positioning to show the correct portion (only when cropping is applied)
+    const hasCropping = cropLeft > 0 || cropRight > 0 || cropTop > 0 || cropBottom > 0;
+    const imageOffsetX = hasCropping ? -((originalWidth * cropLeft) / 100) : 0;
+    const imageOffsetY = hasCropping ? -((originalHeight * cropTop) / 100) : 0;
 
-    // Camera image styles - positioned to show correct portion within cropped container
+    // Camera image styles - responsive when no cropping, positioned when cropping
     const imageStyles = {
       objectFit: 'cover',
-      width: `${originalWidth}px`, // Keep original size
-      height: `${originalHeight}px`, // Keep original size
+      width: hasCropping ? `${originalWidth}px` : '100%', // Responsive unless cropping
+      height: hasCropping ? `${originalHeight}px` : '100%', // Responsive unless cropping
       display: 'block',
-      position: 'absolute',
-      left: `${imageOffsetX}px`, // Offset to show correct portion
-      top: `${imageOffsetY}px`, // Offset to show correct portion
+      position: hasCropping ? 'absolute' : 'static', // Only absolute positioning when cropping
+      left: hasCropping ? `${imageOffsetX}px` : 'auto', // Offset only when cropping
+      top: hasCropping ? `${imageOffsetY}px` : 'auto', // Offset only when cropping
       transition: 'all 0.3s ease',
       borderRadius: designProperties.border_radius || '0px', // Match container border radius
     };
 
-    // Container styling using cropped dimensions - prioritize design properties
+    // Container styling - prioritize global design properties completely
     const containerImageStyles = {
-      width: designProperties.width || `${Math.max(50, croppedWidth)}px`,
-      height: designProperties.height || `${Math.max(50, croppedHeight)}px`,
+      width:
+        designProperties.width || (hasGlobalWidth ? '100%' : `${Math.max(50, croppedWidth)}px`),
+      height:
+        designProperties.height || (hasGlobalHeight ? 'auto' : `${Math.max(50, croppedHeight)}px`),
       maxWidth: designProperties.max_width || undefined,
       minWidth: designProperties.min_width || undefined,
       maxHeight: designProperties.max_height || undefined,
@@ -1642,7 +1666,7 @@ export class UltraCameraModule extends BaseUltraModule {
     }
   }
 
-  // Dimension handling with aspect ratio linking
+  // Dimension handling with aspect ratio linking (fallback dimensions only)
   private _handleDimensionChange(
     cameraModule: CameraModule,
     changedDimension: 'width' | 'height',
@@ -1650,6 +1674,9 @@ export class UltraCameraModule extends BaseUltraModule {
     updateModule: (updates: Partial<CameraModule>) => void
   ): void {
     const updates: Partial<CameraModule> = {};
+
+    // Note: These are fallback pixel dimensions used when no global design dimensions are set
+    // The camera will still be responsive by default via the global design system
 
     if (cameraModule.aspect_ratio_linked !== false) {
       // Aspect ratio is linked - calculate the other dimension

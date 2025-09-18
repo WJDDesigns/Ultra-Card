@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 1.2.0-Beta4
+
+### 📱 Camera Module Responsive Improvements
+
+We've made the camera module much more responsive and container-friendly:
+
+- **Responsive by Default**: Camera modules now use 100% width by default instead of fixed pixel sizes
+- **Stays Within Containers**: No more cameras overflowing their card boundaries
+- **Smart Sizing**: Automatically adapts to different screen sizes and layouts
+- **Global Design Integration**: Full compatibility with the Design tab for custom dimensions
+- **Maintains All Features**: Cropping, aspect ratios, and all existing functionality still work perfectly
+
+**💡 How It Works**: The camera module now respects its container size while giving you complete control through the Global Design tab. The pixel dimension controls in the General tab are now fallbacks for specific use cases.
+
 ## Version 1.2.0-Beta3
 
 ### 🎯 Enhanced Module Spacing & Defaults
@@ -12,23 +26,24 @@ We've implemented consistent, professional spacing defaults across all modules t
 - **Consistent spacing** between modules regardless of type
 
 **💡 Important**: You have **complete control** over these defaults! Use the **Global Design Tab** to:
+
 - Override margins and padding for any individual module
-- Set custom spacing values per module or globally  
+- Set custom spacing values per module or globally
 - **Remove default spacing entirely** if you prefer custom layouts
 - Apply your own spacing preferences to match your dashboard design
 
-### 🔧 Bar Module Improvements  
+### 🔧 Bar Module Improvements
 
 - **Fixed Left/Right Side Labels**: Cleaned up the display when title fields are empty
   - **Removed orphaned colons** (":") that appeared when no title was specified
-  - Now displays clean "Value" instead of awkward ": Value" 
+  - Now displays clean "Value" instead of awkward ": Value"
   - **Improved spacing** between title and value elements for better readability
   - Only shows the colon separator when there's actually a title present
 
 ### 🛠️ Technical Improvements
 
 - Enhanced conditional rendering logic for bar module labels
-- Better default spacing system implementation across all module types  
+- Better default spacing system implementation across all module types
 - Improved CSS organization for consistent spacing behavior
 - More robust template handling for cleaner UI displays
 

@@ -7,7 +7,14 @@ export interface ModuleActionConfig {
     navigation_path?: string;
     url_path?: string;
     service?: string;
+    perform_action?: string;
     service_data?: Record<string, any>;
+    target?: {
+        entity_id?: string | string[];
+        device_id?: string | string[];
+        area_id?: string | string[];
+    };
+    data?: Record<string, any>;
 }
 export interface DisplayCondition {
     id: string;
@@ -993,7 +1000,9 @@ export interface DropdownOption {
         navigation_path?: string;
         url_path?: string;
         service?: string;
+        perform_action?: string;
         service_data?: Record<string, any>;
+        data?: Record<string, any>;
         target?: {
             entity_id?: string | string[];
             device_id?: string | string[];

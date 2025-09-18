@@ -1352,7 +1352,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               }
               break;
             case 'perform-action':
-              if (!option.action.service) {
+              if (!option.action.perform_action && !option.action.service) {
                 errors.push(`Option ${index + 1}: Service is required for perform-action`);
               }
               break;

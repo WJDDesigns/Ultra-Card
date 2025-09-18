@@ -975,6 +975,7 @@ export class LayoutTab extends LitElement {
 
     this._selectedRowIndex = rowIndex;
     this._selectedColumnIndex = columnIndex;
+    this._selectedLayoutModuleIndex = -1; // Reset to indicate we're adding to a column, not a layout module
     this._showModuleSelector = true;
   }
 
@@ -3962,14 +3963,18 @@ export class LayoutTab extends LitElement {
             </button>
           </div>
 
-          <div class="module-tab-content">
-            ${this._activeModuleTab === 'general' ? this._renderGeneralTab(module) : ''}
-            ${this._activeModuleTab === 'actions' && hasActionsTab
-              ? this._renderActionsTab(module)
-              : ''}
-            ${this._activeModuleTab === 'other' && hasOtherTab ? this._renderOtherTab(module) : ''}
-            ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
-            ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
+          <div class="popup-body">
+            <div class="module-tab-content">
+              ${this._activeModuleTab === 'general' ? this._renderGeneralTab(module) : ''}
+              ${this._activeModuleTab === 'actions' && hasActionsTab
+                ? this._renderActionsTab(module)
+                : ''}
+              ${this._activeModuleTab === 'other' && hasOtherTab
+                ? this._renderOtherTab(module)
+                : ''}
+              ${this._activeModuleTab === 'logic' ? this._renderModuleLogicTab(module) : ''}
+              ${this._activeModuleTab === 'design' ? this._renderDesignTab(module) : ''}
+            </div>
           </div>
 
           <!-- Resize handle -->
@@ -4151,20 +4156,24 @@ export class LayoutTab extends LitElement {
             </button>
           </div>
 
-          <div class="module-tab-content">
-            ${this._activeModuleTab === 'general'
-              ? this._renderLayoutChildGeneralTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'actions' && hasActionsTab
-              ? this._renderLayoutChildActionsTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'other' && hasOtherTab
-              ? this._renderLayoutChildOtherTab(childModule)
-              : ''}
-            ${this._activeModuleTab === 'logic' ? this._renderLayoutChildLogicTab(childModule) : ''}
-            ${this._activeModuleTab === 'design'
-              ? this._renderLayoutChildDesignTab(childModule)
-              : ''}
+          <div class="popup-body">
+            <div class="module-tab-content">
+              ${this._activeModuleTab === 'general'
+                ? this._renderLayoutChildGeneralTab(childModule)
+                : ''}
+              ${this._activeModuleTab === 'actions' && hasActionsTab
+                ? this._renderLayoutChildActionsTab(childModule)
+                : ''}
+              ${this._activeModuleTab === 'other' && hasOtherTab
+                ? this._renderLayoutChildOtherTab(childModule)
+                : ''}
+              ${this._activeModuleTab === 'logic'
+                ? this._renderLayoutChildLogicTab(childModule)
+                : ''}
+              ${this._activeModuleTab === 'design'
+                ? this._renderLayoutChildDesignTab(childModule)
+                : ''}
+            </div>
           </div>
 
           <!-- Resize handle -->
@@ -4430,11 +4439,13 @@ export class LayoutTab extends LitElement {
             </button>
           </div>
 
-          <div class="settings-tab-content">
-            ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
-            ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
-            ${this._activeRowTab === 'logic' ? this._renderRowLogicTab(row) : ''}
-            ${this._activeRowTab === 'design' ? this._renderRowDesignTab(row) : ''}
+          <div class="popup-body">
+            <div class="settings-tab-content">
+              ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
+              ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
+              ${this._activeRowTab === 'logic' ? this._renderRowLogicTab(row) : ''}
+              ${this._activeRowTab === 'design' ? this._renderRowDesignTab(row) : ''}
+            </div>
           </div>
 
           <!-- Resize handle -->
@@ -4556,11 +4567,13 @@ export class LayoutTab extends LitElement {
             </button>
           </div>
 
-          <div class="settings-tab-content">
-            ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
-            ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
-            ${this._activeColumnTab === 'logic' ? this._renderColumnLogicTab(column) : ''}
-            ${this._activeColumnTab === 'design' ? this._renderColumnDesignTab(column) : ''}
+          <div class="popup-body">
+            <div class="settings-tab-content">
+              ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
+              ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
+              ${this._activeColumnTab === 'logic' ? this._renderColumnLogicTab(column) : ''}
+              ${this._activeColumnTab === 'design' ? this._renderColumnDesignTab(column) : ''}
+            </div>
           </div>
 
           <!-- Resize handle -->
@@ -6964,6 +6977,8 @@ export class LayoutTab extends LitElement {
     const allModules = registry.getAllModules();
 
     // Check if we're adding to a layout module (prevent nested layout modules)
+    // If _selectedLayoutModuleIndex >= 0, we're adding inside a layout module (only content modules allowed)
+    // If _selectedLayoutModuleIndex === -1, we're adding to a column (layout modules allowed)
     const isAddingToLayoutModule = this._selectedLayoutModuleIndex >= 0;
 
     // Separate layout modules from content modules
@@ -6972,7 +6987,13 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="module-selector-popup">
-        <div class="popup-overlay" @click=${() => (this._showModuleSelector = false)}></div>
+        <div
+          class="popup-overlay"
+          @click=${() => {
+            this._showModuleSelector = false;
+            this._selectedLayoutModuleIndex = -1;
+          }}
+        ></div>
         <div class="selector-content draggable-popup" id="module-selector-popup">
           <div
             class="selector-header"
@@ -6987,7 +7008,10 @@ export class LayoutTab extends LitElement {
                 class="close-button"
                 title="Close"
                 @mousedown=${(e: Event) => e.stopPropagation()}
-                @click=${() => (this._showModuleSelector = false)}
+                @click=${() => {
+                  this._showModuleSelector = false;
+                  this._selectedLayoutModuleIndex = -1;
+                }}
               >
                 ×
               </button>
@@ -6999,62 +7023,64 @@ export class LayoutTab extends LitElement {
               : ''}
           </div>
 
-          ${!isAddingToLayoutModule && layoutModules.length > 0
-            ? html`
-                <div class="module-category">
-                  <h4 class="category-title">Layout Containers</h4>
-                  <p class="category-description">Create containers to organize your modules</p>
-                  <div class="module-types layout-modules">
-                    ${layoutModules.map(module => {
-                      const metadata = module.metadata;
-                      const isHorizontal = metadata.type === 'horizontal';
-                      const isVertical = metadata.type === 'vertical';
-                      return html`
-                        <button
-                          class="module-type-btn layout-module ${isHorizontal
-                            ? 'horizontal-layout'
-                            : ''} ${isVertical ? 'vertical-layout' : ''}"
-                          @click=${() => this._addModule(metadata.type)}
-                          title="${metadata.description}"
-                        >
-                          <ha-icon icon="${metadata.icon}"></ha-icon>
-                          <div class="module-info">
-                            <span class="module-title">${metadata.title}</span>
-                            <span class="module-description">${metadata.description}</span>
-                          </div>
-                        </button>
-                      `;
-                    })}
+          <div class="selector-body">
+            ${!isAddingToLayoutModule && layoutModules.length > 0
+              ? html`
+                  <div class="module-category">
+                    <h4 class="category-title">Layout Containers</h4>
+                    <p class="category-description">Create containers to organize your modules</p>
+                    <div class="module-types layout-modules">
+                      ${layoutModules.map(module => {
+                        const metadata = module.metadata;
+                        const isHorizontal = metadata.type === 'horizontal';
+                        const isVertical = metadata.type === 'vertical';
+                        return html`
+                          <button
+                            class="module-type-btn layout-module ${isHorizontal
+                              ? 'horizontal-layout'
+                              : ''} ${isVertical ? 'vertical-layout' : ''}"
+                            @click=${() => this._addModule(metadata.type)}
+                            title="${metadata.description}"
+                          >
+                            <ha-icon icon="${metadata.icon}"></ha-icon>
+                            <div class="module-info">
+                              <span class="module-title">${metadata.title}</span>
+                              <span class="module-description">${metadata.description}</span>
+                            </div>
+                          </button>
+                        `;
+                      })}
+                    </div>
                   </div>
-                </div>
-              `
-            : ''}
-          ${contentModules.length > 0
-            ? html`
-                <div class="module-category">
-                  <h4 class="category-title">Content Modules</h4>
-                  <p class="category-description">Add content and interactive elements</p>
-                  <div class="module-types content-modules">
-                    ${contentModules.map(module => {
-                      const metadata = module.metadata;
-                      return html`
-                        <button
-                          class="module-type-btn content-module"
-                          @click=${() => this._addModule(metadata.type)}
-                          title="${metadata.description}"
-                        >
-                          <ha-icon icon="${metadata.icon}"></ha-icon>
-                          <div class="module-info">
-                            <span class="module-title">${metadata.title}</span>
-                            <span class="module-description">${metadata.description}</span>
-                          </div>
-                        </button>
-                      `;
-                    })}
+                `
+              : ''}
+            ${contentModules.length > 0
+              ? html`
+                  <div class="module-category">
+                    <h4 class="category-title">Content Modules</h4>
+                    <p class="category-description">Add content and interactive elements</p>
+                    <div class="module-types content-modules">
+                      ${contentModules.map(module => {
+                        const metadata = module.metadata;
+                        return html`
+                          <button
+                            class="module-type-btn content-module"
+                            @click=${() => this._addModule(metadata.type)}
+                            title="${metadata.description}"
+                          >
+                            <ha-icon icon="${metadata.icon}"></ha-icon>
+                            <div class="module-info">
+                              <span class="module-title">${metadata.title}</span>
+                              <span class="module-description">${metadata.description}</span>
+                            </div>
+                          </button>
+                        `;
+                      })}
+                    </div>
                   </div>
-                </div>
-              `
-            : ''}
+                `
+              : ''}
+          </div>
 
           <!-- Resize handle -->
           <div
@@ -7129,29 +7155,31 @@ export class LayoutTab extends LitElement {
             </p>
           </div>
 
-          <div class="layout-options">
-            ${availableLayouts.map(
-              layout => html`
-                <button
-                  class="layout-option-btn ${layout.id === currentLayoutId ||
-                  layout.id === migratedLayoutId
-                    ? 'current'
-                    : ''}"
-                  @click=${() => this._changeColumnLayout(layout.id)}
-                  title="${layout.name}"
-                >
-                  <div class="layout-visual">
-                    <div class="layout-icon-large">
-                      ${unsafeHTML(this._createColumnIconHTML(layout.proportions))}
+          <div class="selector-body">
+            <div class="layout-options">
+              ${availableLayouts.map(
+                layout => html`
+                  <button
+                    class="layout-option-btn ${layout.id === currentLayoutId ||
+                    layout.id === migratedLayoutId
+                      ? 'current'
+                      : ''}"
+                    @click=${() => this._changeColumnLayout(layout.id)}
+                    title="${layout.name}"
+                  >
+                    <div class="layout-visual">
+                      <div class="layout-icon-large">
+                        ${unsafeHTML(this._createColumnIconHTML(layout.proportions))}
+                      </div>
                     </div>
-                  </div>
-                  <div class="layout-name">${layout.name}</div>
-                  ${layout.id === currentLayoutId || layout.id === migratedLayoutId
-                    ? html`<div class="current-badge">Current</div>`
-                    : ''}
-                </button>
-              `
-            )}
+                    <div class="layout-name">${layout.name}</div>
+                    ${layout.id === currentLayoutId || layout.id === migratedLayoutId
+                      ? html`<div class="current-badge">Current</div>`
+                      : ''}
+                  </button>
+                `
+              )}
+            </div>
           </div>
 
           <!-- Resize handle -->
@@ -7862,23 +7890,34 @@ export class LayoutTab extends LitElement {
         position: relative;
         background: var(--card-background-color);
         border-radius: 8px;
-        /* remove top padding so sticky header touches the top edge */
-        padding: 0 24px 24px;
         max-width: 500px;
         width: 90%;
         max-height: 80vh;
+        overflow: visible; /* allow resize handle to be positioned relative to this container */
+        display: flex;
+        flex-direction: column;
+      }
+
+      .selector-body {
         overflow-x: hidden; /* prevent bleed */
         overflow-y: auto; /* allow vertical scrolling when content exceeds height */
+        max-height: inherit;
+        padding: 0 24px 28px 24px; /* consistent horizontal padding, leave room for resize handle */
+        flex: 1; /* take up remaining space */
+        border-radius: 0 0 8px 8px; /* maintain bottom border radius */
       }
 
       .selector-content.draggable-popup {
-        position: relative !important; /* avoid transform so fixed menus anchor correctly */
+        position: absolute; /* consistent with other draggable popups */
         width: min(700px, 95vw);
         height: min(750px, 90vh);
         transform: none !important;
-        top: auto !important;
-        left: auto !important;
-        margin: 0 auto;
+        /* Center the popup initially using same approach as other popups */
+        top: 50%;
+        left: 50%;
+        margin-left: -350px; /* half of max width (700px) */
+        margin-top: -375px; /* half of max height (750px) */
+        z-index: 1000;
       }
 
       /* Mobile optimization for selector popup */
@@ -7886,6 +7925,8 @@ export class LayoutTab extends LitElement {
         .selector-content.draggable-popup {
           width: 95vw;
           height: 90vh;
+          margin-left: -47.5vw; /* half of 95vw */
+          margin-top: -45vh; /* half of 90vh */
         }
       }
 
@@ -7894,12 +7935,13 @@ export class LayoutTab extends LitElement {
         top: 0;
         z-index: 5;
         background: var(--card-background-color);
-        padding: 20px 0 16px; /* top padding moved from container */
+        padding: 20px 24px 16px; /* add horizontal padding to match container */
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 16px;
         cursor: move;
         user-select: none;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        border-radius: 8px 8px 0 0; /* maintain top border radius */
       }
 
       .selector-header-top {
@@ -7932,10 +7974,6 @@ export class LayoutTab extends LitElement {
       .module-stats {
         font-size: 12px;
         color: var(--secondary-text-color);
-      }
-
-      .module-category {
-        margin-bottom: 20px;
       }
 
       .category-title {
@@ -8355,10 +8393,16 @@ export class LayoutTab extends LitElement {
         min-height: 480px;
         max-width: 98vw;
         max-height: 98vh;
-        overflow-y: auto; /* internal scroll container for sticky header */
-        overflow-x: hidden;
+        overflow: visible; /* allow resize handle to be positioned relative to this container */
         display: flex;
         flex-direction: column;
+      }
+
+      .popup-body {
+        overflow-y: auto; /* scrolling handled by popup body, not the main container */
+        overflow-x: hidden;
+        flex: 1;
+        padding-bottom: 28px; /* leave room so content doesn't sit under the resize handle */
       }
 
       /* Dropdown positioning fixes for popup context -
@@ -8493,6 +8537,13 @@ export class LayoutTab extends LitElement {
         /* left and top will be set by JavaScript during drag */
       }
 
+      /* Selector popup drag positioning */
+      .selector-content.popup-dragging {
+        position: absolute;
+        transform: none;
+        /* left and top will be set by JavaScript during drag */
+      }
+
       /* Mobile optimization for module popups */
       @media (max-width: 768px) {
         .draggable-popup {
@@ -8533,7 +8584,8 @@ export class LayoutTab extends LitElement {
         background: var(--card-background-color);
         border-radius: 8px 0 8px 0;
         transition: all 0.2s ease;
-        z-index: 20; /* ensure it stays above content */
+        z-index: 1000; /* ensure it stays above all content including scrollable areas */
+        pointer-events: auto; /* ensure it's always clickable */
       }
 
       /* Keep sticky behavior even during drag/resize */
@@ -8579,6 +8631,20 @@ export class LayoutTab extends LitElement {
 
       .popup-dragging .resize-handle,
       .popup-resizing .resize-handle {
+        pointer-events: none;
+      }
+
+      /* Selector popup drag behavior */
+      .selector-content.popup-dragging {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        z-index: 1010 !important;
+      }
+
+      .selector-content.popup-dragging .selector-header {
+        cursor: move;
+      }
+
+      .selector-content.popup-dragging .resize-handle {
         pointer-events: none;
       }
 
