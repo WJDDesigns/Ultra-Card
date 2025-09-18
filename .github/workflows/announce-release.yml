@@ -11,6 +11,56 @@ jobs:
       - name: Use repo avatar file (optional)
         uses: actions/checkout@v4
 
+      - name: Extract release notes from RELEASE_NOTES.md
+        id: extract_notes
+        run: |
+          # If this is a manual trigger, try to get the version from the latest release
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger - fetching latest release version"
+            LATEST_TAG=$(curl -s -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases" | jq -r '.[0].tag_name')
+            VERSION_NUM="${LATEST_TAG#v}"
+          else
+            # Get version from release event
+            VERSION_NUM=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH" | sed 's/^v//')
+          fi
+          
+          echo "Looking for release notes for version: $VERSION_NUM"
+          
+          # Try to extract release notes from RELEASE_NOTES.md
+          if [ -f "RELEASE_NOTES.md" ]; then
+            echo "Found RELEASE_NOTES.md, extracting notes for version $VERSION_NUM..."
+            
+            # Extract the section for this version from RELEASE_NOTES.md
+            CUSTOM_NOTES=$(awk -v version="$VERSION_NUM" '
+              BEGIN { found=0; printing=0 }
+              /^## Version/ {
+                if ($3 == version) {
+                  found=1
+                  printing=1
+                  next
+                } else if (found && printing) {
+                  exit
+                }
+              }
+              printing && found { print }
+            ' RELEASE_NOTES.md)
+            
+            if [ -n "$CUSTOM_NOTES" ]; then
+              echo "Successfully extracted release notes from RELEASE_NOTES.md"
+              echo "CUSTOM_RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+              echo "$CUSTOM_NOTES" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+              echo "HAS_CUSTOM_NOTES=true" >> $GITHUB_OUTPUT
+            else
+              echo "Version $VERSION_NUM not found in RELEASE_NOTES.md"
+              echo "HAS_CUSTOM_NOTES=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "RELEASE_NOTES.md not found"
+            echo "HAS_CUSTOM_NOTES=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and send Discord embed
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -61,8 +111,17 @@ jobs:
             NAME="Release $TAG"
           fi
 
-          # Convert literal \n to actual newlines and trim to fit Discord embed description (~2048 chars)
-          DESC=$(printf "%b" "$BODY" | head -c 1900)
+          # Use custom notes if available, otherwise use GitHub release body
+          if [ "${{ steps.extract_notes.outputs.HAS_CUSTOM_NOTES }}" = "true" ]; then
+            echo "Using custom release notes from RELEASE_NOTES.md"
+            DESC="${{ steps.extract_notes.outputs.CUSTOM_RELEASE_NOTES }}"
+          else
+            echo "Using GitHub release body"
+            DESC=$(printf "%b" "$BODY")
+          fi
+          
+          # Trim to fit Discord embed description (~2048 chars)
+          DESC=$(echo "$DESC" | head -c 1900)
 
           # Color: purple for prerelease, blue for stable
           if [ "$IS_PRE" = "true" ]; then
