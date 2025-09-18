@@ -2,31 +2,35 @@
 
 ## Version 1.2.0-Beta3
 
-### New Features
+### 🎯 Enhanced Module Spacing & Defaults
 
-- **🎯 Enhanced Module Spacing & Defaults**: All modules now have consistent, professional spacing defaults
-  - Standard 8px top/bottom margins for proper web design spacing
-  - Improved visual hierarchy and readability
-  - Better mobile and responsive layout behavior
+We've implemented consistent, professional spacing defaults across all modules to improve the overall visual experience:
 
-### Improvements
+- **Standard 8px top/bottom margins** applied to all modules for proper web design spacing
+- **Improved visual hierarchy** and readability throughout the card
+- **Better mobile and responsive layout** behavior across all devices
+- **Consistent spacing** between modules regardless of type
 
-- **🎛️ Full Spacing Control**: Users have complete control over module spacing via the Global Design Tab
+**💡 Important**: You have **complete control** over these defaults! Use the **Global Design Tab** to:
+- Override margins and padding for any individual module
+- Set custom spacing values per module or globally  
+- **Remove default spacing entirely** if you prefer custom layouts
+- Apply your own spacing preferences to match your dashboard design
 
-  - Override default margins and padding for any module
-  - Set custom spacing values per module or globally
-  - Remove default spacing entirely if desired for custom layouts
+### 🔧 Bar Module Improvements  
 
-- **✨ Cleaner Bar Module Labels**: Fixed left/right side label display
-  - Removed orphaned colons (":") when title fields are empty
-  - Now shows clean "Value" instead of ": Value" when no title is specified
-  - Improved spacing between title and value elements
+- **Fixed Left/Right Side Labels**: Cleaned up the display when title fields are empty
+  - **Removed orphaned colons** (":") that appeared when no title was specified
+  - Now displays clean "Value" instead of awkward ": Value" 
+  - **Improved spacing** between title and value elements for better readability
+  - Only shows the colon separator when there's actually a title present
 
-### Technical Improvements
+### 🛠️ Technical Improvements
 
-- Enhanced conditional rendering for bar module labels
-- Better default spacing system across all module types
+- Enhanced conditional rendering logic for bar module labels
+- Better default spacing system implementation across all module types  
 - Improved CSS organization for consistent spacing behavior
+- More robust template handling for cleaner UI displays
 
 ## Version 1.2.0-Beta1
 
