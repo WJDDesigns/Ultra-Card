@@ -1528,26 +1528,55 @@ export class UltraGraphsModule extends BaseUltraModule {
     const header = ['pie', 'donut'].includes((graphsModule as any).chart_type)
       ? html``
       : html`
-          <div style="position:absolute; ${posMap[headerPos]}; pointer-events:none; z-index:2;">
+          <div
+            class="graph-header-info"
+            style="
+              position:absolute; 
+              ${posMap[headerPos]}; 
+              pointer-events:none; 
+              z-index:2;
+              max-width: calc(100% - 32px);
+              box-sizing: border-box;
+              overflow: hidden;
+            "
+          >
             ${(graphsModule as any).show_display_name !== false &&
             (graphsModule as any).show_title !== false
               ? html`<div
-                  style="${composeTextStyle({
+                  class="graph-title"
+                  style="
+                    ${composeTextStyle({
                     fontSize: resolvedFontSize || '18px',
-                  })}; font-weight: 600; ${designProperties.text_align
+                  })}; 
+                    font-weight: 600; 
+                    ${designProperties.text_align
                     ? `text-align:${designProperties.text_align};`
-                    : ''}"
+                    : ''};
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  "
                 >
                   ${primaryName}
                 </div>`
               : ''}
             ${(graphsModule as any).show_entity_value !== false
               ? html`<div
-                  style="${composeTextStyle({
+                  class="graph-value"
+                  style="
+                    ${composeTextStyle({
                     fontSize: resolvedFontSize || '28px',
-                  })}; line-height: 1.1; font-weight: 600; margin-top: 6px; ${designProperties.text_align
+                  })}; 
+                    line-height: 1.1; 
+                    font-weight: 600; 
+                    margin-top: 6px; 
+                    ${designProperties.text_align
                     ? `text-align:${designProperties.text_align};`
-                    : ''}"
+                    : ''};
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  "
                 >
                   ${headerDisplay}
                 </div>`
@@ -1569,15 +1598,41 @@ export class UltraGraphsModule extends BaseUltraModule {
     const justify = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
     const chartWidthCss = this._resolveChartWidth(graphsModule);
     const content = html`
-      <div class="uc-graphs-module" style="${this.styleObjectToCss(containerStyles)}">
+      <div
+        class="uc-graphs-module"
+        style="
+          ${this.styleObjectToCss(containerStyles)};
+          position: relative;
+          overflow: hidden;
+          contain: layout style;
+        "
+      >
         <uc-preview-container
           .alignment=${(graphsModule as any).chart_alignment || 'center'}
           .height=${typeof graphsModule.chart_height === 'number'
             ? graphsModule.chart_height
             : parseInt(String(graphsModule.chart_height)) || 200}
         >
-          <div style="display:flex; width:100%; justify-content:${justify}">
-            <div style="width:${chartWidthCss}; max-width:100%;">
+          <div
+            style="
+            display:flex; 
+            width:100%; 
+            height:100%;
+            justify-content:${justify};
+            overflow:hidden;
+            box-sizing:border-box;
+          "
+          >
+            <div
+              style="
+              width:${chartWidthCss}; 
+              max-width:100%;
+              height:100%;
+              position:relative;
+              overflow:hidden;
+              box-sizing:border-box;
+            "
+            >
               ${this._renderSimpleChart(
                 graphsModule,
                 chartData,
@@ -1864,12 +1919,21 @@ export class UltraGraphsModule extends BaseUltraModule {
     // some browsers treat the SVG as a flex item that stretches to full width.
     const marginCss = align === 'left' ? '0 auto 0 0' : align === 'right' ? '0 0 0 auto' : '0 auto';
     return html`
-      <div style="display:block;width:${diameter}px;height:${diameter}px;margin:${marginCss};">
+      <div
+        style="
+        display:block;
+        width:${diameter}px;
+        height:${diameter}px;
+        margin:${marginCss};
+        overflow:hidden;
+        box-sizing:border-box;
+      "
+      >
         <svg
           width="${diameter}"
           height="${diameter}"
           viewBox="${-radius} ${-radius} ${diameter} ${diameter}"
-          style="display:block;"
+          style="display:block; overflow:visible;"
         >
           ${segments.map(s => {
             const path = buildSlicePath(radius, innerRadius, s.startDeg, s.endDeg);
@@ -1901,8 +1965,18 @@ export class UltraGraphsModule extends BaseUltraModule {
               : innerRadius > 0
                 ? innerRadius + ringThickness * 0.55
                 : radius * 0.55;
-            const lx = Math.cos(toRad(mid)) * labelRadius;
-            const ly = Math.sin(toRad(mid)) * labelRadius;
+            let lx = Math.cos(toRad(mid)) * labelRadius;
+            let ly = Math.sin(toRad(mid)) * labelRadius;
+
+            // Constrain labels to stay within the chart bounds with padding
+            const maxOffset = radius * 0.85; // Stay within 85% of radius
+            if (Math.abs(lx) > maxOffset) {
+              lx = Math.sign(lx) * maxOffset;
+            }
+            if (Math.abs(ly) > maxOffset) {
+              ly = Math.sign(ly) * maxOffset;
+            }
+
             const sliceAngle = s.endDeg - s.startDeg;
             let formatted = `${s.value}${s.unit || ''}`;
             if (hass && s.entityId) {
@@ -1919,10 +1993,36 @@ export class UltraGraphsModule extends BaseUltraModule {
             const showName = entityCfg ? entityCfg.label_show_name !== false : true;
             const showNameAfterArea = showName && sliceAngle >= 15;
             const showValue = entityCfg ? entityCfg.label_show_value !== false : true;
-            return svg`<g transform="translate(${lx}, ${ly})" style="pointer-events:none;">
-            ${showNameAfterArea ? svg`<text text-anchor="middle" style="${textStyle || ''}; font-size:12px; font-weight:700; fill: currentColor;">${s.name}</text>` : ''}
-            ${showValue ? svg`<text y="${showNameAfterArea ? 14 : 0}" text-anchor="middle" style="${textStyle || ''}; font-size:12px; fill: currentColor;">${formatted}</text>` : ''}
-          </g>`;
+
+            // Only show labels if slice is large enough to avoid overcrowding
+            const minSliceAngle = 10; // Minimum angle in degrees to show labels
+            const shouldShowLabels = sliceAngle >= minSliceAngle;
+
+            return shouldShowLabels
+              ? svg`<g transform="translate(${lx}, ${ly})" style="pointer-events:none;">
+              ${
+                showNameAfterArea
+                  ? svg`<text 
+                text-anchor="middle" 
+                style="${textStyle || ''}; font-size:11px; font-weight:600; fill: currentColor;"
+                textLength="${Math.min(s.name.length * 7, radius * 1.2)}" 
+                lengthAdjust="spacingAndGlyphs"
+              >${s.name.length > 12 ? s.name.substring(0, 12) + '...' : s.name}</text>`
+                  : ''
+              }
+              ${
+                showValue
+                  ? svg`<text 
+                y="${showNameAfterArea ? 13 : 0}" 
+                text-anchor="middle" 
+                style="${textStyle || ''}; font-size:11px; fill: currentColor;"
+                textLength="${Math.min(formatted.length * 6, radius * 1.0)}" 
+                lengthAdjust="spacingAndGlyphs"
+              >${formatted.length > 10 ? formatted.substring(0, 10) + '...' : formatted}</text>`
+                  : ''
+              }
+            </g>`
+              : svg``;
           })}
         </svg>
       </div>
@@ -2077,7 +2177,17 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     return html`
       <div
-        style="width: 100%; height: ${chartHeight}px; position: relative; box-sizing: border-box; margin: 0; padding: 0;"
+        class="line-chart-container"
+        style="
+          width: 100%; 
+          height: ${chartHeight}px; 
+          position: relative; 
+          box-sizing: border-box; 
+          margin: 0; 
+          padding: 0;
+          overflow: hidden;
+          contain: layout style;
+        "
       >
         <!-- Debug info badge with refresh button -->
 
@@ -2107,7 +2217,14 @@ export class UltraGraphsModule extends BaseUltraModule {
           height="100%"
           viewBox="0 0 300 100"
           preserveAspectRatio="none"
-          style="display: block; width: 100%; height: 100%; margin: 0; padding: 0;"
+          style="
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden;
+          "
         >
           ${grid
             ? svg`${Array.from({ length: 4 }, (_, i) => {
@@ -2237,15 +2354,52 @@ export class UltraGraphsModule extends BaseUltraModule {
       bottom_right: 'bottom:8px; right:8px; justify-content:flex-end;',
     };
     return html`<div
-      style="position:absolute; ${map[
-        pos
-      ]}; display:flex; gap:12px; flex-wrap:wrap; font-size:12px; ${textStyle || ''}; z-index:2;"
+      class="graph-legend"
+      style="
+        position:absolute; 
+        ${map[pos]}; 
+        display:flex; 
+        gap:8px; 
+        flex-wrap:wrap; 
+        font-size:12px; 
+        ${textStyle || ''}; 
+        z-index:2;
+        max-width: calc(100% - 16px);
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      "
     >
       ${data.map(
         d =>
-          html`<div style="display:flex; align-items:center; gap:6px;">
-            <span style="width:10px; height:10px; background:${d.color}; border-radius:2px;"></span
-            ><span>${d.name}</span>
+          html`<div
+            style="
+            display:flex; 
+            align-items:center; 
+            gap:4px;
+            min-width: 0;
+            flex-shrink: 1;
+          "
+          >
+            <span
+              style="
+              width:10px; 
+              height:10px; 
+              background:${d.color}; 
+              border-radius:2px;
+              flex-shrink: 0;
+            "
+            ></span>
+            <span
+              style="
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              min-width: 0;
+            "
+              >${d.name}</span
+            >
           </div>`
       )}
     </div>`;
@@ -2287,10 +2441,19 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     return html`
       <div
-        style="width:100%; height:${chartHeight}px; display:flex; align-items:center; justify-content:${(() => {
+        class="bar-chart-container"
+        style="
+          width:100%; 
+          height:${chartHeight}px; 
+          display:flex; 
+          align-items:center; 
+          justify-content:${(() => {
           const a = ((module as any).chart_alignment || 'center') as string;
           return a === 'left' ? 'flex-start' : a === 'right' ? 'flex-end' : 'center';
-        })()};"
+        })()};
+          overflow: hidden;
+          box-sizing: border-box;
+        "
       >
         <div
           style="
@@ -2304,8 +2467,10 @@ export class UltraGraphsModule extends BaseUltraModule {
             if (a === 'right') return 'flex-end';
             return 'center';
           })()};
-            gap: 10px;
-            padding: 10px 0;
+            gap: 8px;
+            padding: 8px;
+            box-sizing: border-box;
+            overflow: hidden;
           "
         >
           ${data.map(d => {
@@ -2317,15 +2482,22 @@ export class UltraGraphsModule extends BaseUltraModule {
                   flex-direction: column;
                   align-items: center;
                   flex: 0 0 auto;
-                  width: 64px;
+                  width: 60px;
+                  max-width: calc(100% / ${data.length});
+                  box-sizing: border-box;
                 "
               >
                 <div
                   style="
-                  font-size: 12px;
-                  ${textStyle || ''};
-                  margin-bottom: 5px;
-                "
+                    font-size: 11px;
+                    ${textStyle || ''};
+                    margin-bottom: 4px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    width: 100%;
+                    text-align: center;
+                  "
                 >
                   ${(() => {
                     let formatted = `${d.value}${d.unit || ''}`;
@@ -2337,32 +2509,35 @@ export class UltraGraphsModule extends BaseUltraModule {
                         });
                       } catch (_) {}
                     }
-                    return formatted;
+                    // Truncate long values
+                    return formatted.length > 8 ? formatted.substring(0, 8) + '...' : formatted;
                   })()}
                 </div>
                 <div
                   style="
-                  width: 100%;
-                  height: ${barHeight}px;
-                  background: ${d.color};
-                  border-radius: 4px 4px 0 0;
-                  transition: height 0.3s ease;
-                "
+                    width: 100%;
+                    height: ${barHeight}px;
+                    background: ${d.color};
+                    border-radius: 3px 3px 0 0;
+                    transition: height 0.3s ease;
+                    min-height: 2px;
+                  "
                 ></div>
                 <div
                   style="
-                  font-size: 10px;
-                  ${textStyle || ''};
-                  opacity: 0.8;
-                  margin-top: 5px;
-                  text-align: center;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                  width: 100%;
-                "
+                    font-size: 10px;
+                    ${textStyle || ''};
+                    opacity: 0.8;
+                    margin-top: 4px;
+                    text-align: center;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    width: 100%;
+                  "
+                  title="${d.name}"
                 >
-                  ${d.name}
+                  ${d.name.length > 8 ? d.name.substring(0, 8) + '...' : d.name}
                 </div>
               </div>
             `;
@@ -3601,6 +3776,49 @@ export class UltraGraphsModule extends BaseUltraModule {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+        position: relative;
+        overflow: hidden;
+        contain: layout style;
+      }
+
+      /* Graph content area containment */
+      .uc-graphs-module .chart-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+
+      /* Legend containment */
+      .uc-graphs-module .graph-legend {
+        max-width: calc(100% - 16px) !important;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .uc-graphs-module .graph-legend > div {
+        min-width: 0;
+        flex-shrink: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Header info containment */
+      .uc-graphs-module .graph-header-info {
+        max-width: calc(100% - 32px) !important;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .uc-graphs-module .graph-title,
+      .uc-graphs-module .graph-value {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
       }
 
       .entity-card {
@@ -3861,6 +4079,24 @@ export class UltraGraphsModule extends BaseUltraModule {
         .chart-container {
           min-height: 200px;
         }
+        
+        .uc-graphs-module .graph-legend {
+          max-width: calc(100% - 8px) !important;
+          gap: 4px !important;
+          font-size: 11px !important;
+        }
+        
+        .uc-graphs-module .graph-header-info {
+          max-width: calc(100% - 16px) !important;
+        }
+        
+        .uc-graphs-module .graph-title {
+          font-size: 14px !important;
+        }
+        
+        .uc-graphs-module .graph-value {
+          font-size: 20px !important;
+        }
       }
 
       /* Animation styles */
@@ -3891,6 +4127,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         justify-content: center;
         height: 100%;
         color: var(--secondary-text-color);
+        overflow: hidden;
       }
 
       .chart-error {
@@ -3901,6 +4138,23 @@ export class UltraGraphsModule extends BaseUltraModule {
         color: var(--error-color);
         text-align: center;
         padding: 20px;
+        overflow: hidden;
+        word-wrap: break-word;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      
+      /* SVG text containment for pie charts */
+      .uc-graphs-module svg text {
+        pointer-events: none;
+        user-select: none;
+      }
+      
+      /* Ensure tooltips stay within bounds */
+      .uc-graphs-module [id^="graph-tooltip-"] {
+        max-width: calc(100vw - 32px);
+        word-wrap: break-word;
+        box-sizing: border-box;
       }
     `;
   }

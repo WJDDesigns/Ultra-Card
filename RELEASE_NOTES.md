@@ -1,5 +1,15 @@
 # Release Notes
 
+## Version 1.2.0-beta5
+
+### 🖼️ Image Module Improvements
+
+- **Unlimited Image Heights**: Removed the 800px height restriction on image modules
+  - Users can now set images to any height they need (previously limited to 800px max)
+  - Removed both UI form constraints and validation limits
+  - Only maintains sensible minimum of 1px to prevent invalid configurations
+  - Perfect for large banners, full-height images, or any custom sizing needs
+
 ## Version 1.2.0-beta4
 
 ### 📱 Camera Module Responsive Improvements

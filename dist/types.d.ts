@@ -1136,6 +1136,12 @@ export interface LayoutConfig {
     rows: CardRow[];
     gap?: number;
 }
+export interface FavoriteColor {
+    id: string;
+    name: string;
+    color: string;
+    order: number;
+}
 export interface UltraCardConfig {
     type: string;
     layout: LayoutConfig;
@@ -1146,6 +1152,7 @@ export interface UltraCardConfig {
     card_margin?: number;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
+    favorite_colors?: FavoriteColor[];
 }
 export interface CustomCard {
     type: string;

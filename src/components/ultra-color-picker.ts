@@ -1,6 +1,8 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
+import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
+import { FavoriteColor } from '../types';
 
 export interface ColorChangedEvent {
   detail: {
@@ -77,7 +79,10 @@ export class UltraColorPicker extends LitElement {
   @state() private _currentValue?: string;
   @state() private _showPalette = false;
   @state() private _textInputValue?: string;
+  @state() private _favoriteColors: FavoriteColor[] = [];
+  @state() private _showAddToFavorites = false;
   private _documentClickHandler?: (e: Event) => void;
+  private _favoritesUnsubscribe?: () => void;
 
   protected firstUpdated(): void {
     this._currentValue = this.value;
@@ -85,6 +90,12 @@ export class UltraColorPicker extends LitElement {
     // Simple click outside handler for accordion
     this._documentClickHandler = this._handleDocumentClick.bind(this);
     document.addEventListener('click', this._documentClickHandler, true);
+
+    // Subscribe to favorite colors changes
+    this._favoritesUnsubscribe = ucFavoriteColorsService.subscribe(favorites => {
+      this._favoriteColors = favorites;
+      this.requestUpdate(); // Force re-render when favorites change
+    });
   }
 
   disconnectedCallback(): void {
@@ -93,18 +104,32 @@ export class UltraColorPicker extends LitElement {
       document.removeEventListener('click', this._documentClickHandler, true);
       this._documentClickHandler = undefined;
     }
+
+    // Unsubscribe from favorite colors
+    if (this._favoritesUnsubscribe) {
+      this._favoritesUnsubscribe();
+      this._favoritesUnsubscribe = undefined;
+    }
   }
 
   private _handleDocumentClick(event: Event): void {
     if (!this._showPalette) return;
+
+    // Don't close palette during prompt dialogs or if we're in the middle of adding favorites
+    if (this._showAddToFavorites) return;
+
     // If click originated inside this component (including within shadow DOM), ignore
     const path = (event as any).composedPath?.() as EventTarget[] | undefined;
     if (path && path.includes(this)) return;
 
     const target = event.target as Node;
     if (this.shadowRoot?.contains(target)) return;
+
     // Don't close if it's a color input event (these can sometimes trigger outside events)
     if (target instanceof HTMLInputElement && target.type === 'color') return;
+
+    // Don't close if it's a prompt dialog or modal
+    if (target instanceof HTMLElement && target.closest('[role="dialog"], .prompt, .modal')) return;
 
     this._showPalette = false;
   }
@@ -213,6 +238,72 @@ export class UltraColorPicker extends LitElement {
       composed: true,
     });
     this.dispatchEvent(event);
+  }
+
+  private _addToFavorites(): void {
+    const currentColor = this._currentValue || this.value;
+    if (!currentColor || ucFavoriteColorsService.hasColor(currentColor)) {
+      return;
+    }
+
+    // Prevent the palette from closing during the prompt
+    const originalShowPalette = this._showPalette;
+
+    // Use setTimeout to ensure the prompt appears after the current event cycle
+    setTimeout(() => {
+      // Show a simple prompt for the color name
+      const colorName = prompt(
+        'Enter a name for this color:',
+        this._getColorDisplayName(currentColor)
+      );
+
+      if (colorName && colorName.trim()) {
+        ucFavoriteColorsService.addFavorite(colorName.trim(), currentColor);
+
+        // Keep the palette open if it was open before
+        this._showPalette = originalShowPalette;
+        this._showAddToFavorites = false;
+
+        // Force a re-render to show the updated favorites
+        this.requestUpdate();
+      } else {
+        // Restore the palette state if user cancelled
+        this._showPalette = originalShowPalette;
+      }
+    }, 10);
+  }
+
+  private _getColorDisplayName(color: string): string {
+    // Convert common colors to friendly names
+    const colorNames: Record<string, string> = {
+      '#ff0000': 'Red',
+      '#00ff00': 'Green',
+      '#0000ff': 'Blue',
+      '#ffff00': 'Yellow',
+      '#ff00ff': 'Magenta',
+      '#00ffff': 'Cyan',
+      '#000000': 'Black',
+      '#ffffff': 'White',
+      '#808080': 'Gray',
+      '#ffa500': 'Orange',
+      '#800080': 'Purple',
+      '#ffc0cb': 'Pink',
+    };
+
+    const lowerColor = color.toLowerCase();
+    if (colorNames[lowerColor]) {
+      return colorNames[lowerColor];
+    }
+
+    // For CSS variables, extract the variable name
+    if (color.startsWith('var(--')) {
+      const varName = color.match(/var\(--([^)]+)\)/)?.[1];
+      if (varName) {
+        return varName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      }
+    }
+
+    return color;
   }
 
   private _getDisplayValue(): string {
@@ -403,6 +494,56 @@ export class UltraColorPicker extends LitElement {
                     `
                   )}
                 </div>
+
+                <!-- Favorites Section -->
+                ${this._favoriteColors.length > 0 || this._showAddToFavorites
+                  ? html`
+                      <div class="favorites-section">
+                        <div class="favorites-header">
+                          <label class="favorites-label">Favorite Colors</label>
+                          ${this._currentValue &&
+                          !ucFavoriteColorsService.hasColor(this._currentValue)
+                            ? html`
+                                <button
+                                  class="add-favorite-btn"
+                                  @click=${this._addToFavorites}
+                                  title="Add current color to favorites"
+                                  type="button"
+                                >
+                                  <ha-icon icon="mdi:heart-plus"></ha-icon>
+                                </button>
+                              `
+                            : ''}
+                        </div>
+
+                        ${this._favoriteColors.length > 0
+                          ? html`
+                              <div class="favorites-grid">
+                                ${this._favoriteColors.map(
+                                  favorite => html`
+                                    <div
+                                      class="favorite-swatch ${this._currentValue === favorite.color
+                                        ? 'selected'
+                                        : ''}"
+                                      style="background-color: ${favorite.color}"
+                                      @click=${(e: Event) => this._selectColor(favorite.color, e)}
+                                      title="${favorite.name} (${favorite.color})"
+                                    >
+                                      <span class="favorite-tooltip">${favorite.name}</span>
+                                    </div>
+                                  `
+                                )}
+                              </div>
+                            `
+                          : html`
+                              <div class="no-favorites">
+                                <span>No favorite colors yet</span>
+                                <small>Select a color and click the heart to add it</small>
+                              </div>
+                            `}
+                      </div>
+                    `
+                  : ''}
               </div>
             `
           : ''}
@@ -734,6 +875,120 @@ export class UltraColorPicker extends LitElement {
       .native-picker-wrapper:hover .native-picker-btn {
         background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
         transform: scale(1.1);
+      }
+
+      /* Favorites Section */
+      .favorites-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--divider-color);
+      }
+
+      .favorites-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .favorites-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .add-favorite-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        background: none;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: var(--primary-color);
+        transition: all 0.2s ease;
+      }
+
+      .add-favorite-btn:hover {
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
+        transform: scale(1.1);
+      }
+
+      .add-favorite-btn ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .favorites-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+        gap: 8px;
+        margin-bottom: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .favorite-swatch {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .favorite-swatch:hover {
+        transform: scale(1.1);
+        border-color: var(--primary-color);
+      }
+
+      .favorite-swatch.selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 33, 150, 243), 0.3);
+      }
+
+      .favorite-swatch .favorite-tooltip {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 1000;
+      }
+
+      .favorite-swatch:hover .favorite-tooltip {
+        opacity: 1;
+      }
+
+      .no-favorites {
+        text-align: center;
+        padding: 16px;
+        color: var(--secondary-text-color);
+      }
+
+      .no-favorites span {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+
+      .no-favorites small {
+        font-size: 12px;
+        opacity: 0.7;
       }
 
       @media (max-width: 768px) {

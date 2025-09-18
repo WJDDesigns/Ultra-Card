@@ -587,12 +587,6 @@ export class UcLightColorPicker extends LitElement {
     return html`
       <div class="light-color-picker ${this.disabled ? 'disabled' : ''}">
         <!-- Debug Info -->
-        <div
-          style="padding: 4px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: 4px; margin-bottom: 8px; font-size: 11px;"
-        >
-          Debug: disabled=${this.disabled}, mode=${this.mode},
-          effect_list=${this.effect_list?.length || 0} effects
-        </div>
 
         <!-- Color Mode Tabs -->
         <div class="color-mode-tabs">
@@ -826,14 +820,7 @@ export class UcLightColorPicker extends LitElement {
         <!-- Effects Controls -->
         ${this.mode === 'effect'
           ? this.effect_list && this.effect_list.length > 0
-            ? html` <div
-                style="padding: 8px; background: rgba(var(--rgb-info-color), 0.1); border-radius: 4px; margin-bottom: 12px;"
-              >
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Debug: Effect list has ${this.effect_list?.length || 0} shared effects. Mode:
-                  ${this.mode}
-                </div>
-              </div>`
+            ? html``
             : html` <div
                 style="padding: 16px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: 8px; text-align: center;"
               >

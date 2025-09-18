@@ -3686,7 +3686,7 @@ export class UltraBarModule extends BaseUltraModule {
             background: ${trackBackground};
             min-width: 80px;
             border-radius: ${borderRadius}px;
-            overflow: hidden;
+            overflow: ${barModule.bar_style === 'minimal' ? 'visible' : 'hidden'};
             position: relative;
             transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
             border: ${
@@ -3702,6 +3702,7 @@ export class UltraBarModule extends BaseUltraModule {
                 ? 'pointer'
                 : 'default'
             };
+            z-index: 1;
           "
           @pointerdown=${handlePointerDown}
           @pointerup=${handlePointerUp}
@@ -3884,7 +3885,8 @@ export class UltraBarModule extends BaseUltraModule {
                           transition: ${barModule.animation !== false
                           ? 'left 0.3s ease, background 0.3s ease'
                           : 'none'};
-                          z-index: 5;
+                          z-index: 3;
+                          will-change: left, background;
                         "
                       ></div>
                     `;
@@ -4077,16 +4079,20 @@ export class UltraBarModule extends BaseUltraModule {
                     <div
                       class="percentage-text"
                       style="
-                    position: absolute;
-                    top: 50%;
-                    left: ${barModule.percentage_text_alignment === 'left'
-                        ? '8px'
-                        : barModule.percentage_text_alignment === 'right'
-                          ? 'calc(100% - 32px)'
-                          : '50%'};
-                    transform: translate(${barModule.percentage_text_alignment === 'center'
-                        ? '-50%, -50%'
-                        : '0, -50%'});
+                    position: ${barModule.bar_style === 'minimal' ? 'relative' : 'absolute'};
+                    top: ${barModule.bar_style === 'minimal' ? 'auto' : '50%'};
+                    left: ${barModule.bar_style === 'minimal'
+                        ? 'auto'
+                        : barModule.percentage_text_alignment === 'left'
+                          ? '8px'
+                          : barModule.percentage_text_alignment === 'right'
+                            ? 'calc(100% - 32px)'
+                            : '50%'};
+                    transform: ${barModule.bar_style === 'minimal'
+                        ? 'none'
+                        : barModule.percentage_text_alignment === 'center'
+                          ? 'translate(-50%, -50%)'
+                          : 'translate(0, -50%)'};
                     text-align: ${barModule.percentage_text_alignment || 'center'};
                     font-size: ${designProperties.font_size
                         ? `${designProperties.font_size}px`
@@ -4096,9 +4102,12 @@ export class UltraBarModule extends BaseUltraModule {
                       moduleWithDesign.color ||
                       'white'};
                     font-weight: 600;
-                    z-index: 10;
+                    z-index: ${barModule.bar_style === 'minimal' ? '2' : '10'};
                     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
                     white-space: nowrap;
+                    ${barModule.bar_style === 'minimal'
+                        ? 'margin-top: 8px; position: relative; display: block;'
+                        : ''}
                   "
                     >
                       ${(() => {
@@ -4308,6 +4317,8 @@ export class UltraBarModule extends BaseUltraModule {
         overflow: visible;
         box-sizing: border-box;
         min-width: 80px; /* keep a visible track inside flex rows */
+        position: relative;
+        z-index: 0; /* Establish stacking context */
       }
       
       .bar-container {
@@ -4316,6 +4327,14 @@ export class UltraBarModule extends BaseUltraModule {
         display: block;
         box-sizing: border-box;
         min-width: 0; /* allow flex parent to size correctly */
+        /* Ensure minimal style dots stay within container bounds */
+        contain: layout style;
+      }
+      
+      /* Minimal style specific containment */
+      .bar-container.minimal-style {
+        overflow: visible;
+        isolation: isolate; /* Create new stacking context */
       }
       
       .bar-fill {
@@ -5092,6 +5111,30 @@ export class UltraBarModule extends BaseUltraModule {
       
       .minimal-dot.bar-anim-pulse { animation: minimal-dot-pulse 1.6s ease-in-out infinite; }
       @keyframes minimal-dot-pulse { 0%,100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.15); } }
+      
+      /* Minimal style z-index management */
+      .minimal-track {
+        z-index: 1;
+        position: relative;
+      }
+      
+      .minimal-dot {
+        z-index: 3 !important;
+        position: absolute;
+        /* Ensure dot stays within reasonable bounds */
+        max-width: 32px;
+        max-height: 32px;
+        /* Prevent dot from going outside card boundaries */
+        contain: size layout style;
+      }
+      
+      /* Percentage text positioning for minimal style */
+      .bar-container .percentage-text {
+        /* Ensure text doesn't interfere with HA header */
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       
       .minimal-track.bar-anim-glow { box-shadow: 0 0 4px currentColor; animation: minimal-track-glow 1.5s ease-in-out infinite; }
       @keyframes minimal-track-glow { 0%,100% { box-shadow: 0 0 4px currentColor; } 50% { box-shadow: 0 0 8px currentColor; } }

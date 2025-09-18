@@ -812,19 +812,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Apply design properties with priority - global design properties are stored directly on the module
     const moduleWithDesign = dropdownModule as any;
 
-    console.log('Raw module with design:', moduleWithDesign);
-    console.log('Full module object keys:', Object.keys(dropdownModule));
-    console.log('Design properties found on module:', {
-      width: moduleWithDesign.width,
-      height: moduleWithDesign.height,
-      color: moduleWithDesign.color,
-      font_size: moduleWithDesign.font_size,
-      font_family: moduleWithDesign.font_family,
-      background_color: moduleWithDesign.background_color,
-      border_color: moduleWithDesign.border_color,
-      border_radius: moduleWithDesign.border_radius,
-    });
-
     // Resolve styles - use design properties directly from module or defaults
     const textColor = moduleWithDesign.color || 'var(--primary-text-color)';
     const fontSize = moduleWithDesign.font_size || 14;
@@ -879,17 +866,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     const fontFamily = moduleWithDesign.font_family || 'inherit';
     const fontWeight = moduleWithDesign.font_weight || 'normal';
     const textAlign = moduleWithDesign.text_align || 'left';
-
-    console.log('Design properties applied:', {
-      width: dropdownWidth,
-      height: dropdownHeight,
-      fontSize: fontSize,
-      textColor: textColor,
-      backgroundColor: backgroundColor,
-      fontFamily: fontFamily,
-      fontWeight: fontWeight,
-      textAlign: textAlign,
-    });
 
     const dropdownStyles = `
       width: ${this.addPixelUnit(dropdownWidth)};
@@ -961,13 +937,6 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     const placeholderText = dropdownModule.placeholder || 'Choose an option...';
     const dropdownValue = currentSelectedOption ? currentSelectedOption.label : '';
-
-    console.log('Selection logic:', {
-      track_state: dropdownModule.track_state,
-      current_selection: dropdownModule.current_selection,
-      currentSelectedOption: currentSelectedOption?.label,
-      showPlaceholder: showPlaceholder,
-    });
 
     // Handle dropdown interactions - prevent closing popup
     const handleDropdownInteraction = (e: Event) => {

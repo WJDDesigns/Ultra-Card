@@ -7,6 +7,7 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
+import '../components/uc-favorite-colors-manager';
 import { getModuleRegistry } from '../modules';
 import { localize } from '../localize/localize';
 
@@ -446,6 +447,22 @@ export class UltraCardEditor extends LitElement {
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Favorite Colors Section -->
+          <div class="settings-section">
+            <div class="section-header">
+              <h4>${localize('editor.favorite_colors.title', lang, 'Favorite Colors')}</h4>
+              <p>
+                ${localize(
+                  'editor.favorite_colors.description',
+                  lang,
+                  'Manage your favorite colors that appear in all Ultra Card color pickers. These colors sync across all your Ultra Cards.'
+                )}
+              </p>
+            </div>
+
+            <uc-favorite-colors-manager .hass=${this.hass}></uc-favorite-colors-manager>
           </div>
         </div>
       </div>

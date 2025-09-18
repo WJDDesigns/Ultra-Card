@@ -14,7 +14,10 @@ export declare class UltraColorPicker extends LitElement {
     private _currentValue?;
     private _showPalette;
     private _textInputValue?;
+    private _favoriteColors;
+    private _showAddToFavorites;
     private _documentClickHandler?;
+    private _favoritesUnsubscribe?;
     protected firstUpdated(): void;
     disconnectedCallback(): void;
     private _handleDocumentClick;
@@ -27,6 +30,8 @@ export declare class UltraColorPicker extends LitElement {
     private _applyTextInputValue;
     private _isValidColor;
     private _resetToDefault;
+    private _addToFavorites;
+    private _getColorDisplayName;
     private _getDisplayValue;
     private _getColorForNativeInput;
     private _isDefaultValue;

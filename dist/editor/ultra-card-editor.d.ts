@@ -4,6 +4,7 @@ import { UltraCardConfig } from '../types';
 import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
+import '../components/uc-favorite-colors-manager';
 export declare class UltraCardEditor extends LitElement {
     hass?: HomeAssistant;
     config: UltraCardConfig;

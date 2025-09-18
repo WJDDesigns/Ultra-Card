@@ -2090,6 +2090,14 @@ export interface LayoutConfig {
   gap?: number;
 }
 
+// Favorite Color Configuration
+export interface FavoriteColor {
+  id: string;
+  name: string;
+  color: string;
+  order: number;
+}
+
 // Main card configuration
 export interface UltraCardConfig {
   type: string;
@@ -2102,6 +2110,8 @@ export interface UltraCardConfig {
   // Card-level conditional display
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
+  // Favorite colors configuration
+  favorite_colors?: FavoriteColor[];
 }
 
 // Custom card interface for registration

@@ -313,7 +313,6 @@ export class UltraLightModule extends BaseUltraModule {
   private getEffectList(entityId: string, hass: HomeAssistant): string[] {
     const entity = hass.states[entityId];
     const effectList = entity?.attributes.effect_list || [];
-    console.log(`Effect list for ${entityId}:`, effectList);
     return effectList;
   }
 
@@ -371,12 +370,8 @@ export class UltraLightModule extends BaseUltraModule {
       );
     });
 
-    console.log('Common effects across all entities:', commonEffects);
-
     // If no common effects, return a curated list of universal effects that most devices support
     if (commonEffects.length === 0) {
-      console.log('No common effects found, using universal fallback effects');
-
       // Try to find effects with similar names across devices (case-insensitive partial matching)
       const universalEffects: string[] = [];
       const searchTerms = [
@@ -414,11 +409,8 @@ export class UltraLightModule extends BaseUltraModule {
         }
       }
 
-      console.log('Found universal effects:', universalEffects);
-
       // If still no universal effects, return basic fallback
       if (universalEffects.length === 0) {
-        console.log('No universal effects found, using basic fallback');
         return ['colorloop', 'strobe', 'fade']; // Basic effects most devices should support
       }
 
@@ -443,14 +435,10 @@ export class UltraLightModule extends BaseUltraModule {
     hass: HomeAssistant
   ): Promise<void> {
     try {
-      console.log(`Calling light.${action} for ${entityId} with data:`, serviceData);
-
       await hass.callService('light', action, {
         entity_id: entityId,
         ...serviceData,
       });
-
-      console.log(`Successfully called light.${action} for ${entityId}`);
     } catch (error) {
       console.error(`Failed to call light.${action} for ${entityId}:`, error);
       console.error('Service data was:', serviceData);
@@ -879,7 +867,6 @@ export class UltraLightModule extends BaseUltraModule {
                 : 'rotate(0deg)'}; cursor: pointer; padding: 8px; margin: -8px;"
               @click=${(e: Event) => {
                 e.stopPropagation();
-                console.log('Direct caret clicked for preset:', preset.id);
 
                 // Find elements directly from the event
                 const caret = e.target as HTMLElement;
@@ -888,19 +875,16 @@ export class UltraLightModule extends BaseUltraModule {
 
                 if (card && content && caret) {
                   const id = card.getAttribute('data-preset-id') || '';
-                  console.log('Direct caret - found ID:', id);
 
                   // Toggle state
                   if (this.expandedPresets.has(id)) {
                     this.expandedPresets.delete(id);
                     content.style.display = 'none';
                     caret.style.transform = 'rotate(0deg)';
-                    console.log('Direct caret - collapsed');
                   } else {
                     this.expandedPresets.add(id);
                     content.style.display = 'block';
                     caret.style.transform = 'rotate(180deg)';
-                    console.log('Direct caret - expanded');
                   }
                 }
               }}
@@ -988,7 +972,6 @@ export class UltraLightModule extends BaseUltraModule {
             .max_mireds=${500}
             @color-changed=${(e: CustomEvent) => {
               const detail = e.detail;
-              console.log('📢 @color-changed event received:', detail);
               const updates: Partial<LightPreset> = {};
 
               if (detail.mode === 'effect') {
@@ -1001,8 +984,6 @@ export class UltraLightModule extends BaseUltraModule {
                 updates.rgbw_color = undefined;
                 updates.rgbww_color = undefined;
                 updates.white = undefined;
-                console.log('🎭 Setting effect to:', detail.effect);
-                console.log('🎭 Effect mode - cleared all colors');
               } else if (detail.mode === 'color_temp') {
                 updates.color_temp = detail.color_temp;
                 updates.rgb_color = undefined;
@@ -1012,7 +993,6 @@ export class UltraLightModule extends BaseUltraModule {
                 updates.rgbww_color = undefined;
                 updates.white = undefined;
                 updates.effect = ''; // Clear effect when setting color
-                console.log('Setting color_temp - cleared effect');
               } else {
                 updates.rgb_color = detail.rgb_color;
                 updates.hs_color = detail.hs_color;
@@ -1022,20 +1002,13 @@ export class UltraLightModule extends BaseUltraModule {
                 updates.rgbww_color = undefined;
                 updates.white = undefined;
                 updates.effect = ''; // Clear effect when setting color
-                console.log('Setting color - cleared effect');
               }
 
               updatePreset(updates);
-              console.log('Updated preset with:', updates);
-              console.log('Full preset now:', { ...preset, ...updates });
               // Trigger immediate preview update
               this.triggerPreviewUpdate();
             }}
             @test-preset=${() => {
-              console.log('Testing preset:', preset.name, preset);
-              console.log('Preset entities:', preset.entities);
-              console.log('Preset effect:', preset.effect);
-              console.log('Preset brightness:', preset.brightness);
               this.applyPreset(preset, lightModule, hass);
             }}
           ></uc-light-color-picker>
@@ -1708,14 +1681,6 @@ export class UltraLightModule extends BaseUltraModule {
         (entity?.attributes.friendly_name &&
           entity.attributes.friendly_name.toLowerCase().includes('glorb'));
 
-      console.log(`Processing ${entityId}, isWLED: ${isWLED}`, {
-        integration: entity?.attributes.integration,
-        device_class: entity?.attributes.device_class,
-        effect_list_length: entity?.attributes.effect_list?.length,
-        entity_id: entity?.entity_id,
-        friendly_name: entity?.attributes.friendly_name,
-      });
-
       // Add transition time if specified (but not for WLED effects)
       const transitionTime = preset.transition_time || lightModule.default_transition_time;
       if (
@@ -1741,10 +1706,6 @@ export class UltraLightModule extends BaseUltraModule {
           // Effect mode - ONLY effect, no color parameters
           serviceData.effect = preset.effect;
 
-          console.log(
-            `Effect mode: applying effect "${preset.effect}" for ${entityId} (supported)`
-          );
-
           // Ensure no color parameters interfere with effects
           delete serviceData.rgb_color;
           delete serviceData.hs_color;
@@ -1755,30 +1716,19 @@ export class UltraLightModule extends BaseUltraModule {
           delete serviceData.white;
 
           if (isWLED) {
-            console.log(`Detected WLED device, adding WLED parameters`);
             // Remove transition for WLED effects
             delete serviceData.transition;
 
             // Add WLED-specific effect parameters (only those supported by HA)
             // Note: effect_speed, effect_intensity, effect_reverse are not supported by HA's light service
             // These parameters would need to be sent via WLED's native API, not through HA
-
-            console.log('WLED effect parameters (HA service only supports basic effect):', {
-              effect: serviceData.effect,
-              note: 'Advanced WLED parameters like speed/intensity/reverse require WLED API calls',
-            });
           }
         } else {
-          console.log(
-            `Effect "${preset.effect}" not supported by ${entityId}, trying fallback or skipping`
-          );
-
           // Try to find a similar effect on this device
           const entityEffectList = this.getEffectList(entityId, hass);
           const fallbackEffect = this.findSimilarEffect(preset.effect, entityEffectList);
 
           if (fallbackEffect) {
-            console.log(`Using fallback effect "${fallbackEffect}" for ${entityId}`);
             serviceData.effect = fallbackEffect;
             // Clear all color parameters when effect is set
             delete serviceData.rgb_color;
@@ -1789,66 +1739,43 @@ export class UltraLightModule extends BaseUltraModule {
             delete serviceData.rgbww_color;
             delete serviceData.white;
           } else {
-            console.log(`No fallback effect found for ${entityId}, skipping effect`);
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
       } else if (preset.color_temp !== undefined) {
         // Color temperature mode
         serviceData.color_temp = preset.color_temp;
-        console.log(`Color temp mode: ${serviceData.color_temp} for ${entityId}`);
       } else if (isWLED && preset.rgb_color !== undefined) {
         // For WLED devices, prioritize RGB color mode and clear effects
         serviceData.rgb_color = preset.rgb_color;
         serviceData.effect = 'Solid'; // Explicitly set to Solid effect to clear any active effects
-        console.log(
-          `WLED RGB color mode: [${serviceData.rgb_color}] with Solid effect for ${entityId}`
-        );
       } else if (preset.hs_color !== undefined) {
         // HS color mode (preferred for Home Assistant)
         serviceData.hs_color = preset.hs_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
-          console.log(
-            `WLED HS color mode: [${serviceData.hs_color}] with Solid effect for ${entityId}`
-          );
-        } else {
-          console.log(`HS color mode: [${serviceData.hs_color}] for ${entityId}`);
         }
       } else if (preset.xy_color !== undefined) {
         // XY color mode
         serviceData.xy_color = preset.xy_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
-          console.log(
-            `WLED XY color mode: [${serviceData.xy_color}] with Solid effect for ${entityId}`
-          );
-        } else {
-          console.log(`XY color mode: [${serviceData.xy_color}] for ${entityId}`);
         }
       } else if (preset.rgb_color !== undefined) {
         // RGB color mode - fallback for non-WLED devices
         serviceData.rgb_color = preset.rgb_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
-          console.log(
-            `WLED RGB fallback mode: [${serviceData.rgb_color}] with Solid effect for ${entityId}`
-          );
-        } else {
-          console.log(`RGB color mode: [${serviceData.rgb_color}] for ${entityId}`);
         }
       } else if (preset.rgbw_color !== undefined) {
         // RGBW color mode
         serviceData.rgbw_color = preset.rgbw_color;
-        console.log(`RGBW color mode: [${serviceData.rgbw_color}] for ${entityId}`);
       } else if (preset.rgbww_color !== undefined) {
         // RGBWW color mode
         serviceData.rgbww_color = preset.rgbww_color;
-        console.log(`RGBWW color mode: [${serviceData.rgbww_color}] for ${entityId}`);
       } else if (preset.white !== undefined) {
         // White value mode
         serviceData.white = preset.white;
-        console.log(`White value mode: ${serviceData.white} for ${entityId}`);
       }
 
       await this.callLightService('turn_on', entityId, serviceData, hass);

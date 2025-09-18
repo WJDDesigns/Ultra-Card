@@ -281,7 +281,7 @@ export class UltraImageModule extends BaseUltraModule {
               localize('editor.image.height_desc', lang, 'Set the height in pixels.'),
               hass,
               { height: imageModule.height || 200 },
-              [FormUtils.createSchemaItem('height', { number: { min: 0, max: 2000, step: 1 } })],
+              [FormUtils.createSchemaItem('height', { number: { min: 1, step: 1 } })],
               (e: CustomEvent) => updateModule({ height: e.detail.value.height })
             )}
           </div>
@@ -1150,8 +1150,8 @@ export class UltraImageModule extends BaseUltraModule {
       errors.push('Width must be between 1 and 100 percent');
     }
 
-    if (imageModule.height && (imageModule.height < 50 || imageModule.height > 800)) {
-      errors.push('Height must be between 50 and 800 pixels');
+    if (imageModule.height && imageModule.height < 1) {
+      errors.push('Height must be at least 1 pixel');
     }
 
     return {
