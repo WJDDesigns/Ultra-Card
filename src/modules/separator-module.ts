@@ -826,6 +826,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
     // Container styles for design system (design overrides module props)
     const containerStyles = {
+      // Only apply padding if explicitly set by user
       padding:
         designProperties.padding_top ||
         designProperties.padding_bottom ||
@@ -835,8 +836,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
         moduleWithDesign.padding_bottom ||
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
-          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
-          : '8px 0',
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -846,8 +848,8 @@ export class UltraSeparatorModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
-          : '0',
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          : '8px 0',
       background:
         designProperties.background_color || moduleWithDesign.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(

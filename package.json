@@ -1,6 +1,6 @@
 {
   "name": "ultra-card",
-  "version": "1.2.0-beta1",
+  "version": "1.2.0-beta3",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {

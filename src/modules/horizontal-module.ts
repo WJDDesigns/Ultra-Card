@@ -304,7 +304,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
       alignItems: this.getAlignItems(horizontalModule.vertical_alignment || 'center'),
       // width is set above via design props with sensible default
       // Allow fully collapsed layouts when designers set 0 padding/margin
-      minHeight: (effective as any).min_height || '60px',
+      // Only set min-height if explicitly specified by user, otherwise let content determine height
+      minHeight: (effective as any).min_height || 'auto',
       // Allow overlaps (e.g., negative margins) to render across siblings
       overflowX: 'visible',
       overflowY: 'visible',
@@ -440,17 +441,22 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
                   const isNegativeGap = gapValue < 0;
 
-                  // In horizontal layouts we want bars to take remaining width while
+                  // In horizontal layouts we want bars and horizontal separators to take remaining width while
                   // icons and other modules keep their natural width. If alignment is
                   // 'justify' then allow all children to grow evenly.
                   const isBar = (childModule as any)?.type === 'bar';
+                  const isHorizontalSeparator =
+                    (childModule as any)?.type === 'separator' &&
+                    ((childModule as any)?.orientation === 'horizontal' ||
+                      !(childModule as any)?.orientation);
                   const allowGrowForAll = horizontalModule.alignment === 'justify';
-                  const flexGrow = isBar ? 1 : allowGrowForAll ? 1 : 0;
-                  const flexShrink = isBar ? 1 : 0; // keep icons/text stable
-                  // Use content-based sizing for non-bar modules so they size to their content
-                  const flexBasis = isBar ? '0' : 'content';
-                  // Ensure bars always remain visible even if a sibling tries to expand
-                  const minWidth = isBar ? '80px' : '0';
+                  const shouldGrow = isBar || isHorizontalSeparator || allowGrowForAll;
+                  const flexGrow = shouldGrow ? 1 : 0;
+                  const flexShrink = shouldGrow ? 1 : 0; // keep icons/text stable, allow bars and separators to shrink
+                  // Use content-based sizing for non-expanding modules so they size to their content
+                  const flexBasis = shouldGrow ? '0' : 'content';
+                  // Ensure bars and horizontal separators always remain visible even if a sibling tries to expand
+                  const minWidth = isBar ? '80px' : isHorizontalSeparator ? '20px' : '0';
                   const childWidth = 'auto';
                   const alignSelf = 'auto';
 
@@ -749,12 +755,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
   }
 
   private getPaddingCSS(moduleWithDesign: any): string {
+    // Layout containers should have no default padding - only apply if explicitly set
     return moduleWithDesign.padding_top ||
       moduleWithDesign.padding_bottom ||
       moduleWithDesign.padding_left ||
       moduleWithDesign.padding_right
-      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '8px'}`
-      : '8px';
+      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
+      : '0';
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
@@ -874,7 +881,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       /* Horizontal Module Styles */
       .horizontal-module-preview {
         width: 100%;
-        min-height: 60px; /* Minimum height to make vertical alignment visible */
+        /* No forced min-height - let content and user design properties control height */
       }
 
       .horizontal-preview-content {

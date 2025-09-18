@@ -376,9 +376,27 @@ export class GlobalDesignTab extends LitElement {
 
   private _toggleSpacingLock(type: 'margin' | 'padding'): void {
     if (type === 'margin') {
+      const wasLocked = this._marginLocked;
       this._marginLocked = !this._marginLocked;
+
+      // When locking, sync all sides to the top value
+      if (!wasLocked && this._marginLocked) {
+        const topValue = this.designProperties.margin_top || '';
+        this._updateProperty('margin_right', topValue);
+        this._updateProperty('margin_bottom', topValue);
+        this._updateProperty('margin_left', topValue);
+      }
     } else {
+      const wasLocked = this._paddingLocked;
       this._paddingLocked = !this._paddingLocked;
+
+      // When locking, sync all sides to the top value
+      if (!wasLocked && this._paddingLocked) {
+        const topValue = this.designProperties.padding_top || '';
+        this._updateProperty('padding_right', topValue);
+        this._updateProperty('padding_bottom', topValue);
+        this._updateProperty('padding_left', topValue);
+      }
     }
     this.requestUpdate();
   }
@@ -1632,7 +1650,7 @@ export class GlobalDesignTab extends LitElement {
                   <label>Top</label>
                   <input
                     type="text"
-                    placeholder="0px, 1rem, 5%"
+                    placeholder="8px (default)"
                     .value=${this.designProperties.margin_top || ''}
                     @input=${this._createRobustInputHandler('margin_top', (value: string) =>
                       this._updateSpacing('margin', 'top', value)
@@ -1653,8 +1671,11 @@ export class GlobalDesignTab extends LitElement {
                   <label>Right</label>
                   <input
                     type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${this.designProperties.margin_right || ''}
+                    placeholder="0px (default)"
+                    .value=${this._marginLocked
+                      ? this.designProperties.margin_top || ''
+                      : this.designProperties.margin_right || ''}
+                    .disabled=${this._marginLocked}
                     @input=${this._createRobustInputHandler('margin_right', (value: string) =>
                       this._updateSpacing('margin', 'right', value)
                     )}
@@ -1667,15 +1688,18 @@ export class GlobalDesignTab extends LitElement {
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="spacing-input"
+                    class="spacing-input ${this._marginLocked ? 'locked' : ''}"
                   />
                 </div>
                 <div class="spacing-field">
                   <label>Bottom</label>
                   <input
                     type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${this.designProperties.margin_bottom || ''}
+                    placeholder="8px (default)"
+                    .value=${this._marginLocked
+                      ? this.designProperties.margin_top || ''
+                      : this.designProperties.margin_bottom || ''}
+                    .disabled=${this._marginLocked}
                     @input=${this._createRobustInputHandler('margin_bottom', (value: string) =>
                       this._updateSpacing('margin', 'bottom', value)
                     )}
@@ -1688,15 +1712,18 @@ export class GlobalDesignTab extends LitElement {
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="spacing-input"
+                    class="spacing-input ${this._marginLocked ? 'locked' : ''}"
                   />
                 </div>
                 <div class="spacing-field">
                   <label>Left</label>
                   <input
                     type="text"
-                    placeholder="0px, 1rem, 5%"
-                    .value=${this.designProperties.margin_left || ''}
+                    placeholder="0px (default)"
+                    .value=${this._marginLocked
+                      ? this.designProperties.margin_top || ''
+                      : this.designProperties.margin_left || ''}
+                    .disabled=${this._marginLocked}
                     @input=${this._createRobustInputHandler('margin_left', (value: string) =>
                       this._updateSpacing('margin', 'left', value)
                     )}
@@ -1709,7 +1736,7 @@ export class GlobalDesignTab extends LitElement {
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="spacing-input"
+                    class="spacing-input ${this._marginLocked ? 'locked' : ''}"
                   />
                 </div>
               </div>
@@ -1756,7 +1783,10 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     placeholder="0px, 1rem, 5%"
-                    .value=${this.designProperties.padding_right || ''}
+                    .value=${this._paddingLocked
+                      ? this.designProperties.padding_top || ''
+                      : this.designProperties.padding_right || ''}
+                    .disabled=${this._paddingLocked}
                     @input=${this._createRobustInputHandler('padding_right', (value: string) =>
                       this._updateSpacing('padding', 'right', value)
                     )}
@@ -1769,7 +1799,7 @@ export class GlobalDesignTab extends LitElement {
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="spacing-input"
+                    class="spacing-input ${this._paddingLocked ? 'locked' : ''}"
                   />
                 </div>
                 <div class="spacing-field">
@@ -1777,7 +1807,10 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     placeholder="0px, 1rem, 5%"
-                    .value=${this.designProperties.padding_bottom || ''}
+                    .value=${this._paddingLocked
+                      ? this.designProperties.padding_top || ''
+                      : this.designProperties.padding_bottom || ''}
+                    .disabled=${this._paddingLocked}
                     @input=${this._createRobustInputHandler('padding_bottom', (value: string) =>
                       this._updateSpacing('padding', 'bottom', value)
                     )}
@@ -1790,7 +1823,7 @@ export class GlobalDesignTab extends LitElement {
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="spacing-input"
+                    class="spacing-input ${this._paddingLocked ? 'locked' : ''}"
                   />
                 </div>
                 <div class="spacing-field">
@@ -1798,7 +1831,10 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     placeholder="0px, 1rem, 5%"
-                    .value=${this.designProperties.padding_left || ''}
+                    .value=${this._paddingLocked
+                      ? this.designProperties.padding_top || ''
+                      : this.designProperties.padding_left || ''}
+                    .disabled=${this._paddingLocked}
                     @input=${this._createRobustInputHandler('padding_left', (value: string) =>
                       this._updateSpacing('padding', 'left', value)
                     )}
@@ -1811,7 +1847,7 @@ export class GlobalDesignTab extends LitElement {
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    class="spacing-input"
+                    class="spacing-input ${this._paddingLocked ? 'locked' : ''}"
                   />
                 </div>
               </div>
@@ -3248,6 +3284,18 @@ export class GlobalDesignTab extends LitElement {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      .spacing-input.locked {
+        background: var(--disabled-color);
+        color: var(--secondary-text-color);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .spacing-input.locked:focus {
+        border-color: var(--divider-color);
+        box-shadow: none;
       }
 
       @media (max-width: 768px) {

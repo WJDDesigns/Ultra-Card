@@ -869,13 +869,14 @@ export class UltraImageModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
           : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         moduleWithDesign.margin_top ||
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
-          : '0',
+          ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
+          : '8px 0',
       background: moduleWithDesign.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(moduleWithDesign, hass),
       backgroundSize: moduleWithDesign.background_size || 'cover',

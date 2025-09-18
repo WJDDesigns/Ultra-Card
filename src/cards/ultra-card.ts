@@ -917,6 +917,8 @@ export class UltraCard extends LitElement {
         row.columns.length
       ),
       gap: `${row.gap || 16}px`,
+      // Standard 8px top/bottom padding for proper web design spacing
+      padding: '8px 0',
     };
 
     // Only add alignment properties if they are explicitly set (not undefined)
@@ -1002,7 +1004,7 @@ export class UltraCard extends LitElement {
     const baseStyles: Record<string, string> = {
       display: 'flex',
       flexDirection: 'column',
-      gap: '8px',
+      // No gap - row controls spacing between columns, modules within column have no forced spacing
     };
 
     // Apply column alignment only if explicitly set
@@ -1203,17 +1205,17 @@ export class UltraCard extends LitElement {
       }
 
       .card-row {
-        margin-bottom: 16px;
+        /* No default margins - spacing controlled by individual modules */
       }
 
       .card-row:last-child {
-        margin-bottom: 0;
+        /* No default margins - spacing controlled by individual modules */
       }
 
       .card-column {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        /* Gap is now controlled via inline styles from column.gap property */
       }
 
       .unknown-module {

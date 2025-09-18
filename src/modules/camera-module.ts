@@ -2096,25 +2096,27 @@ export class UltraCameraModule extends BaseUltraModule {
 
   // Design property helper methods
   private getPaddingWithDesign(designProperties: any, moduleWithDesign: any): string {
+    // Only apply padding if explicitly set by user
     if (
       designProperties.padding_top ||
       designProperties.padding_bottom ||
       designProperties.padding_left ||
       designProperties.padding_right
     ) {
-      return `${designProperties.padding_top || '8px'} ${designProperties.padding_right || '12px'} ${designProperties.padding_bottom || '8px'} ${designProperties.padding_left || '12px'}`;
+      return `${designProperties.padding_top || '0px'} ${designProperties.padding_right || '0px'} ${designProperties.padding_bottom || '0px'} ${designProperties.padding_left || '0px'}`;
     }
     return this.getPaddingCSS(moduleWithDesign);
   }
 
   private getMarginWithDesign(designProperties: any, moduleWithDesign: any): string {
+    // Standard 8px top/bottom margin for proper web design spacing
     if (
       designProperties.margin_top ||
       designProperties.margin_bottom ||
       designProperties.margin_left ||
       designProperties.margin_right
     ) {
-      return `${designProperties.margin_top || '0px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '0px'} ${designProperties.margin_left || '0px'}`;
+      return `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0px'}`;
     }
     return this.getMarginCSS(moduleWithDesign);
   }
@@ -2150,24 +2152,26 @@ export class UltraCameraModule extends BaseUltraModule {
   }
 
   private getPaddingCSS(moduleWithDesign: any): string {
+    // Only apply padding if explicitly set by user
     return moduleWithDesign.padding_top ||
       moduleWithDesign.padding_bottom ||
       moduleWithDesign.padding_left ||
       moduleWithDesign.padding_right
-      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '12px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '12px'}`
-      : '8px 12px';
+      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
+      : '0';
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
+    // Standard 8px top/bottom margin for proper web design spacing
     if (
       moduleWithDesign.margin_top ||
       moduleWithDesign.margin_bottom ||
       moduleWithDesign.margin_left ||
       moduleWithDesign.margin_right
     ) {
-      return `${this.addPixelUnit(moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`;
+      return `${this.addPixelUnit(moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`;
     }
-    return '0px';
+    return '8px 0';
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {

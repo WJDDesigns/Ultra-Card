@@ -3497,6 +3497,7 @@ export class UltraBarModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -3506,8 +3507,8 @@ export class UltraBarModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
-          : '0',
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          : '8px 0',
       background: containerBackground,
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
@@ -4184,23 +4185,30 @@ export class UltraBarModule extends BaseUltraModule {
                   ${barModule.left_enabled
                     ? html`
                         <div class="left-side-below" style="text-align: left;">
-                          <span
-                            style="font-size: ${designProperties.font_size
-                              ? `${designProperties.font_size}px`
-                              : `${barModule.left_title_size || 14}px`}; color: ${designProperties.color ||
-                            barModule.left_title_color ||
-                            moduleWithDesign.color ||
-                            'var(--primary-text-color)'};"
-                          >
-                            ${barModule.left_title}:
-                          </span>
+                          ${barModule.left_title && barModule.left_title.trim()
+                            ? html`
+                                <span
+                                  style="font-size: ${designProperties.font_size
+                                    ? `${designProperties.font_size}px`
+                                    : `${barModule.left_title_size || 14}px`}; color: ${designProperties.color ||
+                                  barModule.left_title_color ||
+                                  moduleWithDesign.color ||
+                                  'var(--primary-text-color)'};"
+                                >
+                                  ${barModule.left_title}:
+                                </span>
+                              `
+                            : ''}
                           <span
                             style="font-size: ${designProperties.font_size
                               ? `${designProperties.font_size}px`
                               : `${barModule.left_value_size || 14}px`}; font-weight: 600; color: ${designProperties.color ||
                             barModule.left_value_color ||
                             moduleWithDesign.color ||
-                            'var(--primary-text-color)'}; margin-left: 4px;"
+                            'var(--primary-text-color)'}; margin-left: ${barModule.left_title &&
+                            barModule.left_title.trim()
+                              ? '4px'
+                              : '0'};"
                           >
                             ${leftDisplay}
                           </span>
@@ -4210,23 +4218,30 @@ export class UltraBarModule extends BaseUltraModule {
                   ${barModule.right_enabled
                     ? html`
                         <div class="right-side-below" style="text-align: right;">
-                          <span
-                            style="font-size: ${designProperties.font_size
-                              ? `${designProperties.font_size}px`
-                              : `${barModule.right_title_size || 14}px`}; color: ${designProperties.color ||
-                            barModule.right_title_color ||
-                            moduleWithDesign.color ||
-                            'var(--primary-text-color)'};"
-                          >
-                            ${barModule.right_title}:
-                          </span>
+                          ${barModule.right_title && barModule.right_title.trim()
+                            ? html`
+                                <span
+                                  style="font-size: ${designProperties.font_size
+                                    ? `${designProperties.font_size}px`
+                                    : `${barModule.right_title_size || 14}px`}; color: ${designProperties.color ||
+                                  barModule.right_title_color ||
+                                  moduleWithDesign.color ||
+                                  'var(--primary-text-color)'};"
+                                >
+                                  ${barModule.right_title}:
+                                </span>
+                              `
+                            : ''}
                           <span
                             style="font-size: ${designProperties.font_size
                               ? `${designProperties.font_size}px`
                               : `${barModule.right_value_size || 14}px`}; font-weight: 600; color: ${designProperties.color ||
                             barModule.right_value_color ||
                             moduleWithDesign.color ||
-                            'var(--primary-text-color)'}; margin-left: 4px;"
+                            'var(--primary-text-color)'}; margin-left: ${barModule.right_title &&
+                            barModule.right_title.trim()
+                              ? '4px'
+                              : '0'};"
                           >
                             ${rightDisplay}
                           </span>

@@ -501,20 +501,22 @@ export class UltraButtonModule extends BaseUltraModule {
       maxHeight: 'none',
       minWidth: 'auto',
       minHeight: 'auto',
+      // Only apply padding if explicitly set by user
       padding:
         designProperties.padding_top ||
         designProperties.padding_bottom ||
         designProperties.padding_left ||
         designProperties.padding_right
-          ? `${designProperties.padding_top || '8px'} ${designProperties.padding_right || '8px'} ${designProperties.padding_bottom || '8px'} ${designProperties.padding_left || '8px'}`
-          : '8px',
+          ? `${designProperties.padding_top || '0px'} ${designProperties.padding_right || '0px'} ${designProperties.padding_bottom || '0px'} ${designProperties.padding_left || '0px'}`
+          : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
         designProperties.margin_left ||
         designProperties.margin_right
-          ? `${designProperties.margin_top || '0'} ${designProperties.margin_right || '0'} ${designProperties.margin_bottom || '0'} ${designProperties.margin_left || '0'}`
-          : '0',
+          ? `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0'}`
+          : '8px 0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },

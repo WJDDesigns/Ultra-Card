@@ -837,20 +837,22 @@ export class UltraDropdownModule extends BaseUltraModule {
     const containerStyles = {
       width: '100%',
       height: 'auto',
+      // Only apply padding if explicitly set by user
       padding:
         moduleWithDesign.padding_top ||
         moduleWithDesign.padding_bottom ||
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
-          ? `${moduleWithDesign.padding_top || '8px'} ${moduleWithDesign.padding_right || '8px'} ${moduleWithDesign.padding_bottom || '8px'} ${moduleWithDesign.padding_left || '8px'}`
-          : '8px',
+          ? `${moduleWithDesign.padding_top || '0px'} ${moduleWithDesign.padding_right || '0px'} ${moduleWithDesign.padding_bottom || '0px'} ${moduleWithDesign.padding_left || '0px'}`
+          : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         moduleWithDesign.margin_top ||
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${moduleWithDesign.margin_top || '0'} ${moduleWithDesign.margin_right || '0'} ${moduleWithDesign.margin_bottom || '0'} ${moduleWithDesign.margin_left || '0'}`
-          : '0',
+          ? `${moduleWithDesign.margin_top || '8px'} ${moduleWithDesign.margin_right || '0'} ${moduleWithDesign.margin_bottom || '8px'} ${moduleWithDesign.margin_left || '0'}`
+          : '8px 0',
       background: moduleWithDesign.background_color || 'transparent',
       'border-radius': moduleWithDesign.border_radius || '4px',
       border:

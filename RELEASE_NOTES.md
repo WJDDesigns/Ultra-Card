@@ -1,5 +1,32 @@
 # Release Notes
 
+## Version 1.2.0-Beta3
+
+### New Features
+
+- **🎯 Enhanced Module Spacing & Defaults**: All modules now have consistent, professional spacing defaults
+  - Standard 8px top/bottom margins for proper web design spacing
+  - Improved visual hierarchy and readability
+  - Better mobile and responsive layout behavior
+
+### Improvements
+
+- **🎛️ Full Spacing Control**: Users have complete control over module spacing via the Global Design Tab
+  - Override default margins and padding for any module
+  - Set custom spacing values per module or globally
+  - Remove default spacing entirely if desired for custom layouts
+
+- **✨ Cleaner Bar Module Labels**: Fixed left/right side label display
+  - Removed orphaned colons (":") when title fields are empty
+  - Now shows clean "Value" instead of ": Value" when no title is specified
+  - Improved spacing between title and value elements
+
+### Technical Improvements
+
+- Enhanced conditional rendering for bar module labels
+- Better default spacing system across all module types
+- Improved CSS organization for consistent spacing behavior
+
 ## Version 1.2.0-Beta1
 
 ### New Features

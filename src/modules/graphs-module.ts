@@ -1377,6 +1377,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -1386,8 +1387,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
-          : '0',
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          : '8px 0',
       background:
         designProperties.background_color && designProperties.background_color !== 'transparent'
           ? designProperties.background_color
@@ -3482,12 +3483,13 @@ export class UltraGraphsModule extends BaseUltraModule {
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
+    // Standard 8px top/bottom margin for proper web design spacing
     return moduleWithDesign.margin_top ||
       moduleWithDesign.margin_bottom ||
       moduleWithDesign.margin_left ||
       moduleWithDesign.margin_right
-      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
-      : '0';
+      ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
+      : '8px 0';
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {
