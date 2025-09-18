@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.2.0-Beta4
+## Version 1.2.0-beta4
 
 ### 📱 Camera Module Responsive Improvements
 
@@ -14,7 +14,7 @@ We've made the camera module much more responsive and container-friendly:
 
 **💡 How It Works**: The camera module now respects its container size while giving you complete control through the Global Design tab. The pixel dimension controls in the General tab are now fallbacks for specific use cases.
 
-## Version 1.2.0-Beta3
+## Version 1.2.0-beta3
 
 ### 🎯 Enhanced Module Spacing & Defaults
 
@@ -47,7 +47,7 @@ We've implemented consistent, professional spacing defaults across all modules t
 - Improved CSS organization for consistent spacing behavior
 - More robust template handling for cleaner UI displays
 
-## Version 1.2.0-Beta1
+## Version 1.2.0-beta1
 
 ### New Features
 
@@ -65,7 +65,7 @@ We've implemented consistent, professional spacing defaults across all modules t
 - Improved editor event handling
 - Better z-index management for dropdown layering
 
-## Version 1.1.0-Beta3 (Separator Module Enhancements)
+## Version 1.1.0-beta3 (Separator Module Enhancements)
 
 ### New Features
 
@@ -90,7 +90,7 @@ We've implemented consistent, professional spacing defaults across all modules t
 - Improved CSS styling for vertical separator layouts
 - Better default values and ranges for separator controls
 
-## Version 1.1.0-Beta1 (New Minimal Bar Style & Improvements)
+## Version 1.1.0-beta1 (New Minimal Bar Style & Improvements)
 
 ### New Features
 
@@ -125,7 +125,7 @@ We've implemented consistent, professional spacing defaults across all modules t
 - Optimized rendering performance for all bar styles
 - Added comprehensive animation support for minimal style elements
 
-## Version 2.0-Beta1 (TypeScript Rewrite)
+## Version 2.0-beta1 (TypeScript Rewrite)
 
 ### Major Changes
 
