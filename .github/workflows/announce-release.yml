@@ -24,9 +24,9 @@ jobs:
             # Get version from release event
             VERSION_NUM=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH" | sed 's/^v//')
           fi
-          
+
           echo "Looking for release notes for version: $VERSION_NUM"
-          
+
           # Try to extract release notes from RELEASE_NOTES.md
           if [ -f "RELEASE_NOTES.md" ]; then
             echo "Found RELEASE_NOTES.md, extracting notes for version $VERSION_NUM..."
@@ -119,7 +119,7 @@ jobs:
             echo "Using GitHub release body"
             DESC=$(printf "%b" "$BODY")
           fi
-          
+
           # Trim to fit Discord embed description (~2048 chars)
           DESC=$(echo "$DESC" | head -c 1900)
 

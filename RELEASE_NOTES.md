@@ -12,6 +12,7 @@
 ### Improvements
 
 - **🎛️ Full Spacing Control**: Users have complete control over module spacing via the Global Design Tab
+
   - Override default margins and padding for any module
   - Set custom spacing values per module or globally
   - Remove default spacing entirely if desired for custom layouts

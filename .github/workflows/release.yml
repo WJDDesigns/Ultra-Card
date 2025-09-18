@@ -61,9 +61,9 @@ jobs:
           VERSION="${{ github.ref_name }}"
           # Remove 'v' prefix from version for matching
           VERSION_NUM="${VERSION#v}"
-          
+
           echo "Looking for release notes for version: $VERSION_NUM"
-          
+
           # Try to extract release notes from RELEASE_NOTES.md
           if [ -f "RELEASE_NOTES.md" ]; then
             echo "Found RELEASE_NOTES.md, extracting notes for version $VERSION_NUM..."
