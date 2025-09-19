@@ -31,23 +31,8 @@ jobs:
           if [ -f "RELEASE_NOTES.md" ]; then
             echo "Found RELEASE_NOTES.md, extracting notes for version $VERSION_NUM..."
             
-            # Create a temporary awk script to avoid command substitution issues
-            cat > extract_notes.awk << 'AWK_SCRIPT'
-BEGIN { found=0; printing=0 }
-/^## Version/ {
-  if ($3 == version) {
-    found=1
-    printing=1
-    next
-  } else if (found && printing) {
-    exit
-  }
-}
-printing && found { print }
-AWK_SCRIPT
-            
-            # Extract the section for this version from RELEASE_NOTES.md
-            CUSTOM_NOTES=$(awk -v version="$VERSION_NUM" -f extract_notes.awk RELEASE_NOTES.md)
+            # Use sed to extract the version section (simpler than awk in YAML)
+            CUSTOM_NOTES=$(sed -n "/^## Version $VERSION_NUM$/,/^## Version /p" RELEASE_NOTES.md | sed '$d')
             
             if [ -n "$CUSTOM_NOTES" ]; then
               echo "Successfully extracted release notes from RELEASE_NOTES.md"
@@ -59,9 +44,6 @@ AWK_SCRIPT
               echo "Version $VERSION_NUM not found in RELEASE_NOTES.md"
               echo "HAS_CUSTOM_NOTES=false" >> $GITHUB_OUTPUT
             fi
-            
-            # Clean up temporary file
-            rm -f extract_notes.awk
           else
             echo "RELEASE_NOTES.md not found"
             echo "HAS_CUSTOM_NOTES=false" >> $GITHUB_OUTPUT
