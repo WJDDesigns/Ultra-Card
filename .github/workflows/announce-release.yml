@@ -14,24 +14,18 @@ jobs:
       - name: Extract release notes from RELEASE_NOTES.md
         id: extract_notes
         run: |
-          # If this is a manual trigger, try to get the version from the latest release
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual trigger - fetching latest release version"
-            LATEST_TAG=$(curl -s -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases" | jq -r '.[0].tag_name')
+            LATEST_TAG=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/releases" | jq -r '.[0].tag_name')
             VERSION_NUM="${LATEST_TAG#v}"
           else
-            # Get version from release event
             VERSION_NUM=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH" | sed 's/^v//')
           fi
-
+          
           echo "Looking for release notes for version: $VERSION_NUM"
-
-          # Try to extract release notes from RELEASE_NOTES.md
+          
           if [ -f "RELEASE_NOTES.md" ]; then
             echo "Found RELEASE_NOTES.md, extracting notes for version $VERSION_NUM..."
-            
-            # Use sed to extract the version section (simpler than awk in YAML)
             CUSTOM_NOTES=$(sed -n "/^## Version $VERSION_NUM$/,/^## Version /p" RELEASE_NOTES.md | sed '$d')
             
             if [ -n "$CUSTOM_NOTES" ]; then
