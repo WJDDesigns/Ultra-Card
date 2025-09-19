@@ -1749,28 +1749,12 @@ export class LayoutTab extends LitElement {
       }
     }
 
-    // Debug logging to see what's being applied
-    console.log(`[ULTRA-DEBUG] _updateModuleDesign final moduleUpdates:`, moduleUpdates);
-
+    // Apply the module updates
     if (isChildEdit) {
       this._updateLayoutChildModule(moduleUpdates);
     } else {
       this._updateModule(moduleUpdates);
     }
-
-    // Debug the module after update
-    setTimeout(() => {
-      const layout = this._ensureLayout();
-      if (this._selectedModule) {
-        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-        const updatedModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
-        console.log(`[ULTRA-DEBUG] Module after update:`, updatedModule);
-        console.log(`[ULTRA-DEBUG] Module margin_top:`, (updatedModule as any)?.margin_top);
-        console.log(`[ULTRA-DEBUG] Module margin object:`, (updatedModule as any)?.margin);
-        console.log(`[ULTRA-DEBUG] Module padding_top:`, (updatedModule as any)?.padding_top);
-        console.log(`[ULTRA-DEBUG] Module padding object:`, (updatedModule as any)?.padding);
-      }
-    }, 0);
   }
 
   private _closeModuleSettings(): void {
