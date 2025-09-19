@@ -1641,14 +1641,10 @@ export class LayoutTab extends LitElement {
           // Some margin properties exist, create/update the margin object
           const currentMargin = (module as any).margin || {};
           moduleUpdates.margin = {
-            top: marginTop !== undefined ? parseFloat(marginTop) || 0 : currentMargin.top || 0,
-            bottom:
-              marginBottom !== undefined
-                ? parseFloat(marginBottom) || 0
-                : currentMargin.bottom || 0,
-            left: marginLeft !== undefined ? parseFloat(marginLeft) || 0 : currentMargin.left || 0,
-            right:
-              marginRight !== undefined ? parseFloat(marginRight) || 0 : currentMargin.right || 0,
+            top: marginTop !== undefined ? marginTop : currentMargin.top,
+            bottom: marginBottom !== undefined ? marginBottom : currentMargin.bottom,
+            left: marginLeft !== undefined ? marginLeft : currentMargin.left,
+            right: marginRight !== undefined ? marginRight : currentMargin.right,
           };
         }
       }
@@ -1691,17 +1687,10 @@ export class LayoutTab extends LitElement {
           // Some padding properties exist, create/update the padding object
           const currentPadding = (module as any).padding || {};
           moduleUpdates.padding = {
-            top: paddingTop !== undefined ? parseFloat(paddingTop) || 0 : currentPadding.top || 0,
-            bottom:
-              paddingBottom !== undefined
-                ? parseFloat(paddingBottom) || 0
-                : currentPadding.bottom || 0,
-            left:
-              paddingLeft !== undefined ? parseFloat(paddingLeft) || 0 : currentPadding.left || 0,
-            right:
-              paddingRight !== undefined
-                ? parseFloat(paddingRight) || 0
-                : currentPadding.right || 0,
+            top: paddingTop !== undefined ? paddingTop : currentPadding.top,
+            bottom: paddingBottom !== undefined ? paddingBottom : currentPadding.bottom,
+            left: paddingLeft !== undefined ? paddingLeft : currentPadding.left,
+            right: paddingRight !== undefined ? paddingRight : currentPadding.right,
           };
         }
       }
@@ -1760,11 +1749,28 @@ export class LayoutTab extends LitElement {
       }
     }
 
+    // Debug logging to see what's being applied
+    console.log(`[ULTRA-DEBUG] _updateModuleDesign final moduleUpdates:`, moduleUpdates);
+
     if (isChildEdit) {
       this._updateLayoutChildModule(moduleUpdates);
     } else {
       this._updateModule(moduleUpdates);
     }
+
+    // Debug the module after update
+    setTimeout(() => {
+      const layout = this._ensureLayout();
+      if (this._selectedModule) {
+        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+        const updatedModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+        console.log(`[ULTRA-DEBUG] Module after update:`, updatedModule);
+        console.log(`[ULTRA-DEBUG] Module margin_top:`, (updatedModule as any)?.margin_top);
+        console.log(`[ULTRA-DEBUG] Module margin object:`, (updatedModule as any)?.margin);
+        console.log(`[ULTRA-DEBUG] Module padding_top:`, (updatedModule as any)?.padding_top);
+        console.log(`[ULTRA-DEBUG] Module padding object:`, (updatedModule as any)?.padding);
+      }
+    }, 0);
   }
 
   private _closeModuleSettings(): void {
@@ -5773,7 +5779,7 @@ export class LayoutTab extends LitElement {
     const isBarModule = (module as any)?.type === 'bar';
     // Extract current design properties from module
     const designProperties: DesignProperties = {
-      color: (module as any).color,
+      color: (module as any).design?.color || (module as any).color,
       text_align: (() => {
         // Explicit priority order for text alignment
         if ((module as any).text_align !== undefined) return (module as any).text_align;
@@ -5784,29 +5790,30 @@ export class LayoutTab extends LitElement {
         return undefined;
       })(),
       font_size: (() => {
-        const fontSize = (module as any).font_size;
+        const fontSize = (module as any).design?.font_size || (module as any).font_size;
         if (fontSize !== undefined && fontSize !== null && fontSize !== '')
           return fontSize.toString();
         // No default so the input can be blank
         return undefined;
       })(),
-      line_height: (module as any).line_height?.toString(),
-      letter_spacing: (module as any).letter_spacing,
-      font_family: (module as any).font_family,
+      line_height: ((module as any).design?.line_height || (module as any).line_height)?.toString(),
+      letter_spacing: (module as any).design?.letter_spacing || (module as any).letter_spacing,
+      font_family: (module as any).design?.font_family || (module as any).font_family,
       font_weight: (() => {
-        const fontWeight = (module as any).font_weight;
+        const fontWeight = (module as any).design?.font_weight || (module as any).font_weight;
         if (fontWeight !== undefined && fontWeight !== null && fontWeight !== '') return fontWeight;
         // No default so the input can be blank
         return undefined;
       })(),
       text_transform: (() => {
-        const textTransform = (module as any).text_transform;
+        const textTransform =
+          (module as any).design?.text_transform || (module as any).text_transform;
         if (textTransform !== undefined && textTransform !== null && textTransform !== '')
           return textTransform;
         // No default so the input can be blank
         return undefined;
       })(),
-      font_style: (module as any).font_style,
+      font_style: (module as any).design?.font_style || (module as any).font_style,
       // Use design-scoped background color only so default top-level values
       // don't mark Background as edited on brand-new modules
       background_color: (module as any).design?.background_color,

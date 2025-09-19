@@ -138,6 +138,17 @@ export class GlobalDesignTab extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+
+    // Ensure lock states are always false by default (prevent auto-fill behavior)
+    this._marginLocked = false;
+    this._paddingLocked = false;
+
+    // Debug logging to confirm initialization
+    console.log(
+      `[ULTRA-DEBUG] GlobalDesignTab initialized - marginLocked: ${this._marginLocked}, paddingLocked: ${this._paddingLocked}`
+    );
+    console.log(`[ULTRA-DEBUG] Initial designProperties:`, this.designProperties);
+
     // Load clipboard state from localStorage when component initializes
     this._loadClipboardFromStorage();
 
@@ -242,26 +253,79 @@ export class GlobalDesignTab extends LitElement {
     side: 'top' | 'bottom' | 'left' | 'right',
     value: string
   ): void {
-    const isLocked = type === 'margin' ? this._marginLocked : this._paddingLocked;
+    // Get current lock state and ensure it's boolean
+    const isSpacingLocked =
+      type === 'margin' ? Boolean(this._marginLocked) : Boolean(this._paddingLocked);
+
+    // Debug logging to track the issue
+    console.log(
+      `[ULTRA-DEBUG] _updateSpacing called: type=${type}, side=${side}, value="${value}", isLocked=${isSpacingLocked}`
+    );
+    console.log(
+      `[ULTRA-DEBUG] Lock states: marginLocked=${this._marginLocked}, paddingLocked=${this._paddingLocked}`
+    );
+
+    // When locked, only allow updates from the top field (prevent disabled field updates)
+    if (isSpacingLocked && side !== 'top') {
+      console.log(`[ULTRA-DEBUG] Ignoring update from ${side} field because ${type} is locked`);
+      return;
+    }
 
     let updates: Partial<DesignProperties>;
-    if (isLocked) {
-      // Apply to all sides when locked
+
+    if (isSpacingLocked) {
+      // When locked, apply to all sides (user expects mirrored behavior)
+      // This should only happen when updating from the top field
       updates = {
         [`${type}_top`]: value,
         [`${type}_bottom`]: value,
         [`${type}_left`]: value,
         [`${type}_right`]: value,
       };
+      console.log(`[ULTRA-DEBUG] Locked mode: updating all ${type} sides to "${value}"`);
     } else {
-      // Apply to specific side only
+      // When unlocked, apply to specific side only (default behavior)
       updates = { [`${type}_${side}`]: value };
+      console.log(`[ULTRA-DEBUG] Unlocked mode: updating only ${type}_${side} to "${value}"`);
+    }
+
+    console.log(`[ULTRA-DEBUG] Updates object:`, updates);
+
+    // Update local designProperties immediately
+    this.designProperties = { ...(this.designProperties || {}), ...updates } as any;
+
+    // For locked spacing fields, force immediate UI update to sync all fields
+    const isSpacingUpdate = Object.keys(updates).some(
+      key => key.startsWith('margin_') || key.startsWith('padding_')
+    );
+    const isCurrentlyLocked =
+      (type === 'margin' && this._marginLocked) || (type === 'padding' && this._paddingLocked);
+
+    if (isSpacingUpdate && isCurrentlyLocked) {
+      // Immediate update for locked fields to ensure synchronization
+      this.requestUpdate();
+    } else {
+      // Delay the UI update to prevent input value override for unlocked fields
+      setTimeout(() => {
+        this.requestUpdate();
+      }, 0);
     }
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
+      console.log(`[ULTRA-DEBUG] Using onUpdate callback with updates:`, updates);
       this.onUpdate(updates);
+      console.log(`[ULTRA-DEBUG] onUpdate callback completed`);
+
+      // Check if properties were modified after callback
+      setTimeout(() => {
+        console.log(
+          `[ULTRA-DEBUG] Post-callback designProperties for ${type}_${side}:`,
+          this.designProperties[`${type}_${side}`]
+        );
+      }, 0);
     } else {
+      console.log(`[ULTRA-DEBUG] Dispatching design-changed event`);
       // Dispatch event for event-listener based integrations
       const event = new CustomEvent('design-changed', {
         detail: updates,
@@ -280,23 +344,56 @@ export class GlobalDesignTab extends LitElement {
       const target = e.target as HTMLInputElement;
       const value = target.value;
 
+      console.log(`[ULTRA-DEBUG] Input handler called for ${property}, value: "${value}"`);
+
       // Store cursor position before any processing
       const cursorPosition = target.selectionStart;
       const cursorEnd = target.selectionEnd;
 
-      // Prevent any browser auto-formatting by preserving the exact user input
+      // Prevent event bubbling but allow normal input behavior
       e.stopPropagation();
-      e.preventDefault(); // Also prevent default to stop any browser processing
+      // REMOVED: e.preventDefault() - this was preventing normal typing
+
+      console.log(
+        `[ULTRA-DEBUG] About to call updateCallback for ${property} with value: "${value}"`
+      );
 
       // Update the value first
       updateCallback(value);
 
-      // Restore cursor position after any potential re-rendering
-      requestAnimationFrame(() => {
-        if (target && typeof cursorPosition === 'number') {
-          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-        }
-      });
+      // For locked fields, don't fight the reactive updates - let them sync naturally
+      const isSpacingField = property.includes('margin_') || property.includes('padding_');
+      const isFieldLocked =
+        isSpacingField &&
+        ((property.includes('margin_') && this._marginLocked) ||
+          (property.includes('padding_') && this._paddingLocked));
+
+      if (!isFieldLocked) {
+        // Only preserve values for unlocked fields to avoid fighting reactive updates
+        const preserveValue = () => {
+          if (target && target.value !== value) {
+            console.log(
+              `[ULTRA-DEBUG] Input value was reset from "${value}" to "${target.value}", restoring...`
+            );
+            target.value = value;
+            if (typeof cursorPosition === 'number') {
+              target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+            }
+          }
+        };
+
+        // Try multiple times to preserve the value
+        requestAnimationFrame(preserveValue);
+        setTimeout(preserveValue, 0);
+        setTimeout(preserveValue, 10);
+      } else {
+        // For locked fields, just restore cursor position
+        requestAnimationFrame(() => {
+          if (target && typeof cursorPosition === 'number') {
+            target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+          }
+        });
+      }
     };
   }
 
@@ -375,13 +472,19 @@ export class GlobalDesignTab extends LitElement {
   }
 
   private _toggleSpacingLock(type: 'margin' | 'padding'): void {
+    console.log(`[ULTRA-DEBUG] _toggleSpacingLock called for ${type}`);
+    console.trace(`[ULTRA-DEBUG] Stack trace for lock toggle:`);
+
     if (type === 'margin') {
       const wasLocked = this._marginLocked;
       this._marginLocked = !this._marginLocked;
 
-      // When locking, sync all sides to the top value
-      if (!wasLocked && this._marginLocked) {
+      console.log(`[ULTRA-DEBUG] Margin lock toggled: ${wasLocked} -> ${this._marginLocked}`);
+
+      // When locking (only when explicitly toggled by user), sync all sides to the top value
+      if (!wasLocked && this._marginLocked === true) {
         const topValue = this.designProperties.margin_top || '';
+        console.log(`[ULTRA-DEBUG] Syncing all margin sides to top value: "${topValue}"`);
         this._updateProperty('margin_right', topValue);
         this._updateProperty('margin_bottom', topValue);
         this._updateProperty('margin_left', topValue);
@@ -390,9 +493,12 @@ export class GlobalDesignTab extends LitElement {
       const wasLocked = this._paddingLocked;
       this._paddingLocked = !this._paddingLocked;
 
-      // When locking, sync all sides to the top value
-      if (!wasLocked && this._paddingLocked) {
+      console.log(`[ULTRA-DEBUG] Padding lock toggled: ${wasLocked} -> ${this._paddingLocked}`);
+
+      // When locking (only when explicitly toggled by user), sync all sides to the top value
+      if (!wasLocked && this._paddingLocked === true) {
         const topValue = this.designProperties.padding_top || '';
+        console.log(`[ULTRA-DEBUG] Syncing all padding sides to top value: "${topValue}"`);
         this._updateProperty('padding_right', topValue);
         this._updateProperty('padding_bottom', topValue);
         this._updateProperty('padding_left', topValue);

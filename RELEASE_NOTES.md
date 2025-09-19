@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.2.0-beta6
+
+### 🎛️ Major Global Design Spacing Improvements
+
+We've completely overhauled the spacing controls in the Global Design tab to fix several critical issues and improve the user experience:
+
+#### 🚫 Fixed Auto-Fill Behavior
+- **No More Unwanted Auto-Fill**: When unlocked, typing in one margin/padding field no longer automatically fills all other fields
+- **Individual Field Control**: Each spacing field now operates independently by default
+- **Precise Control**: You can now set different values for top, right, bottom, and left margins/padding without interference
+
+#### 🔒 Enhanced Lock Functionality  
+- **Perfect Value Mirroring**: When locked, the top field value (including units) is now correctly mirrored to all other fields in real-time
+- **Unit Preservation**: Typing "10px" in a locked top field now correctly copies "10px" to all sides (not just "10")
+- **Smart Lock Behavior**: Lock only affects the intended spacing type (margin lock doesn't affect padding and vice versa)
+
+#### 📝 Improved Input Handling
+- **Full Unit Support**: All CSS units now work properly - px, rem, em, %, vh, vw, etc.
+- **No More Input Blocking**: Fixed issue where certain characters couldn't be typed in spacing fields
+- **Preserved Formatting**: Values you type are preserved exactly as entered (no more automatic conversion or stripping)
+
+#### 🔧 Technical Fixes
+- **Removed Hardcoded Padding**: Eliminated fixed 4px padding from info module entities - users now have complete control via Global Design
+- **Fixed Value Processing**: Removed `parseFloat()` calls that were stripping units from spacing values
+- **Resolved Template Conflicts**: Fixed reactive update conflicts that were overriding user input
+- **Better State Management**: Enhanced lock state initialization and management to prevent edge cases
+
+#### 💡 How It Works Now
+- **Unlocked Mode (Default)**: Each margin/padding field works independently - perfect for asymmetric spacing
+- **Locked Mode**: Click the lock icon to enable synchronized editing - typing in the top field mirrors to all sides
+- **Global Design Integration**: All spacing values now properly apply to module rendering with correct units
+
+These improvements make the Global Design spacing controls much more intuitive and reliable across all modules.
+
 ## Version 1.2.0-beta5
 
 ### 🖼️ Image Module Improvements

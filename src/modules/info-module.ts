@@ -98,6 +98,14 @@ export class UltraInfoModule extends BaseUltraModule {
     const infoModule = module as InfoModule;
     const lang = hass?.locale?.language || 'en';
     const defaultEntity = this.createDefault().info_entities[0];
+
+    // Ensure the module has at least one entity with proper defaults
+    if (!infoModule.info_entities || infoModule.info_entities.length === 0) {
+      infoModule.info_entities = [{ ...defaultEntity }];
+      // Update the module immediately to ensure persistence
+      updateModule({ info_entities: infoModule.info_entities });
+    }
+
     let entity = infoModule.info_entities[0]
       ? { ...defaultEntity, ...infoModule.info_entities[0] }
       : defaultEntity;
@@ -913,7 +921,9 @@ export class UltraInfoModule extends BaseUltraModule {
                 position => html`
                   <button
                     type="button"
-                    class="control-btn ${entity.icon_position === position.value ? 'active' : ''}"
+                    class="control-btn ${(entity.icon_position || 'left') === position.value
+                      ? 'active'
+                      : ''}"
                     @click=${() =>
                       this._updateEntity(
                         infoModule,
@@ -950,7 +960,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 alignment => html`
                   <button
                     type="button"
-                    class="control-btn ${entity.overall_alignment === alignment.value
+                    class="control-btn ${(entity.overall_alignment || 'center') === alignment.value
                       ? 'active'
                       : ''}"
                     @click=${() =>
@@ -993,7 +1003,7 @@ export class UltraInfoModule extends BaseUltraModule {
                   alignment => html`
                     <button
                       type="button"
-                      class="control-btn ${entity.icon_alignment === alignment.value
+                      class="control-btn ${(entity.icon_alignment || 'center') === alignment.value
                         ? 'active'
                         : ''}"
                       @click=${() =>
@@ -1032,7 +1042,7 @@ export class UltraInfoModule extends BaseUltraModule {
                   alignment => html`
                     <button
                       type="button"
-                      class="control-btn ${entity.content_alignment === alignment.value
+                      class="control-btn ${(entity.content_alignment || 'start') === alignment.value
                         ? 'active'
                         : ''}"
                       @click=${() =>
@@ -1162,7 +1172,76 @@ export class UltraInfoModule extends BaseUltraModule {
 
     // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = infoModule as any;
-    const designProperties = (infoModule as any).design || {};
+    const designFromDesignObject = (infoModule as any).design || {};
+
+    // Create merged design properties object that prioritizes top-level properties (where Global Design saves)
+    // over design object properties, and includes all properties needed by the container styles
+    const designProperties = {
+      // Text properties - prioritize top-level (where Global Design saves them)
+      color: (infoModule as any).color || designFromDesignObject.color,
+      font_size: (infoModule as any).font_size || designFromDesignObject.font_size,
+      font_weight: (infoModule as any).font_weight || designFromDesignObject.font_weight,
+      font_style: (infoModule as any).font_style || designFromDesignObject.font_style,
+      text_transform: (infoModule as any).text_transform || designFromDesignObject.text_transform,
+      font_family: (infoModule as any).font_family || designFromDesignObject.font_family,
+      line_height: (infoModule as any).line_height || designFromDesignObject.line_height,
+      letter_spacing: (infoModule as any).letter_spacing || designFromDesignObject.letter_spacing,
+      text_align: (infoModule as any).text_align || designFromDesignObject.text_align,
+      text_shadow_h: (infoModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
+      text_shadow_v: (infoModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
+      text_shadow_blur:
+        (infoModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
+      text_shadow_color:
+        (infoModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
+      // Container properties - also check both locations
+      background_color:
+        (infoModule as any).background_color || designFromDesignObject.background_color,
+      background_image:
+        (infoModule as any).background_image || designFromDesignObject.background_image,
+      background_size:
+        (infoModule as any).background_size || designFromDesignObject.background_size,
+      background_position:
+        (infoModule as any).background_position || designFromDesignObject.background_position,
+      background_repeat:
+        (infoModule as any).background_repeat || designFromDesignObject.background_repeat,
+      border_style: (infoModule as any).border_style || designFromDesignObject.border_style,
+      border_width: (infoModule as any).border_width || designFromDesignObject.border_width,
+      border_color: (infoModule as any).border_color || designFromDesignObject.border_color,
+      border_radius: (infoModule as any).border_radius || designFromDesignObject.border_radius,
+      position: (infoModule as any).position || designFromDesignObject.position,
+      top: (infoModule as any).top || designFromDesignObject.top,
+      bottom: (infoModule as any).bottom || designFromDesignObject.bottom,
+      left: (infoModule as any).left || designFromDesignObject.left,
+      right: (infoModule as any).right || designFromDesignObject.right,
+      z_index: (infoModule as any).z_index || designFromDesignObject.z_index,
+      width: (infoModule as any).width || designFromDesignObject.width,
+      height: (infoModule as any).height || designFromDesignObject.height,
+      max_width: (infoModule as any).max_width || designFromDesignObject.max_width,
+      max_height: (infoModule as any).max_height || designFromDesignObject.max_height,
+      min_width: (infoModule as any).min_width || designFromDesignObject.min_width,
+      min_height: (infoModule as any).min_height || designFromDesignObject.min_height,
+      overflow: (infoModule as any).overflow || designFromDesignObject.overflow,
+      clip_path: (infoModule as any).clip_path || designFromDesignObject.clip_path,
+      backdrop_filter:
+        (infoModule as any).backdrop_filter || designFromDesignObject.backdrop_filter,
+      box_shadow_h: (infoModule as any).box_shadow_h || designFromDesignObject.box_shadow_h,
+      box_shadow_v: (infoModule as any).box_shadow_v || designFromDesignObject.box_shadow_v,
+      box_shadow_blur:
+        (infoModule as any).box_shadow_blur || designFromDesignObject.box_shadow_blur,
+      box_shadow_spread:
+        (infoModule as any).box_shadow_spread || designFromDesignObject.box_shadow_spread,
+      box_shadow_color:
+        (infoModule as any).box_shadow_color || designFromDesignObject.box_shadow_color,
+      // Spacing properties
+      padding_top: (infoModule as any).padding_top || designFromDesignObject.padding_top,
+      padding_bottom: (infoModule as any).padding_bottom || designFromDesignObject.padding_bottom,
+      padding_left: (infoModule as any).padding_left || designFromDesignObject.padding_left,
+      padding_right: (infoModule as any).padding_right || designFromDesignObject.padding_right,
+      margin_top: (infoModule as any).margin_top || designFromDesignObject.margin_top,
+      margin_bottom: (infoModule as any).margin_bottom || designFromDesignObject.margin_bottom,
+      margin_left: (infoModule as any).margin_left || designFromDesignObject.margin_left,
+      margin_right: (infoModule as any).margin_right || designFromDesignObject.margin_right,
+    };
 
     // Helper function to safely add px units to font size
     const getFontSizeWithUnits = (designSize?: number | string, fallbackSize?: number | string) => {
@@ -1316,6 +1395,13 @@ export class UltraInfoModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
+    // Get the first entity with proper defaults for consistent grid alignment
+    const firstEntity =
+      infoModule.info_entities && infoModule.info_entities.length > 0
+        ? { ...this.createDefault().info_entities[0], ...infoModule.info_entities[0] }
+        : this.createDefault().info_entities[0];
+    const gridAlignment = firstEntity.overall_alignment || 'center';
+
     return html`
       <div class="info-module-container" style=${this.styleObjectToCss(containerStyles)}>
         <div class="info-module-preview">
@@ -1325,24 +1411,16 @@ export class UltraInfoModule extends BaseUltraModule {
             display: grid;
             grid-template-columns: repeat(${infoModule.columns || 1}, 1fr);
             gap: ${infoModule.gap || 12}px;
-            ${infoModule.info_entities[0]?.overall_alignment
-              ? `justify-content: ${
-                  infoModule.info_entities[0].overall_alignment === 'left'
-                    ? 'start'
-                    : infoModule.info_entities[0].overall_alignment === 'right'
-                      ? 'end'
-                      : 'center'
-                };`
-              : '/* No justify-content - allow Global Design tab control */'}
-            ${infoModule.info_entities[0]?.overall_alignment
-              ? `justify-items: ${
-                  infoModule.info_entities[0].overall_alignment === 'left'
-                    ? 'start'
-                    : infoModule.info_entities[0].overall_alignment === 'right'
-                      ? 'end'
-                      : 'center'
-                };`
-              : '/* No justify-items - allow Global Design tab control */'}
+            justify-content: ${gridAlignment === 'left'
+              ? 'start'
+              : gridAlignment === 'right'
+                ? 'end'
+                : 'center'};
+            justify-items: ${gridAlignment === 'left'
+              ? 'start'
+              : gridAlignment === 'right'
+                ? 'end'
+                : 'center'};
           "
           >
             ${infoModule.info_entities.slice(0, 3).map((originalEntity, index) => {
@@ -1438,6 +1516,19 @@ export class UltraInfoModule extends BaseUltraModule {
                     `
                   : '';
 
+              // Helper function to compose text shadow CSS
+              const getTextShadow = () => {
+                const h = designProperties.text_shadow_h || moduleWithDesign.text_shadow_h;
+                const v = designProperties.text_shadow_v || moduleWithDesign.text_shadow_v;
+                const blur = designProperties.text_shadow_blur || moduleWithDesign.text_shadow_blur;
+                const color =
+                  designProperties.text_shadow_color || moduleWithDesign.text_shadow_color;
+                if (h || v || blur || color) {
+                  return `${h || '0px'} ${v || '0px'} ${blur || '0px'} ${color || 'rgba(0,0,0,0.2)'}`;
+                }
+                return 'none';
+              };
+
               const contentElement = html`
                 <div
                   class="entity-content"
@@ -1469,6 +1560,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     line-height: ${designProperties.line_height || 'inherit'};
                     letter-spacing: ${designProperties.letter_spacing || 'inherit'};
                     text-align: ${getTextAlignment(entity)};
+                    text-shadow: ${getTextShadow()};
                   "
                         >
                           ${displayName}
@@ -1499,6 +1591,7 @@ export class UltraInfoModule extends BaseUltraModule {
                         line-height: ${designProperties.line_height || 'inherit'};
                         letter-spacing: ${designProperties.letter_spacing || 'inherit'};
                         text-align: ${getTextAlignment(entity)};
+                        text-shadow: ${getTextShadow()};
                       "
                         >
                           ${displayValue}
@@ -1535,8 +1628,6 @@ export class UltraInfoModule extends BaseUltraModule {
                         ? 'flex-end'
                         : 'center'};
                     gap: ${iconGap}px;
-                    padding: 4px;
-                    border-radius: 4px;
                     cursor: pointer;
                     user-select: none;
                     -webkit-user-select: none;
@@ -1573,8 +1664,6 @@ export class UltraInfoModule extends BaseUltraModule {
                         ? 'flex-end'
                         : 'center'};
                     gap: ${iconGap}px;
-                    padding: 4px;
-                    border-radius: 4px;
                   "
                   >
                     ${iconPosition === 'left' || iconPosition === 'top'
@@ -1619,8 +1708,6 @@ export class UltraInfoModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .info-module-preview {
-        padding: 8px;
-        min-height: 40px;
       }
       
       .info-entities {
