@@ -27,9 +27,9 @@ jobs:
             BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
             IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
           fi
-          
+
           VERSION_NUM="${TAG#v}"
-          
+
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "body=$BODY" >> $GITHUB_OUTPUT
@@ -40,7 +40,7 @@ jobs:
         id: custom_notes
         run: |
           VERSION="${{ steps.release_info.outputs.version }}"
-          
+
           if [ -f "RELEASE_NOTES.md" ]; then
             echo "Extracting notes for version: $VERSION"
             
@@ -72,24 +72,24 @@ jobs:
             echo "No Discord webhook configured"
             exit 0
           fi
-          
+
           TAG="${{ steps.release_info.outputs.tag }}"
           NAME="${{ steps.release_info.outputs.name }}"
           IS_PRE="${{ steps.release_info.outputs.is_prerelease }}"
-          
+
           if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
             NAME="Release $TAG"
           fi
-          
+
           if [ "${{ steps.custom_notes.outputs.has_custom }}" = "true" ]; then
             DESCRIPTION="${{ steps.custom_notes.outputs.NOTES }}"
           else
             DESCRIPTION="${{ steps.release_info.outputs.body }}"
           fi
-          
+
           # Truncate description
           DESCRIPTION=$(echo "$DESCRIPTION" | head -c 1900)
-          
+
           # Set color based on release type
           if [ "$IS_PRE" = "true" ]; then
             COLOR=11141290
@@ -98,7 +98,7 @@ jobs:
             COLOR=3447003
             TYPE="Release"
           fi
-          
+
           # Create Discord payload
           PAYLOAD=$(jq -n \
             --arg title "$NAME" \
@@ -123,8 +123,8 @@ jobs:
                 ]
               }]
             }')
-          
+
           # Send to Discord
           curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
-          
+
           echo "Discord notification sent successfully!"
