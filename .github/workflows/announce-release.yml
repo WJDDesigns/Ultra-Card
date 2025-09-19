@@ -2,227 +2,129 @@ name: Announce GitHub Releases to Discord
 on:
   release:
     types: [published, prereleased]
-  workflow_dispatch: {} # allows manual test runs
+  workflow_dispatch: {}
 
 jobs:
   announce:
     runs-on: ubuntu-latest
     steps:
-      - name: Use repo avatar file (optional)
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract release notes from RELEASE_NOTES.md
-        id: extract_notes
+      - name: Get release information
+        id: release_info
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger - fetching latest release version"
-            LATEST_TAG=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/releases" | jq -r '.[0].tag_name')
-            VERSION_NUM="${LATEST_TAG#v}"
-          else
-            VERSION_NUM=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH" | sed 's/^v//')
-          fi
-          
-          echo "Looking for release notes for version: $VERSION_NUM"
-          
-          if [ -f "RELEASE_NOTES.md" ]; then
-            echo "Found RELEASE_NOTES.md, extracting notes for version $VERSION_NUM..."
-            CUSTOM_NOTES=$(sed -n "/^## Version $VERSION_NUM$/,/^## Version /p" RELEASE_NOTES.md | sed '$d')
-            
-            if [ -n "$CUSTOM_NOTES" ]; then
-              echo "Successfully extracted release notes from RELEASE_NOTES.md"
-              echo "CUSTOM_RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
-              echo "$CUSTOM_NOTES" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
-              echo "HAS_CUSTOM_NOTES=true" >> $GITHUB_OUTPUT
-            else
-              echo "Version $VERSION_NUM not found in RELEASE_NOTES.md"
-              echo "HAS_CUSTOM_NOTES=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "RELEASE_NOTES.md not found"
-            echo "HAS_CUSTOM_NOTES=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build and send Discord embed
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_WEBHOOK_ANNOUNCEMENTS: ${{ secrets.DISCORD_WEBHOOK_ANNOUNCEMENTS }}
-          BOT_NAME: 'UpdateBot'
-          # Using existing Ultra.jpg as avatar
-          AVATAR_URL: 'https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg'
-        run: |
-          if [ -z "$DISCORD_WEBHOOK" ]; then
-            echo "Missing DISCORD_WEBHOOK secret"; exit 1
-          fi
-
-          # Check if this is a manual trigger (workflow_dispatch)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger detected - fetching most recent release data (including pre-releases)"
-            
-            # Fetch all releases and get the most recent one (including pre-releases)
-            RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0]')
-            
-            NAME=$(echo "$RELEASE_DATA" | jq -r '.name // ""')
+            echo "Manual trigger - fetching latest release"
+            RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0]')
             TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
-            URL=$(echo "$RELEASE_DATA" | jq -r '.html_url')
+            NAME=$(echo "$RELEASE_DATA" | jq -r '.name // ""')
             BODY=$(echo "$RELEASE_DATA" | jq -r '.body // ""')
             IS_PRE=$(echo "$RELEASE_DATA" | jq -r '.prerelease')
-            PUBLISHED_AT=$(echo "$RELEASE_DATA" | jq -r '.published_at')
-            
-            echo "Fetched most recent release: $NAME ($TAG)"
-            echo "Published at: $PUBLISHED_AT"
-            echo "Is pre-release: $IS_PRE"
           else
-            # Pull data from the release event JSON
-            NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
             TAG=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH")
-            URL=$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")
+            NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
             BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
             IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
+          fi
+          
+          VERSION_NUM="${TAG#v}"
+          
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION_NUM" >> $GITHUB_OUTPUT
+
+      - name: Extract custom release notes
+        id: custom_notes
+        run: |
+          VERSION="${{ steps.release_info.outputs.version }}"
+          
+          if [ -f "RELEASE_NOTES.md" ]; then
+            echo "Extracting notes for version: $VERSION"
             
-            echo "Release event detected"
-            echo "Release name: $NAME"
-            echo "Tag: $TAG"
-            echo "Is prerelease: $IS_PRE"
+            # Extract version section
+            sed -n "/^## Version $VERSION$/,/^## Version /p" RELEASE_NOTES.md | sed '$d' > temp_notes.txt
+            
+            if [ -s temp_notes.txt ]; then
+              echo "Found custom release notes"
+              echo "has_custom=true" >> $GITHUB_OUTPUT
+              echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+              cat temp_notes.txt >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "No custom notes found"
+              echo "has_custom=false" >> $GITHUB_OUTPUT
+            fi
+            
+            rm -f temp_notes.txt
+          else
+            echo "No RELEASE_NOTES.md file"
+            echo "has_custom=false" >> $GITHUB_OUTPUT
           fi
 
-          REPO="${GITHUB_REPOSITORY#*/}"
-
-          # Fallback title if .name is empty
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "No Discord webhook configured"
+            exit 0
+          fi
+          
+          TAG="${{ steps.release_info.outputs.tag }}"
+          NAME="${{ steps.release_info.outputs.name }}"
+          IS_PRE="${{ steps.release_info.outputs.is_prerelease }}"
+          
           if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
             NAME="Release $TAG"
           fi
-
-          # Use custom notes if available, otherwise use GitHub release body
-          if [ "${{ steps.extract_notes.outputs.HAS_CUSTOM_NOTES }}" = "true" ]; then
-            echo "Using custom release notes from RELEASE_NOTES.md"
-            DESC="${{ steps.extract_notes.outputs.CUSTOM_RELEASE_NOTES }}"
+          
+          if [ "${{ steps.custom_notes.outputs.has_custom }}" = "true" ]; then
+            DESCRIPTION="${{ steps.custom_notes.outputs.NOTES }}"
           else
-            echo "Using GitHub release body"
-            DESC=$(printf "%b" "$BODY")
+            DESCRIPTION="${{ steps.release_info.outputs.body }}"
           fi
-
-          # Trim to fit Discord embed description (~2048 chars)
-          DESC=$(echo "$DESC" | head -c 1900)
-
-          # Color: purple for prerelease, blue for stable
+          
+          # Truncate description
+          DESCRIPTION=$(echo "$DESCRIPTION" | head -c 1900)
+          
+          # Set color based on release type
           if [ "$IS_PRE" = "true" ]; then
-            COLOR=11141290   # 0xAA66DA
-            RELEASE_TYPE="Prerelease"
+            COLOR=11141290
+            TYPE="Pre-release"
           else
-            COLOR=3447003    # 0x3498db
-            RELEASE_TYPE="Release"
+            COLOR=3447003
+            TYPE="Release"
           fi
-
-          # Create footer text based on trigger type
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            FOOTER_TEXT="Ultra-Card • $RELEASE_TYPE • $TAG • Manual Announcement"
-          else
-            FOOTER_TEXT="Ultra-Card • $RELEASE_TYPE • $TAG"
-          fi
-
-          # Build JSON payload with jq (avoids escaping headaches)
+          
+          # Create Discord payload
           PAYLOAD=$(jq -n \
-            --arg username "$BOT_NAME" \
-            --arg avatar_url "$AVATAR_URL" \
             --arg title "$NAME" \
-            --arg url "$URL" \
-            --arg desc "$DESC" \
-            --arg repo "$REPO" \
+            --arg url "https://github.com/${{ github.repository }}/releases/tag/$TAG" \
+            --arg desc "$DESCRIPTION" \
             --arg tag "$TAG" \
-            --arg rtype "$RELEASE_TYPE" \
-            --arg commit_url "https://github.com/${{ github.repository }}/commits/$TAG" \
-            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --arg footer "$FOOTER_TEXT" \
-            --arg author "WJDDesigns/Ultra-Card" \
-            --arg thumb "https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg" \
+            --arg type "$TYPE" \
             --argjson color $COLOR \
             '{
-              "username": $username,
-              "avatar_url": $avatar_url,
-              "embeds": [
-                {
-                  "title": $title,
-                  "url": $url,
-                  "description": $desc,
-                  "color": $color,
-                  "timestamp": $ts,
-                  "author": { "name": $author },
-                  "footer": { "text": $footer },
-                  "fields": [
-                    { "name": "Tag", "value": $tag, "inline": true },
-                    { "name": "Repo", "value": $repo, "inline": true }
-                  ]
-                }
-              ]
+              "username": "UpdateBot",
+              "avatar_url": "https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg",
+              "embeds": [{
+                "title": $title,
+                "url": $url,
+                "description": $desc,
+                "color": $color,
+                "timestamp": (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
+                "footer": {"text": ("Ultra-Card • " + $type + " • " + $tag)},
+                "fields": [
+                  {"name": "Tag", "value": $tag, "inline": true},
+                  {"name": "Repository", "value": "Ultra-Card", "inline": true}
+                ]
+              }]
             }')
-
-          echo "Debug info:"
-          echo "Event name: ${{ github.event_name }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Tag: $TAG"
-          echo "Name: $NAME"
-          echo "Is Pre-release: $IS_PRE"
-          echo ""
-
-          echo "Sending payload to Discord:"
-          echo "$PAYLOAD" | jq .
-          echo ""
-
-          echo "Testing webhook URL accessibility..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$DISCORD_WEBHOOK")
-          echo "Webhook HTTP status: $HTTP_STATUS"
-          echo ""
-
-          # Function to send Discord notification
-          send_discord_notification() {
-            local webhook_url="$1"
-            local channel_name="$2"
-            
-            echo "Sending Discord notification to $channel_name..."
-            RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\n" -X POST -H "Content-Type: application/json" \
-                            -d "$PAYLOAD" "$webhook_url")
-
-            HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
-            RESPONSE_BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE:/d')
-
-            echo "HTTP Response Code for $channel_name: $HTTP_CODE"
-            echo "Response Body for $channel_name: $RESPONSE_BODY"
-
-            if [ "$HTTP_CODE" = "204" ] || [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ Successfully sent Discord notification to $channel_name"
-              return 0
-            else
-              echo "❌ Failed to send Discord notification to $channel_name"
-              echo "HTTP Code: $HTTP_CODE"
-              echo "Response: $RESPONSE_BODY"
-              return 1
-            fi
-          }
-
-          # Send to main channel
-          send_discord_notification "$DISCORD_WEBHOOK" "main channel"
-          MAIN_SUCCESS=$?
-
-          # Send to announcements channel if webhook is configured
-          if [ -n "$DISCORD_WEBHOOK_ANNOUNCEMENTS" ]; then
-            echo ""
-            send_discord_notification "$DISCORD_WEBHOOK_ANNOUNCEMENTS" "announcements channel"
-            ANNOUNCEMENTS_SUCCESS=$?
-          else
-            echo "No DISCORD_WEBHOOK_ANNOUNCEMENTS configured - skipping announcements channel"
-            ANNOUNCEMENTS_SUCCESS=0
-          fi
-
-          # Exit with error if main channel failed (announcements is optional)
-          if [ $MAIN_SUCCESS -ne 0 ]; then
-            echo "❌ Main channel notification failed"
-            exit 1
-          fi
-
-          if [ -n "$DISCORD_WEBHOOK_ANNOUNCEMENTS" ] && [ $ANNOUNCEMENTS_SUCCESS -ne 0 ]; then
-            echo "⚠️ Announcements channel notification failed, but continuing since main channel succeeded"
-          fi
-
-          echo "🎉 Discord notifications complete!"
+          
+          # Send to Discord
+          curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
+          
+          echo "Discord notification sent successfully!"
