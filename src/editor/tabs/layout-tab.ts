@@ -12,6 +12,7 @@ import {
   ImageModule,
   BarModule,
   DisplayCondition,
+  LayoutConfig,
 } from '../../types';
 import '../../components/ultra-color-picker';
 import { getModuleRegistry } from '../../modules/module-registry';
@@ -23,6 +24,12 @@ import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
 import { getImageUrl, uploadImage } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
+import { ucPresetsService } from '../../services/uc-presets-service';
+import { ucFavoritesService } from '../../services/uc-favorites-service';
+import { ucExportImportService } from '../../services/uc-export-import-service';
+import { PresetDefinition, FavoriteRow, ExportData } from '../../types';
+import '../../components/uc-favorite-dialog';
+import '../../components/uc-import-dialog';
 
 // Typography and font definitions matching the professional interface
 const DEFAULT_FONTS = [{ value: 'default', label: '– Default –', category: 'default' }];
@@ -115,8 +122,10 @@ export class LayoutTab extends LitElement {
   @state() private _showColumnLayoutSelector = false;
   @state() private _selectedRowForLayout = -1;
 
-  // Collapsible preview in headers
-  @state() private _isPreviewCollapsed = false;
+  // Collapsible preview in headers - now tracks per module
+  @state() private _collapsedPreviewModules: Set<string> = new Set();
+  // Global preview state for row/column settings (open by default)
+  @state() private _isRowColumnPreviewCollapsed = false;
   // Track collapsed condition items by id (not in set => expanded)
   @state() private _collapsedConditionIds: Set<string> = new Set();
   // Drag state for condition reordering
@@ -126,8 +135,24 @@ export class LayoutTab extends LitElement {
     | { scope: 'column'; fromIndex: number }
     | null = null;
 
+  // New state properties for presets, favorites, and export/import
+  @state() private _activeModuleSelectorTab: 'modules' | 'presets' | 'favorites' = 'modules';
+  @state() private _selectedPresetCategory: 'badges' | 'layouts' | 'widgets' | 'custom' = 'badges';
+  @state() private _showFavoriteDialog = false;
+  @state() private _favoriteRowToSave: CardRow | null = null;
+  @state() private _showImportDialog = false;
+  @state() private _openMoreMenuRowIndex: number = -1;
+
+  // Undo/Redo state management
+  @state() private _undoStack: { rows: CardRow[] }[] = [];
+  @state() private _redoStack: { rows: CardRow[] }[] = [];
+  private _maxHistorySize = 50; // Maximum number of undo states to keep
+  private _isUndoRedoAction = false; // Flag to prevent saving undo states during undo/redo
+
   /** Listen for template updates from modules to refresh live previews */
   private _templateUpdateListener?: () => void;
+  private _documentClickListener?: (e: Event) => void;
+  private _keydownListener?: (e: KeyboardEvent) => void;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -135,6 +160,38 @@ export class LayoutTab extends LitElement {
       this.requestUpdate();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+
+    // Close more menu when clicking outside
+    this._documentClickListener = (e: Event) => {
+      if (this._openMoreMenuRowIndex !== -1) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.row-more-container')) {
+          this._openMoreMenuRowIndex = -1;
+        }
+      }
+    };
+    document.addEventListener('click', this._documentClickListener);
+
+    // Add keyboard shortcuts for undo/redo
+    this._keydownListener = (e: KeyboardEvent) => {
+      // Check if we're focused on an input element
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return; // Don't intercept keyboard shortcuts when typing in input fields
+      }
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (ctrlKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        this._undo();
+      } else if (ctrlKey && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        this._redo();
+      }
+    };
+    document.addEventListener('keydown', this._keydownListener);
 
     // Inject hover effect styles into layout tab's shadow root for popup previews
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
@@ -151,7 +208,40 @@ export class LayoutTab extends LitElement {
 
   private _togglePreviewCollapsed(e?: Event): void {
     if (e) e.stopPropagation();
-    this._isPreviewCollapsed = !this._isPreviewCollapsed;
+
+    // Get current module key for tracking per-module state
+    const moduleKey = this._getSelectedModuleKey();
+    if (!moduleKey) return;
+
+    // Toggle the collapsed state for this specific module
+    if (this._collapsedPreviewModules.has(moduleKey)) {
+      this._collapsedPreviewModules.delete(moduleKey);
+    } else {
+      this._collapsedPreviewModules.add(moduleKey);
+    }
+
+    // Trigger re-render
+    this.requestUpdate();
+  }
+
+  // Helper to get unique key for the selected module
+  private _getSelectedModuleKey(): string | null {
+    if (!this._selectedModule) return null;
+    const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+    return `${rowIndex}-${columnIndex}-${moduleIndex}`;
+  }
+
+  // Helper to check if current module preview is collapsed
+  private _isCurrentModulePreviewCollapsed(): boolean {
+    const moduleKey = this._getSelectedModuleKey();
+    if (!moduleKey) return false; // Default to expanded
+    return this._collapsedPreviewModules.has(moduleKey);
+  }
+
+  // Toggle row/column preview state
+  private _toggleRowColumnPreviewCollapsed(e?: Event): void {
+    if (e) e.stopPropagation();
+    this._isRowColumnPreviewCollapsed = !this._isRowColumnPreviewCollapsed;
   }
 
   private _toggleConditionExpanded(conditionId: string): void {
@@ -254,12 +344,13 @@ export class LayoutTab extends LitElement {
 
   // Drag and drop state
   @state() private _draggedItem: {
-    type: 'module' | 'column' | 'row';
+    type: 'module' | 'column' | 'row' | 'nested-child';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
     data: any;
     layoutChildIndex?: number;
+    nestedChildIndex?: number;
   } | null = null;
   @state() private _dropTarget: {
     type: 'module' | 'column' | 'row' | 'layout' | 'layout-child';
@@ -269,6 +360,7 @@ export class LayoutTab extends LitElement {
     childIndex?: number;
   } | null = null;
   @state() private _selectedLayoutModuleIndex: number = -1;
+  @state() private _selectedNestedChildIndex: number = -1;
 
   // Layout child module settings state
   @state() private _showLayoutChildSettings = false;
@@ -322,6 +414,16 @@ export class LayoutTab extends LitElement {
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
       this._templateUpdateListener = undefined;
+    }
+    // Remove document click listener
+    if (this._documentClickListener) {
+      document.removeEventListener('click', this._documentClickListener);
+      this._documentClickListener = undefined;
+    }
+    // Remove keyboard listener
+    if (this._keydownListener) {
+      document.removeEventListener('keydown', this._keydownListener);
+      this._keydownListener = undefined;
     }
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
@@ -613,7 +715,7 @@ export class LayoutTab extends LitElement {
   }
 
   // Initialize layout if it doesn't exist
-  private _ensureLayout(): { rows: CardRow[] } {
+  private _ensureLayout(): LayoutConfig {
     if (!this.config.layout || !this.config.layout.rows) {
       return {
         rows: [
@@ -628,6 +730,11 @@ export class LayoutTab extends LitElement {
               },
             ],
             column_layout: '1-col',
+            // Default design properties with proper margins
+            design: {
+              margin_top: '8px',
+              margin_bottom: '8px',
+            },
           },
         ],
       };
@@ -646,17 +753,91 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateLayout(layout: { rows: CardRow[] }): void {
+    // Save current state to undo stack before making changes (unless it's an undo/redo action)
+    if (!this._isUndoRedoAction) {
+      this._saveStateToUndoStack();
+      this._redoStack = []; // Clear redo stack when making new changes
+    }
+
     this._updateConfig({ layout });
+  }
+
+  // Undo/Redo functionality
+  private _saveStateToUndoStack(): void {
+    const layout = this._ensureLayout();
+    const currentState = {
+      rows: JSON.parse(JSON.stringify(layout.rows)), // Deep copy
+    };
+
+    this._undoStack.push(currentState);
+
+    // Limit undo stack size
+    if (this._undoStack.length > this._maxHistorySize) {
+      this._undoStack.shift();
+    }
+  }
+
+  private _canUndo(): boolean {
+    return this._undoStack.length > 0;
+  }
+
+  private _canRedo(): boolean {
+    return this._redoStack.length > 0;
+  }
+
+  private _undo(): void {
+    if (!this._canUndo()) return;
+
+    const layout = this._ensureLayout();
+    const currentState = {
+      rows: JSON.parse(JSON.stringify(layout.rows)), // Deep copy
+    };
+
+    // Save current state to redo stack
+    this._redoStack.push(currentState);
+
+    // Get previous state from undo stack
+    const previousState = this._undoStack.pop()!;
+
+    // Apply previous state
+    this._isUndoRedoAction = true;
+    this._updateConfig({ layout: previousState });
+    this._isUndoRedoAction = false;
+  }
+
+  private _redo(): void {
+    if (!this._canRedo()) return;
+
+    const layout = this._ensureLayout();
+    const currentState = {
+      rows: JSON.parse(JSON.stringify(layout.rows)), // Deep copy
+    };
+
+    // Save current state to undo stack
+    this._undoStack.push(currentState);
+
+    // Get next state from redo stack
+    const nextState = this._redoStack.pop()!;
+
+    // Apply next state
+    this._isUndoRedoAction = true;
+    this._updateConfig({ layout: nextState });
+    this._isUndoRedoAction = false;
   }
 
   private _addRow(): void {
     const layout = this._ensureLayout();
 
-    // Create a new empty row with no columns
+    // Create a new empty row with no columns and default margins
     const newRow: CardRow = {
       id: `row-${Date.now()}`,
       columns: [], // Start with empty columns array
       column_layout: '1-col',
+      // Default design properties with proper margins
+      design: {
+        margin_top: '8px',
+        margin_bottom: '8px',
+      },
     };
 
     // Create a completely new layout object to ensure Lit detects the change
@@ -729,13 +910,21 @@ export class LayoutTab extends LitElement {
       horizontal_alignment: 'center',
     };
 
-    // Create new layout with added column
+    // Calculate new column count after adding
+    const newColumnCount = row.columns.length + 1;
+
+    // Get the first (default) layout for the new column count
+    const defaultLayout = this._getLayoutsForColumnCount(newColumnCount)[0];
+    const newColumnLayout = defaultLayout ? defaultLayout.id : `repeat(${newColumnCount}, 1fr)`;
+
+    // Create new layout with added column and updated column_layout
     const newLayout = {
       rows: layout.rows.map((r, index) => {
         if (index === rowIndex) {
           return {
             ...r,
             columns: [...r.columns, newColumn],
+            column_layout: newColumnLayout as CardRow['column_layout'],
           };
         }
         return r;
@@ -762,7 +951,14 @@ export class LayoutTab extends LitElement {
       horizontal_alignment: 'center',
     };
 
-    // Create new layout with column inserted after the current column
+    // Calculate new column count after adding
+    const newColumnCount = row.columns.length + 1;
+
+    // Get the first (default) layout for the new column count
+    const defaultLayout = this._getLayoutsForColumnCount(newColumnCount)[0];
+    const newColumnLayout = defaultLayout ? defaultLayout.id : `repeat(${newColumnCount}, 1fr)`;
+
+    // Create new layout with column inserted after the current column and updated column_layout
     const newLayout = {
       rows: layout.rows.map((r, index) => {
         if (index === rowIndex) {
@@ -771,6 +967,7 @@ export class LayoutTab extends LitElement {
           return {
             ...r,
             columns: newColumns,
+            column_layout: newColumnLayout as CardRow['column_layout'],
           };
         }
         return r;
@@ -805,9 +1002,17 @@ export class LayoutTab extends LitElement {
       })),
     };
 
-    // Create new layout with duplicated column
+    // Calculate new column count after duplicating
+    const newColumnCount = row.columns.length + 1;
+
+    // Get the first (default) layout for the new column count
+    const defaultLayout = this._getLayoutsForColumnCount(newColumnCount)[0];
+    const newColumnLayout = defaultLayout ? defaultLayout.id : `repeat(${newColumnCount}, 1fr)`;
+
+    // Create new layout with duplicated column and updated column_layout
     const newLayout = JSON.parse(JSON.stringify(layout));
     newLayout.rows[rowIndex].columns.splice(columnIndex + 1, 0, duplicatedColumn);
+    newLayout.rows[rowIndex].column_layout = newColumnLayout;
     this._updateLayout(newLayout);
   }
 
@@ -824,13 +1029,22 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Create new layout with deleted column (allow empty rows)
+    // Calculate new column count after deletion
+    const newColumnCount = row.columns.length - 1;
+
+    // Get the first (default) layout for the new column count, or '1-col' if no columns left
+    const defaultLayout =
+      newColumnCount > 0 ? this._getLayoutsForColumnCount(newColumnCount)[0] : null;
+    const newColumnLayout = defaultLayout ? defaultLayout.id : '1-col';
+
+    // Create new layout with deleted column and updated column_layout
     const newLayout = {
       rows: layout.rows.map((r, index) => {
         if (index === rowIndex) {
           return {
             ...r,
             columns: r.columns.filter((_, colIndex) => colIndex !== columnIndex),
+            column_layout: newColumnLayout as CardRow['column_layout'],
           };
         }
         return r;
@@ -976,6 +1190,7 @@ export class LayoutTab extends LitElement {
     this._selectedRowIndex = rowIndex;
     this._selectedColumnIndex = columnIndex;
     this._selectedLayoutModuleIndex = -1; // Reset to indicate we're adding to a column, not a layout module
+    this._selectedNestedChildIndex = -1; // Reset nested child index
     this._showModuleSelector = true;
   }
 
@@ -1141,7 +1356,7 @@ export class LayoutTab extends LitElement {
     let newLayout;
 
     if (this._selectedLayoutModuleIndex >= 0) {
-      // Adding to a layout module (horizontal or vertical)
+      // Adding to a layout module (horizontal or vertical) or nested layout module
       newLayout = {
         rows: layout.rows.map((row, rIndex) => {
           if (rIndex === this._selectedRowIndex) {
@@ -1154,10 +1369,33 @@ export class LayoutTab extends LitElement {
                     modules: col.modules.map((module, mIndex) => {
                       if (mIndex === this._selectedLayoutModuleIndex) {
                         const layoutModule = module as any;
-                        return {
-                          ...layoutModule,
-                          modules: [...(layoutModule.modules || []), newModule],
-                        };
+
+                        // Check if we're adding to a nested layout module
+                        if (this._selectedNestedChildIndex >= 0) {
+                          // Adding to a nested layout module (layout module inside another layout module)
+                          return {
+                            ...layoutModule,
+                            modules: layoutModule.modules.map(
+                              (childModule: any, childIndex: number) => {
+                                if (childIndex === this._selectedNestedChildIndex) {
+                                  // This is the nested layout module we want to add to
+                                  const nestedLayoutModule = childModule as any;
+                                  return {
+                                    ...nestedLayoutModule,
+                                    modules: [...(nestedLayoutModule.modules || []), newModule],
+                                  };
+                                }
+                                return childModule;
+                              }
+                            ),
+                          };
+                        } else {
+                          // Adding to a regular layout module (not nested)
+                          return {
+                            ...layoutModule,
+                            modules: [...(layoutModule.modules || []), newModule],
+                          };
+                        }
                       }
                       return module;
                     }),
@@ -1210,6 +1448,311 @@ export class LayoutTab extends LitElement {
     this._selectedRowIndex = -1;
     this._selectedColumnIndex = -1;
     this._selectedLayoutModuleIndex = -1;
+    this._selectedNestedChildIndex = -1;
+  }
+
+  private _addPreset(preset: PresetDefinition): void {
+    try {
+      // debug removed
+
+      const currentLayout = this._ensureLayout();
+
+      if (!preset.layout || !preset.layout.rows || preset.layout.rows.length === 0) {
+        console.error('Invalid preset layout:', preset);
+        console.error('Layout structure:', preset.layout);
+        console.error('Layout rows:', preset.layout?.rows);
+        console.error('Full preset object:', preset);
+        this._showToast(`Error: Invalid preset "${preset.name}" - missing layout rows`, 'error');
+        return;
+      }
+
+      console.log('Valid preset layout found:', preset.layout);
+      console.log('Layout rows structure:', preset.layout.rows);
+      console.log('First row structure:', preset.layout.rows[0]);
+
+      // Create a new layout with extensible arrays
+      const newRows = [...currentLayout.rows];
+
+      // Add all rows from the preset at the end
+      preset.layout.rows.forEach((presetRow, index) => {
+        console.log(`Processing preset row ${index}:`, presetRow);
+        try {
+          // Clone the row with new IDs
+          const newRow = this._cloneRowWithNewIds(presetRow);
+          console.log(`Successfully cloned row ${index}:`, newRow);
+          newRows.push(newRow);
+        } catch (cloneError) {
+          console.error(`Failed to clone row ${index}:`, cloneError);
+          throw cloneError;
+        }
+      });
+
+      // Create completely new layout object
+      const newLayout: LayoutConfig = {
+        rows: newRows,
+        ...(currentLayout.gap !== undefined && { gap: currentLayout.gap }),
+      };
+
+      console.log('Final layout to apply:', newLayout);
+      console.log('Number of rows in final layout:', newLayout.rows.length);
+
+      this._updateLayout(newLayout);
+      this._showModuleSelector = false;
+      this._selectedLayoutModuleIndex = -1;
+      this._selectedNestedChildIndex = -1;
+      this._selectedRowIndex = -1;
+      this._selectedColumnIndex = -1;
+      this._showToast(`"${preset.name}" preset added successfully!`, 'success');
+
+      // debug removed
+    } catch (error) {
+      console.error('Error adding preset:', error);
+      this._showToast(
+        `Error adding preset: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'error'
+      );
+    }
+  }
+
+  private _addFavorite(favorite: FavoriteRow): void {
+    const currentLayout = this._ensureLayout();
+
+    // Create a new layout with extensible arrays
+    const newRows = [...currentLayout.rows];
+
+    // Clone the favorite row with new IDs and add at the end
+    const newRow = this._cloneRowWithNewIds(favorite.row);
+    newRows.push(newRow);
+
+    // Create completely new layout object
+    const newLayout: LayoutConfig = {
+      rows: newRows,
+      ...(currentLayout.gap !== undefined && { gap: currentLayout.gap }),
+    };
+
+    this._updateLayout(newLayout);
+    this._showModuleSelector = false;
+    this._selectedLayoutModuleIndex = -1;
+    this._selectedNestedChildIndex = -1;
+    this._selectedRowIndex = -1;
+    this._selectedColumnIndex = -1;
+    this._showToast(`"${favorite.name}" favorite added successfully!`, 'success');
+  }
+
+  private _saveRowAsFavorite(rowIndex: number): void {
+    const layout = this._ensureLayout();
+    const row = layout.rows[rowIndex];
+    if (!row) return;
+
+    this._favoriteRowToSave = row;
+    this._showFavoriteDialog = true;
+  }
+
+  private async _exportRow(rowIndex: number): Promise<void> {
+    const layout = this._ensureLayout();
+    const row = layout.rows[rowIndex];
+    if (!row) return;
+
+    try {
+      this._showToast('Exporting row to clipboard...', 'info');
+      await ucExportImportService.exportRowToClipboard(row, `Row ${rowIndex + 1}`);
+      this._showToast('Row exported to clipboard!', 'success');
+    } catch (error) {
+      console.error('Failed to export row:', error);
+      this._showToast('Failed to export row to clipboard', 'error');
+    }
+  }
+
+  private async _pasteRowFromClipboard(rowIndex: number): Promise<void> {
+    try {
+      // Show loading state
+      this._showToast('Reading from clipboard...', 'info');
+
+      // Try to read from clipboard with a small retry mechanism
+      let importData = await ucExportImportService.importFromClipboard();
+
+      // If no data found, wait a bit and try once more (for immediate paste after export)
+      if (!importData) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        importData = await ucExportImportService.importFromClipboard();
+      }
+
+      if (!importData) {
+        this._showToast(
+          'No valid Ultra Card shortcode found. Please ensure you have copied an exported row or paste it manually when prompted.',
+          'error'
+        );
+        return;
+      }
+
+      // Validate that it's row data or layout data
+      let rowData: CardRow;
+      let sourceName = '';
+
+      if (importData.type === 'ultra-card-row' && importData.data) {
+        // Direct row import
+        rowData = importData.data as CardRow;
+        sourceName = importData.metadata?.name || 'Imported Row';
+      } else if (importData.type === 'ultra-card-layout' && importData.data) {
+        // Layout import - take the first row
+        const layoutData = importData.data as LayoutConfig;
+        if (layoutData.rows && layoutData.rows.length > 0) {
+          rowData = layoutData.rows[0];
+          sourceName = `${importData.metadata?.name || 'Imported Layout'} (Row 1)`;
+        } else {
+          this._showToast('Layout data does not contain any rows', 'error');
+          return;
+        }
+      } else {
+        this._showToast(
+          `Clipboard contains ${importData.type} data, but row data is required`,
+          'error'
+        );
+        return;
+      }
+
+      // Clone the row with new IDs to avoid conflicts
+      const clonedRow = this._cloneRowWithNewIds(rowData);
+
+      // Create a new layout object to ensure Lit detects the change
+      const currentLayout = this._ensureLayout();
+      const newLayout = {
+        rows: [...currentLayout.rows],
+      };
+
+      // Add the pasted row after the current row (duplicate behavior)
+      newLayout.rows.splice(rowIndex + 1, 0, clonedRow);
+
+      // Update the layout (includes undo/redo state management)
+      this._updateLayout(newLayout);
+
+      // Force immediate re-render
+      this.requestUpdate();
+
+      this._showToast(
+        `Row added successfully from "${sourceName}"! Check below the current row.`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Failed to paste row from clipboard:', error);
+      if (error instanceof Error && error.name === 'NotAllowedError') {
+        this._showToast('Clipboard access denied. Please check browser permissions.', 'error');
+      } else {
+        this._showToast('Failed to paste row from clipboard. Please try again.', 'error');
+      }
+    }
+  }
+
+  private async _exportFavorite(favorite: FavoriteRow): Promise<void> {
+    try {
+      this._showToast('Exporting favorite to clipboard...', 'info');
+      await ucExportImportService.exportRowToClipboard(favorite.row, favorite.name);
+      this._showToast('Favorite exported to clipboard!', 'success');
+    } catch (error) {
+      console.error('Failed to export favorite:', error);
+      this._showToast('Failed to export favorite to clipboard', 'error');
+    }
+  }
+
+  private _deleteFavorite(favoriteId: string): void {
+    if (confirm('Are you sure you want to delete this favorite?')) {
+      ucFavoritesService.removeFavorite(favoriteId);
+      this._showToast('Favorite deleted', 'info');
+    }
+  }
+
+  private _cloneRowWithNewIds(row: CardRow): CardRow {
+    try {
+      // Use structuredClone if available (modern browsers), otherwise fallback to JSON
+      const deepClone = (obj: any) => {
+        if (typeof structuredClone !== 'undefined') {
+          return structuredClone(obj);
+        }
+        return JSON.parse(JSON.stringify(obj));
+      };
+
+      const cloned = deepClone(row);
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substr(2, 9);
+
+      // Generate new IDs safely
+      cloned.id = `row-${timestamp}-${randomSuffix}`;
+
+      // Apply default design properties if the row doesn't have them
+      if (!cloned.design) {
+        cloned.design = {};
+      }
+
+      // Apply default margins if not already set
+      if (!cloned.design.margin_top && !cloned.design.margin_bottom) {
+        cloned.design.margin_top = '8px';
+        cloned.design.margin_bottom = '8px';
+      }
+
+      if (cloned.columns && Array.isArray(cloned.columns)) {
+        cloned.columns.forEach((column: any, colIndex: number) => {
+          column.id = `col-${timestamp}-${colIndex}-${randomSuffix}`;
+
+          if (column.modules && Array.isArray(column.modules)) {
+            column.modules.forEach((module: any, moduleIndex: number) => {
+              module.id = `${module.type}-${timestamp}-${moduleIndex}-${randomSuffix}`;
+            });
+          }
+        });
+      }
+
+      return cloned;
+    } catch (error) {
+      console.error('Error cloning row:', error);
+      throw new Error(
+        `Failed to clone row: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  private _toggleMoreMenu(rowIndex: number): void {
+    if (this._openMoreMenuRowIndex === rowIndex) {
+      this._openMoreMenuRowIndex = -1;
+    } else {
+      this._openMoreMenuRowIndex = rowIndex;
+    }
+  }
+
+  private _showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
+    // Create a simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `ultra-toast ultra-toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background: var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'primary'}-color);
+      color: white;
+      border-radius: 8px;
+      z-index: 10000;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+    `;
+
+    document.body.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(0)';
+    });
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
   }
 
   private _duplicateModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
@@ -1358,40 +1901,88 @@ export class LayoutTab extends LitElement {
     if (!targetColumn.modules || !targetColumn.modules[parentModuleIndex]) return;
 
     const layoutModule = targetColumn.modules[parentModuleIndex] as any;
-    if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
 
-    const originalChildModule = layoutModule.modules[childIndex];
+    // Check if we're updating a nested child module (module inside a nested layout)
+    if (this._selectedNestedChildIndex >= 0) {
+      // We're updating a nested child module
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
 
-    // Create updated module by copying original and applying updates
-    const updatedModule: any = { ...originalChildModule };
+      const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+      if (
+        !nestedLayoutModule.modules ||
+        !nestedLayoutModule.modules[this._selectedNestedChildIndex]
+      )
+        return;
 
-    // Special handling: deep-merge nested design object so partial updates don't wipe other fields
-    if (updates.hasOwnProperty('design')) {
-      const incomingDesign = (updates as any).design || {};
-      const existingDesign = (updatedModule.design || {}) as Record<string, any>;
-      const mergedDesign: Record<string, any> = { ...existingDesign };
-      for (const [dKey, dVal] of Object.entries(incomingDesign)) {
-        if (dVal === undefined) {
-          delete mergedDesign[dKey];
+      const originalChildModule = nestedLayoutModule.modules[this._selectedNestedChildIndex];
+
+      // Create updated module by copying original and applying updates
+      const updatedModule: any = { ...originalChildModule };
+
+      // Special handling: deep-merge nested design object so partial updates don't wipe other fields
+      if (updates.hasOwnProperty('design')) {
+        const incomingDesign = (updates as any).design || {};
+        const existingDesign = (updatedModule.design || {}) as Record<string, any>;
+        const mergedDesign: Record<string, any> = { ...existingDesign };
+        for (const [dKey, dVal] of Object.entries(incomingDesign)) {
+          if (dVal === undefined) {
+            delete mergedDesign[dKey];
+          } else {
+            mergedDesign[dKey] = dVal;
+          }
+        }
+        updatedModule.design = mergedDesign;
+      }
+
+      // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
+      for (const [key, value] of Object.entries(updates)) {
+        if (key === 'design') continue;
+        if (value === undefined) {
+          delete updatedModule[key];
         } else {
-          mergedDesign[dKey] = dVal;
+          updatedModule[key] = value;
         }
       }
-      updatedModule.design = mergedDesign;
-    }
 
-    // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
-    for (const [key, value] of Object.entries(updates)) {
-      if (key === 'design') continue;
-      if (value === undefined) {
-        delete updatedModule[key];
-      } else {
-        updatedModule[key] = value;
+      // Update the nested child module in the nested layout
+      nestedLayoutModule.modules[this._selectedNestedChildIndex] = updatedModule;
+    } else {
+      // Regular layout child module update
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
+
+      const originalChildModule = layoutModule.modules[childIndex];
+
+      // Create updated module by copying original and applying updates
+      const updatedModule: any = { ...originalChildModule };
+
+      // Special handling: deep-merge nested design object so partial updates don't wipe other fields
+      if (updates.hasOwnProperty('design')) {
+        const incomingDesign = (updates as any).design || {};
+        const existingDesign = (updatedModule.design || {}) as Record<string, any>;
+        const mergedDesign: Record<string, any> = { ...existingDesign };
+        for (const [dKey, dVal] of Object.entries(incomingDesign)) {
+          if (dVal === undefined) {
+            delete mergedDesign[dKey];
+          } else {
+            mergedDesign[dKey] = dVal;
+          }
+        }
+        updatedModule.design = mergedDesign;
       }
-    }
 
-    // Update the child module in the layout
-    layoutModule.modules[childIndex] = updatedModule;
+      // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
+      for (const [key, value] of Object.entries(updates)) {
+        if (key === 'design') continue;
+        if (value === undefined) {
+          delete updatedModule[key];
+        } else {
+          updatedModule[key] = value;
+        }
+      }
+
+      // Update the child module in the layout
+      layoutModule.modules[childIndex] = updatedModule;
+    }
 
     this._updateLayout(newLayout);
   }
@@ -1400,6 +1991,7 @@ export class LayoutTab extends LitElement {
     // Support both direct module edits and child-module edits inside layout containers
     const isChildEdit = !this._selectedModule && !!this._selectedLayoutChild;
     if (!this._selectedModule && !this._selectedLayoutChild) {
+      console.warn('_updateModuleDesign called but no selected module or layout child');
       return;
     }
 
@@ -1430,8 +2022,31 @@ export class LayoutTab extends LitElement {
         moduleUpdates.text_align = updates.text_align;
       }
     }
-    if (updates.hasOwnProperty('font_size'))
-      moduleUpdates.font_size = updates.font_size ? parseFloat(updates.font_size) : undefined;
+    if (updates.hasOwnProperty('font_size')) {
+      // For text modules, store font_size in design for consistency with module rendering,
+      // and mirror a numeric top-level value for compatibility where needed.
+      const layout = this._ensureLayout();
+      let actualModule: any = null;
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        actualModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else {
+        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule!;
+        actualModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      }
+
+      if (actualModule && actualModule.type === 'text') {
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(actualModule.design || {}) };
+        (moduleUpdates.design as any).font_size = (updates as any).font_size || undefined;
+      }
+
+      moduleUpdates.font_size = (updates as any).font_size
+        ? parseFloat((updates as any).font_size)
+        : undefined;
+    }
     if (updates.hasOwnProperty('line_height')) moduleUpdates.line_height = updates.line_height;
     if (updates.hasOwnProperty('letter_spacing'))
       moduleUpdates.letter_spacing = updates.letter_spacing;
@@ -1766,6 +2381,7 @@ export class LayoutTab extends LitElement {
   private _closeLayoutChildSettings(): void {
     this._showLayoutChildSettings = false;
     this._selectedLayoutChild = null;
+    this._selectedNestedChildIndex = -1; // Reset nested child index
     this.requestUpdate();
   }
 
@@ -1801,6 +2417,8 @@ export class LayoutTab extends LitElement {
     }
 
     this._draggedItem = { type, rowIndex, columnIndex, moduleIndex, data };
+
+    // debug removed
 
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData(
@@ -1861,7 +2479,12 @@ export class LayoutTab extends LitElement {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!this._draggedItem) return;
+    // debug removed
+
+    if (!this._draggedItem) {
+      // debug removed
+      return;
+    }
 
     // Don't allow dropping on self
     if (
@@ -1870,27 +2493,37 @@ export class LayoutTab extends LitElement {
       this._draggedItem.columnIndex === columnIndex &&
       this._draggedItem.moduleIndex === moduleIndex
     ) {
+      // debug removed
       return;
     }
 
-    // Special handling for layout children being dragged to regular columns
+    // Special handling for layout children being dragged to layout modules
     if (this._draggedItem.layoutChildIndex !== undefined) {
-      // Prevent dropping on the parent layout module
+      // Only prevent dropping on the EXACT SAME parent layout module
+      // Allow dropping on different layout modules (different row/column/module coordinates)
       if (
         type === 'layout' &&
         this._draggedItem.rowIndex === rowIndex &&
         this._draggedItem.columnIndex === columnIndex &&
         this._draggedItem.moduleIndex === moduleIndex
       ) {
+        // debug removed
         return;
       }
+      // Allow dropping on different layout modules
+      // debug removed
     }
 
     // Only show drop target for valid combinations
-    if (!this._isValidDropTarget(this._draggedItem.type, type)) {
+    const isValid = this._isValidDropTarget(this._draggedItem.type, type);
+    // debug removed
+
+    if (!isValid) {
+      // debug removed
       return;
     }
 
+    // debug removed
     this._dropTarget = { type, rowIndex, columnIndex, moduleIndex };
 
     // Add enhanced visual feedback
@@ -1932,6 +2565,8 @@ export class LayoutTab extends LitElement {
     e.preventDefault();
     e.stopPropagation();
 
+    // debug removed
+
     // Reset visual feedback
     const target = e.currentTarget as HTMLElement;
     if (target) {
@@ -1948,14 +2583,14 @@ export class LayoutTab extends LitElement {
       this._draggedItem.columnIndex === columnIndex &&
       this._draggedItem.moduleIndex === moduleIndex
     ) {
+      // debug removed
       return;
     }
 
     // Validate drop target compatibility
-    if (!this._isValidDropTarget(this._draggedItem.type, type)) {
-      return; // Reject invalid drops
-    }
+    if (!this._isValidDropTarget(this._draggedItem.type, type)) return; // Reject invalid drops
 
+    // debug removed
     this._performMove(this._draggedItem, { type, rowIndex, columnIndex, moduleIndex });
 
     this._draggedItem = null;
@@ -1967,6 +2602,8 @@ export class LayoutTab extends LitElement {
     // Define valid drop combinations
     const validCombinations: Record<string, string[]> = {
       module: ['module', 'column', 'layout', 'layout-child'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
+      'nested-child': ['module', 'column', 'layout', 'layout-child'], // Back-compat alias (older DnD path)
+      'layout-child': ['module', 'column', 'layout', 'layout-child'], // Actual type emitted by layout child drag start
       column: ['column', 'row'], // Columns can be dropped on other columns or row areas
       row: ['row'], // Rows can only be dropped on other rows
     };
@@ -1981,6 +2618,9 @@ export class LayoutTab extends LitElement {
     switch (source.type) {
       case 'module':
         this._moveModule(newLayout, source, target);
+        break;
+      case 'nested-child':
+        this._moveNestedChild(newLayout, source, target);
         break;
       case 'column':
         this._moveColumn(newLayout, source, target);
@@ -2144,6 +2784,15 @@ export class LayoutTab extends LitElement {
     const sourceColumn = layout.rows[source.rowIndex].columns[source.columnIndex];
     layout.rows[source.rowIndex].columns.splice(source.columnIndex, 1);
 
+    // Update source row's column layout after removal
+    const sourceRowNewColumnCount = layout.rows[source.rowIndex].columns.length;
+    if (sourceRowNewColumnCount > 0) {
+      const sourceDefaultLayout = this._getLayoutsForColumnCount(sourceRowNewColumnCount)[0];
+      layout.rows[source.rowIndex].column_layout = sourceDefaultLayout
+        ? sourceDefaultLayout.id
+        : `repeat(${sourceRowNewColumnCount}, 1fr)`;
+    }
+
     if (target.type === 'column') {
       // Insert at specific position within row
       layout.rows[target.rowIndex].columns.splice(target.columnIndex || 0, 0, sourceColumn);
@@ -2151,6 +2800,13 @@ export class LayoutTab extends LitElement {
       // Add to end of target row
       layout.rows[target.rowIndex].columns.push(sourceColumn);
     }
+
+    // Update target row's column layout after addition
+    const targetRowNewColumnCount = layout.rows[target.rowIndex].columns.length;
+    const targetDefaultLayout = this._getLayoutsForColumnCount(targetRowNewColumnCount)[0];
+    layout.rows[target.rowIndex].column_layout = targetDefaultLayout
+      ? targetDefaultLayout.id
+      : `repeat(${targetRowNewColumnCount}, 1fr)`;
   }
 
   private _moveRow(layout: any, source: any, target: any): void {
@@ -2161,6 +2817,40 @@ export class LayoutTab extends LitElement {
     // Insert at target position
     const targetIndex = target.rowIndex;
     layout.rows.splice(targetIndex, 0, sourceRow);
+  }
+
+  private _moveNestedChild(layout: any, source: any, target: any): void {
+    // Handle moving nested child modules (modules inside nested layout modules)
+    const sourceParentLayout =
+      layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
+    const sourceNestedLayout = sourceParentLayout.modules[source.layoutChildIndex];
+    const sourceModule = sourceNestedLayout.modules[source.nestedChildIndex];
+
+    // Remove from source
+    sourceNestedLayout.modules.splice(source.nestedChildIndex, 1);
+
+    // Add to target based on target type
+    if (target.type === 'module') {
+      // Moving to a regular column
+      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
+      const targetIndex = target.moduleIndex || 0;
+      targetColumn.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'layout') {
+      // Moving to a layout module
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      if (!targetLayoutModule.modules) {
+        targetLayoutModule.modules = [];
+      }
+      targetLayoutModule.modules.push(sourceModule);
+    } else if (target.type === 'layout-child') {
+      // Moving to another position within a layout module
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      const targetIndex = target.childIndex || 0;
+      targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
+    }
+    // Note: We could add more target types here for moving to nested layouts, etc.
   }
 
   // Row settings methods
@@ -2269,12 +2959,14 @@ export class LayoutTab extends LitElement {
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
           <ha-icon
             class="preview-caret"
-            icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+            icon="${this._isCurrentModulePreviewCollapsed()
+              ? 'mdi:chevron-down'
+              : 'mdi:chevron-up'}"
           ></ha-icon>
         </div>
         <div
           class="preview-content"
-          style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+          style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
         >
           ${previewContent}
         </div>
@@ -2546,12 +3238,18 @@ export class LayoutTab extends LitElement {
                     e.stopPropagation();
                     this._openLayoutModuleSelector(rowIndex!, columnIndex!, moduleIndex!);
                   }}
+                  @dragover=${this._onDragOver}
+                  @dragenter=${(e: DragEvent) =>
+                    this._onDragEnter(e, 'layout', rowIndex!, columnIndex!, moduleIndex!)}
+                  @dragleave=${this._onDragLeave}
+                  @drop=${(e: DragEvent) =>
+                    this._onDrop(e, 'layout', rowIndex!, columnIndex!, moduleIndex!)}
                   title="${localize(
                     'editor.layout.click_to_add_module',
                     lang,
                     'Click to add a module'
                   )}"
-                  style="cursor: pointer;"
+                  style="cursor: pointer; border: 2px dashed transparent; border-radius: 4px; padding: 12px;"
                 >
                   <ha-icon icon="mdi:plus-circle"></ha-icon>
                   <span
@@ -2614,7 +3312,24 @@ export class LayoutTab extends LitElement {
     childIndex?: number
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    // In the layout builder, show simplified modules like regular columns
+
+    // Check if this child module is itself a layout module (horizontal or vertical)
+    const isNestedLayoutModule =
+      childModule.type === 'horizontal' || childModule.type === 'vertical';
+
+    if (isNestedLayoutModule) {
+      // Render nested layout modules with full layout functionality
+      // We need to create a special context for nested layout modules
+      return this._renderNestedLayoutModule(
+        childModule,
+        parentRowIndex,
+        parentColumnIndex,
+        parentModuleIndex,
+        childIndex
+      );
+    }
+
+    // For non-layout modules, use the existing simplified rendering
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(childModule.type);
 
@@ -2733,6 +3448,533 @@ export class LayoutTab extends LitElement {
                       'editor.layout.delete_child_module',
                       lang,
                       'Delete Child Module'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:delete"></ha-icon>
+                  </button>
+                </div>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderNestedLayoutModule(
+    layoutModule: CardModule,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    childIndex?: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const nestedLayout = layoutModule as any; // HorizontalModule or VerticalModule
+    const hasChildren = nestedLayout.modules && nestedLayout.modules.length > 0;
+    const isHorizontal = layoutModule.type === 'horizontal';
+    const isVertical = layoutModule.type === 'vertical';
+
+    // Get module metadata
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(layoutModule.type);
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown Layout',
+      description: 'Unknown layout type',
+    };
+
+    return html`
+      <div class="nested-layout-module-container layout-module-container">
+        <div class="nested-layout-module-header layout-module-header">
+          <div class="nested-layout-module-title layout-module-title">
+            <div
+              class="nested-layout-drag-handle layout-module-drag-handle"
+              title="${localize(
+                'editor.layout.drag_to_move_nested_layout',
+                lang,
+                'Drag to move nested layout module'
+              )}"
+            >
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}"></ha-icon>
+            <span
+              >${isHorizontal
+                ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
+                : localize('editor.layout.vertical_layout', lang, 'Vertical Layout')}</span
+            >
+          </div>
+          <div class="nested-layout-module-actions layout-module-actions">
+            ${parentRowIndex !== undefined &&
+            parentColumnIndex !== undefined &&
+            parentModuleIndex !== undefined &&
+            childIndex !== undefined
+              ? html`
+                  <button
+                    class="layout-module-add-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openNestedLayoutModuleSelector(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.add_module_to_nested_layout',
+                      lang,
+                      'Add Module to Nested Layout'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:plus"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-module-settings-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openLayoutChildSettings(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.nested_layout_settings',
+                      lang,
+                      'Nested Layout Settings'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:cog"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-module-duplicate-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._duplicateLayoutChildModule(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.duplicate_nested_layout',
+                      lang,
+                      'Duplicate Nested Layout'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-module-delete-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._deleteLayoutChildModule(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.delete_nested_layout',
+                      lang,
+                      'Delete Nested Layout'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:delete"></ha-icon>
+                  </button>
+                `
+              : ''}
+          </div>
+        </div>
+        <div
+          class="nested-layout-modules-container layout-modules-container"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 8px 12px;
+            min-height: 60px;
+            box-sizing: border-box;
+            overflow: hidden;
+          "
+          @dragover=${this._onDragOver}
+          @dragenter=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // debug removed
+
+            if (!this._draggedItem) return;
+
+            // Only handle drops from OUTSIDE this specific nested layout
+            // Check if dragging from within the EXACT SAME nested layout
+            const isDraggingFromThisExactNestedLayout =
+              this._draggedItem.type === 'nested-child' &&
+              this._draggedItem.rowIndex === parentRowIndex &&
+              this._draggedItem.columnIndex === parentColumnIndex &&
+              this._draggedItem.moduleIndex === parentModuleIndex &&
+              this._draggedItem.layoutChildIndex === childIndex;
+
+            // debug removed
+
+            if (isDraggingFromThisExactNestedLayout) {
+              // debug removed
+              return;
+            }
+
+            // debug removed
+
+            // Allow dropping into nested layout modules from external sources
+            this._dropTarget = {
+              type: 'nested-layout' as any,
+              rowIndex: parentRowIndex!,
+              columnIndex: parentColumnIndex!,
+              moduleIndex: parentModuleIndex!,
+              childIndex: childIndex,
+            };
+
+            // Add visual feedback
+            const target = e.currentTarget as HTMLElement;
+            if (target) {
+              target.style.borderColor = 'var(--primary-color)';
+              target.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
+            }
+
+            this.requestUpdate();
+          }}
+          @dragleave=${this._onDragLeave}
+          @drop=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // debug removed
+
+            // Reset visual feedback
+            const target = e.currentTarget as HTMLElement;
+            if (target) {
+              target.style.borderColor = '';
+              target.style.backgroundColor = '';
+            }
+
+            if (!this._draggedItem) return;
+
+            // Only handle drops from OUTSIDE this specific nested layout
+            const isDraggingFromThisExactNestedLayout =
+              this._draggedItem.type === 'nested-child' &&
+              this._draggedItem.rowIndex === parentRowIndex &&
+              this._draggedItem.columnIndex === parentColumnIndex &&
+              this._draggedItem.moduleIndex === parentModuleIndex &&
+              this._draggedItem.layoutChildIndex === childIndex;
+
+            // debug removed
+
+            if (isDraggingFromThisExactNestedLayout) {
+              // debug removed
+              return;
+            }
+
+            // Move the module to the nested layout
+            const layout = this._ensureLayout();
+            const newLayout = JSON.parse(JSON.stringify(layout));
+
+            // Get the nested layout module
+            const nestedLayoutModule = newLayout.rows[parentRowIndex!].columns[parentColumnIndex!]
+              .modules[parentModuleIndex!].modules[childIndex!] as any;
+
+            if (nestedLayoutModule && this._isLayoutModule(nestedLayoutModule.type)) {
+              if (!nestedLayoutModule.modules) {
+                nestedLayoutModule.modules = [];
+              }
+
+              // Get the source module
+              let sourceModule;
+              if (this._draggedItem.layoutChildIndex !== undefined) {
+                // From layout child
+                const sourceParentLayout =
+                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
+                    .modules[this._draggedItem.moduleIndex];
+                sourceModule = sourceParentLayout.modules[this._draggedItem.layoutChildIndex];
+                // Remove from source
+                sourceParentLayout.modules.splice(this._draggedItem.layoutChildIndex, 1);
+              } else {
+                // From regular module
+                sourceModule =
+                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
+                    .modules[this._draggedItem.moduleIndex];
+                // Remove from source
+                newLayout.rows[this._draggedItem.rowIndex].columns[
+                  this._draggedItem.columnIndex
+                ].modules.splice(this._draggedItem.moduleIndex, 1);
+              }
+
+              // Add to nested layout
+              nestedLayoutModule.modules.push(sourceModule);
+
+              // debug removed
+              this._updateLayout(newLayout);
+            }
+
+            this._draggedItem = null;
+            this._dropTarget = null;
+            this.requestUpdate();
+          }}
+        >
+          ${hasChildren
+            ? nestedLayout.modules.map(
+                (childModule: CardModule, nestedChildIndex: number) => html`
+                  <div
+                    class="nested-layout-child-wrapper"
+                    style="width: 100%; box-sizing: border-box;"
+                    @dragover=${(e: DragEvent) =>
+                      this._onNestedChildDragOver(
+                        e,
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex,
+                        nestedChildIndex
+                      )}
+                    @dragenter=${(e: DragEvent) =>
+                      this._onNestedChildDragEnter(
+                        e,
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex,
+                        nestedChildIndex
+                      )}
+                    @dragleave=${(e: DragEvent) => this._onNestedChildDragLeave(e)}
+                    @drop=${(e: DragEvent) =>
+                      this._onNestedChildDrop(
+                        e,
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex,
+                        nestedChildIndex
+                      )}
+                  >
+                    ${this._renderNestedChildModule(
+                      childModule,
+                      parentRowIndex,
+                      parentColumnIndex,
+                      parentModuleIndex,
+                      childIndex,
+                      nestedChildIndex
+                    )}
+                  </div>
+                `
+              )
+            : html`
+                <div
+                  class="nested-layout-empty layout-module-empty"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    if (
+                      parentRowIndex !== undefined &&
+                      parentColumnIndex !== undefined &&
+                      parentModuleIndex !== undefined &&
+                      childIndex !== undefined
+                    ) {
+                      this._openNestedLayoutModuleSelector(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        childIndex
+                      );
+                    }
+                  }}
+                  title="${localize(
+                    'editor.layout.click_to_add_to_nested',
+                    lang,
+                    'Click to add a module to nested layout'
+                  )}"
+                  style="cursor: pointer;"
+                >
+                  <ha-icon icon="mdi:plus-circle"></ha-icon>
+                  <span>
+                    ${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}
+                  </span>
+                </div>
+              `}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderNestedChildModule(
+    childModule: CardModule,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    nestedChildIndex?: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+
+    // Check if this child module is itself a layout module (for 3+ level nesting, which we prevent)
+    const isNestedLayoutModule =
+      childModule.type === 'horizontal' || childModule.type === 'vertical';
+
+    if (isNestedLayoutModule) {
+      // This would be a 3rd level of nesting, which we don't allow
+      // But we still need to render it properly (this shouldn't happen with our validation)
+      return this._renderLayoutChildModule(
+        childModule,
+        parentRowIndex,
+        parentColumnIndex,
+        parentModuleIndex,
+        nestedLayoutIndex
+      );
+    }
+
+    // For regular content modules inside nested layouts, use simplified rendering with proper nested indexing
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(childModule.type);
+
+    // Get module metadata for icon and description
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+      description: 'Unknown module type',
+    };
+
+    // Generate helpful info based on module type and configuration
+    const moduleInfo = this._generateModuleInfo(childModule);
+    const moduleTitle = this._getModuleDisplayName(childModule);
+
+    return html`
+      <div
+        class="layout-child-simplified-module"
+        draggable="true"
+        @dragstart=${(e: DragEvent) =>
+          this._onNestedChildDragStart(
+            e,
+            childModule,
+            parentRowIndex,
+            parentColumnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            nestedChildIndex
+          )}
+        @dragend=${(e: DragEvent) => this._onNestedChildDragEnd(e)}
+        @click=${(e: Event) => {
+          // Only open settings if not clicking on action buttons or drag handle
+          const target = e.target as HTMLElement;
+          if (
+            !target.closest('.layout-child-actions') &&
+            !target.closest('.layout-child-drag-handle')
+          ) {
+            e.stopPropagation();
+            if (
+              parentRowIndex !== undefined &&
+              parentColumnIndex !== undefined &&
+              parentModuleIndex !== undefined &&
+              nestedLayoutIndex !== undefined &&
+              nestedChildIndex !== undefined
+            ) {
+              this._openNestedChildSettings(
+                parentRowIndex,
+                parentColumnIndex,
+                parentModuleIndex,
+                nestedLayoutIndex,
+                nestedChildIndex
+              );
+            }
+          }
+        }}
+      >
+        <div class="layout-child-module-header">
+          <div
+            class="layout-child-drag-handle"
+            title="${localize('editor.layout.drag_to_reorder', lang, 'Drag to reorder')}"
+          >
+            <ha-icon icon="mdi:drag"></ha-icon>
+          </div>
+          <ha-icon icon="${metadata.icon}" class="layout-child-icon"></ha-icon>
+          <div class="layout-child-content">
+            <div class="layout-child-title">${moduleTitle}</div>
+            <div class="layout-child-info">${moduleInfo}</div>
+          </div>
+          ${parentRowIndex !== undefined &&
+          parentColumnIndex !== undefined &&
+          parentModuleIndex !== undefined &&
+          nestedLayoutIndex !== undefined &&
+          nestedChildIndex !== undefined
+            ? html`
+                <div class="layout-child-actions">
+                  <button
+                    class="layout-child-action-btn edit-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openNestedChildSettings(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        nestedLayoutIndex,
+                        nestedChildIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.edit_nested_child_module',
+                      lang,
+                      'Edit Nested Child Module'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:pencil"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-child-action-btn duplicate-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._duplicateNestedChildModule(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        nestedLayoutIndex,
+                        nestedChildIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.duplicate_nested_child_module',
+                      lang,
+                      'Duplicate Nested Child Module'
+                    )}"
+                  >
+                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-child-action-btn delete-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._deleteNestedChildModule(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        nestedLayoutIndex,
+                        nestedChildIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize(
+                      'editor.layout.delete_nested_child_module',
+                      lang,
+                      'Delete Nested Child Module'
                     )}"
                   >
                     <ha-icon icon="mdi:delete"></ha-icon>
@@ -2926,6 +4168,200 @@ export class LayoutTab extends LitElement {
 
     this._draggedItem = null;
     this._dropTarget = null;
+    this.requestUpdate();
+  }
+
+  private _onNestedChildDragStart(
+    e: DragEvent,
+    childModule: CardModule,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    nestedChildIndex?: number
+  ): void {
+    if (!e.dataTransfer) return;
+
+    e.stopPropagation();
+
+    // Set up drag data for nested child modules
+    this._draggedItem = {
+      type: 'nested-child',
+      rowIndex: parentRowIndex!,
+      columnIndex: parentColumnIndex!,
+      moduleIndex: parentModuleIndex!,
+      layoutChildIndex: nestedLayoutIndex!, // Index of the nested layout module
+      nestedChildIndex: nestedChildIndex!, // Index of the module within the nested layout
+      data: childModule, // Store the module data for drag operations
+    };
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'nested-child-module');
+
+    // Visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '0.5';
+      target.style.transform = 'scale(0.95)';
+    }
+  }
+
+  private _onNestedChildDragEnd(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '';
+      target.style.transform = '';
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  private _onNestedChildDragOver(
+    e: DragEvent,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    targetChildIndex?: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  private _onNestedChildDragEnter(
+    e: DragEvent,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    targetChildIndex?: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // debug removed
+
+    if (!this._draggedItem) return;
+
+    // Only handle reordering within the same nested layout
+    const isSameNestedLayout =
+      this._draggedItem.type === 'nested-child' &&
+      this._draggedItem.rowIndex === parentRowIndex &&
+      this._draggedItem.columnIndex === parentColumnIndex &&
+      this._draggedItem.moduleIndex === parentModuleIndex &&
+      this._draggedItem.layoutChildIndex === nestedLayoutIndex;
+
+    if (!isSameNestedLayout) return;
+
+    // Don't drop on yourself
+    if (this._draggedItem.nestedChildIndex === targetChildIndex) return;
+
+    // Visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.backgroundColor = 'var(--primary-color, #03a9f4)';
+      target.style.opacity = '0.3';
+    }
+  }
+
+  private _onNestedChildDragLeave(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.backgroundColor = '';
+      target.style.opacity = '';
+    }
+  }
+
+  private _onNestedChildDrop(
+    e: DragEvent,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    targetChildIndex?: number
+  ): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // debug removed
+
+    // Clear visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.backgroundColor = '';
+      target.style.opacity = '';
+    }
+
+    if (!this._draggedItem) return;
+
+    // Only handle reordering within the same nested layout
+    const isSameNestedLayout =
+      this._draggedItem.type === 'nested-child' &&
+      this._draggedItem.rowIndex === parentRowIndex &&
+      this._draggedItem.columnIndex === parentColumnIndex &&
+      this._draggedItem.moduleIndex === parentModuleIndex &&
+      this._draggedItem.layoutChildIndex === nestedLayoutIndex;
+
+    if (!isSameNestedLayout) return;
+
+    // Don't drop on yourself
+    if (this._draggedItem.nestedChildIndex === targetChildIndex) return;
+
+    // debug removed
+
+    // Reorder within the nested layout
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    let sourceChildIndex = this._draggedItem.nestedChildIndex!;
+    let targetIndex = targetChildIndex!;
+
+    // Access the nested layout using the same structure used for rendering
+    const parentLayoutModule: any =
+      newLayout.rows[parentRowIndex!].columns[parentColumnIndex!].modules[parentModuleIndex!];
+
+    if (!parentLayoutModule || !Array.isArray(parentLayoutModule.modules)) {
+      console.warn('❌ Parent layout module missing modules array');
+      return;
+    }
+
+    const nestedLayout: any = parentLayoutModule.modules[nestedLayoutIndex!];
+    if (!nestedLayout || !Array.isArray(nestedLayout.modules)) {
+      console.warn('❌ Nested layout missing modules array');
+      return;
+    }
+
+    const nestedModules = nestedLayout.modules as any[];
+
+    // If moving downward, the removal shifts the target index
+    if (sourceChildIndex < targetIndex) {
+      targetIndex = Math.max(0, targetIndex - 1);
+    }
+
+    // Bounds safety
+    sourceChildIndex = Math.max(0, Math.min(sourceChildIndex, nestedModules.length - 1));
+    targetIndex = Math.max(0, Math.min(targetIndex, nestedModules.length));
+
+    // Remove the dragged module
+    const [draggedModule] = nestedModules.splice(sourceChildIndex, 1);
+
+    // Insert at target position
+    nestedModules.splice(targetIndex, 0, draggedModule);
+
+    // debug removed
+
+    // Update the layout
+    this._updateLayout(newLayout);
+
+    this._draggedItem = null;
     this.requestUpdate();
   }
 
@@ -3190,6 +4626,26 @@ export class LayoutTab extends LitElement {
     this._showModuleSelector = true;
   }
 
+  private _openNestedLayoutModuleSelector(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    childIndex: number
+  ): void {
+    // For now, we'll use a simplified approach where we temporarily modify the nested layout module
+    // to act as if it's a top-level layout module for the purposes of adding children
+    // This is a compromise solution that reuses the existing module selector infrastructure
+
+    // Set the nested layout module as the target
+    this._selectedRowIndex = parentRowIndex;
+    this._selectedColumnIndex = parentColumnIndex;
+    // Use a special encoding to indicate we're adding to a nested layout
+    // We'll store the parent module index and child index in a way we can decode later
+    this._selectedLayoutModuleIndex = parentModuleIndex;
+    this._selectedNestedChildIndex = childIndex; // We'll need to add this state variable
+    this._showModuleSelector = true;
+  }
+
   private _openLayoutChildSettings(
     parentRowIndex: number,
     parentColumnIndex: number,
@@ -3225,6 +4681,9 @@ export class LayoutTab extends LitElement {
     const childModuleToDuplicate = layoutModule.modules[childIndex];
     const duplicatedModule = JSON.parse(JSON.stringify(childModuleToDuplicate));
 
+    // Generate new IDs for the duplicated module and any nested content
+    this._regenerateModuleIds(duplicatedModule);
+
     // Create new layout with the duplicated child module
     const newLayout = {
       rows: layout.rows.map((r, rIndex) => {
@@ -3259,6 +4718,196 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
+  }
+
+  private _duplicateNestedChildModule(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    nestedChildIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const row = layout.rows[parentRowIndex];
+    if (!row || !row.columns[parentColumnIndex]) return;
+
+    const column = row.columns[parentColumnIndex];
+    if (!column.modules || !column.modules[parentModuleIndex]) return;
+
+    const parentLayoutModule = column.modules[parentModuleIndex] as any;
+    if (!parentLayoutModule.modules || !parentLayoutModule.modules[nestedLayoutIndex]) return;
+
+    const nestedLayoutModule = parentLayoutModule.modules[nestedLayoutIndex] as any;
+    if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[nestedChildIndex]) return;
+
+    // Clone the nested child module
+    const childModuleToDuplicate = nestedLayoutModule.modules[nestedChildIndex];
+    const duplicatedModule = JSON.parse(JSON.stringify(childModuleToDuplicate));
+
+    // Generate new IDs for the duplicated module and any nested content
+    this._regenerateModuleIds(duplicatedModule);
+
+    // Create new layout with the duplicated nested child module
+    const newLayout = {
+      rows: layout.rows.map((r, rIndex) => {
+        if (rIndex === parentRowIndex) {
+          return {
+            ...r,
+            columns: r.columns.map((col, cIndex) => {
+              if (cIndex === parentColumnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((module, mIndex) => {
+                    if (mIndex === parentModuleIndex) {
+                      const updatedParentLayoutModule = module as any;
+                      return {
+                        ...updatedParentLayoutModule,
+                        modules: updatedParentLayoutModule.modules.map(
+                          (nestedModule: any, nIndex: number) => {
+                            if (nIndex === nestedLayoutIndex) {
+                              const updatedNestedLayoutModule = nestedModule as any;
+                              const newModules = [...updatedNestedLayoutModule.modules];
+                              // Insert the duplicated module right after the original
+                              newModules.splice(nestedChildIndex + 1, 0, duplicatedModule);
+                              return {
+                                ...updatedNestedLayoutModule,
+                                modules: newModules,
+                              };
+                            }
+                            return nestedModule;
+                          }
+                        ),
+                      };
+                    }
+                    return module;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return r;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+  }
+
+  private _deleteNestedChildModule(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    nestedChildIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const row = layout.rows[parentRowIndex];
+    if (!row || !row.columns[parentColumnIndex]) return;
+
+    const column = row.columns[parentColumnIndex];
+    if (!column.modules || !column.modules[parentModuleIndex]) return;
+
+    const parentLayoutModule = column.modules[parentModuleIndex] as any;
+    if (!parentLayoutModule.modules || !parentLayoutModule.modules[nestedLayoutIndex]) return;
+
+    const nestedLayoutModule = parentLayoutModule.modules[nestedLayoutIndex] as any;
+    if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[nestedChildIndex]) return;
+
+    // Create new layout with the nested child module removed
+    const newLayout = {
+      rows: layout.rows.map((r, rIndex) => {
+        if (rIndex === parentRowIndex) {
+          return {
+            ...r,
+            columns: r.columns.map((col, cIndex) => {
+              if (cIndex === parentColumnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((module, mIndex) => {
+                    if (mIndex === parentModuleIndex) {
+                      const updatedParentLayoutModule = module as any;
+                      return {
+                        ...updatedParentLayoutModule,
+                        modules: updatedParentLayoutModule.modules.map(
+                          (nestedModule: any, nIndex: number) => {
+                            if (nIndex === nestedLayoutIndex) {
+                              const updatedNestedLayoutModule = nestedModule as any;
+                              const newModules = [...updatedNestedLayoutModule.modules];
+                              // Remove the nested child module
+                              newModules.splice(nestedChildIndex, 1);
+                              return {
+                                ...updatedNestedLayoutModule,
+                                modules: newModules,
+                              };
+                            }
+                            return nestedModule;
+                          }
+                        ),
+                      };
+                    }
+                    return module;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return r;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+  }
+
+  private _openNestedChildSettings(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    nestedChildIndex: number
+  ): void {
+    // For now, this is a placeholder - we'd need to extend the settings system
+    // to handle deeply nested modules. This could reuse the existing layout child
+    // settings system with an additional nesting level parameter.
+    // Extend the existing layout child settings system to handle nested children
+    // We'll use the existing _selectedLayoutChild but add nested indexing
+    this._selectedLayoutChild = {
+      parentRowIndex,
+      parentColumnIndex,
+      parentModuleIndex,
+      childIndex: nestedLayoutIndex, // The nested layout module index
+    };
+
+    // Store the nested child index separately for deeper nesting
+    this._selectedNestedChildIndex = nestedChildIndex;
+    this._showLayoutChildSettings = true;
+  }
+
+  private _regenerateModuleIds(module: any): void {
+    // Generate new ID for the module
+    module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // If this is a layout module, regenerate IDs for all nested modules
+    if ((module.type === 'horizontal' || module.type === 'vertical') && module.modules) {
+      module.modules.forEach((childModule: any) => {
+        this._regenerateModuleIds(childModule); // Recursive for nested layouts
+      });
+    }
+
+    // Handle other modules with nested content (like info modules with entities)
+    if (module.type === 'info' && module.info_entities) {
+      module.info_entities.forEach((entity: any) => {
+        entity.id = `info-entity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      });
+    }
+
+    if (module.type === 'icon' && module.icons) {
+      module.icons.forEach((icon: any) => {
+        icon.id = `icon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      });
+    }
   }
 
   private _deleteLayoutChildModule(
@@ -3734,18 +5383,18 @@ export class LayoutTab extends LitElement {
       <div class="module-preview">
         <div
           class="preview-header"
-          @click=${this._togglePreviewCollapsed}
+          @click=${this._toggleRowColumnPreviewCollapsed}
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
           <ha-icon
             class="preview-caret"
-            icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+            icon="${this._isRowColumnPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
           ></ha-icon>
         </div>
         <div
           class="preview-content"
-          style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+          style="display: ${this._isRowColumnPreviewCollapsed ? 'none' : 'block'};"
         >
           ${rowAnimationData.class
             ? html`
@@ -3801,18 +5450,18 @@ export class LayoutTab extends LitElement {
       <div class="module-preview">
         <div
           class="preview-header"
-          @click=${this._togglePreviewCollapsed}
+          @click=${this._toggleRowColumnPreviewCollapsed}
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
           <ha-icon
             class="preview-caret"
-            icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+            icon="${this._isRowColumnPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
           ></ha-icon>
         </div>
         <div
           class="preview-content"
-          style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+          style="display: ${this._isRowColumnPreviewCollapsed ? 'none' : 'block'};"
         >
           ${columnAnimationData.class
             ? html`
@@ -3998,9 +5647,28 @@ export class LayoutTab extends LitElement {
     if (!parentColumn.modules || !parentColumn.modules[parentModuleIndex]) return html``;
 
     const layoutModule = parentColumn.modules[parentModuleIndex] as any;
-    if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
 
-    const childModule = layoutModule.modules[childIndex];
+    let childModule: any;
+
+    // Check if we're accessing a nested child module (module inside a nested layout)
+    if (this._selectedNestedChildIndex >= 0) {
+      // We're accessing a nested child module
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
+
+      const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+      if (
+        !nestedLayoutModule.modules ||
+        !nestedLayoutModule.modules[this._selectedNestedChildIndex]
+      )
+        return html``;
+
+      childModule = nestedLayoutModule.modules[this._selectedNestedChildIndex];
+    } else {
+      // Regular layout child module access
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
+
+      childModule = layoutModule.modules[childIndex];
+    }
 
     // Determine which extra tabs are supported by this module
     const registry = getModuleRegistry();
@@ -4094,12 +5762,14 @@ export class LayoutTab extends LitElement {
               <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
               <ha-icon
                 class="preview-caret"
-                icon="${this._isPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+                icon="${this._isCurrentModulePreviewCollapsed()
+                  ? 'mdi:chevron-down'
+                  : 'mdi:chevron-up'}"
               ></ha-icon>
             </div>
             <div
               class="preview-content"
-              style="display: ${this._isPreviewCollapsed ? 'none' : 'block'};"
+              style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
             >
               ${this._renderSingleModuleWithAnimation(childModule)}
             </div>
@@ -4296,15 +5966,8 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderLayoutChildDesignTab(module: CardModule): TemplateResult {
-    // Use the existing design tab implementation but temporarily override update methods
-    const originalUpdateModule = this._updateModule.bind(this);
-    const originalUpdateModuleDesign = this._updateModuleDesign.bind(this);
-
-    this._updateModule = (updates: Partial<CardModule>) => {
-      this._updateLayoutChildModule(updates);
-    };
-
-    this._updateModuleDesign = (updates: Partial<DesignProperties>) => {
+    // Create a custom update method for child modules
+    const updateChildModuleDesign = (updates: Partial<DesignProperties>) => {
       // Deep-merge design updates into the existing child module design
       const layout = this._ensureLayout();
       const selChild = this._selectedLayoutChild;
@@ -4329,14 +5992,98 @@ export class LayoutTab extends LitElement {
         }
       }
 
+      // Mirror font_size to top-level for text modules and other modules that read module.font_size
+      if (Object.prototype.hasOwnProperty.call(updates, 'font_size')) {
+        modulePatch.font_size = (updates as any).font_size;
+      }
+
       this._updateLayoutChildModule(modulePatch);
     };
 
-    const result = this._renderDesignTab(module);
+    // Create a custom design properties object for the child module
+    const designProperties = {
+      color: (module as any).color,
+      text_align: (module as any).text_align || (module as any).design?.text_align,
+      font_size: (module as any).font_size || (module as any).design?.font_size,
+      line_height: (module as any).line_height || (module as any).design?.line_height,
+      letter_spacing: (module as any).letter_spacing || (module as any).design?.letter_spacing,
+      font_family: (module as any).font_family || (module as any).design?.font_family,
+      font_weight: (module as any).font_weight || (module as any).design?.font_weight,
+      text_transform: (module as any).text_transform || (module as any).design?.text_transform,
+      font_style: (module as any).font_style || (module as any).design?.font_style,
+      background_color:
+        (module as any).background_color || (module as any).design?.background_color,
+      background_image:
+        (module as any).background_image || (module as any).design?.background_image,
+      background_image_type:
+        (module as any).background_image_type || (module as any).design?.background_image_type,
+      background_image_entity:
+        (module as any).background_image_entity || (module as any).design?.background_image_entity,
+      background_repeat:
+        (module as any).background_repeat || (module as any).design?.background_repeat,
+      background_position:
+        (module as any).background_position || (module as any).design?.background_position,
+      background_size: (module as any).background_size || (module as any).design?.background_size,
+      backdrop_filter: (module as any).backdrop_filter || (module as any).design?.backdrop_filter,
+      width: (module as any).width || (module as any).design?.width,
+      height: (module as any).height || (module as any).design?.height,
+      max_width: (module as any).max_width || (module as any).design?.max_width,
+      max_height: (module as any).max_height || (module as any).design?.max_height,
+      min_width: (module as any).min_width || (module as any).design?.min_width,
+      min_height: (module as any).min_height || (module as any).design?.min_height,
+      margin_top: (module as any).margin_top || (module as any).design?.margin_top,
+      margin_bottom: (module as any).margin_bottom || (module as any).design?.margin_bottom,
+      margin_left: (module as any).margin_left || (module as any).design?.margin_left,
+      margin_right: (module as any).margin_right || (module as any).design?.margin_right,
+      padding_top: (module as any).padding_top || (module as any).design?.padding_top,
+      padding_bottom: (module as any).padding_bottom || (module as any).design?.padding_bottom,
+      padding_left: (module as any).padding_left || (module as any).design?.padding_left,
+      padding_right: (module as any).padding_right || (module as any).design?.padding_right,
+      border_radius: (module as any).border_radius || (module as any).design?.border_radius,
+      border_style: (module as any).border_style || (module as any).design?.border_style,
+      border_width: (module as any).border_width || (module as any).design?.border_width,
+      border_color: (module as any).border_color || (module as any).design?.border_color,
+      position: (module as any).position || (module as any).design?.position,
+      top: (module as any).top || (module as any).design?.top,
+      bottom: (module as any).bottom || (module as any).design?.bottom,
+      left: (module as any).left || (module as any).design?.left,
+      right: (module as any).right || (module as any).design?.right,
+      z_index: (module as any).z_index || (module as any).design?.z_index,
+      overflow: (module as any).overflow || (module as any).design?.overflow,
+      clip_path: (module as any).clip_path || (module as any).design?.clip_path,
+      box_shadow_h: (module as any).box_shadow_h || (module as any).design?.box_shadow_h,
+      box_shadow_v: (module as any).box_shadow_v || (module as any).design?.box_shadow_v,
+      box_shadow_blur: (module as any).box_shadow_blur || (module as any).design?.box_shadow_blur,
+      box_shadow_spread:
+        (module as any).box_shadow_spread || (module as any).design?.box_shadow_spread,
+      box_shadow_color:
+        (module as any).box_shadow_color || (module as any).design?.box_shadow_color,
+      text_shadow_h: (module as any).text_shadow_h || (module as any).design?.text_shadow_h,
+      text_shadow_v: (module as any).text_shadow_v || (module as any).design?.text_shadow_v,
+      text_shadow_blur:
+        (module as any).text_shadow_blur || (module as any).design?.text_shadow_blur,
+      text_shadow_color:
+        (module as any).text_shadow_color || (module as any).design?.text_shadow_color,
+      // Animation properties
+      animation_type: (module as any).animation_type,
+      animation_entity: (module as any).animation_entity,
+      animation_trigger_type: (module as any).animation_trigger_type,
+      animation_attribute: (module as any).animation_attribute,
+      animation_state: (module as any).animation_state,
+      intro_animation: (module as any).intro_animation,
+      outro_animation: (module as any).outro_animation,
+      animation_duration: (module as any).animation_duration,
+      animation_delay: (module as any).animation_delay,
+      animation_timing: (module as any).animation_timing,
+    };
 
-    // Restore original methods
-    this._updateModule = originalUpdateModule;
-    this._updateModuleDesign = originalUpdateModuleDesign;
+    const result = html`
+      <ultra-global-design-tab
+        .hass=${this.hass}
+        .designProperties=${designProperties}
+        .onUpdate=${updateChildModuleDesign}
+      ></ultra-global-design-tab>
+    `;
 
     return result;
   }
@@ -4608,14 +6355,41 @@ export class LayoutTab extends LitElement {
             'Column Gap (px)'
           )}:</label
         >
-        <input
-          type="number"
-          min="0"
-          max="50"
-          .value=${row.gap || 16}
-          @change=${(e: Event) =>
-            this._updateRow({ gap: Number((e.target as HTMLInputElement).value) })}
-        />
+        <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+          <input
+            type="range"
+            class="gap-slider"
+            min="0"
+            max="50"
+            step="1"
+            .value="${row.gap || 16}"
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              const value = Number(target.value);
+              this._updateRow({ gap: value });
+            }}
+          />
+          <input
+            type="number"
+            class="gap-input"
+            min="0"
+            max="50"
+            step="1"
+            .value="${row.gap || 16}"
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              const value = Number(target.value);
+              if (!isNaN(value)) {
+                this._updateRow({ gap: value });
+              }
+            }}
+            @keydown=${(e: KeyboardEvent) => {
+              if (e.key === 'Enter') {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
       </div>
     `;
   }
@@ -6648,21 +8422,51 @@ export class LayoutTab extends LitElement {
       <div class="layout-builder">
         <div class="builder-header">
           <h3>${localize('editor.tabs.layout', lang, 'Layout Builder')}</h3>
-          <button
-            class="add-row-btn"
-            @click=${(e: Event) => {
-              e.stopPropagation();
-              this._addRow();
-            }}
-            title="${localize(
-              'editor.layout.add_row_tooltip',
-              lang,
-              'Add a new row to your layout'
-            )}"
-          >
-            <ha-icon icon="mdi:plus"></ha-icon>
-            ${localize('editor.layout.add_row', lang, 'Add Row')}
-          </button>
+          <div class="header-buttons">
+            <button
+              class="undo-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._undo();
+              }}
+              ?disabled=${!this._canUndo()}
+              title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)')}"
+            >
+              <ha-icon icon="mdi:undo"></ha-icon>
+              ${localize('editor.layout.undo', lang, 'Undo')}
+            </button>
+            <button
+              class="redo-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._redo();
+              }}
+              ?disabled=${!this._canRedo()}
+              title="${localize(
+                'editor.layout.redo_tooltip',
+                lang,
+                'Redo last undone change (Ctrl+Y)'
+              )}"
+            >
+              <ha-icon icon="mdi:redo"></ha-icon>
+              ${localize('editor.layout.redo', lang, 'Redo')}
+            </button>
+            <button
+              class="add-row-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._addRow();
+              }}
+              title="${localize(
+                'editor.layout.add_row_tooltip',
+                lang,
+                'Add a new row to your layout'
+              )}"
+            >
+              <ha-icon icon="mdi:plus"></ha-icon>
+              ${localize('editor.layout.add_row', lang, 'Add Row')}
+            </button>
+          </div>
         </div>
 
         <div class="rows-container">
@@ -6741,6 +8545,92 @@ export class LayoutTab extends LitElement {
                     >
                       <ha-icon icon="mdi:cog"></ha-icon>
                     </button>
+                    <button
+                      class="row-paste-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._pasteRowFromClipboard(rowIndex);
+                      }}
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      @dragstart=${(e: Event) => e.preventDefault()}
+                      title="Paste from clipboard (or paste manually if prompted)"
+                    >
+                      <ha-icon icon="mdi:clipboard-text"></ha-icon>
+                    </button>
+                    <button
+                      class="row-favorite-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._saveRowAsFavorite(rowIndex);
+                      }}
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      @dragstart=${(e: Event) => e.preventDefault()}
+                      title="Save as favorite"
+                    >
+                      <ha-icon icon="mdi:heart"></ha-icon>
+                    </button>
+                    <button
+                      class="row-export-btn"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        this._exportRow(rowIndex);
+                      }}
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      @dragstart=${(e: Event) => e.preventDefault()}
+                      title="Export row"
+                    >
+                      <ha-icon icon="mdi:export"></ha-icon>
+                    </button>
+                    <div class="row-more-container">
+                      <button
+                        class="row-more-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._toggleMoreMenu(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="More actions"
+                      >
+                        <ha-icon icon="mdi:dots-vertical"></ha-icon>
+                      </button>
+                      ${this._openMoreMenuRowIndex === rowIndex
+                        ? html`
+                            <div class="row-more-menu" @click=${(e: Event) => e.stopPropagation()}>
+                              <button
+                                class="more-menu-item paste"
+                                @click=${() => {
+                                  this._pasteRowFromClipboard(rowIndex);
+                                  this._openMoreMenuRowIndex = -1;
+                                }}
+                              >
+                                <ha-icon icon="mdi:clipboard-text"></ha-icon>
+                                <span>Paste from Clipboard</span>
+                              </button>
+                              <button
+                                class="more-menu-item favorite"
+                                @click=${() => {
+                                  this._saveRowAsFavorite(rowIndex);
+                                  this._openMoreMenuRowIndex = -1;
+                                }}
+                              >
+                                <ha-icon icon="mdi:heart"></ha-icon>
+                                <span>Save as Favorite</span>
+                              </button>
+                              <button
+                                class="more-menu-item export"
+                                @click=${() => {
+                                  this._exportRow(rowIndex);
+                                  this._openMoreMenuRowIndex = -1;
+                                }}
+                              >
+                                <ha-icon icon="mdi:export"></ha-icon>
+                                <span>Export Row</span>
+                              </button>
+                            </div>
+                          `
+                        : ''}
+                    </div>
                     <button
                       class="delete-row-btn"
                       @click=${(e: Event) => {
@@ -6959,6 +8849,7 @@ export class LayoutTab extends LitElement {
         ${this._showRowSettings ? this._renderRowSettings() : ''}
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
+        ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
       </div>
     `;
   }
@@ -6966,15 +8857,7 @@ export class LayoutTab extends LitElement {
   private _renderModuleSelector(): TemplateResult {
     const registry = getModuleRegistry();
     const allModules = registry.getAllModules();
-
-    // Check if we're adding to a layout module (prevent nested layout modules)
-    // If _selectedLayoutModuleIndex >= 0, we're adding inside a layout module (only content modules allowed)
-    // If _selectedLayoutModuleIndex === -1, we're adding to a column (layout modules allowed)
     const isAddingToLayoutModule = this._selectedLayoutModuleIndex >= 0;
-
-    // Separate layout modules from content modules
-    const layoutModules = allModules.filter(m => m.metadata.category === 'layout');
-    const contentModules = allModules.filter(m => m.metadata.category !== 'layout');
 
     return html`
       <div class="module-selector-popup">
@@ -6983,6 +8866,7 @@ export class LayoutTab extends LitElement {
           @click=${() => {
             this._showModuleSelector = false;
             this._selectedLayoutModuleIndex = -1;
+            this._selectedNestedChildIndex = -1;
           }}
         ></div>
         <div class="selector-content draggable-popup" id="module-selector-popup">
@@ -7002,6 +8886,7 @@ export class LayoutTab extends LitElement {
                 @click=${() => {
                   this._showModuleSelector = false;
                   this._selectedLayoutModuleIndex = -1;
+                  this._selectedNestedChildIndex = -1;
                 }}
               >
                 ×
@@ -7009,68 +8894,47 @@ export class LayoutTab extends LitElement {
             </div>
             ${isAddingToLayoutModule
               ? html`<p class="selector-subtitle">
-                  Adding to layout module (only content modules allowed)
+                  Adding to layout module (content modules and layout modules allowed up to 2 levels
+                  deep)
                 </p>`
               : ''}
           </div>
 
+          <!-- Tab Navigation -->
+          <div class="module-selector-tabs">
+            <button
+              class="tab-button ${this._activeModuleSelectorTab === 'modules' ? 'active' : ''}"
+              @click=${() => (this._activeModuleSelectorTab = 'modules')}
+            >
+              <ha-icon icon="mdi:puzzle"></ha-icon>
+              <span>Modules</span>
+            </button>
+            <button
+              class="tab-button ${this._activeModuleSelectorTab === 'presets' ? 'active' : ''}"
+              @click=${() => {
+                this._activeModuleSelectorTab = 'presets';
+                // Refresh WordPress presets when presets tab is opened
+                ucPresetsService.refreshWordPressPresets();
+              }}
+            >
+              <ha-icon icon="mdi:palette"></ha-icon>
+              <span>Presets</span>
+            </button>
+            <button
+              class="tab-button ${this._activeModuleSelectorTab === 'favorites' ? 'active' : ''}"
+              @click=${() => (this._activeModuleSelectorTab = 'favorites')}
+            >
+              <ha-icon icon="mdi:heart"></ha-icon>
+              <span>Favorites</span>
+            </button>
+          </div>
+
           <div class="selector-body">
-            ${!isAddingToLayoutModule && layoutModules.length > 0
-              ? html`
-                  <div class="module-category">
-                    <h4 class="category-title">Layout Containers</h4>
-                    <p class="category-description">Create containers to organize your modules</p>
-                    <div class="module-types layout-modules">
-                      ${layoutModules.map(module => {
-                        const metadata = module.metadata;
-                        const isHorizontal = metadata.type === 'horizontal';
-                        const isVertical = metadata.type === 'vertical';
-                        return html`
-                          <button
-                            class="module-type-btn layout-module ${isHorizontal
-                              ? 'horizontal-layout'
-                              : ''} ${isVertical ? 'vertical-layout' : ''}"
-                            @click=${() => this._addModule(metadata.type)}
-                            title="${metadata.description}"
-                          >
-                            <ha-icon icon="${metadata.icon}"></ha-icon>
-                            <div class="module-info">
-                              <span class="module-title">${metadata.title}</span>
-                              <span class="module-description">${metadata.description}</span>
-                            </div>
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                `
+            ${this._activeModuleSelectorTab === 'modules'
+              ? this._renderModulesTab(allModules, isAddingToLayoutModule)
               : ''}
-            ${contentModules.length > 0
-              ? html`
-                  <div class="module-category">
-                    <h4 class="category-title">Content Modules</h4>
-                    <p class="category-description">Add content and interactive elements</p>
-                    <div class="module-types content-modules">
-                      ${contentModules.map(module => {
-                        const metadata = module.metadata;
-                        return html`
-                          <button
-                            class="module-type-btn content-module"
-                            @click=${() => this._addModule(metadata.type)}
-                            title="${metadata.description}"
-                          >
-                            <ha-icon icon="${metadata.icon}"></ha-icon>
-                            <div class="module-info">
-                              <span class="module-title">${metadata.title}</span>
-                              <span class="module-description">${metadata.description}</span>
-                            </div>
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                `
-              : ''}
+            ${this._activeModuleSelectorTab === 'presets' ? this._renderPresetsTab() : ''}
+            ${this._activeModuleSelectorTab === 'favorites' ? this._renderFavoritesTab() : ''}
           </div>
 
           <!-- Resize handle -->
@@ -7091,6 +8955,429 @@ export class LayoutTab extends LitElement {
 
   private _formatCategoryTitle(category: string): string {
     return category.charAt(0).toUpperCase() + category.slice(1);
+  }
+
+  private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
+    const layoutModules = allModules.filter(m => m.metadata.category === 'layout');
+    const contentModules = allModules.filter(m => m.metadata.category !== 'layout');
+
+    // Get the parent layout module and check nesting depth if we're adding to a layout module
+    let parentLayoutType: string | null = null;
+    let nestingDepth = 0;
+    if (isAddingToLayoutModule && this._selectedLayoutModuleIndex >= 0) {
+      const layout = this.config.layout;
+      let parentModule =
+        layout.rows[this._selectedRowIndex]?.columns[this._selectedColumnIndex]?.modules[
+          this._selectedLayoutModuleIndex
+        ];
+
+      // Check if we're adding to a nested layout module
+      if (this._selectedNestedChildIndex >= 0) {
+        // We're adding to a nested layout module (layout inside another layout)
+        const outerLayoutModule = parentModule as any;
+        if (
+          outerLayoutModule &&
+          outerLayoutModule.modules &&
+          outerLayoutModule.modules[this._selectedNestedChildIndex]
+        ) {
+          parentModule = outerLayoutModule.modules[this._selectedNestedChildIndex];
+          nestingDepth = 2; // We're already at the second level of nesting
+        }
+      } else {
+        nestingDepth = 1; // We're at the first level of nesting
+      }
+
+      parentLayoutType = parentModule?.type || null;
+
+      // Calculate current nesting depth by checking if parent has layout children
+      if (
+        parentModule &&
+        (parentModule.type === 'horizontal' || parentModule.type === 'vertical')
+      ) {
+        const layoutParent = parentModule as any;
+        if (layoutParent.modules && layoutParent.modules.length > 0) {
+          // Check if any existing children are layout modules (indicating we're at max depth)
+          const hasLayoutChildren = layoutParent.modules.some(
+            (child: any) => child.type === 'horizontal' || child.type === 'vertical'
+          );
+          if (hasLayoutChildren && nestingDepth >= 2) {
+            nestingDepth = 3; // Would exceed maximum depth
+          }
+        }
+      }
+    }
+
+    // Filter layout modules based on nesting rules (max 2 levels)
+    let allowedLayoutModules: any[] = [];
+    if (isAddingToLayoutModule && parentLayoutType) {
+      if (nestingDepth < 2) {
+        // Allow both horizontal and vertical layout modules for levels 1 and 2
+        allowedLayoutModules = layoutModules;
+      }
+      // If nestingDepth >= 2, don't show any layout modules (content only)
+    } else if (!isAddingToLayoutModule) {
+      // When adding to columns, show all layout modules
+      allowedLayoutModules = layoutModules;
+    }
+
+    return html`
+      ${allowedLayoutModules.length > 0
+        ? html`
+            <div class="module-category layout-containers">
+              <h4 class="category-title">Layout Containers</h4>
+              <p class="category-description">
+                ${isAddingToLayoutModule
+                  ? nestingDepth < 2
+                    ? `Add horizontal or vertical layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
+                    : 'Maximum nesting depth reached - only content modules allowed'
+                  : 'Create containers to organize your modules'}
+              </p>
+              <div class="module-types layout-modules">
+                ${allowedLayoutModules.map(module => {
+                  const metadata = module.metadata;
+                  const isHorizontal = metadata.type === 'horizontal';
+                  const isVertical = metadata.type === 'vertical';
+                  return html`
+                    <button
+                      class="module-type-btn layout-module ${isHorizontal
+                        ? 'horizontal-layout'
+                        : ''} ${isVertical ? 'vertical-layout' : ''}"
+                      @click=${() => this._addModule(metadata.type)}
+                      title="${metadata.description}"
+                    >
+                      <ha-icon icon="${metadata.icon}"></ha-icon>
+                      <div class="module-info">
+                        <span class="module-title">${metadata.title}</span>
+                        <span class="module-description">${metadata.description}</span>
+                      </div>
+                    </button>
+                  `;
+                })}
+              </div>
+            </div>
+          `
+        : ''}
+      ${contentModules.length > 0
+        ? html`
+            <div class="module-category">
+              <h4 class="category-title">Content Modules</h4>
+              <p class="category-description">Add content and interactive elements</p>
+              <div class="module-types content-modules">
+                ${contentModules.map(module => {
+                  const metadata = module.metadata;
+                  return html`
+                    <button
+                      class="module-type-btn content-module"
+                      @click=${() => this._addModule(metadata.type)}
+                      title="${metadata.description}"
+                    >
+                      <ha-icon icon="${metadata.icon}"></ha-icon>
+                      <div class="module-info">
+                        <span class="module-title">${metadata.title}</span>
+                        <span class="module-description">${metadata.description}</span>
+                      </div>
+                    </button>
+                  `;
+                })}
+              </div>
+            </div>
+          `
+        : ''}
+    `;
+  }
+
+  private _renderPresetsTab(): TemplateResult {
+    const categories = ['badges', 'layouts', 'widgets', 'custom'] as const;
+    const presets = ucPresetsService.getPresetsByCategory(this._selectedPresetCategory);
+    const wpStatus = ucPresetsService.getWordPressStatus();
+    const wpCount = ucPresetsService.getWordPressPresetsCount();
+
+    return html`
+      <div class="presets-container">
+        <!-- Header with WordPress status -->
+        <div class="presets-header">
+          <div class="preset-categories">
+            ${categories.map(
+              category => html`
+                <button
+                  class="category-btn ${this._selectedPresetCategory === category ? 'active' : ''}"
+                  @click=${() => (this._selectedPresetCategory = category)}
+                >
+                  <ha-icon
+                    icon="${category === 'badges'
+                      ? 'mdi:account-circle'
+                      : category === 'layouts'
+                        ? 'mdi:view-dashboard'
+                        : category === 'widgets'
+                          ? 'mdi:widgets'
+                          : 'mdi:puzzle'}"
+                  ></ha-icon>
+                  <span>${category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                </button>
+              `
+            )}
+          </div>
+
+          ${wpStatus.error
+            ? html`
+                <div class="wordpress-status">
+                  <div class="status-item error">
+                    <ha-icon icon="mdi:alert-circle"></ha-icon>
+                    <span>Failed to load presets</span>
+                    <button
+                      class="retry-btn"
+                      @click=${() => ucPresetsService.refreshWordPressPresets()}
+                      title="Retry loading presets"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
+                </div>
+              `
+            : ''}
+        </div>
+
+        <!-- Presets Grid -->
+        <div class="presets-grid">
+          ${presets.length > 0
+            ? presets.map(
+                preset => html`
+                  <div
+                    class="preset-card ${preset.id.startsWith('wp-')
+                      ? 'community-preset'
+                      : 'builtin-preset'}"
+                    @click=${() => {
+                      this._addPreset(preset);
+                      // Track download for WordPress presets
+                      if (preset.id.startsWith('wp-')) {
+                        ucPresetsService.trackPresetDownload(preset.id);
+                      }
+                    }}
+                  >
+                    ${preset.thumbnail
+                      ? html`
+                          <div class="preset-thumbnail">
+                            <img src="${preset.thumbnail}" alt="${preset.name} preview" />
+                            ${preset.id.startsWith('wp-')
+                              ? preset.author === 'WJD Designs'
+                                ? html`<div class="standard-badge">Default</div>`
+                                : html`<div class="community-badge">Community</div>`
+                              : html`<div class="builtin-badge">Built-in</div>`}
+                          </div>
+                        `
+                      : html`
+                          <div class="preset-icon">
+                            <ha-icon icon="${preset.icon}"></ha-icon>
+                            ${preset.id.startsWith('wp-')
+                              ? preset.author === 'WJD Designs'
+                                ? html`<div class="standard-badge">Default</div>`
+                                : html`<div class="community-badge">Community</div>`
+                              : html`<div class="builtin-badge">Built-in</div>`}
+                          </div>
+                        `}
+                    <div class="preset-info">
+                      <h4>${preset.name}</h4>
+                      <p class="preset-description">${preset.description}</p>
+                      <div class="preset-meta">
+                        <span class="preset-author">by ${preset.author}</span>
+                        <div class="preset-stats">
+                          ${preset.metadata?.downloads
+                            ? html`<span class="stat"
+                                ><ha-icon icon="mdi:download"></ha-icon>${preset.metadata
+                                  .downloads}</span
+                              >`
+                            : ''}
+                          ${preset.metadata?.rating && preset.metadata.rating > 0
+                            ? html`<span class="stat"
+                                ><ha-icon icon="mdi:star"></ha-icon
+                                >${preset.metadata.rating.toFixed(1)}</span
+                              >`
+                            : ''}
+                        </div>
+                      </div>
+                      <div class="preset-tags">
+                        ${preset.tags
+                          .filter(tag => !['community', 'wordpress', 'standard'].includes(tag))
+                          .slice(0, 3)
+                          .map(tag => html`<span class="tag">${tag}</span>`)}
+                      </div>
+                      ${preset.id.startsWith('wp-')
+                        ? html`
+                            <div class="preset-actions">
+                              <button
+                                class="read-more-btn"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation(); // Prevent preset from being applied
+                                  const wpPreset = preset as any; // Cast to access preset_url
+                                  if (wpPreset.preset_url) {
+                                    window.open(wpPreset.preset_url, '_blank');
+                                  }
+                                }}
+                                title="View full preset details on ultracard.io"
+                              >
+                                <ha-icon icon="mdi:open-in-new"></ha-icon>
+                                <span>Read More</span>
+                              </button>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  </div>
+                `
+              )
+            : html`<div class="empty-state">
+                <ha-icon icon="mdi:palette-outline"></ha-icon>
+                <p>No presets available in this category</p>
+                ${wpStatus.error
+                  ? html`<p class="error-hint">
+                      Check your internet connection and try refreshing.
+                    </p>`
+                  : ''}
+              </div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderFavoritesTab(): TemplateResult {
+    const favorites = ucFavoritesService.getFavorites();
+
+    return html`
+      <div class="favorites-container">
+        <div class="favorites-header">
+          <h4>Saved Favorites</h4>
+          <button class="import-btn" @click=${() => (this._showImportDialog = true)}>
+            <ha-icon icon="mdi:import"></ha-icon>
+            <span>Import</span>
+          </button>
+        </div>
+
+        <div class="favorites-grid">
+          ${favorites.length > 0
+            ? favorites.map(
+                favorite => html`
+                  <div class="favorite-card">
+                    <div class="favorite-header">
+                      <h4>${favorite.name}</h4>
+                      <div class="favorite-actions">
+                        <button
+                          class="action-btn"
+                          @click=${() => this._addFavorite(favorite)}
+                          title="Add to layout"
+                        >
+                          <ha-icon icon="mdi:plus"></ha-icon>
+                        </button>
+                        <button
+                          class="action-btn"
+                          @click=${() => this._exportFavorite(favorite)}
+                          title="Export"
+                        >
+                          <ha-icon icon="mdi:export"></ha-icon>
+                        </button>
+                        <button
+                          class="action-btn delete"
+                          @click=${() => this._deleteFavorite(favorite.id)}
+                          title="Delete"
+                        >
+                          <ha-icon icon="mdi:delete"></ha-icon>
+                        </button>
+                      </div>
+                    </div>
+                    ${favorite.description
+                      ? html`<p class="favorite-description">${favorite.description}</p>`
+                      : ''}
+                    <div class="favorite-meta">
+                      <span class="favorite-date">
+                        ${new Date(favorite.created).toLocaleDateString()}
+                      </span>
+                      ${favorite.tags.length > 0
+                        ? html`<div class="favorite-tags">
+                            ${favorite.tags
+                              .slice(0, 2)
+                              .map(tag => html`<span class="tag">${tag}</span>`)}
+                          </div>`
+                        : ''}
+                    </div>
+                  </div>
+                `
+              )
+            : html`<div class="empty-state">
+                <ha-icon icon="mdi:heart-outline"></ha-icon>
+                <p>No favorites saved yet</p>
+                <p class="empty-hint">Use the heart icon on any row to save it as a favorite</p>
+              </div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderFavoriteDialog(): TemplateResult {
+    if (!this._showFavoriteDialog || !this._favoriteRowToSave) {
+      return html``;
+    }
+
+    return html`
+      <uc-favorite-dialog
+        .row=${this._favoriteRowToSave}
+        .open=${this._showFavoriteDialog}
+        @close=${() => {
+          this._showFavoriteDialog = false;
+          this._favoriteRowToSave = null;
+        }}
+        @saved=${(e: CustomEvent) => {
+          this._showToast(`"${e.detail.name}" saved to favorites!`, 'success');
+        }}
+      ></uc-favorite-dialog>
+    `;
+  }
+
+  private _renderImportDialog(): TemplateResult {
+    return html`
+      <uc-import-dialog
+        .open=${this._showImportDialog}
+        @close=${() => (this._showImportDialog = false)}
+        @import=${this._handleImport}
+      ></uc-import-dialog>
+    `;
+  }
+
+  private _handleImport(e: CustomEvent<ExportData>): void {
+    const importData = e.detail;
+
+    if (importData.type === 'ultra-card-row') {
+      // Add the imported row to the layout
+      const layout = this._ensureLayout();
+      const newRow = importData.data as CardRow;
+
+      // Insert after current selected row or at the end
+      const insertIndex =
+        this._selectedRowIndex >= 0 ? this._selectedRowIndex + 1 : layout.rows.length;
+      layout.rows.splice(insertIndex, 0, newRow);
+
+      this._updateLayout(layout);
+      this._showToast(`Row "${importData.metadata.name}" imported successfully!`, 'success');
+    } else if (importData.type === 'ultra-card-layout') {
+      // Replace entire layout (with confirmation)
+      if (confirm('This will replace your entire layout. Are you sure?')) {
+        const newLayout = importData.data as { rows: CardRow[] };
+        this._updateLayout(newLayout);
+        this._showToast(`Layout "${importData.metadata.name}" imported successfully!`, 'success');
+      }
+    } else if (importData.type === 'ultra-card-module') {
+      // Add module to selected column
+      if (this._selectedRowIndex >= 0 && this._selectedColumnIndex >= 0) {
+        const layout = this._ensureLayout();
+        const column = layout.rows[this._selectedRowIndex]?.columns[this._selectedColumnIndex];
+        if (column) {
+          const newModule = importData.data as CardModule;
+          column.modules.push(newModule);
+          this._updateLayout(layout);
+          this._showToast(`Module "${importData.metadata.name}" imported successfully!`, 'success');
+        }
+      } else {
+        this._showToast('Please select a column to add the module to', 'error');
+      }
+    }
   }
 
   // Layout Module Rules - centralized logic for layout module behavior
@@ -7228,6 +9515,15 @@ export class LayoutTab extends LitElement {
         font-size: 18px;
       }
 
+      .header-buttons {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .undo-btn,
+      .redo-btn,
       .add-row-btn {
         display: flex;
         align-items: center;
@@ -7244,10 +9540,28 @@ export class LayoutTab extends LitElement {
         min-height: 40px;
       }
 
+      .undo-btn:hover,
+      .redo-btn:hover,
       .add-row-btn:hover {
         background: var(--primary-color-dark, var(--primary-color));
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .undo-btn:disabled,
+      .redo-btn:disabled {
+        background: var(--disabled-color, #ccc);
+        color: var(--disabled-text-color, #999);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .undo-btn:disabled:hover,
+      .redo-btn:disabled:hover {
+        background: var(--disabled-color, #ccc);
+        transform: none;
+        box-shadow: none;
       }
 
       .row-builder {
@@ -7276,7 +9590,7 @@ export class LayoutTab extends LitElement {
         font-weight: 500;
         border-bottom: 2px solid var(--primary-color);
         position: static;
-        z-index: 2;
+        z-index: 1;
         border-radius: 8px 8px 0px 0px;
       }
 
@@ -7475,7 +9789,7 @@ export class LayoutTab extends LitElement {
         color: white;
         border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));
         position: static;
-        z-index: 2;
+        z-index: 1;
         border-radius: 6px 6px 0px 0px;
       }
 
@@ -8869,6 +11183,79 @@ export class LayoutTab extends LitElement {
       .settings-section textarea {
         min-height: 60px;
         resize: vertical;
+      }
+
+      /* Gap control container styles */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .gap-slider {
+        flex: 1;
+        min-width: 0;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--divider-color);
+        outline: none;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .gap-slider:hover {
+        opacity: 1;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-moz-range-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .gap-slider::-moz-range-track {
+        height: 6px;
+        border-radius: 3px;
+        background: var(--divider-color);
+        border: none;
+      }
+
+      .gap-input {
+        flex: 0 0 60px;
+        min-width: 60px;
+        max-width: 60px;
+        text-align: center;
+        padding: 6px 8px !important;
       }
 
       /* Ensure form elements fit properly */
@@ -10302,6 +12689,781 @@ export class LayoutTab extends LitElement {
 
         .module-action-btn ha-icon {
           --mdc-icon-size: 20px;
+        }
+      }
+
+      /* Module Selector Tabs */
+      .module-selector-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--divider-color);
+        background: var(--secondary-background-color);
+      }
+
+      .tab-button {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: none;
+        border: none;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 2px solid transparent;
+      }
+
+      .tab-button:hover {
+        color: var(--primary-color);
+        background: var(--primary-color-10);
+      }
+
+      .tab-button.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+        background: var(--primary-color-10);
+      }
+
+      .tab-button ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      /* Layout Containers spacing */
+      .module-category.layout-containers {
+        margin-top: 20px;
+      }
+
+      /* Presets Tab */
+      .presets-container {
+        padding: 16px;
+      }
+
+      .preset-categories {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .category-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--secondary-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 20px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+      }
+
+      .category-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .category-btn.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+      }
+
+      .category-btn ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .presets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .preset-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .preset-card:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+      }
+
+      /* WordPress preset specific styles */
+      .presets-header {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .wordpress-status {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .status-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--secondary-background-color);
+        color: var(--secondary-text-color);
+      }
+
+      .status-item.loading {
+        background: rgba(var(--rgb-primary-color), 0.1);
+        color: var(--primary-color);
+      }
+
+      .status-item.error {
+        background: rgba(var(--rgb-error-color, 244, 67, 54), 0.1);
+        color: var(--error-color, #f44336);
+      }
+
+      .status-item.success {
+        background: rgba(var(--rgb-success-color, 76, 175, 80), 0.1);
+        color: var(--success-color, #4caf50);
+      }
+
+      .status-item ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .spinning {
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .retry-btn,
+      .refresh-btn {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        margin-left: 8px;
+      }
+
+      .retry-btn:hover,
+      .refresh-btn:hover {
+        background: rgba(0, 0, 0, 0.1);
+        transform: scale(1.1);
+      }
+
+      .retry-btn ha-icon,
+      .refresh-btn ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      /* Community vs Built-in vs Standard preset badges */
+      .community-badge,
+      .builtin-badge,
+      .standard-badge {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .community-badge {
+        background: rgba(var(--rgb-primary-color), 0.2);
+        color: var(--primary-color);
+        border: 1px solid rgba(var(--rgb-primary-color), 0.3);
+      }
+
+      .standard-badge {
+        background: rgba(var(--rgb-success-color, 76, 175, 80), 0.2);
+        color: var(--success-color, #4caf50);
+        border: 1px solid rgba(var(--rgb-success-color, 76, 175, 80), 0.3);
+      }
+
+      .builtin-badge {
+        background: rgba(var(--rgb-secondary-text-color), 0.1);
+        color: var(--secondary-text-color);
+        border: 1px solid rgba(var(--rgb-secondary-text-color), 0.2);
+      }
+
+      /* Enhanced preset cards for community presets */
+      .preset-card.community-preset {
+        border-left: 3px solid var(--primary-color);
+      }
+
+      .preset-card.community-preset:hover {
+        border-left-color: var(--primary-color);
+        box-shadow: 0 4px 16px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .preset-card.builtin-preset {
+        border-left: 3px solid var(--divider-color);
+      }
+
+      /* Preset stats (downloads, ratings) */
+      .preset-stats {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 4px;
+      }
+
+      .preset-stats .stat {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+
+      .preset-stats .stat ha-icon {
+        --mdc-icon-size: 12px;
+      }
+
+      /* Error hint for empty states */
+      .error-hint {
+        font-size: 12px;
+        color: var(--error-color, #f44336);
+        text-align: center;
+        margin-top: 8px;
+        font-style: italic;
+      }
+
+      /* Preset description and actions */
+      .preset-description {
+        margin: 8px 0;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
+        font-size: 13px;
+      }
+
+      .preset-actions {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .read-more-btn {
+        background: none;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .read-more-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(var(--rgb-primary-color), 0.3);
+      }
+
+      .read-more-btn ha-icon {
+        --mdc-icon-size: 12px;
+      }
+
+      /* Improve preset card layout */
+      .preset-card .preset-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .preset-card .preset-info h4 {
+        margin: 0 0 6px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        line-height: 1.3;
+      }
+
+      .preset-card .preset-meta {
+        margin-top: auto;
+        padding-top: 8px;
+      }
+
+      .preset-icon {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-color-10);
+        border-radius: 8px;
+        color: var(--primary-color);
+      }
+
+      .preset-icon ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .preset-thumbnail {
+        flex-shrink: 0;
+        width: 60px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--divider-color);
+      }
+
+      .preset-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 6px;
+      }
+
+      .preset-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .preset-info h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .preset-info p {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+      }
+
+      .preset-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .preset-author {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+
+      .preset-tags {
+        display: flex;
+        gap: 4px;
+      }
+
+      .tag {
+        padding: 2px 6px;
+        background: var(--secondary-background-color);
+        border-radius: 10px;
+        font-size: 10px;
+        color: var(--secondary-text-color);
+      }
+
+      /* Favorites Tab */
+      .favorites-container {
+        padding: 16px;
+      }
+
+      .favorites-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .favorites-header h4 {
+        margin: 0;
+        color: var(--primary-text-color);
+      }
+
+      .import-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s ease;
+      }
+
+      .import-btn:hover {
+        background: var(--primary-color-dark);
+      }
+
+      .import-btn ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .favorites-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+
+      .favorite-card {
+        padding: 16px;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 12px;
+      }
+
+      .favorite-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .favorite-header h4 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .favorite-actions {
+        display: flex;
+        gap: 4px;
+      }
+
+      .action-btn {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--secondary-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .action-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .action-btn.delete:hover {
+        border-color: var(--error-color);
+        color: var(--error-color);
+      }
+
+      .action-btn ha-icon {
+        --mdc-icon-size: 14px;
+      }
+
+      .favorite-description {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+      }
+
+      .favorite-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .favorite-date {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+      }
+
+      .favorite-tags {
+        display: flex;
+        gap: 4px;
+      }
+
+      /* Empty States */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--secondary-text-color);
+      }
+
+      .empty-state ha-icon {
+        --mdc-icon-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.6;
+      }
+
+      .empty-state p {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+      }
+
+      .empty-hint {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+
+      /* Row Action Buttons */
+      .row-paste-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .row-paste-btn:hover {
+        background: rgba(100, 150, 255, 0.8);
+        color: white;
+      }
+
+      .row-favorite-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .row-favorite-btn:hover {
+        background: rgba(255, 100, 150, 0.8);
+        color: white;
+      }
+
+      .row-export-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .row-export-btn:hover {
+        background: rgba(100, 150, 255, 0.8);
+        color: white;
+      }
+
+      /* More actions button - hidden on desktop, shown on mobile */
+      .row-more-container {
+        position: relative;
+        display: none; /* Hidden on desktop */
+      }
+
+      .row-more-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .row-more-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+
+      /* Ensure menu appears above everything */
+      .row-more-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+        min-width: 180px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+
+      .more-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-size: 14px;
+        font-weight: 500;
+        min-height: 48px;
+        box-sizing: border-box;
+      }
+
+      .more-menu-item:hover {
+        background: var(--secondary-background-color);
+      }
+
+      .more-menu-item:active {
+        background: var(--divider-color);
+      }
+
+      .more-menu-item.favorite {
+        color: var(--pink-color, #e91e63);
+      }
+
+      .more-menu-item.export {
+        color: var(--blue-color, #2196f3);
+      }
+
+      .more-menu-item ha-icon {
+        --mdc-icon-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .more-menu-item span {
+        flex: 1;
+        white-space: nowrap;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .presets-grid,
+        .favorites-grid {
+          grid-template-columns: 1fr;
+        }
+
+        /* Improve tab visibility on mobile */
+        .module-selector-tabs {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: var(--secondary-background-color);
+          border-bottom: 2px solid var(--divider-color);
+        }
+
+        .tab-button {
+          flex-direction: row;
+          gap: 6px;
+          padding: 14px 8px;
+          min-height: 48px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .tab-button ha-icon {
+          --mdc-icon-size: 20px;
+        }
+
+        .tab-button span {
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .preset-categories {
+          justify-content: center;
+          gap: 6px;
+        }
+
+        .category-btn {
+          padding: 10px 12px;
+          font-size: 13px;
+        }
+
+        /* Make module selector popup larger on mobile */
+        .selector-content {
+          width: 95vw !important;
+          max-width: 95vw !important;
+          height: 85vh !important;
+          max-height: 85vh !important;
+        }
+
+        .selector-body {
+          padding: 12px;
+          overflow-y: auto;
+        }
+
+        /* Improve module cards on mobile */
+        .module-types {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .module-type-btn {
+          padding: 16px;
+          text-align: left;
+        }
+
+        .preset-card {
+          padding: 12px;
+        }
+
+        .favorite-card {
+          padding: 12px;
+        }
+
+        /* Hide secondary actions on mobile and show more menu */
+        .row-paste-btn,
+        .row-favorite-btn,
+        .row-export-btn {
+          display: none;
+        }
+
+        .row-more-container {
+          display: inline-flex;
         }
       }
     `;

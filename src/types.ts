@@ -208,6 +208,7 @@ export interface TextModule extends BaseModule {
     service_data?: Record<string, any>;
   };
   icon?: string;
+  icon_color?: string;
   icon_position?: 'before' | 'after' | 'none';
   font_size?: number;
   font_family?: string;
@@ -325,9 +326,9 @@ export interface ImageModule extends BaseModule {
   image_url?: string;
   entity?: string;
   image_attribute?: string;
-  width?: number;
-  height?: number;
-  aspect_ratio?: 'auto' | '1:1' | '16:9' | '4:3' | '3:2';
+  width?: number | string;
+  height?: number | string;
+  aspect_ratio?: 'auto' | '1/1' | '4/3' | '3/2' | '16/9' | '21/9' | '2/3' | '9/16';
   object_fit?: 'cover' | 'contain' | 'fill' | 'scale-down' | 'none';
   border_radius?: number;
   border_width?: number;
@@ -743,6 +744,8 @@ export interface IconConfig {
   icon_active?: string;
   inactive_state?: string;
   active_state?: string;
+  inactive_attribute?: string;
+  active_attribute?: string;
   custom_inactive_state_text?: string;
   custom_active_state_text?: string;
   custom_inactive_name_text?: string;
@@ -1291,7 +1294,25 @@ export interface CameraModule extends BaseModule {
   entity: string;
   camera_name?: string;
   show_name?: boolean;
-  name_position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+  name_position?:
+    | 'top-left'
+    | 'top-middle'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-middle'
+    | 'bottom-right'
+    | 'center';
+
+  // Fullscreen controls
+  show_fullscreen?: boolean;
+  fullscreen_position?:
+    | 'top-left'
+    | 'top-middle'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-middle'
+    | 'bottom-right'
+    | 'center';
 
   // Display settings
   width?: number;
@@ -2096,6 +2117,48 @@ export interface FavoriteColor {
   name: string;
   color: string;
   order: number;
+}
+
+// Preset system types
+export interface PresetDefinition {
+  id: string;
+  name: string;
+  description: string;
+  category: 'badges' | 'layouts' | 'widgets' | 'custom';
+  icon: string;
+  author: string;
+  version: string;
+  tags: string[];
+  thumbnail?: string;
+  layout: LayoutConfig; // The actual preset configuration
+  metadata: {
+    created: string;
+    updated: string;
+    downloads?: number;
+    rating?: number;
+  };
+}
+
+// Favorites system types
+export interface FavoriteRow {
+  id: string;
+  name: string;
+  description?: string;
+  row: CardRow;
+  created: string;
+  tags: string[];
+}
+
+// Export/Import system types
+export interface ExportData {
+  type: 'ultra-card-row' | 'ultra-card-layout' | 'ultra-card-module';
+  version: string;
+  data: CardRow | LayoutConfig | CardModule;
+  metadata: {
+    exported: string;
+    name?: string;
+    description?: string;
+  };
 }
 
 // Main card configuration

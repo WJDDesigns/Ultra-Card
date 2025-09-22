@@ -124,10 +124,7 @@ export class UltraCard extends LitElement {
     const validationResult = configValidationService.validateAndCorrectConfig(config);
 
     if (!validationResult.valid) {
-      console.error('❌ Ultra Card: Config validation failed', {
-        errors: validationResult.errors,
-        warnings: validationResult.warnings,
-      });
+      // Config validation failed (silent)
       throw new Error(`Invalid configuration: ${validationResult.errors.join(', ')}`);
     }
 
@@ -138,9 +135,7 @@ export class UltraCard extends LitElement {
 
     let finalConfig = validationResult.correctedConfig!;
     if (!uniqueIdCheck.valid) {
-      console.warn('⚠️  Ultra Card: Duplicate module IDs detected, fixing...', {
-        duplicates: uniqueIdCheck.duplicates,
-      });
+      // Duplicate module IDs detected; fixing silently
       finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
     }
 

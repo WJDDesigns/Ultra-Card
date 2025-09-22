@@ -66,6 +66,10 @@
       "hidden_by_logic": "Oculto por lógica",
       "add_row": "Añadir fila",
       "add_row_tooltip": "Añadir una nueva fila a tu diseño",
+      "undo": "Deshacer",
+      "undo_tooltip": "Deshacer último cambio (Ctrl+Z)",
+      "redo": "Rehacer",
+      "redo_tooltip": "Rehacer último cambio deshecho (Ctrl+Y)",
       "row_settings": "Configuración de fila",
       "column_settings": "Configuración de columna",
       "row_background_color": "Color de fondo de fila",
@@ -367,7 +371,17 @@
       "value_template_desc": "Plantilla para renderizar el texto usando sintaxis Jinja2",
       "examples_title": "Ejemplos comunes:",
       "example_basic": "Valor básico",
-      "example_percent": "Con porcentaje"
+      "example_percent": "Con porcentaje",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

@@ -1,5 +1,9 @@
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
+import { CardModule } from '../types';
+
+// Module-level change guard to prevent infinite loops
+let _formChangeGuard = false;
 
 /**
  * Ultra Card form utilities
@@ -23,7 +27,20 @@ export class UcFormUtils {
         .schema=${schema}
         .computeLabel=${showLabels ? this._defaultComputeLabel : this._hideLabels}
         .computeDescription=${showLabels ? this._defaultComputeDescription : this._hideDescriptions}
-        @value-changed=${onChange}
+        @value-changed=${(e: CustomEvent) => {
+          // Prevent re-entrant calls that cause infinite loops
+          if (_formChangeGuard) {
+            return;
+          }
+
+          _formChangeGuard = true;
+          // Use requestAnimationFrame for better performance than setTimeout
+          requestAnimationFrame(() => {
+            _formChangeGuard = false;
+          });
+
+          onChange(e);
+        }}
       ></ha-form>
     `;
   }
@@ -271,5 +288,68 @@ export class UcFormUtils {
         ${UcFormUtils.getCleanFormStyles()}
       </style>
     `;
+  }
+
+  /**
+   * Calculate the nesting depth of layout modules
+   * @param module The module to check
+   * @param currentDepth The current depth (used internally for recursion)
+   * @returns The maximum nesting depth found
+   */
+  static getLayoutNestingDepth(module: CardModule, currentDepth: number = 0): number {
+    // Only layout modules contribute to nesting depth
+    if (module.type !== 'horizontal' && module.type !== 'vertical') {
+      return currentDepth;
+    }
+
+    let maxDepth = currentDepth + 1;
+    const layoutModule = module as any;
+
+    // Check children if they exist
+    if (layoutModule.modules && layoutModule.modules.length > 0) {
+      for (const childModule of layoutModule.modules) {
+        const childDepth = UcFormUtils.getLayoutNestingDepth(childModule, currentDepth + 1);
+        maxDepth = Math.max(maxDepth, childDepth);
+      }
+    }
+
+    return maxDepth;
+  }
+
+  /**
+   * Check if adding a module would exceed the maximum nesting depth
+   * @param parentModule The parent layout module
+   * @param childModule The child module to add
+   * @param maxDepth Maximum allowed nesting depth (default: 3, allowing 2 levels of layout modules)
+   * @returns True if the nesting would be valid, false otherwise
+   */
+  static validateNestingDepth(
+    parentModule: CardModule,
+    childModule: CardModule,
+    maxDepth: number = 3
+  ): { valid: boolean; error?: string } {
+    // If parent is not a layout module, no nesting restrictions
+    if (parentModule.type !== 'horizontal' && parentModule.type !== 'vertical') {
+      return { valid: true };
+    }
+
+    // If child is not a layout module, it's always valid
+    if (childModule.type !== 'horizontal' && childModule.type !== 'vertical') {
+      return { valid: true };
+    }
+
+    // Calculate what the depth would be if we added this child
+    const parentDepth = UcFormUtils.getLayoutNestingDepth(parentModule);
+    const childDepth = UcFormUtils.getLayoutNestingDepth(childModule);
+    const combinedDepth = parentDepth + childDepth;
+
+    if (combinedDepth > maxDepth) {
+      return {
+        valid: false,
+        error: `Layout modules cannot be nested more than ${maxDepth - 1} levels deep. This would create ${combinedDepth - 1} levels of layout nesting.`,
+      };
+    }
+
+    return { valid: true };
   }
 }

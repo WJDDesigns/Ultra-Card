@@ -5,6 +5,7 @@
 ### 🚀 Major New Features
 
 #### 📤 Export & Paste Icons in Row Headers
+
 - **Export Row Configuration**: New export icon in row headers allows you to copy the complete configuration of any row (including all modules and settings) to your clipboard as JSON
 - **Paste Row Configuration**: New paste icon enables you to quickly duplicate rows or import row configurations from other cards
 - **Row Management Icons**: Row headers now feature a complete set of management tools:
@@ -15,6 +16,7 @@
   - **⚙️ Settings**: Access row-specific configuration options
 
 #### 🌐 Integrated Online Preset Marketplace
+
 - **Browse Presets Online**: Access a curated marketplace of community-created card presets directly from the editor
 - **One-Click Installation**: Install presets instantly without manual JSON copying
 - **Category Filtering**: Browse presets by category (Dashboards, Vehicles, Weather, etc.)
@@ -23,6 +25,7 @@
 - **Auto-Updates**: Marketplace content updates automatically with new community submissions
 
 #### ⭐ Favorites System
+
 - **Mark Favorite Presets**: Star your most-used presets for quick access
 - **Favorites Tab**: Dedicated section for your starred presets in the marketplace
 - **Quick Access**: Favorite presets appear at the top of relevant categories
@@ -30,6 +33,7 @@
 - **Smart Recommendations**: System learns from your favorites to suggest similar presets
 
 #### 📹 Camera Module Fullscreen Support
+
 - **Fullscreen Toggle**: New fullscreen button in camera modules for immersive viewing
 - **Touch/Click to Expand**: Tap any camera feed to enter fullscreen mode
 - **Gesture Support**: Pinch to zoom, swipe to exit on touch devices
@@ -40,6 +44,7 @@
 ### 🎨 Design & Layout Improvements
 
 #### 🔧 Global Design Formatting Fixes
+
 - **Text Module Font Sizing**: Fixed inconsistent text size applications in text modules
 - **Proper CSS Inheritance**: Text size settings now properly cascade through nested elements
 - **Responsive Text Scaling**: Text modules now scale appropriately on different screen sizes
@@ -48,6 +53,7 @@
 - **Color Inheritance**: Fixed text color inheritance issues in nested layouts
 
 #### 📐 Module Nesting Support (1 Layer)
+
 - **Layout Module Nesting**: Layout modules (Row, Column, Horizontal) can now contain other layout modules
 - **Single-Level Deep**: Supports one level of nesting (e.g., Row → Column → Modules)
 - **Flexible Arrangements**: Create complex layouts like rows within columns or columns within rows

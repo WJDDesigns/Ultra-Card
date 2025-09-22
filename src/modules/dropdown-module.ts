@@ -25,6 +25,16 @@ export class UltraDropdownModule extends BaseUltraModule {
   private dropdownOpen: boolean = false;
   private currentSelection: Map<string, string> = new Map(); // moduleId -> selectedOption
 
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
+  }
+
   createDefault(id?: string, hass?: HomeAssistant): DropdownModule {
     return {
       id: id || this.generateId('dropdown'),
@@ -141,38 +151,27 @@ export class UltraDropdownModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
       <div class="general-tab">
         <!-- Basic Settings -->
-        ${this.renderSettingsSection(
-          localize('editor.dropdown.basic.title', lang, 'Basic Settings'),
-          localize(
-            'editor.dropdown.basic.desc',
-            lang,
-            'Configure the dropdown appearance and behavior.'
-          ),
-          [
-            ...(dropdownModule.track_state
-              ? []
-              : [
-                  {
-                    title: localize('editor.dropdown.placeholder.title', lang, 'Placeholder'),
-                    description: localize(
-                      'editor.dropdown.placeholder.desc',
-                      lang,
-                      'Text shown when no option is selected.'
-                    ),
-                    hass,
-                    data: { placeholder: dropdownModule.placeholder ?? 'Choose an option...' },
-                    schema: [this.textField('placeholder')],
-                    onChange: (e: CustomEvent) => {
-                      updateModule(e.detail.value);
-                    },
-                  },
-                ]),
-          ]
-        )}
-
-        <!-- Keep Selection State -->
         <div class="settings-section">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.dropdown.basic.desc',
+              lang,
+              'Configure the dropdown appearance and behavior.'
+            )}
+          </div>
+
+          <!-- Keep Selection State -->
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
+          >
             <div>
               <div
                 style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
@@ -201,6 +200,42 @@ export class UltraDropdownModule extends BaseUltraModule {
               }}
             ></ha-switch>
           </div>
+
+          <!-- Placeholder (only show when track_state is disabled) -->
+          ${!dropdownModule.track_state
+            ? html`
+                <div style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+                  >
+                    ${localize('editor.dropdown.placeholder.title', lang, 'Placeholder')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+                  >
+                    ${localize(
+                      'editor.dropdown.placeholder.desc',
+                      lang,
+                      'Text shown when no option is selected.'
+                    )}
+                  </div>
+                  ${this.renderUcForm(
+                    hass,
+                    { placeholder: dropdownModule.placeholder || '' },
+                    [this.textField('placeholder')],
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.placeholder;
+                      const prev = dropdownModule.placeholder || '';
+                      if (next === prev) return;
+                      updateModule(e.detail.value);
+                    },
+                    false
+                  )}
+                </div>
+              `
+            : ''}
         </div>
 
         <!-- Label Settings removed intentionally -->
@@ -297,7 +332,9 @@ export class UltraDropdownModule extends BaseUltraModule {
                           ? 'rotate(180deg)'
                           : 'rotate(0deg)'}; cursor: pointer; padding: 8px; margin: -8px;"
                         @click=${(e: Event) => {
+                          // Stop event propagation to prevent header click
                           e.stopPropagation();
+                          e.preventDefault();
                           console.log('Direct caret clicked for option:', option.id);
 
                           // Find elements directly from the event
@@ -690,10 +727,10 @@ export class UltraDropdownModule extends BaseUltraModule {
             'What happens when this option is selected'
           )}
         </div>
-        <ha-form
-          .hass=${hass}
-          .data=${{ action_config: option.action }}
-          .schema=${[
+        ${this.renderUcForm(
+          hass,
+          { action_config: option.action },
+          [
             {
               name: 'action_config',
               label: '',
@@ -703,16 +740,21 @@ export class UltraDropdownModule extends BaseUltraModule {
                 },
               },
             },
-          ]}
-          .computeLabel=${(schema: any) => schema.label || ''}
-          .computeDescription=${(schema: any) => schema.description || ''}
-          @value-changed=${(e: CustomEvent) => {
+          ],
+          (e: CustomEvent) => {
             const newAction = e.detail.value?.action_config;
-            if (newAction) {
-              updateOption(option.id, { action: newAction });
-            }
-          }}
-        ></ha-form>
+            if (!newAction) return;
+            const prevStr = JSON.stringify(option.action || {});
+            const nextStr = JSON.stringify(newAction || {});
+            if (prevStr === nextStr) return;
+            updateOption(option.id, { action: newAction });
+            // Trigger re-render to update dropdown UI
+            setTimeout(() => {
+              this.triggerPreviewUpdate();
+            }, 50);
+          },
+          false
+        )}
       </div>
 
       ${option.action.action === 'more-info'
@@ -736,10 +778,14 @@ export class UltraDropdownModule extends BaseUltraModule {
                       hass,
                       { entity: option.action.entity || '' },
                       [this.entityField('entity')],
-                      (e: CustomEvent) =>
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.entity;
+                        const prev = option.action.entity || '';
+                        if (next === prev) return;
                         updateOption(option.id, {
                           action: { ...option.action, entity: e.detail.value.entity },
-                        })
+                        });
+                      }
                     )}
                   </div>
                 `
@@ -764,10 +810,14 @@ export class UltraDropdownModule extends BaseUltraModule {
                       hass,
                       { entity: option.action.entity || '' },
                       [this.entityField('entity')],
-                      (e: CustomEvent) =>
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.entity;
+                        const prev = option.action.entity || '';
+                        if (next === prev) return;
                         updateOption(option.id, {
                           action: { ...option.action, entity: e.detail.value.entity },
-                        })
+                        });
+                      }
                     )}
                   </div>
                 `
@@ -892,7 +942,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     // Handle dropdown selection
     const handleDropdownChange = (e: Event) => {
-      e.stopPropagation(); // Prevent event from bubbling up to close the popup
+      // Prevent event from bubbling up to close the popup
       e.stopImmediatePropagation();
       const target = e.target as HTMLSelectElement;
       const selectedValue = target.value;
@@ -940,26 +990,22 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     // Handle dropdown interactions - prevent closing popup
     const handleDropdownInteraction = (e: Event) => {
-      e.stopPropagation();
       e.stopImmediatePropagation();
     };
 
     // Prevent all dropdown interactions from closing the popup
     const preventClose = (e: Event) => {
-      e.stopPropagation();
       e.stopImmediatePropagation();
     };
 
     // More comprehensive event prevention for the entire dropdown container
     const preventAllEvents = (e: Event) => {
-      e.stopPropagation();
       e.stopImmediatePropagation();
     };
 
     // Prevent container clicks from closing popup but allow dropdown functionality
     const preventContainerClose = (e: Event) => {
       // Only prevent propagation, don't prevent default to allow dropdown to work
-      e.stopPropagation();
     };
 
     // Get hover effect configuration from module design
@@ -969,7 +1015,6 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Add comprehensive event capturing for the entire container
     const captureAllEvents = (e: Event) => {
       // Stop all event propagation to prevent popup from closing
-      e.stopPropagation();
       e.stopImmediatePropagation();
 
       // Only prevent default for non-essential events
@@ -994,7 +1039,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                 class="dropdown-selected"
                 style="${dropdownStyles} display: flex; align-items: center; justify-content: space-between;"
                 @click=${(e: Event) => {
-                  e.stopPropagation();
                   console.log('Dropdown clicked');
                   this.toggleDropdown(e);
                 }}
@@ -1032,7 +1076,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                         class="dropdown-option"
                         style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--divider-color); color: inherit; font-size: inherit; font-family: inherit; font-weight: inherit;"
                         @click=${(e: Event) => {
-                          e.stopPropagation();
                           console.log('Placeholder option clicked');
                           this.selectOption('', dropdownModule);
                           this.closeDropdown(e);
@@ -1051,7 +1094,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                       class="dropdown-option"
                       style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--divider-color); display: flex; align-items: center; gap: 8px; transition: background-color 0.2s ease; color: inherit; font-size: inherit; font-family: inherit; font-weight: inherit;"
                       @click=${(e: Event) => {
-                        e.stopPropagation();
                         console.log('Option clicked:', option.label);
 
                         // Update current selection if state tracking is enabled
@@ -1440,18 +1482,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         z-index: -1;
       }
 
-      /* Ensure dropdown menu appears above other content */
-      .dropdown-module-container ha-select,
-      .dropdown-module-container mwc-menu,
-      .dropdown-module-container .mdc-menu-surface {
-        z-index: 10001 !important;
-      }
-
-      /* Fix dropdown positioning */
-      .dropdown-module-container .mdc-select__menu {
-        z-index: 10001 !important;
-        position: fixed !important;
-      }
+      /* Let HA handle dropdown positioning naturally */
 
       /* Style dropdown items with icons */
       .dropdown-module-container mwc-list-item ha-icon {
@@ -1539,31 +1570,10 @@ export class UltraDropdownModule extends BaseUltraModule {
         display: none !important;
       }
 
-      /* Fix z-index for action dropdowns in option configuration */
-      .option-item ha-form {
-        position: relative;
-        z-index: 1000;
-      }
-
-      .option-item ha-form ha-select,
-      .option-item ha-form mwc-menu,
-      .option-item ha-form .mdc-menu-surface,
-      .option-item ha-form .mdc-select__menu {
-        z-index: 10002 !important;
-        position: fixed !important;
-      }
-
-      /* Ensure action selector dropdowns appear above other content */
+      /* Simplified form styling - let HA handle dropdowns */
+      .option-item ha-form,
       .field-group ha-form {
         position: relative;
-        z-index: 1000;
-      }
-
-      .field-group ha-form ha-select,
-      .field-group ha-form mwc-menu,
-      .field-group ha-form .mdc-menu-surface,
-      .field-group ha-form .mdc-select__menu {
-        z-index: 10002 !important;
       }
 
       /* Conditional fields grouping */

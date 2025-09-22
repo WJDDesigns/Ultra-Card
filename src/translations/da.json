@@ -79,7 +79,11 @@
       "alignment_bottom": "Nederst",
       "alignment_stretch": "Stræk",
       "alignment_left": "Venstre",
-      "alignment_right": "Højre"
+      "alignment_right": "Højre",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)"
     },
     "about": {
       "developed_by": "Udviklet af",
@@ -233,7 +237,17 @@
       "value_template_desc": "Skabelon til at gengive teksten ved hjælp af Jinja2-syntaks",
       "examples_title": "Almindelige eksempler:",
       "example_basic": "Grundværdi",
-      "example_percent": "Med procent"
+      "example_percent": "Med procent",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

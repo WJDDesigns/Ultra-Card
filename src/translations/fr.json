@@ -127,6 +127,10 @@
       "hidden_by_logic": "Masqué par la logique",
       "add_row": "Ajouter une ligne",
       "add_row_tooltip": "Ajouter une nouvelle ligne à votre mise en page",
+      "undo": "Annuler",
+      "undo_tooltip": "Annuler la dernière modification (Ctrl+Z)",
+      "redo": "Refaire",
+      "redo_tooltip": "Refaire la dernière modification annulée (Ctrl+Y)",
       "row_settings": "Paramètres de ligne",
       "column_settings": "Paramètres de colonne",
       "row_background_color": "Couleur d'arrière-plan de la ligne",
@@ -346,7 +350,17 @@
       "value_template_desc": "Modèle pour rendre le texte en utilisant la syntaxe Jinja2",
       "examples_title": "Exemples courants :",
       "example_basic": "Valeur de base",
-      "example_percent": "Avec pourcentage"
+      "example_percent": "Avec pourcentage",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "markdown": {
       "content": {

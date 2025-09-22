@@ -131,6 +131,10 @@
       "hidden_by_logic": "Hidden by Logic",
       "add_row": "Add Row",
       "add_row_tooltip": "Add a new row to your layout",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)",
       "row_settings": "Row Settings",
       "column_settings": "Column Settings",
       "row_background_color": "Row Background Color",
@@ -350,7 +354,16 @@
       "value_template_desc": "Template to render the text using Jinja2 syntax",
       "examples_title": "Common Examples:",
       "example_basic": "Basic value",
-      "example_percent": "With percent"
+      "example_percent": "With percent",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "markdown": {
       "content": {

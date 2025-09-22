@@ -79,7 +79,11 @@
       "alignment_bottom": "Bunn",
       "alignment_stretch": "Strekk",
       "alignment_left": "Venstre",
-      "alignment_right": "Høyre"
+      "alignment_right": "Høyre",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)"
     },
     "about": {
       "developed_by": "Utviklet av",
@@ -233,7 +237,17 @@
       "value_template_desc": "Mal for å gjengi teksten ved hjelp av Jinja2-syntaks",
       "examples_title": "Vanlige eksempler:",
       "example_basic": "Grunnverdi",
-      "example_percent": "Med prosent"
+      "example_percent": "Med prosent",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

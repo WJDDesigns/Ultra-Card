@@ -225,11 +225,33 @@ export class GlobalDesignTab extends LitElement {
   }
 
   private _updateProperty(property: keyof DesignProperties, value: any): void {
-    const updates: Partial<DesignProperties> = { [property]: value } as any;
+    // Handle empty strings as property deletion for proper reset behavior
+    const processedValue =
+      value === '' || value === null || (typeof value === 'string' && value.trim() === '')
+        ? undefined
+        : value;
+    const updates: Partial<DesignProperties> = { [property]: processedValue } as any;
 
     // Update local state immediately so UI reflects the change
-    this.designProperties = { ...(this.designProperties || {}), [property]: value } as any;
+    const newDesignProperties = { ...(this.designProperties || {}) };
+    if (processedValue === undefined) {
+      delete (newDesignProperties as any)[property];
+    } else {
+      (newDesignProperties as any)[property] = processedValue;
+    }
+    this.designProperties = newDesignProperties as any;
     this.requestUpdate();
+
+    // Debug logging for font_size updates
+    if (property === 'font_size') {
+      console.log('🔧 EditorGlobalDesignTab: Font size update', {
+        property,
+        originalValue: value,
+        processedValue,
+        updates,
+        newDesignProperties: this.designProperties,
+      });
+    }
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {

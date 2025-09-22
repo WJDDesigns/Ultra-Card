@@ -37,8 +37,8 @@ export class UltraImageModule extends BaseUltraModule {
       image_attribute: '',
 
       // Size Controls
-      width: 100,
-      height: 200,
+      width: '100%' as any,
+      height: '200px' as any,
       aspect_ratio: 'auto',
       object_fit: 'cover',
 
@@ -58,10 +58,9 @@ export class UltraImageModule extends BaseUltraModule {
       filter_hue_rotate: 0,
       filter_opacity: 100,
 
-      // Border & Styling
+      // Border & Styling (now handled by Global Design)
       border_radius: 0,
-      border_width: 0,
-      border_color: 'var(--divider-color)',
+      // Removed individual border properties - now handled by Global Design system
       box_shadow: 'none',
 
       // Hover Effects
@@ -108,7 +107,7 @@ export class UltraImageModule extends BaseUltraModule {
           </div>
 
           <!-- Image Source Type -->
-          ${FormUtils.renderField(
+          ${this.renderFieldSection(
             localize('editor.image.source_type', lang, 'Image Source Type'),
             localize(
               'editor.image.source_type_desc',
@@ -118,32 +117,36 @@ export class UltraImageModule extends BaseUltraModule {
             hass,
             { image_type: imageModule.image_type || 'default' },
             [
-              FormUtils.createSchemaItem('image_type', {
-                select: {
-                  options: [
-                    {
-                      value: 'default',
-                      label: localize('editor.image.source.default', lang, 'Default Image'),
-                    },
-                    { value: 'url', label: localize('editor.image.source.url', lang, 'Image URL') },
-                    {
-                      value: 'upload',
-                      label: localize('editor.image.source.upload', lang, 'Upload Image'),
-                    },
-                    {
-                      value: 'entity',
-                      label: localize('editor.image.source.entity', lang, 'Entity Image'),
-                    },
-                    {
-                      value: 'attribute',
-                      label: localize('editor.image.source.attribute', lang, 'Entity Attribute'),
-                    },
-                  ],
-                  mode: 'dropdown',
+              this.selectField('image_type', [
+                {
+                  value: 'default',
+                  label: localize('editor.image.source.default', lang, 'Default Image'),
                 },
-              }),
+                { value: 'url', label: localize('editor.image.source.url', lang, 'Image URL') },
+                {
+                  value: 'upload',
+                  label: localize('editor.image.source.upload', lang, 'Upload Image'),
+                },
+                {
+                  value: 'entity',
+                  label: localize('editor.image.source.entity', lang, 'Entity Image'),
+                },
+                {
+                  value: 'attribute',
+                  label: localize('editor.image.source.attribute', lang, 'Entity Attribute'),
+                },
+              ]),
             ],
-            (e: CustomEvent) => updateModule({ image_type: e.detail.value.image_type })
+            (e: CustomEvent) => {
+              const next = e.detail.value.image_type;
+              const prev = imageModule.image_type || 'default';
+              if (next === prev) return;
+              updateModule({ image_type: next });
+              // Trigger re-render to update dropdown UI
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            }
           )}
 
           <!-- URL Image Source -->
@@ -213,7 +216,12 @@ export class UltraImageModule extends BaseUltraModule {
                     hass,
                     { image_entity: imageModule.image_entity || '' },
                     [FormUtils.createSchemaItem('image_entity', { entity: {} })],
-                    (e: CustomEvent) => updateModule({ image_entity: e.detail.value.image_entity })
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.image_entity;
+                      const prev = imageModule.image_entity || '';
+                      if (next === prev) return;
+                      updateModule({ image_entity: next });
+                    }
                   )}
                 `
               )
@@ -238,7 +246,12 @@ export class UltraImageModule extends BaseUltraModule {
                     hass,
                     { image_entity: imageModule.image_entity || '' },
                     [FormUtils.createSchemaItem('image_entity', { entity: {} })],
-                    (e: CustomEvent) => updateModule({ image_entity: e.detail.value.image_entity })
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.image_entity;
+                      const prev = imageModule.image_entity || '';
+                      if (next === prev) return;
+                      updateModule({ image_entity: next });
+                    }
                   )}
 
                   <div style="margin-top: 16px;">
@@ -262,32 +275,95 @@ export class UltraImageModule extends BaseUltraModule {
 
           <div class="field-group" style="margin-bottom: 16px; margin-top: 32px;">
             ${FormUtils.renderField(
-              localize('editor.image.width', lang, 'Width (%)'),
+              localize('editor.image.width', lang, 'Width'),
               localize(
                 'editor.image.width_desc',
                 lang,
-                'Set the width as a percentage of the container.'
+                'Set the width (supports px, %, em, rem, etc.).'
               ),
               hass,
-              { width: imageModule.width || 100 },
-              [FormUtils.createSchemaItem('width', { number: { min: 10, max: 100, step: 1 } })],
+              { width: imageModule.width || '100%' },
+              [FormUtils.createSchemaItem('width', { text: {} })],
               (e: CustomEvent) => updateModule({ width: e.detail.value.width })
             )}
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
             ${FormUtils.renderField(
-              localize('editor.image.height', lang, 'Height (px)'),
-              localize('editor.image.height_desc', lang, 'Set the height in pixels.'),
+              localize('editor.image.height', lang, 'Height'),
+              localize(
+                'editor.image.height_desc',
+                lang,
+                'Set the height (supports px, %, em, rem, etc.).'
+              ),
               hass,
-              { height: imageModule.height || 200 },
-              [FormUtils.createSchemaItem('height', { number: { min: 1, step: 1 } })],
+              { height: imageModule.height || '200px' },
+              [FormUtils.createSchemaItem('height', { text: {} })],
               (e: CustomEvent) => updateModule({ height: e.detail.value.height })
             )}
           </div>
 
           <div class="field-group" style="margin-bottom: 16px;">
-            ${FormUtils.renderField(
+            ${this.renderFieldSection(
+              localize('editor.image.aspect_ratio', lang, 'Aspect Ratio'),
+              localize(
+                'editor.image.aspect_ratio_desc',
+                lang,
+                'Set the aspect ratio of the image container.'
+              ),
+              hass,
+              { aspect_ratio: imageModule.aspect_ratio || 'auto' },
+              [
+                this.selectField('aspect_ratio', [
+                  {
+                    value: 'auto',
+                    label: localize('editor.image.aspect.auto', lang, 'Auto (use height setting)'),
+                  },
+                  {
+                    value: '1/1',
+                    label: localize('editor.image.aspect.square', lang, 'Square (1:1)'),
+                  },
+                  {
+                    value: '4/3',
+                    label: localize('editor.image.aspect.standard', lang, 'Standard (4:3)'),
+                  },
+                  {
+                    value: '3/2',
+                    label: localize('editor.image.aspect.photo', lang, 'Photo (3:2)'),
+                  },
+                  {
+                    value: '16/9',
+                    label: localize('editor.image.aspect.widescreen', lang, 'Widescreen (16:9)'),
+                  },
+                  {
+                    value: '21/9',
+                    label: localize('editor.image.aspect.ultrawide', lang, 'Ultrawide (21:9)'),
+                  },
+                  {
+                    value: '2/3',
+                    label: localize('editor.image.aspect.portrait', lang, 'Portrait (2:3)'),
+                  },
+                  {
+                    value: '9/16',
+                    label: localize('editor.image.aspect.mobile', lang, 'Mobile (9:16)'),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = e.detail.value.aspect_ratio;
+                const prev = imageModule.aspect_ratio || 'auto';
+                if (next === prev) return;
+                updateModule({ aspect_ratio: next });
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              }
+            )}
+          </div>
+
+          <div class="field-group" style="margin-bottom: 16px;">
+            ${this.renderFieldSection(
               localize('editor.image.crop_fit', lang, 'Crop & Fit'),
               localize(
                 'editor.image.crop_fit_desc',
@@ -297,39 +373,39 @@ export class UltraImageModule extends BaseUltraModule {
               hass,
               { object_fit: imageModule.object_fit || 'cover' },
               [
-                FormUtils.createSchemaItem('object_fit', {
-                  select: {
-                    options: [
-                      {
-                        value: 'cover',
-                        label: localize('editor.image.fit.cover', lang, 'Cover (crop to fill)'),
-                      },
-                      {
-                        value: 'contain',
-                        label: localize(
-                          'editor.image.fit.contain',
-                          lang,
-                          'Contain (fit entire image)'
-                        ),
-                      },
-                      {
-                        value: 'fill',
-                        label: localize('editor.image.fit.fill', lang, 'Fill (stretch to fit)'),
-                      },
-                      {
-                        value: 'scale-down',
-                        label: localize('editor.image.fit.scale_down', lang, 'Scale Down'),
-                      },
-                      {
-                        value: 'none',
-                        label: localize('editor.image.fit.none', lang, 'None (original size)'),
-                      },
-                    ],
-                    mode: 'dropdown',
+                this.selectField('object_fit', [
+                  {
+                    value: 'cover',
+                    label: localize('editor.image.fit.cover', lang, 'Cover (crop to fill)'),
                   },
-                }),
+                  {
+                    value: 'contain',
+                    label: localize('editor.image.fit.contain', lang, 'Contain (fit entire image)'),
+                  },
+                  {
+                    value: 'fill',
+                    label: localize('editor.image.fit.fill', lang, 'Fill (stretch to fit)'),
+                  },
+                  {
+                    value: 'scale-down',
+                    label: localize('editor.image.fit.scale_down', lang, 'Scale Down'),
+                  },
+                  {
+                    value: 'none',
+                    label: localize('editor.image.fit.none', lang, 'None (original size)'),
+                  },
+                ]),
               ],
-              (e: CustomEvent) => updateModule({ object_fit: e.detail.value.object_fit })
+              (e: CustomEvent) => {
+                const next = e.detail.value.object_fit;
+                const prev = imageModule.object_fit || 'cover';
+                if (next === prev) return;
+                updateModule({ object_fit: next });
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              }
             )}
           </div>
 
@@ -443,7 +519,7 @@ export class UltraImageModule extends BaseUltraModule {
                   ${localize('editor.image.hover.title', lang, 'Hover Effects')}
                 </div>
                 <div class="field-group" style="margin-bottom: 16px;">
-                  ${FormUtils.renderField(
+                  ${this.renderFieldSection(
                     localize('editor.image.hover.effect_type', lang, 'Effect Type'),
                     localize(
                       'editor.image.hover.effect_type_desc',
@@ -453,55 +529,47 @@ export class UltraImageModule extends BaseUltraModule {
                     hass,
                     { effect: imageModule.hover_effect || 'scale' },
                     [
-                      FormUtils.createSchemaItem('effect', {
-                        select: {
-                          options: [
-                            {
-                              value: 'scale',
-                              label: localize(
-                                'editor.image.hover.scale',
-                                lang,
-                                'Scale (zoom in/out)'
-                              ),
-                            },
-                            {
-                              value: 'rotate',
-                              label: localize('editor.image.hover.rotate', lang, 'Rotate'),
-                            },
-                            {
-                              value: 'fade',
-                              label: localize(
-                                'editor.image.hover.fade',
-                                lang,
-                                'Fade (opacity change)'
-                              ),
-                            },
-                            {
-                              value: 'blur',
-                              label: localize('editor.image.hover.blur', lang, 'Blur'),
-                            },
-                            {
-                              value: 'brightness',
-                              label: localize('editor.image.hover.brightness', lang, 'Brightness'),
-                            },
-                            {
-                              value: 'glow',
-                              label: localize('editor.image.hover.glow', lang, 'Glow (box shadow)'),
-                            },
-                            {
-                              value: 'slide',
-                              label: localize(
-                                'editor.image.hover.slide',
-                                lang,
-                                'Slide (translate)'
-                              ),
-                            },
-                          ],
-                          mode: 'dropdown',
+                      this.selectField('effect', [
+                        {
+                          value: 'scale',
+                          label: localize('editor.image.hover.scale', lang, 'Scale (zoom in/out)'),
                         },
-                      }),
+                        {
+                          value: 'rotate',
+                          label: localize('editor.image.hover.rotate', lang, 'Rotate'),
+                        },
+                        {
+                          value: 'fade',
+                          label: localize('editor.image.hover.fade', lang, 'Fade (opacity change)'),
+                        },
+                        {
+                          value: 'blur',
+                          label: localize('editor.image.hover.blur', lang, 'Blur'),
+                        },
+                        {
+                          value: 'brightness',
+                          label: localize('editor.image.hover.brightness', lang, 'Brightness'),
+                        },
+                        {
+                          value: 'glow',
+                          label: localize('editor.image.hover.glow', lang, 'Glow (box shadow)'),
+                        },
+                        {
+                          value: 'slide',
+                          label: localize('editor.image.hover.slide', lang, 'Slide (translate)'),
+                        },
+                      ]),
                     ],
-                    (e: CustomEvent) => updateModule({ hover_effect: e.detail.value.effect })
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.effect;
+                      const prev = imageModule.hover_effect || 'scale';
+                      if (next === prev) return;
+                      updateModule({ hover_effect: next });
+                      // Trigger re-render to update dropdown UI
+                      setTimeout(() => {
+                        this.triggerPreviewUpdate();
+                      }, 50);
+                    }
                   )}
                 </div>
 
@@ -608,7 +676,7 @@ export class UltraImageModule extends BaseUltraModule {
                   : ''}
                 ${imageModule.hover_effect === 'glow'
                   ? html`<div class="field-group" style="margin-bottom: 16px;">
-                      ${FormUtils.renderField(
+                      ${this.renderFieldSection(
                         localize('editor.image.hover.glow_intensity', lang, 'Glow Intensity'),
                         localize(
                           'editor.image.hover.glow_intensity_desc',
@@ -618,47 +686,43 @@ export class UltraImageModule extends BaseUltraModule {
                         hass,
                         { shadow: imageModule.hover_shadow || 'medium' },
                         [
-                          FormUtils.createSchemaItem('shadow', {
-                            select: {
-                              options: [
-                                {
-                                  value: 'light',
-                                  label: localize(
-                                    'editor.image.hover.glow_light',
-                                    lang,
-                                    'Light Glow'
-                                  ),
-                                },
-                                {
-                                  value: 'medium',
-                                  label: localize(
-                                    'editor.image.hover.glow_medium',
-                                    lang,
-                                    'Medium Glow'
-                                  ),
-                                },
-                                {
-                                  value: 'heavy',
-                                  label: localize(
-                                    'editor.image.hover.glow_heavy',
-                                    lang,
-                                    'Heavy Glow'
-                                  ),
-                                },
-                                {
-                                  value: 'custom',
-                                  label: localize(
-                                    'editor.image.hover.glow_custom',
-                                    lang,
-                                    'Custom Shadow'
-                                  ),
-                                },
-                              ],
-                              mode: 'dropdown',
+                          this.selectField('shadow', [
+                            {
+                              value: 'light',
+                              label: localize('editor.image.hover.glow_light', lang, 'Light Glow'),
                             },
-                          }),
+                            {
+                              value: 'medium',
+                              label: localize(
+                                'editor.image.hover.glow_medium',
+                                lang,
+                                'Medium Glow'
+                              ),
+                            },
+                            {
+                              value: 'heavy',
+                              label: localize('editor.image.hover.glow_heavy', lang, 'Heavy Glow'),
+                            },
+                            {
+                              value: 'custom',
+                              label: localize(
+                                'editor.image.hover.glow_custom',
+                                lang,
+                                'Custom Shadow'
+                              ),
+                            },
+                          ]),
                         ],
-                        (e: CustomEvent) => updateModule({ hover_shadow: e.detail.value.shadow })
+                        (e: CustomEvent) => {
+                          const next = e.detail.value.shadow;
+                          const prev = imageModule.hover_shadow || 'medium';
+                          if (next === prev) return;
+                          updateModule({ hover_shadow: next });
+                          // Trigger re-render to update dropdown UI
+                          setTimeout(() => {
+                            this.triggerPreviewUpdate();
+                          }, 50);
+                        }
                       )}
                     </div>`
                   : ''}
@@ -831,16 +895,36 @@ export class UltraImageModule extends BaseUltraModule {
       }
     }
 
+    // Calculate container dimensions based on aspect ratio
+    let containerHeight = imageModule.height || '200px';
+    let containerAspectRatio = 'auto';
+
+    if (imageModule.aspect_ratio && imageModule.aspect_ratio !== 'auto') {
+      containerAspectRatio = imageModule.aspect_ratio;
+      containerHeight = 'auto'; // Let aspect-ratio control height
+    }
+
+    // Get design properties from global design system (like other modules)
+    const designProperties = (imageModule as any).design || {};
+
+    // Build border CSS for the image itself
+    const imageBorderCSS = this.getBorderWithDesign(designProperties, imageModule);
+    const imageBorderRadius =
+      this.addPixelUnit(designProperties.border_radius?.toString()) ||
+      this.addPixelUnit(imageModule.border_radius?.toString()) ||
+      '0';
+
     const imageStyle = `
-      width: ${imageModule.width || 100}%;
-      height: ${imageModule.height || 200}px;
+      width: ${imageModule.width || '100%'};
+      height: ${containerHeight};
+      aspect-ratio: ${containerAspectRatio};
       object-fit: ${imageModule.object_fit || 'cover'};
-      border-radius: ${imageModule.border_radius ?? 0}px;
       filter: ${filterCSS};
+      border: ${imageBorderCSS};
+      border-radius: ${imageBorderRadius};
       transition: ${imageModule.hover_enabled ? `transform ${hoverTransition} ease, filter ${hoverTransition} ease, opacity ${hoverTransition} ease, box-shadow ${hoverTransition} ease` : 'none'};
       cursor: pointer;
       display: block;
-      border: ${imageModule.border_width ? `${imageModule.border_width}px solid ${imageModule.border_color}` : 'none'};
     `;
 
     // Calculate image container alignment
@@ -857,54 +941,49 @@ export class UltraImageModule extends BaseUltraModule {
         break;
     }
 
-    // Apply design properties
     const moduleWithDesign = imageModule as any;
 
-    // Container styles for design system
+    // Container styles for design system - properly handle global design borders
     const containerStyles = {
       padding:
-        moduleWithDesign.padding_top ||
-        moduleWithDesign.padding_bottom ||
-        moduleWithDesign.padding_left ||
-        moduleWithDesign.padding_right
-          ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
           : '0',
       // Standard 8px top/bottom margin for proper web design spacing
       margin:
-        moduleWithDesign.margin_top ||
-        moduleWithDesign.margin_bottom ||
-        moduleWithDesign.margin_left ||
-        moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.margin_left) || '0px'}`
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right
+          ? `${this.addPixelUnit(designProperties.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left) || '0px'}`
           : '8px 0',
-      background: moduleWithDesign.background_color || 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(moduleWithDesign, hass),
-      backgroundSize: moduleWithDesign.background_size || 'cover',
-      backgroundPosition: moduleWithDesign.background_position || 'center',
-      backgroundRepeat: moduleWithDesign.background_repeat || 'no-repeat',
-      border:
-        moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none'
-          ? `${moduleWithDesign.border_width || '1px'} ${moduleWithDesign.border_style} ${moduleWithDesign.border_color || 'var(--divider-color)'}`
-          : 'none',
-      borderRadius: this.addPixelUnit(moduleWithDesign.border_radius) || '0',
-      position: moduleWithDesign.position || 'relative',
-      top: moduleWithDesign.top || 'auto',
-      bottom: moduleWithDesign.bottom || 'auto',
-      left: moduleWithDesign.left || 'auto',
-      right: moduleWithDesign.right || 'auto',
-      zIndex: moduleWithDesign.z_index || 'auto',
-      width: moduleWithDesign.width || '100%',
-      height: moduleWithDesign.height || 'auto',
-      maxWidth: moduleWithDesign.max_width || '100%',
-      maxHeight: moduleWithDesign.max_height || 'none',
-      minWidth: moduleWithDesign.min_width || 'none',
-      minHeight: moduleWithDesign.min_height || 'auto',
-      overflow: moduleWithDesign.overflow || 'visible',
-      clipPath: moduleWithDesign.clip_path || 'none',
-      backdropFilter: moduleWithDesign.backdrop_filter || 'none',
+      background: designProperties.background_color || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(designProperties, hass),
+      backgroundSize: designProperties.background_size || 'cover',
+      backgroundPosition: designProperties.background_position || 'center',
+      backgroundRepeat: designProperties.background_repeat || 'no-repeat',
+      // NO border on container - borders are applied directly to the image
+      position: designProperties.position || 'relative',
+      top: designProperties.top || 'auto',
+      bottom: designProperties.bottom || 'auto',
+      left: designProperties.left || 'auto',
+      right: designProperties.right || 'auto',
+      zIndex: designProperties.z_index || 'auto',
+      width: designProperties.width || imageModule.width || '100%',
+      height: designProperties.height || imageModule.height || 'auto',
+      maxWidth: designProperties.max_width || '100%',
+      maxHeight: designProperties.max_height || 'none',
+      minWidth: designProperties.min_width || 'none',
+      minHeight: designProperties.min_height || 'auto',
+      overflow: designProperties.overflow || 'visible',
+      clipPath: designProperties.clip_path || 'none',
+      backdropFilter: designProperties.backdrop_filter || 'none',
       boxShadow:
-        moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
-          ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+        designProperties.box_shadow_h && designProperties.box_shadow_v
+          ? `${designProperties.box_shadow_h || '0'} ${designProperties.box_shadow_v || '0'} ${designProperties.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || '0'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.1)'}`
           : 'none',
       boxSizing: 'border-box',
     };
@@ -994,11 +1073,12 @@ export class UltraImageModule extends BaseUltraModule {
                   <div
                     class="${hoverEffectClass}"
                     style="
-                      width: ${imageModule.width || 100}%;
-                      height: ${imageModule.height || 200}px;
+                      width: ${imageModule.width || '100%'};
+                      height: ${containerHeight};
+                      aspect-ratio: ${containerAspectRatio};
                       background: var(--secondary-background-color);
                       border: 2px dashed var(--divider-color);
-                      border-radius: ${imageModule.border_radius ?? 0}px;
+                      border-radius: 0;
                       display: flex;
                       align-items: center;
                       justify-content: center;
@@ -1146,11 +1226,17 @@ export class UltraImageModule extends BaseUltraModule {
       errors.push('Link URL is required when link is enabled');
     }
 
-    if (imageModule.width && (imageModule.width < 1 || imageModule.width > 100)) {
+    // Validate width - only validate if it's a number (for percentage values)
+    if (
+      imageModule.width &&
+      typeof imageModule.width === 'number' &&
+      (imageModule.width < 1 || imageModule.width > 100)
+    ) {
       errors.push('Width must be between 1 and 100 percent');
     }
 
-    if (imageModule.height && imageModule.height < 1) {
+    // Validate height - only validate if it's a number (for pixel values)
+    if (imageModule.height && typeof imageModule.height === 'number' && imageModule.height < 1) {
       errors.push('Height must be at least 1 pixel');
     }
 
@@ -1255,23 +1341,9 @@ export class UltraImageModule extends BaseUltraModule {
         display: block;
       }
 
-      /* Defensive dropdown positioning for selects inside image module sections */
-      .module-general-settings ha-select {
-        position: relative !important;
-        overflow: visible !important;
-        z-index: 9999 !important;
-      }
-      .module-general-settings ha-select .mdc-select__menu,
-      .module-general-settings ha-select mwc-menu,
-      .module-general-settings ha-select .mdc-menu,
-      .module-general-settings ha-select ha-menu {
-        /* Rely on HA menu positioning; ensure it's above */
-        z-index: 10001 !important;
-      }
-
-      /* Ensure container allows dropdown overflow */
+      /* Let HA handle dropdown positioning naturally */
       .module-general-settings {
-        overflow: visible !important;
+        overflow: visible;
       }
 
       /* Conditional Fields Grouping CSS */
@@ -1367,6 +1439,16 @@ export class UltraImageModule extends BaseUltraModule {
     `;
   }
 
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
+  }
+
   // Helper method to ensure border radius values have proper units
   private addPixelUnit(value: string | undefined): string | undefined {
     if (!value) return value;
@@ -1386,5 +1468,29 @@ export class UltraImageModule extends BaseUltraModule {
 
     // Otherwise return as-is (already has units like px, em, %, etc.)
     return value;
+  }
+
+  // Standard border CSS generation like other modules
+  private getBorderCSS(moduleWithDesign: any): string {
+    if (
+      moduleWithDesign.border_style &&
+      moduleWithDesign.border_style !== 'none' &&
+      moduleWithDesign.border_width
+    ) {
+      return `${this.addPixelUnit(moduleWithDesign.border_width) || '1px'} ${moduleWithDesign.border_style} ${moduleWithDesign.border_color || 'var(--divider-color)'}`;
+    }
+    return 'none';
+  }
+
+  // Border handling with design properties (like other modules)
+  private getBorderWithDesign(designProperties: any, moduleWithDesign: any): string {
+    if (
+      designProperties.border_style &&
+      designProperties.border_style !== 'none' &&
+      designProperties.border_width
+    ) {
+      return `${this.addPixelUnit(designProperties.border_width) || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`;
+    }
+    return this.getBorderCSS(moduleWithDesign);
   }
 }

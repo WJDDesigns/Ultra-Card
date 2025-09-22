@@ -287,6 +287,22 @@ export class UltraBarModule extends BaseUltraModule {
     const barModule = module as BarModule;
     const lang = hass?.locale?.language || 'en';
 
+    // Stable schema for percentage type select (memoized by language)
+    const percentageTypeSchema = [
+      this.selectField('percentage_type', [
+        { value: 'entity', label: localize('editor.bar.perc_type.entity', lang, 'Entity (0-100)') },
+        {
+          value: 'attribute',
+          label: localize('editor.bar.perc_type.attribute', lang, 'Entity Attribute'),
+        },
+        {
+          value: 'difference',
+          label: localize('editor.bar.perc_type.difference', lang, 'Difference'),
+        },
+        { value: 'template', label: localize('editor.bar.perc_type.template', lang, 'Template') },
+      ]),
+    ];
+
     return html`
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
@@ -301,33 +317,23 @@ export class UltraBarModule extends BaseUltraModule {
           []
         )}
         <div class="field-group percentage-type-group" style="margin-top: -16px; margin-bottom: 16px;">
-          <ha-form
-            .hass=${hass}
-            .data=${{ percentage_type: barModule.percentage_type || 'entity' }}
-            .schema=${[
-              this.selectField('percentage_type', [
-                {
-                  value: 'entity',
-                  label: localize('editor.bar.perc_type.entity', lang, 'Entity (0-100)'),
-                },
-                {
-                  value: 'attribute',
-                  label: localize('editor.bar.perc_type.attribute', lang, 'Entity Attribute'),
-                },
-                {
-                  value: 'difference',
-                  label: localize('editor.bar.perc_type.difference', lang, 'Difference'),
-                },
-                {
-                  value: 'template',
-                  label: localize('editor.bar.perc_type.template', lang, 'Template'),
-                },
-              ]),
-            ]}
-            .computeLabel=${() => ''}
-            .computeDescription=${() => ''}
-            @value-changed=${(e: CustomEvent) => updateModule(e.detail.value)}
-          ></ha-form>
+          ${this.renderFieldSection(
+            localize('editor.bar.percentage_type.title', lang, 'Percentage Type'),
+            localize(
+              'editor.bar.percentage_type.desc',
+              lang,
+              'Choose how the bar percentage is calculated'
+            ),
+            hass,
+            { percentage_type: barModule.percentage_type || 'entity' },
+            percentageTypeSchema,
+            (e: CustomEvent) => {
+              const next = e.detail.value?.percentage_type;
+              if (next === undefined || next === barModule.percentage_type) return;
+
+              updateModule({ percentage_type: next });
+            }
+          )}
         </div>
 
           <!-- Entity Attribute Fields -->
@@ -496,7 +502,7 @@ export class UltraBarModule extends BaseUltraModule {
                             "Enter a Jinja2 template that returns a number between 0-100 for the percentage. Example: {{ (states('sensor.battery_level') | float) * 100 }}"
                           ),
                           hass,
-                          data: { percentage_template: barModule.percentage_template || '' },
+                          data: barModule,
                           schema: [this.textField('percentage_template', true)],
                           onChange: (e: CustomEvent) =>
                             updateModule({
@@ -604,90 +610,81 @@ export class UltraBarModule extends BaseUltraModule {
                 'Choose the visual style of the progress bar.'
               )}
             </div>
-            <ha-form
-              .hass=${hass}
-              .data=${{ bar_style: barModule.bar_style || 'flat' }}
-              .schema=${[
-                {
-                  name: 'bar_style',
-                  selector: {
-                    select: {
-                      options: [
-                        {
-                          value: 'flat',
-                          label: localize(
-                            'editor.bar.appearance.style_flat',
-                            lang,
-                            'Flat (Default)'
-                          ),
-                        },
-                        {
-                          value: 'glossy',
-                          label: localize('editor.bar.appearance.style_glossy', lang, 'Glossy'),
-                        },
-                        {
-                          value: 'embossed',
-                          label: localize('editor.bar.appearance.style_embossed', lang, 'Embossed'),
-                        },
-                        {
-                          value: 'inset',
-                          label: localize('editor.bar.appearance.style_inset', lang, 'Inset'),
-                        },
-                        {
-                          value: 'gradient-overlay',
-                          label: localize(
-                            'editor.bar.appearance.style_gradient',
-                            lang,
-                            'Gradient Overlay'
-                          ),
-                        },
-                        {
-                          value: 'neon-glow',
-                          label: localize('editor.bar.appearance.style_neon', lang, 'Neon Glow'),
-                        },
-                        {
-                          value: 'outline',
-                          label: localize('editor.bar.appearance.style_outline', lang, 'Outline'),
-                        },
-                        {
-                          value: 'glass',
-                          label: localize('editor.bar.appearance.style_glass', lang, 'Glass'),
-                        },
-                        {
-                          value: 'metallic',
-                          label: localize('editor.bar.appearance.style_metallic', lang, 'Metallic'),
-                        },
-                        {
-                          value: 'neumorphic',
-                          label: localize(
-                            'editor.bar.appearance.style_neumorphic',
-                            lang,
-                            'Neumorphic'
-                          ),
-                        },
-                        {
-                          value: 'dashed',
-                          label: localize('editor.bar.appearance.style_dashed', lang, 'Dashed'),
-                        },
-                        {
-                          value: 'dots',
-                          label: localize('editor.bar.appearance.style_dots', lang, 'Dots'),
-                        },
-                        {
-                          value: 'minimal',
-                          label: localize('editor.bar.appearance.style_minimal', lang, 'Minimal'),
-                        },
-                      ],
-                      mode: 'dropdown',
-                    },
+            ${this.renderUcForm(
+              hass,
+              { bar_style: barModule.bar_style || 'flat' },
+              [
+                this.selectField('bar_style', [
+                  {
+                    value: 'flat',
+                    label: localize('editor.bar.appearance.style_flat', lang, 'Flat (Default)'),
                   },
-                  label: '',
-                },
-              ]}
-              .computeLabel=${() => ''}
-              .computeDescription=${() => ''}
-              @value-changed=${(e: CustomEvent) => updateModule({ bar_style: e.detail.value.bar_style })}
-            ></ha-form>
+                  {
+                    value: 'glossy',
+                    label: localize('editor.bar.appearance.style_glossy', lang, 'Glossy'),
+                  },
+                  {
+                    value: 'embossed',
+                    label: localize('editor.bar.appearance.style_embossed', lang, 'Embossed'),
+                  },
+                  {
+                    value: 'inset',
+                    label: localize('editor.bar.appearance.style_inset', lang, 'Inset'),
+                  },
+                  {
+                    value: 'gradient-overlay',
+                    label: localize(
+                      'editor.bar.appearance.style_gradient',
+                      lang,
+                      'Gradient Overlay'
+                    ),
+                  },
+                  {
+                    value: 'neon-glow',
+                    label: localize('editor.bar.appearance.style_neon', lang, 'Neon Glow'),
+                  },
+                  {
+                    value: 'outline',
+                    label: localize('editor.bar.appearance.style_outline', lang, 'Outline'),
+                  },
+                  {
+                    value: 'glass',
+                    label: localize('editor.bar.appearance.style_glass', lang, 'Glass'),
+                  },
+                  {
+                    value: 'metallic',
+                    label: localize('editor.bar.appearance.style_metallic', lang, 'Metallic'),
+                  },
+                  {
+                    value: 'neumorphic',
+                    label: localize('editor.bar.appearance.style_neumorphic', lang, 'Neumorphic'),
+                  },
+                  {
+                    value: 'dashed',
+                    label: localize('editor.bar.appearance.style_dashed', lang, 'Dashed'),
+                  },
+                  {
+                    value: 'dots',
+                    label: localize('editor.bar.appearance.style_dots', lang, 'Dots'),
+                  },
+                  {
+                    value: 'minimal',
+                    label: localize('editor.bar.appearance.style_minimal', lang, 'Minimal'),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = e.detail.value.bar_style;
+                const prev = barModule.bar_style || 'flat';
+                if (next === prev) return;
+                updateModule({ bar_style: next });
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
+              false
+            )}
           </div>
 
           <!-- Bar Fill Direction -->
@@ -1057,46 +1054,41 @@ export class UltraBarModule extends BaseUltraModule {
                         'Control how the left and right side labels are positioned.'
                       )}
                     </div>
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{ label_alignment: barModule.label_alignment || 'space-between' }}
-                      .schema=${[
-                        {
-                          name: 'label_alignment',
-                          selector: {
-                            select: {
-                              options: [
-                                {
-                                  value: 'left',
-                                  label: localize('editor.common.left', lang, 'Left'),
-                                },
-                                {
-                                  value: 'center',
-                                  label: localize('editor.common.center', lang, 'Center'),
-                                },
-                                {
-                                  value: 'right',
-                                  label: localize('editor.common.right', lang, 'Right'),
-                                },
-                                {
-                                  value: 'space-between',
-                                  label: localize(
-                                    'editor.common.space_between',
-                                    lang,
-                                    'Space Between'
-                                  ),
-                                },
-                              ],
-                              mode: 'dropdown',
-                            },
+                    ${this.renderUcForm(
+                      hass,
+                      { label_alignment: barModule.label_alignment || 'space-between' },
+                      [
+                        this.selectField('label_alignment', [
+                          {
+                            value: 'left',
+                            label: localize('editor.common.left', lang, 'Left'),
                           },
-                          label: '',
-                        },
-                      ]}
-                      .computeLabel=${() => ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        updateModule({ label_alignment: e.detail.value.label_alignment })}
-                    ></ha-form>
+                          {
+                            value: 'center',
+                            label: localize('editor.common.center', lang, 'Center'),
+                          },
+                          {
+                            value: 'right',
+                            label: localize('editor.common.right', lang, 'Right'),
+                          },
+                          {
+                            value: 'space-between',
+                            label: localize('editor.common.space_between', lang, 'Space Between'),
+                          },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.label_alignment;
+                        const prev = barModule.label_alignment || 'space-between';
+                        if (next === prev) return;
+                        updateModule({ label_alignment: next });
+                        // Trigger re-render to update dropdown UI
+                        setTimeout(() => {
+                          this.triggerPreviewUpdate();
+                        }, 50);
+                      },
+                      false
+                    )}
                   </div>
                 `
               : ''
@@ -1239,42 +1231,39 @@ export class UltraBarModule extends BaseUltraModule {
                     <div class="field-title">
                       ${localize('editor.bar.text_display.text_alignment', lang, 'Text Alignment')}
                     </div>
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{
+                    ${this.renderUcForm(
+                      hass,
+                      {
                         percentage_text_alignment: barModule.percentage_text_alignment || 'center',
-                      }}
-                      .schema=${[
-                        {
-                          name: 'percentage_text_alignment',
-                          selector: {
-                            select: {
-                              options: [
-                                {
-                                  value: 'left',
-                                  label: localize('editor.common.left', lang, 'Left'),
-                                },
-                                {
-                                  value: 'center',
-                                  label: localize('editor.common.center', lang, 'Center'),
-                                },
-                                {
-                                  value: 'right',
-                                  label: localize('editor.common.right', lang, 'Right'),
-                                },
-                              ],
-                              mode: 'dropdown',
-                            },
+                      },
+                      [
+                        this.selectField('percentage_text_alignment', [
+                          {
+                            value: 'left',
+                            label: localize('editor.common.left', lang, 'Left'),
                           },
-                          label: '',
-                        },
-                      ]}
-                      .computeLabel=${() => ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        updateModule({
-                          percentage_text_alignment: e.detail.value.percentage_text_alignment,
-                        })}
-                    ></ha-form>
+                          {
+                            value: 'center',
+                            label: localize('editor.common.center', lang, 'Center'),
+                          },
+                          {
+                            value: 'right',
+                            label: localize('editor.common.right', lang, 'Right'),
+                          },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.percentage_text_alignment;
+                        const prev = barModule.percentage_text_alignment || 'center';
+                        if (next === prev) return;
+                        updateModule({ percentage_text_alignment: next });
+                        // Trigger re-render to update dropdown UI
+                        setTimeout(() => {
+                          this.triggerPreviewUpdate();
+                        }, 50);
+                      },
+                      false
+                    )}
                   </div>
 
                   <!-- Text Color -->
@@ -2079,45 +2068,37 @@ export class UltraBarModule extends BaseUltraModule {
             barModule.use_gradient
               ? html`
                   <div class="field-group" style="margin-bottom: 12px;">
-                    <ha-form
-                      .hass=${hass}
-                      .data=${{ gradient_display_mode: barModule.gradient_display_mode || 'full' }}
-                      .schema=${[
-                        {
-                          name: 'gradient_display_mode',
-                          selector: {
-                            select: {
-                              options: [
-                                {
-                                  value: 'full',
-                                  label: localize('editor.bar.gradient.full', lang, 'Full'),
-                                },
-                                {
-                                  value: 'cropped',
-                                  label: localize('editor.bar.gradient.cropped', lang, 'Cropped'),
-                                },
-                                {
-                                  value: 'value-based',
-                                  label: localize(
-                                    'editor.bar.gradient.value_based',
-                                    lang,
-                                    'Value-Based'
-                                  ),
-                                },
-                              ],
-                              mode: 'dropdown',
-                            },
+                    ${this.renderUcForm(
+                      hass,
+                      { gradient_display_mode: barModule.gradient_display_mode || 'full' },
+                      [
+                        this.selectField('gradient_display_mode', [
+                          {
+                            value: 'full',
+                            label: localize('editor.bar.gradient.full', lang, 'Full'),
                           },
-                          label: '',
-                        },
-                      ]}
-                      .computeLabel=${() => ''}
-                      .computeDescription=${() => ''}
-                      @value-changed=${(e: CustomEvent) =>
-                        updateModule({
-                          gradient_display_mode: e.detail.value.gradient_display_mode,
-                        })}
-                    ></ha-form>
+                          {
+                            value: 'cropped',
+                            label: localize('editor.bar.gradient.cropped', lang, 'Cropped'),
+                          },
+                          {
+                            value: 'value-based',
+                            label: localize('editor.bar.gradient.value_based', lang, 'Value-Based'),
+                          },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.gradient_display_mode;
+                        const prev = barModule.gradient_display_mode || 'full';
+                        if (next === prev) return;
+                        updateModule({ gradient_display_mode: next });
+                        // Trigger re-render to update dropdown UI
+                        setTimeout(() => {
+                          this.triggerPreviewUpdate();
+                        }, 50);
+                      },
+                      false
+                    )}
                   </div>
                   <uc-gradient-editor
                     .stops=${barModule.gradient_stops || createDefaultGradientStops()}
@@ -2431,7 +2412,13 @@ export class UltraBarModule extends BaseUltraModule {
                             },
                           ]),
                         ],
-                        onChange: (e: CustomEvent) => updateModule(e.detail.value),
+                        onChange: (e: CustomEvent) => {
+                          const next = e.detail.value.bar_animation_override_trigger_type;
+                          const prev =
+                            (barModule as any).bar_animation_override_trigger_type || 'state';
+                          if (next === prev) return;
+                          updateModule(e.detail.value);
+                        },
                       },
                       ...(((barModule as any).bar_animation_override_trigger_type || 'state') ===
                       'attribute'
@@ -3592,8 +3579,6 @@ export class UltraBarModule extends BaseUltraModule {
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       isHolding = false;
 
       // Start hold timer
@@ -3611,8 +3596,6 @@ export class UltraBarModule extends BaseUltraModule {
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       // Clear hold timer
       if (holdTimeout) {
         clearTimeout(holdTimeout);
@@ -4487,18 +4470,9 @@ export class UltraBarModule extends BaseUltraModule {
       
       .module-general-settings { }
       /* Dropdown positioning fixes scoped to Bar module (defensive in case globals miss) */
-      .bar-module-preview .settings-section ha-select {
-        position: relative !important;
-        overflow: visible !important;
-        z-index: 9999 !important;
-      }
-
-      .bar-module-preview .settings-section ha-select .mdc-select__menu,
-      .bar-module-preview .settings-section ha-select mwc-menu,
-      .bar-module-preview .settings-section ha-select .mdc-menu,
-      .bar-module-preview .settings-section ha-select ha-menu {
-        /* Rely on HA menu positioning; ensure it's above */
-        z-index: 10001 !important;
+      /* Let HA handle dropdown positioning naturally */
+      .bar-module-preview .settings-section {
+        overflow: visible;
       }
 
       .module-general-settings > * {
@@ -5303,6 +5277,16 @@ export class UltraBarModule extends BaseUltraModule {
   // Helper method to convert RGB to hex
   private rgbToHex(r: number, g: number, b: number): string {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  }
+
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
   }
 
   // Helper method to ensure border radius values have proper units

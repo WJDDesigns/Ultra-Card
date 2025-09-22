@@ -8,8 +8,38 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
+import { TemplateService } from '../services/template-service';
+import { marked } from 'marked';
 
 export class UltraMarkdownModule extends BaseUltraModule {
+  private _templateService: TemplateService | null = null;
+  private _renderedContentCache: Map<string, string> = new Map();
+
+  // Hash function for template caching
+  private _hashString(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) & 0xffffffff;
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  // Clear markdown cache (useful when content changes)
+  private _clearMarkdownCache(moduleId?: string): void {
+    if (moduleId) {
+      // Clear cache for specific module
+      const keysToDelete = Array.from(this._renderedContentCache.keys()).filter(key =>
+        key.startsWith(`${moduleId}_`)
+      );
+      keysToDelete.forEach(key => {
+        this._renderedContentCache.delete(key);
+      });
+    } else {
+      // Clear all cache
+      this._renderedContentCache.clear();
+    }
+  }
+
   metadata: ModuleMetadata = {
     type: 'markdown',
     title: 'Markdown Module',
@@ -25,27 +55,23 @@ export class UltraMarkdownModule extends BaseUltraModule {
     return {
       id: id || this.generateId('markdown'),
       type: 'markdown',
-      markdown_content: `# Welcome to Markdown
+      markdown_content: `# Markdown Module
 
-This is a **markdown** module that supports:
+The **Markdown** module supports rich formatting including **bold**, *italicized*, \`inline code\`, ~~strikethrough~~, and [links](https://example.com).
 
-- *Italic* and **bold** text
-- [Links](https://example.com)
-- \`inline code\`
-- Lists and more!
+> Blockquotes and nested content work perfectly
+>> Including nested blockquotes
 
-## Features
-1. Headers (H1-H6)
-2. Tables
-3. Code blocks
-4. And much more...
+**Lists and formatting:**
+- **Bold**, *italic*, ~~strikethrough~~
+- \`inline code\` and code blocks
+- Tables, headers, and horizontal rules
 
-> This is a blockquote example
+**Jinja Templates:**
+- Current time: {{now().strftime('%H:%M:%S')}}
+- Date: {{now().strftime('%Y-%m-%d')}}
 
-| Column 1 | Column 2 | Column 3 |
-|----------|----------|----------|
-| Row 1    | Data     | More     |
-| Row 2    | Content  | Here     |`,
+All standard markdown features are automatically enabled!`,
       enable_html: false,
       enable_tables: true,
       enable_code_highlighting: true,
@@ -106,7 +132,7 @@ This is a **markdown** module that supports:
           </div>
         </div>
 
-        <!-- Feature Settings Section -->
+        <!-- HTML Support Section -->
         <div
           class="settings-section"
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
@@ -115,82 +141,30 @@ This is a **markdown** module that supports:
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
-            ${localize('editor.markdown.features.title', lang, 'Markdown Features')}
+            ${localize('editor.markdown.html.title', lang, 'HTML Support')}
           </div>
 
-          <div class="three-column-grid">
-            <div class="field-group">
-              <ha-form
-                .hass=${hass}
-                .data=${{ enable_html: markdownModule.enable_html || false }}
-                .schema=${[
-                  {
-                    name: 'enable_html',
-                    label: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
-                    description: localize(
-                      'editor.markdown.enable_html_desc',
-                      lang,
-                      'Allow HTML tags in markdown content'
-                    ),
-                    selector: { boolean: {} },
-                  },
-                ]}
-                .computeLabel=${(schema: any) => schema.label || schema.name}
-                .computeDescription=${(schema: any) => schema.description || ''}
-                @value-changed=${(e: CustomEvent) =>
-                  updateModule({ enable_html: e.detail.value.enable_html })}
-              ></ha-form>
-            </div>
-
-            <div class="field-group">
-              <ha-form
-                .hass=${hass}
-                .data=${{ enable_tables: markdownModule.enable_tables !== false }}
-                .schema=${[
-                  {
-                    name: 'enable_tables',
-                    label: localize('editor.markdown.enable_tables', lang, 'Enable Tables'),
-                    description: localize(
-                      'editor.markdown.enable_tables_desc',
-                      lang,
-                      'Support for markdown table syntax'
-                    ),
-                    selector: { boolean: {} },
-                  },
-                ]}
-                .computeLabel=${(schema: any) => schema.label || schema.name}
-                .computeDescription=${(schema: any) => schema.description || ''}
-                @value-changed=${(e: CustomEvent) =>
-                  updateModule({ enable_tables: e.detail.value.enable_tables })}
-              ></ha-form>
-            </div>
-
-            <div class="field-group">
-              <ha-form
-                .hass=${hass}
-                .data=${{
-                  enable_code_highlighting: markdownModule.enable_code_highlighting !== false,
-                }}
-                .schema=${[
-                  {
-                    name: 'enable_code_highlighting',
-                    label: localize('editor.markdown.code_highlighting', lang, 'Code Highlighting'),
-                    description: localize(
-                      'editor.markdown.code_highlighting_desc',
-                      lang,
-                      'Syntax highlighting for code blocks'
-                    ),
-                    selector: { boolean: {} },
-                  },
-                ]}
-                .computeLabel=${(schema: any) => schema.label || schema.name}
-                .computeDescription=${(schema: any) => schema.description || ''}
-                @value-changed=${(e: CustomEvent) =>
-                  updateModule({
-                    enable_code_highlighting: e.detail.value.enable_code_highlighting,
-                  })}
-              ></ha-form>
-            </div>
+          <div class="field-group">
+            <ha-form
+              .hass=${hass}
+              .data=${{ enable_html: markdownModule.enable_html || false }}
+              .schema=${[
+                {
+                  name: 'enable_html',
+                  label: localize('editor.markdown.enable_html', lang, 'Enable HTML'),
+                  description: localize(
+                    'editor.markdown.enable_html_desc',
+                    lang,
+                    'Allow raw HTML tags in markdown content (all standard markdown features are always enabled)'
+                  ),
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ enable_html: e.detail.value.enable_html })}
+            ></ha-form>
           </div>
         </div>
       </div>
@@ -224,8 +198,8 @@ This is a **markdown** module that supports:
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
-          : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
+          : '16px', // Match HA card padding
+      // Minimal margin like HA markdown card
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -235,8 +209,8 @@ This is a **markdown** module that supports:
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
-          : '8px 0',
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          : '0',
       background:
         designProperties.background_color && designProperties.background_color !== 'transparent'
           ? designProperties.background_color
@@ -288,14 +262,12 @@ This is a **markdown** module that supports:
     const contentStyles = {
       fontSize:
         (designProperties.font_size && designProperties.font_size) ||
-        (moduleWithDesign.font_size
-          ? `${moduleWithDesign.font_size}px`
-          : `${markdownModule.font_size || 14}px`),
+        (moduleWithDesign.font_size ? `${moduleWithDesign.font_size}px` : '14px'), // Match HA default
       fontFamily:
         designProperties.font_family ||
         moduleWithDesign.font_family ||
         markdownModule.font_family ||
-        'Roboto',
+        'var(--primary-font-family, "Roboto", sans-serif)', // Use HA font
       color:
         (designProperties && designProperties.color) ||
         moduleWithDesign.color ||
@@ -312,24 +284,14 @@ This is a **markdown** module that supports:
         designProperties.line_height ||
         moduleWithDesign.line_height ||
         markdownModule.line_height ||
-        1.6,
+        1.4, // Match HA line height
       letterSpacing:
         designProperties.letter_spacing ||
         moduleWithDesign.letter_spacing ||
         markdownModule.letter_spacing ||
         'normal',
-      // Only apply padding if explicitly set by user
-      padding:
-        designProperties.padding_top ||
-        designProperties.padding_bottom ||
-        designProperties.padding_left ||
-        designProperties.padding_right ||
-        moduleWithDesign.padding_top ||
-        moduleWithDesign.padding_bottom ||
-        moduleWithDesign.padding_left ||
-        moduleWithDesign.padding_right
-          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
-          : '0',
+      // Remove default padding - let CSS handle it
+      padding: '0',
       maxHeight:
         (designProperties.max_height && designProperties.max_height !== 'none'
           ? designProperties.max_height
@@ -359,153 +321,123 @@ This is a **markdown** module that supports:
             : 'none',
     };
 
-    // Enhanced markdown to HTML conversion with feature toggle support
+    // Process markdown using marked.js like Home Assistant does
     const renderMarkdown = (content: string): string => {
       if (!content) return '';
 
-      let html = content;
+      // Process Jinja templates first if they exist in the content
+      let processedContent = content;
 
-      // HTML support (respect HTML setting) - handle early if disabled
-      if (!markdownModule.enable_html) {
-        // Escape HTML tags if HTML is disabled (but preserve markdown syntax)
-        html = html.replace(
-          /<(?![/]?(h[1-6]|p|strong|em|code|pre|blockquote|ul|ol|li|a|hr|table|thead|tbody|tr|th|td)\b)[^>]*>/g,
-          match => {
-            return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          }
-        );
-      }
+      // Check if content contains Jinja templates
+      const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(content);
 
-      html = html
-        // Headers (support H1-H6)
-        .replace(/^#{6} (.*$)/gim, '<h6>$1</h6>')
-        .replace(/^#{5} (.*$)/gim, '<h5>$1</h5>')
-        .replace(/^#{4} (.*$)/gim, '<h4>$1</h4>')
-        .replace(/^#{3} (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^#{2} (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^#{1} (.*$)/gim, '<h1>$1</h1>')
-        // Bold and italic (order matters)
-        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        // Links
-        .replace(
-          /\[([^\]]+)\]\(([^)]+)\)/g,
-          '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-        )
-        // Blockquotes
-        .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
-        // Horizontal rules
-        .replace(/^---$/gim, '<hr>')
-        .replace(/^\*\*\*$/gim, '<hr>');
+      if (hasTemplates && hass) {
+        // Initialize template service if needed
+        if (!this._templateService) {
+          this._templateService = new TemplateService(hass);
+        }
 
-      // Code blocks and inline code (respect code highlighting setting)
-      if (markdownModule.enable_code_highlighting !== false) {
-        // Code blocks (triple backticks)
-        html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-          const className = lang ? ` class="language-${lang}"` : '';
-          return `<pre><code${className}>${code.trim()}</code></pre>`;
-        });
-        // Inline code
-        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
-      } else {
-        // Simple code formatting without highlighting
-        html = html.replace(/```[\s\S]*?```/g, match => {
-          const code = match.replace(/```(\w+)?\n?/, '').replace(/```$/, '');
-          return `<pre><code>${code.trim()}</code></pre>`;
-        });
-        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
-      }
+        // Ensure template string cache exists on hass
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
 
-      // Tables (respect table setting)
-      if (markdownModule.enable_tables !== false) {
-        // Simple table parsing
-        const lines = html.split('\n');
-        let inTable = false;
-        let tableHtml = '';
-        let processedLines: string[] = [];
+        const templateHash = this._hashString(content);
+        const templateKey = `state_text_markdown_${markdownModule.id}_${templateHash}`;
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
+        // Subscribe to template if needed
+        if (!this._templateService.hasTemplateSubscription(templateKey)) {
+          this._templateService.subscribeToTemplate(content, templateKey, () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
+          });
+        }
 
-          if (line.includes('|') && line.split('|').length > 2) {
-            if (!inTable) {
-              inTable = true;
-              tableHtml = '<table>';
-              // Check if next line is a separator
-              const nextLine = lines[i + 1]?.trim();
-              const isHeader = nextLine && /^[\|\-\s:]+$/.test(nextLine);
+        // Use latest rendered string if available
+        const rendered = hass.__uvc_template_strings?.[templateKey];
+        if (rendered !== undefined) {
+          processedContent = String(rendered);
+        } else {
+          // Try immediate template evaluation as fallback
+          try {
+            hass
+              .callApi<string>('POST', 'template', { template: content })
+              .then(result => {
+                if (!hass.__uvc_template_strings) {
+                  hass.__uvc_template_strings = {};
+                }
+                hass.__uvc_template_strings[templateKey] = result;
 
-              if (isHeader) {
-                tableHtml += '<thead>';
-                const cells = line.split('|').filter(cell => cell.trim());
-                tableHtml += '<tr>';
-                cells.forEach(cell => {
-                  tableHtml += `<th>${cell.trim()}</th>`;
-                });
-                tableHtml += '</tr></thead><tbody>';
-                i++; // Skip separator line
-              } else {
-                tableHtml += '<tbody>';
-                const cells = line.split('|').filter(cell => cell.trim());
-                tableHtml += '<tr>';
-                cells.forEach(cell => {
-                  tableHtml += `<td>${cell.trim()}</td>`;
-                });
-                tableHtml += '</tr>';
-              }
-            } else {
-              const cells = line.split('|').filter(cell => cell.trim());
-              tableHtml += '<tr>';
-              cells.forEach(cell => {
-                tableHtml += `<td>${cell.trim()}</td>`;
+                // Clear the cache so it will re-render with the new content
+                this._clearMarkdownCache(markdownModule.id);
+
+                // Trigger re-render
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                }
+              })
+              .catch(() => {
+                // Silent fail for invalid templates
               });
-              tableHtml += '</tr>';
-            }
-          } else {
-            if (inTable) {
-              inTable = false;
-              tableHtml += '</tbody></table>';
-              processedLines.push(tableHtml);
-              tableHtml = '';
-            }
-            processedLines.push(line);
+          } catch {
+            // Silent fail for invalid templates
           }
         }
-
-        if (inTable) {
-          tableHtml += '</tbody></table>';
-          processedLines.push(tableHtml);
-        }
-
-        html = processedLines.join('\n');
       }
 
-      // Line breaks (preserve double newlines as paragraphs)
-      html = html.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>');
+      // Configure marked.js options like Home Assistant
+      const markedOptions = {
+        breaks: false, // HA default
+        gfm: true, // GitHub Flavored Markdown - enables strikethrough
+        tables: true, // Always enable tables
+        headerIds: false,
+        mangle: false,
+      };
 
-      // Wrap in paragraph tags
-      html = '<p>' + html + '</p>';
+      try {
+        // Use marked.js to process the markdown (synchronous version)
+        let html = marked(processedContent, markedOptions) as string;
 
-      // Clean up empty paragraphs and fix nesting
-      html = html.replace(/<p><\/p>/g, '');
-      html = html.replace(/<p>(<h[1-6]>.*?<\/h[1-6]>)<\/p>/g, '$1');
-      html = html.replace(/<p>(<blockquote>.*?<\/blockquote>)<\/p>/g, '$1');
-      html = html.replace(/<p>(<hr>)<\/p>/g, '$1');
-      html = html.replace(/<p>(<table>[\s\S]*?<\/table>)<\/p>/g, '$1');
-      html = html.replace(/<p>(<pre>[\s\S]*?<\/pre>)<\/p>/g, '$1');
+        // Allow all markdown-generated HTML (marked.js is trusted)
+        // Only escape raw HTML if HTML is explicitly disabled
+        if (!markdownModule.enable_html) {
+          // marked.js already generates safe HTML, so we trust its output
+          // Only escape obvious raw HTML that wasn't generated by markdown
+          html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+          html = html.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+          html = html.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+          html = html.replace(/<embed\b[^<]*>/gi, '');
+        }
 
-      // Lists (improved implementation)
-      html = html.replace(/^[-*+] (.*$)/gim, '<li>$1</li>');
-      html = html.replace(/^(\d+)\. (.*$)/gim, '<li>$2</li>');
-
-      // Wrap consecutive <li> elements in <ul>
-      html = html.replace(/(<li>[\s\S]*?<\/li>(?:\s*<li>[\s\S]*?<\/li>)*)/g, '<ul>$1</ul>');
-
-      return html;
+        return html;
+      } catch (error) {
+        console.warn('Ultra Card: Failed to process markdown:', error);
+        return processedContent; // Fallback to original content
+      }
     };
 
-    const content = renderMarkdown(markdownModule.markdown_content || '');
+    // Create a cache key for this content
+    const contentKey = `${markdownModule.id}_${this._hashString(markdownModule.markdown_content || '')}`;
+
+    // Check if we already have rendered content
+    let renderedContent =
+      this._renderedContentCache.get(contentKey) || markdownModule.markdown_content || '';
+
+    // Only process if we don't have cached content
+    if (!this._renderedContentCache.has(contentKey)) {
+      try {
+        // Process markdown synchronously
+        const result = renderMarkdown(markdownModule.markdown_content || '');
+        // Cache the result
+        this._renderedContentCache.set(contentKey, result);
+        renderedContent = result;
+      } catch (error) {
+        console.warn('Ultra Card: Failed to render markdown:', error);
+        // Use original content as fallback
+        renderedContent = markdownModule.markdown_content || '';
+      }
+    }
 
     // Gesture handling variables
     let clickTimeout: any = null;
@@ -593,7 +525,7 @@ This is a **markdown** module that supports:
       }
     };
 
-    const element = html`<div class="markdown-content" .innerHTML=${content}></div>`;
+    const element = html`<div class="markdown-content" .innerHTML=${renderedContent}></div>`;
 
     return html`
       <div
@@ -659,132 +591,112 @@ This is a **markdown** module that supports:
 
   getStyles(): string {
     return `
+      /* Match Home Assistant ha-markdown exactly */
       .markdown-module-preview {
-        min-height: 20px;
-        word-wrap: break-word;
+        display: block;
+        -ms-user-select: text;
+        -webkit-user-select: text;
+        -moz-user-select: text;
       }
-      
 
       .markdown-content {
         width: 100%;
       }
-      
-             /* Module-specific grid layouts */
-       .two-column-grid {
-         display: grid;
-         grid-template-columns: 1fr 1fr;
-         gap: 20px;
-         margin-bottom: 20px;
-       }
 
-       .three-column-grid {
-         display: grid;
-         grid-template-columns: 1fr 1fr 1fr;
-         gap: 16px;
-         margin-bottom: 20px;
-       }
-       
-       @media (max-width: 768px) {
-         .two-column-grid,
-         .three-column-grid {
-           grid-template-columns: 1fr;
-           gap: 16px;
-         }
-       }
+      /* Match HA's exact first/last child rules */
+      .markdown-content > *:first-child {
+        margin-top: 0;
+      }
 
+      .markdown-content > *:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Links - Match HA exactly */
+      .markdown-content a {
+        color: -webkit-link;
+        cursor: pointer;
+        text-decoration: underline !important;
+      }
+
+      /* Images - Match HA */
+      .markdown-content img {
+        max-width: 100%;
+      }
+
+      /* Code and Pre - Match HA exactly */
+      .markdown-content code,
+      .markdown-content pre {
+        background-color: var(--markdown-code-background-color, none);
+        border-radius: 3px;
+      }
+
+      /* Strikethrough - exact HA styling */
+      .markdown-content del {
+        text-decoration: line-through !important;
+        color: var(--primary-text-color) !important;
+      }
+
+      .markdown-content code {
+        font-size: var(--ha-font-size-s);
+        color: var(--primary-text-color) !important;
+        padding: .2em .4em;
+      }
+
+      .markdown-content pre code {
+        padding: 0;
+      }
+
+      .markdown-content pre {
+        padding: 16px;
+        overflow: auto;
+        line-height: var(--ha-line-height-condensed);
+        font-family: var(--ha-font-family-code);
+      }
+
+      /* Headers - Match HA exactly */
       .markdown-content h1,
       .markdown-content h2,
       .markdown-content h3,
       .markdown-content h4,
       .markdown-content h5,
       .markdown-content h6 {
-        margin: 16px 0 8px 0;
-        font-weight: 600;
-        line-height: 1.2;
+        line-height: initial;
       }
 
-      .markdown-content h1 { font-size: 2em; }
-      .markdown-content h2 { font-size: 1.5em; }
-      .markdown-content h3 { font-size: 1.25em; }
-      .markdown-content h4 { font-size: 1.1em; }
-      .markdown-content h5 { font-size: 1em; font-weight: 700; }
-      .markdown-content h6 { font-size: 0.9em; font-weight: 700; }
-
-      .markdown-content p {
-        margin: 8px 0;
-        line-height: inherit;
+      .markdown-content h2 {
+        font-size: var(--ha-font-size-xl);
+        font-weight: var(--ha-font-weight-bold);
       }
 
-      .markdown-content ul,
-      .markdown-content ol {
-        margin: 8px 0;
-        padding-left: 20px;
-      }
-
-      .markdown-content li {
-        margin: 4px 0;
-        line-height: inherit;
-      }
-
-      .markdown-content code {
-        background: var(--secondary-background-color);
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-      }
-
-      .markdown-content blockquote {
-        border-left: 4px solid var(--primary-color);
-        margin: 16px 0;
-        padding: 8px 16px;
-        background: var(--secondary-background-color);
-        font-style: italic;
-      }
-
-      .markdown-content a {
-        color: var(--primary-color);
-        text-decoration: none;
-      }
-
-      .markdown-content a:hover {
-        text-decoration: underline;
-      }
-
-      .markdown-content strong {
-        font-weight: 600;
-      }
-
-      .markdown-content em {
-        font-style: italic;
-      }
-
-      .markdown-content br {
-        line-height: inherit;
-      }
-      
+      /* Horizontal rules - Match HA */
       .markdown-content hr {
-        border: none;
-        border-top: 1px solid var(--divider-color);
+        border-color: var(--divider-color);
+        border-bottom: none;
         margin: 16px 0;
       }
-      
-      .markdown-content table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 16px 0;
+
+      /* Module-specific grid layouts */
+      .two-column-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
       }
-      
-      .markdown-content th,
-      .markdown-content td {
-        border: 1px solid var(--divider-color);
-        padding: 8px 12px;
-        text-align: left;
+
+      .three-column-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
       }
-      
-      .markdown-content th {
-        background: var(--secondary-background-color);
-        font-weight: 600;
+       
+      @media (max-width: 768px) {
+        .two-column-grid,
+        .three-column-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
       }
     `;
   }

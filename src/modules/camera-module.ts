@@ -37,6 +37,10 @@ export class UltraCameraModule extends BaseUltraModule {
       show_name: true,
       name_position: 'top-left',
 
+      // Fullscreen controls
+      show_fullscreen: false,
+      fullscreen_position: 'top-right',
+
       // Display settings
       aspect_ratio_linked: true,
       aspect_ratio_value: 1.778, // 16:9 ratio (320/180)
@@ -111,7 +115,7 @@ export class UltraCameraModule extends BaseUltraModule {
                 'Select the camera entity to display. This should be a camera or mjpeg entity from Home Assistant.'
               ),
               hass,
-              data: { entity: cameraModule.entity || '' },
+              data: cameraModule,
               schema: [this.entityField('entity', ['camera'])],
               onChange: (e: CustomEvent) => updateModule(e.detail.value),
             },
@@ -207,9 +211,32 @@ export class UltraCameraModule extends BaseUltraModule {
                             'Bottom Right'
                           ),
                         },
+                        {
+                          value: 'top-middle',
+                          label: localize(
+                            'editor.camera.name_position.options.top_middle',
+                            lang,
+                            'Top Middle'
+                          ),
+                        },
+                        {
+                          value: 'bottom-middle',
+                          label: localize(
+                            'editor.camera.name_position.options.bottom_middle',
+                            lang,
+                            'Bottom Middle'
+                          ),
+                        },
                       ]),
                     ],
-                    (e: CustomEvent) => updateModule(e.detail.value)
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.name_position;
+                      const prev = cameraModule.name_position || 'top-left';
+
+                      if (next === prev) return;
+
+                      updateModule(e.detail.value);
+                    }
                   )}
                 </div>
               `
@@ -221,6 +248,126 @@ export class UltraCameraModule extends BaseUltraModule {
                     'editor.camera.show_name_toggle.enable_toggle_desc',
                     lang,
                     'Enable the toggle above to configure camera name display'
+                  )}
+                </div>
+              `}
+        </div>
+
+        <!-- Fullscreen Icon Settings with toggle in header -->
+        <div class="settings-section">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
+          >
+            <div
+              class="section-title"
+              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
+            >
+              ${localize('editor.camera.show_fullscreen', lang, 'Show Fullscreen Icon')}
+            </div>
+            <ha-switch
+              .checked=${cameraModule.show_fullscreen === true}
+              @change=${(e: Event) => {
+                const target = e.target as any;
+                updateModule({ show_fullscreen: target.checked });
+              }}
+            ></ha-switch>
+          </div>
+
+          ${cameraModule.show_fullscreen === true
+            ? html`
+                <div class="field-group" style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize(
+                      'editor.camera.fullscreen_position.title',
+                      lang,
+                      'Fullscreen Icon Position'
+                    ),
+                    localize(
+                      'editor.camera.fullscreen_position.desc',
+                      lang,
+                      'Choose where the fullscreen icon appears as an overlay on the camera image.'
+                    ),
+                    hass,
+                    { fullscreen_position: cameraModule.fullscreen_position || 'top-right' },
+                    [
+                      this.selectField('fullscreen_position', [
+                        {
+                          value: 'top-left',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.top_left',
+                            lang,
+                            'Top Left'
+                          ),
+                        },
+                        {
+                          value: 'top-middle',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.top_middle',
+                            lang,
+                            'Top Middle'
+                          ),
+                        },
+                        {
+                          value: 'top-right',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.top_right',
+                            lang,
+                            'Top Right'
+                          ),
+                        },
+                        {
+                          value: 'center',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.center',
+                            lang,
+                            'Center'
+                          ),
+                        },
+                        {
+                          value: 'bottom-left',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.bottom_left',
+                            lang,
+                            'Bottom Left'
+                          ),
+                        },
+                        {
+                          value: 'bottom-middle',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.bottom_middle',
+                            lang,
+                            'Bottom Middle'
+                          ),
+                        },
+                        {
+                          value: 'bottom-right',
+                          label: localize(
+                            'editor.camera.fullscreen_position.options.bottom_right',
+                            lang,
+                            'Bottom Right'
+                          ),
+                        },
+                      ]),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.fullscreen_position;
+                      const prev = cameraModule.fullscreen_position || 'top-right';
+
+                      if (next === prev) return;
+
+                      updateModule(e.detail.value);
+                    }
+                  )}
+                </div>
+              `
+            : html`
+                <div
+                  style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
+                >
+                  ${localize(
+                    'editor.camera.show_fullscreen_toggle.enable_toggle_desc',
+                    lang,
+                    'Enable the toggle above to configure fullscreen icon display'
                   )}
                 </div>
               `}
@@ -1407,6 +1554,27 @@ export class UltraCameraModule extends BaseUltraModule {
                       </div>
                     `
                   : ''}
+                ${cameraModule.show_fullscreen === true
+                  ? html`
+                      <div
+                        class="camera-fullscreen-icon"
+                        style=${this.styleObjectToCss(
+                          this.getFullscreenIconPositionStyles(
+                            cameraModule.fullscreen_position || 'top-right',
+                            moduleWithDesign,
+                            designProperties,
+                            cameraModule.show_name !== false
+                              ? cameraModule.name_position
+                              : undefined
+                          )
+                        )}
+                        @click=${(e: Event) => this.handleFullscreenClick(e, cameraModule)}
+                        title="Enter fullscreen"
+                      >
+                        <ha-icon icon="mdi:fullscreen"></ha-icon>
+                      </div>
+                    `
+                  : ''}
               `
             : !isUnavailable
               ? html`
@@ -1418,7 +1586,31 @@ export class UltraCameraModule extends BaseUltraModule {
                     style=${this.styleObjectToCss(imageStyles)}
                     class="camera-image"
                     @error=${() => {}}
-                    @load=${() => {}}
+                    @load=${(e: Event) => {
+                      // Reposition overlays to video area after image loads
+                      const imageElement = e.target as HTMLElement;
+                      const container = imageElement.closest(
+                        '.camera-image-container'
+                      ) as HTMLElement;
+                      if (container) {
+                        const nameOverlay = container.querySelector(
+                          '.camera-name-overlay'
+                        ) as HTMLElement;
+                        const fullscreenIcon = container.querySelector(
+                          '.camera-fullscreen-icon'
+                        ) as HTMLElement;
+
+                        // Use setTimeout to ensure DOM is updated
+                        setTimeout(() => {
+                          this.repositionPreviewOverlays(
+                            imageElement,
+                            nameOverlay,
+                            fullscreenIcon,
+                            container
+                          );
+                        }, 100);
+                      }
+                    }}
                   ></hui-image>
                   ${cameraModule.show_name !== false
                     ? html`
@@ -1427,6 +1619,27 @@ export class UltraCameraModule extends BaseUltraModule {
                           style=${this.styleObjectToCss(namePositionStyles)}
                         >
                           ${cameraName}
+                        </div>
+                      `
+                    : ''}
+                  ${cameraModule.show_fullscreen === true
+                    ? html`
+                        <div
+                          class="camera-fullscreen-icon"
+                          style=${this.styleObjectToCss(
+                            this.getFullscreenIconPositionStyles(
+                              cameraModule.fullscreen_position || 'top-right',
+                              moduleWithDesign,
+                              designProperties,
+                              cameraModule.show_name !== false
+                                ? cameraModule.name_position
+                                : undefined
+                            )
+                          )}
+                          @click=${(e: Event) => this.handleFullscreenClick(e, cameraModule)}
+                          title="Enter fullscreen"
+                        >
+                          <ha-icon icon="mdi:fullscreen"></ha-icon>
                         </div>
                       `
                     : ''}
@@ -1492,6 +1705,27 @@ export class UltraCameraModule extends BaseUltraModule {
                           style=${this.styleObjectToCss(namePositionStyles)}
                         >
                           ${cameraName}
+                        </div>
+                      `
+                    : ''}
+                  ${cameraModule.show_fullscreen === true
+                    ? html`
+                        <div
+                          class="camera-fullscreen-icon"
+                          style=${this.styleObjectToCss(
+                            this.getFullscreenIconPositionStyles(
+                              cameraModule.fullscreen_position || 'top-right',
+                              moduleWithDesign,
+                              designProperties,
+                              cameraModule.show_name !== false
+                                ? cameraModule.name_position
+                                : undefined
+                            )
+                          )}
+                          @click=${(e: Event) => this.handleFullscreenClick(e, cameraModule)}
+                          title="Enter fullscreen"
+                        >
+                          <ha-icon icon="mdi:fullscreen"></ha-icon>
                         </div>
                       `
                     : ''}
@@ -1666,6 +1900,949 @@ export class UltraCameraModule extends BaseUltraModule {
     }
   }
 
+  // Fullscreen functionality
+  private handleFullscreenClick(event: Event, module: CameraModule): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    this.createFullscreenModal(module);
+  }
+
+  // Create a bulletproof fullscreen modal
+  private createFullscreenModal(module: CameraModule): void {
+    // Remove any existing fullscreen modals first
+    const existingModals = document.querySelectorAll('[id^="ultra-camera-fullscreen-"]');
+    existingModals.forEach(modal => modal.remove());
+
+    // Get camera entity
+    let cameraEntity = module.entity;
+    if (module.template_mode && module.template) {
+      try {
+        const hass = (document.querySelector('home-assistant') as any)?.hass;
+        if (hass) {
+          let template = module.template;
+          const entityMatch = template.match(/['"]([^'"]+)['"]/);
+          if (entityMatch) {
+            cameraEntity = entityMatch[1];
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!cameraEntity) {
+      alert('No camera entity available');
+      return;
+    }
+
+    // Create unique ID
+    const modalId = 'ultra-camera-fullscreen-' + Date.now();
+
+    // Create modal elements directly (avoid innerHTML inert issues)
+    const modal = document.createElement('div');
+    modal.id = modalId;
+    modal.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(0,0,0,0.95) !important;
+      z-index: 2147483647 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      backdrop-filter: blur(10px) !important;
+    `;
+
+    const cameraWrapper = document.createElement('div');
+    cameraWrapper.style.cssText = `
+      position: relative !important;
+      max-width: 95vw !important;
+      max-height: 95vh !important;
+      border-radius: 12px !important;
+      overflow: hidden !important;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8) !important;
+      background: black !important;
+    `;
+
+    const cameraContainer = document.createElement('div');
+    cameraContainer.id = modalId + '-camera-container';
+    cameraContainer.style.cssText = `
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-height: 300px !important;
+    `;
+
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '✕';
+    closeButton.style.cssText = `
+      position: absolute !important;
+      top: 20px !important;
+      right: 20px !important;
+      width: 50px !important;
+      height: 50px !important;
+      border: 3px solid rgba(255,255,255,0.7) !important;
+      background: rgba(0,0,0,0.8) !important;
+      color: white !important;
+      font-size: 30px !important;
+      font-weight: bold !important;
+      cursor: pointer !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 2147483647 !important;
+      backdrop-filter: blur(4px) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6) !important;
+      font-family: Arial, sans-serif !important;
+      line-height: 1 !important;
+      transition: all 0.2s ease !important;
+    `;
+
+    // Add camera name if enabled
+    if (module.show_name !== false) {
+      const nameDiv = document.createElement('div');
+      nameDiv.style.cssText = `
+        position: absolute !important;
+        top: 20px !important;
+        left: 20px !important;
+        padding: 10px 16px !important;
+        background: rgba(0,0,0,0.8) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        backdrop-filter: blur(4px) !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+      `;
+      nameDiv.textContent = module.camera_name || cameraEntity;
+      cameraWrapper.appendChild(nameDiv);
+    }
+
+    // Assemble modal
+    cameraWrapper.appendChild(cameraContainer);
+    cameraWrapper.appendChild(closeButton);
+    modal.appendChild(cameraWrapper);
+    document.body.appendChild(modal);
+
+    // Add event handlers and prevent inert attribute
+    const closeModal = () => {
+      modal.remove();
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+
+    // Force remove inert attribute and add event handlers
+    const setupInteractions = () => {
+      modal.removeAttribute('inert');
+      closeButton.removeAttribute('inert');
+
+      // Force pointer events
+      modal.style.pointerEvents = 'auto';
+      closeButton.style.pointerEvents = 'auto';
+
+      // Add click handlers with capture phase
+      closeButton.addEventListener(
+        'click',
+        e => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log('X button clicked');
+          closeModal();
+        },
+        true
+      );
+
+      modal.addEventListener(
+        'click',
+        e => {
+          console.log('Modal clicked', e.target === modal);
+          if (e.target === modal) {
+            e.stopPropagation();
+            e.preventDefault();
+            closeModal();
+          }
+        },
+        true
+      );
+    };
+
+    // Setup interactions immediately and also after a delay
+    setupInteractions();
+    setTimeout(setupInteractions, 100);
+
+    // Monitor for inert attribute being added and remove it
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'inert') {
+          const target = mutation.target as HTMLElement;
+          if (target === modal || target === closeButton) {
+            target.removeAttribute('inert');
+            target.style.pointerEvents = 'auto';
+          }
+        }
+      });
+    });
+
+    observer.observe(modal, { attributes: true });
+    observer.observe(closeButton, { attributes: true });
+
+    // Insert camera into the container
+    setTimeout(() => {
+      const modal = document.getElementById(modalId);
+      const cameraContainer = document.getElementById(modalId + '-camera-container');
+
+      if (modal && cameraContainer) {
+        const hass = (document.querySelector('home-assistant') as any)?.hass;
+
+        if (hass) {
+          // Create hui-image element
+          const huiImage = document.createElement('hui-image');
+          (huiImage as any).hass = hass;
+          (huiImage as any).cameraImage = cameraEntity;
+          (huiImage as any).cameraView = module.live_view ? 'live' : 'auto';
+
+          huiImage.style.cssText = `
+            width: auto !important;
+            height: auto !important;
+            max-width: 95vw !important;
+            max-height: 95vh !important;
+            display: block !important;
+            object-fit: contain !important;
+            border-radius: 12px !important;
+          `;
+
+          cameraContainer.innerHTML = '';
+          cameraContainer.appendChild(huiImage);
+        } else {
+          // Fallback to img if no hass
+          cameraContainer.innerHTML = `
+            <img src="/api/camera_proxy/${cameraEntity}?t=${Date.now()}" style="
+              width: auto !important;
+              height: auto !important;
+              max-width: 95vw !important;
+              max-height: 95vh !important;
+              display: block !important;
+              object-fit: contain !important;
+              border-radius: 12px !important;
+            " onerror="this.parentElement.innerHTML='<div style=\\"color:white;text-align:center;padding:40px;\\">Camera Error</div>'" />
+          `;
+        }
+      }
+    }, 50);
+
+    // Add ESC key handler
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Legacy methods - keeping for fallback compatibility
+  private trySimpleModal(container: HTMLElement, module: CameraModule): boolean {
+    try {
+      // Get camera entity first
+      let cameraEntity = module.entity;
+      if (module.template_mode && module.template) {
+        try {
+          const hass = (document.querySelector('home-assistant') as any)?.hass;
+          if (hass) {
+            let template = module.template;
+            const entityMatch = template.match(/['"]([^'"]+)['"]/);
+            if (entityMatch) {
+              cameraEntity = entityMatch[1];
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!cameraEntity) return false;
+
+      // Create modal with simple innerHTML approach
+      const modalId = 'camera-fullscreen-' + Date.now();
+      const cameraName = module.camera_name || cameraEntity;
+
+      const modalHTML = `
+        <div id="${modalId}" style="
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: rgba(0,0,0,0.95) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 2147483647 !important;
+          backdrop-filter: blur(10px) !important;
+        " onclick="if(event.target === this) this.remove()">
+          <div style="
+            position: relative !important;
+            max-width: 95vw !important;
+            max-height: 95vh !important;
+            background: black !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important;
+          ">
+            <img src="/api/camera_proxy/${cameraEntity}?t=${Date.now()}" style="
+              max-width: 95vw !important;
+              max-height: 95vh !important;
+              width: auto !important;
+              height: auto !important;
+              display: block !important;
+              object-fit: contain !important;
+              border-radius: 12px !important;
+            " />
+            <button onclick="document.getElementById('${modalId}').remove()" style="
+              position: absolute !important;
+              top: 16px !important;
+              right: 16px !important;
+              width: 48px !important;
+              height: 48px !important;
+              border: 2px solid rgba(255,255,255,0.5) !important;
+              background: rgba(0,0,0,0.8) !important;
+              color: white !important;
+              font-size: 28px !important;
+              cursor: pointer !important;
+              border-radius: 50% !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              z-index: 2147483647 !important;
+              backdrop-filter: blur(4px) !important;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+              font-family: monospace !important;
+              line-height: 1 !important;
+            " onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(0,0,0,0.8)'; this.style.transform='scale(1)'">
+              ✕
+            </button>
+            ${
+              module.show_name !== false
+                ? `
+              <div style="
+                position: absolute !important;
+                top: 16px !important;
+                left: 16px !important;
+                padding: 8px 16px !important;
+                background: rgba(0,0,0,0.7) !important;
+                color: white !important;
+                border-radius: 6px !important;
+                font-size: 16px !important;
+                font-weight: 500 !important;
+                backdrop-filter: blur(4px) !important;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+                z-index: 10 !important;
+              ">
+                ${cameraName}
+              </div>
+            `
+                : ''
+            }
+          </div>
+        </div>
+      `;
+
+      // Insert modal
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+      // Add ESC handler
+      const escHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          const modal = document.getElementById(modalId);
+          if (modal) {
+            modal.remove();
+            document.removeEventListener('keydown', escHandler);
+          }
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+
+      return true;
+    } catch (error) {
+      console.warn('Simple modal failed:', error);
+      return false;
+    }
+  }
+
+  // Try to use native browser fullscreen API
+  private tryNativeFullscreen(container: HTMLElement, module: CameraModule): boolean {
+    try {
+      // Create a fullscreen wrapper
+      const fullscreenWrapper = document.createElement('div');
+      fullscreenWrapper.style.cssText = `
+        width: 100vw;
+        height: 100vh;
+        background: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      `;
+
+      // Clone the camera content
+      const cameraClone = container.cloneNode(true) as HTMLElement;
+      cameraClone.style.cssText = `
+        max-width: 100vw;
+        max-height: 100vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      `;
+
+      // Add exit button for native fullscreen
+      const exitButton = document.createElement('button');
+      exitButton.innerHTML = '✕';
+      exitButton.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px;
+        z-index: 999999;
+      `;
+
+      exitButton.onclick = () => {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          (document as any).mozCancelFullScreen();
+        } else if ((document as any).msExitFullscreen) {
+          (document as any).msExitFullscreen();
+        }
+      };
+
+      fullscreenWrapper.appendChild(cameraClone);
+      fullscreenWrapper.appendChild(exitButton);
+      document.body.appendChild(fullscreenWrapper);
+
+      // Request fullscreen
+      const requestFullscreen =
+        fullscreenWrapper.requestFullscreen ||
+        (fullscreenWrapper as any).webkitRequestFullscreen ||
+        (fullscreenWrapper as any).mozRequestFullScreen ||
+        (fullscreenWrapper as any).msRequestFullscreen;
+
+      if (requestFullscreen) {
+        requestFullscreen.call(fullscreenWrapper);
+
+        // Clean up when fullscreen exits
+        const cleanup = () => {
+          if (fullscreenWrapper.parentNode) {
+            fullscreenWrapper.parentNode.removeChild(fullscreenWrapper);
+          }
+          document.removeEventListener('fullscreenchange', cleanup);
+          document.removeEventListener('webkitfullscreenchange', cleanup);
+          document.removeEventListener('mozfullscreenchange', cleanup);
+          document.removeEventListener('MSFullscreenChange', cleanup);
+        };
+
+        document.addEventListener('fullscreenchange', cleanup);
+        document.addEventListener('webkitfullscreenchange', cleanup);
+        document.addEventListener('mozfullscreenchange', cleanup);
+        document.addEventListener('MSFullscreenChange', cleanup);
+
+        return true;
+      }
+    } catch (error) {
+      console.warn('Native fullscreen failed:', error);
+    }
+    return false;
+  }
+
+  private enterFullscreen(container: HTMLElement, module: CameraModule): void {
+    // Create fullscreen overlay
+    const fullscreenOverlay = document.createElement('div');
+    fullscreenOverlay.className = 'camera-fullscreen-overlay';
+    fullscreenOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 2147483647;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.3s ease;
+      pointer-events: auto;
+    `;
+
+    // Create a fresh camera container instead of cloning problematic elements
+    const fullscreenContainer = document.createElement('div');
+    fullscreenContainer.className = 'camera-fullscreen-container';
+    fullscreenContainer.style.cssText = `
+      max-width: 95vw;
+      max-height: 95vh;
+      width: auto;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      position: relative;
+      animation: scaleIn 0.3s ease;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    `;
+
+    // Get the camera entity
+    let cameraEntity = module.entity;
+
+    // Handle template mode (same logic as preview)
+    if (module.template_mode && module.template) {
+      try {
+        const hass = (document.querySelector('home-assistant') as any)?.hass;
+        if (hass) {
+          let evaluatedTemplate = module.template;
+
+          // Replace state() function calls
+          const stateMatches = evaluatedTemplate.match(/states\(['"]([^'"]+)['"]\)/g);
+          if (stateMatches) {
+            stateMatches.forEach(match => {
+              const entityId = match.match(/states\(['"]([^'"]+)['"]\)/)[1];
+              const entity = hass?.states[entityId];
+              const value = entity ? entity.state : 'unknown';
+              evaluatedTemplate = evaluatedTemplate.replace(match, `'${value}'`);
+            });
+          }
+
+          // Replace is_state() function calls
+          const isStateMatches = evaluatedTemplate.match(
+            /is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/g
+          );
+          if (isStateMatches) {
+            isStateMatches.forEach(match => {
+              const [, entityId, expectedState] = match.match(
+                /is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/
+              );
+              const entity = hass?.states[entityId];
+              const isMatch = entity && entity.state === expectedState;
+              evaluatedTemplate = evaluatedTemplate.replace(match, isMatch ? 'True' : 'False');
+            });
+          }
+
+          // Simple if-else evaluation
+          const ifElseMatch = evaluatedTemplate.match(
+            /['"]([^'"]+)['"] if (.+?) else ['"]([^'"]+)['"]/
+          );
+          if (ifElseMatch) {
+            const [, trueEntity, condition, falseEntity] = ifElseMatch;
+            const conditionResult = condition.includes('True');
+            cameraEntity = conditionResult ? trueEntity : falseEntity;
+          } else {
+            const entityMatch = evaluatedTemplate.match(/['"]([^'"]+)['"]/);
+            if (entityMatch) {
+              cameraEntity = entityMatch[1];
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Template evaluation error:', error);
+        cameraEntity = module.entity;
+      }
+    }
+
+    // Create the camera image element directly
+    if (cameraEntity) {
+      const hass = (document.querySelector('home-assistant') as any)?.hass;
+
+      if (hass) {
+        const cameraImg = document.createElement('hui-image');
+        (cameraImg as any).hass = hass;
+        (cameraImg as any).cameraImage = cameraEntity;
+        (cameraImg as any).cameraView = module.live_view ? 'live' : 'auto';
+
+        cameraImg.style.cssText = `
+          width: 100%;
+          height: 100%;
+          max-width: 95vw;
+          max-height: 95vh;
+          object-fit: contain;
+          border-radius: 12px;
+          pointer-events: auto;
+        `;
+
+        fullscreenContainer.appendChild(cameraImg);
+
+        // Add camera name overlay if enabled - positioned within actual video area
+        if (module.show_name !== false) {
+          const cameraName =
+            module.camera_name ||
+            hass.states[cameraEntity]?.attributes?.friendly_name ||
+            cameraEntity;
+          const nameOverlay = document.createElement('div');
+          nameOverlay.className = 'camera-name-overlay-fullscreen';
+          nameOverlay.style.cssText = `
+              position: absolute;
+              top: 16px;
+              left: 16px;
+              padding: 8px 16px;
+              background: rgba(0, 0, 0, 0.7);
+              color: white;
+              border-radius: 6px;
+              font-size: 16px;
+              font-weight: 500;
+              backdrop-filter: blur(4px);
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+              z-index: 10;
+            `;
+          nameOverlay.textContent = cameraName;
+
+          // Wait for image to load to get actual dimensions and reposition
+          cameraImg.addEventListener('load', () => {
+            this.repositionOverlaysToVideoArea(cameraImg, nameOverlay, fullscreenContainer);
+          });
+
+          fullscreenContainer.appendChild(nameOverlay);
+        }
+      } else {
+        // No hass available - show error
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          color: white;
+          font-size: 20px;
+          text-align: center;
+          padding: 40px;
+        `;
+        errorDiv.innerHTML = `
+          <ha-icon icon="mdi:camera-off" style="font-size: 64px; margin-bottom: 16px;"></ha-icon>
+          <div>Home Assistant not available</div>
+        `;
+        fullscreenContainer.appendChild(errorDiv);
+      }
+    } else {
+      // No camera entity - show no camera message
+      const noCameraDiv = document.createElement('div');
+      noCameraDiv.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: white;
+        font-size: 20px;
+        text-align: center;
+        padding: 40px;
+      `;
+      noCameraDiv.innerHTML = `
+        <ha-icon icon="mdi:camera-off" style="font-size: 64px; margin-bottom: 16px;"></ha-icon>
+        <div>No Camera Available</div>
+      `;
+      fullscreenContainer.appendChild(noCameraDiv);
+    }
+
+    // Add minimize button (X icon in top-right) - clean white icon style
+    const minimizeButton = document.createElement('div');
+    minimizeButton.className = 'camera-minimize-icon';
+    minimizeButton.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 6px;
+      background: transparent;
+      color: white;
+      font-size: 32px;
+      cursor: pointer;
+      z-index: 2147483647;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.6);
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+      pointer-events: auto;
+    `;
+    minimizeButton.innerHTML = '<ha-icon icon="mdi:close" style="pointer-events: none;"></ha-icon>';
+    minimizeButton.title = 'Exit fullscreen';
+
+    // Add hover effects - clean white icon style
+    minimizeButton.addEventListener('mouseenter', () => {
+      minimizeButton.style.transform = 'scale(1.15)';
+      minimizeButton.style.textShadow = '0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7)';
+      minimizeButton.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9))';
+    });
+
+    minimizeButton.addEventListener('mouseleave', () => {
+      minimizeButton.style.transform = 'scale(1)';
+      minimizeButton.style.textShadow = '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.6)';
+      minimizeButton.style.filter = 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))';
+    });
+
+    // Add click handler for minimize
+    minimizeButton.addEventListener('click', (e: Event) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.exitFullscreen(fullscreenOverlay);
+    });
+
+    // Add ESC key handler
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.exitFullscreen(fullscreenOverlay);
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Click outside to close - simplified approach
+    fullscreenOverlay.addEventListener('click', (e: Event) => {
+      const target = e.target as HTMLElement;
+
+      // If we clicked directly on the overlay (not on the camera or buttons)
+      if (target === fullscreenOverlay) {
+        this.exitFullscreen(fullscreenOverlay);
+        document.removeEventListener('keydown', escHandler);
+      }
+    });
+
+    // Assemble and show - add overlay first, then button directly to body
+    fullscreenOverlay.appendChild(fullscreenContainer);
+    document.body.appendChild(fullscreenOverlay);
+    document.body.appendChild(minimizeButton); // Add button directly to body for highest z-index
+
+    // Prevent body scroll and disable HA context menus during fullscreen
+    document.body.style.overflow = 'hidden';
+
+    // Temporarily disable right-click context menus
+    const disableContextMenu = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+    document.addEventListener('contextmenu', disableContextMenu, true);
+
+    // Add class to body to help with CSS overrides
+    document.body.classList.add('camera-fullscreen-active');
+
+    // Store reference for cleanup
+    (fullscreenOverlay as any)._escHandler = escHandler;
+    (fullscreenOverlay as any)._minimizeButton = minimizeButton;
+    (fullscreenOverlay as any)._contextMenuHandler = disableContextMenu;
+  }
+
+  private exitFullscreen(overlay: HTMLElement): void {
+    // Restore body scroll and remove fullscreen class
+    document.body.style.overflow = '';
+    document.body.classList.remove('camera-fullscreen-active');
+
+    // Clean up event listeners
+    const escHandler = (overlay as any)._escHandler;
+    if (escHandler) {
+      document.removeEventListener('keydown', escHandler);
+    }
+
+    // Re-enable context menus
+    const contextMenuHandler = (overlay as any)._contextMenuHandler;
+    if (contextMenuHandler) {
+      document.removeEventListener('contextmenu', contextMenuHandler, true);
+    }
+
+    // Remove minimize button immediately
+    const minimizeButton = (overlay as any)._minimizeButton;
+    if (minimizeButton && minimizeButton.parentNode) {
+      minimizeButton.parentNode.removeChild(minimizeButton);
+    }
+
+    // Animate out
+    overlay.style.animation = 'fadeOut 0.2s ease';
+
+    setTimeout(() => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    }, 200);
+  }
+
+  // Reposition overlays in preview mode to stay within the actual video area
+  private repositionPreviewOverlays(
+    imageElement: HTMLElement,
+    nameOverlay: HTMLElement | null,
+    fullscreenIcon: HTMLElement | null,
+    container: HTMLElement
+  ): void {
+    try {
+      const containerRect = container.getBoundingClientRect();
+
+      // Get the actual video dimensions from the image element
+      const img = imageElement.querySelector('img') || imageElement;
+      if (!img || !(img as HTMLImageElement).naturalWidth) return;
+
+      const naturalWidth = (img as HTMLImageElement).naturalWidth;
+      const naturalHeight = (img as HTMLImageElement).naturalHeight;
+      const videoAspect = naturalWidth / naturalHeight;
+      const containerAspect = containerRect.width / containerRect.height;
+
+      let actualVideoWidth = containerRect.width;
+      let actualVideoHeight = containerRect.height;
+      let videoOffsetX = 0;
+      let videoOffsetY = 0;
+
+      if (videoAspect > containerAspect) {
+        // Video is wider - letterboxing (black bars top/bottom)
+        actualVideoHeight = containerRect.width / videoAspect;
+        videoOffsetY = (containerRect.height - actualVideoHeight) / 2;
+      } else if (videoAspect < containerAspect) {
+        // Video is taller - pillarboxing (black bars left/right)
+        actualVideoWidth = containerRect.height * videoAspect;
+        videoOffsetX = (containerRect.width - actualVideoWidth) / 2;
+      }
+
+      // Only reposition if there's significant letterboxing/pillarboxing (more than 5px in preview)
+      if (videoOffsetX > 5 || videoOffsetY > 5) {
+        const minOffset = 8; // Minimum distance from video edge
+
+        // Reposition name overlay
+        if (nameOverlay) {
+          this.repositionOverlayElement(
+            nameOverlay,
+            videoOffsetX,
+            videoOffsetY,
+            actualVideoWidth,
+            actualVideoHeight,
+            minOffset
+          );
+        }
+
+        // Reposition fullscreen icon
+        if (fullscreenIcon) {
+          this.repositionOverlayElement(
+            fullscreenIcon,
+            videoOffsetX,
+            videoOffsetY,
+            actualVideoWidth,
+            actualVideoHeight,
+            minOffset
+          );
+        }
+      }
+    } catch (error) {
+      // If calculation fails, keep default positioning
+      console.warn('Failed to calculate video area for preview overlay positioning:', error);
+    }
+  }
+
+  // Helper method to reposition individual overlay elements within video bounds
+  private repositionOverlayElement(
+    element: HTMLElement,
+    videoOffsetX: number,
+    videoOffsetY: number,
+    videoWidth: number,
+    videoHeight: number,
+    minOffset: number
+  ): void {
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = element.parentElement?.getBoundingClientRect();
+    if (!containerRect) return;
+
+    // Calculate maximum positions to keep element within video area
+    const maxLeft = videoOffsetX + videoWidth - elementRect.width - minOffset;
+    const maxTop = videoOffsetY + videoHeight - elementRect.height - minOffset;
+    const maxRight = videoOffsetX + videoWidth - elementRect.width - minOffset;
+    const maxBottom = videoOffsetY + videoHeight - elementRect.height - minOffset;
+
+    // Adjust positioning based on current position, ensuring it stays within video bounds
+    if (element.style.left && element.style.left !== '') {
+      const currentLeft = parseInt(element.style.left);
+      element.style.left = `${Math.min(Math.max(videoOffsetX + minOffset, currentLeft), maxLeft)}px`;
+    }
+    if (element.style.right && element.style.right !== '') {
+      const currentRight = parseInt(element.style.right);
+      element.style.right = `${Math.min(Math.max(videoOffsetX + minOffset, currentRight), maxRight)}px`;
+    }
+    if (element.style.top && element.style.top !== '') {
+      const currentTop = parseInt(element.style.top);
+      element.style.top = `${Math.min(Math.max(videoOffsetY + minOffset, currentTop), maxTop)}px`;
+    }
+    if (element.style.bottom && element.style.bottom !== '') {
+      const currentBottom = parseInt(element.style.bottom);
+      element.style.bottom = `${Math.min(Math.max(videoOffsetY + minOffset, currentBottom), maxBottom)}px`;
+    }
+  }
+
+  // Reposition overlays to stay within the actual video area when using object-fit: contain
+  private repositionOverlaysToVideoArea(
+    imageElement: HTMLElement,
+    nameOverlay: HTMLElement,
+    container: HTMLElement
+  ): void {
+    try {
+      const containerRect = container.getBoundingClientRect();
+      const imageRect = imageElement.getBoundingClientRect();
+
+      // Calculate if the image has letterboxing/pillarboxing due to object-fit: contain
+      const containerAspect = containerRect.width / containerRect.height;
+
+      // Get the actual video dimensions from the image element
+      let actualVideoWidth = imageRect.width;
+      let actualVideoHeight = imageRect.height;
+
+      // For hui-image elements, try to get the actual video dimensions
+      const img = imageElement.querySelector('img') || imageElement;
+      if (img && (img as HTMLImageElement).naturalWidth) {
+        const naturalWidth = (img as HTMLImageElement).naturalWidth;
+        const naturalHeight = (img as HTMLImageElement).naturalHeight;
+        const videoAspect = naturalWidth / naturalHeight;
+
+        if (videoAspect > containerAspect) {
+          // Video is wider - letterboxing (black bars top/bottom)
+          actualVideoWidth = containerRect.width;
+          actualVideoHeight = containerRect.width / videoAspect;
+        } else {
+          // Video is taller - pillarboxing (black bars left/right)
+          actualVideoHeight = containerRect.height;
+          actualVideoWidth = containerRect.height * videoAspect;
+        }
+      }
+
+      // Calculate the offset to center the video within the container
+      const videoOffsetX = (containerRect.width - actualVideoWidth) / 2;
+      const videoOffsetY = (containerRect.height - actualVideoHeight) / 2;
+
+      // Only reposition if there's significant letterboxing/pillarboxing (more than 20px)
+      if (videoOffsetX > 20 || videoOffsetY > 20) {
+        // Reposition name overlay to be within the actual video area
+        nameOverlay.style.left = `${videoOffsetX + 16}px`;
+        nameOverlay.style.top = `${videoOffsetY + 16}px`;
+
+        // Also reposition any fullscreen icon if it exists in fullscreen mode
+        const fullscreenIcon = container.querySelector('.camera-fullscreen-icon');
+        if (fullscreenIcon) {
+          const iconElement = fullscreenIcon as HTMLElement;
+          // Position in top-right of actual video area
+          iconElement.style.right = `${videoOffsetX + 16}px`;
+          iconElement.style.top = `${videoOffsetY + 16}px`;
+        }
+      }
+    } catch (error) {
+      // If calculation fails, keep default positioning
+      console.warn('Failed to calculate video area for overlay positioning:', error);
+    }
+  }
+
   // Dimension handling with aspect ratio linking (fallback dimensions only)
   private _handleDimensionChange(
     cameraModule: CameraModule,
@@ -1708,6 +2885,96 @@ export class UltraCameraModule extends BaseUltraModule {
     updateModule(updates);
   }
 
+  // Fullscreen icon positioning with global design integration
+  private getFullscreenIconPositionStyles(
+    position: string,
+    moduleWithDesign: any,
+    designProperties: any = {},
+    namePosition?: string
+  ): Record<string, string> {
+    const baseStyles = {
+      position: 'absolute',
+      padding: '6px',
+      background: 'transparent',
+      color: 'white',
+      fontSize: '22px',
+      cursor: 'pointer',
+      zIndex: '5', // Lower z-index to not interfere with dropdowns
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'all 0.2s ease',
+      textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.6)',
+      filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))',
+    };
+
+    // Check for collision with camera name and adjust position if needed
+    const adjustedPosition = this.getAdjustedPositionForCollision(position, namePosition);
+
+    // Calculate offset if name and fullscreen are in same position (stack them)
+    const hasNameInSamePosition = namePosition === position;
+    const stackOffset = hasNameInSamePosition ? '40px' : '8px'; // Offset for stacking
+
+    switch (adjustedPosition) {
+      case 'top-left':
+        return {
+          ...baseStyles,
+          top: hasNameInSamePosition ? stackOffset : '8px',
+          left: '8px',
+        };
+      case 'top-middle':
+        return {
+          ...baseStyles,
+          top: hasNameInSamePosition ? stackOffset : '8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        };
+      case 'top-right':
+        return {
+          ...baseStyles,
+          top: hasNameInSamePosition ? stackOffset : '8px',
+          right: '8px',
+        };
+      case 'center':
+        return {
+          ...baseStyles,
+          top: hasNameInSamePosition ? 'calc(50% + 20px)' : '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+        };
+      case 'bottom-left':
+        return {
+          ...baseStyles,
+          bottom: hasNameInSamePosition ? stackOffset : '8px',
+          left: '8px',
+        };
+      case 'bottom-middle':
+        return {
+          ...baseStyles,
+          bottom: hasNameInSamePosition ? stackOffset : '8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        };
+      case 'bottom-right':
+        return {
+          ...baseStyles,
+          bottom: hasNameInSamePosition ? stackOffset : '8px',
+          right: '8px',
+        };
+      default:
+        return { ...baseStyles, top: '8px', right: '8px' };
+    }
+  }
+
+  // Collision detection and adjustment - now returns original position to allow stacking
+  private getAdjustedPositionForCollision(
+    fullscreenPosition: string,
+    namePosition?: string
+  ): string {
+    // Allow same position - we'll handle stacking in the positioning logic
+    return fullscreenPosition;
+  }
+
   // Camera name positioning with global design integration
   private getCameraNamePositionStyles(
     position: string,
@@ -1746,6 +3013,14 @@ export class UltraCameraModule extends BaseUltraModule {
         return { ...baseStyles, top: '8px', left: '8px' };
       case 'top-right':
         return { ...baseStyles, top: '8px', right: '8px' };
+      case 'top-middle':
+        return {
+          ...baseStyles,
+          top: '8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          textAlign: 'center',
+        };
       case 'center':
         return {
           ...baseStyles,
@@ -1756,6 +3031,14 @@ export class UltraCameraModule extends BaseUltraModule {
         };
       case 'bottom-left':
         return { ...baseStyles, bottom: '8px', left: '8px' };
+      case 'bottom-middle':
+        return {
+          ...baseStyles,
+          bottom: '8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          textAlign: 'center',
+        };
       case 'bottom-right':
         return { ...baseStyles, bottom: '8px', right: '8px' };
       default:
@@ -2358,6 +3641,105 @@ export class UltraCameraModule extends BaseUltraModule {
 
       .camera-module-container.design-updating {
         animation: textSizeChange 0.3s ease;
+      }
+
+      /* Fullscreen icon styling */
+      .camera-fullscreen-icon {
+        transition: all 0.2s ease;
+        user-select: none;
+      }
+
+      .camera-fullscreen-icon:hover {
+        transform: scale(1.15);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+      }
+
+      .camera-fullscreen-icon:active {
+        transform: scale(1.05);
+      }
+
+      /* Fullscreen overlay animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      @keyframes scaleIn {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Fullscreen overlay global styles */
+      .camera-fullscreen-overlay {
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        z-index: 2147483647 !important;
+        position: fixed !important;
+      }
+
+      .camera-fullscreen-overlay .camera-image-container {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Override HA context menus and modals */
+      .camera-minimize-icon {
+        z-index: 2147483647 !important;
+        position: fixed !important;
+        pointer-events: auto !important;
+      }
+
+      /* Ensure fullscreen is above all HA elements */
+      body .camera-fullscreen-overlay {
+        z-index: 2147483647 !important;
+      }
+
+      body .camera-minimize-icon {
+        z-index: 2147483647 !important;
+      }
+
+      /* When fullscreen is active, ensure our elements are always on top */
+      body.camera-fullscreen-active .camera-fullscreen-overlay,
+      body.camera-fullscreen-active .camera-minimize-icon {
+        z-index: 2147483647 !important;
+        position: fixed !important;
+      }
+
+      /* Hide HA overlays during fullscreen */
+      body.camera-fullscreen-active ha-dialog,
+      body.camera-fullscreen-active ha-more-info-dialog,
+      body.camera-fullscreen-active .mdc-dialog,
+      body.camera-fullscreen-active .dialog-container {
+        z-index: 2147483646 !important;
+      }
+
+      .camera-minimize-icon:hover {
+        transform: scale(1.15) !important;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7) !important;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9)) !important;
+      }
+
+      .camera-minimize-icon:active {
+        transform: scale(1.05) !important;
       }
     `;
   }

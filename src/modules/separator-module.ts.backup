@@ -1,0 +1,1798 @@
+import { TemplateResult, html } from 'lit';
+import { HomeAssistant } from 'custom-card-helpers';
+import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { CardModule, SeparatorModule, UltraCardConfig } from '../types';
+import { FormUtils } from '../utils/form-utils';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
+import { localize } from '../localize/localize';
+
+export class UltraSeparatorModule extends BaseUltraModule {
+  metadata: ModuleMetadata = {
+    type: 'separator',
+    title: 'Separator Module',
+    description: 'Visual dividers and spacing',
+    author: 'WJD Designs',
+    version: '1.0.0',
+    icon: 'mdi:minus',
+    category: 'content',
+    tags: ['separator', 'divider', 'spacing', 'layout'],
+  };
+
+  private _formChangeGuard = false;
+  private _updateTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
+  private _debouncedUpdate = (
+    field: string,
+    value: any,
+    updateModule: (updates: Partial<CardModule>) => void
+  ) => {
+    // Clear existing timeout
+    if (this._updateTimeouts.has(field)) {
+      clearTimeout(this._updateTimeouts.get(field)!);
+    }
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      updateModule({ [field]: value });
+      this._updateTimeouts.delete(field);
+    }, 50);
+
+    this._updateTimeouts.set(field, timeout);
+  };
+
+  createDefault(id?: string, hass?: HomeAssistant): SeparatorModule {
+    return {
+      id: id || this.generateId('separator'),
+      type: 'separator',
+      separator_style: 'line',
+      orientation: 'horizontal',
+      thickness: 2,
+      width_percent: 100,
+      height_px: 300,
+      color: '#cccccc',
+      show_title: false,
+      title: '',
+      title_size: 14,
+      title_color: 'var(--secondary-text-color)',
+      title_bold: false,
+      title_italic: false,
+      title_uppercase: false,
+      title_strikethrough: false,
+      title_underline: false,
+      // Global action configuration
+      tap_action: { action: 'nothing' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
+      // Hover effects
+      enable_hover_effect: true,
+      hover_background_color: 'var(--divider-color, #cccccc)',
+      // Logic (visibility) defaults
+      display_mode: 'always',
+      display_conditions: [],
+    };
+  }
+
+  renderGeneralTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const separatorModule = module as SeparatorModule;
+    const lang = hass.locale?.language || 'en';
+
+    return html`
+      ${this.injectUcFormStyles()}
+      <div class="module-general-settings">
+        <!-- Separator Configuration -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.separator.config.title', lang, 'Separator Configuration')}
+          </div>
+
+          <!-- Separator Style -->
+          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+            ${localize('editor.separator.style.title', lang, 'Separator Style')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+          >
+            ${localize(
+              'editor.separator.style.desc',
+              lang,
+              'Choose the visual style of the separator line.'
+            )}
+          </div>
+          <ha-form
+            .hass=${hass}
+            .data=${{ separator_style: separatorModule.separator_style || 'line' }}
+            .schema=${[
+              {
+                name: 'separator_style',
+                selector: {
+                  select: {
+                    options: [
+                      {
+                        value: 'line',
+                        label: localize('editor.separator.options.solid', lang, 'Solid Line'),
+                      },
+                      {
+                        value: 'double_line',
+                        label: localize('editor.separator.options.double', lang, 'Double Line'),
+                      },
+                      {
+                        value: 'dotted',
+                        label: localize('editor.separator.options.dotted', lang, 'Dotted Line'),
+                      },
+                      {
+                        value: 'double_dotted',
+                        label: localize(
+                          'editor.separator.options.double_dotted',
+                          lang,
+                          'Double Dotted'
+                        ),
+                      },
+                      {
+                        value: 'shadow',
+                        label: localize('editor.separator.options.shadow', lang, 'Shadow'),
+                      },
+                      {
+                        value: 'blank',
+                        label: localize('editor.separator.options.blank', lang, 'Blank Space'),
+                      },
+                    ],
+                    mode: 'dropdown',
+                  },
+                },
+                label: '',
+              },
+            ]}
+            @value-changed=${(e: CustomEvent) => {
+              if (this._formChangeGuard) return;
+              this._formChangeGuard = true;
+              const updates: any = { separator_style: e.detail.value.separator_style };
+              if (updates.separator_style === 'blank') {
+                updates.show_title = false;
+              }
+              this._debouncedUpdate('separator_style', updates.separator_style, updateModule);
+              if (updates.show_title !== undefined) {
+                this._debouncedUpdate('show_title', updates.show_title, updateModule);
+              }
+              setTimeout(() => (this._formChangeGuard = false), 100);
+            }}
+          ></ha-form>
+
+          <!-- Orientation -->
+          <div
+            class="field-title"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
+          >
+            ${localize('editor.separator.orientation.title', lang, 'Orientation')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+          >
+            ${localize(
+              'editor.separator.orientation.desc',
+              lang,
+              'Choose whether the separator runs horizontally or vertically.'
+            )}
+          </div>
+          <ha-form
+            .hass=${hass}
+            .data=${{ orientation: separatorModule.orientation || 'horizontal' }}
+            .schema=${[
+              {
+                name: 'orientation',
+                selector: {
+                  select: {
+                    options: [
+                      {
+                        value: 'horizontal',
+                        label: localize(
+                          'editor.separator.orientation.horizontal',
+                          lang,
+                          'Horizontal'
+                        ),
+                      },
+                      {
+                        value: 'vertical',
+                        label: localize('editor.separator.orientation.vertical', lang, 'Vertical'),
+                      },
+                    ],
+                    mode: 'dropdown',
+                  },
+                },
+                label: '',
+              },
+            ]}
+            @value-changed=${(e: CustomEvent) => {
+              if (this._formChangeGuard) return;
+              this._formChangeGuard = true;
+              this._debouncedUpdate('orientation', e.detail.value.orientation, updateModule);
+              setTimeout(() => (this._formChangeGuard = false), 100);
+            }}
+          ></ha-form>
+        </div>
+
+        <!-- Appearance Configuration -->
+        ${separatorModule.separator_style !== 'blank'
+          ? html`
+              <div
+                class="settings-section"
+                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+              >
+                <div
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                >
+                  ${localize('editor.separator.appearance.title', lang, 'Appearance')}
+                </div>
+
+                <!-- Thickness -->
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">
+                    ${localize('editor.separator.thickness', lang, 'Thickness (px)')}
+                  </div>
+                  <div class="field-description">
+                    ${localize(
+                      'editor.separator.thickness_desc',
+                      lang,
+                      'Thickness of the separator line.'
+                    )}
+                  </div>
+                  <div
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
+                  >
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="1"
+                      max="20"
+                      step="1"
+                      .value="${separatorModule.thickness || 1}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = parseFloat(target.value);
+                        updateModule({ thickness: value });
+                      }}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="1"
+                      max="20"
+                      step="1"
+                      .value="${separatorModule.thickness || 1}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = parseFloat(target.value);
+                        if (!isNaN(value)) {
+                          updateModule({ thickness: value });
+                        }
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          const target = e.target as HTMLInputElement;
+                          const currentValue = parseFloat(target.value) || 1;
+                          const increment = e.key === 'ArrowUp' ? 1 : -1;
+                          const newValue = Math.max(1, Math.min(20, currentValue + increment));
+                          updateModule({ thickness: newValue });
+                        }
+                      }}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${() => updateModule({ thickness: 1 })}
+                      title=${localize(
+                        'editor.fields.reset_default_value',
+                        lang,
+                        'Reset to default ({value})'
+                      ).replace('{value}', '1')}
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Width/Height based on orientation -->
+                ${(separatorModule as any).separator_style === 'shadow' ||
+                (separatorModule as any).separator_style === 'blank'
+                  ? html``
+                  : html`
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">
+                          ${separatorModule.orientation === 'vertical'
+                            ? localize('editor.separator.height', lang, 'Height (px)')
+                            : localize('editor.separator.width', lang, 'Width (%)')}
+                        </div>
+                        <div class="field-description">
+                          ${separatorModule.orientation === 'vertical'
+                            ? localize(
+                                'editor.separator.height_desc',
+                                lang,
+                                'Height of the separator in pixels.'
+                              )
+                            : localize(
+                                'editor.separator.width_desc',
+                                lang,
+                                'Width of the separator as percentage of container.'
+                              )}
+                        </div>
+                        <div
+                          class="gap-control-container"
+                          style="display: flex; align-items: center; gap: 12px;"
+                        >
+                          ${separatorModule.orientation === 'vertical'
+                            ? html`
+                                <input
+                                  type="range"
+                                  class="gap-slider"
+                                  min="50"
+                                  max="1000"
+                                  step="10"
+                                  .value="${separatorModule.height_px || 300}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    updateModule({ height_px: value });
+                                  }}
+                                />
+                                <input
+                                  type="number"
+                                  class="gap-input"
+                                  min="50"
+                                  max="1000"
+                                  step="10"
+                                  .value="${separatorModule.height_px || 300}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    if (!isNaN(value)) {
+                                      updateModule({ height_px: value });
+                                    }
+                                  }}
+                                  @keydown=${(e: KeyboardEvent) => {
+                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      const target = e.target as HTMLInputElement;
+                                      const currentValue = parseFloat(target.value) || 300;
+                                      const increment = e.key === 'ArrowUp' ? 10 : -10;
+                                      const newValue = Math.max(
+                                        50,
+                                        Math.min(1000, currentValue + increment)
+                                      );
+                                      updateModule({ height_px: newValue });
+                                    }
+                                  }}
+                                />
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => updateModule({ height_px: 300 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '300')}
+                                >
+                                  <ha-icon icon="mdi:refresh"></ha-icon>
+                                </button>
+                              `
+                            : html`
+                                <input
+                                  type="range"
+                                  class="gap-slider"
+                                  min="10"
+                                  max="100"
+                                  step="5"
+                                  .value="${separatorModule.width_percent || 100}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    updateModule({ width_percent: value });
+                                  }}
+                                />
+                                <input
+                                  type="number"
+                                  class="gap-input"
+                                  min="10"
+                                  max="100"
+                                  step="5"
+                                  .value="${separatorModule.width_percent || 100}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const value = parseFloat(target.value);
+                                    if (!isNaN(value)) {
+                                      updateModule({ width_percent: value });
+                                    }
+                                  }}
+                                  @keydown=${(e: KeyboardEvent) => {
+                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      const target = e.target as HTMLInputElement;
+                                      const currentValue = parseFloat(target.value) || 100;
+                                      const increment = e.key === 'ArrowUp' ? 5 : -5;
+                                      const newValue = Math.max(
+                                        10,
+                                        Math.min(100, currentValue + increment)
+                                      );
+                                      updateModule({ width_percent: newValue });
+                                    }
+                                  }}
+                                />
+                                <button
+                                  class="reset-btn"
+                                  @click=${() => updateModule({ width_percent: 100 })}
+                                  title=${localize(
+                                    'editor.fields.reset_default_value',
+                                    lang,
+                                    'Reset to default ({value})'
+                                  ).replace('{value}', '100')}
+                                >
+                                  <ha-icon icon="mdi:refresh"></ha-icon>
+                                </button>
+                              `}
+                        </div>
+                      </div>
+                    `}
+
+                <!-- Color -->
+                <div class="field-group">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                  >
+                    ${localize('editor.separator.color.title', lang, 'Color')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+                  >
+                    ${localize('editor.separator.color.desc', lang, 'Color of the separator line.')}
+                  </div>
+                  <ultra-color-picker
+                    .label=${''}
+                    .value=${separatorModule.color || ''}
+                    .defaultValue=${'var(--divider-color, #cccccc)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) => {
+                      const value = e.detail.value;
+                      updateModule({ color: value });
+                    }}
+                  ></ultra-color-picker>
+                </div>
+              </div>
+            `
+          : ''}
+        ${separatorModule.separator_style !== 'blank'
+          ? html` <!-- Text in Separator -->
+              <div
+                class="settings-section"
+                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+              >
+                <div
+                  style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
+                >
+                  <div
+                    class="section-title"
+                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px; margin-bottom: 0;"
+                  >
+                    ${localize('editor.separator.show_title', lang, 'Show Title')}
+                  </div>
+                  <ha-switch
+                    .checked=${separatorModule.show_title || false}
+                    @change=${(e: Event) => {
+                      const target = e.target as any;
+                      updateModule({ show_title: target.checked });
+                    }}
+                  ></ha-switch>
+                </div>
+                <div
+                  class="field-description"
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                >
+                  ${localize(
+                    'editor.separator.show_title_desc',
+                    lang,
+                    'Add text in the middle of the separator line (e.g., ------ Text ------)'
+                  )}
+                </div>
+
+                ${separatorModule.show_title
+                  ? html`
+                      <!-- Text Content -->
+                      <div class="field-group" style="margin-bottom: 16px;">
+                        <div
+                          class="field-title"
+                          style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                        >
+                          ${localize('editor.separator.text_content.title', lang, 'Text Content')}
+                        </div>
+                        <div
+                          class="field-description"
+                          style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+                        >
+                          ${localize(
+                            'editor.separator.text_content.desc',
+                            lang,
+                            'Text to display in the middle of the separator.'
+                          )}
+                        </div>
+                        <ha-form
+                          .hass=${hass}
+                          .data=${{ title: separatorModule.title || '' }}
+                          .schema=${[
+                            {
+                              name: 'title',
+                              selector: { text: {} },
+                              label: '',
+                            },
+                          ]}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ title: e.detail.value.title })}
+                        ></ha-form>
+                      </div>
+
+                      <!-- Font Size -->
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">
+                          ${localize('editor.separator.font_size', lang, 'Font Size')}
+                        </div>
+                        <div class="field-description">
+                          ${localize(
+                            'editor.separator.font_size_desc',
+                            lang,
+                            'Size of the text in pixels.'
+                          )}
+                        </div>
+                        <div
+                          class="gap-control-container"
+                          style="display: flex; align-items: center; gap: 12px;"
+                        >
+                          <input
+                            type="range"
+                            class="gap-slider"
+                            min="8"
+                            max="48"
+                            step="1"
+                            .value="${separatorModule.title_size || 14}"
+                            @input=${(e: Event) => {
+                              const target = e.target as HTMLInputElement;
+                              const value = parseFloat(target.value);
+                              updateModule({ title_size: value });
+                            }}
+                          />
+                          <input
+                            type="number"
+                            class="gap-input"
+                            min="8"
+                            max="48"
+                            step="1"
+                            .value="${separatorModule.title_size || 14}"
+                            @input=${(e: Event) => {
+                              const target = e.target as HTMLInputElement;
+                              const value = parseFloat(target.value);
+                              if (!isNaN(value)) {
+                                updateModule({ title_size: value });
+                              }
+                            }}
+                            @keydown=${(e: KeyboardEvent) => {
+                              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                const target = e.target as HTMLInputElement;
+                                const currentValue = parseFloat(target.value) || 14;
+                                const increment = e.key === 'ArrowUp' ? 1 : -1;
+                                const newValue = Math.max(
+                                  8,
+                                  Math.min(48, currentValue + increment)
+                                );
+                                updateModule({ title_size: newValue });
+                              }
+                            }}
+                          />
+                          <button
+                            class="reset-btn"
+                            @click=${() => updateModule({ title_size: 14 })}
+                            title=${localize(
+                              'editor.fields.reset_default_value',
+                              lang,
+                              'Reset to default ({value})'
+                            ).replace('{value}', '14')}
+                          >
+                            <ha-icon icon="mdi:refresh"></ha-icon>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Text Color -->
+                      <div class="field-group" style="margin-bottom: 16px;">
+                        <div
+                          class="field-title"
+                          style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                        >
+                          ${localize('editor.separator.text_color.title', lang, 'Text Color')}
+                        </div>
+                        <div
+                          class="field-description"
+                          style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+                        >
+                          ${localize(
+                            'editor.separator.text_color.desc',
+                            lang,
+                            'Color of the separator text.'
+                          )}
+                        </div>
+                        <ultra-color-picker
+                          .label=${''}
+                          .value=${separatorModule.title_color || ''}
+                          .defaultValue=${'var(--secondary-text-color)'}
+                          .hass=${hass}
+                          @value-changed=${(e: CustomEvent) => {
+                            const value = e.detail.value;
+                            updateModule({ title_color: value });
+                          }}
+                        ></ultra-color-picker>
+                      </div>
+
+                      <!-- Text Formatting -->
+                      <div class="field-group">
+                        <div
+                          class="field-title"
+                          style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                        >
+                          ${localize('editor.separator.text_format.title', lang, 'Text Formatting')}
+                        </div>
+                        <div
+                          class="field-description"
+                          style="font-size: 13px; font-weight: 400; margin-bottom: 12px;"
+                        >
+                          ${localize(
+                            'editor.separator.text_format.desc',
+                            lang,
+                            'Apply formatting styles to the separator text.'
+                          )}
+                        </div>
+                        <div
+                          class="format-buttons"
+                          style="display: flex; gap: 8px; flex-wrap: wrap;"
+                        >
+                          <button
+                            class="format-btn ${separatorModule.title_bold ? 'active' : ''}"
+                            @click=${() =>
+                              updateModule({ title_bold: !separatorModule.title_bold })}
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_bold
+                              ? 'var(--primary-color)'
+                              : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_bold
+                              ? 'white'
+                              : 'var(--primary-text-color)'};"
+                            title=${localize('editor.separator.text_format.bold', lang, 'Bold')}
+                          >
+                            <ha-icon icon="mdi:format-bold"></ha-icon>
+                          </button>
+                          <button
+                            class="format-btn ${separatorModule.title_italic ? 'active' : ''}"
+                            @click=${() =>
+                              updateModule({ title_italic: !separatorModule.title_italic })}
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_italic
+                              ? 'var(--primary-color)'
+                              : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_italic
+                              ? 'white'
+                              : 'var(--primary-text-color)'};"
+                            title=${localize('editor.separator.text_format.italic', lang, 'Italic')}
+                          >
+                            <ha-icon icon="mdi:format-italic"></ha-icon>
+                          </button>
+                          <button
+                            class="format-btn ${separatorModule.title_underline ? 'active' : ''}"
+                            @click=${() =>
+                              updateModule({ title_underline: !separatorModule.title_underline })}
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_underline
+                              ? 'var(--primary-color)'
+                              : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_underline
+                              ? 'white'
+                              : 'var(--primary-text-color)'};"
+                            title=${localize(
+                              'editor.separator.text_format.underline',
+                              lang,
+                              'Underline'
+                            )}
+                          >
+                            <ha-icon icon="mdi:format-underline"></ha-icon>
+                          </button>
+                          <button
+                            class="format-btn ${separatorModule.title_uppercase ? 'active' : ''}"
+                            @click=${() =>
+                              updateModule({ title_uppercase: !separatorModule.title_uppercase })}
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_uppercase
+                              ? 'var(--primary-color)'
+                              : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_uppercase
+                              ? 'white'
+                              : 'var(--primary-text-color)'};"
+                            title=${localize(
+                              'editor.separator.text_format.uppercase',
+                              lang,
+                              'Uppercase'
+                            )}
+                          >
+                            <ha-icon icon="mdi:format-letter-case-upper"></ha-icon>
+                          </button>
+                          <button
+                            class="format-btn ${separatorModule.title_strikethrough
+                              ? 'active'
+                              : ''}"
+                            @click=${() =>
+                              updateModule({
+                                title_strikethrough: !separatorModule.title_strikethrough,
+                              })}
+                            style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${separatorModule.title_strikethrough
+                              ? 'var(--primary-color)'
+                              : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${separatorModule.title_strikethrough
+                              ? 'white'
+                              : 'var(--primary-text-color)'};"
+                            title=${localize(
+                              'editor.separator.text_format.strikethrough',
+                              lang,
+                              'Strikethrough'
+                            )}
+                          >
+                            <ha-icon icon="mdi:format-strikethrough"></ha-icon>
+                          </button>
+                        </div>
+                      </div>
+                    `
+                  : html`
+                      <div
+                        style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
+                      >
+                        ${localize(
+                          'editor.separator.show_title_toggle.enable_toggle_desc',
+                          lang,
+                          'Enable the toggle above to configure title settings'
+                        )}
+                      </div>
+                    `}
+              </div>`
+          : html`
+              <!-- Spacer (Blank) Thickness Control -->
+              <div
+                class="settings-section"
+                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+              >
+                <div
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                >
+                  ${localize('editor.separator.spacer.title', lang, 'Spacer Height')}
+                </div>
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div class="field-title">
+                    ${localize('editor.separator.height', lang, 'Height (px)')}
+                  </div>
+                  <div class="field-description">
+                    ${localize(
+                      'editor.separator.height_desc',
+                      lang,
+                      'Controls the visual gap for Blank Space.'
+                    )}
+                  </div>
+                  <div
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
+                  >
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="1"
+                      max="300"
+                      step="1"
+                      .value="${separatorModule.thickness || 1}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = parseInt(target.value);
+                        updateModule({ thickness: value });
+                      }}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="1"
+                      max="300"
+                      step="1"
+                      .value="${separatorModule.thickness || 1}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = parseInt(target.value);
+                        if (!isNaN(value)) updateModule({ thickness: value });
+                      }}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${() => updateModule({ thickness: 1 })}
+                      title=${localize(
+                        'editor.fields.reset_default_value',
+                        lang,
+                        'Reset to default ({value})'
+                      ).replace('{value}', '1')}
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `}
+      </div>
+    `;
+  }
+
+  renderActionsTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
+  }
+
+  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+    const separatorModule = module as SeparatorModule;
+
+    // Apply design properties with priority
+    const moduleWithDesign = separatorModule as any;
+    const designProperties = (separatorModule as any).design || {};
+
+    // Container styles for design system (design overrides module props)
+    const containerStyles = {
+      // Only apply padding if explicitly set by user
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
+        moduleWithDesign.padding_top ||
+        moduleWithDesign.padding_bottom ||
+        moduleWithDesign.padding_left ||
+        moduleWithDesign.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : '0',
+      // Standard 8px top/bottom margin for proper web design spacing
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
+        moduleWithDesign.margin_top ||
+        moduleWithDesign.margin_bottom ||
+        moduleWithDesign.margin_left ||
+        moduleWithDesign.margin_right
+          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          : '8px 0',
+      background:
+        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      border:
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color, #cccccc)'}`
+          : 'none',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
+      position: designProperties.position || moduleWithDesign.position || 'relative',
+      top: designProperties.top || moduleWithDesign.top || 'auto',
+      bottom: designProperties.bottom || moduleWithDesign.bottom || 'auto',
+      left: designProperties.left || moduleWithDesign.left || 'auto',
+      right: designProperties.right || moduleWithDesign.right || 'auto',
+      zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
+      width: designProperties.width || moduleWithDesign.width || '100%',
+      height:
+        designProperties.height ||
+        moduleWithDesign.height ||
+        (separatorModule.orientation === 'vertical'
+          ? `${separatorModule.height_px || 300}px`
+          : 'auto'),
+      maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
+      maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
+      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      minHeight:
+        designProperties.min_height ||
+        moduleWithDesign.min_height ||
+        (separatorModule.orientation === 'vertical'
+          ? `${Math.min(separatorModule.height_px || 300, 50)}px`
+          : '10px'),
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
+      backdropFilter:
+        designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
+      boxShadow:
+        designProperties.box_shadow_h && designProperties.box_shadow_v
+          ? `${designProperties.box_shadow_h || '0'} ${designProperties.box_shadow_v || '0'} ${designProperties.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || '0'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
+            ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+            : 'none',
+      boxSizing: 'border-box',
+    } as Record<string, string>;
+
+    if (separatorModule.separator_style === 'blank') {
+      const isVertical = separatorModule.orientation === 'vertical';
+      return html`
+        <div class="separator-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div
+            class="separator-preview blank-separator"
+            style="${isVertical
+              ? `width: ${separatorModule.thickness || 1}px; height: ${separatorModule.height_px || 300}px; display: block; margin: 0 auto;`
+              : `height: ${separatorModule.thickness || 1}px; width: 100%;`}"
+          ></div>
+        </div>
+      `;
+    }
+
+    const separatorStyles = this.getSeparatorStyles(separatorModule);
+
+    // Gesture handling variables
+    let clickTimeout: any = null;
+    let holdTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    // Handle gesture events for tap, hold, double-tap actions
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      isHolding = false;
+
+      // Start hold timer
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (separatorModule.hold_action && separatorModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            separatorModule.hold_action as any,
+            hass,
+            e.target as HTMLElement
+          );
+        }
+      }, 500); // 500ms hold threshold
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Clear hold timer
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      // If this was a hold gesture, don't process as click
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      // Double click detection (within 300ms)
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        // This is a double click
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (
+          separatorModule.double_tap_action &&
+          separatorModule.double_tap_action.action !== 'nothing'
+        ) {
+          UltraLinkComponent.handleAction(
+            separatorModule.double_tap_action as any,
+            hass,
+            e.target as HTMLElement
+          );
+        }
+      } else {
+        // This might be a single click, but wait to see if double click follows
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          // This is a single click
+          clickCount = 0;
+
+          // Execute tap action
+          if (separatorModule.tap_action && separatorModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              separatorModule.tap_action as any,
+              hass,
+              e.target as HTMLElement
+            );
+          }
+        }, 300); // Wait 300ms to see if double click follows
+      }
+    };
+
+    return html`
+      <div
+        class="separator-module-container"
+        style="${this.styleObjectToCss(containerStyles)}; cursor: ${(separatorModule.tap_action &&
+          separatorModule.tap_action.action !== 'nothing') ||
+        (separatorModule.hold_action && separatorModule.hold_action.action !== 'nothing') ||
+        (separatorModule.double_tap_action &&
+          separatorModule.double_tap_action.action !== 'nothing')
+          ? 'pointer'
+          : 'default'};"
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
+      >
+        <div
+          class="separator-preview ${separatorModule.orientation === 'vertical' ? 'vertical' : ''}"
+          style="width: 100%; text-align: center;"
+        >
+          ${separatorModule.show_title && separatorModule.title
+            ? html`
+                <div
+                  class="separator-with-title ${separatorModule.orientation === 'vertical'
+                    ? 'vertical'
+                    : ''}"
+                  style=${this.getTitleContainerStyles(
+                    (separatorModule as any).design || {},
+                    separatorModule.orientation === 'vertical'
+                  )}
+                >
+                  <div
+                    class="separator-line-left"
+                    style=${this.getSeparatorLineStyles(separatorModule, 'left')}
+                  ></div>
+                  <div
+                    class="separator-title ${separatorModule.orientation === 'vertical'
+                      ? 'vertical'
+                      : ''}"
+                    style=${this.getTitleStyles(
+                      separatorModule,
+                      (separatorModule as any).design || {}
+                    )}
+                  >
+                    ${separatorModule.title}
+                  </div>
+                  <div
+                    class="separator-line-right"
+                    style=${this.getSeparatorLineStyles(separatorModule, 'right')}
+                  ></div>
+                </div>
+              `
+            : html` <div class="separator-line" style=${separatorStyles}></div> `}
+        </div>
+      </div>
+    `;
+  }
+
+  // Explicit Logic tab renderer (some editors call this directly)
+  renderLogicTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
+  }
+
+  validate(module: CardModule): { valid: boolean; errors: string[] } {
+    const baseValidation = super.validate(module);
+    const separatorModule = module as SeparatorModule;
+    const errors = [...baseValidation.errors];
+    const isVertical = separatorModule.orientation === 'vertical';
+
+    if (separatorModule.separator_style !== 'blank') {
+      if (
+        separatorModule.thickness &&
+        (separatorModule.thickness < 1 || separatorModule.thickness > 50)
+      ) {
+        errors.push('Thickness must be between 1 and 50 pixels');
+      }
+    } else {
+      if (
+        separatorModule.thickness &&
+        (separatorModule.thickness < 1 || separatorModule.thickness > 300)
+      ) {
+        const dimensionName = isVertical ? 'width' : 'height';
+        errors.push(`Spacer ${dimensionName} must be between 1 and 300 pixels`);
+      }
+    }
+
+    if (isVertical) {
+      if (
+        separatorModule.height_px &&
+        (separatorModule.height_px < 50 || separatorModule.height_px > 1000)
+      ) {
+        errors.push('Height must be between 50 and 1000 pixels');
+      }
+    } else {
+      if (
+        separatorModule.width_percent &&
+        (separatorModule.width_percent < 1 || separatorModule.width_percent > 100)
+      ) {
+        errors.push('Width must be between 1 and 100 percent');
+      }
+    }
+
+    if (
+      separatorModule.show_title &&
+      (!separatorModule.title || separatorModule.title.trim() === '')
+    ) {
+      errors.push('Title text is required when show title is enabled');
+    }
+
+    // Vertical separators with titles have some additional constraints
+    if (isVertical && separatorModule.show_title && separatorModule.title) {
+      // Warn if title is very long for vertical display
+      if (separatorModule.title.length > 20) {
+        errors.push(
+          'Title text should be shorter for vertical separators (max 20 characters recommended)'
+        );
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+
+  getStyles(): string {
+    return `
+      .separator-preview {
+        min-height: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+      }
+      
+      .separator-preview.vertical {
+        min-width: 1px;
+        min-height: 50px;
+        height: 100%;
+        align-items: stretch;
+        justify-content: center;
+      }
+      
+      .blank-separator {
+        background: transparent;
+        display: block;
+        min-height: 0;
+      }
+      
+      .separator-with-title {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      
+      .separator-with-title.vertical {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: auto;
+      }
+      
+      .separator-title {
+        margin: 0;
+        line-height: 1.2;
+        background: var(--card-background-color);
+        padding: 0 8px;
+        position: relative;
+        z-index: 1;
+        white-space: nowrap;
+      }
+      
+      .separator-title.vertical {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        padding: 8px 0;
+        white-space: normal;
+      }
+      
+      .separator-line,
+      .separator-line-left,
+      .separator-line-right {
+        display: block;
+        background-color: var(--divider-color, #cccccc); /* Fallback color */
+      }
+      
+      .separator-line-left,
+      .separator-line-right {
+        flex: 1;
+      }
+      
+      .separator-line {
+        min-height: 1px;
+        min-width: 1px;
+      }
+      
+      
+      /* Format button styles */
+      .format-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      
+      .format-btn {
+        padding: 8px;
+        border: 1px solid var(--divider-color, #cccccc);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        min-height: 36px;
+      }
+      
+      .format-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .format-btn ha-icon {
+        font-size: 16px;
+      }
+      
+      /* Settings section styling */
+      .settings-section {
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 32px;
+      }
+      
+      .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--primary-color);
+        margin-bottom: 16px;
+        padding-bottom: 0;
+        border-bottom: none;
+        letter-spacing: 0.5px;
+      }
+      
+      .field-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      
+      .field-description {
+        font-size: 13px;
+        font-weight: 400;
+        margin-bottom: 12px;
+        color: var(--secondary-text-color);
+      }
+      
+      .field-group {
+        margin-bottom: 16px;
+      }
+
+      /* Gap control styles */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color, #cccccc);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color, #cccccc);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color, #cccccc);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
+      }
+    `;
+  }
+
+  private getSeparatorStyles(separatorModule: SeparatorModule): string {
+    const isVertical = separatorModule.orientation === 'vertical';
+    const styles: Record<string, string> = {};
+
+    if (isVertical) {
+      styles.width = `${separatorModule.thickness || 1}px`;
+      styles.height = `${separatorModule.height_px || 300}px`;
+      styles.margin = '0 auto';
+      styles.display = 'block';
+    } else {
+      styles.width = `${separatorModule.width_percent || 100}%`;
+      styles.height = `${separatorModule.thickness || 1}px`;
+      styles.margin = '0 auto';
+    }
+
+    // Default to 'line' if style is not set to ensure preview visibility
+    const separatorStyleType = separatorModule.separator_style || 'line';
+
+    switch (separatorStyleType) {
+      case 'line':
+        styles.backgroundColor = separatorModule.color || 'var(--divider-color, #cccccc)';
+        break;
+      case 'double_line':
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
+        break;
+      case 'dotted':
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = '0';
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = '0';
+        }
+        break;
+      case 'double_dotted':
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
+        break;
+      case 'shadow': {
+        const t = separatorModule.thickness || 1;
+        const cFull = this._colorWithAlpha(separatorModule.color || '#000000', 0.35);
+        if (isVertical) {
+          const w = Math.max(t * 8, 14);
+          styles.height = 'calc(100% + (var(--ha-card-padding, 16px) * 2))';
+          styles.margin = 'calc(var(--ha-card-padding, 16px) * -1) 0';
+          styles.width = `${w}px`;
+          styles.background = `linear-gradient(to right, ${cFull} 0%, rgba(0,0,0,0) 100%)`;
+        } else {
+          const h = Math.max(t * 8, 14);
+          styles.width = 'calc(100% + (var(--ha-card-padding, 16px) * 2))';
+          styles.margin = '0 calc(var(--ha-card-padding, 16px) * -1)';
+          styles.height = `${h}px`;
+          styles.background = `linear-gradient(to bottom, ${cFull} 0%, rgba(0,0,0,0) 100%)`;
+        }
+        break;
+      }
+    }
+
+    return Object.entries(styles)
+      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
+      .join('; ');
+  }
+
+  private getSeparatorLineStyles(
+    separatorModule: SeparatorModule,
+    position: 'left' | 'right'
+  ): string {
+    const isVertical = separatorModule.orientation === 'vertical';
+    const styles: Record<string, string> = {};
+
+    if (isVertical) {
+      styles.flex = '1';
+      styles.width = `${separatorModule.thickness || 1}px`;
+      styles.margin = position === 'left' ? '0 0 8px 0' : '8px 0 0 0';
+    } else {
+      styles.flex = '1';
+      styles.height = `${separatorModule.thickness || 1}px`;
+      styles.margin = position === 'left' ? '0 8px 0 0' : '0 0 0 8px';
+    }
+
+    // Respect global text alignment by adjusting line flex sizes
+    const textAlign = ((separatorModule as any).design || {}).text_align;
+    if (textAlign && textAlign !== 'inherit') {
+      if (isVertical) {
+        // For vertical separators, adjust based on vertical alignment
+        if (textAlign === 'top') {
+          styles.flex = position === 'left' ? '0 0 12px' : '1';
+        } else if (textAlign === 'bottom') {
+          styles.flex = position === 'right' ? '0 0 12px' : '1';
+        } else {
+          styles.flex = '1';
+        }
+      } else {
+        // For horizontal separators, adjust based on horizontal alignment
+        if (textAlign === 'left') {
+          styles.flex = position === 'left' ? '0 0 12px' : '1';
+        } else if (textAlign === 'right') {
+          styles.flex = position === 'right' ? '0 0 12px' : '1';
+        } else {
+          styles.flex = '1';
+        }
+      }
+    }
+
+    // Default to 'line' if style is not set to ensure preview visibility
+    const separatorStyleType = separatorModule.separator_style || 'line';
+
+    switch (separatorStyleType) {
+      case 'line':
+        styles.backgroundColor = separatorModule.color || 'var(--divider-color, #cccccc)';
+        break;
+      case 'double_line':
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
+        break;
+      case 'dotted':
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = '0';
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = '0';
+        }
+        break;
+      case 'double_dotted':
+        if (isVertical) {
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.width = `${(separatorModule.thickness || 1) * 3}px`;
+        } else {
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.height = `${(separatorModule.thickness || 1) * 3}px`;
+        }
+        break;
+      case 'shadow': {
+        const t = separatorModule.thickness || 1;
+        const c1 = this._colorWithAlpha(separatorModule.color || '#000000', 0.35);
+        const c2 = this._colorWithAlpha(separatorModule.color || '#000000', 0.22);
+        const cTop = this._colorWithAlpha(separatorModule.color || '#000000', 0.25);
+        if (isVertical) {
+          const w = Math.max(t * 8, 14);
+          styles.width = `${w}px`;
+          styles.margin = '0';
+          styles.background = `
+            linear-gradient(to right, ${cTop}, rgba(0,0,0,0) 66%) left/2px 100% no-repeat,
+            radial-gradient(ellipse at center, ${c1} 0%, ${c2} 55%, rgba(0,0,0,0) 80%) right/100% 120% no-repeat
+          `;
+        } else {
+          const h = Math.max(t * 8, 14);
+          styles.height = `${h}px`;
+          styles.margin = '0';
+          styles.background = `
+            linear-gradient(to bottom, ${cTop}, rgba(0,0,0,0) 66%) top/100% 2px no-repeat,
+            radial-gradient(ellipse at center, ${c1} 0%, ${c2} 55%, rgba(0,0,0,0) 80%) bottom/120% 100% no-repeat
+          `;
+        }
+        break;
+      }
+    }
+
+    return Object.entries(styles)
+      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
+      .join('; ');
+  }
+
+  private getTitleContainerStyles(design: any = {}, isVertical: boolean = false): string {
+    const textAlign =
+      design?.text_align && design.text_align !== 'inherit' ? design.text_align : 'center';
+
+    const styles: Record<string, string> = {
+      position: 'relative',
+      display: 'flex',
+      width: '100%',
+      height: '100%',
+    } as Record<string, string>;
+
+    if (isVertical) {
+      styles.flexDirection = 'column';
+      styles.alignItems = 'center';
+      const justifyContent =
+        textAlign === 'top' ? 'flex-start' : textAlign === 'bottom' ? 'flex-end' : 'center';
+      styles.justifyContent = justifyContent;
+    } else {
+      styles.flexDirection = 'row';
+      styles.alignItems = 'center';
+      const justifyContent =
+        textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center';
+      styles.justifyContent = justifyContent;
+    }
+
+    return Object.entries(styles)
+      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
+      .join('; ');
+  }
+
+  private getTitleStyles(separatorModule: SeparatorModule, design: any = {}): string {
+    const isVertical = separatorModule.orientation === 'vertical';
+    const resolveSize = (): string => {
+      if (design.font_size !== undefined && design.font_size !== null) {
+        return typeof design.font_size === 'number'
+          ? `${design.font_size}px`
+          : String(design.font_size);
+      }
+      return `${separatorModule.title_size || 14}px`;
+    };
+
+    const styles: Record<string, string> = {
+      fontSize: resolveSize(),
+      color: design.color || separatorModule.title_color || 'var(--secondary-text-color)',
+      fontWeight: design.font_weight || (separatorModule.title_bold ? 'bold' : 'normal'),
+      fontStyle: design.font_style || (separatorModule.title_italic ? 'italic' : 'normal'),
+      textTransform:
+        design.text_transform || (separatorModule.title_uppercase ? 'uppercase' : 'none'),
+      letterSpacing: design.letter_spacing || undefined,
+      lineHeight: design.line_height || undefined,
+      textAlign: design.text_align || undefined,
+      margin: '0',
+      padding: isVertical ? '8px 0' : '0 8px',
+      backgroundColor: 'transparent',
+      position: 'relative',
+      zIndex: '1',
+      writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
+      textOrientation: isVertical ? 'mixed' : 'mixed',
+    } as Record<string, string>;
+
+    const decorations: string[] = [];
+    if (separatorModule.title_strikethrough) decorations.push('line-through');
+    if (separatorModule.title_underline) decorations.push('underline');
+    styles.textDecoration = decorations.length > 0 ? decorations.join(' ') : 'none';
+
+    if (design.text_shadow_h && design.text_shadow_v) {
+      styles.textShadow = `${design.text_shadow_h || '0'} ${design.text_shadow_v || '0'} ${design.text_shadow_blur || '0'} ${design.text_shadow_color || 'rgba(0,0,0,0.25)'}`;
+    }
+
+    return Object.entries(styles)
+      .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+      .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
+      .join('; ');
+  }
+
+  private camelToKebab(str: string): string {
+    return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+  }
+
+  private _colorWithAlpha(color: string, alpha: number): string {
+    if (!color) return `rgba(0,0,0,${alpha})`;
+    if (color.startsWith('rgba(')) {
+      const parts = color
+        .replace('rgba(', '')
+        .replace(')', '')
+        .split(',')
+        .map(p => p.trim());
+      const [r, g, b] = parts.map((v, i) => (i < 3 ? Number(v) : v));
+      return `rgba(${r || 0}, ${g || 0}, ${b || 0}, ${alpha})`;
+    }
+    if (color.startsWith('rgb(')) {
+      const parts = color
+        .replace('rgb(', '')
+        .replace(')', '')
+        .split(',')
+        .map(p => Number(p.trim()));
+      const [r, g, b] = parts;
+      return `rgba(${r || 0}, ${g || 0}, ${b || 0}, ${alpha})`;
+    }
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      const bigint = parseInt(
+        hex.length === 3
+          ? hex
+              .split('')
+              .map(c => c + c)
+              .join('')
+          : hex,
+        16
+      );
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    // CSS var or unknown: fall back to rgba black with alpha
+    return `rgba(0,0,0,${alpha})`;
+  }
+
+  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+    if (
+      !moduleWithDesign.background_image_type ||
+      moduleWithDesign.background_image_type === 'none'
+    ) {
+      return 'none';
+    }
+
+    switch (moduleWithDesign.background_image_type) {
+      case 'upload':
+      case 'url':
+        if (moduleWithDesign.background_image) {
+          return `url("${moduleWithDesign.background_image}")`;
+        }
+        break;
+
+      case 'entity':
+        if (
+          moduleWithDesign.background_image_entity &&
+          hass?.states[moduleWithDesign.background_image_entity]
+        ) {
+          const entityState = hass.states[moduleWithDesign.background_image_entity];
+          let imageUrl = '';
+
+          // Try to get image from entity
+          if (entityState.attributes?.entity_picture) {
+            imageUrl = entityState.attributes.entity_picture;
+          } else if (entityState.attributes?.image) {
+            imageUrl = entityState.attributes.image;
+          } else if (entityState.state && typeof entityState.state === 'string') {
+            // Handle cases where state itself is an image path
+            if (entityState.state.startsWith('/') || entityState.state.startsWith('http')) {
+              imageUrl = entityState.state;
+            }
+          }
+
+          if (imageUrl) {
+            // Handle Home Assistant local paths
+            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
+              imageUrl = imageUrl;
+            } else if (imageUrl.startsWith('/')) {
+              imageUrl = imageUrl;
+            }
+            return `url("${imageUrl}")`;
+          }
+        }
+        break;
+    }
+
+    return 'none';
+  }
+
+  private styleObjectToCss(styleObj: Record<string, string>): string {
+    return Object.entries(styleObj)
+      .map(([key, value]) => {
+        // Convert camelCase to kebab-case
+        const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+        return `${kebabKey}: ${value}`;
+      })
+      .join('; ');
+  }
+
+  // Helper method to ensure border radius values have proper units
+  private addPixelUnit(value: string | undefined): string | undefined {
+    if (!value) return value;
+
+    // If value is just a number or contains only numbers, add px
+    if (/^\d+$/.test(value)) {
+      return `${value}px`;
+    }
+
+    // If value is a multi-value (like "5 10 15 20"), add px to each number
+    if (/^[\d\s]+$/.test(value)) {
+      return value
+        .split(' ')
+        .map(v => (v.trim() ? `${v}px` : v))
+        .join(' ');
+    }
+
+    // Otherwise return as-is (already has units like px, em, %, etc.)
+    return value;
+  }
+}

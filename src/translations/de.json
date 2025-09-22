@@ -127,6 +127,10 @@
       "hidden_by_logic": "Durch Logik verborgen",
       "add_row": "Zeile hinzufügen",
       "add_row_tooltip": "Eine neue Zeile zu Ihrem Layout hinzufügen",
+      "undo": "Rückgängig",
+      "undo_tooltip": "Letzte Änderung rückgängig machen (Strg+Z)",
+      "redo": "Wiederholen",
+      "redo_tooltip": "Letzte rückgängig gemachte Änderung wiederholen (Strg+Y)",
       "row_settings": "Zeilen-Einstellungen",
       "column_settings": "Spalten-Einstellungen",
       "row_background_color": "Zeilen-Hintergrundfarbe",
@@ -346,7 +350,17 @@
       "value_template_desc": "Vorlage zum Rendern des Textes mit Jinja2-Syntax",
       "examples_title": "Häufige Beispiele:",
       "example_basic": "Grundwert",
-      "example_percent": "Mit Prozent"
+      "example_percent": "Mit Prozent",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "markdown": {
       "content": {

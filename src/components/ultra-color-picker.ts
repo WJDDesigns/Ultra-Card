@@ -12,6 +12,8 @@ export interface ColorChangedEvent {
 
 // Predefined color palette
 const COLOR_PALETTE = [
+  // Transparent option
+  'transparent',
   // Basic colors
   '#000000',
   '#333333',
@@ -315,6 +317,12 @@ export class UltraColorPicker extends LitElement {
 
   private _getColorForNativeInput(): string {
     const displayValue = this._getDisplayValue();
+
+    // Handle transparent - native input can't display transparent, so use white
+    if (displayValue === 'transparent') {
+      return '#ffffff';
+    }
+
     // Convert CSS variables and other formats to hex for native input
     if (displayValue.startsWith('var(--')) {
       // Try to resolve CSS variable to actual color
@@ -350,6 +358,11 @@ export class UltraColorPicker extends LitElement {
   }
 
   private _getContrastColor(backgroundColor: string): string {
+    // Handle transparent background
+    if (backgroundColor === 'transparent') {
+      return 'var(--primary-text-color)';
+    }
+
     // For CSS variables and complex colors, use white text
     if (
       !backgroundColor ||
@@ -811,6 +824,34 @@ export class UltraColorPicker extends LitElement {
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 12px;
+        font-weight: bold;
+        color: var(--primary-text-color);
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+      }
+
+      /* Transparent swatch styling */
+      .color-swatch[style*='transparent'] {
+        background:
+          linear-gradient(45deg, #ccc 25%, transparent 25%),
+          linear-gradient(-45deg, #ccc 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #ccc 75%),
+          linear-gradient(-45deg, transparent 75%, #ccc 75%);
+        background-size: 8px 8px;
+        background-position:
+          0 0,
+          0 4px,
+          4px -4px,
+          -4px 0px;
+        position: relative;
+      }
+
+      .color-swatch[style*='transparent']:after {
+        content: '∅';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 14px;
         font-weight: bold;
         color: var(--primary-text-color);
         text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);

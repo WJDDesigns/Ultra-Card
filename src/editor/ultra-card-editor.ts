@@ -8,6 +8,8 @@ import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
 import '../components/uc-favorite-colors-manager';
+import '../components/uc-favorite-dialog';
+import '../components/uc-import-dialog';
 import { getModuleRegistry } from '../modules';
 import { localize } from '../localize/localize';
 
@@ -125,12 +127,7 @@ export class UltraCardEditor extends LitElement {
       const validationResult = configValidationService.validateAndCorrectConfig(newConfig);
 
       if (!validationResult.valid) {
-        console.error('❌ Ultra Card Editor: Config validation failed', {
-          errors: validationResult.errors,
-          warnings: validationResult.warnings,
-        });
-        // Still dispatch the original config rather than failing completely
-        // This allows the editor to continue working even with validation issues
+        // Config validation failed in editor (silent); still dispatch original config
         const event = new CustomEvent('config-changed', {
           detail: { config: newConfig, isInternal: true },
           bubbles: true,
@@ -147,18 +144,12 @@ export class UltraCardEditor extends LitElement {
 
       let finalConfig = validationResult.correctedConfig!;
       if (!uniqueIdCheck.valid) {
-        console.warn('⚠️  Ultra Card Editor: Duplicate module IDs detected, fixing...', {
-          duplicates: uniqueIdCheck.duplicates,
-        });
+        // Duplicate module IDs detected; fixing silently
         finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
       }
 
       // Only log validation info when there are meaningful warnings
-      if (validationResult.warnings.length > 0) {
-        console.info('ℹ️  Ultra Card: Config corrected with warnings', {
-          warnings: validationResult.warnings.length,
-        });
-      }
+      // Suppress info logs for warnings
 
       const event = new CustomEvent('config-changed', {
         detail: { config: finalConfig, isInternal: true },
@@ -672,74 +663,6 @@ export class UltraCardEditor extends LitElement {
       ha-form:not([data-action-form]) mwc-formfield,
       ha-form:not([data-action-form]) .formfield {
         display: none !important;
-      }
-
-      /* GLOBAL DROPDOWN POSITIONING FIXES - All Modules */
-      /* These fixes ensure ha-select dropdowns render properly across all modules */
-      ha-select {
-        position: relative !important;
-        overflow: visible !important;
-        z-index: 9999 !important;
-      }
-
-      /* Ensure dropdown menus are visible and above other content */
-      ha-select .mdc-select__menu,
-      ha-select mwc-menu,
-      ha-select .mdc-menu,
-      ha-select ha-menu {
-        z-index: 10001 !important;
-        max-height: 300px !important;
-        overflow-y: auto !important;
-      }
-
-      /* Ensure ha-form containers allow dropdown overflow */
-      ha-form {
-        overflow: visible !important;
-        position: relative;
-        z-index: 1;
-      }
-
-      /* Specific fixes for nested form contexts */
-      .settings-section ha-form,
-      .field-section ha-form,
-      .module-general-settings ha-form,
-      .module-tab-content ha-form {
-        overflow: visible !important;
-        position: relative;
-        z-index: 1;
-      }
-
-      /* Ensure all select elements in forms have proper positioning */
-      .settings-section ha-select,
-      .field-section ha-select,
-      .module-general-settings ha-select,
-      .module-tab-content ha-select,
-      ha-form ha-select {
-        position: relative !important;
-        overflow: visible !important;
-        z-index: 9999 !important;
-      }
-
-      /* Fix for conditional fields and nested containers */
-      .conditional-fields-content ha-select,
-      .icon-settings-container ha-select,
-      details ha-select {
-        position: relative !important;
-        overflow: visible !important;
-        z-index: 9999 !important;
-      }
-
-      /* Ensure dropdown menus in nested contexts are properly positioned */
-      .conditional-fields-content ha-select .mdc-select__menu,
-      .conditional-fields-content ha-select mwc-menu,
-      .icon-settings-container ha-select .mdc-select__menu,
-      .icon-settings-container ha-select mwc-menu,
-      details ha-select .mdc-select__menu,
-      details ha-select mwc-menu {
-        position: fixed !important; /* fixed to avoid clipping inside scrollable containers */
-        z-index: 10001 !important;
-        max-height: 300px !important;
-        overflow-y: auto !important;
       }
 
       /* Mobile responsive adjustments */

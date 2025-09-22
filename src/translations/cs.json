@@ -79,7 +79,11 @@
       "alignment_bottom": "Dole",
       "alignment_stretch": "Roztáhnout",
       "alignment_left": "Vlevo",
-      "alignment_right": "Vpravo"
+      "alignment_right": "Vpravo",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)"
     },
     "about": {
       "developed_by": "Vyvinuto",
@@ -233,7 +237,17 @@
       "value_template_desc": "Šablona pro vykreslení textu pomocí syntaxe Jinja2",
       "examples_title": "Běžné příklady:",
       "example_basic": "Základní hodnota",
-      "example_percent": "S procenty"
+      "example_percent": "S procenty",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

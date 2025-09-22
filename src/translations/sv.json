@@ -79,7 +79,11 @@
       "alignment_bottom": "Botten",
       "alignment_stretch": "Sträck",
       "alignment_left": "Vänster",
-      "alignment_right": "Höger"
+      "alignment_right": "Höger",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)"
     },
     "about": {
       "developed_by": "Utvecklad av",
@@ -233,7 +237,17 @@
       "value_template_desc": "Mall för att rendera texten med Jinja2-syntax",
       "examples_title": "Vanliga exempel:",
       "example_basic": "Grundvärde",
-      "example_percent": "Med procent"
+      "example_percent": "Med procent",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

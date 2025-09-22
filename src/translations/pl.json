@@ -79,7 +79,11 @@
       "alignment_bottom": "Dół",
       "alignment_stretch": "Rozciągnij",
       "alignment_left": "Lewo",
-      "alignment_right": "Prawo"
+      "alignment_right": "Prawo",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)"
     },
     "about": {
       "developed_by": "Opracowane przez",
@@ -233,7 +237,17 @@
       "value_template_desc": "Szablon do renderowania tekstu używając składni Jinja2",
       "examples_title": "Typowe przykłady:",
       "example_basic": "Podstawowa wartość",
-      "example_percent": "Z procentem"
+      "example_percent": "Z procentem",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

@@ -25,7 +25,7 @@ export class UltraInfoModule extends BaseUltraModule {
   };
 
   private _templateService?: TemplateService;
-
+  
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
       id: id || this.generateId('info'),
@@ -121,6 +121,15 @@ export class UltraInfoModule extends BaseUltraModule {
 
     return html`
       ${this.injectUcFormStyles()}
+      <style>
+        /* Layout & Positioning button active styles */
+        .control-btn.active {
+          border: none !important;
+          background: var(--primary-color) !important;
+          color: white !important;
+          border-radius: 2px !important;
+        }
+      </style>
       <div class="module-general-settings">
         <!-- Entity Configuration -->
         <div
@@ -152,8 +161,12 @@ export class UltraInfoModule extends BaseUltraModule {
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                this._handleEntityChange(infoModule, 0, e.detail.value.entity, hass, updateModule)}
+              @value-changed=${(e: CustomEvent) => {
+                const next = e.detail.value.entity;
+                const prev = infoModule.info_entities?.[0]?.entity || '';
+                if (next === prev) return;
+                this._handleEntityChange(infoModule, 0, next, hass, updateModule);
+                }}
             ></ha-form>
           </div>
         </div>
@@ -218,13 +231,12 @@ export class UltraInfoModule extends BaseUltraModule {
                     ]}
                     .computeLabel=${(schema: any) => schema.label || schema.name}
                     .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
-                      this._updateEntity(
-                        infoModule,
-                        0,
-                        { icon: e.detail.value.icon },
-                        updateModule
-                      )}
+                    @value-changed=${(e: CustomEvent) => {
+                      const next = e.detail.value.icon;
+                      const prev = infoModule.info_entities?.[0]?.icon || '';
+                      if (next === prev) return;
+                      this._updateEntity(infoModule, 0, { icon: next }, updateModule);
+                      }}
                   ></ha-form>
                 </div>
 
@@ -1856,12 +1868,6 @@ export class UltraInfoModule extends BaseUltraModule {
         opacity: 0.8;
       }
       
-      .control-btn.active {
-        border-color: var(--primary-color);
-        background: var(--primary-color);
-        color: white;
-      }
-      
       .control-btn ha-icon {
         font-size: 14px;
       }
@@ -1869,7 +1875,8 @@ export class UltraInfoModule extends BaseUltraModule {
       .control-button-group {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         border-radius: 4px;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
       }
       
       .control-button-group .control-btn:not(:last-child) {
@@ -1886,6 +1893,12 @@ export class UltraInfoModule extends BaseUltraModule {
       
       .control-button-group .control-btn:only-child {
         border-radius: 4px;
+      }
+
+      .control-button-group .control-btn.active {
+        position: relative;
+        z-index: 2;
+        border-radius: 4px !important;
       }
       
       /* Position-specific layout styles */

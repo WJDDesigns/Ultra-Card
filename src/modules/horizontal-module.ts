@@ -10,8 +10,8 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 
-// Use the existing HorizontalModule interface from types
-import { HorizontalModule } from '../types';
+// Use the existing HorizontalModule and VerticalModule interfaces from types
+import { HorizontalModule, VerticalModule } from '../types';
 
 export class UltraHorizontalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -79,7 +79,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 'Choose how items are aligned horizontally within the container.'
               ),
               hass,
-              data: { alignment: horizontalModule.alignment || 'center' },
+              data: horizontalModule,
               schema: [
                 this.selectField('alignment', [
                   { value: 'left', label: localize('editor.common.left', lang, 'Left') },
@@ -96,33 +96,47 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   { value: 'justify', label: localize('editor.common.justify', lang, 'Justify') },
                 ]),
               ],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-            {
-              title: localize('editor.horizontal.alignment.vertical', lang, 'Vertical Alignment'),
-              description: localize(
-                'editor.horizontal.alignment.vertical_desc',
-                lang,
-                'Choose how items are aligned vertically within the container.'
-              ),
-              hass,
-              data: { vertical_alignment: horizontalModule.vertical_alignment || 'center' },
-              schema: [
-                this.selectField('vertical_alignment', [
-                  { value: 'top', label: localize('editor.common.top', lang, 'Top') },
-                  { value: 'center', label: localize('editor.common.center', lang, 'Center') },
-                  { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
-                  { value: 'stretch', label: localize('editor.common.stretch', lang, 'Stretch') },
-                  {
-                    value: 'baseline',
-                    label: localize('editor.common.baseline', lang, 'Baseline'),
-                  },
-                ]),
-              ],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+              onChange: (e: CustomEvent) => {
+                
+                const next = e.detail.value.alignment;
+                const prev = horizontalModule.alignment || 'center';
+                if (next === prev) return;
+                
+                updateModule(e.detail.value);
+                
+              },
             },
           ]
         )}
+        ${this.renderSettingsSection('', '', [
+          {
+            title: localize('editor.horizontal.alignment.vertical', lang, 'Vertical Alignment'),
+            description: localize(
+              'editor.horizontal.alignment.vertical_desc',
+              lang,
+              'Choose how items are aligned vertically within the container.'
+            ),
+            hass,
+            data: horizontalModule,
+            schema: [
+              this.selectField('vertical_alignment', [
+                { value: 'top', label: localize('editor.common.top', lang, 'Top') },
+                { value: 'center', label: localize('editor.common.center', lang, 'Center') },
+                { value: 'bottom', label: localize('editor.common.bottom', lang, 'Bottom') },
+                { value: 'stretch', label: localize('editor.common.stretch', lang, 'Stretch') },
+                { value: 'baseline', label: localize('editor.common.baseline', lang, 'Baseline') },
+              ]),
+            ],
+            onChange: (e: CustomEvent) => {
+              const next = e.detail.value?.vertical_alignment;
+              if (next === undefined || next === horizontalModule.vertical_alignment) return;
+              
+              
+              updateModule({ vertical_alignment: next });
+              
+            },
+          },
+        ])}
 
         <!-- Allow Wrapping Toggle -->
         <div
@@ -322,8 +336,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       isHolding = false;
 
       // Start hold timer
@@ -341,8 +353,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       // Clear hold timer
       if (holdTimeout) {
         clearTimeout(holdTimeout);
@@ -419,8 +429,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
             ? 'pointer'
             : 'default'};"
           data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
-          @pointerdown=${handlePointerDown}
-          @pointerup=${handlePointerUp}
         >
           ${hasChildren
             ? (() => {
@@ -711,16 +719,36 @@ export class UltraHorizontalModule extends BaseUltraModule {
       errors.push('Vertical alignment must be one of: top, center, bottom, stretch, baseline');
     }
 
-    // Validate nested modules to prevent infinite nesting
+    // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
     if (horizontalModule.modules && horizontalModule.modules.length > 0) {
       for (const childModule of horizontalModule.modules) {
-        if (childModule.type === 'vertical') {
-          errors.push('Vertical layout modules cannot be placed inside horizontal layout modules');
-        }
-        if (childModule.type === 'horizontal') {
-          errors.push(
-            'Horizontal layout modules cannot be nested inside other horizontal layout modules'
-          );
+        // Allow both horizontal and vertical modules at level 1
+        if (childModule.type === 'horizontal' || childModule.type === 'vertical') {
+          const layoutChild = childModule as HorizontalModule | VerticalModule;
+
+          // Check level 2 nesting - allow layout modules but prevent level 3
+          if (layoutChild.modules && layoutChild.modules.length > 0) {
+            for (const nestedModule of layoutChild.modules) {
+              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical') {
+                const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
+
+                // Check level 3 nesting - prevent any layout modules at this level
+                if (deepLayoutModule.modules && deepLayoutModule.modules.length > 0) {
+                  for (const deepNestedModule of deepLayoutModule.modules) {
+                    if (
+                      deepNestedModule.type === 'horizontal' ||
+                      deepNestedModule.type === 'vertical'
+                    ) {
+                      errors.push(
+                        'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
+                      );
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

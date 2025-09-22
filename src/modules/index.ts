@@ -20,3 +20,8 @@ export * from './light-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';
+
+// Export new services
+export { ucPresetsService } from '../services/uc-presets-service';
+export { ucFavoritesService } from '../services/uc-favorites-service';
+export { ucExportImportService } from '../services/uc-export-import-service';

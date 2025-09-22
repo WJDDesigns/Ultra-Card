@@ -30,6 +30,9 @@ export class UltraIconModule extends BaseUltraModule {
 
   private _previewCollapsed = false;
   private _templateService?: TemplateService;
+  private _attributeCache = new Map<string, { value: string; label: string }[]>();
+  private _updateTimeout?: NodeJS.Timeout;
+  private _processingAttributes = new Set<string>();
 
   // Ensure animation/keyframe CSS is globally available (outside editor shadow DOM)
   private static _globalStylesInjected = false;
@@ -171,6 +174,8 @@ export class UltraIconModule extends BaseUltraModule {
           icon_active: 'mdi:weather-partly-cloudy',
           inactive_state: '',
           active_state: '',
+          inactive_attribute: '',
+          active_attribute: '',
           custom_inactive_state_text: '',
           custom_active_state_text: '',
           custom_inactive_name_text: '',
@@ -330,7 +335,7 @@ export class UltraIconModule extends BaseUltraModule {
                       'Select the entity this icon represents'
                     ),
                     hass,
-                    data: { entity: icon.entity || '' },
+                    data: iconModule,
                     schema: [this.entityField('entity')],
                     onChange: (e: CustomEvent) => {
                       const entityId = e.detail.value.entity;
@@ -363,6 +368,12 @@ export class UltraIconModule extends BaseUltraModule {
                       }
 
                       this._updateIcon(iconModule, index, updates, updateModule);
+
+                      // Clear attribute cache for this entity to refresh dropdowns
+                      const oldCacheKey = `${iconModule.icons[index].entity}_attributes`;
+                      const newCacheKey = `${entityId}_attributes`;
+                      this._attributeCache.delete(oldCacheKey);
+                      this._attributeCache.delete(newCacheKey);
                     },
                   },
                   {
@@ -373,7 +384,7 @@ export class UltraIconModule extends BaseUltraModule {
                       'State value considered "inactive" (leave blank to use actual entity state)'
                     ),
                     hass,
-                    data: { inactive_state: icon.inactive_state || '' },
+                    data: iconModule,
                     schema: [this.textField('inactive_state')],
                     onChange: (e: CustomEvent) =>
                       this._updateIcon(
@@ -391,7 +402,7 @@ export class UltraIconModule extends BaseUltraModule {
                       'State value considered "active" (leave blank to use actual entity state)'
                     ),
                     hass,
-                    data: { active_state: icon.active_state || '' },
+                    data: iconModule,
                     schema: [this.textField('active_state')],
                     onChange: (e: CustomEvent) =>
                       this._updateIcon(
@@ -403,6 +414,96 @@ export class UltraIconModule extends BaseUltraModule {
                   },
                 ]
               )}
+
+              <!-- Attributes Section -->
+              <div class="settings-section" style="margin-bottom: 24px;">
+                <div class="section-title">
+                  ${localize('editor.icon.attributes_section.title', lang, 'ATTRIBUTES')}
+                </div>
+                <div
+                  class="section-description"
+                  style="margin-bottom: 16px; font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;"
+                >
+                  ${localize(
+                    'editor.icon.attributes_section.desc',
+                    lang,
+                    'Select entity attributes to use instead of the main entity state for determining active/inactive conditions'
+                  )}
+                </div>
+
+                <!-- Inactive Attribute -->
+                <div class="field-container" style="margin-bottom: 16px;">
+                  <div class="field-title">
+                    ${localize('editor.icon.inactive_attribute', lang, 'Inactive Attribute')}
+                  </div>
+                  <div class="field-description">
+                    ${localize(
+                      'editor.icon.inactive_attribute_desc',
+                      lang,
+                      'Entity attribute to check for inactive state (e.g., "condition" for weather)'
+                    )}
+                  </div>
+                  ${this.renderUcForm(
+                    hass,
+                    { inactive_attribute: icon.inactive_attribute || '' },
+                    [
+                      this.selectField(
+                        'inactive_attribute',
+                        this._getEntityAttributes(icon.entity, hass)
+                      ),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.inactive_attribute;
+                      const prev = iconModule.icons[index].inactive_attribute || '';
+                      if (next === prev) return;
+                      this._updateIcon(
+                        iconModule,
+                        index,
+                        { inactive_attribute: next },
+                        updateModule
+                      );
+                      setTimeout(() => {
+                        this._triggerPreviewUpdate();
+                      }, 50);
+                    },
+                    false
+                  )}
+                </div>
+
+                <!-- Active Attribute -->
+                <div class="field-container">
+                  <div class="field-title">
+                    ${localize('editor.icon.active_attribute', lang, 'Active Attribute')}
+                  </div>
+                  <div class="field-description">
+                    ${localize(
+                      'editor.icon.active_attribute_desc',
+                      lang,
+                      'Entity attribute to check for active state (e.g., "condition" for weather)'
+                    )}
+                  </div>
+                  ${this.renderUcForm(
+                    hass,
+                    { active_attribute: icon.active_attribute || '' },
+                    [
+                      this.selectField(
+                        'active_attribute',
+                        this._getEntityAttributes(icon.entity, hass)
+                      ),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.active_attribute;
+                      const prev = iconModule.icons[index].active_attribute || '';
+                      if (next === prev) return;
+                      this._updateIcon(iconModule, index, { active_attribute: next }, updateModule);
+                      setTimeout(() => {
+                        this._triggerPreviewUpdate();
+                      }, 50);
+                    },
+                    false
+                  )}
+                </div>
+              </div>
 
               <!-- Icon Section -->
               <div class="settings-section" style="margin-bottom: 24px;">
@@ -479,7 +580,7 @@ export class UltraIconModule extends BaseUltraModule {
                                     'Icon to show when inactive'
                                   ),
                                   hass,
-                                  data: { icon_inactive: icon.icon_inactive || '' },
+                                  data: iconModule,
                                   schema: [this.iconField('icon_inactive')],
                                   onChange: (e: CustomEvent) =>
                                     this._updateIconWithLockSync(
@@ -587,17 +688,17 @@ export class UltraIconModule extends BaseUltraModule {
                                     ]),
                                   ],
                                   onChange: (e: CustomEvent) => {
-                                    const shape = e.detail.value.inactive_icon_background;
+                                    const next = e.detail.value.inactive_icon_background;
+                                    const prev =
+                                      iconModule.icons[index].inactive_icon_background || 'none';
+                                    if (next === prev) return;
                                     const updates: any = {
-                                      inactive_icon_background: shape,
+                                      inactive_icon_background: next,
                                     };
-
-                                    // Auto-set background color when shape is selected (but not 'none')
-                                    if (shape && shape !== 'none') {
+                                    if (next && next !== 'none') {
                                       updates.inactive_icon_background_color =
                                         'var(--divider-color)';
                                     }
-
                                     this._updateIcon(iconModule, index, updates, updateModule);
                                   },
                                 },
@@ -1644,13 +1745,21 @@ export class UltraIconModule extends BaseUltraModule {
                         },
                       ]),
                     ],
-                    onChange: (e: CustomEvent) =>
+                    onChange: (e: CustomEvent) => {
+                      const next = e.detail.value.active_icon_animation;
+                      const prev = iconModule.icons[index].active_icon_animation || 'none';
+                      if (next === prev) return;
                       this._updateIcon(
                         iconModule,
                         index,
-                        { active_icon_animation: e.detail.value.active_icon_animation },
+                        { active_icon_animation: next },
                         updateModule
-                      ),
+                      );
+                      // Trigger re-render to update dropdown UI
+                      setTimeout(() => {
+                        this._triggerPreviewUpdate();
+                      }, 50);
+                    },
                   },
                   {
                     title: localize('editor.icon.inactive_animation', lang, 'Inactive Animation'),
@@ -1717,13 +1826,21 @@ export class UltraIconModule extends BaseUltraModule {
                         },
                       ]),
                     ],
-                    onChange: (e: CustomEvent) =>
+                    onChange: (e: CustomEvent) => {
+                      const next = e.detail.value.inactive_icon_animation;
+                      const prev = iconModule.icons[index].inactive_icon_animation || 'none';
+                      if (next === prev) return;
                       this._updateIcon(
                         iconModule,
                         index,
-                        { inactive_icon_animation: e.detail.value.inactive_icon_animation },
+                        { inactive_icon_animation: next },
                         updateModule
-                      ),
+                      );
+                      // Trigger re-render to update dropdown UI
+                      setTimeout(() => {
+                        this._triggerPreviewUpdate();
+                      }, 50);
+                    },
                   },
                 ]
               )}
@@ -1777,9 +1894,82 @@ export class UltraIconModule extends BaseUltraModule {
       this._templateService.updateHass(hass);
     }
 
-    // Apply design properties with priority
+    // Apply design properties with priority - Global Design saves to top-level properties
     const moduleWithDesign = iconModule as any;
-    const designProperties = (iconModule as any).design || {};
+    const designFromDesignObject = (iconModule as any).design || {};
+
+    // Create merged design properties object that prioritizes top-level properties (where Global Design saves)
+    const designProperties = {
+      // Text properties - prioritize top-level (where Global Design saves them)
+      color: (iconModule as any).color || designFromDesignObject.color,
+      font_size: (iconModule as any).font_size || designFromDesignObject.font_size,
+      font_weight: (iconModule as any).font_weight || designFromDesignObject.font_weight,
+      font_style: (iconModule as any).font_style || designFromDesignObject.font_style,
+      text_transform: (iconModule as any).text_transform || designFromDesignObject.text_transform,
+      font_family: (iconModule as any).font_family || designFromDesignObject.font_family,
+      line_height: (iconModule as any).line_height || designFromDesignObject.line_height,
+      letter_spacing: (iconModule as any).letter_spacing || designFromDesignObject.letter_spacing,
+      text_align: (iconModule as any).text_align || designFromDesignObject.text_align,
+      text_shadow_h: (iconModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
+      text_shadow_v: (iconModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
+      text_shadow_blur:
+        (iconModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
+      text_shadow_color:
+        (iconModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
+      // Container properties - also check both locations
+      background_color:
+        (iconModule as any).background_color || designFromDesignObject.background_color,
+      background_image:
+        (iconModule as any).background_image || designFromDesignObject.background_image,
+      background_image_type:
+        (iconModule as any).background_image_type || designFromDesignObject.background_image_type,
+      background_image_entity:
+        (iconModule as any).background_image_entity ||
+        designFromDesignObject.background_image_entity,
+      background_size:
+        (iconModule as any).background_size || designFromDesignObject.background_size,
+      background_position:
+        (iconModule as any).background_position || designFromDesignObject.background_position,
+      background_repeat:
+        (iconModule as any).background_repeat || designFromDesignObject.background_repeat,
+      border_radius: (iconModule as any).border_radius || designFromDesignObject.border_radius,
+      border_style: (iconModule as any).border_style || designFromDesignObject.border_style,
+      border_width: (iconModule as any).border_width || designFromDesignObject.border_width,
+      border_color: (iconModule as any).border_color || designFromDesignObject.border_color,
+      padding_top: (iconModule as any).padding_top || designFromDesignObject.padding_top,
+      padding_bottom: (iconModule as any).padding_bottom || designFromDesignObject.padding_bottom,
+      padding_left: (iconModule as any).padding_left || designFromDesignObject.padding_left,
+      padding_right: (iconModule as any).padding_right || designFromDesignObject.padding_right,
+      margin_top: (iconModule as any).margin_top || designFromDesignObject.margin_top,
+      margin_bottom: (iconModule as any).margin_bottom || designFromDesignObject.margin_bottom,
+      margin_left: (iconModule as any).margin_left || designFromDesignObject.margin_left,
+      margin_right: (iconModule as any).margin_right || designFromDesignObject.margin_right,
+      position: (iconModule as any).position || designFromDesignObject.position,
+      top: (iconModule as any).top || designFromDesignObject.top,
+      bottom: (iconModule as any).bottom || designFromDesignObject.bottom,
+      left: (iconModule as any).left || designFromDesignObject.left,
+      right: (iconModule as any).right || designFromDesignObject.right,
+      z_index: (iconModule as any).z_index || designFromDesignObject.z_index,
+      width: (iconModule as any).width || designFromDesignObject.width,
+      height: (iconModule as any).height || designFromDesignObject.height,
+      max_width: (iconModule as any).max_width || designFromDesignObject.max_width,
+      max_height: (iconModule as any).max_height || designFromDesignObject.max_height,
+      min_width: (iconModule as any).min_width || designFromDesignObject.min_width,
+      min_height: (iconModule as any).min_height || designFromDesignObject.min_height,
+      overflow: (iconModule as any).overflow || designFromDesignObject.overflow,
+      clip_path: (iconModule as any).clip_path || designFromDesignObject.clip_path,
+      backdrop_filter:
+        (iconModule as any).backdrop_filter || designFromDesignObject.backdrop_filter,
+      box_shadow_h: (iconModule as any).box_shadow_h || designFromDesignObject.box_shadow_h,
+      box_shadow_v: (iconModule as any).box_shadow_v || designFromDesignObject.box_shadow_v,
+      box_shadow_blur:
+        (iconModule as any).box_shadow_blur || designFromDesignObject.box_shadow_blur,
+      box_shadow_spread:
+        (iconModule as any).box_shadow_spread || designFromDesignObject.box_shadow_spread,
+      box_shadow_color:
+        (iconModule as any).box_shadow_color || designFromDesignObject.box_shadow_color,
+      hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
+    };
 
     // Container styles for design system - no hardcoded spacing, user controls all
     const containerStyles = {
@@ -2006,6 +2196,24 @@ export class UltraIconModule extends BaseUltraModule {
                 designProperties.color ||
                 (isActive ? icon.active_state_color : icon.inactive_state_color);
 
+              // Apply Global Design text formatting properties
+              const globalTextStyles = {
+                fontSize: designProperties.font_size
+                  ? this.addPixelUnit(designProperties.font_size) || designProperties.font_size
+                  : undefined,
+                fontFamily: designProperties.font_family || undefined,
+                fontWeight: designProperties.font_weight || undefined,
+                fontStyle: designProperties.font_style || undefined,
+                textTransform: designProperties.text_transform || undefined,
+                lineHeight: designProperties.line_height || undefined,
+                letterSpacing: designProperties.letter_spacing || undefined,
+                textAlign: designProperties.text_align || undefined,
+                textShadow:
+                  designProperties.text_shadow_h && designProperties.text_shadow_v
+                    ? `${designProperties.text_shadow_h || '0'} ${designProperties.text_shadow_v || '0'} ${designProperties.text_shadow_blur || '0'} ${designProperties.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+                    : undefined,
+              };
+
               const displayName = isActive
                 ? icon.custom_active_name_text ||
                   icon.name ||
@@ -2101,14 +2309,8 @@ export class UltraIconModule extends BaseUltraModule {
                       : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
                 }
               } else {
-                // No template_mode - show custom text if provided, otherwise show actual entity state
-                displayState = isActive
-                  ? icon.custom_active_state_text && icon.custom_active_state_text.trim() !== ''
-                    ? icon.custom_active_state_text
-                    : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-                  : icon.custom_inactive_state_text && icon.custom_inactive_state_text.trim() !== ''
-                    ? icon.custom_inactive_state_text
-                    : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+                // No template_mode - check for attribute selection first, then custom text, then entity state
+                displayState = this._getDisplayStateValue(icon, hass, isActive);
               }
 
               // Icon background styles - use active/inactive specific properties
@@ -2221,8 +2423,6 @@ export class UltraIconModule extends BaseUltraModule {
 
                 onPointerUp: (e: PointerEvent) => {
                   e.preventDefault();
-                  e.stopPropagation();
-
                   // Clear hold timer
                   if (holdTimeout) {
                     clearTimeout(holdTimeout);
@@ -2376,15 +2576,25 @@ export class UltraIconModule extends BaseUltraModule {
                         <div
                           class="icon-name"
                           style="
-                      font-size: ${isActive
-                            ? icon.active_text_size || icon.text_size || 12
-                            : icon.inactive_text_size || icon.text_size || 14}px;
+                      font-size: ${globalTextStyles.fontSize
+                            ? globalTextStyles.fontSize
+                            : `${
+                                isActive
+                                  ? icon.active_text_size || icon.text_size || 12
+                                  : icon.inactive_text_size || icon.text_size || 14
+                              }px`};
                         color: ${nameColor || 'var(--primary-text-color)'};
-                      text-align: center;
-                      line-height: 1.2;
+                      text-align: ${globalTextStyles.textAlign || 'center'};
+                      line-height: ${globalTextStyles.lineHeight || '1.2'};
                         max-width: 120px;
                       word-wrap: break-word;
                       margin-bottom: ${shouldShowState ? `${icon.name_state_gap ?? 2}px` : '0px'};
+                      font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                      font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                      font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                      text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                      letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                      text-shadow: ${globalTextStyles.textShadow || 'none'};
                     "
                         >
                           ${displayName}
@@ -2396,12 +2606,22 @@ export class UltraIconModule extends BaseUltraModule {
                         <div
                           class="icon-state"
                           style="
-                      font-size: ${isActive
-                            ? icon.active_state_size || icon.state_size || 12
-                            : icon.inactive_state_size || icon.state_size || 12}px;
+                      font-size: ${globalTextStyles.fontSize
+                            ? globalTextStyles.fontSize
+                            : `${
+                                isActive
+                                  ? icon.active_state_size || icon.state_size || 12
+                                  : icon.inactive_state_size || icon.state_size || 12
+                              }px`};
                         color: ${stateColor || 'var(--secondary-text-color)'};
-                      text-align: center;
-                      line-height: 1.2;
+                      text-align: ${globalTextStyles.textAlign || 'center'};
+                      line-height: ${globalTextStyles.lineHeight || '1.2'};
+                      font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                      font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                      font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                      text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                      letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                      text-shadow: ${globalTextStyles.textShadow || 'none'};
                     "
                         >
                           ${displayState}
@@ -2465,7 +2685,10 @@ export class UltraIconModule extends BaseUltraModule {
     if (iconModule.icons.length > 0) {
       const firstIcon = iconModule.icons[0];
 
-      // If template mode is enabled, use template result to determine current state
+      // Use the same evaluation logic as the main preview
+      isCurrentlyActive = this._evaluateIconState(firstIcon, hass);
+
+      // Legacy template mode check (kept for backward compatibility)
       if (firstIcon.template_mode && firstIcon.template) {
         // Initialize template service if needed
         if (!this._templateService && hass) {
@@ -2674,13 +2897,40 @@ export class UltraIconModule extends BaseUltraModule {
     const iconsToShow = iconModule.icons.slice(0, 6);
     const gridCols = Math.min(3, iconsToShow.length);
 
+    // Get design properties for Global Design tab support - check both locations
+    const designFromDesignObject = (iconModule as any).design || {};
+    const designProperties = {
+      color: (iconModule as any).color || designFromDesignObject.color,
+      font_size: (iconModule as any).font_size || designFromDesignObject.font_size,
+      font_weight: (iconModule as any).font_weight || designFromDesignObject.font_weight,
+      font_style: (iconModule as any).font_style || designFromDesignObject.font_style,
+      text_transform: (iconModule as any).text_transform || designFromDesignObject.text_transform,
+      font_family: (iconModule as any).font_family || designFromDesignObject.font_family,
+      line_height: (iconModule as any).line_height || designFromDesignObject.line_height,
+      letter_spacing: (iconModule as any).letter_spacing || designFromDesignObject.letter_spacing,
+      text_align: (iconModule as any).text_align || designFromDesignObject.text_align,
+      text_shadow_h: (iconModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
+      text_shadow_v: (iconModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
+      text_shadow_blur:
+        (iconModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
+      text_shadow_color:
+        (iconModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
+      background_position:
+        (iconModule as any).background_position || designFromDesignObject.background_position,
+      background_repeat:
+        (iconModule as any).background_repeat || designFromDesignObject.background_repeat,
+      hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
+    };
+
     return html`
       <div
         style="
           display: flex;
         "
       >
-        ${iconsToShow.map(icon => this._renderSingleIconPreview(icon, hass, isActiveState))}
+        ${iconsToShow.map(icon =>
+          this._renderSingleIconPreview(icon, hass, isActiveState, iconModule, designProperties)
+        )}
       </div>
     `;
   }
@@ -2689,7 +2939,8 @@ export class UltraIconModule extends BaseUltraModule {
     icon: IconConfig,
     hass: HomeAssistant,
     isActiveState: boolean,
-    iconModule?: IconModule
+    iconModule?: IconModule,
+    designProperties?: any
   ): TemplateResult {
     const entityState = hass?.states[icon.entity];
     const currentState = entityState?.state || 'unknown';
@@ -2793,8 +3044,42 @@ export class UltraIconModule extends BaseUltraModule {
       }
     }
 
-    const nameColor = isActiveState ? icon.active_name_color : icon.inactive_name_color;
-    const stateColor = isActiveState ? icon.active_state_color : icon.inactive_state_color;
+    const nameColor =
+      designProperties?.color ||
+      (isActiveState ? icon.active_name_color : icon.inactive_name_color);
+    const stateColor =
+      designProperties?.color ||
+      (isActiveState ? icon.active_state_color : icon.inactive_state_color);
+
+    // Apply Global Design text formatting properties (same as main renderPreview)
+    const globalTextStyles = designProperties
+      ? {
+          fontSize: designProperties.font_size
+            ? this.addPixelUnit(designProperties.font_size) || designProperties.font_size
+            : undefined,
+          fontFamily: designProperties.font_family || undefined,
+          fontWeight: designProperties.font_weight || undefined,
+          fontStyle: designProperties.font_style || undefined,
+          textTransform: designProperties.text_transform || undefined,
+          lineHeight: designProperties.line_height || undefined,
+          letterSpacing: designProperties.letter_spacing || undefined,
+          textAlign: designProperties.text_align || undefined,
+          textShadow:
+            designProperties.text_shadow_h && designProperties.text_shadow_v
+              ? `${designProperties.text_shadow_h || '0'} ${designProperties.text_shadow_v || '0'} ${designProperties.text_shadow_blur || '0'} ${designProperties.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+              : undefined,
+        }
+      : {
+          fontSize: undefined,
+          fontFamily: undefined,
+          fontWeight: undefined,
+          fontStyle: undefined,
+          textTransform: undefined,
+          lineHeight: undefined,
+          letterSpacing: undefined,
+          textAlign: undefined,
+          textShadow: undefined,
+        };
 
     const displayName = isActiveState
       ? icon.custom_active_name_text ||
@@ -2863,14 +3148,8 @@ export class UltraIconModule extends BaseUltraModule {
         displayState = this._formatValueWithUnits(currentState, icon.entity, icon, hass);
       }
     } else {
-      // Show custom text if provided, otherwise show actual entity state
-      displayState = isActiveState
-        ? icon.custom_active_state_text && icon.custom_active_state_text.trim() !== ''
-          ? icon.custom_active_state_text
-          : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-        : icon.custom_inactive_state_text && icon.custom_inactive_state_text.trim() !== ''
-          ? icon.custom_inactive_state_text
-          : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+      // Use the new display state helper that checks for attributes
+      displayState = this._getDisplayStateValue(icon, hass, isActiveState);
     }
 
     // Icon background styles - use active/inactive specific properties
@@ -2998,15 +3277,25 @@ export class UltraIconModule extends BaseUltraModule {
               <div
                 class="icon-name"
                 style="
-                  font-size: ${isActiveState
-                  ? icon.active_text_size || icon.text_size || 12
-                  : icon.inactive_text_size || icon.text_size || 14}px;
+                  font-size: ${globalTextStyles.fontSize
+                  ? globalTextStyles.fontSize
+                  : `${
+                      isActiveState
+                        ? icon.active_text_size || icon.text_size || 12
+                        : icon.inactive_text_size || icon.text_size || 14
+                    }px`};
                   color: ${nameColor || 'var(--primary-text-color)'};
-                  text-align: center;
-                  line-height: 1.2;
+                  text-align: ${globalTextStyles.textAlign || 'center'};
+                  line-height: ${globalTextStyles.lineHeight || '1.2'};
                   max-width: 120px;
                   word-wrap: break-word;
                   margin-bottom: ${shouldShowState ? `${actualNameStateGap}px` : '0px'};
+                  font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                  font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                  font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                  text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                  letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                  text-shadow: ${globalTextStyles.textShadow || 'none'};
                 "
               >
                 ${displayName}
@@ -3018,12 +3307,22 @@ export class UltraIconModule extends BaseUltraModule {
               <div
                 class="icon-state"
                 style="
-                  font-size: ${isActiveState
-                  ? icon.active_state_size || icon.state_size || 10
-                  : icon.inactive_state_size || icon.state_size || 10}px;
+                  font-size: ${globalTextStyles.fontSize
+                  ? globalTextStyles.fontSize
+                  : `${
+                      isActiveState
+                        ? icon.active_state_size || icon.state_size || 10
+                        : icon.inactive_state_size || icon.state_size || 10
+                    }px`};
                   color: ${stateColor || 'var(--secondary-text-color)'};
-                  text-align: center;
-                  line-height: 1.2;
+                  text-align: ${globalTextStyles.textAlign || 'center'};
+                  line-height: ${globalTextStyles.lineHeight || '1.2'};
+                  font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                  font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                  font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                  text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                  letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                  text-shadow: ${globalTextStyles.textShadow || 'none'};
                 "
               >
                 ${displayState}
@@ -3043,6 +3342,31 @@ export class UltraIconModule extends BaseUltraModule {
     // Get hover effect configuration from module design
     const hoverEffect = (iconModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
+    // Get design properties for Global Design tab support - check both locations
+    const designFromDesignObject = (iconModule as any).design || {};
+    const designProperties = {
+      color: (iconModule as any).color || designFromDesignObject.color,
+      font_size: (iconModule as any).font_size || designFromDesignObject.font_size,
+      font_weight: (iconModule as any).font_weight || designFromDesignObject.font_weight,
+      font_style: (iconModule as any).font_style || designFromDesignObject.font_style,
+      text_transform: (iconModule as any).text_transform || designFromDesignObject.text_transform,
+      font_family: (iconModule as any).font_family || designFromDesignObject.font_family,
+      line_height: (iconModule as any).line_height || designFromDesignObject.line_height,
+      letter_spacing: (iconModule as any).letter_spacing || designFromDesignObject.letter_spacing,
+      text_align: (iconModule as any).text_align || designFromDesignObject.text_align,
+      text_shadow_h: (iconModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
+      text_shadow_v: (iconModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
+      text_shadow_blur:
+        (iconModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
+      text_shadow_color:
+        (iconModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
+      background_position:
+        (iconModule as any).background_position || designFromDesignObject.background_position,
+      background_repeat:
+        (iconModule as any).background_repeat || designFromDesignObject.background_repeat,
+      hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
+    };
 
     return html`
       <div
@@ -3098,8 +3422,30 @@ export class UltraIconModule extends BaseUltraModule {
                   : icon.inactive_icon_color
                 : icon.inactive_icon_color;
 
-          const nameColor = isActive ? icon.active_name_color : icon.inactive_name_color;
-          const stateColor = isActive ? icon.active_state_color : icon.inactive_state_color;
+          const nameColor =
+            designProperties.color ||
+            (isActive ? icon.active_name_color : icon.inactive_name_color);
+          const stateColor =
+            designProperties.color ||
+            (isActive ? icon.active_state_color : icon.inactive_state_color);
+
+          // Apply Global Design text formatting properties
+          const globalTextStyles = {
+            fontSize: designProperties.font_size
+              ? this.addPixelUnit(designProperties.font_size) || designProperties.font_size
+              : undefined,
+            fontFamily: designProperties.font_family || undefined,
+            fontWeight: designProperties.font_weight || undefined,
+            fontStyle: designProperties.font_style || undefined,
+            textTransform: designProperties.text_transform || undefined,
+            lineHeight: designProperties.line_height || undefined,
+            letterSpacing: designProperties.letter_spacing || undefined,
+            textAlign: designProperties.text_align || undefined,
+            textShadow:
+              designProperties.text_shadow_h && designProperties.text_shadow_v
+                ? `${designProperties.text_shadow_h || '0'} ${designProperties.text_shadow_v || '0'} ${designProperties.text_shadow_blur || '0'} ${designProperties.text_shadow_color || 'rgba(0,0,0,0.5)'}`
+                : undefined,
+          };
 
           const displayName = isActive
             ? icon.custom_active_name_text ||
@@ -3113,14 +3459,8 @@ export class UltraIconModule extends BaseUltraModule {
 
           let displayState: string;
 
-          // Show custom text if provided, otherwise show actual entity state
-          displayState = isActive
-            ? icon.custom_active_state_text && icon.custom_active_state_text.trim() !== ''
-              ? icon.custom_active_state_text
-              : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-            : icon.custom_inactive_state_text && icon.custom_inactive_state_text.trim() !== ''
-              ? icon.custom_inactive_state_text
-              : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+          // Use the new display state helper that checks for attributes
+          displayState = this._getDisplayStateValue(icon, hass, isActive);
 
           // Icon background styles - use active/inactive specific properties
           const iconBackground = isActive
@@ -3254,15 +3594,25 @@ export class UltraIconModule extends BaseUltraModule {
                     <div
                       class="icon-name"
                       style="
-                        font-size: ${isActive
-                        ? icon.active_text_size || icon.text_size || 12
-                        : icon.inactive_text_size || icon.text_size || 14}px;
+                        font-size: ${globalTextStyles.fontSize
+                        ? globalTextStyles.fontSize
+                        : `${
+                            isActive
+                              ? icon.active_text_size || icon.text_size || 12
+                              : icon.inactive_text_size || icon.text_size || 14
+                          }px`};
                         color: ${nameColor || 'var(--primary-text-color)'};
-                        text-align: center;
-                        line-height: 1.2;
+                        text-align: ${globalTextStyles.textAlign || 'center'};
+                        line-height: ${globalTextStyles.lineHeight || '1.2'};
                         max-width: 120px;
                         word-wrap: break-word;
                         margin-bottom: ${shouldShowState ? `${actualNameStateGap}px` : '0px'};
+                        font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                        font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                        font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                        text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                        letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                        text-shadow: ${globalTextStyles.textShadow || 'none'};
                       "
                     >
                       ${displayName}
@@ -3274,12 +3624,22 @@ export class UltraIconModule extends BaseUltraModule {
                     <div
                       class="icon-state"
                       style="
-                        font-size: ${isActive
-                        ? icon.active_state_size || icon.state_size || 10
-                        : icon.inactive_state_size || icon.state_size || 10}px;
+                        font-size: ${globalTextStyles.fontSize
+                        ? globalTextStyles.fontSize
+                        : `${
+                            isActive
+                              ? icon.active_state_size || icon.state_size || 10
+                              : icon.inactive_state_size || icon.state_size || 10
+                          }px`};
                         color: ${stateColor || 'var(--secondary-text-color)'};
-                        text-align: center;
-                        line-height: 1.2;
+                        text-align: ${globalTextStyles.textAlign || 'center'};
+                        line-height: ${globalTextStyles.lineHeight || '1.2'};
+                        font-family: ${globalTextStyles.fontFamily || 'inherit'};
+                        font-weight: ${globalTextStyles.fontWeight || 'inherit'};
+                        font-style: ${globalTextStyles.fontStyle || 'inherit'};
+                        text-transform: ${globalTextStyles.textTransform || 'inherit'};
+                        letter-spacing: ${globalTextStyles.letterSpacing || 'inherit'};
+                        text-shadow: ${globalTextStyles.textShadow || 'none'};
                       "
                     >
                       ${displayState}
@@ -3331,6 +3691,97 @@ export class UltraIconModule extends BaseUltraModule {
       this._templateService.unsubscribeAllTemplates();
       this._templateService = undefined;
     }
+    // Clear attribute cache
+    this._attributeCache.clear();
+
+    // Clear processing flags
+    this._processingAttributes.clear();
+
+    // Clear any pending updates
+    if (this._updateTimeout) {
+      clearTimeout(this._updateTimeout);
+      this._updateTimeout = undefined;
+    }
+  }
+
+  // Helper method to get the display state value (attribute value or entity state)
+  private _getDisplayStateValue(icon: IconConfig, hass: HomeAssistant, isActive: boolean): string {
+    const entityState = hass?.states[icon.entity];
+    if (!entityState) {
+      return 'unknown';
+    }
+
+    const currentState = entityState.state;
+
+    // Check if attributes are selected for display
+    const selectedAttribute = isActive ? icon.active_attribute : icon.inactive_attribute;
+
+    if (selectedAttribute && entityState.attributes?.[selectedAttribute] !== undefined) {
+      // Use the attribute value as the display state
+      const attributeValue = entityState.attributes[selectedAttribute];
+      return this._formatValueWithUnits(String(attributeValue), icon.entity, icon, hass);
+    }
+
+    // Fall back to custom text or entity state
+    const customText = isActive ? icon.custom_active_state_text : icon.custom_inactive_state_text;
+
+    if (customText && customText.trim() !== '') {
+      return customText;
+    }
+
+    return this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+  }
+
+  // Helper method to get available attributes from an entity (ultra-simplified)
+  private _getEntityAttributes(
+    entityId: string,
+    hass: HomeAssistant
+  ): { value: string; label: string }[] {
+    const options = [{ value: '', label: 'None (Use State)' }];
+
+    try {
+      if (!entityId || !hass?.states?.[entityId]) {
+        return options;
+      }
+
+      const entityState = hass.states[entityId];
+      const attributes = entityState.attributes || {};
+
+      // Process all attributes, but safely
+      Object.keys(attributes).forEach(key => {
+        // Skip system/internal attributes that aren't useful for state evaluation
+        if (
+          !key.startsWith('_') &&
+          key !== 'friendly_name' &&
+          key !== 'entity_picture' &&
+          key !== 'supported_features' &&
+          key !== 'device_class' &&
+          key !== 'state_class'
+        ) {
+          const value = attributes[key];
+          let displayValue = '';
+
+          // Safely convert value to string
+          if (value === null || value === undefined) {
+            displayValue = 'null';
+          } else if (typeof value === 'object') {
+            displayValue = Array.isArray(value) ? `[${value.length} items]` : '{object}';
+          } else {
+            displayValue = String(value).substring(0, 20);
+          }
+
+          options.push({
+            value: key,
+            label: `${key} (${displayValue})`,
+          });
+        }
+      });
+
+      return options;
+    } catch (error) {
+      console.error('Error getting attributes:', error);
+      return options;
+    }
   }
 
   // Helper method to detect binary entities by domain
@@ -3360,6 +3811,14 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     const currentState = entityState.state;
+
+    // Get attribute values if specified
+    const inactiveValue = icon.inactive_attribute
+      ? entityState.attributes?.[icon.inactive_attribute]?.toString() || ''
+      : currentState;
+    const activeValue = icon.active_attribute
+      ? entityState.attributes?.[icon.active_attribute]?.toString() || ''
+      : currentState;
 
     // Check template_mode first
     if (icon.template_mode && icon.template) {
@@ -3418,10 +3877,10 @@ export class UltraIconModule extends BaseUltraModule {
 
     // If both active_state and inactive_state are defined, check both
     if (icon.active_state && icon.inactive_state) {
-      if (currentState === icon.active_state) {
+      if (activeValue === icon.active_state) {
         return true;
       }
-      if (currentState === icon.inactive_state) {
+      if (inactiveValue === icon.inactive_state) {
         return false;
       }
       // If state doesn't match either, default to inactive
@@ -3430,15 +3889,53 @@ export class UltraIconModule extends BaseUltraModule {
 
     // If only active_state is defined
     if (icon.active_state) {
-      return currentState === icon.active_state;
+      return activeValue === icon.active_state;
     }
 
     // If only inactive_state is defined
     if (icon.inactive_state) {
-      return currentState !== icon.inactive_state;
+      return inactiveValue !== icon.inactive_state;
+    }
+
+    // If attributes are selected but no specific states are defined,
+    // use intelligent defaults based on the attribute values
+    if (
+      (icon.active_attribute || icon.inactive_attribute) &&
+      !icon.active_state &&
+      !icon.inactive_state
+    ) {
+      // For numeric attributes (like temperature), consider values > 70 as "active"
+      const numericValue = parseFloat(activeValue || inactiveValue);
+      if (!isNaN(numericValue)) {
+        return numericValue > 70; // Default threshold for temperature-like values
+      }
+
+      // For string attributes, use common patterns
+      const value = (activeValue || inactiveValue).toLowerCase();
+      const activePatterns = ['cloudy', 'rainy', 'stormy', 'snowy', 'windy', 'hot', 'warm'];
+      const inactivePatterns = ['sunny', 'clear', 'fair', 'cold', 'cool'];
+
+      if (activePatterns.some(pattern => value.includes(pattern))) {
+        return true;
+      }
+
+      if (inactivePatterns.some(pattern => value.includes(pattern))) {
+        return false;
+      }
+
+      // Default to showing the attribute value (active state)
+      return true;
     }
 
     // If neither is defined, use common "active" patterns
+    // Use the primary value (attribute if specified, otherwise state)
+    const primaryValue =
+      icon.active_attribute || icon.inactive_attribute
+        ? icon.active_attribute
+          ? activeValue
+          : inactiveValue
+        : currentState;
+
     const activeStates = ['on', 'true', 'active', 'open', 'playing', 'home'];
     const inactiveStates = [
       'off',
@@ -3452,16 +3949,16 @@ export class UltraIconModule extends BaseUltraModule {
       'unknown',
     ];
 
-    if (activeStates.includes(currentState.toLowerCase())) {
+    if (activeStates.includes(primaryValue.toLowerCase())) {
       return true;
     }
 
-    if (inactiveStates.includes(currentState.toLowerCase())) {
+    if (inactiveStates.includes(primaryValue.toLowerCase())) {
       return false;
     }
 
     // For numeric states, consider > 0 as active
-    const numericState = parseFloat(currentState);
+    const numericState = parseFloat(primaryValue);
     if (!isNaN(numericState)) {
       return numericState > 0;
     }
@@ -4653,6 +5150,8 @@ export class UltraIconModule extends BaseUltraModule {
       icon_active: 'mdi:weather-partly-cloudy',
       inactive_state: '',
       active_state: '',
+      inactive_attribute: '',
+      active_attribute: '',
       custom_inactive_state_text: '',
       custom_active_state_text: '',
       custom_inactive_name_text: '',
@@ -4796,6 +5295,43 @@ export class UltraIconModule extends BaseUltraModule {
       i === index ? { ...icon, ...updates } : icon
     );
     updateModule({ icons: updatedIcons });
+  }
+
+  private _debouncedUpdateIcon(
+    iconModule: IconModule,
+    index: number,
+    updates: Partial<IconConfig>,
+    updateModule: (updates: Partial<CardModule>) => void,
+    delay = 100
+  ): void {
+    if (this._updateTimeout) {
+      clearTimeout(this._updateTimeout);
+    }
+
+    this._updateTimeout = setTimeout(() => {
+      this._updateIcon(iconModule, index, updates, updateModule);
+    }, delay);
+  }
+
+  private _triggerPreviewUpdate(): void {
+    // Clear any caches that might be preventing updates
+    this._attributeCache.clear();
+
+    // Dispatch custom events to trigger preview updates
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+      window.dispatchEvent(new CustomEvent('ultra-card-preview-update'));
+      window.dispatchEvent(new CustomEvent('ultra-card-state-changed'));
+    }
+
+    // Also try to trigger a re-render of the current component
+    try {
+      if ((this as any).requestUpdate) {
+        (this as any).requestUpdate();
+      }
+    } catch (e) {
+      // Ignore if requestUpdate is not available
+    }
   }
 
   private _updateIconWithLockSync(
@@ -5048,14 +5584,15 @@ export class UltraIconModule extends BaseUltraModule {
                         { [activeProperty]: displayValue },
                         [this.selectField(activeProperty, selectOptions || [])],
                         (e: CustomEvent) => {
-                          if (!isLocked) {
-                            this._updateIcon(
-                              iconModule,
-                              index,
-                              { [activeProperty]: e.detail.value[activeProperty] },
-                              updateModule
-                            );
-                          }
+                          const next = e.detail.value[activeProperty];
+                          const prev = (icon as any)[activeProperty];
+                          if (next === prev) return;
+                          this._updateIcon(
+                            iconModule,
+                            index,
+                            { [activeProperty]: next },
+                            updateModule
+                          );
                         },
                         false
                       )}
@@ -5090,14 +5627,15 @@ export class UltraIconModule extends BaseUltraModule {
                           { [activeProperty]: displayValue },
                           [this.textField(activeProperty)],
                           (e: CustomEvent) => {
-                            if (!isLocked) {
-                              this._updateIcon(
-                                iconModule,
-                                index,
-                                { [activeProperty]: e.detail.value[activeProperty] },
-                                updateModule
-                              );
-                            }
+                            const next = e.detail.value[activeProperty];
+                            const prev = (icon as any)[activeProperty];
+                            if (next === prev) return;
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { [activeProperty]: next },
+                              updateModule
+                            );
                           },
                           false
                         )}

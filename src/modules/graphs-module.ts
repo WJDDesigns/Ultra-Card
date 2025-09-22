@@ -223,7 +223,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             ${localize('editor.graphs.chart_type.title', lang, 'Chart Type')}
           </div>
 
-          ${FormUtils.renderField(
+          ${this.renderFieldSection(
             localize('editor.graphs.chart_type.type', lang, 'Type'),
             localize(
               'editor.graphs.chart_type.desc',
@@ -232,12 +232,17 @@ export class UltraGraphsModule extends BaseUltraModule {
             ),
             hass,
             { chart_type: graphsModule.chart_type },
-            [
-              FormUtils.createSchemaItem('chart_type', {
-                select: { options: this.getChartTypeOptions(lang), mode: 'dropdown' },
-              }),
-            ],
-            (e: CustomEvent) => updateModule({ chart_type: e.detail.value.chart_type })
+            [this.selectField('chart_type', this.getChartTypeOptions(lang))],
+            (e: CustomEvent) => {
+              const next = e.detail.value.chart_type;
+              const prev = graphsModule.chart_type;
+              if (next === prev) return;
+              updateModule({ chart_type: next });
+              // Trigger re-render to update dropdown UI
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            }
           )}
         </div>
 
@@ -579,51 +584,53 @@ export class UltraGraphsModule extends BaseUltraModule {
                                   />
                                 </div>
 
-                                ${FormUtils.renderField(
+                                ${this.renderFieldSection(
                                   localize('editor.graphs.line.line_style', lang, 'Line Style'),
                                   '',
                                   hass,
                                   { line_style: entity.line_style || 'solid' },
                                   [
-                                    FormUtils.createSchemaItem('line_style', {
-                                      select: {
-                                        options: [
-                                          {
-                                            value: 'solid',
-                                            label: localize(
-                                              'editor.graphs.line_styles.solid',
-                                              lang,
-                                              'Solid'
-                                            ),
-                                          },
-                                          {
-                                            value: 'dashed',
-                                            label: localize(
-                                              'editor.graphs.line_styles.dashed',
-                                              lang,
-                                              'Dashed'
-                                            ),
-                                          },
-                                          {
-                                            value: 'dotted',
-                                            label: localize(
-                                              'editor.graphs.line_styles.dotted',
-                                              lang,
-                                              'Dotted'
-                                            ),
-                                          },
-                                        ],
-                                        mode: 'dropdown',
+                                    this.selectField('line_style', [
+                                      {
+                                        value: 'solid',
+                                        label: localize(
+                                          'editor.graphs.line_styles.solid',
+                                          lang,
+                                          'Solid'
+                                        ),
                                       },
-                                    }),
+                                      {
+                                        value: 'dashed',
+                                        label: localize(
+                                          'editor.graphs.line_styles.dashed',
+                                          lang,
+                                          'Dashed'
+                                        ),
+                                      },
+                                      {
+                                        value: 'dotted',
+                                        label: localize(
+                                          'editor.graphs.line_styles.dotted',
+                                          lang,
+                                          'Dotted'
+                                        ),
+                                      },
+                                    ]),
                                   ],
                                   (e: CustomEvent) => {
+                                    const next = e.detail.value.line_style;
+                                    const prev = entity.line_style || 'solid';
+                                    if (next === prev) return;
                                     this._updateEntity(
                                       graphsModule,
                                       index,
-                                      { line_style: e.detail.value.line_style },
+                                      { line_style: next },
                                       updateModule
                                     );
+                                    // Trigger re-render to update dropdown UI
+                                    setTimeout(() => {
+                                      this.triggerPreviewUpdate();
+                                    }, 50);
                                   }
                                 )}
                               </div>
@@ -835,7 +842,7 @@ export class UltraGraphsModule extends BaseUltraModule {
               : ''}
 
             <!-- Time Period -->
-            ${FormUtils.renderField(
+            ${this.renderFieldSection(
               localize('editor.graphs.display.time_period', lang, 'Time Period'),
               localize(
                 'editor.graphs.display.time_period_desc',
@@ -844,25 +851,24 @@ export class UltraGraphsModule extends BaseUltraModule {
               ),
               hass,
               { time_period: graphsModule.time_period },
-              [
-                FormUtils.createSchemaItem('time_period', {
-                  select: { options: this.getTimePeriodOptions(lang), mode: 'dropdown' },
-                }),
-              ],
+              [this.selectField('time_period', this.getTimePeriodOptions(lang))],
               (e: CustomEvent) => {
                 const newPeriod = e.detail.value.time_period;
+                const prev = graphsModule.time_period;
+                if (newPeriod === prev) return;
                 updateModule({ time_period: newPeriod });
-                // Clear cached/history state so preview re-renders immediately with new period
                 delete this._historyData[graphsModule.id];
                 delete this._historyError[graphsModule.id];
                 delete this._historyLoading[graphsModule.id];
                 delete this._deferredHistoryScheduled[graphsModule.id];
-                // Trigger load and force UI update for instant feedback
                 const updated = { ...graphsModule, time_period: newPeriod } as any;
                 this._loadHistoryData(updated, hass);
-                // Force immediate fetch of real history to avoid waiting for another change
                 this._triggerHistoryLoad(updated, hass);
                 this.requestUpdate();
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
               }
             )}
 
@@ -1043,7 +1049,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 )}
               </div>
             </div>
-            ${FormUtils.renderField(
+            ${this.renderFieldSection(
               localize('editor.graphs.display.info_position', lang, 'Info Position'),
               localize(
                 'editor.graphs.display.info_position_desc',
@@ -1053,17 +1059,54 @@ export class UltraGraphsModule extends BaseUltraModule {
               hass,
               { info_position: graphsModule.info_position || 'top_left' },
               [
-                FormUtils.createSchemaItem('info_position', {
-                  select: {
-                    options: [
-                      {
-                        value: 'top_left',
-                        label: localize('editor.graphs.position.top_left', lang, 'Top Left'),
-                      },
-                      {
-                        value: 'top_right',
-                        label: localize('editor.graphs.position.top_right', lang, 'Top Right'),
-                      },
+                this.selectField('info_position', [
+                  {
+                    value: 'top_left',
+                    label: localize('editor.graphs.position.top_left', lang, 'Top Left'),
+                  },
+                  {
+                    value: 'top_right',
+                    label: localize('editor.graphs.position.top_right', lang, 'Top Right'),
+                  },
+                  {
+                    value: 'bottom_left',
+                    label: localize('editor.graphs.position.bottom_left', lang, 'Bottom Left'),
+                  },
+                  {
+                    value: 'bottom_right',
+                    label: localize('editor.graphs.position.bottom_right', lang, 'Bottom Right'),
+                  },
+                  {
+                    value: 'middle',
+                    label: localize('editor.graphs.position.middle', lang, 'Middle'),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = e.detail.value.info_position;
+                const prev = graphsModule.info_position || 'top_left';
+                if (next === prev) return;
+                updateModule({ info_position: next });
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              }
+            )}
+
+            <!-- Legend Position -->
+            ${graphsModule.show_legend !== false
+              ? this.renderFieldSection(
+                  localize('editor.graphs.display.legend_position', lang, 'Legend Position'),
+                  localize(
+                    'editor.graphs.display.legend_position_desc',
+                    lang,
+                    'Where to place the legend when enabled.'
+                  ),
+                  hass,
+                  { legend_position: graphsModule.legend_position || 'bottom_left' },
+                  [
+                    this.selectField('legend_position', [
                       {
                         value: 'bottom_left',
                         label: localize('editor.graphs.position.bottom_left', lang, 'Bottom Left'),
@@ -1077,68 +1120,30 @@ export class UltraGraphsModule extends BaseUltraModule {
                         ),
                       },
                       {
-                        value: 'middle',
-                        label: localize('editor.graphs.position.middle', lang, 'Middle'),
+                        value: 'top_left',
+                        label: localize('editor.graphs.position.top_left', lang, 'Top Left'),
                       },
-                    ],
-                    mode: 'dropdown',
-                  },
-                }),
-              ],
-              (e: CustomEvent) => updateModule({ info_position: e.detail.value.info_position })
-            )}
-
-            <!-- Legend Position -->
-            ${graphsModule.show_legend !== false
-              ? FormUtils.renderField(
-                  localize('editor.graphs.display.legend_position', lang, 'Legend Position'),
-                  localize(
-                    'editor.graphs.display.legend_position_desc',
-                    lang,
-                    'Where to place the legend when enabled.'
-                  ),
-                  hass,
-                  { legend_position: graphsModule.legend_position || 'bottom_left' },
-                  [
-                    FormUtils.createSchemaItem('legend_position', {
-                      select: {
-                        options: [
-                          {
-                            value: 'bottom_left',
-                            label: localize(
-                              'editor.graphs.position.bottom_left',
-                              lang,
-                              'Bottom Left'
-                            ),
-                          },
-                          {
-                            value: 'bottom_right',
-                            label: localize(
-                              'editor.graphs.position.bottom_right',
-                              lang,
-                              'Bottom Right'
-                            ),
-                          },
-                          {
-                            value: 'top_left',
-                            label: localize('editor.graphs.position.top_left', lang, 'Top Left'),
-                          },
-                          {
-                            value: 'top_right',
-                            label: localize('editor.graphs.position.top_right', lang, 'Top Right'),
-                          },
-                        ],
-                        mode: 'dropdown',
+                      {
+                        value: 'top_right',
+                        label: localize('editor.graphs.position.top_right', lang, 'Top Right'),
                       },
-                    }),
+                    ]),
                   ],
-                  (e: CustomEvent) =>
-                    updateModule({ legend_position: e.detail.value.legend_position })
+                  (e: CustomEvent) => {
+                    const next = e.detail.value.legend_position;
+                    const prev = graphsModule.legend_position || 'bottom_left';
+                    if (next === prev) return;
+                    updateModule({ legend_position: next });
+                    // Trigger re-render to update dropdown UI
+                    setTimeout(() => {
+                      this.triggerPreviewUpdate();
+                    }, 50);
+                  }
                 )
               : ''}
 
             <!-- Chart Alignment -->
-            ${FormUtils.renderField(
+            ${this.renderFieldSection(
               localize('editor.graphs.display.chart_alignment', lang, 'Chart Alignment'),
               localize(
                 'editor.graphs.display.chart_alignment_desc',
@@ -1148,28 +1153,31 @@ export class UltraGraphsModule extends BaseUltraModule {
               hass,
               { chart_alignment: (graphsModule as any).chart_alignment || 'center' },
               [
-                FormUtils.createSchemaItem('chart_alignment', {
-                  select: {
-                    options: [
-                      {
-                        value: 'left',
-                        label: localize('editor.graphs.position.left', lang, 'Left'),
-                      },
-                      {
-                        value: 'center',
-                        label: localize('editor.graphs.position.center', lang, 'Center'),
-                      },
-                      {
-                        value: 'right',
-                        label: localize('editor.graphs.position.right', lang, 'Right'),
-                      },
-                    ],
-                    mode: 'dropdown',
+                this.selectField('chart_alignment', [
+                  {
+                    value: 'left',
+                    label: localize('editor.graphs.position.left', lang, 'Left'),
                   },
-                }),
+                  {
+                    value: 'center',
+                    label: localize('editor.graphs.position.center', lang, 'Center'),
+                  },
+                  {
+                    value: 'right',
+                    label: localize('editor.graphs.position.right', lang, 'Right'),
+                  },
+                ]),
               ],
-              (e: CustomEvent) =>
-                updateModule({ chart_alignment: e.detail.value.chart_alignment } as any)
+              (e: CustomEvent) => {
+                const next = e.detail.value.chart_alignment;
+                const prev = (graphsModule as any).chart_alignment || 'center';
+                if (next === prev) return;
+                updateModule({ chart_alignment: next } as any);
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              }
             )}
 
             <!-- Background Color -->
@@ -4172,5 +4180,15 @@ export class UltraGraphsModule extends BaseUltraModule {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ultra-card-update'));
     }
+  }
+
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
   }
 }

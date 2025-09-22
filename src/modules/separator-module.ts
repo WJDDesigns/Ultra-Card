@@ -90,60 +90,49 @@ export class UltraSeparatorModule extends BaseUltraModule {
               'Choose the visual style of the separator line.'
             )}
           </div>
-          <ha-form
-            .hass=${hass}
-            .data=${{ separator_style: separatorModule.separator_style || 'line' }}
-            .schema=${[
-              {
-                name: 'separator_style',
-                selector: {
-                  select: {
-                    options: [
-                      {
-                        value: 'line',
-                        label: localize('editor.separator.options.solid', lang, 'Solid Line'),
-                      },
-                      {
-                        value: 'double_line',
-                        label: localize('editor.separator.options.double', lang, 'Double Line'),
-                      },
-                      {
-                        value: 'dotted',
-                        label: localize('editor.separator.options.dotted', lang, 'Dotted Line'),
-                      },
-                      {
-                        value: 'double_dotted',
-                        label: localize(
-                          'editor.separator.options.double_dotted',
-                          lang,
-                          'Double Dotted'
-                        ),
-                      },
-                      {
-                        value: 'shadow',
-                        label: localize('editor.separator.options.shadow', lang, 'Shadow'),
-                      },
-                      {
-                        value: 'blank',
-                        label: localize('editor.separator.options.blank', lang, 'Blank Space'),
-                      },
-                    ],
-                    mode: 'dropdown',
-                  },
+          ${this.renderUcForm(
+            hass,
+            { separator_style: separatorModule.separator_style },
+            [
+              this.selectField('separator_style', [
+                {
+                  value: 'line',
+                  label: localize('editor.separator.options.solid', lang, 'Solid Line'),
                 },
-                label: '',
-              },
-            ]}
-            @value-changed=${(e: CustomEvent) => {
-              const newStyle = e.detail.value.separator_style;
-              const updates: any = { separator_style: newStyle };
-              // If blank space, ensure text is off
-              if (newStyle === 'blank') {
-                updates.show_title = false;
-              }
-              updateModule(updates);
-            }}
-          ></ha-form>
+                {
+                  value: 'double_line',
+                  label: localize('editor.separator.options.double', lang, 'Double Line'),
+                },
+                {
+                  value: 'dotted',
+                  label: localize('editor.separator.options.dotted', lang, 'Dotted Line'),
+                },
+                {
+                  value: 'double_dotted',
+                  label: localize('editor.separator.options.double_dotted', lang, 'Double Dotted'),
+                },
+                {
+                  value: 'shadow',
+                  label: localize('editor.separator.options.shadow', lang, 'Shadow'),
+                },
+                {
+                  value: 'blank',
+                  label: localize('editor.separator.options.blank', lang, 'Blank Space'),
+                },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.separator_style;
+              const prev = separatorModule.separator_style;
+              if (next === prev) return;
+              updateModule(e.detail.value);
+              // Trigger re-render to update dropdown UI
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            },
+            false
+          )}
 
           <!-- Orientation -->
           <div
@@ -162,39 +151,33 @@ export class UltraSeparatorModule extends BaseUltraModule {
               'Choose whether the separator runs horizontally or vertically.'
             )}
           </div>
-          <ha-form
-            .hass=${hass}
-            .data=${{ orientation: separatorModule.orientation || 'horizontal' }}
-            .schema=${[
-              {
-                name: 'orientation',
-                selector: {
-                  select: {
-                    options: [
-                      {
-                        value: 'horizontal',
-                        label: localize(
-                          'editor.separator.orientation.horizontal',
-                          lang,
-                          'Horizontal'
-                        ),
-                      },
-                      {
-                        value: 'vertical',
-                        label: localize('editor.separator.orientation.vertical', lang, 'Vertical'),
-                      },
-                    ],
-                    mode: 'dropdown',
-                  },
+          ${this.renderUcForm(
+            hass,
+            { orientation: separatorModule.orientation },
+            [
+              this.selectField('orientation', [
+                {
+                  value: 'horizontal',
+                  label: localize('editor.separator.orientation.horizontal', lang, 'Horizontal'),
                 },
-                label: '',
-              },
-            ]}
-            @value-changed=${(e: CustomEvent) => {
-              const newOrientation = e.detail.value.orientation;
-              updateModule({ orientation: newOrientation });
-            }}
-          ></ha-form>
+                {
+                  value: 'vertical',
+                  label: localize('editor.separator.orientation.vertical', lang, 'Vertical'),
+                },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.orientation;
+              const prev = separatorModule.orientation;
+              if (next === prev) return;
+              updateModule(e.detail.value);
+              // Trigger re-render to update dropdown UI
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            },
+            false
+          )}
         </div>
 
         <!-- Appearance Configuration -->
@@ -439,10 +422,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                     .value=${separatorModule.color || ''}
                     .defaultValue=${'var(--divider-color, #cccccc)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) => {
-                      const value = e.detail.value;
-                      updateModule({ color: value });
-                    }}
+                    @value-changed=${(e: CustomEvent) => updateModule(e.detail.value)}
                   ></ultra-color-picker>
                 </div>
               </div>
@@ -611,10 +591,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
                           .value=${separatorModule.title_color || ''}
                           .defaultValue=${'var(--secondary-text-color)'}
                           .hass=${hass}
-                          @value-changed=${(e: CustomEvent) => {
-                            const value = e.detail.value;
-                            updateModule({ title_color: value });
-                          }}
+                          @value-changed=${(e: CustomEvent) => updateModule(e.detail.value)}
                         ></ultra-color-picker>
                       </div>
 
@@ -1745,6 +1722,16 @@ export class UltraSeparatorModule extends BaseUltraModule {
         return `${kebabKey}: ${value}`;
       })
       .join('; ');
+  }
+
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
   }
 
   // Helper method to ensure border radius values have proper units

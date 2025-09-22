@@ -17,7 +17,12 @@ export class GlobalDesignTab {
       // Apply updates with reset semantics: empty/undefined/null removes the key
       Object.keys(updates).forEach(key => {
         const val = (updates as any)[key];
-        if (val === '' || val === undefined || val === null) {
+        if (
+          val === '' ||
+          val === undefined ||
+          val === null ||
+          (typeof val === 'string' && val.trim() === '')
+        ) {
           delete mergedDesign[key];
         } else {
           mergedDesign[key] = val;
@@ -29,6 +34,33 @@ export class GlobalDesignTab {
       if (Object.prototype.hasOwnProperty.call(updates, 'background_color')) {
         combined.background_color = updates.background_color || undefined;
         if (!combined.background_color) delete combined.background_color;
+      }
+
+      // Keep a mirrored top-level font_size so modules that read module.font_size
+      // (instead of design.font_size) update immediately and to clear conflicting values.
+      if (Object.prototype.hasOwnProperty.call(updates, 'font_size')) {
+        const fontSizeValue = updates.font_size;
+        if (
+          fontSizeValue === '' ||
+          fontSizeValue === undefined ||
+          fontSizeValue === null ||
+          (typeof fontSizeValue === 'string' && fontSizeValue.trim() === '')
+        ) {
+          combined.font_size = undefined;
+          delete combined.font_size;
+        } else {
+          combined.font_size = fontSizeValue;
+        }
+      }
+
+      // Debug logging for font_size updates
+      if (updates.hasOwnProperty('font_size')) {
+        console.log('🔧 GlobalDesignTab: Font size update', {
+          originalUpdates: updates,
+          combinedUpdates: combined,
+          fontSizeValue: updates.font_size,
+          designObject: combined.design,
+        });
       }
 
       updateModule(combined as any);

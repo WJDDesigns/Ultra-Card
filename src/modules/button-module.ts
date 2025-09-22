@@ -113,7 +113,7 @@ export class UltraButtonModule extends BaseUltraModule {
                 'Text to display on the button (leave blank for icon-only).'
               ),
               hass,
-              data: { label: buttonModule.label ?? '' },
+              data: buttonModule,
               schema: [this.textField('label')],
               onChange: (e: CustomEvent) => updateModule(e.detail.value),
             },
@@ -123,7 +123,16 @@ export class UltraButtonModule extends BaseUltraModule {
               hass,
               data: { style: buttonModule.style || 'flat' },
               schema: [this.selectField('style', this.getButtonStyles(lang))],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+              onChange: (e: CustomEvent) => {
+                const next = e.detail.value.style;
+                const prev = buttonModule.style || 'flat';
+                if (next === prev) return;
+                updateModule(e.detail.value);
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
             },
             {
               title: localize('editor.button.alignment.title', lang, 'Alignment'),
@@ -135,44 +144,58 @@ export class UltraButtonModule extends BaseUltraModule {
               hass,
               data: { alignment: buttonModule.alignment || 'center' },
               schema: [this.selectField('alignment', this.getAlignmentOptions(lang))],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+              onChange: (e: CustomEvent) => {
+                const next = e.detail.value.alignment;
+                const prev = buttonModule.alignment || 'center';
+                if (next === prev) return;
+                updateModule(e.detail.value);
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
             },
           ]
         )}
 
-        <!-- Icon Settings with toggle in header -->
+        <!-- Icon Settings -->
         <div class="settings-section">
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
-          >
-            <div
-              class="section-title"
-              style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
-            >
-              ${localize('editor.button.icon.title', lang, 'Icon Settings')}
-            </div>
-            <ha-switch
-              .checked=${buttonModule.show_icon || false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ show_icon: target.checked });
-              }}
-            ></ha-switch>
+          <div class="section-title">
+            ${localize('editor.button.icon.title', lang, 'Icon Settings')}
           </div>
 
-          ${buttonModule.show_icon
-            ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize('editor.button.icon_field', lang, 'Icon'),
-                    localize('editor.button.icon_desc', lang, 'Icon to display (e.g., mdi:home)'),
-                    hass,
-                    { icon: buttonModule.icon || '' },
-                    [this.iconField('icon')],
-                    (e: CustomEvent) => updateModule(e.detail.value)
-                  )}
-                </div>
+          <!-- Icon Field - Always visible -->
+          <div class="field-group" style="margin-bottom: 16px;">
+            ${this.renderFieldSection(
+              localize('editor.button.icon_field', lang, 'Icon'),
+              localize(
+                'editor.button.icon_desc',
+                lang,
+                'Icon to display (e.g., mdi:home). Selecting an icon will automatically enable icon display.'
+              ),
+              hass,
+              { icon: buttonModule.icon || '' },
+              [this.iconField('icon')],
+              (e: CustomEvent) => {
+                const updates = e.detail.value;
+                // Auto-enable icon display when an icon is selected
+                if (updates.icon && updates.icon.trim()) {
+                  updates.show_icon = true;
+                  // Set default icon position if not already set
+                  if (!buttonModule.icon_position) {
+                    updates.icon_position = 'before';
+                  }
+                } else if (!updates.icon || !updates.icon.trim()) {
+                  // Auto-disable icon display when icon is cleared
+                  updates.show_icon = false;
+                }
+                updateModule(updates);
+              }
+            )}
+          </div>
 
+          ${buttonModule.show_icon && buttonModule.icon
+            ? html`
                 <div class="field-group" style="margin-bottom: 16px;">
                   ${this.renderFieldSection(
                     localize('editor.button.icon_position', lang, 'Icon Position'),
@@ -184,21 +207,20 @@ export class UltraButtonModule extends BaseUltraModule {
                     hass,
                     { icon_position: buttonModule.icon_position || 'before' },
                     [this.selectField('icon_position', this.getIconPositionOptions(lang))],
-                    (e: CustomEvent) => updateModule(e.detail.value)
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.icon_position;
+                      const prev = buttonModule.icon_position || 'before';
+                      if (next === prev) return;
+                      updateModule(e.detail.value);
+                      // Trigger re-render to update dropdown UI
+                      setTimeout(() => {
+                        this.triggerPreviewUpdate();
+                      }, 50);
+                    }
                   )}
                 </div>
               `
-            : html`
-                <div
-                  style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
-                >
-                  ${localize(
-                    'editor.button.icon.enable_toggle_desc',
-                    lang,
-                    'Enable the toggle above to configure icon settings'
-                  )}
-                </div>
-              `}
+            : ''}
         </div>
 
         <!-- Colors -->
@@ -247,7 +269,16 @@ export class UltraButtonModule extends BaseUltraModule {
             hass,
             { action_type: action.action_type || 'none' },
             [this.selectField('action_type', actionTypes)],
-            (e: CustomEvent) => onUpdate({ ...action, action_type: e.detail.value.action_type })
+            (e: CustomEvent) => {
+              const next = e.detail.value.action_type;
+              const prev = action.action_type || 'none';
+              if (next === prev) return;
+              onUpdate({ ...action, action_type: next });
+              // Trigger re-render to update dropdown UI
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            }
           )}
         </div>
 
@@ -550,8 +581,6 @@ export class UltraButtonModule extends BaseUltraModule {
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       isHolding = false;
 
       // Start hold timer
@@ -569,8 +598,6 @@ export class UltraButtonModule extends BaseUltraModule {
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       // Clear hold timer
       if (holdTimeout) {
         clearTimeout(holdTimeout);
@@ -680,6 +707,16 @@ export class UltraButtonModule extends BaseUltraModule {
     return Object.entries(styles)
       .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
       .join('; ');
+  }
+
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
   }
 
   // Resolve background images from global design (upload/url/entity)

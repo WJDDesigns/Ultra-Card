@@ -1,0 +1,11 @@
+Files to remove after Directories Pro migration:
+- src/services/uc-presets-service-updated.ts (duplicate)
+- directories-pro-presets-service-update.ts (instructions only)
+- update-for-directories-pro.md (instructions only)
+
+Keep:
+- src/services/directories-pro-presets-api.ts (new API service)
+- src/services/uc-presets-service.ts (updated service)
+- src/services/uc-presets-service-backup.ts (backup of old version)
+- DIRECTORIES_PRO_MIGRATION.md (documentation)
+- DIRECTORIES_PRO_WORDPRESS_SNIPPET.php (WordPress code)

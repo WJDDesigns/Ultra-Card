@@ -79,7 +79,11 @@
       "alignment_bottom": "Onder",
       "alignment_stretch": "Uitrekken",
       "alignment_left": "Links",
-      "alignment_right": "Rechts"
+      "alignment_right": "Rechts",
+      "undo": "Undo",
+      "undo_tooltip": "Undo last change (Ctrl+Z)",
+      "redo": "Redo",
+      "redo_tooltip": "Redo last undone change (Ctrl+Y)"
     },
     "about": {
       "developed_by": "Ontwikkeld door",
@@ -233,7 +237,17 @@
       "value_template_desc": "Sjabloon om de tekst te renderen met Jinja2-syntaxis",
       "examples_title": "Veelvoorkomende voorbeelden:",
       "example_basic": "Basiswaarde",
-      "example_percent": "Met procent"
+      "example_percent": "Met procent",
+      "color_section": {
+        "title": "Color Configuration",
+        "desc": "Configure the text and icon colors for this module."
+      },
+      "text_color": "Text Color",
+      "text_color_desc": "Choose the color for the text content.",
+      "icon_color_section": "Icon Color Settings",
+      "icon_color": "Icon Color",
+      "icon_color_desc": "Choose the color for the icon.",
+      "hidden_no_link": "Hidden (no link)"
     },
     "bar": {
       "bar_settings": {

@@ -1,6 +1,9 @@
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 
+// Module-level change guard to prevent infinite loops
+let _formChangeGuard = false;
+
 /**
  * Utility class for rendering clean forms without redundant labels
  * Eliminates the duplicate field names that appear above custom field titles
@@ -23,6 +26,12 @@ export class FormUtils {
     schema: any[],
     onChange: (e: CustomEvent) => void
   ): TemplateResult {
+    console.log('🔧 RENDER CLEAN FORM:', {
+      data,
+      schema,
+      dataKeys: Object.keys(data),
+      timestamp: Date.now(),
+    });
     // Generate a unique ID for this form instance
     const formId = `clean-form-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -52,14 +61,27 @@ export class FormUtils {
           .computeLabel=${() => ''}
           .computeDescription=${() => ''}
           @value-changed=${(e: CustomEvent) => {
+            // Prevent re-entrant calls that cause infinite loops
+            if (_formChangeGuard) {
+              return;
+            }
+
+            _formChangeGuard = true;
+            // Use requestAnimationFrame for better performance than setTimeout
+            requestAnimationFrame(() => {
+              _formChangeGuard = false;
+            });
+
+            // Reduced logging for better performance
+            // console.log('🔧 FORM VALUE CHANGED:', { event: e, detail: e.detail, value: e.detail.value, data, timestamp: Date.now() });
             onChange(e);
             // Immediate cleanup after value changes
-            setTimeout(() => {
+            requestAnimationFrame(() => {
               const element = document.getElementById(formId);
               if (element) {
                 FormUtils.aggressiveCleanup(element);
               }
-            }, 0);
+            });
           }}
         ></ha-form>
       </div>

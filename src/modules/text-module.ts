@@ -9,6 +9,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import '../components/ultra-color-picker';
 
 export class UltraTextModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -38,14 +39,14 @@ export class UltraTextModule extends BaseUltraModule {
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
       icon: '',
+      icon_color: '',
       icon_position: 'before',
       template_mode: false,
       template: '',
       // Hover configuration
       enable_hover_effect: true,
       hover_background_color: 'var(--divider-color)',
-      // Default styling for new text modules
-      font_size: 26,
+      // Default styling for new text modules - no hardcoded font_size to allow Global Design tab control
       // alignment: undefined, // No default alignment to allow Global Design tab control
       font_weight: '700',
       text_transform: 'uppercase',
@@ -198,6 +199,86 @@ export class UltraTextModule extends BaseUltraModule {
             : ''}
         </div>
 
+        <!-- Color Configuration -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.text.color_section.title', lang, 'Color Configuration')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.text.color_section.desc',
+              lang,
+              'Configure the text and icon colors for this module.'
+            )}
+          </div>
+
+          <!-- Text Color -->
+          <div class="field-container" style="margin-bottom: 24px;">
+            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+              ${localize('editor.text.text_color', lang, 'Text Color')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
+            >
+              ${localize(
+                'editor.text.text_color_desc',
+                lang,
+                'Choose the color for the text content.'
+              )}
+            </div>
+            <ultra-color-picker
+              .value=${textModule.color || ''}
+              .defaultValue=${'var(--primary-text-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => updateModule({ color: e.detail.value })}
+            ></ultra-color-picker>
+          </div>
+
+          <!-- Icon Color (only show if icon is selected) -->
+          ${textModule.icon && textModule.icon.trim() !== ''
+            ? html`
+                <div class="conditional-fields-group">
+                  <div class="conditional-fields-content">
+                    <div class="field-container">
+                      <div
+                        class="field-title"
+                        style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                      >
+                        ${localize('editor.text.icon_color', lang, 'Icon Color')}
+                      </div>
+                      <div
+                        class="field-description"
+                        style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
+                      >
+                        ${localize(
+                          'editor.text.icon_color_desc',
+                          lang,
+                          'Choose the color for the icon.'
+                        )}
+                      </div>
+                      <ultra-color-picker
+                        .value=${textModule.icon_color || ''}
+                        .defaultValue=${'var(--primary-color)'}
+                        .hass=${hass}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ icon_color: e.detail.value })}
+                      ></ultra-color-picker>
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''}
+        </div>
+
         <!-- Template Configuration -->
         <div
           class="settings-section template-mode-section"
@@ -327,10 +408,13 @@ export class UltraTextModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     const textModule = module as TextModule;
+    const lang = hass?.locale?.language || 'en';
 
     // Check if element should be hidden when no link
     if (textModule.hide_if_no_link && !this.hasActiveLink(textModule)) {
-      return html`<div class="text-module-hidden">Hidden (no link)</div>`;
+      return html`<div class="text-module-hidden">
+        ${localize('editor.text.hidden_no_link', lang, 'Hidden (no link)')}
+      </div>`;
     }
 
     // Apply design properties with priority - design properties override module properties
@@ -357,10 +441,10 @@ export class UltraTextModule extends BaseUltraModule {
 
     const textStyles = {
       fontSize: (() => {
-        if (designProperties.font_size)
+        if (designProperties.font_size && designProperties.font_size.trim() !== '')
           return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
         if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
-        // Default font size for text modules
+        // Default font size for text modules when no design or module font_size is set
         return '26px';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
@@ -406,7 +490,12 @@ export class UltraTextModule extends BaseUltraModule {
       // Note: Sizing and positioning properties are handled by containerStyles for design tab functionality
     } as Record<string, string>;
 
-    const iconElement = textModule.icon ? html`<ha-icon icon="${textModule.icon}"></ha-icon>` : '';
+    const iconElement = textModule.icon
+      ? html`<ha-icon
+          icon="${textModule.icon}"
+          style="color: ${textModule.icon_color || 'var(--primary-color)'};"
+        ></ha-icon>`
+      : '';
 
     // Determine display text: prefer template result if template_mode is enabled
     let displayText: string = textModule.text || 'Sample Text';

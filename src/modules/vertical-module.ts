@@ -9,8 +9,8 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 
-// Use the existing VerticalModule interface from types
-import { VerticalModule } from '../types';
+// Use the existing VerticalModule and HorizontalModule interfaces from types
+import { VerticalModule, HorizontalModule } from '../types';
 
 export class UltraVerticalModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -83,7 +83,16 @@ export class UltraVerticalModule extends BaseUltraModule {
                   { value: 'stretch', label: localize('editor.common.stretch', lang, 'Stretch') },
                 ]),
               ],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+              onChange: (e: CustomEvent) => {
+                const next = e.detail.value.horizontal_alignment;
+                const prev = verticalModule.horizontal_alignment || 'center';
+                if (next === prev) return;
+                updateModule(e.detail.value);
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
             },
             {
               title: localize('editor.vertical.alignment.vertical', lang, 'Vertical Distribution'),
@@ -93,7 +102,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 'How items are distributed along the vertical axis.'
               ),
               hass,
-              data: { alignment: verticalModule.alignment || 'center' },
+              data: { alignment: verticalModule.alignment || 'top' },
               schema: [
                 this.selectField('alignment', [
                   { value: 'top', label: localize('editor.common.top', lang, 'Top') },
@@ -109,7 +118,16 @@ export class UltraVerticalModule extends BaseUltraModule {
                   },
                 ]),
               ],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
+              onChange: (e: CustomEvent) => {
+                const next = e.detail.value.alignment;
+                const prev = verticalModule.alignment || 'top';
+                if (next === prev) return;
+                updateModule(e.detail.value);
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
             },
           ]
         )}
@@ -250,8 +268,6 @@ export class UltraVerticalModule extends BaseUltraModule {
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       isHolding = false;
 
       // Start hold timer
@@ -269,8 +285,6 @@ export class UltraVerticalModule extends BaseUltraModule {
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-
       // Clear hold timer
       if (holdTimeout) {
         clearTimeout(holdTimeout);
@@ -589,16 +603,36 @@ export class UltraVerticalModule extends BaseUltraModule {
       errors.push('Gap must be between -5 and 10 rem');
     }
 
-    // Validate nested modules to prevent infinite nesting
+    // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
     if (verticalModule.modules && verticalModule.modules.length > 0) {
       for (const childModule of verticalModule.modules) {
-        if (childModule.type === 'horizontal') {
-          errors.push('Horizontal layout modules cannot be placed inside vertical layout modules');
-        }
-        if (childModule.type === 'vertical') {
-          errors.push(
-            'Vertical layout modules cannot be nested inside other vertical layout modules'
-          );
+        // Allow both horizontal and vertical modules at level 1
+        if (childModule.type === 'horizontal' || childModule.type === 'vertical') {
+          const layoutChild = childModule as HorizontalModule | VerticalModule;
+
+          // Check level 2 nesting - allow layout modules but prevent level 3
+          if (layoutChild.modules && layoutChild.modules.length > 0) {
+            for (const nestedModule of layoutChild.modules) {
+              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical') {
+                const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
+
+                // Check level 3 nesting - prevent any layout modules at this level
+                if (deepLayoutModule.modules && deepLayoutModule.modules.length > 0) {
+                  for (const deepNestedModule of deepLayoutModule.modules) {
+                    if (
+                      deepNestedModule.type === 'horizontal' ||
+                      deepNestedModule.type === 'vertical'
+                    ) {
+                      errors.push(
+                        'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
+                      );
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -747,6 +781,16 @@ export class UltraVerticalModule extends BaseUltraModule {
       default:
         return 'flex-start';
     }
+  }
+
+  // Trigger preview update for reactive UI
+  private triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
   }
 
   getStyles(): string {

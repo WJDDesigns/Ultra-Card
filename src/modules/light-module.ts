@@ -464,43 +464,79 @@ export class UltraLightModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
       <div class="general-tab">
         <!-- Layout Configuration -->
-        ${this.renderSettingsSection(
-          'Layout Configuration',
-          'Configure how preset buttons are arranged and displayed',
-          [
-            {
-              title: 'Layout Style',
-              description: 'Choose the overall arrangement style for preset buttons',
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            Layout Configuration
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            Configure how preset buttons are arranged and displayed
+          </div>
+
+          <!-- Layout Style -->
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Layout Style</div>
+            <div class="field-description">Choose the overall arrangement style for preset buttons</div>
+            ${this.renderUcForm(
               hass,
-              data: { layout: lightModule.layout || 'buttons' },
-              schema: [
+              { layout: lightModule.layout || 'buttons' },
+              [
                 this.selectField('layout', [
                   { value: 'buttons', label: 'Flexible Buttons' },
                   { value: 'grid', label: 'Grid Layout' },
                 ]),
               ],
-              onChange: (e: CustomEvent) => updateModule({ layout: e.detail.value.layout }),
-            },
-            {
-              title: 'Button Alignment',
-              description: 'Choose how buttons are aligned within the container',
-              hass,
-              data: { button_alignment: lightModule.button_alignment || 'center' },
-              schema: [
-                this.selectField('button_alignment', [
-                  { value: 'left', label: 'Left' },
-                  { value: 'center', label: 'Center' },
-                  { value: 'right', label: 'Right' },
-                  { value: 'space-between', label: 'Space Between' },
-                  { value: 'space-around', label: 'Space Around' },
-                  { value: 'space-evenly', label: 'Space Evenly' },
-                ]),
-              ],
-              onChange: (e: CustomEvent) =>
-                updateModule({ button_alignment: e.detail.value.button_alignment }),
-            },
-          ]
-        )}
+              (e: CustomEvent) => {
+                const next = e.detail.value.layout;
+                if (next === lightModule.layout) return;
+                updateModule({ layout: next });
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
+              false
+            )}
+          </div>
+
+            <!-- Button Alignment -->
+            <div class="field-container" style="margin-bottom: 16px;">
+              <div class="field-title">Button Alignment</div>
+              <div class="field-description">Choose how buttons are aligned within the container</div>
+              ${this.renderUcForm(
+                hass,
+                { button_alignment: lightModule.button_alignment || 'center' },
+                [
+                  this.selectField('button_alignment', [
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                    { value: 'space-between', label: 'Space Between' },
+                    { value: 'space-around', label: 'Space Around' },
+                    { value: 'space-evenly', label: 'Space Evenly' },
+                  ]),
+                ],
+                (e: CustomEvent) => {
+                  const next = e.detail.value.button_alignment;
+                  if (next === lightModule.button_alignment) return;
+                  updateModule({ button_alignment: next });
+                  // Trigger re-render to update dropdown UI
+                  setTimeout(() => {
+                    this.triggerPreviewUpdate();
+                  }, 50);
+                },
+                false
+              )}
+            </div>
+          </div>
+        </div>
 
         <!-- Allow Wrapping Toggle -->
         <div
@@ -614,31 +650,110 @@ export class UltraLightModule extends BaseUltraModule {
             </div>
           </div>
         </div>
-        ${lightModule.layout === 'grid'
-          ? this.renderSettingsSection('Grid Settings', 'Configure grid layout options', [
-              {
-                title: 'Columns',
-                description: 'Number of columns in grid layout',
-                hass,
-                data: { columns: lightModule.columns || 3 },
-                schema: [this.numberField('columns', 1, 6, 1)],
-                onChange: (e: CustomEvent) => updateModule({ columns: e.detail.value.columns }),
-              },
-            ])
-          : ''}
+        ${
+          lightModule.layout === 'grid'
+            ? html`
+                <div
+                  class="settings-section"
+                  style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+                >
+                  <div
+                    class="section-title"
+                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                  >
+                    Grid Settings
+                  </div>
+                  <div
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                  >
+                    Configure grid layout options
+                  </div>
+
+                  <div style="margin-bottom: 20px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+                    >
+                      Columns
+                    </div>
+                    <div
+                      class="field-description"
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
+                    >
+                      Number of columns in grid layout
+                    </div>
+                    <div class="field-container" style="margin-bottom: 16px;">
+                      <div class="field-title">Columns</div>
+                      <div class="field-description">Number of columns in grid layout</div>
+                      ${this.renderUcForm(
+                        hass,
+                        { columns: lightModule.columns || 3 },
+                        [
+                          this.selectField('columns', [
+                            { value: '1', label: '1 Column' },
+                            { value: '2', label: '2 Columns' },
+                            { value: '3', label: '3 Columns' },
+                            { value: '4', label: '4 Columns' },
+                            { value: '5', label: '5 Columns' },
+                            { value: '6', label: '6 Columns' },
+                          ]),
+                        ],
+                        (e: CustomEvent) => {
+                          const next = Number(e.detail.value.columns);
+                          if (isNaN(next) || next === lightModule.columns) return;
+                          updateModule({ columns: next });
+                          // Trigger re-render to update dropdown UI
+                          setTimeout(() => {
+                            this.triggerPreviewUpdate();
+                          }, 50);
+                        },
+                        false
+                      )}
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''
+        }
 
         <!-- Global Settings -->
-        ${this.renderSettingsSection('Global Settings', 'Settings that apply to all presets', [
-          {
-            title: 'Default Transition Time (seconds)',
-            description: 'Default transition time for all presets (can be overridden per preset)',
-            hass,
-            data: { default_transition_time: lightModule.default_transition_time || 0.5 },
-            schema: [this.numberField('default_transition_time', 0, 10, 0.1)],
-            onChange: (e: CustomEvent) =>
-              updateModule({ default_transition_time: e.detail.value.default_transition_time }),
-          },
-        ])}
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            Global Settings
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            Settings that apply to all presets
+          </div>
+
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Default Transition Time</div>
+            <div class="field-description">Default transition time for all presets (can be overridden per preset)</div>
+            ${this.renderUcForm(
+              hass,
+              { default_transition_time: lightModule.default_transition_time ?? 0.5 },
+              [this.numberField('default_transition_time', 0, 10, 0.1)],
+              (e: CustomEvent) => {
+                const next = Number(e.detail.value.default_transition_time);
+                if (isNaN(next) || next === lightModule.default_transition_time) return;
+                updateModule({ default_transition_time: next });
+                // Trigger re-render to update dropdown UI
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
+              false
+            )}
+          </div>
+          </div>
+        </div>
 
         <!-- Preset Configuration -->
         <div class="presets-configuration">
@@ -680,7 +795,6 @@ export class UltraLightModule extends BaseUltraModule {
     const lightModule = module as LightModule;
 
     return html`
-      ${this.injectUcFormStyles()}
       <div class="other-tab">
         <!-- Import/Export Presets -->
         ${this.renderSettingsSection('Import/Export', 'Save and share your preset configurations', [
