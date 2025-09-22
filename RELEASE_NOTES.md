@@ -1,5 +1,79 @@
 # Release Notes
 
+## Version 1.2.0-beta8
+
+### 🚀 Major New Features
+
+#### 📤 Export & Paste Icons in Row Headers
+- **Export Row Configuration**: New export icon in row headers allows you to copy the complete configuration of any row (including all modules and settings) to your clipboard as JSON
+- **Paste Row Configuration**: New paste icon enables you to quickly duplicate rows or import row configurations from other cards
+- **Row Management Icons**: Row headers now feature a complete set of management tools:
+  - **🗂️ Collapse/Expand**: Toggle row visibility in the editor (leftmost icon)
+  - **📤 Export**: Copy row configuration to clipboard (JSON format)
+  - **📋 Paste**: Import row configuration from clipboard
+  - **🗑️ Delete**: Remove the row and all its contents
+  - **⚙️ Settings**: Access row-specific configuration options
+
+#### 🌐 Integrated Online Preset Marketplace
+- **Browse Presets Online**: Access a curated marketplace of community-created card presets directly from the editor
+- **One-Click Installation**: Install presets instantly without manual JSON copying
+- **Category Filtering**: Browse presets by category (Dashboards, Vehicles, Weather, etc.)
+- **Preview Before Install**: See preset screenshots and descriptions before applying
+- **Community Contributions**: Submit your own presets to share with the community
+- **Auto-Updates**: Marketplace content updates automatically with new community submissions
+
+#### ⭐ Favorites System
+- **Mark Favorite Presets**: Star your most-used presets for quick access
+- **Favorites Tab**: Dedicated section for your starred presets in the marketplace
+- **Quick Access**: Favorite presets appear at the top of relevant categories
+- **Persistent Storage**: Your favorites are saved locally and sync across browser sessions
+- **Smart Recommendations**: System learns from your favorites to suggest similar presets
+
+#### 📹 Camera Module Fullscreen Support
+- **Fullscreen Toggle**: New fullscreen button in camera modules for immersive viewing
+- **Touch/Click to Expand**: Tap any camera feed to enter fullscreen mode
+- **Gesture Support**: Pinch to zoom, swipe to exit on touch devices
+- **Keyboard Navigation**: ESC key to exit, arrow keys for multi-camera navigation
+- **Maintains Aspect Ratio**: Fullscreen mode respects original camera proportions
+- **Works with Live Feeds**: Full support for both static images and live camera streams
+
+### 🎨 Design & Layout Improvements
+
+#### 🔧 Global Design Formatting Fixes
+- **Text Module Font Sizing**: Fixed inconsistent text size applications in text modules
+- **Proper CSS Inheritance**: Text size settings now properly cascade through nested elements
+- **Responsive Text Scaling**: Text modules now scale appropriately on different screen sizes
+- **Font Weight Consistency**: Fixed bold/normal weight rendering across all text elements
+- **Line Height Optimization**: Improved line spacing for better text readability
+- **Color Inheritance**: Fixed text color inheritance issues in nested layouts
+
+#### 📐 Module Nesting Support (1 Layer)
+- **Layout Module Nesting**: Layout modules (Row, Column, Horizontal) can now contain other layout modules
+- **Single-Level Deep**: Supports one level of nesting (e.g., Row → Column → Modules)
+- **Flexible Arrangements**: Create complex layouts like rows within columns or columns within rows
+- **Visual Hierarchy**: Nested layouts maintain proper spacing and alignment
+- **Editor Support**: Full drag-and-drop support for creating and managing nested layouts
+- **Performance Optimized**: Nesting doesn't impact rendering performance
+
+### 🛠️ Technical Improvements
+
+- **Enhanced Error Handling**: Better error messages and recovery for marketplace operations
+- **Improved Memory Management**: Optimized preset loading and caching system
+- **Faster Rendering**: Performance optimizations for complex nested layouts
+- **Better Mobile Support**: Enhanced touch interactions for fullscreen camera mode
+- **Accessibility Improvements**: Better keyboard navigation and screen reader support
+
+### 🐛 Bug Fixes
+
+- Fixed Global Design text size not applying correctly to text modules
+- Resolved layout calculation issues with nested modules
+- Fixed camera module aspect ratio preservation in fullscreen
+- Corrected row export/import handling of complex module configurations
+- Fixed marketplace connection issues on slower networks
+- Resolved favorites synchronization across browser tabs
+
+_Includes all improvements from v1.2.0-beta7 below._
+
 ## Version 1.2.0-beta7
 
 ### 🧹 Production Polish
@@ -8,7 +82,7 @@
 - **Optimized Performance**: Eliminated console overhead for better runtime performance
 - **Clean Console**: No more debug messages cluttering the browser console while maintaining full functionality
 
-*Includes all improvements from v1.2.0-beta6 below.*
+_Includes all improvements from v1.2.0-beta6 below._
 
 ## Version 1.2.0-beta6
 
