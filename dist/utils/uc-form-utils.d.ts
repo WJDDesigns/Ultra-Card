@@ -1,5 +1,6 @@
 import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
+import { CardModule } from '../types';
 /**
  * Ultra Card form utilities
  * Clean form rendering without CSS label hiding hacks
@@ -51,4 +52,22 @@ export declare class UcFormUtils {
      * Inject clean form styles
      */
     static injectCleanFormStyles(): TemplateResult;
+    /**
+     * Calculate the nesting depth of layout modules
+     * @param module The module to check
+     * @param currentDepth The current depth (used internally for recursion)
+     * @returns The maximum nesting depth found
+     */
+    static getLayoutNestingDepth(module: CardModule, currentDepth?: number): number;
+    /**
+     * Check if adding a module would exceed the maximum nesting depth
+     * @param parentModule The parent layout module
+     * @param childModule The child module to add
+     * @param maxDepth Maximum allowed nesting depth (default: 3, allowing 2 levels of layout modules)
+     * @returns True if the nesting would be valid, false otherwise
+     */
+    static validateNestingDepth(parentModule: CardModule, childModule: CardModule, maxDepth?: number): {
+        valid: boolean;
+        error?: string;
+    };
 }

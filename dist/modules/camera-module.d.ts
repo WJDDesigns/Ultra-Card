@@ -26,7 +26,18 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private handleTapAction;
     private handleHoldAction;
     private handleDoubleAction;
+    private handleFullscreenClick;
+    private createFullscreenModal;
+    private trySimpleModal;
+    private tryNativeFullscreen;
+    private enterFullscreen;
+    private exitFullscreen;
+    private repositionPreviewOverlays;
+    private repositionOverlayElement;
+    private repositionOverlaysToVideoArea;
     private _handleDimensionChange;
+    private getFullscreenIconPositionStyles;
+    private getAdjustedPositionForCollision;
     private getCameraNamePositionStyles;
     private hasActiveLink;
     private refreshCamera;

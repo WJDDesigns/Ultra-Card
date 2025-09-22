@@ -15,3 +15,6 @@ export * from './graphs-module';
 export * from './dropdown-module';
 export * from './light-module';
 export { getModuleRegistry } from './module-registry';
+export { ucPresetsService } from '../services/uc-presets-service';
+export { ucFavoritesService } from '../services/uc-favorites-service';
+export { ucExportImportService } from '../services/uc-export-import-service';

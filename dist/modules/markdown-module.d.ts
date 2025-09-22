@@ -3,6 +3,10 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, MarkdownModule, UltraCardConfig } from '../types';
 export declare class UltraMarkdownModule extends BaseUltraModule {
+    private _templateService;
+    private _renderedContentCache;
+    private _hashString;
+    private _clearMarkdownCache;
     metadata: ModuleMetadata;
     createDefault(id?: string, hass?: HomeAssistant): MarkdownModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;

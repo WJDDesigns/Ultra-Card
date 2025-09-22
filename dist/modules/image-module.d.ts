@@ -18,5 +18,8 @@ export declare class UltraImageModule extends BaseUltraModule {
     private getAttributeByPath;
     private styleObjectToCss;
     getStyles(): string;
+    private triggerPreviewUpdate;
     private addPixelUnit;
+    private getBorderCSS;
+    private getBorderWithDesign;
 }

@@ -7,6 +7,9 @@ export declare class UltraIconModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private _previewCollapsed;
     private _templateService?;
+    private _attributeCache;
+    private _updateTimeout?;
+    private _processingAttributes;
     private static _globalStylesInjected;
     private _localStylesInjected;
     private static readonly _ANIMATION_KEYFRAMES;
@@ -29,12 +32,16 @@ export declare class UltraIconModule extends BaseUltraModule {
     };
     updateHass(hass: HomeAssistant): void;
     cleanup(): void;
+    private _getDisplayStateValue;
+    private _getEntityAttributes;
     private _isBinaryEntity;
     private _evaluateIconState;
     getStyles(): string;
     private _addIcon;
     private _removeIcon;
     private _updateIcon;
+    private _debouncedUpdateIcon;
+    private _triggerPreviewUpdate;
     private _updateIconWithLockSync;
     private getBackgroundImageCSS;
     private styleObjectToCss;

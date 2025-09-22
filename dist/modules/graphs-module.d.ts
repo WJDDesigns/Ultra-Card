@@ -83,4 +83,5 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     getStyles(): string;
     cleanup(): void;
     requestUpdate(): void;
+    private triggerPreviewUpdate;
 }
