@@ -11,6 +11,7 @@ export interface WordPressPreset {
   shortcode: string;
   category: string;
   tags: string[];
+  integrations?: string[];
   author: string;
   author_avatar?: string;
   featured_image?: string;
@@ -110,6 +111,12 @@ export class DirectoriesProPresetsAPI {
           ? posts.map((post: any) => {
               const meta = post.preset_meta || {};
               const tags = meta.tags ? meta.tags.split(',').map((tag: string) => tag.trim()) : [];
+              const integrations = meta.integrations
+                ? String(meta.integrations)
+                    .split(',')
+                    .map((t: string) => t.trim())
+                    .filter(Boolean)
+                : [];
 
               // Post data received (silent)
 
@@ -128,6 +135,7 @@ export class DirectoriesProPresetsAPI {
                 shortcode: meta.shortcode || '{"rows":[]}',
                 category: meta.category || 'badges', // Default to badges instead of custom
                 tags: tags,
+                integrations,
                 author:
                   post._embedded?.author?.[0]?.display_name ||
                   post._embedded?.author?.[0]?.name ||
@@ -213,6 +221,12 @@ export class DirectoriesProPresetsAPI {
       const post = await response.json();
       const meta = post.preset_meta || {};
       const tags = meta.tags ? meta.tags.split(',').map((tag: string) => tag.trim()) : [];
+      const integrations = meta.integrations
+        ? String(meta.integrations)
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
+        : [];
 
       const fullDescription = this._stripHtml(
         post.excerpt?.rendered || post.content?.rendered || 'No description available'
@@ -226,6 +240,7 @@ export class DirectoriesProPresetsAPI {
         shortcode: meta.shortcode || '{"rows":[]}',
         category: meta.category || 'badges',
         tags: tags,
+        integrations,
         author:
           post._embedded?.author?.[0]?.display_name ||
           post._embedded?.author?.[0]?.name ||

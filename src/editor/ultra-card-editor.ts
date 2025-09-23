@@ -343,6 +343,68 @@ export class UltraCardEditor extends LitElement {
                   </button>
                 </div>
               </div>
+
+              <div class="setting-item">
+                <label>
+                  ${localize('editor.fields.card_border_color', lang, 'Border Color')}
+                </label>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.fields.card_border_color_desc',
+                    lang,
+                    'The border color of the card'
+                  )}
+                </div>
+                <ultra-color-picker
+                  .label=${'Card Border Color'}
+                  .value=${this.config.card_border_color || 'var(--divider-color)'}
+                  .defaultValue=${'var(--divider-color)'}
+                  .hass=${this.hass}
+                  @value-changed=${(e: CustomEvent) =>
+                    this._updateConfig({ card_border_color: e.detail.value })}
+                ></ultra-color-picker>
+              </div>
+
+              <div class="setting-item">
+                <label>
+                  ${localize('editor.fields.card_border_width', lang, 'Border Width')}
+                </label>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.fields.card_border_width_desc',
+                    lang,
+                    'The thickness of the card border (in pixels)'
+                  )}
+                </div>
+                <div class="input-with-unit">
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    .value=${this.config.card_border_width ?? ''}
+                    placeholder="1"
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value.trim();
+                      this._updateConfig({
+                        card_border_width: value === '' ? undefined : Number(value),
+                      });
+                    }}
+                  />
+                  <span class="unit">${localize('editor.fields.unit_px', lang, 'px')}</span>
+                  <button
+                    class="reset-btn"
+                    @click=${() => this._updateConfig({ card_border_width: 1 })}
+                    title=${localize(
+                      'editor.fields.reset_default_value',
+                      lang,
+                      'Reset to default ({value})'
+                    ).replace('{value}', '1px')}
+                  >
+                    ↺
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

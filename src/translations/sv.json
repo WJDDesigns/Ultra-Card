@@ -28,7 +28,11 @@
       "card_margin_desc": "Externt avstånd runt kortet",
       "unit_px": "px",
       "reset_default": "Återställ till standard",
-      "reset_default_value": "Återställ till standard ({value})"
+      "reset_default_value": "Återställ till standard ({value})",
+      "card_border_color": "Border Color",
+      "card_border_color_desc": "The border color of the card",
+      "card_border_width": "Border Width",
+      "card_border_width_desc": "The thickness of the card border (in pixels)"
     },
     "tooltips": {
       "enter_fullscreen": "Gå till helskärm",

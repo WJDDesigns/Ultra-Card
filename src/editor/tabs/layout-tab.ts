@@ -8433,7 +8433,7 @@ export class LayoutTab extends LitElement {
               title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)')}"
             >
               <ha-icon icon="mdi:undo"></ha-icon>
-              ${localize('editor.layout.undo', lang, 'Undo')}
+              <span>${localize('editor.layout.undo', lang, 'Undo')}</span>
             </button>
             <button
               class="redo-btn"
@@ -8449,7 +8449,7 @@ export class LayoutTab extends LitElement {
               )}"
             >
               <ha-icon icon="mdi:redo"></ha-icon>
-              ${localize('editor.layout.redo', lang, 'Redo')}
+              <span>${localize('editor.layout.redo', lang, 'Redo')}</span>
             </button>
             <button
               class="add-row-btn"
@@ -9158,21 +9158,11 @@ export class LayoutTab extends LitElement {
                       ? html`
                           <div class="preset-thumbnail">
                             <img src="${preset.thumbnail}" alt="${preset.name} preview" />
-                            ${preset.id.startsWith('wp-')
-                              ? preset.author === 'WJD Designs'
-                                ? html`<div class="standard-badge">Default</div>`
-                                : html`<div class="community-badge">Community</div>`
-                              : html`<div class="builtin-badge">Built-in</div>`}
                           </div>
                         `
                       : html`
                           <div class="preset-icon">
                             <ha-icon icon="${preset.icon}"></ha-icon>
-                            ${preset.id.startsWith('wp-')
-                              ? preset.author === 'WJD Designs'
-                                ? html`<div class="standard-badge">Default</div>`
-                                : html`<div class="community-badge">Community</div>`
-                              : html`<div class="builtin-badge">Built-in</div>`}
                           </div>
                         `}
                     <div class="preset-info">
@@ -9200,6 +9190,16 @@ export class LayoutTab extends LitElement {
                           .filter(tag => !['community', 'wordpress', 'standard'].includes(tag))
                           .slice(0, 3)
                           .map(tag => html`<span class="tag">${tag}</span>`)}
+                        ${Array.isArray((preset as any).integrations) &&
+                        (preset as any).integrations.length
+                          ? html`<div class="preset-integrations">
+                              ${(preset as any).integrations
+                                .slice(0, 3)
+                                .map(
+                                  (i: string) => html`<span class="integration-chip">${i}</span>`
+                                )}
+                            </div>`
+                          : ''}
                       </div>
                       ${preset.id.startsWith('wp-')
                         ? html`
@@ -9222,6 +9222,20 @@ export class LayoutTab extends LitElement {
                           `
                         : ''}
                     </div>
+                    <!-- Origin badge bottom-left -->
+                    <div
+                      class="origin-badge ${preset.id.startsWith('wp-')
+                        ? preset.author === 'WJD Designs'
+                          ? 'default'
+                          : 'community'
+                        : 'builtin'}"
+                    >
+                      ${preset.id.startsWith('wp-')
+                        ? preset.author === 'WJD Designs'
+                          ? 'Default'
+                          : 'Community'
+                        : 'Built-in'}
+                    </div>
                   </div>
                 `
               )
@@ -9229,11 +9243,40 @@ export class LayoutTab extends LitElement {
                 <ha-icon icon="mdi:palette-outline"></ha-icon>
                 <p>No presets available in this category</p>
                 ${wpStatus.error
-                  ? html`<p class="error-hint">
-                      Check your internet connection and try refreshing.
-                    </p>`
+                  ? html`<div class="error-details">
+                      <p class="error-hint">
+                        ${wpStatus.error.includes('CORS') ||
+                        wpStatus.error.includes('Failed to fetch')
+                          ? html`
+                              <strong>Connection Issue:</strong> Unable to load presets from
+                              ultracard.io.<br />
+                              This usually happens when accessing Home Assistant via IP address
+                              instead of homeassistant.local.<br /><br />
+                              <strong>Solutions:</strong><br />
+                              • Access HA via <code>http://homeassistant.local:8123</code> instead
+                              of IP address<br />
+                              • Or wait for the server CORS configuration to be updated<br />
+                              • Check your internet connection
+                            `
+                          : html`Error: ${wpStatus.error}<br />Check your internet connection and
+                              try refreshing.`}
+                      </p>
+                    </div>`
                   : ''}
               </div>`}
+        </div>
+
+        <!-- Reload Button at Bottom -->
+        <div class="preset-footer">
+          <button
+            class="reload-btn ${wpStatus.loading ? 'loading' : ''}"
+            @click=${() => ucPresetsService.refreshWordPressPresets()}
+            title="Refresh presets from server"
+            ?disabled=${wpStatus.loading}
+          >
+            <ha-icon icon="mdi:refresh" class="${wpStatus.loading ? 'spinning' : ''}"></ha-icon>
+            <span>Reload</span>
+          </button>
         </div>
       </div>
     `;
@@ -9540,6 +9583,49 @@ export class LayoutTab extends LitElement {
         min-height: 40px;
       }
 
+      /* Mobile optimization for undo/redo buttons */
+      @media (max-width: 768px) {
+        .header-buttons {
+          gap: 6px;
+        }
+
+        .undo-btn,
+        .redo-btn {
+          padding: 10px 12px;
+          gap: 6px;
+        }
+
+        /* Hide text labels on mobile for undo/redo buttons to save space */
+        .undo-btn span,
+        .redo-btn span {
+          display: none;
+        }
+
+        /* Ensure disabled buttons are visible on mobile with proper contrast */
+        .undo-btn:disabled,
+        .redo-btn:disabled {
+          background: var(--disabled-color, #ccc) !important;
+          color: var(--text-color, #999) !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+          box-shadow: none !important;
+          opacity: 1 !important;
+          display: flex !important;
+        }
+
+        .undo-btn:disabled ha-icon,
+        .redo-btn:disabled ha-icon {
+          opacity: 1 !important;
+          --mdc-icon-size: 20px;
+          color: var(--text-color, #999) !important;
+        }
+
+        /* Keep add row button text visible as it's the primary action */
+        .add-row-btn {
+          padding: 10px 16px;
+        }
+      }
+
       .undo-btn:hover,
       .redo-btn:hover,
       .add-row-btn:hover {
@@ -9551,10 +9637,11 @@ export class LayoutTab extends LitElement {
       .undo-btn:disabled,
       .redo-btn:disabled {
         background: var(--disabled-color, #ccc);
-        color: var(--disabled-text-color, #999);
+        color: var(--text-color, #999);
         cursor: not-allowed;
         transform: none;
         box-shadow: none;
+        opacity: 1;
       }
 
       .undo-btn:disabled:hover,
@@ -9789,7 +9876,7 @@ export class LayoutTab extends LitElement {
         color: white;
         border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));
         position: static;
-        z-index: 1;
+        z-index: 0;
         border-radius: 6px 6px 0px 0px;
       }
 
@@ -12792,6 +12879,7 @@ export class LayoutTab extends LitElement {
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
+        position: relative;
       }
 
       .preset-card:hover {
@@ -12804,8 +12892,62 @@ export class LayoutTab extends LitElement {
       .presets-header {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         margin-bottom: 24px;
+        align-items: center;
+      }
+
+      .preset-footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px 0;
+        border-top: 1px solid var(--divider-color);
+        margin-top: 16px;
+      }
+
+      .reload-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--secondary-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 20px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .reload-btn:hover:not(:disabled) {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: var(--card-background-color);
+      }
+
+      .reload-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .reload-btn ha-icon {
+        --mdc-icon-size: 14px;
+        transition: transform 0.6s ease;
+      }
+
+      .reload-btn ha-icon.spinning {
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .wordpress-status {
@@ -12884,37 +13026,45 @@ export class LayoutTab extends LitElement {
         --mdc-icon-size: 14px;
       }
 
-      /* Community vs Built-in vs Standard preset badges */
-      .community-badge,
-      .builtin-badge,
-      .standard-badge {
+      /* Origin badge bottom-left on preset cards */
+      .preset-card .origin-badge {
         position: absolute;
-        top: 4px;
-        right: 4px;
-        padding: 2px 6px;
-        border-radius: 4px;
+        left: 8px;
+        bottom: 8px;
+        padding: 3px 8px;
+        border-radius: 6px;
         font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 2;
       }
 
-      .community-badge {
-        background: rgba(var(--rgb-primary-color), 0.2);
-        color: var(--primary-color);
-        border: 1px solid rgba(var(--rgb-primary-color), 0.3);
+      /* Show origin badge on card hover */
+      .preset-card:hover .origin-badge {
+        opacity: 1;
       }
 
-      .standard-badge {
-        background: rgba(var(--rgb-success-color, 76, 175, 80), 0.2);
-        color: var(--success-color, #4caf50);
-        border: 1px solid rgba(var(--rgb-success-color, 76, 175, 80), 0.3);
+      /* Different styles for different badge types */
+      .preset-card .origin-badge.community {
+        background: rgba(var(--rgb-primary-color), 0.9);
+        color: white;
+        border: 1px solid rgba(var(--rgb-primary-color), 1);
       }
 
-      .builtin-badge {
-        background: rgba(var(--rgb-secondary-text-color), 0.1);
-        color: var(--secondary-text-color);
-        border: 1px solid rgba(var(--rgb-secondary-text-color), 0.2);
+      .preset-card .origin-badge.default {
+        background: rgba(var(--rgb-success-color, 76, 175, 80), 0.9);
+        color: white;
+        border: 1px solid rgba(var(--rgb-success-color, 76, 175, 80), 1);
+      }
+
+      .preset-card .origin-badge.builtin {
+        background: rgba(var(--rgb-secondary-text-color), 0.8);
+        color: white;
+        border: 1px solid rgba(var(--rgb-secondary-text-color), 0.9);
       }
 
       /* Enhanced preset cards for community presets */
@@ -13033,6 +13183,7 @@ export class LayoutTab extends LitElement {
         background: var(--primary-color-10);
         border-radius: 8px;
         color: var(--primary-color);
+        position: relative;
       }
 
       .preset-icon ha-icon {
@@ -13050,6 +13201,7 @@ export class LayoutTab extends LitElement {
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid var(--divider-color);
+        position: relative;
       }
 
       .preset-thumbnail img {
@@ -13101,6 +13253,25 @@ export class LayoutTab extends LitElement {
         border-radius: 10px;
         font-size: 10px;
         color: var(--secondary-text-color);
+      }
+
+      /* Integrations chips */
+      .preset-integrations {
+        margin-top: 6px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .integration-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 6px;
+        font-size: 10px;
+        border-radius: 12px;
+        background: var(--primary-color-10);
+        color: var(--primary-color);
+        border: 1px solid rgba(var(--rgb-primary-color), 0.2);
       }
 
       /* Favorites Tab */
@@ -13253,6 +13424,34 @@ export class LayoutTab extends LitElement {
         opacity: 0.8;
       }
 
+      .error-details {
+        margin-top: 16px;
+        padding: 16px;
+        background: var(--error-color);
+        color: white;
+        border-radius: 8px;
+        text-align: left;
+        max-width: 500px;
+      }
+
+      .error-hint {
+        margin: 0 !important;
+        font-size: 13px !important;
+        line-height: 1.4;
+      }
+
+      .error-hint code {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+
+      .error-hint strong {
+        font-weight: 600;
+      }
+
       /* Row Action Buttons */
       .row-paste-btn {
         background: none;
@@ -13329,7 +13528,7 @@ export class LayoutTab extends LitElement {
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        z-index: 10;
+        z-index: 1000;
         min-width: 180px;
         overflow: hidden;
         margin-top: 4px;
@@ -13419,6 +13618,11 @@ export class LayoutTab extends LitElement {
         }
 
         .category-btn {
+          padding: 10px 12px;
+          font-size: 13px;
+        }
+
+        .reload-btn {
           padding: 10px 12px;
           font-size: 13px;
         }

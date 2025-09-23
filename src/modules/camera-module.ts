@@ -38,8 +38,7 @@ export class UltraCameraModule extends BaseUltraModule {
       name_position: 'top-left',
 
       // Fullscreen controls
-      show_fullscreen: false,
-      fullscreen_position: 'top-right',
+      tap_opens_fullscreen: false,
 
       // Display settings
       aspect_ratio_linked: true,
@@ -253,7 +252,7 @@ export class UltraCameraModule extends BaseUltraModule {
               `}
         </div>
 
-        <!-- Fullscreen Icon Settings with toggle in header -->
+        <!-- Tap to Open Fullscreen Settings -->
         <div class="settings-section">
           <div
             style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;"
@@ -262,115 +261,28 @@ export class UltraCameraModule extends BaseUltraModule {
               class="section-title"
               style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.5px;"
             >
-              ${localize('editor.camera.show_fullscreen', lang, 'Show Fullscreen Icon')}
+              ${localize('editor.camera.tap_opens_fullscreen', lang, 'Tap Camera Opens Fullscreen')}
             </div>
             <ha-switch
-              .checked=${cameraModule.show_fullscreen === true}
+              .checked=${cameraModule.tap_opens_fullscreen === true}
               @change=${(e: Event) => {
                 const target = e.target as any;
-                updateModule({ show_fullscreen: target.checked });
+                updateModule({ tap_opens_fullscreen: target.checked });
               }}
             ></ha-switch>
           </div>
 
-          ${cameraModule.show_fullscreen === true
-            ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  ${this.renderFieldSection(
-                    localize(
-                      'editor.camera.fullscreen_position.title',
-                      lang,
-                      'Fullscreen Icon Position'
-                    ),
-                    localize(
-                      'editor.camera.fullscreen_position.desc',
-                      lang,
-                      'Choose where the fullscreen icon appears as an overlay on the camera image.'
-                    ),
-                    hass,
-                    { fullscreen_position: cameraModule.fullscreen_position || 'top-right' },
-                    [
-                      this.selectField('fullscreen_position', [
-                        {
-                          value: 'top-left',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.top_left',
-                            lang,
-                            'Top Left'
-                          ),
-                        },
-                        {
-                          value: 'top-middle',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.top_middle',
-                            lang,
-                            'Top Middle'
-                          ),
-                        },
-                        {
-                          value: 'top-right',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.top_right',
-                            lang,
-                            'Top Right'
-                          ),
-                        },
-                        {
-                          value: 'center',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.center',
-                            lang,
-                            'Center'
-                          ),
-                        },
-                        {
-                          value: 'bottom-left',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.bottom_left',
-                            lang,
-                            'Bottom Left'
-                          ),
-                        },
-                        {
-                          value: 'bottom-middle',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.bottom_middle',
-                            lang,
-                            'Bottom Middle'
-                          ),
-                        },
-                        {
-                          value: 'bottom-right',
-                          label: localize(
-                            'editor.camera.fullscreen_position.options.bottom_right',
-                            lang,
-                            'Bottom Right'
-                          ),
-                        },
-                      ]),
-                    ],
-                    (e: CustomEvent) => {
-                      const next = e.detail.value.fullscreen_position;
-                      const prev = cameraModule.fullscreen_position || 'top-right';
-
-                      if (next === prev) return;
-
-                      updateModule(e.detail.value);
-                    }
-                  )}
-                </div>
-              `
-            : html`
-                <div
-                  style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
-                >
-                  ${localize(
-                    'editor.camera.show_fullscreen_toggle.enable_toggle_desc',
-                    lang,
-                    'Enable the toggle above to configure fullscreen icon display'
-                  )}
-                </div>
-              `}
+          <div
+            class="field-description"
+            style="margin-bottom: 16px; color: var(--secondary-text-color); font-style: italic; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 6px; border-left: 4px solid var(--primary-color);"
+          >
+            <ha-icon icon="mdi:information" style="font-size: 14px; margin-right: 6px;"></ha-icon>
+            ${localize(
+              'editor.camera.tap_opens_fullscreen_desc',
+              lang,
+              'When enabled, tapping anywhere on the camera will open it in fullscreen mode.'
+            )}
+          </div>
         </div>
 
         <!-- Display Settings Section -->
@@ -1554,27 +1466,6 @@ export class UltraCameraModule extends BaseUltraModule {
                       </div>
                     `
                   : ''}
-                ${cameraModule.show_fullscreen === true
-                  ? html`
-                      <div
-                        class="camera-fullscreen-icon"
-                        style=${this.styleObjectToCss(
-                          this.getFullscreenIconPositionStyles(
-                            cameraModule.fullscreen_position || 'top-right',
-                            moduleWithDesign,
-                            designProperties,
-                            cameraModule.show_name !== false
-                              ? cameraModule.name_position
-                              : undefined
-                          )
-                        )}
-                        @click=${(e: Event) => this.handleFullscreenClick(e, cameraModule)}
-                        title="Enter fullscreen"
-                      >
-                        <ha-icon icon="mdi:fullscreen"></ha-icon>
-                      </div>
-                    `
-                  : ''}
               `
             : !isUnavailable
               ? html`
@@ -1619,27 +1510,6 @@ export class UltraCameraModule extends BaseUltraModule {
                           style=${this.styleObjectToCss(namePositionStyles)}
                         >
                           ${cameraName}
-                        </div>
-                      `
-                    : ''}
-                  ${cameraModule.show_fullscreen === true
-                    ? html`
-                        <div
-                          class="camera-fullscreen-icon"
-                          style=${this.styleObjectToCss(
-                            this.getFullscreenIconPositionStyles(
-                              cameraModule.fullscreen_position || 'top-right',
-                              moduleWithDesign,
-                              designProperties,
-                              cameraModule.show_name !== false
-                                ? cameraModule.name_position
-                                : undefined
-                            )
-                          )}
-                          @click=${(e: Event) => this.handleFullscreenClick(e, cameraModule)}
-                          title="Enter fullscreen"
-                        >
-                          <ha-icon icon="mdi:fullscreen"></ha-icon>
                         </div>
                       `
                     : ''}
@@ -1705,27 +1575,6 @@ export class UltraCameraModule extends BaseUltraModule {
                           style=${this.styleObjectToCss(namePositionStyles)}
                         >
                           ${cameraName}
-                        </div>
-                      `
-                    : ''}
-                  ${cameraModule.show_fullscreen === true
-                    ? html`
-                        <div
-                          class="camera-fullscreen-icon"
-                          style=${this.styleObjectToCss(
-                            this.getFullscreenIconPositionStyles(
-                              cameraModule.fullscreen_position || 'top-right',
-                              moduleWithDesign,
-                              designProperties,
-                              cameraModule.show_name !== false
-                                ? cameraModule.name_position
-                                : undefined
-                            )
-                          )}
-                          @click=${(e: Event) => this.handleFullscreenClick(e, cameraModule)}
-                          title="Enter fullscreen"
-                        >
-                          <ha-icon icon="mdi:fullscreen"></ha-icon>
                         </div>
                       `
                     : ''}
@@ -1866,6 +1715,12 @@ export class UltraCameraModule extends BaseUltraModule {
 
   private handleTapAction(event: Event, module: CameraModule, hass: HomeAssistant): void {
     if (this.isHolding) return;
+
+    // Check if tap opens fullscreen is enabled
+    if ((module as any).tap_opens_fullscreen === true) {
+      this.handleFullscreenClick(event, module);
+      return;
+    }
 
     if (module.tap_action) {
       // For camera modules, default to more-info if action is 'default'
@@ -3052,8 +2907,9 @@ export class UltraCameraModule extends BaseUltraModule {
     const hasHoldAction = module.hold_action && module.hold_action.action !== 'nothing';
     const hasDoubleAction =
       module.double_tap_action && module.double_tap_action.action !== 'nothing';
+    const hasFullscreenTap = (module as any).tap_opens_fullscreen === true;
 
-    return hasTapAction || hasHoldAction || hasDoubleAction || !!module.entity; // Default tap for camera
+    return hasTapAction || hasHoldAction || hasDoubleAction || hasFullscreenTap || !!module.entity; // Default tap for camera
   }
 
   private refreshCamera(entity: string, hass: HomeAssistant): void {

@@ -28,7 +28,11 @@
       "card_margin_desc": "Zewnętrzne odstępy wokół karty",
       "unit_px": "px",
       "reset_default": "Przywróć domyślne",
-      "reset_default_value": "Przywróć domyślne ({value})"
+      "reset_default_value": "Przywróć domyślne ({value})",
+      "card_border_color": "Border Color",
+      "card_border_color_desc": "The border color of the card",
+      "card_border_width": "Border Width",
+      "card_border_width_desc": "The thickness of the card border (in pixels)"
     },
     "tooltips": {
       "enter_fullscreen": "Pełny ekran",

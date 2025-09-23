@@ -723,8 +723,7 @@ export interface CameraModule extends BaseModule {
     camera_name?: string;
     show_name?: boolean;
     name_position?: 'top-left' | 'top-middle' | 'top-right' | 'bottom-left' | 'bottom-middle' | 'bottom-right' | 'center';
-    show_fullscreen?: boolean;
-    fullscreen_position?: 'top-left' | 'top-middle' | 'top-right' | 'bottom-left' | 'bottom-middle' | 'bottom-right' | 'center';
+    tap_opens_fullscreen?: boolean;
     width?: number;
     height?: number;
     aspect_ratio_linked?: boolean;
@@ -1156,6 +1155,7 @@ export interface PresetDefinition {
     author: string;
     version: string;
     tags: string[];
+    integrations?: string[];
     thumbnail?: string;
     layout: LayoutConfig;
     metadata: {
@@ -1189,6 +1189,8 @@ export interface UltraCardConfig {
     global_css?: string;
     card_background?: string;
     card_border_radius?: number;
+    card_border_color?: string;
+    card_border_width?: number;
     card_padding?: number;
     card_margin?: number;
     display_mode?: 'always' | 'every' | 'any';

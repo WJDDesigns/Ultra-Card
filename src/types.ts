@@ -1304,15 +1304,7 @@ export interface CameraModule extends BaseModule {
     | 'center';
 
   // Fullscreen controls
-  show_fullscreen?: boolean;
-  fullscreen_position?:
-    | 'top-left'
-    | 'top-middle'
-    | 'top-right'
-    | 'bottom-left'
-    | 'bottom-middle'
-    | 'bottom-right'
-    | 'center';
+  tap_opens_fullscreen?: boolean;
 
   // Display settings
   width?: number;
@@ -2129,6 +2121,8 @@ export interface PresetDefinition {
   author: string;
   version: string;
   tags: string[];
+  // Optional taxonomy for integrations (e.g., Tesla, MQTT, Mobile App)
+  integrations?: string[];
   thumbnail?: string;
   layout: LayoutConfig; // The actual preset configuration
   metadata: {
@@ -2168,6 +2162,8 @@ export interface UltraCardConfig {
   global_css?: string;
   card_background?: string;
   card_border_radius?: number;
+  card_border_color?: string;
+  card_border_width?: number;
   card_padding?: number;
   card_margin?: number;
   // Card-level conditional display

@@ -155,6 +155,11 @@ export class UltraCard extends LitElement {
   public static getStubConfig(): UltraCardConfig {
     return {
       type: 'custom:ultra-card',
+      card_background: 'var(--card-background-color, var(--ha-card-background, white))',
+      card_border_radius: 12,
+      card_border_color: 'var(--divider-color)',
+      card_border_width: 1,
+      card_padding: 16,
       layout: {
         rows: [
           {
@@ -228,6 +233,14 @@ export class UltraCard extends LitElement {
     // Apply border radius
     if (this.config.card_border_radius !== undefined) {
       styles.push(`border-radius: ${this.config.card_border_radius}px`);
+    }
+
+    // Apply border color and width
+    if (this.config.card_border_color || this.config.card_border_width !== undefined) {
+      const borderWidth =
+        this.config.card_border_width !== undefined ? this.config.card_border_width : 1;
+      const borderColor = this.config.card_border_color || 'var(--divider-color)';
+      styles.push(`border: ${borderWidth}px solid ${borderColor}`);
     }
 
     // Apply padding

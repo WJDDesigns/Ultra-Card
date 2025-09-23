@@ -1,6 +1,10 @@
+<?php
 /**
- * CORRECTED Directories Pro Integration with Exact Field Names
- * Title: Directories Pro Ultra Card Integration Corrected
+ * UPDATED Directories Pro Integration with Fixed CORS
+ * Title: Directories Pro Ultra Card Integration with IP Address Support
+ * 
+ * This version fixes the CORS issue by allowing requests from both
+ * homeassistant.local and IP addresses (192.168.x.x, 10.x.x.x, etc.)
  */
 
 // Enable Directories Pro presets in REST API
@@ -53,43 +57,26 @@ function add_directories_pro_preset_meta() {
                 error_log("Found tags: $tags");
             }
             
-            // Get featured image from directory_photos field
+            // Get featured image from _drts_directory_photos (exact structure from debug logs)
             $featured_image = '';
-            $directory_photos = get_post_meta($post_id, 'directory_photos', true);
+            $directory_photos = get_post_meta($post_id, '_drts_directory_photos', true);
             
-            error_log("directory_photos raw data: " . print_r($directory_photos, true));
-            
-            if (!empty($directory_photos)) {
-                if (is_array($directory_photos) && !empty($directory_photos[0])) {
-                    // Array of image IDs - take first one
-                    $image_id = $directory_photos[0];
-                    $featured_image = wp_get_attachment_image_url($image_id, 'large');
-                    error_log("Using first image from array, ID: $image_id, URL: $featured_image");
-                } elseif (is_numeric($directory_photos)) {
-                    // Single image ID
-                    $featured_image = wp_get_attachment_image_url($directory_photos, 'large');
-                    error_log("Using single image ID: $directory_photos, URL: $featured_image");
-                } elseif (is_string($directory_photos) && !empty($directory_photos)) {
-                    // Might be comma-separated IDs or JSON
-                    if (strpos($directory_photos, ',') !== false) {
-                        $image_ids = explode(',', $directory_photos);
-                        $first_id = trim($image_ids[0]);
-                        if (is_numeric($first_id)) {
-                            $featured_image = wp_get_attachment_image_url($first_id, 'large');
-                            error_log("Using first ID from comma list: $first_id, URL: $featured_image");
-                        }
-                    } elseif (is_numeric($directory_photos)) {
-                        $featured_image = wp_get_attachment_image_url($directory_photos, 'large');
-                    }
+            if (!empty($directory_photos) && is_array($directory_photos)) {
+                $first_photo = $directory_photos[0];
+                if (isset($first_photo['url']['large'])) {
+                    $featured_image = $first_photo['url']['large'];
+                } elseif (isset($first_photo['url']['full'])) {
+                    $featured_image = $first_photo['url']['full'];
+                } elseif (isset($first_photo['url']['medium'])) {
+                    $featured_image = $first_photo['url']['medium'];
+                } elseif (isset($first_photo['url'])) {
+                    $featured_image = $first_photo['url'];
                 }
             }
             
             // Fallback to WordPress featured image
             if (empty($featured_image)) {
                 $featured_image = get_the_post_thumbnail_url($post_id, 'large');
-                if ($featured_image) {
-                    error_log("Using WordPress featured image: $featured_image");
-                }
             }
             
             // Final fallback - try to find any attached images
@@ -98,26 +85,13 @@ function add_directories_pro_preset_meta() {
                 if (!empty($attachments)) {
                     $first_attachment = array_shift($attachments);
                     $featured_image = wp_get_attachment_image_url($first_attachment->ID, 'large');
-                    error_log("Using first attachment: $featured_image");
                 }
             }
             
-            error_log("Final result for post $post_id: category='$category', tags='$tags', image='" . ($featured_image ?: 'NONE') . "'");
-            
-            // Build integrations (WP_Error safe)
-            $integrations = '';
-            $integrations_terms = get_the_terms($post_id, 'presets_dir_integrations');
-            if ($integrations_terms && !is_wp_error($integrations_terms)) {
-                $integration_names = array_map(function($t){ return strtolower($t->name); }, $integrations_terms);
-                $integrations = implode(',', $integration_names);
-            }
-
             return array(
                 'shortcode' => $shortcode ?: '{"rows":[]}',
                 'category' => $category,
                 'tags' => $tags,
-                // New taxonomy: integrations (comma-separated string)
-                'integrations' => $integrations,
                 'difficulty' => 'beginner',
                 'compatibility' => '',
                 'downloads' => 0,
@@ -130,22 +104,66 @@ function add_directories_pro_preset_meta() {
 }
 add_action('rest_api_init', 'add_directories_pro_preset_meta');
 
-// Enable CORS
-function add_cors_http_header() {
-    header("Access-Control-Allow-Origin: *");
-    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization");
-}
-add_action('rest_api_init', 'add_cors_http_header');
-
-// Force save weather widget shortcode (uncomment to run once)
-// add_action('init', 'force_save_weather_widget_shortcode');
-
-function force_save_weather_widget_shortcode() {
-    $post_id = 518; // Weather widget ID
-    // Add your weather widget shortcode here
-    $weather_shortcode = '[ultra_card]YOUR_WEATHER_WIDGET_SHORTCODE_HERE[/ultra_card]';
+// FIXED CORS Configuration - Allow Home Assistant from any IP
+function add_ultra_card_cors_headers() {
+    // Get the origin of the request
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
     
-    update_post_meta($post_id, 'field_preset_code', $weather_shortcode);
-    error_log("Force saved weather widget shortcode for post $post_id");
+    // Define allowed origins patterns
+    $allowed_origins = [
+        'http://homeassistant.local:8123',
+        'https://homeassistant.local:8123',
+    ];
+    
+    // Allow any Home Assistant instance on local network IPs (RFC 1918 private ranges)
+    if (preg_match('/^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+):8123$/', $origin)) {
+        $allowed_origins[] = $origin;
+    }
+    
+    // Allow any localhost/127.0.0.1 with port 8123
+    if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1):8123$/', $origin)) {
+        $allowed_origins[] = $origin;
+    }
+    
+    // Allow any public IP with port 8123 (for cloud/remote Home Assistant instances)
+    if (preg_match('/^https?:\/\/\d+\.\d+\.\d+\.\d+:8123$/', $origin)) {
+        $allowed_origins[] = $origin;
+    }
+    
+    // Check if the origin is allowed
+    if (in_array($origin, $allowed_origins) || count($allowed_origins) > 2) {
+        header("Access-Control-Allow-Origin: $origin");
+        error_log("Ultra Card CORS: Allowed origin: $origin");
+    } else {
+        // Fallback: allow all origins for Ultra Card API requests
+        // This is safe since it's read-only preset data
+        header("Access-Control-Allow-Origin: *");
+        error_log("Ultra Card CORS: Using wildcard for origin: $origin");
+    }
+    
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+    header("Access-Control-Allow-Credentials: true");
+    
+    // Handle preflight OPTIONS requests
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        header("HTTP/1.1 200 OK");
+        exit();
+    }
 }
+
+// Apply CORS headers early in the process
+add_action('init', 'add_ultra_card_cors_headers', 1);
+add_action('rest_api_init', 'add_ultra_card_cors_headers', 1);
+
+// Also apply to wp-json requests specifically
+function apply_cors_to_wp_json($response, $handler, $request) {
+    // Only apply to our preset endpoints
+    if (strpos($request->get_route(), '/wp/v2/presets_dir_ltg') !== false) {
+        add_ultra_card_cors_headers();
+    }
+    return $response;
+}
+add_filter('rest_pre_serve_request', 'apply_cors_to_wp_json', 10, 3);
+
+?>

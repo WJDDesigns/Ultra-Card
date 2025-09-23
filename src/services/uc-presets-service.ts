@@ -368,6 +368,7 @@ class UcPresetsService {
         author: wpPreset.author || 'Community',
         version: '1.0.0',
         tags: [...baseTags, ...additionalTags],
+        integrations: wpPreset.integrations || [],
         thumbnail: wpPreset.featured_image,
         layout,
         metadata: {

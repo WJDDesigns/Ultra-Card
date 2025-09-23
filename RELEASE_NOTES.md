@@ -1,5 +1,36 @@
 # Release Notes
 
+## Version 1.2.0-beta9
+
+### 🚀 New Features
+
+#### 📹 Camera Module Fullscreen Toggle
+
+- **Enhanced Camera Experience**: Camera modules now include a fullscreen toggle button for immersive viewing
+- **One-Click Fullscreen**: Easily expand camera feeds to fullscreen mode with a single click
+- **Improved User Interface**: Seamless integration with existing camera module controls
+- **Better Mobile Experience**: Optimized fullscreen viewing for mobile devices and tablets
+
+### 🎨 Design & Layout Improvements
+
+#### 🏠 Default Home Assistant Styling
+
+- **Native HA Integration**: New cards now inherit default background and border styles from Home Assistant theme
+- **Consistent Look & Feel**: Cards automatically match your Home Assistant dashboard styling
+- **Enhanced Border Control**: Added comprehensive border customization options for fine-tuning appearance
+- **Theme Compatibility**: Seamless integration with both light and dark Home Assistant themes
+
+### 🐛 Bug Fixes
+
+#### 🔧 Dialog Box Z-Index Issues
+
+- **Fixed Row Header Dialogs**: Resolved z-index conflicts where overflow row header dialog boxes appeared underneath column content
+- **Improved Layer Management**: Enhanced stacking order for all dialog boxes and modal overlays
+- **Better User Experience**: Dialog boxes now consistently appear above all other content as expected
+- **Cross-Browser Compatibility**: Fixed rendering issues across different browsers and devices
+
+_Includes all improvements from v1.2.0-beta8 below._
+
 ## Version 1.2.0-beta8
 
 ### 🚀 Major New Features
