@@ -12,7 +12,7 @@ export declare class UltraBarModule extends BaseUltraModule {
     private findSuitableBatterySensor;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
     private _hashString;
     validate(module: CardModule): {
         valid: boolean;

@@ -1,6 +1,6 @@
 import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
-import type { CardModule, HoverEffectConfig } from '../types';
+import type { CardModule, HoverEffectConfig, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
 

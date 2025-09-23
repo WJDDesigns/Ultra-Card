@@ -771,7 +771,7 @@ export class UltraLightModule extends BaseUltraModule {
           </div>
 
           ${(lightModule.presets || []).map((preset, index) =>
-            this.renderPresetEditor(preset, index, lightModule, hass, updateModule)
+            this.renderPresetEditor(preset, index, lightModule, hass, updateModule, config)
           )}
 
           <button
@@ -873,7 +873,8 @@ export class UltraLightModule extends BaseUltraModule {
     index: number,
     lightModule: LightModule,
     hass: HomeAssistant,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    config?: UltraCardConfig
   ): TemplateResult {
     const updatePreset = (updates: Partial<LightPreset>) => {
       const newPresets = [...(lightModule.presets || [])];
@@ -1010,7 +1011,7 @@ export class UltraLightModule extends BaseUltraModule {
           class="preset-content"
           style="padding: 16px; display: ${this.expandedPresets.has(preset.id) ? 'block' : 'none'};"
         >
-          ${this.renderPresetConfiguration(preset, hass, updatePreset, lightModule)}
+          ${this.renderPresetConfiguration(preset, hass, updatePreset, lightModule, config)}
         </div>
       </div>
     `;
@@ -1021,7 +1022,8 @@ export class UltraLightModule extends BaseUltraModule {
     preset: LightPreset,
     hass: HomeAssistant,
     updatePreset: (updates: Partial<LightPreset>) => void,
-    lightModule: LightModule
+    lightModule: LightModule,
+    config?: UltraCardConfig
   ): TemplateResult {
     return html`
       <!-- Basic Settings -->
@@ -1123,7 +1125,7 @@ export class UltraLightModule extends BaseUltraModule {
               this.triggerPreviewUpdate();
             }}
             @test-preset=${() => {
-              this.applyPreset(preset, lightModule, hass);
+              this.applyPreset(preset, lightModule, hass, config);
             }}
           ></uc-light-color-picker>
         </div>
@@ -1768,8 +1770,16 @@ export class UltraLightModule extends BaseUltraModule {
   private async applyPreset(
     preset: LightPreset,
     lightModule: LightModule,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    config?: UltraCardConfig
   ): Promise<void> {
+    // Trigger haptic feedback for preset button press
+    const hapticEnabled = config?.haptic_feedback !== false;
+    if (hapticEnabled) {
+      const { forwardHaptic } = await import('custom-card-helpers');
+      forwardHaptic('medium'); // Use medium haptic for preset actions
+    }
+
     const entities = preset.entities || [];
 
     if (entities.length === 0) {
@@ -1916,7 +1926,7 @@ export class UltraLightModule extends BaseUltraModule {
     updateModule({ presets });
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const lightModule = module as LightModule;
     const presets = lightModule.presets || [];
 
@@ -1978,7 +1988,7 @@ export class UltraLightModule extends BaseUltraModule {
       <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
         <div class="presets-container ${layout}" style="${containerLayoutStyles}">
           ${presets.map(preset =>
-            this.renderPresetButton(preset, lightModule, hass, showLabels, buttonStyle)
+            this.renderPresetButton(preset, lightModule, hass, showLabels, buttonStyle, config)
           )}
         </div>
       </div>
@@ -2078,7 +2088,8 @@ export class UltraLightModule extends BaseUltraModule {
     lightModule: LightModule,
     hass: HomeAssistant,
     globalShowLabels: boolean,
-    globalButtonStyle: string
+    globalButtonStyle: string,
+    config?: UltraCardConfig
   ): TemplateResult {
     const hasEntities = preset.entities && preset.entities.length > 0;
 
@@ -2124,7 +2135,9 @@ export class UltraLightModule extends BaseUltraModule {
       <div class="preset-button-container">
         <button
           class="preset-button ${buttonStyle} ${!hasEntities ? 'disabled' : ''}"
-          @click=${hasEntities ? () => this.applyPreset(preset, lightModule, hass) : undefined}
+          @click=${hasEntities
+            ? () => this.applyPreset(preset, lightModule, hass, config)
+            : undefined}
           style="
             ${buttonStyles}
             ${!hasEntities ? 'opacity: 0.5; cursor: not-allowed;' : ''}

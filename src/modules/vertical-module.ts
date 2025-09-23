@@ -222,7 +222,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const verticalModule = module as VerticalModule;
     const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = verticalModule as any;
@@ -277,7 +277,8 @@ export class UltraVerticalModule extends BaseUltraModule {
           UltraLinkComponent.handleAction(
             verticalModule.hold_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       }, 500); // 500ms hold threshold
@@ -316,7 +317,8 @@ export class UltraVerticalModule extends BaseUltraModule {
           UltraLinkComponent.handleAction(
             verticalModule.double_tap_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       } else {
@@ -333,7 +335,8 @@ export class UltraVerticalModule extends BaseUltraModule {
             UltraLinkComponent.handleAction(
               verticalModule.tap_action as any,
               hass,
-              e.target as HTMLElement
+              e.target as HTMLElement,
+              config
             );
           }
         }, 300); // Wait 300ms to see if double click follows

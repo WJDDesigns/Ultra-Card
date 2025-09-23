@@ -245,10 +245,20 @@ class UcPresetsService {
         layout = JSON.parse(wpPreset.shortcode);
         // Successfully parsed direct JSON (silent)
 
-        // Validate that the layout has rows
+        // Validate that the layout has rows with actual content
         if (!layout.rows || !Array.isArray(layout.rows) || layout.rows.length === 0) {
-          console.warn(`Preset ${wpPreset.id} has empty or invalid rows array:`, layout.rows);
+          console.warn(`Preset ${wpPreset.id} has empty rows array, skipping...`);
           throw new Error('Layout has no rows');
+        }
+
+        // Check if rows have actual modules (not just empty structure)
+        const hasModules = layout.rows.some(
+          row => row.columns && row.columns.some(col => col.modules && col.modules.length > 0)
+        );
+
+        if (!hasModules) {
+          console.warn(`Preset ${wpPreset.id} has no modules, skipping...`);
+          throw new Error('Layout has no modules');
         }
       } catch (parseError) {
         // Failed to parse layout from direct JSON; will attempt shortcode fallback (silent)

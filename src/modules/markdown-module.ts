@@ -180,7 +180,7 @@ All standard markdown features are automatically enabled!`,
     return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const markdownModule = module as MarkdownModule;
 
     // Apply design properties with priority - design properties override module properties
@@ -460,7 +460,8 @@ All standard markdown features are automatically enabled!`,
           UltraLinkComponent.handleAction(
             markdownModule.hold_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       }, 500); // 500ms hold threshold
@@ -501,7 +502,8 @@ All standard markdown features are automatically enabled!`,
           UltraLinkComponent.handleAction(
             markdownModule.double_tap_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       } else {
@@ -518,7 +520,8 @@ All standard markdown features are automatically enabled!`,
             UltraLinkComponent.handleAction(
               markdownModule.tap_action as any,
               hass,
-              e.target as HTMLElement
+              e.target as HTMLElement,
+              config
             );
           }
         }, 300); // Wait 300ms to see if double click follows

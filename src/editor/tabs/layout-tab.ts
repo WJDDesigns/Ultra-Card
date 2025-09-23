@@ -1559,7 +1559,11 @@ export class LayoutTab extends LitElement {
       this._showToast('Row exported to clipboard!', 'success');
     } catch (error) {
       console.error('Failed to export row:', error);
-      this._showToast('Failed to export row to clipboard', 'error');
+      if (error instanceof Error && error.message === 'Export cancelled by user') {
+        this._showToast('Export cancelled - privacy protection', 'info');
+      } else {
+        this._showToast('Failed to export row to clipboard', 'error');
+      }
     }
   }
 
@@ -1579,7 +1583,7 @@ export class LayoutTab extends LitElement {
 
       if (!importData) {
         this._showToast(
-          'No valid Ultra Card shortcode found. Please ensure you have copied an exported row or paste it manually when prompted.',
+          'No valid Ultra Card shortcode found. Please ensure you have copied a complete exported row/layout or try copying again.',
           'error'
         );
         return;
@@ -1650,7 +1654,11 @@ export class LayoutTab extends LitElement {
       this._showToast('Favorite exported to clipboard!', 'success');
     } catch (error) {
       console.error('Failed to export favorite:', error);
-      this._showToast('Failed to export favorite to clipboard', 'error');
+      if (error instanceof Error && error.message === 'Export cancelled by user') {
+        this._showToast('Export cancelled - privacy protection', 'info');
+      } else {
+        this._showToast('Failed to export favorite to clipboard', 'error');
+      }
     }
   }
 
@@ -5914,8 +5922,12 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function') {
-      return (moduleHandler as any).renderActionsTab(module, this.hass, this.config, updates =>
-        this._updateLayoutChildModule(updates)
+      return (moduleHandler as any).renderActionsTab(
+        module,
+        this.hass,
+        this.config,
+        updates => this._updateLayoutChildModule(updates),
+        updates => this._updateConfig(updates)
       );
     }
 
@@ -6399,9 +6411,15 @@ export class LayoutTab extends LitElement {
     const updateRow = (updates: Partial<CardRow>) => this._updateRow(updates);
     const handler = new (class extends (BaseUltraModule as any) {})();
     // Use GlobalActionsTab through BaseUltraModule default
-    return (handler as any).renderActionsTab(actions, this.hass, this.config, (updates: any) => {
-      this._updateRow(updates);
-    });
+    return (handler as any).renderActionsTab(
+      actions,
+      this.hass,
+      this.config,
+      (updates: any) => {
+        this._updateRow(updates);
+      },
+      (updates: any) => this._updateConfig(updates)
+    );
   }
 
   private _renderRowLogicTab(row: CardRow): TemplateResult {
@@ -6549,9 +6567,15 @@ export class LayoutTab extends LitElement {
       double_tap_action?: any;
     };
     const handler = new (class extends (BaseUltraModule as any) {})();
-    return (handler as any).renderActionsTab(actions, this.hass, this.config, (updates: any) => {
-      this._updateColumn(updates);
-    });
+    return (handler as any).renderActionsTab(
+      actions,
+      this.hass,
+      this.config,
+      (updates: any) => {
+        this._updateColumn(updates);
+      },
+      (updates: any) => this._updateConfig(updates)
+    );
   }
 
   private _renderColumnLogicTab(column: CardColumn): TemplateResult {
@@ -6669,8 +6693,12 @@ export class LayoutTab extends LitElement {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function') {
-      return (moduleHandler as any).renderActionsTab(module, this.hass, this.config, updates =>
-        this._updateModule(updates)
+      return (moduleHandler as any).renderActionsTab(
+        module,
+        this.hass,
+        this.config,
+        updates => this._updateModule(updates),
+        updates => this._updateConfig(updates)
       );
     }
 

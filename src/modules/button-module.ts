@@ -468,7 +468,7 @@ export class UltraButtonModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const buttonModule = module as ButtonModule;
 
     // Apply design properties with priority - global design overrides module-specific props
@@ -590,7 +590,8 @@ export class UltraButtonModule extends BaseUltraModule {
           UltraLinkComponent.handleAction(
             buttonModule.hold_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       }, 500); // 500ms hold threshold
@@ -626,7 +627,8 @@ export class UltraButtonModule extends BaseUltraModule {
           UltraLinkComponent.handleAction(
             buttonModule.double_tap_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       } else {
@@ -643,7 +645,8 @@ export class UltraButtonModule extends BaseUltraModule {
             UltraLinkComponent.handleAction(
               buttonModule.tap_action as any,
               hass,
-              e.target as HTMLElement
+              e.target as HTMLElement,
+              config
             );
           } else if (buttonModule.action) {
             // Legacy support

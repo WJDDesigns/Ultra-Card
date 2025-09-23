@@ -1881,7 +1881,7 @@ export class UltraIconModule extends BaseUltraModule {
     return this.renderLogicTab(module, hass, config, updateModule);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const iconModule = module as IconModule;
 
     // Initialize template service if needed
@@ -2416,7 +2416,12 @@ export class UltraIconModule extends BaseUltraModule {
                               ...iconModule.hold_action!,
                               entity: iconModule.hold_action!.entity || icon.entity,
                             };
-                      UltraLinkComponent.handleAction(action as any, hass, e.target as HTMLElement);
+                      UltraLinkComponent.handleAction(
+                        action as any,
+                        hass,
+                        e.target as HTMLElement,
+                        config
+                      );
                     }, 500); // 500ms hold threshold
                   }
                 },
@@ -2459,7 +2464,12 @@ export class UltraIconModule extends BaseUltraModule {
                               ...iconModule.double_tap_action,
                               entity: iconModule.double_tap_action.entity || icon.entity,
                             };
-                      UltraLinkComponent.handleAction(action as any, hass, e.target as HTMLElement);
+                      UltraLinkComponent.handleAction(
+                        action as any,
+                        hass,
+                        e.target as HTMLElement,
+                        config
+                      );
                     }
                   } else {
                     // This might be a single click, but wait to see if double click follows
@@ -2485,7 +2495,12 @@ export class UltraIconModule extends BaseUltraModule {
                               ...iconModule.tap_action,
                               entity: iconModule.tap_action.entity || icon.entity,
                             };
-                      UltraLinkComponent.handleAction(action as any, hass, e.target as HTMLElement);
+                      UltraLinkComponent.handleAction(
+                        action as any,
+                        hass,
+                        e.target as HTMLElement,
+                        config
+                      );
                     } else if (iconModule.tap_action) {
                       // Double-tap is configured, wait before executing single tap
                       clickTimeout = setTimeout(() => {
@@ -2504,7 +2519,8 @@ export class UltraIconModule extends BaseUltraModule {
                           UltraLinkComponent.handleAction(
                             action as any,
                             hass,
-                            e.target as HTMLElement
+                            e.target as HTMLElement,
+                            config
                           );
                         }
                         clickCount = 0;

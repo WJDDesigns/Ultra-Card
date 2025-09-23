@@ -685,7 +685,7 @@ export class UltraCard extends LitElement {
 
     let moduleContent: TemplateResult;
     if (moduleHandler && this.hass) {
-      moduleContent = moduleHandler.renderPreview(module, this.hass);
+      moduleContent = moduleHandler.renderPreview(module, this.hass, this.config);
     } else {
       // Fallback for unknown module types
       moduleContent = html`

@@ -25,7 +25,7 @@ export class UltraInfoModule extends BaseUltraModule {
   };
 
   private _templateService?: TemplateService;
-  
+
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
       id: id || this.generateId('info'),
@@ -166,7 +166,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 const prev = infoModule.info_entities?.[0]?.entity || '';
                 if (next === prev) return;
                 this._handleEntityChange(infoModule, 0, next, hass, updateModule);
-                }}
+              }}
             ></ha-form>
           </div>
         </div>
@@ -236,7 +236,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       const prev = infoModule.info_entities?.[0]?.icon || '';
                       if (next === prev) return;
                       this._updateEntity(infoModule, 0, { icon: next }, updateModule);
-                      }}
+                    }}
                   ></ha-form>
                 </div>
 
@@ -1179,7 +1179,7 @@ export class UltraInfoModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const infoModule = module as InfoModule;
 
     // Apply design properties with priority - design properties override module properties
@@ -2048,7 +2048,12 @@ export class UltraInfoModule extends BaseUltraModule {
   }
 
   // Event handlers for info module interactions
-  private handleClick(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private handleClick(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
 
     // Clear any existing timeout
@@ -2058,11 +2063,16 @@ export class UltraInfoModule extends BaseUltraModule {
 
     // Set a timeout to handle single click with delay
     this.clickTimeout = setTimeout(() => {
-      this.handleTapAction(event, infoModule, hass);
+      this.handleTapAction(event, infoModule, hass, config);
     }, 300); // 300ms delay to allow for double-click detection
   }
 
-  private handleDoubleClick(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private handleDoubleClick(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
 
     // Clear the single click timeout
@@ -2072,11 +2082,16 @@ export class UltraInfoModule extends BaseUltraModule {
     }
 
     // Handle double-click action
-    this.handleDoubleAction(event, infoModule, hass);
+    this.handleDoubleAction(event, infoModule, hass, config);
   }
 
-  private handleMouseDown(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
-    this.startHold(event, infoModule, hass);
+  private handleMouseDown(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    this.startHold(event, infoModule, hass, config);
   }
 
   private handleMouseUp(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
@@ -2087,19 +2102,29 @@ export class UltraInfoModule extends BaseUltraModule {
     this.endHold(event, infoModule, hass);
   }
 
-  private handleTouchStart(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
-    this.startHold(event, infoModule, hass);
+  private handleTouchStart(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    this.startHold(event, infoModule, hass, config);
   }
 
   private handleTouchEnd(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
     this.endHold(event, infoModule, hass);
   }
 
-  private startHold(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private startHold(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     this.isHolding = false;
     this.holdTimeout = setTimeout(() => {
       this.isHolding = true;
-      this.handleHoldAction(event, infoModule, hass);
+      this.handleHoldAction(event, infoModule, hass, config);
     }, 500); // 500ms hold time
   }
 
@@ -2111,7 +2136,12 @@ export class UltraInfoModule extends BaseUltraModule {
     this.isHolding = false;
   }
 
-  private handleTapAction(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private handleTapAction(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     // Don't trigger tap action if we're in the middle of a hold
     if (this.isHolding) return;
 
@@ -2123,12 +2153,18 @@ export class UltraInfoModule extends BaseUltraModule {
       UltraLinkComponent.handleAction(
         infoModule.tap_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }
 
-  private handleDoubleAction(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private handleDoubleAction(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (
       infoModule.double_tap_action &&
       infoModule.double_tap_action.action !== 'default' &&
@@ -2137,12 +2173,18 @@ export class UltraInfoModule extends BaseUltraModule {
       UltraLinkComponent.handleAction(
         infoModule.double_tap_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }
 
-  private handleHoldAction(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private handleHoldAction(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (
       infoModule.hold_action &&
       infoModule.hold_action.action !== 'default' &&
@@ -2151,7 +2193,8 @@ export class UltraInfoModule extends BaseUltraModule {
       UltraLinkComponent.handleAction(
         infoModule.hold_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }

@@ -97,13 +97,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 ]),
               ],
               onChange: (e: CustomEvent) => {
-                
                 const next = e.detail.value.alignment;
                 const prev = horizontalModule.alignment || 'center';
                 if (next === prev) return;
-                
+
                 updateModule(e.detail.value);
-                
               },
             },
           ]
@@ -130,10 +128,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
             onChange: (e: CustomEvent) => {
               const next = e.detail.value?.vertical_alignment;
               if (next === undefined || next === horizontalModule.vertical_alignment) return;
-              
-              
+
               updateModule({ vertical_alignment: next });
-              
             },
           },
         ])}
@@ -265,7 +261,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const horizontalModule = module as HorizontalModule;
     const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = horizontalModule as any;
@@ -345,7 +341,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
           UltraLinkComponent.handleAction(
             horizontalModule.hold_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       }, 500); // 500ms hold threshold
@@ -384,7 +381,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
           UltraLinkComponent.handleAction(
             horizontalModule.double_tap_action as any,
             hass,
-            e.target as HTMLElement
+            e.target as HTMLElement,
+            config
           );
         }
       } else {
@@ -401,7 +399,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
             UltraLinkComponent.handleAction(
               horizontalModule.tap_action as any,
               hass,
-              e.target as HTMLElement
+              e.target as HTMLElement,
+              config
             );
           }
         }, 300); // Wait 300ms to see if double click follows

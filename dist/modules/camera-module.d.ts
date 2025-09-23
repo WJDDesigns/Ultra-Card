@@ -10,7 +10,7 @@ export declare class UltraCameraModule extends BaseUltraModule {
     createDefault(id?: string, hass?: HomeAssistant): CameraModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: any, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
@@ -28,6 +28,7 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private handleDoubleAction;
     private handleFullscreenClick;
     private createFullscreenModal;
+    private addPinchZoomToCamera;
     private trySimpleModal;
     private tryNativeFullscreen;
     private enterFullscreen;

@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
 import { localize } from '../localize/localize';
+import { UltraCardConfig } from '../types';
 
 export interface UltraLinkConfig {
   tap_action?: TapActionConfig;
@@ -616,7 +617,35 @@ export class UltraLinkComponent {
     };
   }
 
-  static handleAction(action: TapActionConfig, hass: HomeAssistant, element?: HTMLElement): void {
+  static handleAction(
+    action: TapActionConfig,
+    hass: HomeAssistant,
+    element?: HTMLElement,
+    config?: UltraCardConfig
+  ): void {
+    // Trigger haptic feedback if enabled (default: true)
+    const hapticEnabled = config?.haptic_feedback !== false;
+    if (hapticEnabled && action.action !== 'nothing' && action.action !== 'default') {
+      // Use appropriate haptic type based on action following HA guidelines
+      switch (action.action) {
+        case 'toggle':
+          forwardHaptic('light'); // Physical metaphor for toggling
+          break;
+        case 'more-info':
+        case 'navigate':
+        case 'url':
+          forwardHaptic('selection'); // Selection is actively changing
+          break;
+        case 'perform-action':
+        case 'assist':
+          forwardHaptic('medium'); // Physical metaphor for performing actions
+          break;
+        default:
+          forwardHaptic('selection'); // Default fallback
+          break;
+      }
+    }
+
     // Home Assistant stores perform-action services under 'perform_action' key
     const serviceToCall = action.service || action.perform_action;
 

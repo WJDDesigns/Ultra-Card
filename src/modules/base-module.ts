@@ -39,7 +39,8 @@ export interface UltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    updateConfig?: (updates: Partial<UltraCardConfig>) => void
   ): TemplateResult;
 
   // Optional: Render the module's other settings tab
@@ -59,7 +60,7 @@ export interface UltraModule {
   ): TemplateResult;
 
   // Render the module preview/content
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
 
   // Validate module configuration
   validate(module: CardModule): { valid: boolean; errors: string[] };
@@ -82,14 +83,19 @@ export abstract class BaseUltraModule implements UltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult;
-  abstract renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
+  abstract renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): TemplateResult;
 
   // Default Actions tab implementation - can be overridden
   renderActionsTab(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    updateConfig?: (updates: Partial<UltraCardConfig>) => void
   ): TemplateResult {
     return GlobalActionsTab.render(module, hass, updates => updateModule(updates));
   }

@@ -228,7 +228,9 @@
       "hold_behavior": "Comportement au maintien",
       "hold_behavior_desc": "Action à effectuer lorsque l'élément est pressé et maintenu.",
       "double_tap_behavior": "Comportement au double appui",
-      "double_tap_behavior_desc": "Action à effectuer lorsque l'élément est doublement touché/clické."
+      "double_tap_behavior_desc": "Action à effectuer lorsque l'élément est doublement touché/clické.",
+      "haptic_feedback": "Haptic Feedback",
+      "haptic_feedback_desc": "Provide tactile feedback when buttons are pressed on supported devices"
     },
     "icon": {
       "entity_config": {
@@ -1409,6 +1411,10 @@
     "favorite_colors": {
       "title": "Favorite Colors",
       "description": "Manage your favorite colors that appear in all Ultra Card color pickers. These colors sync across all your Ultra Cards."
+    },
+    "behavior": {
+      "title": "Behavior",
+      "description": "Configure how your card responds to user interactions"
     }
   }
 }

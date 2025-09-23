@@ -1310,7 +1310,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     );
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const graphsModule = module as GraphsModule;
     const moduleWithDesign = graphsModule as any;
     const designProperties = (graphsModule as any).design || {};
@@ -3534,12 +3534,17 @@ export class UltraGraphsModule extends BaseUltraModule {
     return hasTapAction || hasHoldAction || hasDoubleAction;
   }
 
-  private handleClick(event: Event, module: GraphsModule, hass: HomeAssistant): void {
+  private handleClick(
+    event: Event,
+    module: GraphsModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
     if (this.clickTimeout) clearTimeout(this.clickTimeout);
 
     this.clickTimeout = setTimeout(() => {
-      this.handleTapAction(event, module, hass);
+      this.handleTapAction(event, module, hass, config);
     }, 300);
   }
 
@@ -3583,7 +3588,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     this.handleMouseUp(event, module, hass);
   }
 
-  private handleTapAction(event: Event, module: GraphsModule, hass: HomeAssistant): void {
+  private handleTapAction(
+    event: Event,
+    module: GraphsModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (this.isHolding) return;
 
     if (
@@ -3593,11 +3603,21 @@ export class UltraGraphsModule extends BaseUltraModule {
     ) {
       // Only pass valid actions to UltraLinkComponent
       const validAction = { ...module.tap_action };
-      UltraLinkComponent.handleAction(validAction as any, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(
+        validAction as any,
+        hass,
+        event.target as HTMLElement,
+        config
+      );
     }
   }
 
-  private handleHoldAction(event: Event, module: GraphsModule, hass: HomeAssistant): void {
+  private handleHoldAction(
+    event: Event,
+    module: GraphsModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (
       module.hold_action &&
       module.hold_action.action !== 'default' &&
@@ -3605,11 +3625,21 @@ export class UltraGraphsModule extends BaseUltraModule {
     ) {
       // Only pass valid actions to UltraLinkComponent
       const validAction = { ...module.hold_action };
-      UltraLinkComponent.handleAction(validAction as any, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(
+        validAction as any,
+        hass,
+        event.target as HTMLElement,
+        config
+      );
     }
   }
 
-  private handleDoubleAction(event: Event, module: GraphsModule, hass: HomeAssistant): void {
+  private handleDoubleAction(
+    event: Event,
+    module: GraphsModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (
       module.double_tap_action &&
       module.double_tap_action.action !== 'default' &&
@@ -3617,7 +3647,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     ) {
       // Only pass valid actions to UltraLinkComponent
       const validAction = { ...module.double_tap_action };
-      UltraLinkComponent.handleAction(validAction as any, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(
+        validAction as any,
+        hass,
+        event.target as HTMLElement,
+        config
+      );
     }
   }
 

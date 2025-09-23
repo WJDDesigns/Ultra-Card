@@ -1237,7 +1237,7 @@ export class UltraCameraModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const cameraModule = module as CameraModule;
     const moduleWithDesign = cameraModule as any;
 
@@ -1664,29 +1664,44 @@ export class UltraCameraModule extends BaseUltraModule {
   }
 
   // Event Handling Methods
-  private handleClick(event: Event, module: CameraModule, hass: HomeAssistant): void {
+  private handleClick(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
     if (this.clickTimeout) clearTimeout(this.clickTimeout);
 
     this.clickTimeout = setTimeout(() => {
-      this.handleTapAction(event, module, hass);
+      this.handleTapAction(event, module, hass, config);
     }, 300);
   }
 
-  private handleDoubleClick(event: Event, module: CameraModule, hass: HomeAssistant): void {
+  private handleDoubleClick(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
     if (this.clickTimeout) {
       clearTimeout(this.clickTimeout);
       this.clickTimeout = null;
     }
-    this.handleDoubleAction(event, module, hass);
+    this.handleDoubleAction(event, module, hass, config);
   }
 
-  private handleMouseDown(event: Event, module: CameraModule, hass: HomeAssistant): void {
+  private handleMouseDown(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     this.isHolding = false;
     this.holdTimeout = setTimeout(() => {
       this.isHolding = true;
-      this.handleHoldAction(event, module, hass);
+      this.handleHoldAction(event, module, hass, config);
     }, 500);
   }
 
@@ -1705,20 +1720,30 @@ export class UltraCameraModule extends BaseUltraModule {
     this.isHolding = false;
   }
 
-  private handleTouchStart(event: Event, module: CameraModule, hass: HomeAssistant): void {
-    this.handleMouseDown(event, module, hass);
+  private handleTouchStart(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    this.handleMouseDown(event, module, hass, config);
   }
 
   private handleTouchEnd(event: Event, module: CameraModule, hass: HomeAssistant): void {
     this.handleMouseUp(event, module, hass);
   }
 
-  private handleTapAction(event: Event, module: CameraModule, hass: HomeAssistant): void {
+  private handleTapAction(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (this.isHolding) return;
 
     // Check if tap opens fullscreen is enabled
     if ((module as any).tap_opens_fullscreen === true) {
-      this.handleFullscreenClick(event, module);
+      this.handleFullscreenClick(event, module, config);
       return;
     }
 
@@ -1728,37 +1753,66 @@ export class UltraCameraModule extends BaseUltraModule {
         module.tap_action.action === 'default'
           ? { action: 'more-info', entity: module.entity }
           : module.tap_action;
-      UltraLinkComponent.handleAction(action as any, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(action as any, hass, event.target as HTMLElement, config);
     } else if (module.entity) {
       // Default action for cameras: show more-info
       UltraLinkComponent.handleAction(
         { action: 'more-info', entity: module.entity } as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }
 
-  private handleHoldAction(event: Event, module: CameraModule, hass: HomeAssistant): void {
+  private handleHoldAction(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (module.hold_action && module.hold_action.action !== 'nothing') {
-      UltraLinkComponent.handleAction(module.hold_action as any, hass, event.target as HTMLElement);
+      UltraLinkComponent.handleAction(
+        module.hold_action as any,
+        hass,
+        event.target as HTMLElement,
+        config
+      );
     }
   }
 
-  private handleDoubleAction(event: Event, module: CameraModule, hass: HomeAssistant): void {
+  private handleDoubleAction(
+    event: Event,
+    module: CameraModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (module.double_tap_action && module.double_tap_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
         module.double_tap_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }
 
   // Fullscreen functionality
-  private handleFullscreenClick(event: Event, module: CameraModule): void {
+  private handleFullscreenClick(
+    event: Event,
+    module: CameraModule,
+    config?: UltraCardConfig
+  ): void {
     event.stopPropagation();
     event.preventDefault();
+
+    // Trigger haptic feedback for fullscreen action
+    const hapticEnabled = config?.haptic_feedback !== false;
+    if (hapticEnabled) {
+      import('custom-card-helpers').then(({ forwardHaptic }) => {
+        forwardHaptic('medium'); // Use medium haptic for fullscreen action
+      });
+    }
 
     this.createFullscreenModal(module);
   }
@@ -1807,16 +1861,18 @@ export class UltraCameraModule extends BaseUltraModule {
       align-items: center !important;
       justify-content: center !important;
       backdrop-filter: blur(10px) !important;
+      touch-action: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
     `;
 
     const cameraWrapper = document.createElement('div');
     cameraWrapper.style.cssText = `
       position: relative !important;
-      max-width: 95vw !important;
-      max-height: 95vh !important;
-      border-radius: 12px !important;
+      width: 100vw !important;
+      height: 100vh !important;
       overflow: hidden !important;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.8) !important;
       background: black !important;
     `;
 
@@ -1829,6 +1885,8 @@ export class UltraCameraModule extends BaseUltraModule {
       align-items: center !important;
       justify-content: center !important;
       min-height: 300px !important;
+      touch-action: none !important;
+      user-select: none !important;
     `;
 
     const closeButton = document.createElement('button');
@@ -1887,6 +1945,12 @@ export class UltraCameraModule extends BaseUltraModule {
 
     // Add event handlers and prevent inert attribute
     const closeModal = () => {
+      // Restore viewport settings
+      const restoreViewport = (modal as any)._restoreViewport;
+      if (restoreViewport) {
+        restoreViewport();
+      }
+
       modal.remove();
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = '';
@@ -1963,30 +2027,38 @@ export class UltraCameraModule extends BaseUltraModule {
           (huiImage as any).cameraView = module.live_view ? 'live' : 'auto';
 
           huiImage.style.cssText = `
-            width: auto !important;
-            height: auto !important;
-            max-width: 95vw !important;
-            max-height: 95vh !important;
+            width: 100vw !important;
+            height: 100vh !important;
             display: block !important;
             object-fit: contain !important;
-            border-radius: 12px !important;
+            transition: transform 0.2s ease !important;
+            cursor: grab !important;
+            touch-action: none !important;
           `;
 
           cameraContainer.innerHTML = '';
           cameraContainer.appendChild(huiImage);
+
+          // Add pinch-to-zoom functionality
+          this.addPinchZoomToCamera(huiImage, cameraContainer);
         } else {
           // Fallback to img if no hass
-          cameraContainer.innerHTML = `
-            <img src="/api/camera_proxy/${cameraEntity}?t=${Date.now()}" style="
-              width: auto !important;
-              height: auto !important;
-              max-width: 95vw !important;
-              max-height: 95vh !important;
-              display: block !important;
-              object-fit: contain !important;
-              border-radius: 12px !important;
-            " onerror="this.parentElement.innerHTML='<div style=\\"color:white;text-align:center;padding:40px;\\">Camera Error</div>'" />
+          const fallbackImg = document.createElement('img');
+          fallbackImg.src = `/api/camera_proxy/${cameraEntity}?t=${Date.now()}`;
+          fallbackImg.style.cssText = `
+            width: 100vw !important;
+            height: 100vh !important;
+            display: block !important;
+            object-fit: contain !important;
+            cursor: grab !important;
+            touch-action: none !important;
           `;
+
+          cameraContainer.innerHTML = '';
+          cameraContainer.appendChild(fallbackImg);
+
+          // Add pinch-to-zoom to fallback image too
+          this.addPinchZoomToCamera(fallbackImg, cameraContainer);
         }
       }
     }, 50);
@@ -1999,8 +2071,279 @@ export class UltraCameraModule extends BaseUltraModule {
     };
     document.addEventListener('keydown', handleEscape);
 
-    // Prevent body scroll
+    // Prevent body scroll and browser zoom
     document.body.style.overflow = 'hidden';
+
+    // Temporarily disable browser zoom by overriding viewport
+    const originalViewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement;
+    const originalContent = originalViewport?.content || '';
+
+    if (originalViewport) {
+      originalViewport.content =
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    }
+
+    // Restore viewport when modal is removed
+    const restoreViewport = () => {
+      if (originalViewport) {
+        originalViewport.content = originalContent;
+      }
+    };
+
+    // Store restore function for cleanup
+    (modal as any)._restoreViewport = restoreViewport;
+  }
+
+  // Add pinch-to-zoom functionality to camera (no UI controls)
+  private addPinchZoomToCamera(cameraElement: HTMLElement, container: HTMLElement): void {
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let lastDistance = 0;
+    let isPinching = false;
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    // Apply transform with proper order (translate first, then scale)
+    const applyTransform = () => {
+      const transformValue = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+      cameraElement.style.transform = transformValue;
+      cameraElement.style.transformOrigin = 'center center';
+
+      // Force the transform to stick by setting it multiple times
+      requestAnimationFrame(() => {
+        cameraElement.style.transform = transformValue;
+      });
+    };
+
+    // Reset transform
+    const resetTransform = () => {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      applyTransform();
+      cameraElement.style.cursor = 'grab';
+    };
+
+    // Get distance between two touches
+    const getDistance = (touch1: Touch, touch2: Touch): number => {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    // Prevent default touch behaviors that interfere with pinch
+    container.addEventListener(
+      'touchstart',
+      (e: TouchEvent) => {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+
+    container.addEventListener(
+      'touchmove',
+      (e: TouchEvent) => {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+
+    // Touch start handler with enhanced pinch detection
+    cameraElement.addEventListener(
+      'touchstart',
+      (e: TouchEvent) => {
+        if (e.touches.length === 2) {
+          // Start pinch - aggressive prevention of browser interference
+          e.preventDefault();
+          e.stopPropagation();
+          isPinching = true;
+          lastDistance = getDistance(e.touches[0], e.touches[1]);
+
+          console.log('Pinch gesture started, initial distance:', lastDistance);
+        } else if (e.touches.length === 1 && scale > 1) {
+          // Start pan (only when zoomed)
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+        }
+      },
+      { passive: false }
+    );
+
+    // Touch move handler
+    cameraElement.addEventListener(
+      'touchmove',
+      (e: TouchEvent) => {
+        if (isPinching && e.touches.length === 2) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Handle pinch zoom with controlled scaling
+          const currentDistance = getDistance(e.touches[0], e.touches[1]);
+
+          if (lastDistance > 0) {
+            const scaleChange = currentDistance / lastDistance;
+
+            // Simple, responsive scaling
+            scale *= scaleChange;
+            scale = Math.max(1, Math.min(5, scale)); // 1x to 5x range
+
+            // Reset translation when zooming out to 1x
+            if (scale === 1) {
+              translateX = 0;
+              translateY = 0;
+            } else {
+              constrainPan();
+            }
+
+            applyTransform();
+            lastDistance = currentDistance;
+          }
+        } else if (e.touches.length === 1 && scale > 1) {
+          e.preventDefault();
+          // Handle pan
+          const deltaX = e.touches[0].clientX - lastTouchX;
+          const deltaY = e.touches[0].clientY - lastTouchY;
+
+          translateX += deltaX;
+          translateY += deltaY;
+
+          constrainPan();
+          applyTransform();
+
+          lastTouchX = e.touches[0].clientX;
+          lastTouchY = e.touches[0].clientY;
+        }
+      },
+      { passive: false }
+    );
+
+    // Touch end handler
+    cameraElement.addEventListener('touchend', (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        isPinching = false;
+        // Ensure zoom level persists after touch end
+        applyTransform();
+        cameraElement.style.cursor = scale > 1 ? 'grab' : 'grab';
+        console.log('Touch ended, maintaining scale:', scale.toFixed(2));
+      } else if (e.touches.length === 1 && isPinching) {
+        // One finger lifted during pinch - maintain current scale
+        isPinching = false;
+        applyTransform();
+        console.log('Pinch ended, scale maintained at:', scale.toFixed(2));
+      }
+    });
+
+    // Handle touch cancel (important for mobile browsers)
+    cameraElement.addEventListener('touchcancel', (e: TouchEvent) => {
+      // Maintain current scale even if touch is cancelled
+      applyTransform();
+      console.log('Touch cancelled, maintaining scale:', scale.toFixed(2));
+    });
+
+    // Calculate pan boundaries to keep image in view
+    const getPanLimits = () => {
+      const rect = cameraElement.getBoundingClientRect();
+      const scaledWidth = rect.width * scale;
+      const scaledHeight = rect.height * scale;
+      const maxX = Math.max(0, (scaledWidth - window.innerWidth) / 2);
+      const maxY = Math.max(0, (scaledHeight - window.innerHeight) / 2);
+      return { maxX, maxY };
+    };
+
+    // Constrain pan within reasonable bounds
+    const constrainPan = () => {
+      if (scale > 1) {
+        const { maxX, maxY } = getPanLimits();
+        translateX = Math.max(-maxX, Math.min(maxX, translateX));
+        translateY = Math.max(-maxY, Math.min(maxY, translateY));
+      }
+    };
+
+    // DESKTOP MOUSE EVENTS
+    cameraElement.addEventListener('mousedown', (e: MouseEvent) => {
+      if (scale > 1) {
+        e.preventDefault();
+        isDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        cameraElement.style.cursor = 'grabbing';
+      }
+    });
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (isDragging && scale > 1) {
+        e.preventDefault();
+        const deltaX = e.clientX - lastMouseX;
+        const deltaY = e.clientY - lastMouseY;
+
+        translateX += deltaX;
+        translateY += deltaY;
+
+        constrainPan();
+        applyTransform();
+
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        cameraElement.style.cursor = scale > 1 ? 'grab' : 'grab';
+      }
+    });
+
+    // Mouse wheel zoom for desktop
+    cameraElement.addEventListener(
+      'wheel',
+      (e: WheelEvent) => {
+        e.preventDefault();
+
+        const zoomSpeed = 0.1; // Smaller increments for smooth control
+        const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
+
+        const newScale = Math.max(1, Math.min(6, scale + delta)); // Same 6x max as mobile
+
+        if (newScale !== scale) {
+          scale = newScale;
+
+          // Reset pan when zooming out to 1x
+          if (scale === 1) {
+            translateX = 0;
+            translateY = 0;
+          } else {
+            constrainPan();
+          }
+
+          applyTransform();
+          cameraElement.style.cursor = scale > 1 ? 'grab' : 'grab';
+        }
+      },
+      { passive: false }
+    );
+
+    // Double tap to reset zoom
+    let lastTap = 0;
+    cameraElement.addEventListener('touchend', (e: TouchEvent) => {
+      const currentTime = Date.now();
+      const tapLength = currentTime - lastTap;
+
+      if (tapLength < 300 && tapLength > 0 && e.touches.length === 0) {
+        // Double tap detected - reset zoom
+        resetTransform();
+      }
+
+      lastTap = currentTime;
+    });
   }
 
   // Legacy methods - keeping for fallback compatibility

@@ -1,5 +1,6 @@
 import { ExportData, CardRow, LayoutConfig, CardModule } from '../types';
 import { VERSION } from '../version';
+import { ucPrivacyService } from './uc-privacy-service';
 
 /**
  * Service for exporting and importing Ultra Card configurations
@@ -7,16 +8,26 @@ import { VERSION } from '../version';
  */
 class UcExportImportService {
   /**
-   * Export a row to clipboard as Ultra Card shortcode
+   * Export a row to clipboard as Ultra Card shortcode with privacy protection
    */
   async exportRowToClipboard(row: CardRow, name?: string): Promise<void> {
+    // Scan for privacy issues
+    const privacyScan = ucPrivacyService.scanAndSanitize(row);
+
+    // Show privacy dialog if issues found
+    const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
+    if (!userConsent) {
+      throw new Error('Export cancelled by user');
+    }
+
     const exportData: ExportData = {
       type: 'ultra-card-row',
       version: VERSION,
-      data: row,
+      data: privacyScan.sanitizedData, // Use sanitized data
       metadata: {
         exported: new Date().toISOString(),
         name: name || 'Exported Row',
+        privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
     };
 
@@ -25,16 +36,26 @@ class UcExportImportService {
   }
 
   /**
-   * Export a layout to clipboard
+   * Export a layout to clipboard with privacy protection
    */
   async exportLayoutToClipboard(layout: LayoutConfig, name?: string): Promise<void> {
+    // Scan for privacy issues
+    const privacyScan = ucPrivacyService.scanAndSanitize(layout);
+
+    // Show privacy dialog if issues found
+    const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
+    if (!userConsent) {
+      throw new Error('Export cancelled by user');
+    }
+
     const exportData: ExportData = {
       type: 'ultra-card-layout',
       version: VERSION,
-      data: layout,
+      data: privacyScan.sanitizedData, // Use sanitized data
       metadata: {
         exported: new Date().toISOString(),
         name: name || 'Exported Layout',
+        privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
     };
 
@@ -43,16 +64,26 @@ class UcExportImportService {
   }
 
   /**
-   * Export a module to clipboard
+   * Export a module to clipboard with privacy protection
    */
   async exportModuleToClipboard(module: CardModule, name?: string): Promise<void> {
+    // Scan for privacy issues
+    const privacyScan = ucPrivacyService.scanAndSanitize(module);
+
+    // Show privacy dialog if issues found
+    const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
+    if (!userConsent) {
+      throw new Error('Export cancelled by user');
+    }
+
     const exportData: ExportData = {
       type: 'ultra-card-module',
       version: VERSION,
-      data: module,
+      data: privacyScan.sanitizedData, // Use sanitized data
       metadata: {
         exported: new Date().toISOString(),
         name: name || 'Exported Module',
+        privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
     };
 
@@ -65,14 +96,48 @@ class UcExportImportService {
    */
   importFromShortcode(shortcode: string): ExportData | null {
     try {
-      const match = shortcode.match(/\[ultra_card\]([\s\S]*?)\[\/ultra_card\]/);
+      // Clean the shortcode first
+      const cleanShortcode = shortcode.trim();
+
+      const match = cleanShortcode.match(/\[ultra_card\]([\s\S]*?)\[\/ultra_card\]/);
       if (!match) {
         throw new Error('Invalid Ultra Card shortcode format');
       }
 
       const encodedData = match[1].trim();
-      const jsonData = atob(encodedData);
-      const exportData: ExportData = JSON.parse(jsonData);
+
+      // Validate base64 encoding
+      if (!encodedData || encodedData.length === 0) {
+        throw new Error('Empty shortcode data');
+      }
+
+      let jsonData: string;
+      try {
+        jsonData = atob(encodedData);
+      } catch (decodeError) {
+        throw new Error('Invalid base64 encoding in shortcode');
+      }
+
+      // Clean JSON data and validate
+      const cleanJsonData = jsonData.trim();
+      if (!cleanJsonData || cleanJsonData.length === 0) {
+        throw new Error('Empty JSON data in shortcode');
+      }
+
+      let exportData: ExportData;
+      try {
+        exportData = JSON.parse(cleanJsonData);
+      } catch (jsonError) {
+        // Try to fix common JSON issues
+        const fixedJson = this._attemptJsonFix(cleanJsonData);
+        if (fixedJson) {
+          exportData = JSON.parse(fixedJson);
+        } else {
+          throw new Error(
+            `Invalid JSON in shortcode: ${jsonError instanceof Error ? jsonError.message : 'Unknown error'}`
+          );
+        }
+      }
 
       // Validate the import data
       if (!this._isValidExportData(exportData)) {
@@ -97,11 +162,15 @@ class UcExportImportService {
       // Check if the modern clipboard API is available
       if (navigator.clipboard && navigator.clipboard.readText) {
         const text = await navigator.clipboard.readText();
+        if (!text || text.trim().length === 0) {
+          console.warn('Clipboard is empty');
+          return null;
+        }
         return this.importFromShortcode(text);
       } else {
         // Fallback: prompt user to paste manually
         const text = prompt('Paste your Ultra Card shortcode here:');
-        if (!text) {
+        if (!text || text.trim().length === 0) {
           return null;
         }
         return this.importFromShortcode(text);
@@ -113,7 +182,7 @@ class UcExportImportService {
         const text = prompt(
           'Clipboard access failed. Please paste your Ultra Card shortcode here:'
         );
-        if (!text) {
+        if (!text || text.trim().length === 0) {
           return null;
         }
         return this.importFromShortcode(text);
@@ -125,20 +194,30 @@ class UcExportImportService {
   }
 
   /**
-   * Export to file download
+   * Export to file download with privacy protection
    */
-  exportToFile(
+  async exportToFile(
     data: CardRow | LayoutConfig | CardModule,
     type: ExportData['type'],
     name: string
-  ): void {
+  ): Promise<void> {
+    // Scan for privacy issues
+    const privacyScan = ucPrivacyService.scanAndSanitize(data);
+
+    // Show privacy dialog if issues found
+    const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
+    if (!userConsent) {
+      throw new Error('Export cancelled by user');
+    }
+
     const exportData: ExportData = {
       type,
       version: VERSION,
-      data,
+      data: privacyScan.sanitizedData, // Use sanitized data
       metadata: {
         exported: new Date().toISOString(),
         name,
+        privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
     };
 
@@ -220,6 +299,34 @@ class UcExportImportService {
       data.metadata &&
       typeof data.metadata.exported === 'string'
     );
+  }
+
+  /**
+   * Attempt to fix common JSON issues
+   */
+  private _attemptJsonFix(jsonString: string): string | null {
+    try {
+      // Remove trailing commas before closing brackets/braces
+      let fixed = jsonString.replace(/,\s*([}\]])/g, '$1');
+
+      // Remove any non-JSON characters at the end
+      fixed = fixed.replace(/[^}\]]*$/, '');
+
+      // Try to find the last complete JSON object/array
+      const lastBrace = fixed.lastIndexOf('}');
+      const lastBracket = fixed.lastIndexOf(']');
+      const lastIndex = Math.max(lastBrace, lastBracket);
+
+      if (lastIndex > 0) {
+        fixed = fixed.substring(0, lastIndex + 1);
+      }
+
+      // Test if the fixed JSON parses
+      JSON.parse(fixed);
+      return fixed;
+    } catch {
+      return null;
+    }
   }
 
   /**

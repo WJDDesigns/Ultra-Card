@@ -13,6 +13,10 @@
       "title": "Appearance",
       "description": "Control the visual appearance of your card"
     },
+    "behavior": {
+      "title": "Behavior",
+      "description": "Configure how your card responds to user interactions"
+    },
     "spacing": {
       "title": "Spacing",
       "description": "Control the spacing and positioning of your card"
@@ -231,6 +235,8 @@
       "tap_behavior_desc": "Action to perform when the element is tapped/clicked.",
       "hold_behavior": "Hold Behavior",
       "hold_behavior_desc": "Action to perform when the element is pressed and held.",
+      "haptic_feedback": "Haptic Feedback",
+      "haptic_feedback_desc": "Provide tactile feedback when buttons are pressed on supported devices",
       "double_tap_behavior": "Double Tap Behavior",
       "double_tap_behavior_desc": "Action to perform when the element is double-tapped/clicked."
     },

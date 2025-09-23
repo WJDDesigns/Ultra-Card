@@ -775,7 +775,7 @@ export class UltraImageModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const imageModule = module as ImageModule;
 
     // Determine image source based on type
@@ -1001,7 +1001,7 @@ export class UltraImageModule extends BaseUltraModule {
         isHolding = true;
         const holdAction = (imageModule.hold_action as any) || ({ action: 'nothing' } as any);
         if (holdAction && holdAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement);
+          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement, config);
         }
       }, 500);
     };
@@ -1027,7 +1027,7 @@ export class UltraImageModule extends BaseUltraModule {
         clickCount = 0;
         const dblAction = (imageModule.double_tap_action as any) || ({ action: 'nothing' } as any);
         if (dblAction && dblAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement);
+          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement, config);
         }
       } else {
         // Possible single tap; wait to confirm not a double
@@ -1037,7 +1037,7 @@ export class UltraImageModule extends BaseUltraModule {
           clickCount = 0;
           const tapAction = (imageModule.tap_action as any) || ({ action: 'nothing' } as any);
           if (tapAction && tapAction.action !== 'nothing') {
-            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement);
+            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement, config);
           }
         }, 300);
       }

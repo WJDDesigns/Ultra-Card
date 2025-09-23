@@ -502,6 +502,59 @@ export class UltraCardEditor extends LitElement {
             </div>
           </div>
 
+          <!-- Behavior Section -->
+          <div class="settings-section">
+            <div class="section-header">
+              <h4>${localize('editor.behavior.title', lang, 'Behavior')}</h4>
+              <p>
+                ${localize(
+                  'editor.behavior.description',
+                  lang,
+                  'Configure how your card responds to user interactions'
+                )}
+              </p>
+            </div>
+
+            <div class="settings-grid">
+              <div class="setting-item">
+                <label>
+                  ${localize('editor.actions.haptic_feedback', lang, 'Haptic Feedback')}
+                </label>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.actions.haptic_feedback_desc',
+                    lang,
+                    'Provide tactile feedback when buttons are pressed on supported devices'
+                  )}
+                  <br /><small style="opacity: 0.7;"
+                    >Uses Home Assistant's native haptic system. Respects OS-level haptic
+                    settings.</small
+                  >
+                </div>
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{ haptic_feedback: this.config.haptic_feedback !== false }}
+                  .schema=${[
+                    {
+                      name: 'haptic_feedback',
+                      label: '',
+                      selector: {
+                        boolean: {},
+                      },
+                    },
+                  ]}
+                  .computeLabel=${() => ''}
+                  @value-changed=${(e: CustomEvent) => {
+                    const enabled = (e.detail as any)?.value?.haptic_feedback;
+                    if (enabled !== undefined) {
+                      this._updateConfig({ haptic_feedback: enabled });
+                    }
+                  }}
+                ></ha-form>
+              </div>
+            </div>
+          </div>
+
           <!-- Favorite Colors Section -->
           <div class="settings-section">
             <div class="section-header">

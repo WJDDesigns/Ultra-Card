@@ -1,5 +1,6 @@
 import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
+import { UltraCardConfig } from '../types';
 export interface UltraLinkConfig {
     tap_action?: TapActionConfig;
     hold_action?: TapActionConfig;
@@ -31,5 +32,5 @@ export declare class UltraLinkComponent {
     private static renderActionFields;
     private static renderNavigationPicker;
     static getDefaultConfig(): UltraLinkConfig;
-    static handleAction(action: TapActionConfig, hass: HomeAssistant, element?: HTMLElement): void;
+    static handleAction(action: TapActionConfig, hass: HomeAssistant, element?: HTMLElement, config?: UltraCardConfig): void;
 }

@@ -406,7 +406,7 @@ export class UltraTextModule extends BaseUltraModule {
   }
   // Removed bespoke action editor helpers to rely on GlobalActionsTab
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const textModule = module as TextModule;
     const lang = hass?.locale?.language || 'en';
 
@@ -760,7 +760,12 @@ export class UltraTextModule extends BaseUltraModule {
     return errors;
   }
 
-  private handleClick(event: Event, textModule: TextModule, hass: HomeAssistant): void {
+  private handleClick(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
 
     // Clear any existing timeout
@@ -770,11 +775,16 @@ export class UltraTextModule extends BaseUltraModule {
 
     // Set a timeout to handle single click with delay
     this.clickTimeout = setTimeout(() => {
-      this.handleTapAction(event, textModule, hass);
+      this.handleTapAction(event, textModule, hass, config);
     }, 300); // 300ms delay to allow for double-click detection
   }
 
-  private handleDoubleClick(event: Event, textModule: TextModule, hass: HomeAssistant): void {
+  private handleDoubleClick(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     event.preventDefault();
 
     // Clear the single click timeout
@@ -784,14 +794,19 @@ export class UltraTextModule extends BaseUltraModule {
     }
 
     // Handle double-click action
-    this.handleDoubleAction(event, textModule, hass);
+    this.handleDoubleAction(event, textModule, hass, config);
   }
 
   private holdTimeout: any = null;
   private isHolding = false;
 
-  private handleMouseDown(event: Event, textModule: TextModule, hass: HomeAssistant): void {
-    this.startHold(event, textModule, hass);
+  private handleMouseDown(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    this.startHold(event, textModule, hass, config);
   }
 
   private handleMouseUp(event: Event, textModule: TextModule, hass: HomeAssistant): void {
@@ -802,19 +817,29 @@ export class UltraTextModule extends BaseUltraModule {
     this.endHold(event, textModule, hass);
   }
 
-  private handleTouchStart(event: Event, textModule: TextModule, hass: HomeAssistant): void {
-    this.startHold(event, textModule, hass);
+  private handleTouchStart(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    this.startHold(event, textModule, hass, config);
   }
 
   private handleTouchEnd(event: Event, textModule: TextModule, hass: HomeAssistant): void {
     this.endHold(event, textModule, hass);
   }
 
-  private startHold(event: Event, textModule: TextModule, hass: HomeAssistant): void {
+  private startHold(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     this.isHolding = false;
     this.holdTimeout = setTimeout(() => {
       this.isHolding = true;
-      this.handleHoldAction(event, textModule, hass);
+      this.handleHoldAction(event, textModule, hass, config);
     }, 500); // 500ms hold time
   }
 
@@ -826,7 +851,12 @@ export class UltraTextModule extends BaseUltraModule {
     this.isHolding = false;
   }
 
-  private handleTapAction(event: Event, textModule: TextModule, hass: HomeAssistant): void {
+  private handleTapAction(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     // Don't trigger tap action if we're in the middle of a hold
     if (this.isHolding) return;
 
@@ -849,12 +879,18 @@ export class UltraTextModule extends BaseUltraModule {
       UltraLinkComponent.handleAction(
         textModule.tap_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }
 
-  private handleDoubleAction(event: Event, textModule: TextModule, hass: HomeAssistant): void {
+  private handleDoubleAction(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (
       textModule.double_tap_action &&
       textModule.double_tap_action.action !== 'default' &&
@@ -863,12 +899,18 @@ export class UltraTextModule extends BaseUltraModule {
       UltraLinkComponent.handleAction(
         textModule.double_tap_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }
 
-  private handleHoldAction(event: Event, textModule: TextModule, hass: HomeAssistant): void {
+  private handleHoldAction(
+    event: Event,
+    textModule: TextModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     if (
       textModule.hold_action &&
       textModule.hold_action.action !== 'default' &&
@@ -877,7 +919,8 @@ export class UltraTextModule extends BaseUltraModule {
       UltraLinkComponent.handleAction(
         textModule.hold_action as any,
         hass,
-        event.target as HTMLElement
+        event.target as HTMLElement,
+        config
       );
     }
   }

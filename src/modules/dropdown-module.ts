@@ -856,7 +856,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const dropdownModule = module as DropdownModule;
 
     // Apply design properties with priority - global design properties are stored directly on the module
@@ -954,7 +954,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Find option by label since we removed the value field
       const selectedOption = dropdownModule.options.find(option => option.label === selectedValue);
       if (selectedOption) {
-        this.executeOptionAction(selectedOption, hass);
+        this.executeOptionAction(selectedOption, hass, undefined, config);
       }
     };
 
@@ -1159,7 +1159,8 @@ export class UltraDropdownModule extends BaseUltraModule {
                         this.executeOptionAction(
                           option,
                           hass,
-                          (e.currentTarget as HTMLElement) || undefined
+                          (e.currentTarget as HTMLElement) || undefined,
+                          config
                         );
                         this.closeDropdown(e);
                       }}
@@ -1279,9 +1280,18 @@ export class UltraDropdownModule extends BaseUltraModule {
   private executeOptionAction(
     option: DropdownOption,
     hass: HomeAssistant,
-    element?: HTMLElement
+    element?: HTMLElement,
+    config?: UltraCardConfig
   ): void {
     console.log('Executing action:', option.action);
+
+    // Trigger haptic feedback if enabled (default: true)
+    const hapticEnabled = config?.haptic_feedback !== false;
+    if (hapticEnabled) {
+      import('custom-card-helpers').then(({ forwardHaptic }) => {
+        forwardHaptic('selection'); // Use selection haptic for dropdown selections
+      });
+    }
 
     // Prefer central handler to keep behavior consistent with the rest of the card
     if (option.action.action === 'more-info' && option.action.entity) {
@@ -1302,7 +1312,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       return;
     }
 
-    UltraLinkComponent.handleAction(option.action as any, hass, element || document.body);
+    UltraLinkComponent.handleAction(option.action as any, hass, element || document.body, config);
   }
 
   private addPixelUnit(value: string | undefined): string | undefined {

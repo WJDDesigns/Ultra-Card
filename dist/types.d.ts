@@ -1181,6 +1181,7 @@ export interface ExportData {
         exported: string;
         name?: string;
         description?: string;
+        privacyProtected?: boolean;
     };
 }
 export interface UltraCardConfig {
@@ -1196,6 +1197,7 @@ export interface UltraCardConfig {
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
     favorite_colors?: FavoriteColor[];
+    haptic_feedback?: boolean;
 }
 export interface CustomCard {
     type: string;

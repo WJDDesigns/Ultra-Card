@@ -2152,6 +2152,7 @@ export interface ExportData {
     exported: string;
     name?: string;
     description?: string;
+    privacyProtected?: boolean; // Flag indicating if data was sanitized for privacy
   };
 }
 
@@ -2171,6 +2172,8 @@ export interface UltraCardConfig {
   display_conditions?: DisplayCondition[];
   // Favorite colors configuration
   favorite_colors?: FavoriteColor[];
+  // Haptic feedback configuration
+  haptic_feedback?: boolean;
 }
 
 // Custom card interface for registration
