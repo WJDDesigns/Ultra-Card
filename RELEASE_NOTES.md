@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.2.0-beta10
+## Version 1.2.0-beta11
 
 ### 🚀 New Features
 
