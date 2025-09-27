@@ -5,7 +5,7 @@
 ### 🚀 New Features
 
 - **Added haptic feedback option in card settings** - Global toggle for tactile feedback on all interactions
-- **Added pinch to zoom to camera module** - Enhanced camera viewing with zoom and pan controls  
+- **Added pinch to zoom to camera module** - Enhanced camera viewing with zoom and pan controls
 - **Added exported code privacy protection** - Automatically removes sensitive data from exported configurations
 
 ## Version 1.2.0-beta9

@@ -546,7 +546,7 @@ export class UltraButtonModule extends BaseUltraModule {
         designProperties.margin_bottom ||
         designProperties.margin_left ||
         designProperties.margin_right
-          ? `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0'}`
+          ? `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0px'}`
           : '8px 0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(

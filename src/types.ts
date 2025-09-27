@@ -396,6 +396,8 @@ export interface ImageModule extends BaseModule {
   filter_saturate?: number;
   filter_hue_rotate?: number;
   filter_opacity?: number;
+  // Rotation
+  rotation?: number;
   // Hover effects
   hover_enabled?: boolean;
   hover_effect?: 'scale' | 'rotate' | 'fade' | 'blur' | 'brightness' | 'glow' | 'slide';
@@ -1327,6 +1329,9 @@ export interface CameraModule extends BaseModule {
 
   // Image quality
   image_quality?: 'high' | 'medium' | 'low';
+
+  // Rotation
+  rotation?: number;
 
   // Live view (streaming)
   live_view?: boolean;

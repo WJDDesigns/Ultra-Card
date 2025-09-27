@@ -441,8 +441,17 @@ export class UltraTextModule extends BaseUltraModule {
 
     const textStyles = {
       fontSize: (() => {
-        if (designProperties.font_size && designProperties.font_size.trim() !== '')
+        if (
+          designProperties.font_size &&
+          typeof designProperties.font_size === 'string' &&
+          designProperties.font_size.trim() !== ''
+        ) {
+          // If it already has units, use as-is; otherwise add px
+          if (/[a-zA-Z%]/.test(designProperties.font_size)) {
+            return designProperties.font_size;
+          }
           return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
+        }
         if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
         // Default font size for text modules when no design or module font_size is set
         return '26px';
@@ -582,7 +591,7 @@ export class UltraTextModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       // Only apply container-level design properties if specifically configured
       background:

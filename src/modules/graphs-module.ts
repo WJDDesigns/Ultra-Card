@@ -1329,7 +1329,17 @@ export class UltraGraphsModule extends BaseUltraModule {
     // Resolve text styles (global design overrides module)
     const resolvedTextColor =
       designProperties.color || moduleWithDesign.color || 'var(--primary-text-color)';
-    const resolvedFontSize = designProperties.font_size || moduleWithDesign.font_size || undefined;
+    const resolvedFontSize = (() => {
+      const fontSize = designProperties.font_size || moduleWithDesign.font_size;
+      if (fontSize && typeof fontSize === 'string' && fontSize.trim() !== '') {
+        // If it already has units, use as-is; otherwise add px
+        if (/[a-zA-Z%]/.test(fontSize)) {
+          return fontSize;
+        }
+        return `${fontSize}px`;
+      }
+      return undefined;
+    })();
     const resolvedFontFamily =
       designProperties.font_family || moduleWithDesign.font_family || undefined;
     const resolvedFontWeight =
@@ -1395,7 +1405,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background:
         designProperties.background_color && designProperties.background_color !== 'transparent'

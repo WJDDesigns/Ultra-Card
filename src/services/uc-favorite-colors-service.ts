@@ -185,10 +185,53 @@ class UcFavoriteColorsService {
   }
 
   /**
+   * Debug method to help diagnose favorite colors issues
+   */
+  debugFavoriteColors(): void {
+    console.log('=== Ultra Card Favorite Colors Debug Info ===');
+    console.log('Storage Key:', UcFavoriteColorsService.STORAGE_KEY);
+    console.log('Current Favorite Colors Count:', this._favorites.length);
+    console.log('Listeners Count:', this._listeners.size);
+    console.log('LocalStorage Available:', this._isLocalStorageAvailable());
+
+    try {
+      const stored = localStorage.getItem(UcFavoriteColorsService.STORAGE_KEY);
+      console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
+      console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+        console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+      }
+    } catch (error) {
+      console.error('Storage Data Error:', error);
+    }
+
+    console.log(
+      'Favorite Colors List:',
+      this._favorites.map(f => ({
+        id: f.id,
+        name: f.name,
+        color: f.color,
+        order: f.order,
+      }))
+    );
+    console.log('==========================================');
+  }
+
+  /**
    * Load favorites from localStorage
    */
   private _loadFromStorage(): void {
     try {
+      // Check if localStorage is available
+      if (!this._isLocalStorageAvailable()) {
+        console.warn('localStorage is not available, favorite colors will not persist');
+        this._favorites = [];
+        return;
+      }
+
       const stored = localStorage.getItem(UcFavoriteColorsService.STORAGE_KEY);
 
       if (stored) {
@@ -196,14 +239,17 @@ class UcFavoriteColorsService {
 
         if (Array.isArray(parsed)) {
           this._favorites = parsed.filter(this._isValidFavorite.bind(this));
+          console.log(`Loaded ${this._favorites.length} favorite colors from storage`);
         } else {
+          console.warn('Invalid favorite colors data format in storage, resetting');
           this._favorites = [];
         }
       } else {
+        console.log('No favorite colors found in storage');
         this._favorites = [];
       }
     } catch (error) {
-      console.warn('Failed to load favorite colors from storage:', error);
+      console.error('Failed to load favorite colors from storage:', error);
       this._favorites = [];
     }
   }
@@ -213,9 +259,27 @@ class UcFavoriteColorsService {
    */
   private _saveToStorage(): void {
     try {
-      localStorage.setItem(UcFavoriteColorsService.STORAGE_KEY, JSON.stringify(this._favorites));
+      // Check if localStorage is available
+      if (!this._isLocalStorageAvailable()) {
+        console.warn('localStorage is not available, favorite colors will not be saved');
+        return;
+      }
+
+      const dataToSave = JSON.stringify(this._favorites);
+      localStorage.setItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
+      console.log(`Saved ${this._favorites.length} favorite colors to storage`);
     } catch (error) {
-      console.warn('Failed to save favorite colors to storage:', error);
+      console.error('Failed to save favorite colors to storage:', error);
+
+      // Check if it's a quota exceeded error
+      if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
+        console.error(
+          'localStorage quota exceeded! Consider clearing old data or using fewer favorite colors.'
+        );
+        this._handleStorageQuotaExceeded();
+      } else {
+        console.error('Unknown storage error:', error);
+      }
     }
   }
 
@@ -334,12 +398,61 @@ class UcFavoriteColorsService {
       colorFormats.some(format => format.test(color)) || namedColors.includes(color.toLowerCase())
     );
   }
+
+  /**
+   * Check if localStorage is available and working
+   */
+  private _isLocalStorageAvailable(): boolean {
+    try {
+      const testKey = '__ultra_card_colors_storage_test__';
+      localStorage.setItem(testKey, 'test');
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Handle storage quota exceeded by cleaning up old favorite colors
+   */
+  private _handleStorageQuotaExceeded(): void {
+    console.log('Attempting to free up storage space by removing oldest favorite colors...');
+
+    if (this._favorites.length <= 1) {
+      console.error('Cannot free up space - only one or no favorite colors exist');
+      return;
+    }
+
+    // Remove oldest 25% of favorite colors to free up space
+    const colorsToRemove = Math.max(1, Math.floor(this._favorites.length * 0.25));
+    const sortedFavorites = [...this._favorites].sort((a, b) => a.order - b.order);
+
+    // Remove oldest favorite colors (highest order numbers)
+    const colorsToKeep = sortedFavorites.slice(0, this._favorites.length - colorsToRemove);
+    this._favorites = colorsToKeep;
+
+    console.log(`Removed ${colorsToRemove} oldest favorite colors to free up storage space`);
+
+    // Try to save again
+    try {
+      const dataToSave = JSON.stringify(this._favorites);
+      localStorage.setItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
+      console.log('Successfully saved favorite colors after cleanup');
+      this._notifyListeners();
+      this._broadcastChange();
+    } catch (error) {
+      console.error('Still cannot save after cleanup:', error);
+    }
+  }
 }
 
 // Export singleton instance
 export const ucFavoriteColorsService = new UcFavoriteColorsService();
 
-// Make service available globally for debugging
+// Make service and debug methods available globally for debugging
 if (typeof window !== 'undefined') {
   (window as any).ucFavoriteColorsService = ucFavoriteColorsService;
+  (window as any).debugUltraCardFavoriteColors = () =>
+    ucFavoriteColorsService.debugFavoriteColors();
 }

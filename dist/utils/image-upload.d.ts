@@ -7,11 +7,12 @@ export interface ImageUploadResponse {
     warning?: string;
 }
 /**
- * Uploads a file to the Home Assistant media source OR older image API.
+ * Uploads a file to Home Assistant using the best available method.
+ * Tries local media source first, falls back to image API if needed.
  * @param hass The Home Assistant object.
  * @param file The file to upload.
- * @returns The path of the uploaded file (/api/image/serve/<id> format).
- * @throws An error if the upload fails or the response is invalid.
+ * @returns The path of the uploaded file.
+ * @throws An error if all upload methods fail.
  */
 export declare function uploadImage(hass: HomeAssistant, file: File): Promise<string>;
 /**

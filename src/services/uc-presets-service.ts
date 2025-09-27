@@ -115,6 +115,8 @@ class UcPresetsService {
    * Refresh WordPress presets
    */
   async refreshWordPressPresets(): Promise<void> {
+    // Clear the API cache first to ensure fresh data
+    directoriesProPresetsAPI.clearCache();
     await this._loadWordPressPresets(true);
   }
 
@@ -208,8 +210,6 @@ class UcPresetsService {
     this._notifyStatusListeners();
 
     try {
-      // Loading WordPress presets (silent)
-
       const response = await directoriesProPresetsAPI.fetchPresets({
         per_page: 50, // Load up to 50 presets initially
         sort: 'popular', // Sort by most popular first
@@ -218,14 +218,35 @@ class UcPresetsService {
       this._wordpressPresets = response.presets.map(this._convertWordPressPreset.bind(this));
       this._wordpressError = null;
 
-      // Successfully loaded presets (silent)
+      console.log(`Successfully loaded ${response.presets.length} presets from ultracard.io`);
 
       // Notify listeners of new presets
       this._notifyListeners();
     } catch (error) {
       console.error('Failed to load WordPress presets from Directories Pro:', error);
-      this._wordpressError = error instanceof Error ? error.message : 'Failed to load presets';
-      // Keep existing presets on error
+
+      // Provide more specific error messages
+      let errorMessage = 'Unable to load presets from ultracard.io';
+
+      if (error instanceof Error) {
+        if (error.message.includes('CORS')) {
+          errorMessage = 'Network access blocked. Using cached presets if available.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Connection timeout. Please check your internet connection.';
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Using cached presets if available.';
+        } else {
+          errorMessage = `Connection error: ${error.message}`;
+        }
+      }
+
+      this._wordpressError = errorMessage;
+
+      // If we have cached presets, don't treat this as a fatal error
+      if (this._wordpressPresets.length > 0) {
+        console.warn('Using previously loaded presets due to network error');
+        this._wordpressError = `${errorMessage} (Using cached presets)`;
+      }
     } finally {
       this._wordpressLoading = false;
       this._notifyStatusListeners();

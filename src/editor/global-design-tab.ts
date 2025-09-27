@@ -1107,8 +1107,27 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.font_size || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('font_size', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('font_size', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._handleNumericKeydown(e, this.designProperties.font_size || '', value =>
+                      this._updateProperty('font_size', value)
+                    )}
                   placeholder="${localize(
                     'editor.design.font_size_placeholder',
                     lang,
@@ -1136,8 +1155,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.line_height || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('line_height', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('line_height', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   placeholder="${localize(
                     'editor.design.line_height_placeholder',
                     lang,
@@ -1165,8 +1199,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.letter_spacing || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('letter_spacing', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('letter_spacing', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   placeholder="${localize(
                     'editor.design.letter_spacing_placeholder',
                     lang,
@@ -1572,9 +1621,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.width || ''}
-                  @input=${this._createRobustInputHandler('width', (value: string) =>
-                    this._updateProperty('width', value)
-                  )}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('width', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(e, this.designProperties.width || '', value =>
                       this._updateProperty('width', value)
@@ -1602,8 +1665,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.height || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('height', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('height', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(e, this.designProperties.height || '', value =>
                       this._updateProperty('height', value)
@@ -1627,8 +1705,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.max_width || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('max_width', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('max_width', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(e, this.designProperties.max_width || '', value =>
                       this._updateProperty('max_width', value)
@@ -1652,8 +1745,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.max_height || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('max_height', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('max_height', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   placeholder="200px, 15rem, 10vh"
                   class="property-input"
                 />
@@ -1673,8 +1781,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.min_width || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('min_width', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('min_width', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   placeholder="200px, 100%, 14rem, 10vw"
                   class="property-input"
                 />
@@ -1694,8 +1817,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.min_height || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('min_height', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('min_height', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   placeholder="200px, 15rem, 10vh"
                   class="property-input"
                 />
@@ -1735,11 +1873,25 @@ export class GlobalDesignTab extends LitElement {
                   <label>Top</label>
                   <input
                     type="text"
-                    placeholder="8px (default)"
+                    placeholder="8px, auto, 1rem"
                     .value=${this.designProperties.margin_top || ''}
-                    @input=${this._createRobustInputHandler('margin_top', (value: string) =>
-                      this._updateSpacing('margin', 'top', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('margin', 'top', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_top',
                       () => this.designProperties.margin_top || '',
@@ -1756,14 +1908,28 @@ export class GlobalDesignTab extends LitElement {
                   <label>Right</label>
                   <input
                     type="text"
-                    placeholder="0px (default)"
+                    placeholder="0px, auto, 1rem"
                     .value=${this._marginLocked
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_right || ''}
                     .disabled=${this._marginLocked}
-                    @input=${this._createRobustInputHandler('margin_right', (value: string) =>
-                      this._updateSpacing('margin', 'right', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('margin', 'right', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_right',
                       () => this.designProperties.margin_right || '',
@@ -1780,14 +1946,28 @@ export class GlobalDesignTab extends LitElement {
                   <label>Bottom</label>
                   <input
                     type="text"
-                    placeholder="8px (default)"
+                    placeholder="8px, auto, 1rem"
                     .value=${this._marginLocked
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_bottom || ''}
                     .disabled=${this._marginLocked}
-                    @input=${this._createRobustInputHandler('margin_bottom', (value: string) =>
-                      this._updateSpacing('margin', 'bottom', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('margin', 'bottom', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_bottom',
                       () => this.designProperties.margin_bottom || '',
@@ -1804,14 +1984,28 @@ export class GlobalDesignTab extends LitElement {
                   <label>Left</label>
                   <input
                     type="text"
-                    placeholder="0px (default)"
+                    placeholder="0px, auto, 1rem"
                     .value=${this._marginLocked
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_left || ''}
                     .disabled=${this._marginLocked}
-                    @input=${this._createRobustInputHandler('margin_left', (value: string) =>
-                      this._updateSpacing('margin', 'left', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('margin', 'left', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_left',
                       () => this.designProperties.margin_left || '',
@@ -1848,9 +2042,23 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_top || ''}
-                    @input=${this._createRobustInputHandler('padding_top', (value: string) =>
-                      this._updateSpacing('padding', 'top', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('padding', 'top', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_top',
                       () => this.designProperties.padding_top || '',
@@ -1872,9 +2080,23 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_right || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${this._createRobustInputHandler('padding_right', (value: string) =>
-                      this._updateSpacing('padding', 'right', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('padding', 'right', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_right',
                       () => this.designProperties.padding_right || '',
@@ -1896,9 +2118,23 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_bottom || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${this._createRobustInputHandler('padding_bottom', (value: string) =>
-                      this._updateSpacing('padding', 'bottom', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('padding', 'bottom', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_bottom',
                       () => this.designProperties.padding_bottom || '',
@@ -1920,9 +2156,23 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_left || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${this._createRobustInputHandler('padding_left', (value: string) =>
-                      this._updateSpacing('padding', 'left', value)
-                    )}
+                    @input=${(e: Event) => {
+                      const target = e.target as HTMLInputElement;
+                      const value = target.value;
+                      // Store cursor position
+                      const cursorPosition = target.selectionStart;
+                      const cursorEnd = target.selectionEnd;
+
+                      // Update property without immediate re-render
+                      this._updateSpacing('padding', 'left', value);
+
+                      // Restore cursor position after update
+                      requestAnimationFrame(() => {
+                        if (target && typeof cursorPosition === 'number') {
+                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                        }
+                      });
+                    }}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_left',
                       () => this.designProperties.padding_left || '',
@@ -1949,8 +2199,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.border_radius || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('border_radius', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('border_radius', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(
                       e,
@@ -2022,8 +2287,23 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.border_width || ''}
-                  @input=${(e: Event) =>
-                    this._updateProperty('border_width', (e.target as HTMLInputElement).value)}
+                  @input=${(e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const value = target.value;
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart;
+                    const cursorEnd = target.selectionEnd;
+
+                    // Update property without immediate re-render
+                    this._updateProperty('border_width', value);
+
+                    // Restore cursor position after update
+                    requestAnimationFrame(() => {
+                      if (target && typeof cursorPosition === 'number') {
+                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                      }
+                    });
+                  }}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(e, this.designProperties.border_width || '', value =>
                       this._updateProperty('border_width', value)

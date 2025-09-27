@@ -39,8 +39,14 @@ export class DirectoriesProPresetsAPI {
   private static readonly CACHE_KEY = 'ultra-card-directories-pro-presets';
   private static readonly CACHE_TIMESTAMP_KEY = 'ultra-card-directories-pro-presets-timestamp';
   private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private static readonly EXTENDED_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for CORS fallback
 
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private corsProxies = [
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?',
+    'https://cors-anywhere.herokuapp.com/',
+  ];
 
   /**
    * Fetch all presets from Directories Pro
@@ -87,23 +93,8 @@ export class DirectoriesProPresetsAPI {
       // Use Directories Pro post type
       const url = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg?${queryParams.toString()}`;
 
-      // Fetching WordPress presets (silent)
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        // Add timeout
-        signal: AbortSignal.timeout(10000), // 10 second timeout
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const posts = await response.json();
+      // Try multiple methods to fetch data
+      const posts = await this._fetchWithCorsResilience(url);
 
       // Convert Directories Pro presets to our preset format
       const data: WordPressPresetsResponse = {
@@ -176,14 +167,21 @@ export class DirectoriesProPresetsAPI {
     } catch (error) {
       console.error('Failed to fetch Directories Pro presets:', error);
 
-      // Try to return stale cache if available
+      // Try to return stale cache if available (extended duration for CORS failures)
       const staleCache = this._getFromLocalStorage(cacheKey, true);
       if (staleCache) {
-        // Using stale cached presets due to fetch error (silent)
+        console.warn('Using stale cached presets due to fetch error');
         return staleCache.data;
       }
 
-      // Return empty response as fallback
+      // Try to get any cached presets from any previous successful calls
+      const fallbackCache = this._getFallbackCache();
+      if (fallbackCache) {
+        console.warn('Using fallback cached presets due to fetch error');
+        return fallbackCache;
+      }
+
+      // Return empty response as final fallback
       return {
         presets: [],
         total: 0,
@@ -207,18 +205,7 @@ export class DirectoriesProPresetsAPI {
 
     try {
       const url = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg/${id}?_embed=true`;
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const post = await response.json();
+      const post = await this._fetchWithCorsResilience(url);
       const meta = post.preset_meta || {};
       const tags = meta.tags ? meta.tags.split(',').map((tag: string) => tag.trim()) : [];
       const integrations = meta.integrations
@@ -329,6 +316,51 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
+   * Test CORS-resilient connection (for debugging)
+   */
+  async testConnection(): Promise<{ method: string; success: boolean; error?: string }[]> {
+    const testUrl = `${DirectoriesProPresetsAPI.API_BASE}/presets_dir_ltg?per_page=1`;
+    const results: { method: string; success: boolean; error?: string }[] = [];
+
+    // Test direct fetch
+    try {
+      await fetch(testUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+      });
+      results.push({ method: 'Direct Fetch', success: true });
+    } catch (error) {
+      results.push({
+        method: 'Direct Fetch',
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+
+    // Test each CORS proxy
+    for (const proxy of this.corsProxies) {
+      try {
+        const proxyUrl = `${proxy}${encodeURIComponent(testUrl)}`;
+        await fetch(proxyUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(8000),
+        });
+        results.push({ method: `Proxy: ${proxy}`, success: true });
+      } catch (error) {
+        results.push({
+          method: `Proxy: ${proxy}`,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
    * Get cache statistics
    */
   getCacheStats(): { memoryEntries: number; localStorageEntries: number } {
@@ -368,9 +400,16 @@ export class DirectoriesProPresetsAPI {
       const parsed = JSON.parse(stored);
 
       // Check if cache is still valid (unless allowing stale)
-      if (!allowStale && Date.now() - parsed.timestamp > DirectoriesProPresetsAPI.CACHE_DURATION) {
-        localStorage.removeItem(storageKey);
-        return null;
+      const cacheAge = Date.now() - parsed.timestamp;
+      const maxAge = allowStale
+        ? DirectoriesProPresetsAPI.EXTENDED_CACHE_DURATION
+        : DirectoriesProPresetsAPI.CACHE_DURATION;
+
+      if (cacheAge > maxAge) {
+        if (!allowStale) {
+          localStorage.removeItem(storageKey);
+        }
+        return allowStale ? parsed : null;
       }
 
       return parsed;
@@ -408,6 +447,136 @@ export class DirectoriesProPresetsAPI {
     }
 
     return words.slice(0, wordLimit).join(' ') + '...';
+  }
+
+  /**
+   * CORS-resilient fetch that tries multiple methods
+   */
+  private async _fetchWithCorsResilience(url: string): Promise<any> {
+    // Method 1: Direct fetch (fastest if CORS is working)
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(8000), // 8 second timeout
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.warn('Direct fetch failed, trying CORS proxies:', error);
+
+      // Method 2: Try CORS proxies
+      for (const proxy of this.corsProxies) {
+        try {
+          const proxyUrl = `${proxy}${encodeURIComponent(url)}`;
+          const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+            },
+            signal: AbortSignal.timeout(10000), // 10 second timeout for proxies
+          });
+
+          if (!response.ok) {
+            throw new Error(`Proxy HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log(`Successfully fetched via proxy: ${proxy}`);
+          return data;
+        } catch (proxyError) {
+          console.warn(`Proxy ${proxy} failed:`, proxyError);
+          continue; // Try next proxy
+        }
+      }
+
+      // Method 3: Try JSONP-style approach (if supported by server)
+      try {
+        return await this._fetchViaJsonp(url);
+      } catch (jsonpError) {
+        console.warn('JSONP fetch failed:', jsonpError);
+      }
+
+      // All methods failed
+      throw new Error('All CORS-resilient fetch methods failed');
+    }
+  }
+
+  /**
+   * JSONP-style fetch (experimental)
+   */
+  private async _fetchViaJsonp(url: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const callbackName = `ultracard_jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const script = document.createElement('script');
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('JSONP timeout'));
+      }, 15000);
+
+      const cleanup = () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+        delete (window as any)[callbackName];
+        clearTimeout(timeoutId);
+      };
+
+      (window as any)[callbackName] = (data: any) => {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error('JSONP script error'));
+      };
+
+      // Try to add callback parameter (may not work with all APIs)
+      const separator = url.includes('?') ? '&' : '?';
+      script.src = `${url}${separator}callback=${callbackName}`;
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Get fallback cache from any previous successful calls
+   */
+  private _getFallbackCache(): WordPressPresetsResponse | null {
+    try {
+      const keys = Object.keys(localStorage);
+      const presetCacheKeys = keys.filter(key => key.startsWith('wp-presets-cache-presets_'));
+
+      // Sort by timestamp to get the most recent
+      const sortedKeys = presetCacheKeys
+        .map(key => {
+          try {
+            const data = localStorage.getItem(key);
+            if (!data) return null;
+            const parsed = JSON.parse(data);
+            return { key, timestamp: parsed.timestamp, data: parsed.data };
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean)
+        .sort((a, b) => (b?.timestamp || 0) - (a?.timestamp || 0));
+
+      if (sortedKeys.length > 0 && sortedKeys[0]) {
+        return sortedKeys[0].data;
+      }
+    } catch (error) {
+      console.warn('Failed to get fallback cache:', error);
+    }
+
+    return null;
   }
 }
 

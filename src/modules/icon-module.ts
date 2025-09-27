@@ -1995,7 +1995,7 @@ export class UltraIconModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background:
         designProperties.background_color || moduleWithDesign.background_color || 'transparent',
@@ -2199,7 +2199,9 @@ export class UltraIconModule extends BaseUltraModule {
               // Apply Global Design text formatting properties
               const globalTextStyles = {
                 fontSize: designProperties.font_size
-                  ? this.addPixelUnit(designProperties.font_size) || designProperties.font_size
+                  ? /[a-zA-Z%]/.test(designProperties.font_size)
+                    ? designProperties.font_size
+                    : this.addPixelUnit(designProperties.font_size) || designProperties.font_size
                   : undefined,
                 fontFamily: designProperties.font_family || undefined,
                 fontWeight: designProperties.font_weight || undefined,
@@ -3071,7 +3073,9 @@ export class UltraIconModule extends BaseUltraModule {
     const globalTextStyles = designProperties
       ? {
           fontSize: designProperties.font_size
-            ? this.addPixelUnit(designProperties.font_size) || designProperties.font_size
+            ? /[a-zA-Z%]/.test(designProperties.font_size)
+              ? designProperties.font_size
+              : this.addPixelUnit(designProperties.font_size) || designProperties.font_size
             : undefined,
           fontFamily: designProperties.font_family || undefined,
           fontWeight: designProperties.font_weight || undefined,
@@ -3448,7 +3452,9 @@ export class UltraIconModule extends BaseUltraModule {
           // Apply Global Design text formatting properties
           const globalTextStyles = {
             fontSize: designProperties.font_size
-              ? this.addPixelUnit(designProperties.font_size) || designProperties.font_size
+              ? /[a-zA-Z%]/.test(designProperties.font_size)
+                ? designProperties.font_size
+                : this.addPixelUnit(designProperties.font_size) || designProperties.font_size
               : undefined,
             fontFamily: designProperties.font_family || undefined,
             fontWeight: designProperties.font_weight || undefined,

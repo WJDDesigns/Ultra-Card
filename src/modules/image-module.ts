@@ -6,9 +6,11 @@ import '../components/ultra-color-picker';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { FormUtils } from '../utils/form-utils';
+import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { DEFAULT_VEHICLE_IMAGE, DEFAULT_VEHICLE_IMAGE_FALLBACK } from '../utils/constants';
+import { uploadImage, getImageUrl } from '../utils/image-upload';
 
 export class UltraImageModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -57,6 +59,9 @@ export class UltraImageModule extends BaseUltraModule {
       filter_saturate: 100,
       filter_hue_rotate: 0,
       filter_opacity: 100,
+
+      // Rotation
+      rotation: 0,
 
       // Border & Styling (now handled by Global Design)
       border_radius: 0,
@@ -195,7 +200,7 @@ export class UltraImageModule extends BaseUltraModule {
                     type="file"
                     accept="image/*"
                     style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
-                    @change=${(e: Event) => this.handleFileUpload(e, updateModule)}
+                    @change=${(e: Event) => this.handleFileUpload(e, updateModule, hass)}
                   />
                 `
               )
@@ -279,7 +284,7 @@ export class UltraImageModule extends BaseUltraModule {
               localize(
                 'editor.image.width_desc',
                 lang,
-                'Set the width (supports px, %, em, rem, etc.).'
+                'Set the width (supports px, %, em, rem, vw, vh, etc.).'
               ),
               hass,
               { width: imageModule.width || '100%' },
@@ -294,7 +299,7 @@ export class UltraImageModule extends BaseUltraModule {
               localize(
                 'editor.image.height_desc',
                 lang,
-                'Set the height (supports px, %, em, rem, etc.).'
+                'Set the height (supports px, %, em, rem, vw, vh, etc.).'
               ),
               hass,
               { height: imageModule.height || '200px' },
@@ -486,7 +491,7 @@ export class UltraImageModule extends BaseUltraModule {
               (e: CustomEvent) => updateModule({ filter_contrast: e.detail.value.filter_contrast })
             )}
           </div>
-          <div class="field-group">
+          <div class="field-group" style="margin-bottom: 16px;">
             ${FormUtils.renderField(
               localize('editor.image.filter.saturation', lang, 'Saturation (%)'),
               localize(
@@ -502,6 +507,25 @@ export class UltraImageModule extends BaseUltraModule {
                 }),
               ],
               (e: CustomEvent) => updateModule({ filter_saturate: e.detail.value.filter_saturate })
+            )}
+          </div>
+
+          <div class="field-group">
+            ${FormUtils.renderField(
+              localize('editor.image.rotation', lang, 'Rotation (°)'),
+              localize(
+                'editor.image.rotation_desc',
+                lang,
+                'Rotate the image clockwise (0-360 degrees).'
+              ),
+              hass,
+              { rotation: imageModule.rotation || 0 },
+              [
+                FormUtils.createSchemaItem('rotation', {
+                  number: { min: 0, max: 360, step: 1 },
+                }),
+              ],
+              (e: CustomEvent) => updateModule({ rotation: e.detail.value.rotation })
             )}
           </div>
         </div>
@@ -787,11 +811,15 @@ export class UltraImageModule extends BaseUltraModule {
         break;
 
       case 'url':
-        imageUrl = imageModule.image_url || '';
+        if (imageModule.image_url) {
+          imageUrl = getImageUrl(hass, imageModule.image_url);
+        }
         break;
 
       case 'upload':
-        imageUrl = imageModule.image_url || '';
+        if (imageModule.image_url) {
+          imageUrl = getImageUrl(hass, imageModule.image_url);
+        }
         break;
 
       case 'entity':
@@ -828,6 +856,9 @@ export class UltraImageModule extends BaseUltraModule {
         break;
     }
 
+    // Build rotation transform
+    const rotation = imageModule.rotation || 0;
+
     // Build CSS filters
     const filters = [];
     if (imageModule.filter_blur && imageModule.filter_blur > 0) {
@@ -854,10 +885,13 @@ export class UltraImageModule extends BaseUltraModule {
       switch (imageModule.hover_effect || 'scale') {
         case 'scale':
           const hoverScale = (imageModule.hover_scale || 105) / 100;
-          hoverEffectCSS = `transform: scale(${hoverScale});`;
+          const baseRotation = rotation !== 0 ? ` rotate(${rotation}deg)` : '';
+          hoverEffectCSS = `transform: scale(${hoverScale})${baseRotation};`;
           break;
         case 'rotate':
-          hoverEffectCSS = `transform: rotate(${imageModule.hover_rotate || 5}deg);`;
+          const hoverRotation = imageModule.hover_rotate || 5;
+          const combinedRotation = rotation + hoverRotation;
+          hoverEffectCSS = `transform: rotate(${combinedRotation}deg);`;
           break;
         case 'fade':
           hoverEffectCSS = `opacity: ${(imageModule.hover_opacity || 90) / 100};`;
@@ -890,7 +924,8 @@ export class UltraImageModule extends BaseUltraModule {
         case 'slide':
           const translateX = imageModule.hover_translate_x || 0;
           const translateY = imageModule.hover_translate_y || 0;
-          hoverEffectCSS = `transform: translate(${translateX}px, ${translateY}px);`;
+          const baseSlideRotation = rotation !== 0 ? ` rotate(${rotation}deg)` : '';
+          hoverEffectCSS = `transform: translate(${translateX}px, ${translateY}px)${baseSlideRotation};`;
           break;
       }
     }
@@ -914,31 +949,63 @@ export class UltraImageModule extends BaseUltraModule {
       this.addPixelUnit(imageModule.border_radius?.toString()) ||
       '0';
 
+    // Extract margin properties from both design object and top-level (like other modules)
+    const marginLeft =
+      designProperties.margin_left ||
+      (imageModule as any).margin?.left?.toString() ||
+      (imageModule as any).margin_left ||
+      'auto';
+    const marginRight =
+      designProperties.margin_right ||
+      (imageModule as any).margin?.right?.toString() ||
+      (imageModule as any).margin_right ||
+      'auto';
+
+    // Build rotation CSS
+    const rotationCSS = rotation !== 0 ? `rotate(${rotation}deg)` : '';
+
     const imageStyle = `
-      width: ${imageModule.width || '100%'};
+      width: ${designProperties.width || imageModule.width || '100%'};
       height: ${containerHeight};
       aspect-ratio: ${containerAspectRatio};
       object-fit: ${imageModule.object_fit || 'cover'};
       filter: ${filterCSS};
       border: ${imageBorderCSS};
       border-radius: ${imageBorderRadius};
+      transform: ${rotationCSS};
       transition: ${imageModule.hover_enabled ? `transform ${hoverTransition} ease, filter ${hoverTransition} ease, opacity ${hoverTransition} ease, box-shadow ${hoverTransition} ease` : 'none'};
       cursor: pointer;
       display: block;
+      max-width: 100%;
+      max-height: 100%;
+      margin-left: ${marginLeft};
+      margin-right: ${marginRight};
     `;
 
+    // Apply hover effects as CSS class
+    const hoverEffectStyle = imageModule.hover_enabled ? hoverEffectCSS : '';
+
     // Calculate image container alignment
+    // Check if auto margins are being used for centering
+    const hasAutoMargins =
+      (marginLeft === 'auto' && marginRight === 'auto') ||
+      marginLeft === 'auto' ||
+      marginRight === 'auto';
+
     let imageContainerAlignment = 'center';
-    switch (imageModule.alignment) {
-      case 'left':
-        imageContainerAlignment = 'flex-start';
-        break;
-      case 'center':
-        imageContainerAlignment = 'center';
-        break;
-      case 'right':
-        imageContainerAlignment = 'flex-end';
-        break;
+    if (!hasAutoMargins) {
+      // Only use flexbox alignment if not using auto margins
+      switch (imageModule.alignment) {
+        case 'left':
+          imageContainerAlignment = 'flex-start';
+          break;
+        case 'center':
+          imageContainerAlignment = 'center';
+          break;
+        case 'right':
+          imageContainerAlignment = 'flex-end';
+          break;
+      }
     }
 
     const moduleWithDesign = imageModule as any;
@@ -954,11 +1021,8 @@ export class UltraImageModule extends BaseUltraModule {
           : '0',
       // Standard 8px top/bottom margin for proper web design spacing
       margin:
-        designProperties.margin_top ||
-        designProperties.margin_bottom ||
-        designProperties.margin_left ||
-        designProperties.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left) || '0px'}`
+        designProperties.margin_top || designProperties.margin_bottom || marginLeft || marginRight
+          ? `${designProperties.margin_top || (imageModule as any).margin?.top?.toString() || (imageModule as any).margin_top || '8px'} ${marginRight} ${designProperties.margin_bottom || (imageModule as any).margin?.bottom?.toString() || (imageModule as any).margin_bottom || '8px'} ${marginLeft}`
           : '8px 0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(designProperties, hass),
@@ -1051,7 +1115,11 @@ export class UltraImageModule extends BaseUltraModule {
       <div class="image-module-container" style=${this.styleObjectToCss(containerStyles)}>
         <div class="image-module-preview">
           <!-- Image Container with Alignment -->
-          <div style="display: flex; justify-content: ${imageContainerAlignment}; width: 100%;">
+          <div
+            style="display: ${hasAutoMargins
+              ? 'block'
+              : 'flex'}; justify-content: ${imageContainerAlignment}; width: 100%;"
+          >
             ${imageUrl
               ? html`
                   <img
@@ -1065,6 +1133,7 @@ export class UltraImageModule extends BaseUltraModule {
                     alt="${localize('editor.image.alt', hass?.locale?.language || 'en', 'Image')}"
                     style="${imageStyle}"
                     class="${hoverEffectClass}"
+                    data-hover-style="${hoverEffectStyle}"
                     @pointerdown=${handlePointerDown}
                     @pointerup=${handlePointerUp}
                   />
@@ -1073,7 +1142,7 @@ export class UltraImageModule extends BaseUltraModule {
                   <div
                     class="${hoverEffectClass}"
                     style="
-                      width: ${imageModule.width || '100%'};
+                      width: ${designProperties.width || imageModule.width || '100%'};
                       height: ${containerHeight};
                       aspect-ratio: ${containerAspectRatio};
                       background: var(--secondary-background-color);
@@ -1084,6 +1153,8 @@ export class UltraImageModule extends BaseUltraModule {
                       justify-content: center;
                       color: var(--secondary-text-color);
                       font-size: 14px;
+                      margin-left: ${marginLeft};
+                      margin-right: ${marginRight};
                     "
                   >
                     <div style="text-align: center;">
@@ -1111,7 +1182,8 @@ export class UltraImageModule extends BaseUltraModule {
 
   private async handleFileUpload(
     event: Event,
-    updateModule: (updates: Partial<ImageModule>) => void
+    updateModule: (updates: Partial<ImageModule>) => void,
+    hass: HomeAssistant
   ): Promise<void> {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
@@ -1119,52 +1191,15 @@ export class UltraImageModule extends BaseUltraModule {
     if (!file) return;
 
     try {
-      // Create form data for the upload
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Upload to Home Assistant's media browser API
-      const response = await fetch('/api/media_source/local/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${(window as any).hassTokens?.access_token || ''}`,
-        },
+      // Use the centralized upload utility
+      const imagePath = await uploadImage(hass, file);
+      updateModule({
+        image_url: imagePath,
+        image_type: 'upload',
       });
-
-      if (response.ok) {
-        const result = await response.json();
-        // The uploaded file path will be something like '/media/local/filename.jpg'
-        const imagePath = result.media_content_id || `/media/local/${file.name}`;
-        updateModule({
-          image_url: imagePath,
-          image_type: 'upload',
-        });
-      } else {
-        console.error('Upload failed:', response.statusText);
-        // Fallback: try to use a data URL (though this isn't recommended for large images)
-        const reader = new FileReader();
-        reader.onload = e => {
-          const dataUrl = e.target?.result as string;
-          updateModule({
-            image_url: dataUrl,
-            image_type: 'upload',
-          });
-        };
-        reader.readAsDataURL(file);
-      }
     } catch (error) {
       console.error('Error uploading file:', error);
-      // Fallback to data URL
-      const reader = new FileReader();
-      reader.onload = e => {
-        const dataUrl = e.target?.result as string;
-        updateModule({
-          image_url: dataUrl,
-          image_type: 'upload',
-        });
-      };
-      reader.readAsDataURL(file);
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -1176,6 +1211,16 @@ export class UltraImageModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
+  }
+
+  // Explicit Design tab renderer (some editors call this directly)
+  renderDesignTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalDesignTab.render(module as any, hass, updates => updateModule(updates));
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
@@ -1339,6 +1384,10 @@ export class UltraImageModule extends BaseUltraModule {
         max-width: 100%;
         height: auto;
         display: block;
+      }
+
+      .image-module-preview img:hover {
+        transition: all 0.3s ease;
       }
 
       /* Let HA handle dropdown positioning naturally */

@@ -1259,14 +1259,14 @@ export class UltraInfoModule extends BaseUltraModule {
     const getFontSizeWithUnits = (designSize?: number | string, fallbackSize?: number | string) => {
       if (designSize !== undefined && designSize !== null && designSize !== '') {
         // If it's already a string with units, return as-is
-        if (typeof designSize === 'string' && designSize.includes('px')) {
+        if (typeof designSize === 'string' && /[a-zA-Z%]/.test(designSize)) {
           return designSize;
         }
         // Otherwise add px
         return `${designSize}px`;
       }
       if (fallbackSize !== undefined && fallbackSize !== null) {
-        return typeof fallbackSize === 'string' && fallbackSize.includes('px')
+        return typeof fallbackSize === 'string' && /[a-zA-Z%]/.test(fallbackSize)
           ? fallbackSize
           : `${fallbackSize}px`;
       }
@@ -1362,7 +1362,7 @@ export class UltraInfoModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background:
         designProperties.background_color || moduleWithDesign.background_color || 'transparent',

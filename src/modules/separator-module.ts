@@ -825,7 +825,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background:
         designProperties.background_color || moduleWithDesign.background_color || 'transparent',

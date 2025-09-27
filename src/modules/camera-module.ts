@@ -60,6 +60,9 @@ export class UltraCameraModule extends BaseUltraModule {
       // Image quality
       image_quality: 'high',
 
+      // Rotation
+      rotation: 0,
+
       // Error handling
       show_unavailable: true,
       fallback_image: '',
@@ -769,6 +772,71 @@ export class UltraCameraModule extends BaseUltraModule {
                   </div>
                 `}
           </div>
+
+          <!-- Rotation Field -->
+          <div class="dimension-group" style="margin-top: 16px;">
+            <div class="field-title">
+              ${localize('editor.camera.rotation', lang, 'Rotation (°)')}
+            </div>
+            <div class="field-description">
+              ${localize(
+                'editor.camera.rotation_desc',
+                lang,
+                'Rotate the camera image clockwise (0-360 degrees).'
+              )}
+            </div>
+            <div class="number-range-control">
+              <input
+                type="range"
+                class="range-slider"
+                min="0"
+                max="360"
+                step="1"
+                .value="${cameraModule.rotation || 0}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const newRotation = parseInt(target.value);
+                  updateModule({ rotation: newRotation });
+                }}
+              />
+              <input
+                type="number"
+                class="range-input"
+                min="0"
+                max="360"
+                step="1"
+                .value="${cameraModule.rotation || 0}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const newRotation = parseInt(target.value);
+                  if (!isNaN(newRotation)) {
+                    updateModule({ rotation: newRotation });
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const target = e.target as HTMLInputElement;
+                    const currentValue = parseInt(target.value) || 0;
+                    const increment = e.key === 'ArrowUp' ? 1 : -1;
+                    const newValue = Math.max(0, Math.min(360, currentValue + increment));
+                    updateModule({ rotation: newValue });
+                  }
+                }}
+              />
+              <button
+                class="range-reset-btn"
+                @click=${() => updateModule({ rotation: 0 })}
+                title=${localize(
+                  'editor.fields.reset_default_value',
+                  lang,
+                  'Reset to default ({value})'
+                ).replace('{value}', '0')}
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Crop & Position Section -->
@@ -1367,6 +1435,10 @@ export class UltraCameraModule extends BaseUltraModule {
     const imageOffsetX = hasCropping ? -((originalWidth * cropLeft) / 100) : 0;
     const imageOffsetY = hasCropping ? -((originalHeight * cropTop) / 100) : 0;
 
+    // Build rotation transform
+    const rotation = cameraModule.rotation || 0;
+    const rotationCSS = rotation !== 0 ? `rotate(${rotation}deg)` : '';
+
     // Camera image styles - responsive when no cropping, positioned when cropping
     const imageStyles = {
       objectFit: 'cover',
@@ -1376,6 +1448,7 @@ export class UltraCameraModule extends BaseUltraModule {
       position: hasCropping ? 'absolute' : 'static', // Only absolute positioning when cropping
       left: hasCropping ? `${imageOffsetX}px` : 'auto', // Offset only when cropping
       top: hasCropping ? `${imageOffsetY}px` : 'auto', // Offset only when cropping
+      transform: rotationCSS,
       transition: 'all 0.3s ease',
       borderRadius: designProperties.border_radius || '0px', // Match container border radius
     };
@@ -1647,6 +1720,17 @@ export class UltraCameraModule extends BaseUltraModule {
     // Border radius validation
     if (cameraModule.border_radius && isNaN(Number(cameraModule.border_radius))) {
       errors.push('Border radius must be a number');
+    }
+
+    // Rotation validation
+    if (cameraModule.rotation !== undefined && cameraModule.rotation !== null) {
+      if (
+        isNaN(Number(cameraModule.rotation)) ||
+        cameraModule.rotation < 0 ||
+        cameraModule.rotation > 360
+      ) {
+        errors.push('Rotation must be a number between 0 and 360 degrees');
+      }
     }
 
     // Action validation

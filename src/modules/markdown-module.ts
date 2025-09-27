@@ -185,7 +185,84 @@ All standard markdown features are automatically enabled!`,
 
     // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = markdownModule as any;
-    const designProperties = (markdownModule as any).design || {};
+    const designFromDesignObject = (markdownModule as any).design || {};
+
+    // Create merged design properties object that prioritizes top-level properties (where Global Design saves)
+    // over design object properties, and includes all properties needed by the container styles
+    const designProperties = {
+      // Text properties - prioritize top-level (where Global Design saves them)
+      color: (markdownModule as any).color || designFromDesignObject.color,
+      font_size: (markdownModule as any).font_size || designFromDesignObject.font_size,
+      font_weight: (markdownModule as any).font_weight || designFromDesignObject.font_weight,
+      font_style: (markdownModule as any).font_style || designFromDesignObject.font_style,
+      text_transform:
+        (markdownModule as any).text_transform || designFromDesignObject.text_transform,
+      font_family: (markdownModule as any).font_family || designFromDesignObject.font_family,
+      line_height: (markdownModule as any).line_height || designFromDesignObject.line_height,
+      letter_spacing:
+        (markdownModule as any).letter_spacing || designFromDesignObject.letter_spacing,
+      text_align: (markdownModule as any).text_align || designFromDesignObject.text_align,
+      text_shadow_h: (markdownModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
+      text_shadow_v: (markdownModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
+      text_shadow_blur:
+        (markdownModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
+      text_shadow_color:
+        (markdownModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
+      // Container properties - also check both locations
+      background_color:
+        (markdownModule as any).background_color || designFromDesignObject.background_color,
+      background_image:
+        (markdownModule as any).background_image || designFromDesignObject.background_image,
+      background_image_type:
+        (markdownModule as any).background_image_type ||
+        designFromDesignObject.background_image_type,
+      background_image_entity:
+        (markdownModule as any).background_image_entity ||
+        designFromDesignObject.background_image_entity,
+      background_repeat:
+        (markdownModule as any).background_repeat || designFromDesignObject.background_repeat,
+      background_position:
+        (markdownModule as any).background_position || designFromDesignObject.background_position,
+      background_size:
+        (markdownModule as any).background_size || designFromDesignObject.background_size,
+      backdrop_filter:
+        (markdownModule as any).backdrop_filter || designFromDesignObject.backdrop_filter,
+      width: (markdownModule as any).width || designFromDesignObject.width,
+      height: (markdownModule as any).height || designFromDesignObject.height,
+      max_width: (markdownModule as any).max_width || designFromDesignObject.max_width,
+      max_height: (markdownModule as any).max_height || designFromDesignObject.max_height,
+      min_width: (markdownModule as any).min_width || designFromDesignObject.min_width,
+      min_height: (markdownModule as any).min_height || designFromDesignObject.min_height,
+      margin_top: (markdownModule as any).margin_top || designFromDesignObject.margin_top,
+      margin_bottom: (markdownModule as any).margin_bottom || designFromDesignObject.margin_bottom,
+      margin_left: (markdownModule as any).margin_left || designFromDesignObject.margin_left,
+      margin_right: (markdownModule as any).margin_right || designFromDesignObject.margin_right,
+      padding_top: (markdownModule as any).padding_top || designFromDesignObject.padding_top,
+      padding_bottom:
+        (markdownModule as any).padding_bottom || designFromDesignObject.padding_bottom,
+      padding_left: (markdownModule as any).padding_left || designFromDesignObject.padding_left,
+      padding_right: (markdownModule as any).padding_right || designFromDesignObject.padding_right,
+      border_radius: (markdownModule as any).border_radius || designFromDesignObject.border_radius,
+      border_style: (markdownModule as any).border_style || designFromDesignObject.border_style,
+      border_width: (markdownModule as any).border_width || designFromDesignObject.border_width,
+      border_color: (markdownModule as any).border_color || designFromDesignObject.border_color,
+      position: (markdownModule as any).position || designFromDesignObject.position,
+      top: (markdownModule as any).top || designFromDesignObject.top,
+      bottom: (markdownModule as any).bottom || designFromDesignObject.bottom,
+      left: (markdownModule as any).left || designFromDesignObject.left,
+      right: (markdownModule as any).right || designFromDesignObject.right,
+      z_index: (markdownModule as any).z_index || designFromDesignObject.z_index,
+      overflow: (markdownModule as any).overflow || designFromDesignObject.overflow,
+      clip_path: (markdownModule as any).clip_path || designFromDesignObject.clip_path,
+      box_shadow_h: (markdownModule as any).box_shadow_h || designFromDesignObject.box_shadow_h,
+      box_shadow_v: (markdownModule as any).box_shadow_v || designFromDesignObject.box_shadow_v,
+      box_shadow_blur:
+        (markdownModule as any).box_shadow_blur || designFromDesignObject.box_shadow_blur,
+      box_shadow_spread:
+        (markdownModule as any).box_shadow_spread || designFromDesignObject.box_shadow_spread,
+      box_shadow_color:
+        (markdownModule as any).box_shadow_color || designFromDesignObject.box_shadow_color,
+    };
 
     const containerStyles = {
       padding:
@@ -209,7 +286,7 @@ All standard markdown features are automatically enabled!`,
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '0',
       background:
         designProperties.background_color && designProperties.background_color !== 'transparent'
@@ -260,9 +337,22 @@ All standard markdown features are automatically enabled!`,
     };
 
     const contentStyles = {
-      fontSize:
-        (designProperties.font_size && designProperties.font_size) ||
-        (moduleWithDesign.font_size ? `${moduleWithDesign.font_size}px` : '14px'), // Match HA default
+      fontSize: (() => {
+        if (
+          designProperties.font_size &&
+          typeof designProperties.font_size === 'string' &&
+          designProperties.font_size.trim() !== ''
+        ) {
+          // If it already has units, use as-is; otherwise add px
+          if (/[a-zA-Z%]/.test(designProperties.font_size)) {
+            return designProperties.font_size;
+          }
+          return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
+        }
+        if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
+        // Default font size for markdown modules when no design or module font_size is set
+        return '14px'; // Match HA default
+      })(),
       fontFamily:
         designProperties.font_family ||
         moduleWithDesign.font_family ||
@@ -641,7 +731,7 @@ All standard markdown features are automatically enabled!`,
       }
 
       .markdown-content code {
-        font-size: var(--ha-font-size-s);
+        font-size: inherit;
         color: var(--primary-text-color) !important;
         padding: .2em .4em;
       }
@@ -668,7 +758,7 @@ All standard markdown features are automatically enabled!`,
       }
 
       .markdown-content h2 {
-        font-size: var(--ha-font-size-xl);
+        font-size: inherit;
         font-weight: var(--ha-font-weight-bold);
       }
 

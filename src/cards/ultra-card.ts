@@ -924,7 +924,7 @@ export class UltraCard extends LitElement {
         row.column_layout || '1-col',
         row.columns.length
       ),
-      gap: `${row.gap || 16}px`,
+      gap: `${row.gap ?? 16}px`,
       // Standard 8px top/bottom padding for proper web design spacing
       padding: '8px 0',
     };

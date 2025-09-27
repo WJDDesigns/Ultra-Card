@@ -223,6 +223,7 @@ export interface ImageModule extends BaseModule {
     filter_saturate?: number;
     filter_hue_rotate?: number;
     filter_opacity?: number;
+    rotation?: number;
     hover_enabled?: boolean;
     hover_effect?: 'scale' | 'rotate' | 'fade' | 'blur' | 'brightness' | 'glow' | 'slide';
     hover_scale?: number;
@@ -738,6 +739,7 @@ export interface CameraModule extends BaseModule {
     auto_refresh?: boolean;
     refresh_interval?: number;
     image_quality?: 'high' | 'medium' | 'low';
+    rotation?: number;
     live_view?: boolean;
     show_unavailable?: boolean;
     fallback_image?: string;

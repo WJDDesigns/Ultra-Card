@@ -2051,9 +2051,7 @@ export class LayoutTab extends LitElement {
         (moduleUpdates.design as any).font_size = (updates as any).font_size || undefined;
       }
 
-      moduleUpdates.font_size = (updates as any).font_size
-        ? parseFloat((updates as any).font_size)
-        : undefined;
+      moduleUpdates.font_size = (updates as any).font_size || undefined;
     }
     if (updates.hasOwnProperty('line_height')) moduleUpdates.line_height = updates.line_height;
     if (updates.hasOwnProperty('letter_spacing'))
@@ -5377,7 +5375,7 @@ export class LayoutTab extends LitElement {
         row.background_color ||
         'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${rowBgImageCSS}; background-size: ${rd.background_size ||
         'cover'}; background-position: ${rd.background_position ||
-        'center'}; background-repeat: ${rd.background_repeat || 'no-repeat'};gap: ${row.gap ||
+        'center'}; background-repeat: ${rd.background_repeat || 'no-repeat'};gap: ${row.gap ??
         16}px;"
       >
         ${row.columns.map(
@@ -5567,50 +5565,50 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
 
-          ${this._renderModulePreview()}
-
-          <div class="module-tabs">
-            <button
-              class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
-              @click=${() => (this._activeModuleTab = 'general')}
-            >
-              ${localize('editor.layout.general_tab', lang, 'General')}
-            </button>
-            ${hasActionsTab
-              ? html`
-                  <button
-                    class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
-                    @click=${() => (this._activeModuleTab = 'actions')}
-                  >
-                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
-                  </button>
-                `
-              : ''}
-            ${hasOtherTab
-              ? html`
-                  <button
-                    class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
-                    @click=${() => (this._activeModuleTab = 'other')}
-                  >
-                    ${localize('editor.layout.other_tab', lang, 'Other')}
-                  </button>
-                `
-              : ''}
-            <button
-              class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeModuleTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', lang, 'Logic')}
-            </button>
-            <button
-              class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeModuleTab = 'design')}
-            >
-              ${localize('editor.layout.design_tab', lang, 'Design')}
-            </button>
-          </div>
-
           <div class="popup-body">
+            ${this._renderModulePreview()}
+
+            <div class="module-tabs">
+              <button
+                class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                @click=${() => (this._activeModuleTab = 'general')}
+              >
+                ${localize('editor.layout.general_tab', lang, 'General')}
+              </button>
+              ${hasActionsTab
+                ? html`
+                    <button
+                      class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                      @click=${() => (this._activeModuleTab = 'actions')}
+                    >
+                      ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                    </button>
+                  `
+                : ''}
+              ${hasOtherTab
+                ? html`
+                    <button
+                      class="module-tab ${this._activeModuleTab === 'other' ? 'active' : ''}"
+                      @click=${() => (this._activeModuleTab = 'other')}
+                    >
+                      ${localize('editor.layout.other_tab', lang, 'Other')}
+                    </button>
+                  `
+                : ''}
+              <button
+                class="module-tab ${this._activeModuleTab === 'logic' ? 'active' : ''}"
+                @click=${() => (this._activeModuleTab = 'logic')}
+              >
+                ${localize('editor.layout.logic_tab', lang, 'Logic')}
+              </button>
+              <button
+                class="module-tab ${this._activeModuleTab === 'design' ? 'active' : ''}"
+                @click=${() => (this._activeModuleTab = 'design')}
+              >
+                ${localize('editor.layout.design_tab', lang, 'Design')}
+              </button>
+            </div>
+
             <div class="module-tab-content">
               ${this._activeModuleTab === 'general' ? this._renderGeneralTab(module) : ''}
               ${this._activeModuleTab === 'actions' && hasActionsTab
@@ -6151,44 +6149,47 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
 
-          ${this._renderRowPreview(row)}
-
-          <div class="settings-tabs">
-            <button
-              class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'general')}
-            >
-              ${localize(
-                'editor.layout.general_tab',
-                this.hass?.locale?.language || 'en',
-                'General'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'actions')}
-            >
-              ${localize(
-                'editor.layout.actions_tab',
-                this.hass?.locale?.language || 'en',
-                'Actions'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
-            </button>
-            <button
-              class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeRowTab = 'design')}
-            >
-              ${localize('editor.layout.design_tab', this.hass?.locale?.language || 'en', 'Design')}
-            </button>
-          </div>
-
           <div class="popup-body">
+            ${this._renderRowPreview(row)}
+
+            <div class="settings-tabs">
+              <button
+                class="settings-tab ${this._activeRowTab === 'general' ? 'active' : ''}"
+                @click=${() => (this._activeRowTab = 'general')}
+              >
+                ${localize(
+                  'editor.layout.general_tab',
+                  this.hass?.locale?.language || 'en',
+                  'General'
+                )}
+              </button>
+              <button
+                class="settings-tab ${this._activeRowTab === 'actions' ? 'active' : ''}"
+                @click=${() => (this._activeRowTab = 'actions')}
+              >
+                ${localize(
+                  'editor.layout.actions_tab',
+                  this.hass?.locale?.language || 'en',
+                  'Actions'
+                )}
+              </button>
+              <button
+                class="settings-tab ${this._activeRowTab === 'logic' ? 'active' : ''}"
+                @click=${() => (this._activeRowTab = 'logic')}
+              >
+                ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
+              </button>
+              <button
+                class="settings-tab ${this._activeRowTab === 'design' ? 'active' : ''}"
+                @click=${() => (this._activeRowTab = 'design')}
+              >
+                ${localize(
+                  'editor.layout.design_tab',
+                  this.hass?.locale?.language || 'en',
+                  'Design'
+                )}
+              </button>
+            </div>
             <div class="settings-tab-content">
               ${this._activeRowTab === 'general' ? this._renderRowGeneralTab(row) : ''}
               ${this._activeRowTab === 'actions' ? this._renderRowActionsTab(row) : ''}
@@ -6279,44 +6280,47 @@ export class LayoutTab extends LitElement {
             </div>
           </div>
 
-          ${this._renderColumnPreview(column)}
-
-          <div class="settings-tabs">
-            <button
-              class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'general')}
-            >
-              ${localize(
-                'editor.layout.general_tab',
-                this.hass?.locale?.language || 'en',
-                'General'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'actions')}
-            >
-              ${localize(
-                'editor.layout.actions_tab',
-                this.hass?.locale?.language || 'en',
-                'Actions'
-              )}
-            </button>
-            <button
-              class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'logic')}
-            >
-              ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
-            </button>
-            <button
-              class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
-              @click=${() => (this._activeColumnTab = 'design')}
-            >
-              ${localize('editor.layout.design_tab', this.hass?.locale?.language || 'en', 'Design')}
-            </button>
-          </div>
-
           <div class="popup-body">
+            ${this._renderColumnPreview(column)}
+
+            <div class="settings-tabs">
+              <button
+                class="settings-tab ${this._activeColumnTab === 'general' ? 'active' : ''}"
+                @click=${() => (this._activeColumnTab = 'general')}
+              >
+                ${localize(
+                  'editor.layout.general_tab',
+                  this.hass?.locale?.language || 'en',
+                  'General'
+                )}
+              </button>
+              <button
+                class="settings-tab ${this._activeColumnTab === 'actions' ? 'active' : ''}"
+                @click=${() => (this._activeColumnTab = 'actions')}
+              >
+                ${localize(
+                  'editor.layout.actions_tab',
+                  this.hass?.locale?.language || 'en',
+                  'Actions'
+                )}
+              </button>
+              <button
+                class="settings-tab ${this._activeColumnTab === 'logic' ? 'active' : ''}"
+                @click=${() => (this._activeColumnTab = 'logic')}
+              >
+                ${localize('editor.layout.logic_tab', this.hass?.locale?.language || 'en', 'Logic')}
+              </button>
+              <button
+                class="settings-tab ${this._activeColumnTab === 'design' ? 'active' : ''}"
+                @click=${() => (this._activeColumnTab = 'design')}
+              >
+                ${localize(
+                  'editor.layout.design_tab',
+                  this.hass?.locale?.language || 'en',
+                  'Design'
+                )}
+              </button>
+            </div>
             <div class="settings-tab-content">
               ${this._activeColumnTab === 'general' ? this._renderColumnGeneralTab(column) : ''}
               ${this._activeColumnTab === 'actions' ? this._renderColumnActionsTab(column) : ''}
@@ -6374,7 +6378,7 @@ export class LayoutTab extends LitElement {
             min="0"
             max="50"
             step="1"
-            .value="${row.gap || 16}"
+            .value="${row.gap ?? 16}"
             @input=${(e: Event) => {
               const target = e.target as HTMLInputElement;
               const value = Number(target.value);
@@ -6387,7 +6391,7 @@ export class LayoutTab extends LitElement {
             min="0"
             max="50"
             step="1"
-            .value="${row.gap || 16}"
+            .value="${row.gap ?? 16}"
             @input=${(e: Event) => {
               const target = e.target as HTMLInputElement;
               const value = Number(target.value);
@@ -10759,6 +10763,11 @@ export class LayoutTab extends LitElement {
       .settings-tabs {
         display: flex;
         border-bottom: 1px solid var(--divider-color);
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: var(--card-background-color);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
 
       .settings-tab {
@@ -11073,7 +11082,8 @@ export class LayoutTab extends LitElement {
         margin: 16px 24px;
         border: 1px solid var(--divider-color);
         border-radius: 8px;
-        overflow: visible; /* allow inner preview content to fully render */
+        overflow: hidden; /* prevent content from overflowing the preview container */
+        max-width: 100%;
       }
 
       .preview-header {
@@ -11096,12 +11106,19 @@ export class LayoutTab extends LitElement {
         padding: 16px;
         min-height: 60px;
         display: block;
+        max-width: 100%;
+        overflow: hidden; /* ensure preview content doesn't overflow */
       }
 
       /* Module Tabs */
       .module-tabs {
         display: flex;
         border-bottom: 1px solid var(--divider-color);
+        position: sticky;
+        top: 0;
+        z-index: 4;
+        background: var(--card-background-color);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
 
       .module-tab {
@@ -12812,6 +12829,7 @@ export class LayoutTab extends LitElement {
         display: flex;
         border-bottom: 1px solid var(--divider-color);
         background: var(--secondary-background-color);
+        margin-bottom: 16px;
       }
 
       .tab-button {

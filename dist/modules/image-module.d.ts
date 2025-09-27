@@ -10,6 +10,7 @@ export declare class UltraImageModule extends BaseUltraModule {
     renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
     private handleFileUpload;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderDesignTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];

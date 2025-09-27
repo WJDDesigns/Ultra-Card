@@ -3494,7 +3494,7 @@ export class UltraBarModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top) || '8px'} ${this.addPixelUnit(designProperties.margin_right || moduleWithDesign.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom || moduleWithDesign.margin_bottom) || '8px'} ${this.addPixelUnit(designProperties.margin_left || moduleWithDesign.margin_left) || '0px'}`
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background: containerBackground,
       backgroundImage: this.getBackgroundImageCSS(
@@ -3536,11 +3536,21 @@ export class UltraBarModule extends BaseUltraModule {
       boxSizing: 'border-box',
       color: designProperties.color || moduleWithDesign.color || 'var(--primary-text-color)',
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
-      fontSize:
-        designProperties.font_size !== undefined && designProperties.font_size !== null
-          ? `${designProperties.font_size}px`
-          : (moduleWithDesign.font_size ? `${moduleWithDesign.font_size}px` : undefined) ||
-            'inherit',
+      fontSize: (() => {
+        if (
+          designProperties.font_size &&
+          typeof designProperties.font_size === 'string' &&
+          designProperties.font_size.trim() !== ''
+        ) {
+          // If it already has units, use as-is; otherwise add px
+          if (/[a-zA-Z%]/.test(designProperties.font_size)) {
+            return designProperties.font_size;
+          }
+          return `${designProperties.font_size}px`;
+        }
+        if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
+        return 'inherit';
+      })(),
       textAlign: designProperties.text_align || moduleWithDesign.text_align || 'inherit',
       lineHeight: designProperties.line_height || moduleWithDesign.line_height || 'inherit',
       letterSpacing: designProperties.letter_spacing || moduleWithDesign.letter_spacing || 'normal',

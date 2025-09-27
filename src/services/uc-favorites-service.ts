@@ -113,6 +113,42 @@ class UcFavoritesService {
   }
 
   /**
+   * Debug method to help diagnose favorites issues
+   */
+  debugFavorites(): void {
+    console.log('=== Ultra Card Favorites Debug Info ===');
+    console.log('Storage Key:', UcFavoritesService.STORAGE_KEY);
+    console.log('Current Favorites Count:', this._favorites.length);
+    console.log('Listeners Count:', this._listeners.size);
+    console.log('LocalStorage Available:', this._isLocalStorageAvailable());
+
+    try {
+      const stored = localStorage.getItem(UcFavoritesService.STORAGE_KEY);
+      console.log('Raw Storage Data:', stored ? `${stored.length} characters` : 'null');
+      console.log('Storage Data Valid:', stored ? 'Valid JSON' : 'No data');
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log('Parsed Data Type:', Array.isArray(parsed) ? 'Array' : typeof parsed);
+        console.log('Parsed Data Length:', Array.isArray(parsed) ? parsed.length : 'N/A');
+      }
+    } catch (error) {
+      console.error('Storage Data Error:', error);
+    }
+
+    console.log(
+      'Favorites List:',
+      this._favorites.map(f => ({
+        id: f.id,
+        name: f.name,
+        created: f.created,
+        tags: f.tags.length,
+      }))
+    );
+    console.log('=====================================');
+  }
+
+  /**
    * Clone a row with new IDs to avoid conflicts when adding to layout
    */
   private _cloneRowWithNewIds(row: CardRow): CardRow {
@@ -140,24 +176,56 @@ class UcFavoritesService {
 
   private _loadFromStorage(): void {
     try {
+      // Check if localStorage is available
+      if (!this._isLocalStorageAvailable()) {
+        console.warn('localStorage is not available, favorites will not persist');
+        this._favorites = [];
+        return;
+      }
+
       const stored = localStorage.getItem(UcFavoritesService.STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           this._favorites = parsed.filter(this._isValidFavorite.bind(this));
+          console.log(`Loaded ${this._favorites.length} favorites from storage`);
+        } else {
+          console.warn('Invalid favorites data format in storage, resetting');
+          this._favorites = [];
         }
+      } else {
+        console.log('No favorites found in storage');
+        this._favorites = [];
       }
     } catch (error) {
-      console.warn('Failed to load favorites from storage:', error);
+      console.error('Failed to load favorites from storage:', error);
       this._favorites = [];
     }
   }
 
   private _saveToStorage(): void {
     try {
-      localStorage.setItem(UcFavoritesService.STORAGE_KEY, JSON.stringify(this._favorites));
+      // Check if localStorage is available
+      if (!this._isLocalStorageAvailable()) {
+        console.warn('localStorage is not available, favorites will not be saved');
+        return;
+      }
+
+      const dataToSave = JSON.stringify(this._favorites);
+      localStorage.setItem(UcFavoritesService.STORAGE_KEY, dataToSave);
+      console.log(`Saved ${this._favorites.length} favorites to storage`);
     } catch (error) {
-      console.warn('Failed to save favorites to storage:', error);
+      console.error('Failed to save favorites to storage:', error);
+
+      // Check if it's a quota exceeded error
+      if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
+        console.error(
+          'localStorage quota exceeded! Consider clearing old data or using fewer favorites.'
+        );
+        this._handleStorageQuotaExceeded();
+      } else {
+        console.error('Unknown storage error:', error);
+      }
     }
   }
 
@@ -194,7 +262,61 @@ class UcFavoritesService {
       Array.isArray(favorite.row.columns)
     );
   }
+
+  /**
+   * Check if localStorage is available and working
+   */
+  private _isLocalStorageAvailable(): boolean {
+    try {
+      const testKey = '__ultra_card_storage_test__';
+      localStorage.setItem(testKey, 'test');
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Handle storage quota exceeded by cleaning up old favorites
+   */
+  private _handleStorageQuotaExceeded(): void {
+    console.log('Attempting to free up storage space by removing oldest favorites...');
+
+    if (this._favorites.length <= 1) {
+      console.error('Cannot free up space - only one or no favorites exist');
+      return;
+    }
+
+    // Remove oldest 25% of favorites to free up space
+    const favoritesToRemove = Math.max(1, Math.floor(this._favorites.length * 0.25));
+    const sortedFavorites = [...this._favorites].sort(
+      (a, b) => new Date(a.created).getTime() - new Date(b.created).getTime()
+    );
+
+    // Remove oldest favorites
+    const favoritesToKeep = sortedFavorites.slice(favoritesToRemove);
+    this._favorites = favoritesToKeep;
+
+    console.log(`Removed ${favoritesToRemove} oldest favorites to free up storage space`);
+
+    // Try to save again
+    try {
+      const dataToSave = JSON.stringify(this._favorites);
+      localStorage.setItem(UcFavoritesService.STORAGE_KEY, dataToSave);
+      console.log('Successfully saved favorites after cleanup');
+      this._notifyListeners();
+      this._broadcastChange();
+    } catch (error) {
+      console.error('Still cannot save after cleanup:', error);
+    }
+  }
 }
 
 // Export singleton instance
 export const ucFavoritesService = new UcFavoritesService();
+
+// Make debug method available globally for troubleshooting
+if (typeof window !== 'undefined') {
+  (window as any).debugUltraCardFavorites = () => ucFavoritesService.debugFavorites();
+}
