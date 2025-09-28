@@ -30,6 +30,14 @@ export declare class UltraCard extends LitElement {
     private _renderModule;
     private _parseAnimationDuration;
     /**
+     * Collect all hover effect configurations from the current card config
+     */
+    private _collectHoverEffectConfigs;
+    /**
+     * Update hover effect styles based on current configuration
+     */
+    private _updateHoverEffectStyles;
+    /**
      * Helper method to evaluate state-based animation conditions
      */
     private _getStateBasedAnimationClass;

@@ -34,4 +34,12 @@ export declare class UltraCardEditor extends LitElement {
      */
     private _injectModuleStyles;
     static get styles(): import("lit").CSSResult;
+    /**
+     * Collect all hover effect configurations from the current card config
+     */
+    private _collectHoverEffectConfigs;
+    /**
+     * Update hover effect styles based on current configuration
+     */
+    private _updateHoverEffectStyles;
 }

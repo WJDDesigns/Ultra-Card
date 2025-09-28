@@ -44,6 +44,9 @@ export declare class LayoutTab extends LitElement {
     connectedCallback(): void;
     /** Determine if current device/viewport should be treated as mobile */
     private _isMobileDevice;
+    private _handleWindowResize;
+    private _repositionPopup;
+    private _initializePopupPosition;
     private _togglePreviewCollapsed;
     private _getSelectedModuleKey;
     private _isCurrentModulePreviewCollapsed;
@@ -62,6 +65,7 @@ export declare class LayoutTab extends LitElement {
     private _selectedLayoutChild;
     private _popupDragState;
     private _popupResizeState;
+    private _windowResizeListener;
     disconnectedCallback(): void;
     private _startPopupDrag;
     private _handlePopupDrag;
@@ -233,4 +237,12 @@ export declare class LayoutTab extends LitElement {
     private _truncatePath;
     private _getBackgroundSizeDropdownValue;
     private _getCustomSizeValue;
+    /**
+     * Collect all hover effect configurations from the current card config
+     */
+    private _collectHoverEffectConfigs;
+    /**
+     * Update hover effect styles based on current configuration
+     */
+    private _updateHoverEffectStyles;
 }

@@ -35,6 +35,14 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _getDisplayStateValue;
     private _getEntityAttributes;
     private _isBinaryEntity;
+    /**
+     * Enhanced state matching that supports both actual entity states and binary equivalents
+     */
+    private _matchesState;
+    /**
+     * Get state mappings for different entity types and device classes
+     */
+    private _getStateMappings;
     private _evaluateIconState;
     getStyles(): string;
     private _addIcon;

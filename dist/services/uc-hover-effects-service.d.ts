@@ -35,7 +35,15 @@ export declare class UcHoverEffectsService {
     /**
      * Inject hover effect styles into a shadow root or document head
      */
-    static injectHoverEffectStyles(shadowRoot?: ShadowRoot): void;
+    static injectHoverEffectStyles(shadowRoot?: ShadowRoot, configs?: HoverEffectConfig[]): void;
+    /**
+     * Generate hover effect styles for specific configurations
+     */
+    static generateDynamicHoverEffectStyles(configs: HoverEffectConfig[]): string;
+    /**
+     * Update hover effect styles in existing shadow root with new configurations
+     */
+    static updateHoverEffectStyles(shadowRoot: ShadowRoot, configs: HoverEffectConfig[]): void;
     /**
      * Remove hover effect styles from shadow root or document
      */
