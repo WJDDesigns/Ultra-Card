@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 1.2.0-beta13
+
+### 🐛 Bug Fixes
+
+- **Fixed icon inactive/active fields** - Resolved issues with icon module inactive/active field handling and display
+- **Fixed hover animations dropdown freeze** - Eliminated dropdown freezing issues in hover animation controls that prevented proper selection
+- **Fixed Module popup clipping** - Resolved popup clipping issues that prevented proper module editing and configuration
+- **Enhanced fix for CORS issues for presets** - Improved CORS handling for better preset functionality and loading
+
 ## Version 1.2.0-beta11
 
 ### 🚀 New Features
