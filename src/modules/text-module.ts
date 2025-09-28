@@ -642,8 +642,15 @@ export class UltraTextModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
+    // Get hover effect configuration from module design
+    const hoverEffect = (moduleWithDesign as any).design?.hover_effect;
+    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
     return html`
-      <div class="text-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      <div
+        class="text-module-container ${hoverEffectClass}"
+        style=${this.styleObjectToCss(containerStyles)}
+      >
         <div class="text-module-preview" style=${this.styleObjectToCss(textStyles)}>${element}</div>
       </div>
     `;

@@ -2,9 +2,20 @@ import { html, TemplateResult } from 'lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { CardModule, HoverEffectConfig, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
+import { UcFormUtils } from '../utils/uc-form-utils';
 import '../components/ultra-color-picker';
 
 export class GlobalActionsTab {
+  // Trigger preview update for reactive UI
+  private static triggerPreviewUpdate(): void {
+    // Dispatch custom event to update any live previews
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
+  }
+
   static render<M extends CardModule>(
     module: M,
     hass: HomeAssistant,
@@ -431,27 +442,21 @@ export class GlobalActionsTab {
               'Select the visual effect to apply when hovering'
             )}
           </div>
-          <ha-form
-            .hass=${hass}
-            .data=${{ effect: hoverEffect.effect || 'none' }}
-            .schema=${[
-              {
-                name: 'effect',
-                label: '',
-                selector: {
-                  select: {
-                    options: effectOptions,
-                    mode: 'dropdown',
-                  },
-                },
-              },
-            ]}
-            .computeLabel=${this.computeLabel}
-            @value-changed=${(e: CustomEvent) => {
-              const effect = (e.detail as any)?.value?.effect;
-              if (effect) updateHoverEffect({ effect });
-            }}
-          ></ha-form>
+          ${UcFormUtils.renderForm(
+            hass,
+            { effect: hoverEffect.effect || 'none' },
+            [UcFormUtils.select('effect', effectOptions)],
+            (e: CustomEvent) => {
+              const next = e.detail.value.effect;
+              const current = hoverEffect.effect || 'none';
+              if (next === current) return;
+              updateHoverEffect({ effect: next });
+              setTimeout(() => {
+                this.triggerPreviewUpdate();
+              }, 50);
+            },
+            false
+          )}
         </div>
 
         ${hoverEffect.effect && hoverEffect.effect !== 'none'
@@ -468,36 +473,80 @@ export class GlobalActionsTab {
                   ${localize('editor.hover_effects.animation_settings', lang, 'Animation Settings')}
                 </div>
                 <div class="conditional-fields-content" style="padding: 16px;">
-                  <ha-form
-                    .hass=${hass}
-                    .data=${{
-                      duration: hoverEffect.duration || 300,
-                      timing: hoverEffect.timing || 'ease',
-                      intensity: hoverEffect.intensity || 'normal',
-                    }}
-                    .schema=${[
-                      {
-                        name: 'duration',
-                        label: localize('editor.hover_effects.duration', lang, 'Duration (ms)'),
-                        selector: { number: { min: 100, max: 2000, step: 50 } },
+                  <!-- Duration Field -->
+                  <div style="margin-bottom: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    >
+                      ${localize('editor.hover_effects.duration', lang, 'Duration (ms)')}
+                    </div>
+                    ${UcFormUtils.renderForm(
+                      hass,
+                      { duration: hoverEffect.duration || 300 },
+                      [UcFormUtils.number('duration', 100, 2000, 50)],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.duration;
+                        const current = hoverEffect.duration || 300;
+                        if (next === current) return;
+                        updateHoverEffect({ duration: next });
+                        setTimeout(() => {
+                          this.triggerPreviewUpdate();
+                        }, 50);
                       },
-                      {
-                        name: 'timing',
-                        label: localize('editor.hover_effects.timing', lang, 'Timing Function'),
-                        selector: { select: { options: timingOptions, mode: 'dropdown' } },
+                      false
+                    )}
+                  </div>
+
+                  <!-- Timing Function Field -->
+                  <div style="margin-bottom: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    >
+                      ${localize('editor.hover_effects.timing', lang, 'Timing Function')}
+                    </div>
+                    ${UcFormUtils.renderForm(
+                      hass,
+                      { timing: hoverEffect.timing || 'ease' },
+                      [UcFormUtils.select('timing', timingOptions)],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.timing;
+                        const current = hoverEffect.timing || 'ease';
+                        if (next === current) return;
+                        updateHoverEffect({ timing: next });
+                        setTimeout(() => {
+                          this.triggerPreviewUpdate();
+                        }, 50);
                       },
-                      {
-                        name: 'intensity',
-                        label: localize('editor.hover_effects.intensity', lang, 'Intensity'),
-                        selector: { select: { options: intensityOptions, mode: 'dropdown' } },
+                      false
+                    )}
+                  </div>
+
+                  <!-- Intensity Field -->
+                  <div style="margin-bottom: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    >
+                      ${localize('editor.hover_effects.intensity', lang, 'Intensity')}
+                    </div>
+                    ${UcFormUtils.renderForm(
+                      hass,
+                      { intensity: hoverEffect.intensity || 'normal' },
+                      [UcFormUtils.select('intensity', intensityOptions)],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.intensity;
+                        const current = hoverEffect.intensity || 'normal';
+                        if (next === current) return;
+                        updateHoverEffect({ intensity: next });
+                        setTimeout(() => {
+                          this.triggerPreviewUpdate();
+                        }, 50);
                       },
-                    ]}
-                    .computeLabel=${this.computeLabel}
-                    @value-changed=${(e: CustomEvent) => {
-                      const values = (e.detail as any)?.value;
-                      if (values) updateHoverEffect(values);
-                    }}
-                  ></ha-form>
+                      false
+                    )}
+                  </div>
                 </div>
               </div>
 

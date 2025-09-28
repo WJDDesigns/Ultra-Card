@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 1.2.0-beta14
+
+### 🎨 UI/UX Improvements
+
+- **Updated presets UI** - Enhanced preset interface for better user experience
+- **Fixed responsive module box issue** - Resolved layout problems with module containers on different screen sizes
+- **Fixed icon module entity field issue** - Corrected entity field handling in icon module configuration
+
 ## Version 1.2.0-beta13
 
 ### 🐛 Bug Fixes

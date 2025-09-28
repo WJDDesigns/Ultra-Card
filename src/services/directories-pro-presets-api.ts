@@ -19,6 +19,7 @@ export interface WordPressPreset {
   downloads: number;
   rating: number;
   reviews_count: number;
+  rating_count?: number;
   created: string;
   updated?: string;
   is_featured: boolean;
@@ -135,7 +136,8 @@ export class DirectoriesProPresetsAPI {
                 author_avatar: post._embedded?.author?.[0]?.avatar_urls?.['48'] || '',
                 downloads: parseInt(meta.downloads) || 0,
                 rating: parseFloat(meta.rating) || 0,
-                reviews_count: 0,
+                reviews_count: parseInt(meta.rating_count) || 0,
+                rating_count: parseInt(meta.rating_count) || 0,
                 created: post.date,
                 updated: post.modified,
                 is_featured: false,
@@ -236,7 +238,8 @@ export class DirectoriesProPresetsAPI {
         author_avatar: post._embedded?.author?.[0]?.avatar_urls?.['48'] || '',
         downloads: parseInt(meta.downloads) || 0,
         rating: parseFloat(meta.rating) || 0,
-        reviews_count: 0,
+        reviews_count: parseInt(meta.rating_count) || 0,
+        rating_count: parseInt(meta.rating_count) || 0,
         created: post.date,
         updated: post.modified,
         is_featured: false,

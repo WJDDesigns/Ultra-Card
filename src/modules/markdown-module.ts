@@ -620,9 +620,13 @@ All standard markdown features are automatically enabled!`,
 
     const element = html`<div class="markdown-content" .innerHTML=${renderedContent}></div>`;
 
+    // Get hover effect configuration from module design
+    const hoverEffect = (moduleWithDesign as any).design?.hover_effect;
+    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
     return html`
       <div
-        class="markdown-module-container"
+        class="markdown-module-container ${hoverEffectClass}"
         style="${this.styleObjectToCss(containerStyles)}; cursor: ${(markdownModule.tap_action &&
           markdownModule.tap_action.action !== 'nothing') ||
         (markdownModule.hold_action && markdownModule.hold_action.action !== 'nothing') ||

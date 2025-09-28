@@ -66,6 +66,7 @@ export declare class LayoutTab extends LitElement {
     private _popupDragState;
     private _popupResizeState;
     private _windowResizeListener;
+    private _resizeTimeout;
     disconnectedCallback(): void;
     private _startPopupDrag;
     private _handlePopupDrag;
@@ -223,6 +224,11 @@ export declare class LayoutTab extends LitElement {
     private _renderModuleSelector;
     private _formatCategoryTitle;
     private _renderModulesTab;
+    private _renderPresetImages;
+    private _navigateSlider;
+    private _goToSlide;
+    private _handleSliderMouseDown;
+    private _handleSliderTouchStart;
     private _renderPresetsTab;
     private _renderFavoritesTab;
     private _renderFavoriteDialog;

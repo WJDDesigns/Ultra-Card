@@ -335,7 +335,7 @@ export class UltraIconModule extends BaseUltraModule {
                       'Select the entity this icon represents'
                     ),
                     hass,
-                    data: iconModule,
+                    data: { entity: icon.entity || '' },
                     schema: [this.entityField('entity')],
                     onChange: (e: CustomEvent) => {
                       const entityId = e.detail.value.entity;
@@ -384,7 +384,7 @@ export class UltraIconModule extends BaseUltraModule {
                       'State value considered "inactive" (leave blank to use actual entity state)'
                     ),
                     hass,
-                    data: iconModule,
+                    data: { inactive_state: icon.inactive_state || '' },
                     schema: [this.textField('inactive_state')],
                     onChange: (e: CustomEvent) =>
                       this._updateIcon(
@@ -402,7 +402,7 @@ export class UltraIconModule extends BaseUltraModule {
                       'State value considered "active" (leave blank to use actual entity state)'
                     ),
                     hass,
-                    data: iconModule,
+                    data: { active_state: icon.active_state || '' },
                     schema: [this.textField('active_state')],
                     onChange: (e: CustomEvent) =>
                       this._updateIcon(
@@ -3825,6 +3825,146 @@ export class UltraIconModule extends BaseUltraModule {
     return binaryDomains.includes(domain);
   }
 
+  /**
+   * Enhanced state matching that supports both actual entity states and binary equivalents
+   */
+  private _matchesState(actualValue: string, configuredState: string, entityState: any): boolean {
+    // Direct match first
+    if (actualValue === configuredState) {
+      return true;
+    }
+
+    // Case-insensitive match
+    if (actualValue.toLowerCase() === configuredState.toLowerCase()) {
+      return true;
+    }
+
+    // Binary state mapping - allow users to use either actual states or binary equivalents
+    const domain = entityState?.entity_id?.split('.')[0];
+    const deviceClass = entityState?.attributes?.device_class;
+
+    // Create mapping of actual states to binary equivalents
+    const stateMappings = this._getStateMappings(domain, deviceClass);
+
+    // Check if configured state maps to actual value
+    if (stateMappings[configuredState.toLowerCase()] === actualValue.toLowerCase()) {
+      return true;
+    }
+
+    // Check reverse mapping (actual state maps to configured binary)
+    if (stateMappings[actualValue.toLowerCase()] === configuredState.toLowerCase()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get state mappings for different entity types and device classes
+   */
+  private _getStateMappings(domain: string, deviceClass?: string): Record<string, string> {
+    const mappings: Record<string, string> = {};
+
+    // Common binary mappings that work for most entities
+    mappings['on'] = 'on';
+    mappings['off'] = 'off';
+    mappings['true'] = 'on';
+    mappings['false'] = 'off';
+    mappings['yes'] = 'on';
+    mappings['no'] = 'off';
+    mappings['1'] = 'on';
+    mappings['0'] = 'off';
+
+    // Domain-specific mappings
+    switch (domain) {
+      case 'binary_sensor':
+        // Map common binary sensor states to on/off
+        mappings['open'] = 'on';
+        mappings['closed'] = 'off';
+        mappings['detected'] = 'on';
+        mappings['clear'] = 'off';
+        mappings['motion'] = 'on';
+        mappings['no_motion'] = 'off';
+        mappings['occupied'] = 'on';
+        mappings['not_occupied'] = 'off';
+        mappings['wet'] = 'on';
+        mappings['dry'] = 'off';
+        mappings['connected'] = 'on';
+        mappings['disconnected'] = 'off';
+        mappings['home'] = 'on';
+        mappings['away'] = 'off';
+        mappings['problem'] = 'on';
+        mappings['ok'] = 'off';
+        mappings['unsafe'] = 'on';
+        mappings['safe'] = 'off';
+
+        // Device class specific mappings
+        if (deviceClass) {
+          switch (deviceClass) {
+            case 'door':
+            case 'window':
+            case 'garage_door':
+              mappings['open'] = 'on';
+              mappings['closed'] = 'off';
+              break;
+            case 'lock':
+              mappings['unlocked'] = 'on';
+              mappings['locked'] = 'off';
+              break;
+            case 'motion':
+              mappings['motion'] = 'on';
+              mappings['no_motion'] = 'off';
+              break;
+            case 'occupancy':
+              mappings['occupied'] = 'on';
+              mappings['not_occupied'] = 'off';
+              break;
+            case 'presence':
+              mappings['home'] = 'on';
+              mappings['away'] = 'off';
+              break;
+            case 'connectivity':
+              mappings['connected'] = 'on';
+              mappings['disconnected'] = 'off';
+              break;
+          }
+        }
+        break;
+
+      case 'cover':
+        mappings['open'] = 'on';
+        mappings['closed'] = 'off';
+        mappings['opening'] = 'on';
+        mappings['closing'] = 'off';
+        break;
+
+      case 'lock':
+        mappings['unlocked'] = 'on';
+        mappings['locked'] = 'off';
+        mappings['unlocking'] = 'on';
+        mappings['locking'] = 'off';
+        break;
+
+      case 'device_tracker':
+      case 'person':
+        mappings['home'] = 'on';
+        mappings['away'] = 'off';
+        mappings['not_home'] = 'off';
+        break;
+
+      case 'alarm_control_panel':
+        mappings['disarmed'] = 'off';
+        mappings['armed_home'] = 'on';
+        mappings['armed_away'] = 'on';
+        mappings['armed_night'] = 'on';
+        mappings['armed_vacation'] = 'on';
+        mappings['armed_custom_bypass'] = 'on';
+        break;
+    }
+
+    return mappings;
+  }
+
   // Helper method to properly evaluate icon state (matches logic from actual card)
   private _evaluateIconState(icon: IconConfig, hass: HomeAssistant): boolean {
     const entityState = hass?.states[icon.entity];
@@ -3899,10 +4039,10 @@ export class UltraIconModule extends BaseUltraModule {
 
     // If both active_state and inactive_state are defined, check both
     if (icon.active_state && icon.inactive_state) {
-      if (activeValue === icon.active_state) {
+      if (this._matchesState(activeValue, icon.active_state, entityState)) {
         return true;
       }
-      if (inactiveValue === icon.inactive_state) {
+      if (this._matchesState(inactiveValue, icon.inactive_state, entityState)) {
         return false;
       }
       // If state doesn't match either, default to inactive
@@ -3911,12 +4051,12 @@ export class UltraIconModule extends BaseUltraModule {
 
     // If only active_state is defined
     if (icon.active_state) {
-      return activeValue === icon.active_state;
+      return this._matchesState(activeValue, icon.active_state, entityState);
     }
 
     // If only inactive_state is defined
     if (icon.inactive_state) {
-      return inactiveValue !== icon.inactive_state;
+      return !this._matchesState(inactiveValue, icon.inactive_state, entityState);
     }
 
     // If attributes are selected but no specific states are defined,

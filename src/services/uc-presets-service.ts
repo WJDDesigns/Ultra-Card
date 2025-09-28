@@ -36,8 +36,11 @@ class UcPresetsService {
   /**
    * Get presets by category
    */
-  getPresetsByCategory(category: PresetDefinition['category']): PresetDefinition[] {
+  getPresetsByCategory(category: PresetDefinition['category'] | 'all'): PresetDefinition[] {
     const allPresets = this.getAllPresets();
+    if (category === 'all') {
+      return allPresets;
+    }
     const filtered = allPresets.filter(preset => preset.category === category);
     return filtered;
   }
@@ -413,6 +416,7 @@ class UcPresetsService {
       // Add WordPress-specific data for Read More functionality
       presetDefinition.preset_url = wpPreset.preset_url;
       presetDefinition.description_full = wpPreset.description_full;
+      presetDefinition.gallery = wpPreset.gallery || [];
 
       return presetDefinition;
     } catch (error) {

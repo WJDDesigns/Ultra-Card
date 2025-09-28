@@ -324,7 +324,7 @@ export class UcHoverEffectsService {
   /**
    * Inject hover effect styles into a shadow root or document head
    */
-  static injectHoverEffectStyles(shadowRoot?: ShadowRoot): void {
+  static injectHoverEffectStyles(shadowRoot?: ShadowRoot, configs?: HoverEffectConfig[]): void {
     const styleId = 'uc-hover-effects-styles';
 
     if (shadowRoot) {
@@ -337,7 +337,12 @@ export class UcHoverEffectsService {
         shadowRoot.appendChild(styleElement);
       }
 
-      styleElement.textContent = this.generateAllHoverEffectStyles();
+      // Generate styles based on provided configs or use defaults
+      if (configs && configs.length > 0) {
+        styleElement.textContent = this.generateDynamicHoverEffectStyles(configs);
+      } else {
+        styleElement.textContent = this.generateAllHoverEffectStyles();
+      }
     } else {
       // Fallback to document head
       let styleElement = document.getElementById(styleId) as HTMLStyleElement;
@@ -348,8 +353,53 @@ export class UcHoverEffectsService {
         document.head.appendChild(styleElement);
       }
 
-      styleElement.textContent = this.generateAllHoverEffectStyles();
+      // Generate styles based on provided configs or use defaults
+      if (configs && configs.length > 0) {
+        styleElement.textContent = this.generateDynamicHoverEffectStyles(configs);
+      } else {
+        styleElement.textContent = this.generateAllHoverEffectStyles();
+      }
     }
+  }
+
+  /**
+   * Generate hover effect styles for specific configurations
+   */
+  static generateDynamicHoverEffectStyles(configs: HoverEffectConfig[]): string {
+    let allStyles = '';
+
+    // First, generate all keyframes (always needed)
+    allStyles += this.generateAllKeyframes();
+
+    // Then generate styles for each specific configuration
+    configs.forEach(config => {
+      if (config && config.effect && config.effect !== 'none') {
+        allStyles += this.generateHoverEffectStyles(config);
+      }
+    });
+
+    // Also include default styles for basic effects
+    allStyles += this.generateAllHoverEffectStyles();
+
+    return allStyles;
+  }
+
+  /**
+   * Update hover effect styles in existing shadow root with new configurations
+   */
+  static updateHoverEffectStyles(shadowRoot: ShadowRoot, configs: HoverEffectConfig[]): void {
+    const styleId = 'uc-hover-effects-styles';
+    let styleElement = shadowRoot.querySelector(`#${styleId}`) as HTMLStyleElement;
+
+    if (!styleElement) {
+      // Create if doesn't exist
+      styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      shadowRoot.appendChild(styleElement);
+    }
+
+    // Generate dynamic styles based on current configurations
+    styleElement.textContent = this.generateDynamicHoverEffectStyles(configs);
   }
 
   /**

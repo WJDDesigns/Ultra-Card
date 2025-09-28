@@ -8,6 +8,7 @@ import {
   CardColumn,
   TextModule,
   ImageModule,
+  HoverEffectConfig,
 } from '../types';
 import { getModuleRegistry } from '../modules';
 import { getImageUrl } from '../utils/image-upload';
@@ -51,6 +52,8 @@ export class UltraCard extends LitElement {
     // Listen for template updates from modules
     this._templateUpdateListener = () => {
       this.requestUpdate();
+      // Update hover styles when configuration changes
+      this._updateHoverEffectStyles();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
   }
@@ -741,6 +744,50 @@ export class UltraCard extends LitElement {
     }
 
     return unit === 's' ? value * 1000 : value;
+  }
+
+  /**
+   * Collect all hover effect configurations from the current card config
+   */
+  private _collectHoverEffectConfigs(): HoverEffectConfig[] {
+    const configs: HoverEffectConfig[] = [];
+
+    if (!this.config) return configs;
+
+    // Collect from rows
+    this.config.layout?.rows?.forEach(row => {
+      if (row.design?.hover_effect) {
+        configs.push(row.design.hover_effect);
+      }
+
+      // Collect from columns
+      row.columns?.forEach(column => {
+        if (column.design?.hover_effect) {
+          configs.push(column.design.hover_effect);
+        }
+
+        // Collect from modules
+        column.modules?.forEach(module => {
+          if ((module as any).design?.hover_effect) {
+            configs.push((module as any).design.hover_effect);
+          }
+        });
+      });
+    });
+
+    return configs;
+  }
+
+  /**
+   * Update hover effect styles based on current configuration
+   */
+  private _updateHoverEffectStyles(): void {
+    if (!this.shadowRoot) return;
+
+    const configs = this._collectHoverEffectConfigs();
+    if (configs.length > 0) {
+      UcHoverEffectsService.updateHoverEffectStyles(this.shadowRoot, configs);
+    }
   }
 
   /**

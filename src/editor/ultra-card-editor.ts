@@ -1,9 +1,11 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { UltraCardConfig } from '../types';
+import { UltraCardConfig, HoverEffectConfig } from '../types';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
+import { ucCloudSyncService, SyncStatus } from '../services/uc-cloud-sync-service';
 import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
@@ -23,6 +25,13 @@ export class UltraCardEditor extends LitElement {
   @state() private _configDebounceTimeout?: number;
   @state() private _isFullScreen: boolean = false;
   @state() private _isMobile: boolean = false;
+
+  // Cloud sync state
+  @state() private _cloudUser: CloudUser | null = null;
+  @state() private _syncStatus: SyncStatus | null = null;
+  @state() private _showLoginForm: boolean = false;
+  @state() private _loginError: string = '';
+  @state() private _isLoggingIn: boolean = false;
 
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
@@ -52,6 +61,12 @@ export class UltraCardEditor extends LitElement {
 
     // Inject hover effect styles into editor's shadow root
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
+
+    // Update hover styles when configuration changes
+    this._updateHoverEffectStyles();
+
+    // Setup cloud sync listeners
+    this._setupCloudSyncListeners();
   }
 
   private _resizeListener?: () => void;
@@ -71,6 +86,9 @@ export class UltraCardEditor extends LitElement {
 
     // Clean up full screen class if still applied
     document.body.classList.remove('ultra-card-fullscreen');
+
+    // Cleanup cloud sync listeners
+    this._cleanupCloudSyncListeners();
   }
 
   private _checkMobileDevice(): void {
@@ -93,6 +111,8 @@ export class UltraCardEditor extends LitElement {
     ev.stopPropagation();
     if (ev.detail && ev.detail.config) {
       this.config = ev.detail.config;
+      // Update hover styles when configuration changes
+      this._updateHoverEffectStyles();
       // Only re-dispatch if this isn't already a bubbled event to prevent infinite loops
       if (!ev.detail.isInternal) {
         const event = new CustomEvent('config-changed', {
@@ -570,6 +590,9 @@ export class UltraCardEditor extends LitElement {
 
             <uc-favorite-colors-manager .hass=${this.hass}></uc-favorite-colors-manager>
           </div>
+
+          <!-- Cloud Sync Section -->
+          ${this._renderCloudSyncSection(lang)}
         </div>
       </div>
     `;
@@ -1117,6 +1140,940 @@ export class UltraCardEditor extends LitElement {
           height: 16px;
         }
       }
+
+      /* Cloud Sync Styles */
+      .cloud-sync-container {
+        margin-top: 16px;
+      }
+
+      .login-section {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 20px;
+        background: var(--card-background-color);
+      }
+
+      .login-prompt {
+        text-align: center;
+      }
+
+      .login-benefits {
+        margin-bottom: 24px;
+      }
+
+      .login-benefits h5 {
+        margin: 0 0 12px 0;
+        color: var(--primary-text-color);
+        font-size: 16px;
+      }
+
+      .login-benefits ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        text-align: left;
+        display: inline-block;
+      }
+
+      .login-benefits li {
+        margin: 8px 0;
+        color: var(--secondary-text-color);
+        font-size: 14px;
+      }
+
+      .login-actions {
+        margin-top: 20px;
+      }
+
+      .login-btn {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border: none;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .login-btn:hover {
+        background: var(--primary-color);
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      .login-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .login-note {
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+      }
+
+      .login-note a {
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .login-note a:hover {
+        text-decoration: underline;
+      }
+
+      .login-form {
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .login-form h5 {
+        margin: 0 0 20px 0;
+        text-align: center;
+        color: var(--primary-text-color);
+      }
+
+      .error-message {
+        background: var(--error-color);
+        color: white;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        font-size: 14px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        box-sizing: border-box;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px var(--primary-color) 20;
+      }
+
+      .form-group input:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+      }
+
+      .cancel-btn {
+        background: transparent;
+        color: var(--secondary-text-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        padding: 12px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .cancel-btn:hover {
+        background: var(--divider-color);
+      }
+
+      .login-links {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 13px;
+      }
+
+      .login-links a {
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .login-links a:hover {
+        text-decoration: underline;
+      }
+
+      .login-links span {
+        margin: 0 8px;
+        color: var(--secondary-text-color);
+      }
+
+      .sync-controls {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 20px;
+        background: var(--card-background-color);
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .user-details {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .user-text {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-text strong {
+        color: var(--primary-text-color);
+        font-size: 16px;
+      }
+
+      .user-email {
+        color: var(--secondary-text-color);
+        font-size: 13px;
+      }
+
+      .logout-btn {
+        background: transparent;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        padding: 8px;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        transition: all 0.2s ease;
+      }
+
+      .logout-btn:hover {
+        background: var(--error-color);
+        color: white;
+        border-color: var(--error-color);
+      }
+
+      .sync-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .sync-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .sync-stat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+
+      .sync-stat.pending .stat-value {
+        color: var(--warning-color);
+        font-weight: 500;
+      }
+
+      .sync-stat.conflicts .stat-value {
+        color: var(--error-color);
+        font-weight: 500;
+      }
+
+      .stat-label {
+        color: var(--secondary-text-color);
+        min-width: 80px;
+      }
+
+      .stat-value {
+        color: var(--primary-text-color);
+        font-weight: 500;
+      }
+
+      .sync-btn {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border: none;
+        border-radius: 6px;
+        padding: 10px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+      }
+
+      .sync-btn:hover:not(:disabled) {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      .sync-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .sync-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .sync-settings {
+        border-top: 1px solid var(--divider-color);
+        padding-top: 16px;
+      }
+
+      .sync-toggle {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .toggle-label input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .toggle-text {
+        color: var(--primary-text-color);
+        font-weight: 500;
+      }
+
+      .toggle-description {
+        margin: 0;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        margin-left: 30px;
+      }
+
+      .sync-conflicts {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--divider-color);
+      }
+
+      .sync-conflicts h6 {
+        margin: 0 0 8px 0;
+        color: var(--error-color);
+        font-size: 16px;
+      }
+
+      .sync-conflicts p {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+
+      .conflicts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .conflict-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border: 1px solid var(--error-color);
+        border-radius: 6px;
+        background: var(--error-color) 10;
+      }
+
+      .conflict-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .conflict-info strong {
+        color: var(--primary-text-color);
+        font-size: 14px;
+      }
+
+      .conflict-field {
+        color: var(--secondary-text-color);
+        font-size: 12px;
+      }
+
+      .conflict-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .resolve-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .resolve-btn.local {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+      }
+
+      .resolve-btn.remote {
+        background: var(--secondary-color, var(--divider-color));
+        color: var(--primary-text-color);
+      }
+
+      .resolve-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      /* Mobile responsive styles */
+      @media (max-width: 768px) {
+        .sync-status {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        .user-info {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .conflict-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .conflict-actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+
+        .form-actions {
+          flex-direction: column;
+        }
+
+        .login-benefits ul {
+          width: 100%;
+        }
+      }
     `;
+  }
+
+  /**
+   * Collect all hover effect configurations from the current card config
+   */
+  private _collectHoverEffectConfigs(): HoverEffectConfig[] {
+    const configs: HoverEffectConfig[] = [];
+
+    if (!this.config) return configs;
+
+    // Collect from rows
+    this.config.layout?.rows?.forEach(row => {
+      if (row.design?.hover_effect) {
+        configs.push(row.design.hover_effect);
+      }
+
+      // Collect from columns
+      row.columns?.forEach(column => {
+        if (column.design?.hover_effect) {
+          configs.push(column.design.hover_effect);
+        }
+
+        // Collect from modules
+        column.modules?.forEach(module => {
+          if ((module as any).design?.hover_effect) {
+            configs.push((module as any).design.hover_effect);
+          }
+        });
+      });
+    });
+
+    return configs;
+  }
+
+  /**
+   * Update hover effect styles based on current configuration
+   */
+  private _updateHoverEffectStyles(): void {
+    if (!this.shadowRoot) return;
+
+    const configs = this._collectHoverEffectConfigs();
+    if (configs.length > 0) {
+      UcHoverEffectsService.updateHoverEffectStyles(this.shadowRoot, configs);
+    }
+  }
+
+  // Cloud Sync Methods
+
+  private _authListener?: (user: CloudUser | null) => void;
+  private _syncListener?: (status: SyncStatus) => void;
+
+  /**
+   * Setup cloud sync listeners
+   */
+  private _setupCloudSyncListeners(): void {
+    // Get initial state
+    this._cloudUser = ucCloudAuthService.getCurrentUser();
+    this._syncStatus = ucCloudSyncService.getSyncStatus();
+
+    // Setup auth listener
+    this._authListener = (user: CloudUser | null) => {
+      this._cloudUser = user;
+      this._loginError = '';
+      this.requestUpdate();
+    };
+    ucCloudAuthService.addListener(this._authListener);
+
+    // Setup sync listener
+    this._syncListener = (status: SyncStatus) => {
+      this._syncStatus = status;
+      this.requestUpdate();
+    };
+    ucCloudSyncService.addListener(this._syncListener);
+  }
+
+  /**
+   * Cleanup cloud sync listeners
+   */
+  private _cleanupCloudSyncListeners(): void {
+    if (this._authListener) {
+      ucCloudAuthService.removeListener(this._authListener);
+      this._authListener = undefined;
+    }
+    if (this._syncListener) {
+      ucCloudSyncService.removeListener(this._syncListener);
+      this._syncListener = undefined;
+    }
+  }
+
+  /**
+   * Render cloud sync section
+   */
+  private _renderCloudSyncSection(lang: string): TemplateResult {
+    return html`
+      <div class="settings-section">
+        <div class="section-header">
+          <h4>${localize('editor.cloud_sync.title', lang, 'Cloud Sync')}</h4>
+          <p>
+            ${localize(
+              'editor.cloud_sync.description',
+              lang,
+              'Sync your favorites, colors, and reviews across all your devices using your ultracard.io account.'
+            )}
+          </p>
+        </div>
+
+        <div class="cloud-sync-container">
+          ${this._cloudUser ? this._renderSyncControls(lang) : this._renderLoginSection(lang)}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render login section for unauthenticated users
+   */
+  private _renderLoginSection(lang: string): TemplateResult {
+    return html`
+      <div class="login-section">
+        ${!this._showLoginForm
+          ? html`
+              <div class="login-prompt">
+                <div class="login-benefits">
+                  <h5>Benefits of Cloud Sync:</h5>
+                  <ul>
+                    <li>✅ Access your favorites on any device</li>
+                    <li>✅ Automatic backup of your custom colors</li>
+                    <li>✅ Sync your preset reviews and ratings</li>
+                    <li>✅ Never lose your configurations</li>
+                  </ul>
+                </div>
+
+                <div class="login-actions">
+                  <button class="login-btn primary" @click=${() => (this._showLoginForm = true)}>
+                    Sign In to Ultra Card Cloud
+                  </button>
+                  <p class="login-note">
+                    Don't have an account?
+                    <a href="https://ultracard.io/register" target="_blank" rel="noopener">
+                      Create one free at ultracard.io
+                    </a>
+                  </p>
+                </div>
+              </div>
+            `
+          : this._renderLoginForm(lang)}
+      </div>
+    `;
+  }
+
+  /**
+   * Render login form
+   */
+  private _renderLoginForm(lang: string): TemplateResult {
+    return html`
+      <div class="login-form">
+        <h5>Sign In to Ultra Card Cloud</h5>
+
+        ${this._loginError ? html`<div class="error-message">${this._loginError}</div>` : ''}
+
+        <form @submit=${this._handleLogin}>
+          <div class="form-group">
+            <label for="username">Username or Email</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              ?disabled=${this._isLoggingIn}
+              placeholder="Enter your username or email"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              ?disabled=${this._isLoggingIn}
+              placeholder="Enter your password"
+            />
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="cancel-btn"
+              @click=${() => {
+                this._showLoginForm = false;
+                this._loginError = '';
+              }}
+              ?disabled=${this._isLoggingIn}
+            >
+              Cancel
+            </button>
+            <button type="submit" class="login-btn primary" ?disabled=${this._isLoggingIn}>
+              ${this._isLoggingIn ? 'Signing In...' : 'Sign In'}
+            </button>
+          </div>
+        </form>
+
+        <div class="login-links">
+          <a href="https://ultracard.io/forgot-password" target="_blank" rel="noopener">
+            Forgot Password?
+          </a>
+          <span>•</span>
+          <a href="https://ultracard.io/register" target="_blank" rel="noopener">
+            Create Account
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render sync controls for authenticated users
+   */
+  private _renderSyncControls(lang: string): TemplateResult {
+    const lastSync = this._syncStatus?.lastSync;
+    const isSyncing = this._syncStatus?.isSyncing || false;
+    const pendingChanges = this._syncStatus?.pendingChanges || 0;
+    const conflicts = this._syncStatus?.conflicts || [];
+
+    return html`
+      <div class="sync-controls">
+        <div class="user-info">
+          <div class="user-details">
+            ${this._cloudUser?.avatar
+              ? html`<img src="${this._cloudUser.avatar}" alt="Avatar" class="user-avatar" />`
+              : html`<div class="user-avatar-placeholder">
+                  ${this._cloudUser?.displayName?.charAt(0) || '?'}
+                </div>`}
+            <div class="user-text">
+              <strong>${this._cloudUser?.displayName || 'Unknown User'}</strong>
+              <span class="user-email">${this._cloudUser?.email}</span>
+            </div>
+          </div>
+          <button class="logout-btn" @click=${this._handleLogout} title="Sign Out">
+            <ha-icon icon="mdi:logout"></ha-icon>
+          </button>
+        </div>
+
+        <div class="sync-status">
+          <div class="sync-info">
+            <div class="sync-stat">
+              <span class="stat-label">Last Sync:</span>
+              <span class="stat-value">
+                ${lastSync ? this._formatRelativeTime(lastSync) : 'Never'}
+              </span>
+            </div>
+            ${pendingChanges > 0
+              ? html`
+                  <div class="sync-stat pending">
+                    <span class="stat-label">Pending:</span>
+                    <span class="stat-value">${pendingChanges} changes</span>
+                  </div>
+                `
+              : ''}
+            ${conflicts.length > 0
+              ? html`
+                  <div class="sync-stat conflicts">
+                    <span class="stat-label">Conflicts:</span>
+                    <span class="stat-value">${conflicts.length} items</span>
+                  </div>
+                `
+              : ''}
+          </div>
+
+          <div class="sync-actions">
+            <button
+              class="sync-btn"
+              @click=${this._handleSyncNow}
+              ?disabled=${isSyncing}
+              title="Sync all data now"
+            >
+              <ha-icon icon="mdi:sync${isSyncing ? ' spin' : ''}"></ha-icon>
+              ${isSyncing ? 'Syncing...' : 'Sync Now'}
+            </button>
+          </div>
+        </div>
+
+        <div class="sync-settings">
+          <div class="sync-toggle">
+            <label class="toggle-label">
+              <input
+                type="checkbox"
+                ?checked=${this._syncStatus?.isEnabled}
+                @change=${this._handleSyncToggle}
+                ?disabled=${isSyncing}
+              />
+              <span class="toggle-text">
+                ${localize('editor.cloud_sync.auto_sync', lang, 'Automatic Sync')}
+              </span>
+            </label>
+            <p class="toggle-description">
+              ${localize(
+                'editor.cloud_sync.auto_sync_desc',
+                lang,
+                'Automatically sync changes in the background'
+              )}
+            </p>
+          </div>
+        </div>
+
+        ${conflicts.length > 0 ? this._renderConflicts(conflicts, lang) : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render sync conflicts
+   */
+  private _renderConflicts(conflicts: any[], lang: string): TemplateResult {
+    return html`
+      <div class="sync-conflicts">
+        <h6>Sync Conflicts</h6>
+        <p>The following items have conflicts that need to be resolved:</p>
+
+        <div class="conflicts-list">
+          ${conflicts.map(
+            conflict => html`
+              <div class="conflict-item">
+                <div class="conflict-info">
+                  <strong>${conflict.type}: ${conflict.local.name || conflict.local.id}</strong>
+                  <span class="conflict-field">Field: ${conflict.field}</span>
+                </div>
+                <div class="conflict-actions">
+                  <button
+                    class="resolve-btn local"
+                    @click=${() => this._resolveConflict(conflict, 'local')}
+                  >
+                    Keep Local
+                  </button>
+                  <button
+                    class="resolve-btn remote"
+                    @click=${() => this._resolveConflict(conflict, 'remote')}
+                  >
+                    Keep Cloud
+                  </button>
+                </div>
+              </div>
+            `
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Handle login form submission
+   */
+  private async _handleLogin(e: Event): Promise<void> {
+    e.preventDefault();
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+
+    if (!username || !password) {
+      this._loginError = 'Please enter both username and password';
+      return;
+    }
+
+    this._isLoggingIn = true;
+    this._loginError = '';
+
+    try {
+      await ucCloudAuthService.login({ username, password });
+      this._showLoginForm = false;
+
+      // Enable sync by default after successful login
+      await ucCloudSyncService.setSyncEnabled(true);
+
+      console.log('✅ Successfully logged in and enabled sync');
+    } catch (error) {
+      this._loginError = error instanceof Error ? error.message : 'Login failed';
+      console.error('❌ Login failed:', error);
+    } finally {
+      this._isLoggingIn = false;
+    }
+  }
+
+  /**
+   * Handle logout
+   */
+  private async _handleLogout(): Promise<void> {
+    try {
+      await ucCloudAuthService.logout();
+      this._showLoginForm = false;
+      console.log('✅ Successfully logged out');
+    } catch (error) {
+      console.error('❌ Logout failed:', error);
+    }
+  }
+
+  /**
+   * Handle sync now button
+   */
+  private async _handleSyncNow(): Promise<void> {
+    try {
+      const results = await ucCloudSyncService.syncAll();
+      console.log('✅ Sync completed:', results);
+
+      // Show success message (could be enhanced with toast notification)
+      const totalSynced = results.favorites.synced + results.colors.synced + results.reviews.synced;
+      if (totalSynced > 0) {
+        console.log(`Synced ${totalSynced} items successfully`);
+      }
+    } catch (error) {
+      console.error('❌ Sync failed:', error);
+      // Could show error toast here
+    }
+  }
+
+  /**
+   * Handle sync toggle
+   */
+  private async _handleSyncToggle(e: Event): Promise<void> {
+    const target = e.target as HTMLInputElement;
+    const enabled = target.checked;
+
+    try {
+      await ucCloudSyncService.setSyncEnabled(enabled);
+      console.log(`✅ Sync ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('❌ Failed to toggle sync:', error);
+      // Revert checkbox state
+      target.checked = !enabled;
+    }
+  }
+
+  /**
+   * Resolve a sync conflict
+   */
+  private async _resolveConflict(conflict: any, resolution: 'local' | 'remote'): Promise<void> {
+    try {
+      await ucCloudSyncService.resolveConflict(conflict, resolution);
+      console.log(`✅ Conflict resolved: ${resolution}`);
+    } catch (error) {
+      console.error('❌ Failed to resolve conflict:', error);
+    }
+  }
+
+  /**
+   * Format relative time for last sync display
+   */
+  private _formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString();
   }
 }

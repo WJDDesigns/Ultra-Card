@@ -25,6 +25,12 @@
       "title": "Favorite Colors",
       "description": "Manage your favorite colors that appear in all Ultra Card color pickers. These colors sync across all your Ultra Cards."
     },
+    "cloud_sync": {
+      "title": "Cloud Sync",
+      "description": "Sync your favorites, colors, and reviews across all your devices using your ultracard.io account.",
+      "auto_sync": "Automatic Sync",
+      "auto_sync_desc": "Automatically sync changes in the background"
+    },
     "fields": {
       "card_background_color": "Card Background Color",
       "card_background_color_desc": "The background color of the entire card",

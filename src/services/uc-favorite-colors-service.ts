@@ -1,4 +1,5 @@
 import { FavoriteColor } from '../types';
+import { ucCloudSyncService } from './uc-cloud-sync-service';
 
 /**
  * Service for managing favorite colors across Ultra Card instances
@@ -38,6 +39,10 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+
+    // Queue for cloud sync
+    ucCloudSyncService.queueChange('color', 'create', newFavorite);
+
     return newFavorite;
   }
 
@@ -57,6 +62,10 @@ class UcFavoriteColorsService {
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+
+    // Queue for cloud sync
+    ucCloudSyncService.queueChange('color', 'update', this._favorites[index]);
+
     return true;
   }
 
@@ -67,10 +76,15 @@ class UcFavoriteColorsService {
     const index = this._favorites.findIndex(f => f.id === id);
     if (index === -1) return false;
 
+    const deletedColor = this._favorites[index];
     this._favorites.splice(index, 1);
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+
+    // Queue for cloud sync
+    ucCloudSyncService.queueChange('color', 'delete', { id });
+
     return true;
   }
 

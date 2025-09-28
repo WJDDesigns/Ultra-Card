@@ -14,6 +14,11 @@ export declare class UltraCardEditor extends LitElement {
     private _configDebounceTimeout?;
     private _isFullScreen;
     private _isMobile;
+    private _cloudUser;
+    private _syncStatus;
+    private _showLoginForm;
+    private _loginError;
+    private _isLoggingIn;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
@@ -42,4 +47,58 @@ export declare class UltraCardEditor extends LitElement {
      * Update hover effect styles based on current configuration
      */
     private _updateHoverEffectStyles;
+    private _authListener?;
+    private _syncListener?;
+    /**
+     * Setup cloud sync listeners
+     */
+    private _setupCloudSyncListeners;
+    /**
+     * Cleanup cloud sync listeners
+     */
+    private _cleanupCloudSyncListeners;
+    /**
+     * Render cloud sync section
+     */
+    private _renderCloudSyncSection;
+    /**
+     * Render login section for unauthenticated users
+     */
+    private _renderLoginSection;
+    /**
+     * Render login form
+     */
+    private _renderLoginForm;
+    /**
+     * Render sync controls for authenticated users
+     */
+    private _renderSyncControls;
+    /**
+     * Render sync conflicts
+     */
+    private _renderConflicts;
+    /**
+     * Handle login form submission
+     */
+    private _handleLogin;
+    /**
+     * Handle logout
+     */
+    private _handleLogout;
+    /**
+     * Handle sync now button
+     */
+    private _handleSyncNow;
+    /**
+     * Handle sync toggle
+     */
+    private _handleSyncToggle;
+    /**
+     * Resolve a sync conflict
+     */
+    private _resolveConflict;
+    /**
+     * Format relative time for last sync display
+     */
+    private _formatRelativeTime;
 }

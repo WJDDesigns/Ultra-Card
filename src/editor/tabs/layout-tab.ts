@@ -27,7 +27,7 @@ import { localize } from '../../localize/localize';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ucExportImportService } from '../../services/uc-export-import-service';
-import { PresetDefinition, FavoriteRow, ExportData } from '../../types';
+import { PresetDefinition, FavoriteRow, ExportData, HoverEffectConfig } from '../../types';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
 
@@ -137,7 +137,8 @@ export class LayoutTab extends LitElement {
 
   // New state properties for presets, favorites, and export/import
   @state() private _activeModuleSelectorTab: 'modules' | 'presets' | 'favorites' = 'modules';
-  @state() private _selectedPresetCategory: 'badges' | 'layouts' | 'widgets' | 'custom' = 'badges';
+  @state() private _selectedPresetCategory: 'all' | 'badges' | 'layouts' | 'widgets' | 'custom' =
+    'all';
   @state() private _showFavoriteDialog = false;
   @state() private _favoriteRowToSave: CardRow | null = null;
   @state() private _showImportDialog = false;
@@ -160,6 +161,12 @@ export class LayoutTab extends LitElement {
       this.requestUpdate();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+
+    // Add window resize listener for popup repositioning
+    this._windowResizeListener = () => {
+      this._handleWindowResize();
+    };
+    window.addEventListener('resize', this._windowResizeListener);
 
     // Close more menu when clicking outside
     this._documentClickListener = (e: Event) => {
@@ -195,15 +202,120 @@ export class LayoutTab extends LitElement {
 
     // Inject hover effect styles into layout tab's shadow root for popup previews
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
+
+    // Update hover styles with current configuration
+    this._updateHoverEffectStyles();
   }
 
   /** Determine if current device/viewport should be treated as mobile */
   private _isMobileDevice(): boolean {
-    const isMobileViewport = window.innerWidth <= 768;
+    // Check for mobile viewport size (including iPhone in landscape)
+    const isMobileViewport = window.innerWidth <= 768 || window.innerHeight <= 768;
+
+    // Check for mobile user agents
     const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
     );
-    return isMobileViewport || isMobileUserAgent;
+
+    // Check for touch capability (additional mobile indicator)
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    return isMobileViewport || isMobileUserAgent || (isTouchDevice && window.innerWidth <= 1024);
+  }
+
+  private _handleWindowResize(): void {
+    // Debounce resize events to avoid excessive repositioning
+    clearTimeout(this._resizeTimeout);
+    this._resizeTimeout = setTimeout(() => {
+      // Reposition all visible popups to stay centered and within viewport
+      const popups = document.querySelectorAll('.draggable-popup');
+      popups.forEach(popup => {
+        const element = popup as HTMLElement;
+        if (element.offsetParent !== null) {
+          // Only handle visible popups
+          this._repositionPopup(element);
+        }
+      });
+    }, 100);
+  }
+
+  private _repositionPopup(element: HTMLElement): void {
+    const isMobile = this._isMobileDevice();
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // On mobile, let CSS handle positioning - just ensure it's not dragged off-screen
+    if (isMobile) {
+      // Reset any drag positioning and let CSS handle mobile layout
+      element.style.position = 'fixed';
+      element.style.top = '50%';
+      element.style.left = '50%';
+      element.style.transform = 'translate(-50%, -50%)';
+      element.style.marginLeft = '';
+      element.style.marginTop = '';
+      element.style.width = '';
+      element.style.height = '';
+      element.style.maxWidth = '';
+      element.style.maxHeight = '';
+      return;
+    }
+
+    // On desktop, keep popup within viewport bounds
+    let newLeft = rect.left;
+    let newTop = rect.top;
+
+    // Check if popup extends beyond right edge
+    if (rect.right > viewportWidth) {
+      newLeft = viewportWidth - rect.width - 20; // 20px padding
+    }
+
+    // Check if popup extends beyond left edge
+    if (newLeft < 20) {
+      newLeft = 20;
+    }
+
+    // Check if popup extends beyond bottom edge
+    if (rect.bottom > viewportHeight) {
+      newTop = viewportHeight - rect.height - 20; // 20px padding
+    }
+
+    // Check if popup extends beyond top edge
+    if (newTop < 20) {
+      newTop = 20;
+    }
+
+    // Only update position if it changed
+    if (newLeft !== rect.left || newTop !== rect.top) {
+      element.style.position = 'fixed';
+      element.style.left = `${newLeft}px`;
+      element.style.top = `${newTop}px`;
+      element.style.transform = 'none';
+      element.style.marginLeft = '0';
+      element.style.marginTop = '0';
+    }
+  }
+
+  private _initializePopupPosition(element: HTMLElement): void {
+    // Initialize popup with proper responsive positioning
+    const isMobile = this._isMobileDevice();
+
+    if (isMobile) {
+      // On mobile, let CSS handle all positioning - don't override
+      // Just ensure any previous drag positioning is cleared
+      element.style.marginLeft = '';
+      element.style.marginTop = '';
+      element.style.left = '';
+      element.style.top = '';
+      element.style.transform = '';
+      element.style.width = '';
+      element.style.height = '';
+    } else {
+      // On desktop, schedule a reposition after the element is rendered
+      setTimeout(() => {
+        this._repositionPopup(element);
+      }, 0);
+    }
   }
 
   private _togglePreviewCollapsed(e?: Event): void {
@@ -404,6 +516,9 @@ export class LayoutTab extends LitElement {
     element: null,
   };
 
+  private _windowResizeListener: (() => void) | null = null;
+  private _resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // Component lifecycle
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -414,6 +529,16 @@ export class LayoutTab extends LitElement {
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
       this._templateUpdateListener = undefined;
+    }
+    // Remove window resize listener
+    if (this._windowResizeListener) {
+      window.removeEventListener('resize', this._windowResizeListener);
+      this._windowResizeListener = null;
+    }
+    // Clear resize timeout
+    if (this._resizeTimeout) {
+      clearTimeout(this._resizeTimeout);
+      this._resizeTimeout = null;
     }
     // Remove document click listener
     if (this._documentClickListener) {
@@ -438,6 +563,7 @@ export class LayoutTab extends LitElement {
     const rect = element.getBoundingClientRect();
 
     // Convert current position to absolute positioning for drag
+    element.style.position = 'fixed';
     element.style.left = `${rect.left}px`;
     element.style.top = `${rect.top}px`;
     element.style.transform = 'none';
@@ -513,6 +639,7 @@ export class LayoutTab extends LitElement {
     const hasTransform = style.transform && style.transform !== 'none';
     const rect = element.getBoundingClientRect();
     if (hasTransform) {
+      element.style.position = 'fixed';
       element.style.left = `${rect.left}px`;
       element.style.top = `${rect.top}px`;
       element.style.transform = 'none';
@@ -744,6 +871,12 @@ export class LayoutTab extends LitElement {
 
   private _updateConfig(updates: Partial<UltraCardConfig>): void {
     const newConfig = { ...this.config, ...updates };
+
+    // Update hover styles when configuration changes
+    setTimeout(() => {
+      this._updateHoverEffectStyles();
+    }, 0);
+
     const event = new CustomEvent('config-changed', {
       detail: { config: newConfig },
       bubbles: true,
@@ -8422,6 +8555,38 @@ export class LayoutTab extends LitElement {
 
   protected updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
+
+    // Initialize popup positioning when popups are shown
+    if (changedProperties.has('_showModuleSelector') && this._showModuleSelector) {
+      setTimeout(() => {
+        const popup = this.shadowRoot?.querySelector('#module-selector-popup') as HTMLElement;
+        if (popup) {
+          this._initializePopupPosition(popup);
+        }
+      }, 0);
+    }
+
+    if (changedProperties.has('_selectedModule') && this._selectedModule) {
+      setTimeout(() => {
+        const popup = this.shadowRoot?.querySelector(
+          `#module-popup-${this._selectedModule?.rowIndex}-${this._selectedModule?.columnIndex}-${this._selectedModule?.moduleIndex}`
+        ) as HTMLElement;
+        if (popup) {
+          this._initializePopupPosition(popup);
+        }
+      }, 0);
+    }
+
+    if (changedProperties.has('_selectedLayoutChild') && this._selectedLayoutChild) {
+      setTimeout(() => {
+        const popup = this.shadowRoot?.querySelector(
+          `#child-popup-${this._selectedLayoutChild?.parentRowIndex}-${this._selectedLayoutChild?.parentColumnIndex}-${this._selectedLayoutChild?.parentModuleIndex}-${this._selectedLayoutChild?.childIndex}`
+        ) as HTMLElement;
+        if (popup) {
+          this._initializePopupPosition(popup);
+        }
+      }, 0);
+    }
   }
 
   private _renderBorderDesignTab(module: CardModule): TemplateResult {
@@ -9118,8 +9283,203 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _renderPresetImages(preset: any, wpPreset: any): TemplateResult {
+    // Get all available images
+    const images: string[] = [];
+
+    // Add featured image first if it exists
+    if (preset.thumbnail) {
+      images.push(preset.thumbnail);
+    }
+
+    // Add gallery images if they exist
+    if (wpPreset.gallery && Array.isArray(wpPreset.gallery) && wpPreset.gallery.length > 0) {
+      // Add gallery images that aren't already in the list
+      wpPreset.gallery.forEach((img: string) => {
+        if (img && !images.includes(img)) {
+          images.push(img);
+        }
+      });
+    }
+
+    // If no images, show icon
+    if (images.length === 0) {
+      return html`
+        <div class="preset-icon-large">
+          <ha-icon icon="${preset.icon}"></ha-icon>
+        </div>
+      `;
+    }
+
+    // If only one image, show simple thumbnail
+    if (images.length === 1) {
+      return html`
+        <div class="preset-thumbnail">
+          <img src="${images[0]}" alt="${preset.name} preview" />
+        </div>
+      `;
+    }
+
+    // Multiple images - show slider
+    const sliderId = `slider-${preset.id}`;
+    return html`
+      <div class="preset-image-slider" id="${sliderId}">
+        <div
+          class="preset-slider-container"
+          style="transform: translateX(0%)"
+          @mousedown=${(e: MouseEvent) => this._handleSliderMouseDown(e, sliderId, images.length)}
+          @touchstart=${(e: TouchEvent) => this._handleSliderTouchStart(e, sliderId, images.length)}
+        >
+          ${images.map(
+            (image, index) => html`
+              <div class="preset-slider-image">
+                <img src="${image}" alt="${preset.name} preview ${index + 1}" />
+              </div>
+            `
+          )}
+        </div>
+
+        <!-- Navigation arrows -->
+        <button
+          class="preset-slider-nav prev"
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            this._navigateSlider(sliderId, -1, images.length);
+          }}
+        >
+          <ha-icon icon="mdi:chevron-left"></ha-icon>
+        </button>
+        <button
+          class="preset-slider-nav next"
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            this._navigateSlider(sliderId, 1, images.length);
+          }}
+        >
+          <ha-icon icon="mdi:chevron-right"></ha-icon>
+        </button>
+
+        <!-- Dots indicator -->
+        <div class="preset-slider-dots">
+          ${images.map(
+            (_, index) => html`
+              <div
+                class="preset-slider-dot ${index === 0 ? 'active' : ''}"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._goToSlide(sliderId, index, images.length);
+                }}
+              ></div>
+            `
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  private _navigateSlider(sliderId: string, direction: number, totalImages: number): void {
+    const slider = this.shadowRoot?.querySelector(`#${sliderId}`);
+    if (!slider) return;
+
+    const container = slider.querySelector('.preset-slider-container') as HTMLElement;
+    const dots = slider.querySelectorAll('.preset-slider-dot');
+
+    if (!container || !dots.length) return;
+
+    // Get current slide index from transform
+    const currentTransform = container.style.transform || 'translateX(0%)';
+    const currentIndex = Math.abs(parseInt(currentTransform.match(/-?\d+/)?.[0] || '0') / 100);
+
+    // Calculate new index
+    let newIndex = currentIndex + direction;
+    if (newIndex < 0) newIndex = totalImages - 1;
+    if (newIndex >= totalImages) newIndex = 0;
+
+    // Update transform
+    container.style.transform = `translateX(-${newIndex * 100}%)`;
+
+    // Update dots
+    dots.forEach((dot, index) => {
+      dot.classList.toggle('active', index === newIndex);
+    });
+  }
+
+  private _goToSlide(sliderId: string, targetIndex: number, totalImages: number): void {
+    const slider = this.shadowRoot?.querySelector(`#${sliderId}`);
+    if (!slider) return;
+
+    const container = slider.querySelector('.preset-slider-container') as HTMLElement;
+    const dots = slider.querySelectorAll('.preset-slider-dot');
+
+    if (!container || !dots.length) return;
+
+    // Update transform
+    container.style.transform = `translateX(-${targetIndex * 100}%)`;
+
+    // Update dots
+    dots.forEach((dot, index) => {
+      dot.classList.toggle('active', index === targetIndex);
+    });
+  }
+
+  private _handleSliderMouseDown(e: MouseEvent, sliderId: string, totalImages: number): void {
+    e.preventDefault();
+    const startX = e.clientX;
+    let isDragging = false;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      if (Math.abs(deltaX) > 10) {
+        isDragging = true;
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+
+      if (isDragging && Math.abs(deltaX) > 50) {
+        const direction = deltaX > 0 ? -1 : 1;
+        this._navigateSlider(sliderId, direction, totalImages);
+      }
+
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }
+
+  private _handleSliderTouchStart(e: TouchEvent, sliderId: string, totalImages: number): void {
+    const startX = e.touches[0].clientX;
+    let isDragging = false;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const deltaX = e.touches[0].clientX - startX;
+      if (Math.abs(deltaX) > 10) {
+        isDragging = true;
+        e.preventDefault(); // Prevent scrolling
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const deltaX = e.changedTouches[0].clientX - startX;
+
+      if (isDragging && Math.abs(deltaX) > 50) {
+        const direction = deltaX > 0 ? -1 : 1;
+        this._navigateSlider(sliderId, direction, totalImages);
+      }
+
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  }
+
   private _renderPresetsTab(): TemplateResult {
-    const categories = ['badges', 'layouts', 'widgets', 'custom'] as const;
+    const categories = ['all', 'badges', 'layouts', 'widgets', 'custom'] as const;
     const presets = ucPresetsService.getPresetsByCategory(this._selectedPresetCategory);
     const wpStatus = ucPresetsService.getWordPressStatus();
     const wpCount = ucPresetsService.getWordPressPresetsCount();
@@ -9136,13 +9496,15 @@ export class LayoutTab extends LitElement {
                   @click=${() => (this._selectedPresetCategory = category)}
                 >
                   <ha-icon
-                    icon="${category === 'badges'
-                      ? 'mdi:account-circle'
-                      : category === 'layouts'
-                        ? 'mdi:view-dashboard'
-                        : category === 'widgets'
-                          ? 'mdi:widgets'
-                          : 'mdi:puzzle'}"
+                    icon="${category === 'all'
+                      ? 'mdi:view-grid'
+                      : category === 'badges'
+                        ? 'mdi:account-circle'
+                        : category === 'layouts'
+                          ? 'mdi:view-dashboard'
+                          : category === 'widgets'
+                            ? 'mdi:widgets'
+                            : 'mdi:puzzle'}"
                   ></ha-icon>
                   <span>${category.charAt(0).toUpperCase() + category.slice(1)}</span>
                 </button>
@@ -9172,105 +9534,137 @@ export class LayoutTab extends LitElement {
         <!-- Presets Grid -->
         <div class="presets-grid">
           ${presets.length > 0
-            ? presets.map(
-                preset => html`
+            ? presets.map(preset => {
+                const isWpPreset = preset.id.startsWith('wp-');
+                const isWjdDesigns = preset.author === 'WJD Designs';
+                const isCommunity = isWpPreset && !isWjdDesigns;
+                const isDefault = isWpPreset && isWjdDesigns;
+                const wpPreset = preset as any;
+
+                return html`
                   <div
-                    class="preset-card ${preset.id.startsWith('wp-')
-                      ? 'community-preset'
+                    class="preset-card ${isWpPreset
+                      ? isCommunity
+                        ? 'community-preset'
+                        : 'default-preset'
                       : 'builtin-preset'}"
                     @click=${() => {
                       this._addPreset(preset);
                       // Track download for WordPress presets
-                      if (preset.id.startsWith('wp-')) {
+                      if (isWpPreset) {
                         ucPresetsService.trackPresetDownload(preset.id);
                       }
                     }}
                   >
-                    ${preset.thumbnail
-                      ? html`
-                          <div class="preset-thumbnail">
-                            <img src="${preset.thumbnail}" alt="${preset.name} preview" />
-                          </div>
-                        `
-                      : html`
-                          <div class="preset-icon">
-                            <ha-icon icon="${preset.icon}"></ha-icon>
-                          </div>
-                        `}
-                    <div class="preset-info">
-                      <h4>${preset.name}</h4>
-                      <p class="preset-description">${preset.description}</p>
-                      <div class="preset-meta">
-                        <span class="preset-author">by ${preset.author}</span>
-                        <div class="preset-stats">
-                          ${preset.metadata?.downloads
-                            ? html`<span class="stat"
-                                ><ha-icon icon="mdi:download"></ha-icon>${preset.metadata
-                                  .downloads}</span
-                              >`
-                            : ''}
-                          ${preset.metadata?.rating && preset.metadata.rating > 0
-                            ? html`<span class="stat"
-                                ><ha-icon icon="mdi:star"></ha-icon
-                                >${preset.metadata.rating.toFixed(1)}</span
-                              >`
+                    <!-- Header with badge, title, and stats -->
+                    <div class="preset-header">
+                      <div class="preset-header-left">
+                        <div
+                          class="origin-badge ${isCommunity
+                            ? 'community'
+                            : isDefault
+                              ? 'default'
+                              : 'builtin'}"
+                        >
+                          ${isCommunity ? 'Community' : isDefault ? 'Default' : 'Built-in'}
+                        </div>
+                        <div class="preset-title-info">
+                          <h4 class="preset-header-title">${preset.name}</h4>
+                          ${!isWjdDesigns
+                            ? html`<span class="preset-header-author">by ${preset.author}</span>`
                             : ''}
                         </div>
                       </div>
-                      <div class="preset-tags">
-                        ${preset.tags
-                          .filter(tag => !['community', 'wordpress', 'standard'].includes(tag))
-                          .slice(0, 3)
-                          .map(tag => html`<span class="tag">${tag}</span>`)}
-                        ${Array.isArray((preset as any).integrations) &&
-                        (preset as any).integrations.length
-                          ? html`<div class="preset-integrations">
-                              ${(preset as any).integrations
-                                .slice(0, 3)
-                                .map(
-                                  (i: string) => html`<span class="integration-chip">${i}</span>`
-                                )}
-                            </div>`
+                      <div class="preset-stats">
+                        ${preset.metadata?.downloads
+                          ? html`<span class="stat"
+                              ><ha-icon icon="mdi:download"></ha-icon>${preset.metadata
+                                .downloads}</span
+                            >`
+                          : ''}
+                        ${isCommunity && preset.metadata?.rating && preset.metadata.rating > 0
+                          ? html`<span class="stat"
+                              ><ha-icon icon="mdi:star"></ha-icon>${preset.metadata.rating.toFixed(
+                                1
+                              )}${wpPreset.rating_count && wpPreset.rating_count > 1
+                                ? ` (${wpPreset.rating_count})`
+                                : ''}</span
+                            >`
                           : ''}
                       </div>
-                      ${preset.id.startsWith('wp-')
+                    </div>
+
+                    <!-- Large preview image or slider -->
+                    <div class="preset-preview">${this._renderPresetImages(preset, wpPreset)}</div>
+
+                    <!-- Content section -->
+                    <div class="preset-content">
+                      <p class="preset-description">${preset.description}</p>
+
+                      <!-- Tags and integrations -->
+                      ${preset.tags.filter(
+                        tag => !['community', 'wordpress', 'standard'].includes(tag)
+                      ).length > 0 ||
+                      (Array.isArray(wpPreset.integrations) && wpPreset.integrations.length > 0)
                         ? html`
-                            <div class="preset-actions">
-                              <button
-                                class="read-more-btn"
-                                @click=${(e: Event) => {
-                                  e.stopPropagation(); // Prevent preset from being applied
-                                  const wpPreset = preset as any; // Cast to access preset_url
-                                  if (wpPreset.preset_url) {
-                                    window.open(wpPreset.preset_url, '_blank');
-                                  }
-                                }}
-                                title="View full preset details on ultracard.io"
-                              >
-                                <ha-icon icon="mdi:open-in-new"></ha-icon>
-                                <span>Read More</span>
-                              </button>
+                            <div class="preset-tags">
+                              ${preset.tags
+                                .filter(
+                                  tag => !['community', 'wordpress', 'standard'].includes(tag)
+                                )
+                                .slice(0, 3)
+                                .map(tag => html`<span class="tag">${tag}</span>`)}
+                              ${Array.isArray(wpPreset.integrations) && wpPreset.integrations.length
+                                ? wpPreset.integrations
+                                    .slice(0, 2)
+                                    .map(
+                                      (i: string) =>
+                                        html`<span class="integration-chip">${i}</span>`
+                                    )
+                                : ''}
                             </div>
                           `
                         : ''}
                     </div>
-                    <!-- Origin badge bottom-left -->
-                    <div
-                      class="origin-badge ${preset.id.startsWith('wp-')
-                        ? preset.author === 'WJD Designs'
-                          ? 'default'
-                          : 'community'
-                        : 'builtin'}"
-                    >
-                      ${preset.id.startsWith('wp-')
-                        ? preset.author === 'WJD Designs'
-                          ? 'Default'
-                          : 'Community'
-                        : 'Built-in'}
+
+                    <!-- Action buttons at bottom -->
+                    <div class="preset-actions">
+                      <button
+                        class="add-preset-btn primary"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._addPreset(preset);
+                          if (isWpPreset) {
+                            ucPresetsService.trackPresetDownload(preset.id);
+                          }
+                        }}
+                        title="Add this preset to your card"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                        <span>Add</span>
+                      </button>
+
+                      ${isWpPreset
+                        ? html`
+                            <button
+                              class="read-more-btn secondary"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                if (wpPreset.preset_url) {
+                                  window.open(wpPreset.preset_url, '_blank');
+                                }
+                              }}
+                              title="View full preset details on ultracard.io"
+                            >
+                              <ha-icon icon="mdi:open-in-new"></ha-icon>
+                              <span>Read More</span>
+                            </button>
+                          `
+                        : ''}
                     </div>
                   </div>
-                `
-              )
+                `;
+              })
             : html`<div class="empty-state">
                 <ha-icon icon="mdi:palette-outline"></ha-icon>
                 <p>No presets available in this category</p>
@@ -10329,28 +10723,70 @@ export class LayoutTab extends LitElement {
         padding: 0 24px 28px 24px; /* consistent horizontal padding, leave room for resize handle */
         flex: 1; /* take up remaining space */
         border-radius: 0 0 8px 8px; /* maintain bottom border radius */
+        /* Ensure content doesn't hide under header */
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Improve mobile scrolling behavior */
+      @media (max-width: 768px) {
+        .selector-body {
+          padding: 0 16px 20px 16px; /* Reduce padding on mobile */
+          /* Ensure proper scrolling on mobile */
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
       }
 
       .selector-content.draggable-popup {
-        position: absolute; /* consistent with other draggable popups */
+        position: fixed; /* Use fixed positioning for better control */
         width: min(700px, 95vw);
         height: min(750px, 90vh);
-        transform: none !important;
-        /* Center the popup initially using same approach as other popups */
+        /* Use transform for better centering on all devices */
         top: 50%;
         left: 50%;
-        margin-left: -350px; /* half of max width (700px) */
-        margin-top: -375px; /* half of max height (750px) */
+        transform: translate(-50%, -50%);
         z-index: 1000;
+        max-width: calc(100vw - 40px); /* Ensure 20px padding on each side */
+        max-height: calc(100vh - 40px); /* Ensure 20px padding on top/bottom */
       }
 
       /* Mobile optimization for selector popup */
-      @media (max-width: 768px) {
+      @media (max-width: 768px), (max-height: 768px) {
         .selector-content.draggable-popup {
-          width: 95vw;
-          height: 90vh;
-          margin-left: -47.5vw; /* half of 95vw */
-          margin-top: -45vh; /* half of 90vh */
+          width: calc(100vw - 20px) !important; /* Full width with 10px padding each side */
+          height: calc(100vh - 40px) !important; /* Full height with 20px padding top/bottom */
+          max-width: none !important; /* Remove max-width constraint on mobile */
+          max-height: none !important; /* Remove max-height constraint on mobile */
+          /* Ensure proper centering on mobile */
+          position: fixed !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          margin: 0 !important;
+        }
+
+        /* Ensure header content stays properly aligned on mobile */
+        .selector-header-top {
+          flex-wrap: nowrap;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .selector-header h3 {
+          flex: 1;
+          min-width: 0; /* Allow text to truncate if needed */
+          margin-right: 12px;
+        }
+
+        .selector-header .close-button {
+          flex-shrink: 0; /* Prevent close button from shrinking */
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 0; /* Remove auto margin on mobile */
         }
       }
 
@@ -10974,15 +11410,18 @@ export class LayoutTab extends LitElement {
       }
 
       /* Mobile optimization for module popups */
-      @media (max-width: 768px) {
+      @media (max-width: 768px), (max-height: 768px) {
         .draggable-popup {
-          width: 95vw;
-          height: 90vh;
-          /* Keep centered without transforms using viewport-based negative margins */
-          top: 50%;
-          left: 50%;
-          margin-left: calc(-47.5vw);
-          margin-top: calc(-45vh);
+          /* Use transform-based centering for better mobile compatibility */
+          position: fixed !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          width: calc(100vw - 20px) !important;
+          height: calc(100vh - 40px) !important;
+          margin: 0 !important;
+          max-width: none !important;
+          max-height: none !important;
         }
         /* Remove move affordance on mobile */
         .popup-header {
@@ -12830,6 +13269,16 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         background: var(--secondary-background-color);
         margin-bottom: 16px;
+        /* Ensure tabs don't overflow on mobile */
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE/Edge */
+      }
+
+      .module-selector-tabs::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
       }
 
       .tab-button {
@@ -12911,21 +13360,21 @@ export class LayoutTab extends LitElement {
 
       .presets-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
       }
 
       .preset-card {
         display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 16px;
+        flex-direction: column;
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.2s ease;
         position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
       .preset-card:hover {
@@ -13072,53 +13521,337 @@ export class LayoutTab extends LitElement {
         --mdc-icon-size: 14px;
       }
 
-      /* Origin badge bottom-left on preset cards */
-      .preset-card .origin-badge {
-        position: absolute;
-        left: 8px;
-        bottom: 8px;
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-size: 10px;
+      /* Preset header with badge, title, and stats */
+      .preset-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(var(--rgb-primary-color), 0.02);
+        border-bottom: 1px solid var(--divider-color);
+        gap: 12px;
+      }
+
+      .preset-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .preset-title-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .preset-header-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .preset-header-author {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        font-style: italic;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Origin badge styles */
+      .preset-header .origin-badge {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        z-index: 2;
-      }
-
-      /* Show origin badge on card hover */
-      .preset-card:hover .origin-badge {
-        opacity: 1;
+        flex-shrink: 0;
       }
 
       /* Different styles for different badge types */
-      .preset-card .origin-badge.community {
+      .preset-header .origin-badge.community {
+        background: rgba(var(--rgb-secondary-color, 255, 152, 0), 0.9);
+        color: white;
+        border: 1px solid rgba(var(--rgb-secondary-color, 255, 152, 0), 1);
+      }
+
+      .preset-header .origin-badge.default {
         background: rgba(var(--rgb-primary-color), 0.9);
         color: white;
         border: 1px solid rgba(var(--rgb-primary-color), 1);
       }
 
-      .preset-card .origin-badge.default {
-        background: rgba(var(--rgb-success-color, 76, 175, 80), 0.9);
-        color: white;
-        border: 1px solid rgba(var(--rgb-success-color, 76, 175, 80), 1);
-      }
-
-      .preset-card .origin-badge.builtin {
+      .preset-header .origin-badge.builtin {
         background: rgba(var(--rgb-secondary-text-color), 0.8);
         color: white;
         border: 1px solid rgba(var(--rgb-secondary-text-color), 0.9);
       }
 
+      /* Large preview section */
+      .preset-preview {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        background: var(--secondary-background-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+
+      .preset-thumbnail {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .preset-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+      }
+
+      .preset-card:hover .preset-thumbnail img {
+        transform: scale(1.05);
+      }
+
+      /* Image slider styles */
+      .preset-image-slider {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+      }
+
+      .preset-slider-container {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.3s ease;
+        cursor: grab;
+      }
+
+      .preset-slider-container:active {
+        cursor: grabbing;
+      }
+
+      .preset-slider-image {
+        flex: 0 0 100%;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .preset-slider-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+      }
+
+      .preset-card:hover .preset-slider-image img {
+        transform: scale(1.05);
+      }
+
+      /* Slider navigation dots */
+      .preset-slider-dots {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 6px;
+        z-index: 2;
+      }
+
+      .preset-slider-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+      }
+
+      .preset-slider-dot.active {
+        background: rgba(255, 255, 255, 0.9);
+        transform: scale(1.2);
+      }
+
+      .preset-slider-dot:hover {
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      /* Slider navigation arrows */
+      .preset-slider-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.2s ease;
+        z-index: 2;
+      }
+
+      .preset-image-slider:hover .preset-slider-nav {
+        opacity: 1;
+      }
+
+      .preset-slider-nav:hover {
+        background: rgba(0, 0, 0, 0.7);
+        transform: translateY(-50%) scale(1.1);
+      }
+
+      .preset-slider-nav.prev {
+        left: 8px;
+      }
+
+      .preset-slider-nav.next {
+        right: 8px;
+      }
+
+      .preset-slider-nav ha-icon {
+        font-size: 16px;
+      }
+
+      .preset-icon-large {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        background: rgba(var(--rgb-primary-color), 0.1);
+        border-radius: 50%;
+        color: var(--primary-color);
+      }
+
+      .preset-icon-large ha-icon {
+        font-size: 40px;
+      }
+
+      /* Content section */
+      .preset-content {
+        padding: 16px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .preset-description {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--secondary-text-color);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* Action buttons at bottom */
+      .preset-actions {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+      }
+
+      .preset-actions button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+        justify-content: center;
+        min-height: 40px;
+      }
+
+      .preset-actions button ha-icon {
+        font-size: 16px;
+      }
+
+      /* Primary button (Add) */
+      .add-preset-btn.primary {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+      }
+
+      .add-preset-btn.primary:hover {
+        background: var(--primary-color);
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.3);
+      }
+
+      /* Secondary button (Read More) */
+      .read-more-btn.secondary {
+        background: transparent;
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+      }
+
+      .read-more-btn.secondary:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+      }
+
       /* Enhanced preset cards for community presets */
       .preset-card.community-preset {
-        border-left: 3px solid var(--primary-color);
+        border-left: 3px solid rgba(var(--rgb-secondary-color, 255, 152, 0), 1);
       }
 
       .preset-card.community-preset:hover {
+        border-left-color: rgba(var(--rgb-secondary-color, 255, 152, 0), 1);
+        box-shadow: 0 4px 16px rgba(var(--rgb-secondary-color, 255, 152, 0), 0.2);
+      }
+
+      /* Enhanced preset cards for default presets */
+      .preset-card.default-preset {
+        border-left: 3px solid var(--primary-color);
+      }
+
+      .preset-card.default-preset:hover {
         border-left-color: var(--primary-color);
         box-shadow: 0 4px 16px rgba(var(--rgb-primary-color), 0.2);
       }
@@ -13131,8 +13864,7 @@ export class LayoutTab extends LitElement {
       .preset-stats {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-top: 4px;
+        gap: 8px;
       }
 
       .preset-stats .stat {
@@ -13141,6 +13873,10 @@ export class LayoutTab extends LitElement {
         gap: 4px;
         font-size: 11px;
         color: var(--secondary-text-color);
+        background: rgba(var(--rgb-secondary-text-color), 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 500;
       }
 
       .preset-stats .stat ha-icon {
@@ -13162,125 +13898,6 @@ export class LayoutTab extends LitElement {
         line-height: 1.4;
         color: var(--secondary-text-color);
         font-size: 13px;
-      }
-
-      .preset-actions {
-        margin-top: 12px;
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      .read-more-btn {
-        background: none;
-        border: 1px solid var(--primary-color);
-        color: var(--primary-color);
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 11px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        transition: all 0.2s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .read-more-btn:hover {
-        background: var(--primary-color);
-        color: white;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(var(--rgb-primary-color), 0.3);
-      }
-
-      .read-more-btn ha-icon {
-        --mdc-icon-size: 12px;
-      }
-
-      /* Improve preset card layout */
-      .preset-card .preset-info {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-      }
-
-      .preset-card .preset-info h4 {
-        margin: 0 0 6px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--primary-text-color);
-        line-height: 1.3;
-      }
-
-      .preset-card .preset-meta {
-        margin-top: auto;
-        padding-top: 8px;
-      }
-
-      .preset-icon {
-        flex-shrink: 0;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--primary-color-10);
-        border-radius: 8px;
-        color: var(--primary-color);
-        position: relative;
-      }
-
-      .preset-icon ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .preset-thumbnail {
-        flex-shrink: 0;
-        width: 60px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--secondary-background-color);
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid var(--divider-color);
-        position: relative;
-      }
-
-      .preset-thumbnail img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        border-radius: 6px;
-      }
-
-      .preset-info {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .preset-info h4 {
-        margin: 0 0 4px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-
-      .preset-info p {
-        margin: 0 0 8px 0;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        line-height: 1.4;
-      }
-
-      .preset-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
       }
 
       .preset-author {
@@ -13629,6 +14246,7 @@ export class LayoutTab extends LitElement {
         .presets-grid,
         .favorites-grid {
           grid-template-columns: 1fr;
+          gap: 16px;
         }
 
         /* Improve tab visibility on mobile */
@@ -13638,11 +14256,14 @@ export class LayoutTab extends LitElement {
           z-index: 10;
           background: var(--secondary-background-color);
           border-bottom: 2px solid var(--divider-color);
+          gap: 0; /* Remove gap on mobile for better fit */
         }
 
         .tab-button {
           flex-direction: row;
           gap: 6px;
+          min-width: 0; /* Allow buttons to shrink */
+          white-space: nowrap;
           padding: 14px 8px;
           min-height: 48px;
           font-size: 13px;
@@ -13697,8 +14318,49 @@ export class LayoutTab extends LitElement {
           text-align: left;
         }
 
-        .preset-card {
+        .preset-preview {
+          height: 160px;
+          padding: 6px;
+        }
+
+        .preset-header {
+          padding: 10px 12px;
+        }
+
+        .preset-header-title {
+          font-size: 14px;
+        }
+
+        .preset-content {
           padding: 12px;
+        }
+
+        .preset-actions {
+          padding: 10px 12px;
+        }
+
+        .preset-actions button {
+          padding: 8px 12px;
+          font-size: 12px;
+        }
+
+        /* Mobile slider improvements */
+        .preset-slider-nav {
+          width: 28px;
+          height: 28px;
+        }
+
+        .preset-slider-nav ha-icon {
+          font-size: 14px;
+        }
+
+        .preset-slider-dots {
+          bottom: 6px;
+        }
+
+        .preset-slider-dot {
+          width: 6px;
+          height: 6px;
         }
 
         .favorite-card {
@@ -13778,5 +14440,49 @@ export class LayoutTab extends LitElement {
       return parts[1] || parts[0] || '';
     }
     return '';
+  }
+
+  /**
+   * Collect all hover effect configurations from the current card config
+   */
+  private _collectHoverEffectConfigs(): HoverEffectConfig[] {
+    const configs: HoverEffectConfig[] = [];
+
+    if (!this.config) return configs;
+
+    // Collect from rows
+    this.config.layout?.rows?.forEach(row => {
+      if (row.design?.hover_effect) {
+        configs.push(row.design.hover_effect);
+      }
+
+      // Collect from columns
+      row.columns?.forEach(column => {
+        if (column.design?.hover_effect) {
+          configs.push(column.design.hover_effect);
+        }
+
+        // Collect from modules
+        column.modules?.forEach(module => {
+          if ((module as any).design?.hover_effect) {
+            configs.push((module as any).design.hover_effect);
+          }
+        });
+      });
+    });
+
+    return configs;
+  }
+
+  /**
+   * Update hover effect styles based on current configuration
+   */
+  private _updateHoverEffectStyles(): void {
+    if (!this.shadowRoot) return;
+
+    const configs = this._collectHoverEffectConfigs();
+    if (configs.length > 0) {
+      UcHoverEffectsService.updateHoverEffectStyles(this.shadowRoot, configs);
+    }
   }
 }
