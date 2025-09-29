@@ -10,7 +10,6 @@ export declare class UltraInfoModule extends BaseUltraModule {
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    private renderInfoActionConfig;
     private renderSingleActionConfig;
     renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
     validate(module: CardModule): {
@@ -43,4 +42,17 @@ export declare class UltraInfoModule extends BaseUltraModule {
     private addPixelUnit;
     private _hashString;
     private _handleTemplateChange;
+    /**
+     * Check if an entity has a custom icon or entity_picture and return the appropriate URL
+     * @param entityState The entity state object
+     * @param hass Home Assistant instance
+     * @returns The entity picture URL or null if not available
+     */
+    private _getEntityPicture;
+    /**
+     * Check if an entity should use its picture instead of an icon
+     * @param entityState The entity state object
+     * @returns True if entity picture should be used
+     */
+    private _shouldUseEntityPicture;
 }

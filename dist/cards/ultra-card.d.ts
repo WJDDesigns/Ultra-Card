@@ -19,6 +19,14 @@ export declare class UltraCard extends LitElement {
     private _moduleStylesInjected;
     connectedCallback(): void;
     disconnectedCallback(): void;
+    /**
+     * Returns grid options for Home Assistant sections view resizing.
+     * Ultra Card uses full width by default and lets content determine height naturally.
+     */
+    getGridOptions(): {
+        columns: string;
+        min_columns: number;
+    };
     protected willUpdate(changedProps: PropertyValues): void;
     setConfig(config: UltraCardConfig): void;
     static getConfigElement(): HTMLElement;

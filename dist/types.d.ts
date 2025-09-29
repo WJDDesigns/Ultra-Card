@@ -896,6 +896,8 @@ export interface GraphsModule extends BaseModule {
 export interface DropdownModule extends BaseModule {
     type: 'dropdown';
     placeholder?: string;
+    entity?: string;
+    entity_mode?: boolean;
     options: DropdownOption[];
     current_selection?: string;
     track_state?: boolean;

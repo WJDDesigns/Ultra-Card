@@ -73,5 +73,18 @@ export declare class UltraIconModule extends BaseUltraModule {
      * Convert HSV to RGB
      */
     private _hsToRgb;
+    /**
+     * Check if an entity has a custom icon or entity_picture and return the appropriate URL
+     * @param entityState The entity state object
+     * @param hass Home Assistant instance
+     * @returns The entity picture URL or null if not available
+     */
+    private _getEntityPicture;
+    /**
+     * Check if an entity should use its picture instead of an icon
+     * @param entityState The entity state object
+     * @returns True if entity picture should be used
+     */
+    private _shouldUseEntityPicture;
     private _injectKeyframesIntoHaIcon;
 }
