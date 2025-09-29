@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 1.2.0-beta15
+
+### 🎨 UI/UX Improvements
+
+- **Fixed responsiveness issues** - Improved card layout and display across different screen sizes and devices
+- **Enhanced display when using built in home assistant resizing settings** - Better integration with Home Assistant's native resizing controls
+- **Fixed icon spacing between devices** - Corrected spacing issues that affected icon alignment and visual consistency
+
+### 🐛 Bug Fixes
+
+- **Possible fix for clipping issues** - Addressed various clipping problems that affected module display and interaction
+
+### 🚀 New Features
+
+- **Automatic action linking** - When adding icon module or info module item will automatically link to more info inside the action tab
+- **Enhanced dropdown module support** - Dropdown module now supports select and input select entities for broader compatibility
+- **Entity image support** - Added entity image support inside icon and info modules for richer visual displays
+
+### 🔧 Miscellaneous
+
+- **Various improvements** - More stuff that I likely forgot about...
+
 ## Version 1.2.0-beta14
 
 ### 🎨 UI/UX Improvements
