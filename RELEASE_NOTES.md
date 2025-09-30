@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 1.2.0-beta16
+
+### 🚀 New Features
+
+- **Added Spinbox Module** - New module type for numeric input with increment/decrement controls
+- **Added pinning to live preview window** - Pin the preview window to keep it visible while editing other modules. Click the pin icon in the preview window header to toggle pinning.
+- **Enhanced Dropdown Module** - Improved functionality and user experience for dropdown selections
+- **Added new Gauge Module (work in progress)** - New module type for displaying gauge-style data visualizations
+
+### 🔧 Miscellaneous
+
+- **Various improvements** - Additional enhancements and refinements
+
 ## Version 1.2.0-beta15
 
 ### 🎨 UI/UX Improvements
@@ -15,7 +28,9 @@
 ### 🚀 New Features
 
 - **Automatic action linking** - When adding icon module or info module item will automatically link to more info inside the action tab
-- **Enhanced dropdown module support** - Dropdown module now supports select and input select entities for broader compatibility
+- **Dropdown Module Entity Source Support** - Dropdown module now supports `select` and `input_select` entities as a data source. Choose between:
+  - **Manual Mode**: Define custom options with individual actions, icons, and colors (existing functionality)
+  - **Entity Source Mode**: Automatically populate options from a `select` or `input_select` entity. The dropdown displays the entity's current state and updates the entity when an option is selected. Options are automatically synced with entity changes for fully reactive behavior.
 - **Entity image support** - Added entity image support inside icon and info modules for richer visual displays
 
 ### 🔧 Miscellaneous

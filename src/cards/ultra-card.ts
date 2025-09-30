@@ -70,6 +70,20 @@ export class UltraCard extends LitElement {
     }
   }
 
+  /**
+   * Returns grid options for Home Assistant sections view resizing.
+   * Ultra Card uses full width by default and lets content determine height naturally.
+   */
+  public getGridOptions() {
+    // Ultra Card should take full width and size naturally by content
+    // This maintains the card's original behavior while supporting HA resizing
+    return {
+      columns: 'full', // Take full width of section
+      // Don't define rows - let the card size naturally based on content
+      min_columns: 6, // Minimum 6 columns (half width) when resized
+    };
+  }
+
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('config')) {
       // Only clear states if this is a substantial config change (not just internal updates)
@@ -1234,6 +1248,10 @@ export class UltraCard extends LitElement {
     return css`
       :host {
         display: block;
+        /* Ensure card adapts to container size in sections view */
+        container-type: inline-size;
+        width: 100%;
+        min-width: 0;
       }
 
       .card-container {
@@ -1242,6 +1260,9 @@ export class UltraCard extends LitElement {
         box-shadow: var(--ha-card-box-shadow, 0 2px 4px rgba(0, 0, 0, 0.1));
         padding: 16px;
         transition: all 0.3s ease;
+        /* Responsive sizing for sections view */
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .welcome-text {
@@ -2014,6 +2035,41 @@ export class UltraCard extends LitElement {
         to {
           transform: rotate(200deg);
           opacity: 0;
+        }
+      }
+
+      /* Container queries for responsive behavior in sections view */
+      @container (max-width: 300px) {
+        .card-container {
+          padding: 12px;
+        }
+
+        .card-row {
+          margin-bottom: 8px;
+        }
+
+        .card-column {
+          gap: 8px;
+        }
+      }
+
+      @container (min-width: 500px) {
+        .card-container {
+          padding: 20px;
+        }
+
+        .card-row {
+          margin-bottom: 16px;
+        }
+      }
+
+      @container (max-height: 200px) {
+        .card-container {
+          padding: 8px 16px;
+        }
+
+        .welcome-text {
+          padding: 16px;
         }
       }
     `;

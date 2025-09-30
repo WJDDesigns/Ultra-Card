@@ -39,6 +39,8 @@ export class UltraDropdownModule extends BaseUltraModule {
     return {
       id: id || this.generateId('dropdown'),
       type: 'dropdown',
+      source_mode: 'manual', // Default to manual mode
+      source_entity: undefined, // No entity selected by default
       placeholder: 'Choose an option...',
       options: [
         {
@@ -60,6 +62,7 @@ export class UltraDropdownModule extends BaseUltraModule {
           },
         },
       ],
+      entity_option_customization: {}, // Empty customization by default
       current_selection: 'Turn On Lights', // Default to first option
       track_state: true, // Enable state tracking by default
       // label removed
@@ -74,6 +77,79 @@ export class UltraDropdownModule extends BaseUltraModule {
       enable_hover_effect: false,
       hover_background_color: 'var(--primary-color)',
     };
+  }
+
+  // Helper method to get options from entity
+  private getOptionsFromEntity(module: DropdownModule, hass: HomeAssistant): string[] {
+    if (!module.source_entity || !hass) return [];
+
+    const entityState = hass.states[module.source_entity];
+    if (!entityState) return [];
+
+    // Get options from entity attributes
+    const options = entityState.attributes?.options;
+    if (Array.isArray(options)) {
+      return options;
+    }
+
+    return [];
+  }
+
+  // Helper method to get current state from entity
+  private getCurrentStateFromEntity(
+    module: DropdownModule,
+    hass: HomeAssistant
+  ): string | undefined {
+    if (!module.source_entity || !hass) return undefined;
+
+    const entityState = hass.states[module.source_entity];
+    if (!entityState) return undefined;
+
+    return entityState.state;
+  }
+
+  // Helper method to render entity source preview info
+  private renderEntitySourcePreview(
+    module: DropdownModule,
+    hass: HomeAssistant,
+    lang: string
+  ): TemplateResult {
+    const options = this.getOptionsFromEntity(module, hass);
+    const currentState = this.getCurrentStateFromEntity(module, hass);
+
+    if (options.length === 0) {
+      return html`
+        <div style="font-size: 12px; color: var(--secondary-text-color); font-style: italic;">
+          ${localize('editor.dropdown.no_options_found', lang, 'No options found for this entity')}
+        </div>
+      `;
+    }
+
+    return html`
+      <div style="font-size: 12px; margin-top: 8px;">
+        <div style="font-weight: 600; margin-bottom: 4px; color: var(--primary-text-color);">
+          ${localize('editor.dropdown.available_options', lang, 'Available Options')}
+          (${options.length}):
+        </div>
+        <div style="color: var(--secondary-text-color); line-height: 1.6;">
+          ${options.map(
+            (opt, idx) =>
+              html`<div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--primary-color);">•</span>
+                <span
+                  style="${opt === currentState
+                    ? 'font-weight: 600; color: var(--primary-color);'
+                    : ''}"
+                  >${opt}</span
+                >
+                ${opt === currentState
+                  ? html`<span style="font-size: 10px; opacity: 0.7;">(current)</span>`
+                  : ''}
+              </div>`
+          )}
+        </div>
+      </div>
+    `;
   }
 
   // Label position support removed
@@ -150,240 +226,405 @@ export class UltraDropdownModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="general-tab">
-        <!-- Basic Settings -->
+        <!-- Source Configuration -->
         <div class="settings-section">
           <div
             class="section-title"
             style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
           >
-            ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
+            ${localize('editor.dropdown.source.title', lang, 'Dropdown Source')}
           </div>
           <div
             style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
           >
             ${localize(
-              'editor.dropdown.basic.desc',
+              'editor.dropdown.source.desc',
               lang,
-              'Configure the dropdown appearance and behavior.'
+              'Choose whether to manually define options or use a select/input_select entity.'
             )}
           </div>
 
-          <!-- Keep Selection State -->
-          <div
-            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
-          >
-            <div>
-              <div
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                ${localize(
-                  'editor.dropdown.keep_selection_state.title',
-                  lang,
-                  'Keep Selection State'
-                )}
-              </div>
-              <div
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                ${localize(
-                  'editor.dropdown.keep_selection_state.desc',
-                  lang,
-                  'Remember and display the last selected option (recommended for scene selectors)'
-                )}
-              </div>
-            </div>
-            <ha-switch
-              .checked=${dropdownModule.track_state ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ track_state: target.checked });
-              }}
-            ></ha-switch>
+          <!-- Source Mode Selection -->
+          <div style="margin-bottom: 16px;">
+            ${this.renderFieldSection(
+              localize('editor.dropdown.source_mode.title', lang, 'Source Mode'),
+              localize(
+                'editor.dropdown.source_mode.desc',
+                lang,
+                'Manual: Define custom options with actions. Entity: Use options from a select or input_select entity.'
+              ),
+              hass,
+              { source_mode: dropdownModule.source_mode || 'manual' },
+              [
+                this.selectField('source_mode', [
+                  {
+                    value: 'manual',
+                    label: localize('editor.dropdown.source_mode.manual', lang, 'Manual Options'),
+                  },
+                  {
+                    value: 'entity',
+                    label: localize('editor.dropdown.source_mode.entity', lang, 'Entity Source'),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = e.detail.value.source_mode;
+                const prev = dropdownModule.source_mode || 'manual';
+                if (next === prev) return;
+                updateModule({ source_mode: next });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
           </div>
 
-          <!-- Placeholder (only show when track_state is disabled) -->
-          ${!dropdownModule.track_state
+          <!-- Entity Picker (only shown when source_mode is 'entity') -->
+          ${dropdownModule.source_mode === 'entity'
             ? html`
                 <div style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                  >
-                    ${localize('editor.dropdown.placeholder.title', lang, 'Placeholder')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                  >
-                    ${localize(
-                      'editor.dropdown.placeholder.desc',
+                  ${this.renderConditionalFieldsGroup(
+                    localize(
+                      'editor.dropdown.entity_source_config',
                       lang,
-                      'Text shown when no option is selected.'
-                    )}
-                  </div>
-                  ${this.renderUcForm(
-                    hass,
-                    { placeholder: dropdownModule.placeholder || '' },
-                    [this.textField('placeholder')],
-                    (e: CustomEvent) => {
-                      const next = e.detail.value.placeholder;
-                      const prev = dropdownModule.placeholder || '';
-                      if (next === prev) return;
-                      updateModule(e.detail.value);
-                    },
-                    false
+                      'Entity Source Configuration'
+                    ),
+                    html`
+                      ${this.renderFieldSection(
+                        localize('editor.dropdown.source_entity.title', lang, 'Source Entity'),
+                        localize(
+                          'editor.dropdown.source_entity.desc',
+                          lang,
+                          'Select or input_select entity to use as the source for dropdown options.'
+                        ),
+                        hass,
+                        { source_entity: dropdownModule.source_entity || '' },
+                        [
+                          {
+                            name: 'source_entity',
+                            label: '',
+                            selector: {
+                              entity: {
+                                domain: ['input_select', 'select'],
+                              },
+                            },
+                          },
+                        ],
+                        (e: CustomEvent) => {
+                          const next = e.detail.value.source_entity;
+                          const prev = dropdownModule.source_entity || '';
+                          if (next === prev) return;
+                          updateModule({ source_entity: next });
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }
+                      )}
+                      ${dropdownModule.source_entity
+                        ? html`
+                            <div
+                              style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 4px; border-left: 3px solid var(--primary-color);"
+                            >
+                              <div
+                                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px;"
+                              >
+                                ${localize(
+                                  'editor.dropdown.entity_source_info',
+                                  lang,
+                                  'Options will be automatically populated from the entity. The dropdown will display the current state and update the entity when an option is selected.'
+                                )}
+                              </div>
+                              ${this.renderEntitySourcePreview(dropdownModule, hass, lang)}
+                            </div>
+                          `
+                        : ''}
+                    `
                   )}
                 </div>
               `
             : ''}
         </div>
 
-        <!-- Label Settings removed intentionally -->
-
-        <!-- Dropdown Options -->
-        <div class="settings-section">
-          <div
-            class="section-title"
-            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-          >
-            ${localize('editor.dropdown.options.title', lang, 'Dropdown Options')}
-          </div>
-
-          <div class="options-list">
-            ${dropdownModule.options.map(
-              (option, index) => html`
+        <!-- Basic Settings (only show for manual mode or when no entity is selected) -->
+        ${dropdownModule.source_mode === 'manual'
+          ? html`
+              <div class="settings-section">
                 <div
-                  class="option-item"
-                  style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: 8px; border: 1px solid var(--divider-color); overflow: hidden;"
-                  data-option-id="${option.id}"
-                  data-option-index="${index}"
-                  @dragover=${(e: DragEvent) => this.handleDragOver(e)}
-                  @dragenter=${(e: DragEvent) => this.handleDragEnter(e)}
-                  @dragleave=${(e: DragEvent) => this.handleDragLeave(e)}
-                  @drop=${(e: DragEvent) => this.handleDrop(e, index, moveOption)}
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
                 >
-                  <div
-                    class="option-header"
-                    style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(var(--rgb-primary-color), 0.05); border-bottom: 1px solid var(--divider-color); cursor: pointer;"
-                    @click=${(e: Event) => this.toggleHeader(e)}
-                  >
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <div
-                        class="drag-handle"
-                        style="padding: 8px; margin: -8px; cursor: grab; border-radius: 4px; transition: background-color 0.2s ease;"
-                        draggable="true"
-                        @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
-                        @dragend=${(e: DragEvent) => this.handleDragEnd(e)}
-                        @click=${(e: Event) => e.stopPropagation()}
-                        @mousedown=${(e: Event) => e.stopPropagation()}
-                        .title=${localize('editor.dropdown.drag_option', lang, 'Drag to reorder')}
-                        @mouseenter=${(e: Event) => {
-                          const target = e.target as HTMLElement;
-                          target.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
-                        }}
-                        @mouseleave=${(e: Event) => {
-                          const target = e.target as HTMLElement;
-                          target.style.backgroundColor = 'transparent';
-                        }}
-                      >
-                        <ha-icon
-                          icon="mdi:drag"
-                          style="color: var(--secondary-text-color); pointer-events: none;"
-                        ></ha-icon>
-                      </div>
-                      <div style="font-weight: 600; color: var(--primary-text-color);">
-                        ${option.label ||
-                        localize('editor.dropdown.option_number', lang, 'Option {number}').replace(
-                          '{number}',
-                          (index + 1).toString()
-                        )}
-                      </div>
+                  ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
+                </div>
+                <div
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                >
+                  ${localize(
+                    'editor.dropdown.basic.desc',
+                    lang,
+                    'Configure the dropdown appearance and behavior.'
+                  )}
+                </div>
+
+                <!-- Keep Selection State -->
+                <div
+                  style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
+                >
+                  <div>
+                    <div
+                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+                    >
+                      ${localize(
+                        'editor.dropdown.keep_selection_state.title',
+                        lang,
+                        'Keep Selection State'
+                      )}
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <ha-icon-button
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          duplicateDropdownOption(option.id);
-                        }}
-                        .title=${localize(
-                          'editor.dropdown.duplicate_option',
-                          lang,
-                          'Duplicate option'
-                        )}
-                      >
-                        <ha-icon icon="mdi:content-duplicate"></ha-icon>
-                      </ha-icon-button>
-                      <ha-icon-button
-                        @click=${(e: Event) => {
-                          e.stopPropagation();
-                          removeDropdownOption(option.id);
-                        }}
-                        .title=${localize('editor.dropdown.remove_option', lang, 'Remove option')}
-                        .disabled=${dropdownModule.options.length <= 1}
-                      >
-                        <ha-icon icon="mdi:delete"></ha-icon>
-                      </ha-icon-button>
-                      <ha-icon
-                        class="expand-caret"
-                        icon="mdi:chevron-down"
-                        style="color: var(--secondary-text-color); transition: transform 0.2s ease; transform: ${this.expandedOptions.has(
-                          option.id
-                        )
-                          ? 'rotate(180deg)'
-                          : 'rotate(0deg)'}; cursor: pointer; padding: 8px; margin: -8px;"
-                        @click=${(e: Event) => {
-                          // Stop event propagation to prevent header click
-                          e.stopPropagation();
-                          e.preventDefault();
-                          console.log('Direct caret clicked for option:', option.id);
-
-                          // Find elements directly from the event
-                          const caret = e.target as HTMLElement;
-                          const card = caret.closest('.option-item') as HTMLElement;
-                          const content = card?.querySelector('.option-content') as HTMLElement;
-
-                          if (card && content && caret) {
-                            const id = card.getAttribute('data-option-id') || '';
-                            console.log('Direct caret - found ID:', id);
-
-                            // Toggle state
-                            if (this.expandedOptions.has(id)) {
-                              this.expandedOptions.delete(id);
-                              content.style.display = 'none';
-                              caret.style.transform = 'rotate(0deg)';
-                              console.log('Direct caret - collapsed');
-                            } else {
-                              this.expandedOptions.add(id);
-                              content.style.display = 'block';
-                              caret.style.transform = 'rotate(180deg)';
-                              console.log('Direct caret - expanded');
-                            }
-                          }
-                        }}
-                      ></ha-icon>
+                    <div
+                      style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
+                    >
+                      ${localize(
+                        'editor.dropdown.keep_selection_state.desc',
+                        lang,
+                        'Remember and display the last selected option (recommended for scene selectors)'
+                      )}
                     </div>
                   </div>
+                  <ha-switch
+                    .checked=${dropdownModule.track_state ?? true}
+                    @change=${(e: Event) => {
+                      const target = e.target as any;
+                      updateModule({ track_state: target.checked });
+                    }}
+                  ></ha-switch>
+                </div>
 
-                  <div
-                    class="option-content"
-                    style="padding: 16px; display: ${this.expandedOptions.has(option.id)
-                      ? 'block'
-                      : 'none'};"
-                  >
-                    ${this.renderOptionConfiguration(option, hass, lang, updateDropdownOption)}
+                <!-- Placeholder (only show when track_state is disabled) -->
+                ${!dropdownModule.track_state
+                  ? html`
+                      <div style="margin-bottom: 16px;">
+                        <div
+                          class="field-title"
+                          style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+                        >
+                          ${localize('editor.dropdown.placeholder.title', lang, 'Placeholder')}
+                        </div>
+                        <div
+                          class="field-description"
+                          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+                        >
+                          ${localize(
+                            'editor.dropdown.placeholder.desc',
+                            lang,
+                            'Text shown when no option is selected.'
+                          )}
+                        </div>
+                        ${this.renderUcForm(
+                          hass,
+                          { placeholder: dropdownModule.placeholder || '' },
+                          [this.textField('placeholder')],
+                          (e: CustomEvent) => {
+                            const next = e.detail.value.placeholder;
+                            const prev = dropdownModule.placeholder || '';
+                            if (next === prev) return;
+                            updateModule(e.detail.value);
+                          },
+                          false
+                        )}
+                      </div>
+                    `
+                  : ''}
+              </div>
+
+              <!-- Dropdown Options -->
+              <div class="settings-section">
+                <div
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                >
+                  ${localize('editor.dropdown.options.title', lang, 'Dropdown Options')}
+                </div>
+
+                <div class="options-list">
+                  ${dropdownModule.options.map(
+                    (option, index) => html`
+                      <div
+                        class="option-item"
+                        style="margin-bottom: 24px; background: var(--secondary-background-color); border-radius: 8px; border: 1px solid var(--divider-color); overflow: hidden;"
+                        data-option-id="${option.id}"
+                        data-option-index="${index}"
+                        @dragover=${(e: DragEvent) => this.handleDragOver(e)}
+                        @dragenter=${(e: DragEvent) => this.handleDragEnter(e)}
+                        @dragleave=${(e: DragEvent) => this.handleDragLeave(e)}
+                        @drop=${(e: DragEvent) => this.handleDrop(e, index, moveOption)}
+                      >
+                        <div
+                          class="option-header"
+                          style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(var(--rgb-primary-color), 0.05); border-bottom: 1px solid var(--divider-color); cursor: pointer;"
+                          @click=${(e: Event) => this.toggleHeader(e)}
+                        >
+                          <div style="display: flex; align-items: center; gap: 12px;">
+                            <div
+                              class="drag-handle"
+                              style="padding: 8px; margin: -8px; cursor: grab; border-radius: 4px; transition: background-color 0.2s ease;"
+                              draggable="true"
+                              @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
+                              @dragend=${(e: DragEvent) => this.handleDragEnd(e)}
+                              @click=${(e: Event) => e.stopPropagation()}
+                              @mousedown=${(e: Event) => e.stopPropagation()}
+                              .title=${localize(
+                                'editor.dropdown.drag_option',
+                                lang,
+                                'Drag to reorder'
+                              )}
+                              @mouseenter=${(e: Event) => {
+                                const target = e.target as HTMLElement;
+                                target.style.backgroundColor =
+                                  'rgba(var(--rgb-primary-color), 0.1)';
+                              }}
+                              @mouseleave=${(e: Event) => {
+                                const target = e.target as HTMLElement;
+                                target.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <ha-icon
+                                icon="mdi:drag"
+                                style="color: var(--secondary-text-color); pointer-events: none;"
+                              ></ha-icon>
+                            </div>
+                            <div style="font-weight: 600; color: var(--primary-text-color);">
+                              ${option.label ||
+                              localize(
+                                'editor.dropdown.option_number',
+                                lang,
+                                'Option {number}'
+                              ).replace('{number}', (index + 1).toString())}
+                            </div>
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 8px;">
+                            <ha-icon-button
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                duplicateDropdownOption(option.id);
+                              }}
+                              .title=${localize(
+                                'editor.dropdown.duplicate_option',
+                                lang,
+                                'Duplicate option'
+                              )}
+                            >
+                              <ha-icon icon="mdi:content-duplicate"></ha-icon>
+                            </ha-icon-button>
+                            <ha-icon-button
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                removeDropdownOption(option.id);
+                              }}
+                              .title=${localize(
+                                'editor.dropdown.remove_option',
+                                lang,
+                                'Remove option'
+                              )}
+                              .disabled=${dropdownModule.options.length <= 1}
+                            >
+                              <ha-icon icon="mdi:delete"></ha-icon>
+                            </ha-icon-button>
+                            <ha-icon
+                              class="expand-caret"
+                              icon="mdi:chevron-down"
+                              style="color: var(--secondary-text-color); transition: transform 0.2s ease; transform: ${this.expandedOptions.has(
+                                option.id
+                              )
+                                ? 'rotate(180deg)'
+                                : 'rotate(0deg)'}; cursor: pointer; padding: 8px; margin: -8px;"
+                              @click=${(e: Event) => {
+                                // Stop event propagation to prevent header click
+                                e.stopPropagation();
+                                e.preventDefault();
+                                console.log('Direct caret clicked for option:', option.id);
+
+                                // Find elements directly from the event
+                                const caret = e.target as HTMLElement;
+                                const card = caret.closest('.option-item') as HTMLElement;
+                                const content = card?.querySelector(
+                                  '.option-content'
+                                ) as HTMLElement;
+
+                                if (card && content && caret) {
+                                  const id = card.getAttribute('data-option-id') || '';
+                                  console.log('Direct caret - found ID:', id);
+
+                                  // Toggle state
+                                  if (this.expandedOptions.has(id)) {
+                                    this.expandedOptions.delete(id);
+                                    content.style.display = 'none';
+                                    caret.style.transform = 'rotate(0deg)';
+                                    console.log('Direct caret - collapsed');
+                                  } else {
+                                    this.expandedOptions.add(id);
+                                    content.style.display = 'block';
+                                    caret.style.transform = 'rotate(180deg)';
+                                    console.log('Direct caret - expanded');
+                                  }
+                                }
+                              }}
+                            ></ha-icon>
+                          </div>
+                        </div>
+
+                        <div
+                          class="option-content"
+                          style="padding: 16px; display: ${this.expandedOptions.has(option.id)
+                            ? 'block'
+                            : 'none'};"
+                        >
+                          ${this.renderOptionConfiguration(
+                            option,
+                            hass,
+                            lang,
+                            updateDropdownOption
+                          )}
+                        </div>
+                      </div>
+                    `
+                  )}
+                </div>
+
+                <div style="margin-top: 16px; text-align: center;">
+                  <ha-button @click=${addDropdownOption}>
+                    <ha-icon icon="mdi:plus" slot="icon"></ha-icon>
+                    ${localize('editor.dropdown.add_option', lang, 'Add Option')}
+                  </ha-button>
+                </div>
+              </div>
+            `
+          : html`
+              <div class="settings-section">
+                <div
+                  class="section-title"
+                  style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+                >
+                  ${localize('editor.dropdown.basic.title', lang, 'Basic Settings')}
+                </div>
+                <div
+                  style="text-align: center; padding: 32px; color: var(--secondary-text-color); background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px;"
+                >
+                  <ha-icon
+                    icon="mdi:link-variant"
+                    style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"
+                  ></ha-icon>
+                  <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                    ${localize(
+                      'editor.dropdown.entity_mode_active',
+                      lang,
+                      'Entity Source Mode Active'
+                    )}
+                  </div>
+                  <div style="font-size: 14px; line-height: 1.4;">
+                    ${localize(
+                      'editor.dropdown.entity_mode_desc',
+                      lang,
+                      'Options are automatically managed by the selected entity. The dropdown will display the current state and update the entity when an option is selected.'
+                    )}
                   </div>
                 </div>
-              `
-            )}
-          </div>
-
-          <div style="margin-top: 16px; text-align: center;">
-            <ha-button @click=${addDropdownOption}>
-              <ha-icon icon="mdi:plus" slot="icon"></ha-icon>
-              ${localize('editor.dropdown.add_option', lang, 'Add Option')}
-            </ha-button>
-          </div>
-        </div>
+              </div>
+            `}
       </div>
     `;
   }
@@ -938,90 +1179,73 @@ export class UltraDropdownModule extends BaseUltraModule {
       box-sizing: border-box;
     `;
 
-    const labelStyles = ``;
+    // Determine if we're in entity source mode
+    const isEntityMode = dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
 
-    // Handle dropdown selection
-    const handleDropdownChange = (e: Event) => {
-      // Prevent event from bubbling up to close the popup
-      e.stopImmediatePropagation();
-      const target = e.target as HTMLSelectElement;
-      const selectedValue = target.value;
+    // Get options based on mode
+    let availableOptions: Array<{
+      label: string;
+      icon?: string;
+      icon_color?: string;
+      use_state_color?: boolean;
+    }> = [];
+    let currentSelectedLabel: string | undefined;
 
-      if (!selectedValue) {
-        return;
-      }
+    if (isEntityMode) {
+      // Entity source mode: get options from entity
+      const entityOptions = this.getOptionsFromEntity(dropdownModule, hass);
+      const entityState = this.getCurrentStateFromEntity(dropdownModule, hass);
 
-      // Find option by label since we removed the value field
-      const selectedOption = dropdownModule.options.find(option => option.label === selectedValue);
-      if (selectedOption) {
-        this.executeOptionAction(selectedOption, hass, undefined, config);
-      }
-    };
+      availableOptions = entityOptions.map(opt => ({
+        label: opt,
+        // Apply customization if it exists
+        icon: dropdownModule.entity_option_customization?.[opt]?.icon,
+        icon_color: dropdownModule.entity_option_customization?.[opt]?.icon_color,
+        use_state_color: dropdownModule.entity_option_customization?.[opt]?.use_state_color,
+      }));
 
-    // Determine current selection based on tracking mode
-    let currentSelectedOption: DropdownOption | undefined;
-    let showPlaceholder = false;
-
-    if (dropdownModule.track_state) {
-      // State tracking mode: show current selection or first option
-      const moduleId = dropdownModule.id;
-      const storedSelection =
-        this.currentSelection.get(moduleId) || dropdownModule.current_selection;
-
-      if (storedSelection) {
-        currentSelectedOption = dropdownModule.options.find(
-          option => option.label === storedSelection
-        );
-      }
-      // If no current selection or option not found, default to first option
-      if (!currentSelectedOption && dropdownModule.options.length > 0) {
-        currentSelectedOption = dropdownModule.options[0];
-        // Store the first option as current selection
-        this.currentSelection.set(moduleId, currentSelectedOption.label);
-      }
-      showPlaceholder = false; // Never show placeholder in state tracking mode
+      // In entity mode, always show current state (no placeholder mode)
+      currentSelectedLabel = entityState;
     } else {
-      // Traditional mode: show placeholder if no selection
-      showPlaceholder = true;
+      // Manual mode: use configured options
+      availableOptions = dropdownModule.options.map(opt => ({
+        label: opt.label,
+        icon: opt.icon,
+        icon_color: opt.icon_color,
+        use_state_color: opt.use_state_color,
+      }));
+
+      // Handle selection based on tracking mode
+      if (dropdownModule.track_state) {
+        const moduleId = dropdownModule.id;
+        const storedSelection =
+          this.currentSelection.get(moduleId) || dropdownModule.current_selection;
+        currentSelectedLabel = storedSelection;
+      }
     }
 
+    // Find current selected option or default to first
+    let currentSelectedOption = availableOptions.find(opt => opt.label === currentSelectedLabel);
+    if (
+      !currentSelectedOption &&
+      availableOptions.length > 0 &&
+      (isEntityMode || dropdownModule.track_state)
+    ) {
+      currentSelectedOption = availableOptions[0];
+      if (!isEntityMode) {
+        // Store the first option as current selection for manual mode
+        const moduleId = dropdownModule.id;
+        this.currentSelection.set(moduleId, currentSelectedOption.label);
+      }
+    }
+
+    const showPlaceholder = !isEntityMode && !dropdownModule.track_state;
     const placeholderText = dropdownModule.placeholder || 'Choose an option...';
-    const dropdownValue = currentSelectedOption ? currentSelectedOption.label : '';
-
-    // Handle dropdown interactions - prevent closing popup
-    const handleDropdownInteraction = (e: Event) => {
-      e.stopImmediatePropagation();
-    };
-
-    // Prevent all dropdown interactions from closing the popup
-    const preventClose = (e: Event) => {
-      e.stopImmediatePropagation();
-    };
-
-    // More comprehensive event prevention for the entire dropdown container
-    const preventAllEvents = (e: Event) => {
-      e.stopImmediatePropagation();
-    };
-
-    // Prevent container clicks from closing popup but allow dropdown functionality
-    const preventContainerClose = (e: Event) => {
-      // Only prevent propagation, don't prevent default to allow dropdown to work
-    };
 
     // Get hover effect configuration from module design
     const hoverEffect = (dropdownModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
-    // Add comprehensive event capturing for the entire container
-    const captureAllEvents = (e: Event) => {
-      // Stop all event propagation to prevent popup from closing
-      e.stopImmediatePropagation();
-
-      // Only prevent default for non-essential events
-      if (e.type !== 'change' && e.type !== 'input' && e.type !== 'select') {
-        e.preventDefault();
-      }
-    };
     return html`
       <div
         class="dropdown-module-container ${hoverEffectClass}"
@@ -1031,8 +1255,6 @@ export class UltraDropdownModule extends BaseUltraModule {
           class="dropdown-module-preview"
           style="display: flex; flex-direction: column; align-items: flex-start;"
         >
-          ${''}
-
           <div style="position: relative; width: 100%;">
             <div class="custom-dropdown" style="position: relative;">
               <div
@@ -1049,7 +1271,11 @@ export class UltraDropdownModule extends BaseUltraModule {
                         ${currentSelectedOption.icon
                           ? html`<ha-icon
                               icon="${currentSelectedOption.icon}"
-                              style="color: ${this.getIconColor(currentSelectedOption, hass)};"
+                              style="color: ${this.getOptionIconColor(
+                                currentSelectedOption,
+                                hass,
+                                dropdownModule
+                              )};"
                             ></ha-icon>`
                           : ''}
                         <span>${currentSelectedOption.label}</span>
@@ -1088,7 +1314,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                       </div>
                     `
                   : ''}
-                ${dropdownModule.options.map(
+                ${availableOptions.map(
                   option => html`
                     <div
                       class="dropdown-option"
@@ -1096,72 +1322,87 @@ export class UltraDropdownModule extends BaseUltraModule {
                       @click=${(e: Event) => {
                         console.log('Option clicked:', option.label);
 
-                        // Update current selection if state tracking is enabled
-                        if (dropdownModule.track_state) {
-                          const moduleId = dropdownModule.id;
-                          this.currentSelection.set(moduleId, option.label);
-                          console.log(
-                            'Updated selection for module',
-                            moduleId,
-                            'to:',
-                            option.label
-                          );
-
-                          // Update the displayed selection immediately
-                          const clickedElement = e.target as HTMLElement;
-                          const previewContainer = clickedElement.closest(
-                            '.dropdown-module-container'
-                          );
-                          if (previewContainer) {
-                            // Update the displayed selection text
-                            const selectedSpan = previewContainer.querySelector(
-                              '.dropdown-selected span:last-child'
+                        // Update selection and execute action
+                        if (isEntityMode) {
+                          // Entity mode: call service to update entity
+                          this.updateEntitySelection(dropdownModule, option.label, hass);
+                        } else {
+                          // Manual mode: track state and execute action
+                          if (dropdownModule.track_state) {
+                            const moduleId = dropdownModule.id;
+                            this.currentSelection.set(moduleId, option.label);
+                            console.log(
+                              'Updated selection for module',
+                              moduleId,
+                              'to:',
+                              option.label
                             );
-                            if (selectedSpan) {
-                              selectedSpan.textContent = option.label;
-                              console.log('Updated display to show:', option.label);
-                            }
 
-                            // Update the icon if the option has one
-                            const selectedIconContainer = previewContainer.querySelector(
-                              '.dropdown-selected > div'
+                            // Update the displayed selection immediately
+                            const clickedElement = e.target as HTMLElement;
+                            const previewContainer = clickedElement.closest(
+                              '.dropdown-module-container'
                             );
-                            if (selectedIconContainer) {
-                              const existingIcon = selectedIconContainer.querySelector('ha-icon');
-                              if (option.icon) {
-                                if (existingIcon) {
-                                  // Update existing icon
-                                  existingIcon.setAttribute('icon', option.icon);
-                                  (existingIcon as HTMLElement).style.color = this.getIconColor(
-                                    option,
-                                    hass
-                                  );
-                                } else {
-                                  // Add new icon
-                                  const iconElement = document.createElement('ha-icon');
-                                  iconElement.setAttribute('icon', option.icon);
-                                  iconElement.style.color = this.getIconColor(option, hass);
-                                  iconElement.style.marginRight = '8px';
-                                  selectedIconContainer.insertBefore(
-                                    iconElement,
-                                    selectedIconContainer.firstChild
-                                  );
+                            if (previewContainer) {
+                              // Update the displayed selection text
+                              const selectedSpan = previewContainer.querySelector(
+                                '.dropdown-selected span:last-child'
+                              );
+                              if (selectedSpan) {
+                                selectedSpan.textContent = option.label;
+                                console.log('Updated display to show:', option.label);
+                              }
+
+                              // Update the icon if the option has one
+                              const selectedIconContainer = previewContainer.querySelector(
+                                '.dropdown-selected > div'
+                              );
+                              if (selectedIconContainer) {
+                                const existingIcon = selectedIconContainer.querySelector('ha-icon');
+                                if (option.icon) {
+                                  if (existingIcon) {
+                                    // Update existing icon
+                                    existingIcon.setAttribute('icon', option.icon);
+                                    (existingIcon as HTMLElement).style.color =
+                                      this.getOptionIconColor(option, hass, dropdownModule);
+                                  } else {
+                                    // Add new icon
+                                    const iconElement = document.createElement('ha-icon');
+                                    iconElement.setAttribute('icon', option.icon);
+                                    iconElement.style.color = this.getOptionIconColor(
+                                      option,
+                                      hass,
+                                      dropdownModule
+                                    );
+                                    iconElement.style.marginRight = '8px';
+                                    selectedIconContainer.insertBefore(
+                                      iconElement,
+                                      selectedIconContainer.firstChild
+                                    );
+                                  }
+                                } else if (existingIcon) {
+                                  // Remove icon if option doesn't have one
+                                  existingIcon.remove();
                                 }
-                              } else if (existingIcon) {
-                                // Remove icon if option doesn't have one
-                                existingIcon.remove();
                               }
                             }
                           }
+
+                          // Execute the option's action
+                          const manualOption = dropdownModule.options.find(
+                            o => o.label === option.label
+                          );
+                          if (manualOption) {
+                            this.selectOption(option.label, dropdownModule);
+                            this.executeOptionAction(
+                              manualOption,
+                              hass,
+                              (e.currentTarget as HTMLElement) || undefined,
+                              config
+                            );
+                          }
                         }
 
-                        this.selectOption(option.label, dropdownModule);
-                        this.executeOptionAction(
-                          option,
-                          hass,
-                          (e.currentTarget as HTMLElement) || undefined,
-                          config
-                        );
                         this.closeDropdown(e);
                       }}
                       @mouseenter=${(e: Event) => {
@@ -1176,7 +1417,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                       ${option.icon
                         ? html`<ha-icon
                             icon="${option.icon}"
-                            style="color: ${this.getIconColor(option, hass)};"
+                            style="color: ${this.getOptionIconColor(option, hass, dropdownModule)};"
                           ></ha-icon>`
                         : ''}
                       <span>${option.label}</span>
@@ -1189,6 +1430,72 @@ export class UltraDropdownModule extends BaseUltraModule {
         </div>
       </div>
     `;
+  }
+
+  // Helper to get icon color for options (handles both manual and entity mode)
+  private getOptionIconColor(
+    option: { label: string; icon?: string; icon_color?: string; use_state_color?: boolean },
+    hass: HomeAssistant,
+    module: DropdownModule
+  ): string {
+    // If use state color is enabled and we have a source entity, get the state color
+    if (option.use_state_color && module.source_entity && hass) {
+      const entityState = hass.states[module.source_entity];
+      if (entityState) {
+        // Try to get color from entity attributes
+        const entityColor = (entityState.attributes as any)?.rgb_color;
+        if (entityColor && Array.isArray(entityColor) && entityColor.length === 3) {
+          return `rgb(${entityColor[0]}, ${entityColor[1]}, ${entityColor[2]})`;
+        }
+
+        // Fallback to state-based colors for common entity types
+        const domain = module.source_entity.split('.')[0];
+        const state = entityState.state;
+
+        switch (domain) {
+          case 'light':
+            return state === 'on' ? '#FFA500' : '#666666'; // Orange when on, gray when off
+          case 'switch':
+            return state === 'on' ? '#4CAF50' : '#666666'; // Green when on, gray when off
+          case 'binary_sensor':
+            return state === 'on' ? '#F44336' : '#4CAF50'; // Red when on, green when off
+          case 'sensor':
+            return '#2196F3'; // Blue for sensors
+          default:
+            return state === 'on' || state === 'open' || state === 'active'
+              ? 'var(--primary-color)'
+              : '#666666';
+        }
+      }
+    }
+
+    // Use custom color or default
+    return option.icon_color || 'var(--primary-color)';
+  }
+
+  // Update entity selection via service call
+  private async updateEntitySelection(
+    module: DropdownModule,
+    selectedValue: string,
+    hass: HomeAssistant
+  ): Promise<void> {
+    if (!module.source_entity || !hass) return;
+
+    const domain = module.source_entity.split('.')[0];
+    const service =
+      domain === 'input_select' ? 'input_select.select_option' : 'select.select_option';
+
+    console.log(`Calling ${service} for ${module.source_entity} with option: ${selectedValue}`);
+
+    try {
+      await hass.callService(domain, 'select_option', {
+        entity_id: module.source_entity,
+        option: selectedValue,
+      });
+      console.log('Service call successful');
+    } catch (error) {
+      console.error('Failed to update entity selection:', error);
+    }
   }
 
   private getIconColor(option: DropdownOption, hass: HomeAssistant): string {
@@ -1339,47 +1646,59 @@ export class UltraDropdownModule extends BaseUltraModule {
     const dropdownModule = module as DropdownModule;
     const errors = [...baseValidation.errors];
 
-    // Validate options array
-    if (!dropdownModule.options || dropdownModule.options.length === 0) {
-      errors.push('At least one dropdown option is required');
-    } else {
-      dropdownModule.options.forEach((option, index) => {
-        if (!option.label || option.label.trim() === '') {
-          errors.push(`Option ${index + 1}: Label is required`);
-        }
+    // Check source mode
+    const isEntityMode = dropdownModule.source_mode === 'entity';
 
-        // Validate action configuration
-        if (!option.action || !option.action.action) {
-          errors.push(`Option ${index + 1}: Action is required`);
-        } else {
-          // Validate action-specific requirements
-          switch (option.action.action) {
-            case 'more-info':
-            case 'toggle':
-              if (!option.action.entity) {
-                errors.push(
-                  `Option ${index + 1}: Entity is required for ${option.action.action} action`
-                );
-              }
-              break;
-            case 'navigate':
-              if (!option.action.navigation_path) {
-                errors.push(`Option ${index + 1}: Navigation path is required for navigate action`);
-              }
-              break;
-            case 'url':
-              if (!option.action.url_path) {
-                errors.push(`Option ${index + 1}: URL is required for url action`);
-              }
-              break;
-            case 'perform-action':
-              if (!option.action.perform_action && !option.action.service) {
-                errors.push(`Option ${index + 1}: Service is required for perform-action`);
-              }
-              break;
+    if (isEntityMode) {
+      // Entity mode validation
+      if (!dropdownModule.source_entity) {
+        errors.push('Source entity is required when using entity source mode');
+      }
+    } else {
+      // Manual mode validation
+      if (!dropdownModule.options || dropdownModule.options.length === 0) {
+        errors.push('At least one dropdown option is required in manual mode');
+      } else {
+        dropdownModule.options.forEach((option, index) => {
+          if (!option.label || option.label.trim() === '') {
+            errors.push(`Option ${index + 1}: Label is required`);
           }
-        }
-      });
+
+          // Validate action configuration
+          if (!option.action || !option.action.action) {
+            errors.push(`Option ${index + 1}: Action is required`);
+          } else {
+            // Validate action-specific requirements
+            switch (option.action.action) {
+              case 'more-info':
+              case 'toggle':
+                if (!option.action.entity) {
+                  errors.push(
+                    `Option ${index + 1}: Entity is required for ${option.action.action} action`
+                  );
+                }
+                break;
+              case 'navigate':
+                if (!option.action.navigation_path) {
+                  errors.push(
+                    `Option ${index + 1}: Navigation path is required for navigate action`
+                  );
+                }
+                break;
+              case 'url':
+                if (!option.action.url_path) {
+                  errors.push(`Option ${index + 1}: URL is required for url action`);
+                }
+                break;
+              case 'perform-action':
+                if (!option.action.perform_action && !option.action.service) {
+                  errors.push(`Option ${index + 1}: Service is required for perform-action`);
+                }
+                break;
+            }
+          }
+        });
+      }
     }
 
     return { valid: errors.length === 0, errors };
@@ -1540,7 +1859,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         transition: all 0.2s ease;
       }
 
-      .drag-handle:hover {
+      .drag-handle:strong {
         background: rgba(var(--rgb-primary-color), 0.15) !important;
         transform: scale(1.1);
       }

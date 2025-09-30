@@ -1,8 +1,9 @@
 import { FavoriteRow, CardRow } from '../types';
-import { ucCloudSyncService } from './uc-cloud-sync-service';
+// NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
+// import { ucCloudSyncService } from './uc-cloud-sync-service';
 
 /**
- * Service for managing favorite rows that users can save and reuse
+ * Service for managing favorite rows that users can save and reuse (local-only, no cloud sync)
  */
 class UcFavoritesService {
   private static readonly STORAGE_KEY = 'ultra-card-favorites';
@@ -46,8 +47,8 @@ class UcFavoritesService {
     this._notifyListeners();
     this._broadcastChange();
 
-    // Queue for cloud sync
-    ucCloudSyncService.queueChange('favorite', 'create', newFavorite);
+    // NOTE: Cloud sync disabled - favorites are local-only per user request
+    // ucCloudSyncService.queueChange('favorite', 'create', newFavorite);
 
     return newFavorite;
   }
@@ -65,8 +66,8 @@ class UcFavoritesService {
     this._notifyListeners();
     this._broadcastChange();
 
-    // Queue for cloud sync
-    ucCloudSyncService.queueChange('favorite', 'delete', { id });
+    // NOTE: Cloud sync disabled - favorites are local-only per user request
+    // ucCloudSyncService.queueChange('favorite', 'delete', { id });
 
     return true;
   }

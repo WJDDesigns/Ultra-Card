@@ -59,6 +59,7 @@ export declare class UltraCardEditor extends LitElement {
     private _cleanupCloudSyncListeners;
     /**
      * Render cloud sync section
+     * NOTE: Login area hidden per user request - favorites and colors are local-only
      */
     private _renderCloudSyncSection;
     /**

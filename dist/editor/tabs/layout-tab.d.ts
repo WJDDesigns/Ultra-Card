@@ -26,6 +26,7 @@ export declare class LayoutTab extends LitElement {
     private _collapsedPreviewModules;
     private _isRowColumnPreviewCollapsed;
     private _collapsedConditionIds;
+    private _isPreviewPinned;
     private _draggingCondition;
     private _activeModuleSelectorTab;
     private _selectedPresetCategory;
@@ -135,6 +136,7 @@ export declare class LayoutTab extends LitElement {
     private _updateColumn;
     private _loadGoogleFont;
     private _renderModulePreview;
+    private _togglePreviewPin;
     private _renderSingleModule;
     private _renderSimplifiedModule;
     private _renderLayoutModuleAsColumn;

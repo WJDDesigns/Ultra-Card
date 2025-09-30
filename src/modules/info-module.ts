@@ -79,8 +79,8 @@ export class UltraInfoModule extends BaseUltraModule {
       columns: 1,
       gap: 12,
       allow_wrap: true,
-      // Global action configuration
-      tap_action: { action: 'nothing' },
+      // Global action configuration - auto-set tap action to more-info with default entity
+      tap_action: { action: 'more-info', entity: 'weather.forecast_home' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
       // Logic (visibility) defaults
@@ -1084,10 +1084,7 @@ export class UltraInfoModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
-    const infoModule = module as InfoModule;
-    const entity = infoModule.info_entities[0] || this.createDefault().info_entities[0];
-
-    return GlobalActionsTab.render(infoModule as any, hass, updates => updateModule(updates));
+    return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
   // Explicit Logic tab renderer (some editors call this directly)
@@ -1098,36 +1095,6 @@ export class UltraInfoModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
-  }
-
-  private renderInfoActionConfig(
-    infoModule: InfoModule,
-    hass: HomeAssistant,
-    updateModule: (updates: Partial<InfoModule>) => void
-  ): TemplateResult {
-    return html`
-      ${this.renderSingleActionConfig(
-        'Tap Action',
-        'Action when tapping this info entity',
-        (infoModule.tap_action || { action: 'nothing' }) as any,
-        hass,
-        action => updateModule({ tap_action: action })
-      )}
-      ${this.renderSingleActionConfig(
-        'Hold Action',
-        'Action when holding this info entity',
-        (infoModule.hold_action || { action: 'nothing' }) as any,
-        hass,
-        action => updateModule({ hold_action: action })
-      )}
-      ${this.renderSingleActionConfig(
-        'Double Tap Action',
-        'Action when double-tapping this info entity',
-        (infoModule.double_tap_action || { action: 'nothing' }) as any,
-        hass,
-        action => updateModule({ double_tap_action: action })
-      )}
-    `;
   }
 
   private renderSingleActionConfig(
@@ -1514,18 +1481,38 @@ export class UltraInfoModule extends BaseUltraModule {
 
               const iconElement =
                 entity.show_icon !== false
-                  ? html`
-                      <ha-icon
-                        icon="${displayIcon}"
-                        class="entity-icon"
-                        style="color: ${designProperties.color ||
-                        entity.icon_color ||
-                        'var(--primary-color)'}; --mdc-icon-size: ${getIconSizeWithUnits(
-                          designProperties.font_size,
-                          entity.icon_size || 26
-                        )};"
-                      ></ha-icon>
-                    `
+                  ? this._shouldUseEntityPicture(entityState)
+                    ? html`
+                        <img
+                          src="${this._getEntityPicture(entityState, hass)}"
+                          class="entity-icon entity-picture"
+                          style="
+                            width: ${getIconSizeWithUnits(
+                            designProperties.font_size,
+                            entity.icon_size || 26
+                          )};
+                            height: ${getIconSizeWithUnits(
+                            designProperties.font_size,
+                            entity.icon_size || 26
+                          )};
+                            border-radius: 50%;
+                            object-fit: cover;
+                          "
+                          alt="Entity picture"
+                        />
+                      `
+                    : html`
+                        <ha-icon
+                          icon="${displayIcon}"
+                          class="entity-icon"
+                          style="color: ${designProperties.color ||
+                          entity.icon_color ||
+                          'var(--primary-color)'}; --mdc-icon-size: ${getIconSizeWithUnits(
+                            designProperties.font_size,
+                            entity.icon_size || 26
+                          )};"
+                        ></ha-icon>
+                      `
                   : '';
 
               // Helper function to compose text shadow CSS
@@ -2246,7 +2233,22 @@ export class UltraInfoModule extends BaseUltraModule {
     };
 
     const updatedEntities = [...infoModule.info_entities, newEntity];
-    updateModule({ info_entities: updatedEntities });
+
+    // If this is the first entity and no module-level tap action is set, auto-set it
+    const moduleUpdates: Partial<InfoModule> = { info_entities: updatedEntities };
+    if (
+      updatedEntities.length === 1 &&
+      (!infoModule.tap_action ||
+        infoModule.tap_action.action === 'nothing' ||
+        infoModule.tap_action.action === 'default')
+    ) {
+      moduleUpdates.tap_action = {
+        action: 'more-info',
+        entity: newEntity.entity,
+      };
+    }
+
+    updateModule(moduleUpdates);
   }
 
   private _removeEntity(
@@ -2286,7 +2288,41 @@ export class UltraInfoModule extends BaseUltraModule {
       }
     }
 
-    this._updateEntity(infoModule, index, updates, updateModule);
+    // Update entity in the entities array
+    const updatedEntities = infoModule.info_entities.map((entity, i) =>
+      i === index ? { ...entity, ...updates } : entity
+    );
+    const moduleUpdates: any = { info_entities: updatedEntities };
+
+    // Auto-set module-level tap action to more-info with the selected entity
+    if (entityId && hass?.states[entityId]) {
+      const shouldUpdateTap =
+        !infoModule.tap_action ||
+        infoModule.tap_action.action === 'nothing' ||
+        infoModule.tap_action.action === 'default' ||
+        infoModule.tap_action.action === 'more-info';
+
+      if (shouldUpdateTap) {
+        moduleUpdates.tap_action = {
+          action: 'more-info',
+          entity: entityId,
+        };
+      }
+    }
+
+    // Apply all updates in one call to avoid race conditions
+    updateModule(moduleUpdates);
+
+    // Force UI refresh
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('ultra-card-actions-refresh', {
+          detail: { moduleId: infoModule.id },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }, 50);
   }
 
   private _updateEntity(
@@ -2439,5 +2475,87 @@ export class UltraInfoModule extends BaseUltraModule {
     } catch (error) {
       // Silent fail - template may be incomplete while typing
     }
+  }
+
+  /**
+   * Check if an entity has a custom icon or entity_picture and return the appropriate URL
+   * @param entityState The entity state object
+   * @param hass Home Assistant instance
+   * @returns The entity picture URL or null if not available
+   */
+  private _getEntityPicture(entityState: any, hass: HomeAssistant): string | null {
+    if (!entityState || !hass) return null;
+
+    const entityId = entityState.entity_id;
+    if (!entityId) return null;
+
+    // First check for entity_picture (most common for person, device_tracker, camera, media_player)
+    const entityPicture = entityState.attributes?.entity_picture;
+    if (entityPicture) {
+      // Convert relative URL to absolute URL if needed
+      if (entityPicture.startsWith('/')) {
+        const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';
+        return `${baseUrl.replace(/\/$/, '')}${entityPicture}`;
+      }
+      return entityPicture;
+    }
+
+    // Check for other image attributes that might contain entity pictures
+    const imageAttributes = [
+      'image',
+      'picture',
+      'thumbnail',
+      'avatar',
+      'photo',
+      'icon_url',
+      'image_url',
+    ];
+
+    for (const attr of imageAttributes) {
+      const imageUrl = entityState.attributes?.[attr];
+      if (imageUrl && typeof imageUrl === 'string') {
+        // Convert relative URL to absolute URL if needed
+        if (imageUrl.startsWith('/')) {
+          const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';
+          return `${baseUrl.replace(/\/$/, '')}${imageUrl}`;
+        }
+        return imageUrl;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if an entity should use its picture instead of an icon
+   * @param entityState The entity state object
+   * @returns True if entity picture should be used
+   */
+  private _shouldUseEntityPicture(entityState: any): boolean {
+    if (!entityState) return false;
+
+    const entityId = entityState.entity_id;
+    if (!entityId) return false;
+
+    // Check for entity_picture first (most common)
+    if (entityState.attributes?.entity_picture) return true;
+
+    // Check for other image attributes
+    const imageAttributes = [
+      'image',
+      'picture',
+      'thumbnail',
+      'avatar',
+      'photo',
+      'icon_url',
+      'image_url',
+    ];
+
+    return imageAttributes.some(
+      attr =>
+        entityState.attributes?.[attr] &&
+        typeof entityState.attributes[attr] === 'string' &&
+        entityState.attributes[attr].trim() !== ''
+    );
   }
 }

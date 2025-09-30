@@ -42,6 +42,9 @@ export class GlobalActionsTab {
       double_tap_action: (module as any).double_tap_action || { action: 'default' },
     } as any;
 
+    // Create a unique key based on the actual action data to force form refresh when data changes
+    const formKey = `actions_${(module as any).id}_${JSON.stringify(current).replace(/[^a-zA-Z0-9]/g, '')}`;
+
     const lang = hass?.locale?.language || 'en';
     const localizedTitle = title || localize('editor.actions.title', lang, 'Actions Configuration');
 
@@ -275,6 +278,7 @@ export class GlobalActionsTab {
             ${label}
           </div>
           <ha-form
+            .key=${`form_${JSON.stringify(displayAction).replace(/[^a-zA-Z0-9]/g, '')}`}
             .hass=${hass}
             .data=${{ action_config: displayAction }}
             .schema=${[
@@ -322,6 +326,7 @@ export class GlobalActionsTab {
                     Select which entity to show more information for
                   </div>
                   <ha-form
+                    .key=${`entity_${action.entity || 'none'}_${Date.now()}`}
                     .hass=${hass}
                     .data=${{ entity: action.entity || '' }}
                     .schema=${[{ name: 'entity', label: 'Entity', selector: { entity: {} } }]}

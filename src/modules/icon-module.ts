@@ -293,8 +293,8 @@ export class UltraIconModule extends BaseUltraModule {
       // vertical_alignment: undefined, // No default alignment to allow Global Design tab control
       columns: 3,
       gap: 16,
-      // Global action configuration (for the module container)
-      tap_action: { action: 'nothing' },
+      // Global action configuration (for the module container) - auto-set tap action to more-info with default entity
+      tap_action: { action: 'more-info', entity: 'weather.forecast_home' },
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
       // Logic (visibility) defaults
@@ -355,6 +355,17 @@ export class UltraIconModule extends BaseUltraModule {
                             updates.icon_active = entityIcon;
                           }
                         }
+
+                        // Auto-set module-level tap action to more-info with the selected entity
+                        // Always update if more-info action or no action set
+                        const shouldUpdateTapAction =
+                          !iconModule.tap_action ||
+                          iconModule.tap_action.action === 'nothing' ||
+                          iconModule.tap_action.action === 'default' ||
+                          iconModule.tap_action.action === 'more-info';
+
+                        if (shouldUpdateTapAction) {
+                        }
                       }
 
                       // Auto-populate states for binary entities
@@ -367,7 +378,45 @@ export class UltraIconModule extends BaseUltraModule {
                         }
                       }
 
-                      this._updateIcon(iconModule, index, updates, updateModule);
+                      // Update icon in the icons array
+                      const updatedIcons = iconModule.icons.map((ic, i) =>
+                        i === index ? { ...ic, ...updates } : ic
+                      );
+                      const moduleUpdates: any = { icons: updatedIcons };
+
+                      // Add tap action update if needed
+                      if (entityId && hass?.states[entityId]) {
+                        const shouldUpdateTap =
+                          !iconModule.tap_action ||
+                          iconModule.tap_action.action === 'nothing' ||
+                          iconModule.tap_action.action === 'default' ||
+                          iconModule.tap_action.action === 'more-info';
+
+                        if (shouldUpdateTap) {
+                          moduleUpdates.tap_action = {
+                            action: 'more-info',
+                            entity: entityId,
+                          };
+                        }
+                      }
+
+                      // Apply all updates in one call to avoid race conditions
+                      updateModule(moduleUpdates);
+
+                      // Force UI refresh
+                      setTimeout(() => {
+                        try {
+                          this._triggerPreviewUpdate();
+                        } catch (_) {}
+
+                        window.dispatchEvent(
+                          new CustomEvent('ultra-card-actions-refresh', {
+                            detail: { moduleId: iconModule.id },
+                            bubbles: true,
+                            composed: true,
+                          })
+                        );
+                      }, 50);
 
                       // Clear attribute cache for this entity to refresh dropdowns
                       const oldCacheKey = `${iconModule.icons[index].entity}_attributes`;
@@ -2484,8 +2533,17 @@ export class UltraIconModule extends BaseUltraModule {
                     }
 
                     // Set timeout for single click (only if double-tap action is NOT configured)
-                    if (!iconModule.double_tap_action && iconModule.tap_action) {
+                    if (
+                      (!iconModule.double_tap_action ||
+                        iconModule.double_tap_action.action === 'nothing') &&
+                      iconModule.tap_action &&
+                      iconModule.tap_action.action !== 'nothing'
+                    ) {
                       // No double-tap configured, execute immediately
+                      console.log(
+                        '🔧 Icon preview: Executing tap action immediately:',
+                        iconModule.tap_action
+                      );
                       const action =
                         iconModule.tap_action.action === 'default'
                           ? {
@@ -2503,10 +2561,17 @@ export class UltraIconModule extends BaseUltraModule {
                         e.target as HTMLElement,
                         config
                       );
-                    } else if (iconModule.tap_action) {
+                    } else if (
+                      iconModule.tap_action &&
+                      iconModule.tap_action.action !== 'nothing'
+                    ) {
                       // Double-tap is configured, wait before executing single tap
                       clickTimeout = setTimeout(() => {
                         if (clickCount === 1) {
+                          console.log(
+                            '🔧 Icon preview: Executing delayed tap action:',
+                            iconModule.tap_action
+                          );
                           const action =
                             iconModule.tap_action!.action === 'default'
                               ? {
@@ -2574,18 +2639,42 @@ export class UltraIconModule extends BaseUltraModule {
                                 : '0px',
                           })}"
                         >
-                          <ha-icon
-                            icon="${displayIcon || 'mdi:help-circle'}"
-                            class="${animationClass} ultra-force-animation"
-                            style="
-                      color: ${displayColor || 'var(--secondary-text-color)'};
-                      --mdc-icon-size: ${Number(
-                              isActive
-                                ? icon.active_icon_size || icon.icon_size
-                                : icon.inactive_icon_size || icon.icon_size
-                            ) || 26}px;
-                    "
-                          ></ha-icon>
+                          ${this._shouldUseEntityPicture(entityState)
+                            ? html`
+                                <img
+                                  src="${this._getEntityPicture(entityState, hass)}"
+                                  class="${animationClass} ultra-force-animation entity-picture"
+                                  style="
+                                    width: ${Number(
+                                    isActive
+                                      ? icon.active_icon_size || icon.icon_size
+                                      : icon.inactive_icon_size || icon.icon_size
+                                  ) || 26}px;
+                                    height: ${Number(
+                                    isActive
+                                      ? icon.active_icon_size || icon.icon_size
+                                      : icon.inactive_icon_size || icon.icon_size
+                                  ) || 26}px;
+                                    border-radius: 50%;
+                                    object-fit: cover;
+                                  "
+                                  alt="Entity picture"
+                                />
+                              `
+                            : html`
+                                <ha-icon
+                                  icon="${displayIcon || 'mdi:help-circle'}"
+                                  class="${animationClass} ultra-force-animation"
+                                  style="
+                                    color: ${displayColor || 'var(--secondary-text-color)'};
+                                    --mdc-icon-size: ${Number(
+                                    isActive
+                                      ? icon.active_icon_size || icon.icon_size
+                                      : icon.inactive_icon_size || icon.icon_size
+                                  ) || 26}px;
+                                  "
+                                ></ha-icon>
+                              `}
                         </div>
                       `
                     : ''}
@@ -3259,6 +3348,21 @@ export class UltraIconModule extends BaseUltraModule {
           ...containerStyles,
           gap: '0px',
         })}
+        @click=${(e: Event) => {
+          e.preventDefault();
+          if (iconModule.tap_action && iconModule.tap_action.action !== 'nothing') {
+            const action =
+              iconModule.tap_action.action === 'default'
+                ? { ...iconModule.tap_action, action: 'toggle', entity: icon.entity }
+                : { ...iconModule.tap_action, entity: iconModule.tap_action.entity || icon.entity };
+            UltraLinkComponent.handleAction(
+              action as any,
+              hass,
+              e.target as HTMLElement,
+              undefined
+            );
+          }
+        }}
       >
         ${shouldShowIcon
           ? html`
@@ -3272,23 +3376,52 @@ export class UltraIconModule extends BaseUltraModule {
                       : '0px',
                 })}"
               >
-                <ha-icon
-                  icon="${displayIcon || 'mdi:help-circle'}"
-                  class="${animationClass} ultra-force-animation"
-                  style="
-                    color: ${displayColor || 'var(--secondary-text-color)'};
-                    --mdc-icon-size: ${Number(
-                    isActiveState
-                      ? icon.active_icon_size || icon.icon_size
-                      : icon.inactive_icon_size || icon.icon_size
-                  ) || 26}px;
-                    ${animationClass && animationClass !== 'none'
-                    ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
-                    : ''}
-                  "
-                  data-animation-debug="${animationClass || 'none'}"
-                  data-is-active="${isActiveState}"
-                ></ha-icon>
+                ${this._shouldUseEntityPicture(entityState)
+                  ? html`
+                      <img
+                        src="${this._getEntityPicture(entityState, hass)}"
+                        class="${animationClass} ultra-force-animation entity-picture"
+                        style="
+                          width: ${Number(
+                          isActiveState
+                            ? icon.active_icon_size || icon.icon_size
+                            : icon.inactive_icon_size || icon.icon_size
+                        ) || 26}px;
+                          height: ${Number(
+                          isActiveState
+                            ? icon.active_icon_size || icon.icon_size
+                            : icon.inactive_icon_size || icon.icon_size
+                        ) || 26}px;
+                          border-radius: 50%;
+                          object-fit: cover;
+                          ${animationClass && animationClass !== 'none'
+                          ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
+                          : ''}
+                        "
+                        data-animation-debug="${animationClass || 'none'}"
+                        data-is-active="${isActiveState}"
+                        alt="Entity picture"
+                      />
+                    `
+                  : html`
+                      <ha-icon
+                        icon="${displayIcon || 'mdi:help-circle'}"
+                        class="${animationClass} ultra-force-animation"
+                        style="
+                          color: ${displayColor || 'var(--secondary-text-color)'};
+                          --mdc-icon-size: ${Number(
+                          isActiveState
+                            ? icon.active_icon_size || icon.icon_size
+                            : icon.inactive_icon_size || icon.icon_size
+                        ) || 26}px;
+                          ${animationClass && animationClass !== 'none'
+                          ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
+                          : ''}
+                        "
+                        data-animation-debug="${animationClass || 'none'}"
+                        data-is-active="${isActiveState}"
+                      ></ha-icon>
+                    `}
               </div>
             `
           : ''}
@@ -3591,23 +3724,52 @@ export class UltraIconModule extends BaseUltraModule {
                             : '0px',
                       })}"
                     >
-                      <ha-icon
-                        icon="${displayIcon || 'mdi:help-circle'}"
-                        class="${animationClass} ultra-force-animation"
-                        style="
-                          color: ${displayColor || 'var(--secondary-text-color)'};
-                          --mdc-icon-size: ${Number(
-                          isActive
-                            ? icon.active_icon_size || icon.icon_size
-                            : icon.inactive_icon_size || icon.icon_size
-                        ) || 26}px;
-                          ${animationClass && animationClass !== 'none'
-                          ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
-                          : ''}
-                        "
-                        data-animation-debug="${animationClass || 'none'}"
-                        data-is-active="${isActive}"
-                      ></ha-icon>
+                      ${this._shouldUseEntityPicture(entityState)
+                        ? html`
+                            <img
+                              src="${this._getEntityPicture(entityState, hass)}"
+                              class="${animationClass} ultra-force-animation entity-picture"
+                              style="
+                                width: ${Number(
+                                isActive
+                                  ? icon.active_icon_size || icon.icon_size
+                                  : icon.inactive_icon_size || icon.icon_size
+                              ) || 26}px;
+                                height: ${Number(
+                                isActive
+                                  ? icon.active_icon_size || icon.icon_size
+                                  : icon.inactive_icon_size || icon.icon_size
+                              ) || 26}px;
+                                border-radius: 50%;
+                                object-fit: cover;
+                                ${animationClass && animationClass !== 'none'
+                                ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
+                                : ''}
+                              "
+                              data-animation-debug="${animationClass || 'none'}"
+                              data-is-active="${isActive}"
+                              alt="Entity picture"
+                            />
+                          `
+                        : html`
+                            <ha-icon
+                              icon="${displayIcon || 'mdi:help-circle'}"
+                              class="${animationClass} ultra-force-animation"
+                              style="
+                                color: ${displayColor || 'var(--secondary-text-color)'};
+                                --mdc-icon-size: ${Number(
+                                isActive
+                                  ? icon.active_icon_size || icon.icon_size
+                                  : icon.inactive_icon_size || icon.icon_size
+                              ) || 26}px;
+                                ${animationClass && animationClass !== 'none'
+                                ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
+                                : ''}
+                              "
+                              data-animation-debug="${animationClass || 'none'}"
+                              data-is-active="${isActive}"
+                            ></ha-icon>
+                          `}
                     </div>
                   `
                 : ''}
@@ -4324,10 +4486,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       @media (max-width: 480px) {
-        .icon-module-split-preview .icon-grid {
-          grid-template-columns: repeat(auto-fit, minmax(35px, 1fr)) !important;
-          gap: 2px !important;
-        }
+        /* Removed mobile-specific icon-grid overrides to maintain consistent user-configured spacing */
 
         .icon-module-split-preview .inactive-preview,
         .icon-module-split-preview .active-preview {
@@ -4750,11 +4909,7 @@ export class UltraIconModule extends BaseUltraModule {
           padding: 12px !important;
         }
 
-        /* Mobile-friendly preview grid */
-        .icon-grid {
-          grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)) !important;
-          gap: 8px !important;
-        }
+        /* Removed mobile-specific icon-grid overrides to maintain consistent user-configured spacing across all screen sizes */
 
         .icon-item-preview {
           padding: 6px !important;
@@ -5433,7 +5588,22 @@ export class UltraIconModule extends BaseUltraModule {
     };
 
     const updatedIcons = [...iconModule.icons, newIcon];
-    updateModule({ icons: updatedIcons });
+
+    // If this is the first icon and no module-level tap action is set, auto-set it
+    const moduleUpdates: Partial<IconModule> = { icons: updatedIcons };
+    if (
+      updatedIcons.length === 1 &&
+      (!iconModule.tap_action ||
+        iconModule.tap_action.action === 'nothing' ||
+        iconModule.tap_action.action === 'default')
+    ) {
+      moduleUpdates.tap_action = {
+        action: 'more-info',
+        entity: newIcon.entity,
+      };
+    }
+
+    updateModule(moduleUpdates);
   }
 
   private _removeIcon(
@@ -6203,6 +6373,88 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
+
+  /**
+   * Check if an entity has a custom icon or entity_picture and return the appropriate URL
+   * @param entityState The entity state object
+   * @param hass Home Assistant instance
+   * @returns The entity picture URL or null if not available
+   */
+  private _getEntityPicture(entityState: any, hass: HomeAssistant): string | null {
+    if (!entityState || !hass) return null;
+
+    const entityId = entityState.entity_id;
+    if (!entityId) return null;
+
+    // First check for entity_picture (most common for person, device_tracker, camera, media_player)
+    const entityPicture = entityState.attributes?.entity_picture;
+    if (entityPicture) {
+      // Convert relative URL to absolute URL if needed
+      if (entityPicture.startsWith('/')) {
+        const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';
+        return `${baseUrl.replace(/\/$/, '')}${entityPicture}`;
+      }
+      return entityPicture;
+    }
+
+    // Check for other image attributes that might contain entity pictures
+    const imageAttributes = [
+      'image',
+      'picture',
+      'thumbnail',
+      'avatar',
+      'photo',
+      'icon_url',
+      'image_url',
+    ];
+
+    for (const attr of imageAttributes) {
+      const imageUrl = entityState.attributes?.[attr];
+      if (imageUrl && typeof imageUrl === 'string') {
+        // Convert relative URL to absolute URL if needed
+        if (imageUrl.startsWith('/')) {
+          const baseUrl = (hass as any).hassUrl ? (hass as any).hassUrl() : '';
+          return `${baseUrl.replace(/\/$/, '')}${imageUrl}`;
+        }
+        return imageUrl;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if an entity should use its picture instead of an icon
+   * @param entityState The entity state object
+   * @returns True if entity picture should be used
+   */
+  private _shouldUseEntityPicture(entityState: any): boolean {
+    if (!entityState) return false;
+
+    const entityId = entityState.entity_id;
+    if (!entityId) return false;
+
+    // Check for entity_picture first (most common)
+    if (entityState.attributes?.entity_picture) return true;
+
+    // Check for other image attributes
+    const imageAttributes = [
+      'image',
+      'picture',
+      'thumbnail',
+      'avatar',
+      'photo',
+      'icon_url',
+      'image_url',
+    ];
+
+    return imageAttributes.some(
+      attr =>
+        entityState.attributes?.[attr] &&
+        typeof entityState.attributes[attr] === 'string' &&
+        entityState.attributes[attr].trim() !== ''
+    );
   }
 
   private _injectKeyframesIntoHaIcon(iconEl: HTMLElement): void {

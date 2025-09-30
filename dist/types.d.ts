@@ -30,7 +30,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -422,6 +422,103 @@ export interface BarModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
+export interface GaugeModule extends BaseModule {
+    type: 'gauge';
+    entity: string;
+    name?: string;
+    value_type?: 'entity' | 'attribute' | 'template';
+    value_entity?: string;
+    value_attribute_entity?: string;
+    value_attribute_name?: string;
+    value_template?: string;
+    min_value?: number;
+    max_value?: number;
+    gauge_style?: 'basic' | 'speedometer' | 'block' | 'lines' | 'modern' | 'inset' | '3d' | 'neon' | 'digital' | 'minimal' | 'arc' | 'radial';
+    gauge_size?: number;
+    gauge_thickness?: number;
+    pointer_enabled?: boolean;
+    pointer_style?: 'triangle' | 'line' | 'needle' | 'arrow' | 'circle' | 'highlight' | 'cap' | 'custom';
+    pointer_color?: string;
+    pointer_length?: number;
+    pointer_width?: number;
+    gauge_color_mode?: 'solid' | 'gradient' | 'segments';
+    gauge_color?: string;
+    gauge_background_color?: string;
+    use_gradient?: boolean;
+    gradient_display_mode?: 'full' | 'cropped' | 'value-based';
+    gradient_stops?: Array<{
+        id: string;
+        position: number;
+        color: string;
+    }>;
+    use_segments?: boolean;
+    segments?: Array<{
+        id: string;
+        from: number;
+        to: number;
+        color: string;
+        label?: string;
+    }>;
+    show_value?: boolean;
+    value_position?: 'center' | 'top' | 'bottom' | 'none';
+    value_font_size?: number;
+    value_color?: string;
+    value_format?: string;
+    value_x_offset?: number;
+    value_y_offset?: number;
+    show_name?: boolean;
+    name_position?: 'top' | 'bottom' | 'center' | 'none';
+    name_font_size?: number;
+    name_color?: string;
+    name_x_offset?: number;
+    name_y_offset?: number;
+    show_min_max?: boolean;
+    min_max_font_size?: number;
+    min_max_color?: string;
+    show_ticks?: boolean;
+    tick_count?: number;
+    tick_color?: string;
+    show_tick_labels?: boolean;
+    tick_label_font_size?: number;
+    animation_enabled?: boolean;
+    animation_duration?: string;
+    animation_easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce';
+    zones?: Array<{
+        id: string;
+        from: number;
+        to: number;
+        color: string;
+        opacity?: number;
+    }>;
+    template_mode?: boolean;
+    template?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
 export interface IconConfig {
     id: string;
     entity: string;
@@ -673,6 +770,56 @@ export interface ButtonModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
+export interface SpinboxModule extends BaseModule {
+    type: 'spinbox';
+    entity?: string;
+    value?: number;
+    min_value: number;
+    max_value: number;
+    step: number;
+    unit?: string;
+    show_unit?: boolean;
+    layout?: 'horizontal' | 'vertical';
+    show_value?: boolean;
+    value_position?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+    button_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic';
+    button_shape?: 'rounded' | 'square' | 'circle';
+    button_size?: number;
+    button_spacing?: number;
+    button_gap?: number;
+    increment_icon?: string;
+    decrement_icon?: string;
+    button_background_color?: string;
+    button_text_color?: string;
+    value_color?: string;
+    value_font_size?: number;
+    template_mode?: boolean;
+    template?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
 export interface MarkdownModule extends BaseModule {
     type: 'markdown';
     markdown_content: string;
@@ -895,10 +1042,15 @@ export interface GraphsModule extends BaseModule {
 }
 export interface DropdownModule extends BaseModule {
     type: 'dropdown';
+    source_mode?: 'manual' | 'entity';
+    source_entity?: string;
     placeholder?: string;
-    entity?: string;
-    entity_mode?: boolean;
     options: DropdownOption[];
+    entity_option_customization?: Record<string, {
+        icon?: string;
+        icon_color?: string;
+        use_state_color?: boolean;
+    }>;
     current_selection?: string;
     track_state?: boolean;
     tap_action?: {
@@ -1018,7 +1170,7 @@ export interface DropdownOption {
         };
     };
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

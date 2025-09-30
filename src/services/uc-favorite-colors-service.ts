@@ -1,9 +1,10 @@
 import { FavoriteColor } from '../types';
-import { ucCloudSyncService } from './uc-cloud-sync-service';
+// NOTE: Cloud sync disabled - import removed as favorites are local-only per user request
+// import { ucCloudSyncService } from './uc-cloud-sync-service';
 
 /**
  * Service for managing favorite colors across Ultra Card instances
- * Provides cross-card synchronization using localStorage
+ * Provides cross-card synchronization using localStorage (local-only, no cloud sync)
  */
 class UcFavoriteColorsService {
   private static readonly STORAGE_KEY = 'ultra-card-favorite-colors';
@@ -40,8 +41,8 @@ class UcFavoriteColorsService {
     this._notifyListeners();
     this._broadcastChange();
 
-    // Queue for cloud sync
-    ucCloudSyncService.queueChange('color', 'create', newFavorite);
+    // NOTE: Cloud sync disabled - favorites are local-only per user request
+    // ucCloudSyncService.queueChange('color', 'create', newFavorite);
 
     return newFavorite;
   }
@@ -63,8 +64,8 @@ class UcFavoriteColorsService {
     this._notifyListeners();
     this._broadcastChange();
 
-    // Queue for cloud sync
-    ucCloudSyncService.queueChange('color', 'update', this._favorites[index]);
+    // NOTE: Cloud sync disabled - favorites are local-only per user request
+    // ucCloudSyncService.queueChange('color', 'update', this._favorites[index]);
 
     return true;
   }
@@ -82,8 +83,8 @@ class UcFavoriteColorsService {
     this._notifyListeners();
     this._broadcastChange();
 
-    // Queue for cloud sync
-    ucCloudSyncService.queueChange('color', 'delete', { id });
+    // NOTE: Cloud sync disabled - favorites are local-only per user request
+    // ucCloudSyncService.queueChange('color', 'delete', { id });
 
     return true;
   }

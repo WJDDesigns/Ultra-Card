@@ -128,6 +128,8 @@ export class LayoutTab extends LitElement {
   @state() private _isRowColumnPreviewCollapsed = false;
   // Track collapsed condition items by id (not in set => expanded)
   @state() private _collapsedConditionIds: Set<string> = new Set();
+  // Pin state for preview window (unpinned by default)
+  @state() private _isPreviewPinned = false;
   // Drag state for condition reordering
   @state() private _draggingCondition:
     | { scope: 'module'; fromIndex: number }
@@ -3089,18 +3091,39 @@ export class LayoutTab extends LitElement {
         : this._renderSingleModuleWithAnimation(module);
 
     return html`
-      <div class="module-preview">
-        <div
-          class="preview-header"
-          @click=${this._togglePreviewCollapsed}
-          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
-        >
-          <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
+      <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
+        <div class="preview-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <ha-icon
+              class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
+              icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._togglePreviewPin();
+              }}
+              title="${this._isPreviewPinned
+                ? localize(
+                    'editor.layout.unpin_preview',
+                    lang,
+                    'Unpin preview (scroll with content)'
+                  )
+                : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+            ></ha-icon>
+            <span
+              @click=${this._togglePreviewCollapsed}
+              style="cursor: pointer; flex: 1;"
+              title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+            >
+              ${localize('editor.layout.live_preview', lang, 'Live Preview')}
+            </span>
+          </div>
           <ha-icon
             class="preview-caret"
             icon="${this._isCurrentModulePreviewCollapsed()
               ? 'mdi:chevron-down'
               : 'mdi:chevron-up'}"
+            @click=${this._togglePreviewCollapsed}
+            title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
           ></ha-icon>
         </div>
         <div
@@ -3111,6 +3134,10 @@ export class LayoutTab extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _togglePreviewPin(): void {
+    this._isPreviewPinned = !this._isPreviewPinned;
   }
 
   private _renderSingleModule(
@@ -11523,6 +11550,27 @@ export class LayoutTab extends LitElement {
         border-radius: 8px;
         overflow: hidden; /* prevent content from overflowing the preview container */
         max-width: 100%;
+        transition: all 0.3s ease;
+      }
+
+      /* Pinned preview - sticky positioning */
+      .module-preview.pinned {
+        position: sticky;
+        top: 16px;
+        z-index: 5;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-color);
+        background: var(--card-background-color);
+      }
+
+      /* Ensure pinned preview header also has solid background */
+      .module-preview.pinned .preview-header {
+        background: var(--secondary-background-color);
+      }
+
+      /* Ensure pinned preview content has solid background */
+      .module-preview.pinned .preview-content {
+        background: var(--card-background-color);
       }
 
       .preview-header {
@@ -11533,12 +11581,39 @@ export class LayoutTab extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
+      }
+
+      .preview-pin-icon {
+        --mdc-icon-size: 18px;
+        color: var(--secondary-text-color);
         cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .preview-pin-icon:hover {
+        color: var(--primary-color);
+        transform: scale(1.15);
+      }
+
+      .preview-pin-icon.pinned {
+        color: var(--primary-color);
+        transform: rotate(45deg);
+      }
+
+      .preview-pin-icon.pinned:hover {
+        transform: rotate(45deg) scale(1.15);
       }
 
       .preview-caret {
         --mdc-icon-size: 20px;
         color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .preview-caret:hover {
+        color: var(--primary-color);
       }
 
       .preview-content {

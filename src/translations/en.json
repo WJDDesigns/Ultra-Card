@@ -117,6 +117,8 @@
     "layout": {
       "live_preview": "Live Preview",
       "toggle_preview": "Toggle preview",
+      "pin_preview": "Pin preview (keep in view)",
+      "unpin_preview": "Unpin preview (scroll with content)",
       "drag_to_move_module": "Drag to move module",
       "edit_module": "Edit Module",
       "duplicate_module": "Duplicate Module",
@@ -1040,6 +1042,100 @@
         "desc": "Action to perform when button is double-tapped"
       }
     },
+    "spinbox": {
+      "entity": {
+        "title": "Entity Configuration",
+        "desc": "Optional: Link to a Home Assistant entity for synced values (e.g., input_number, climate temperature)."
+      },
+      "entity_field": "Entity",
+      "entity_field_desc": "Select an entity to sync the spinbox value (optional). Supports input_number, number, climate entities.",
+      "value": {
+        "title": "Value Configuration",
+        "desc": "Configure the numeric range, step size, and default value."
+      },
+      "min_value": "Minimum Value",
+      "min_value_desc": "The minimum allowed value",
+      "max_value": "Maximum Value",
+      "max_value_desc": "The maximum allowed value",
+      "step": "Step Size",
+      "step_desc": "How much the value changes with each button press",
+      "value": "Default Value",
+      "value_desc": "The initial value (only used when no entity is linked)",
+      "display": {
+        "title": "Display Configuration"
+      },
+      "layout_title": "Layout",
+      "layout_desc": "Arrangement of buttons and value",
+      "layout_options": {
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
+      "show_value": "Show Value",
+      "show_value_desc": "Display the current numeric value",
+      "value_position_title": "Value Position",
+      "value_position_desc": "Where to display the value relative to buttons",
+      "value_position_options": {
+        "center": "Center (Between Buttons)",
+        "top": "Top (Above Both Buttons)",
+        "bottom": "Bottom (Below Both Buttons)",
+        "left": "Left (Before Buttons)",
+        "right": "Right (After Buttons)"
+      },
+      "show_unit": "Show Unit",
+      "show_unit_desc": "Display a unit label (e.g., °C, %)",
+      "unit": "Unit",
+      "unit_desc": "Unit to display (e.g., °C, %, km)",
+      "buttons": {
+        "title": "Button Configuration"
+      },
+      "button_style": "Button Style",
+      "button_style_desc": "Visual style for buttons",
+      "button_shape": "Button Shape",
+      "button_shape_desc": "Shape of the buttons",
+      "button_size": "Button Size",
+      "button_size_desc": "Size of the buttons in pixels (width and height)",
+      "button_spacing": "Value Spacing",
+      "button_spacing_desc": "Space between buttons and value display in pixels",
+      "button_gap": "Button Gap",
+      "button_gap_desc": "Space between increment and decrement buttons in pixels",
+      "increment_icon": "Increment Icon",
+      "increment_icon_desc": "Icon for the increment button (e.g., mdi:plus, mdi:chevron-up)",
+      "decrement_icon": "Decrement Icon",
+      "decrement_icon_desc": "Icon for the decrement button (e.g., mdi:minus, mdi:chevron-down)",
+      "button_background_color": "Button Background",
+      "button_text_color": "Button Icon Color",
+      "value_style": {
+        "title": "Value Display Styling"
+      },
+      "value_color": "Value Color",
+      "value_font_size": "Value Font Size",
+      "value_font_size_desc": "Font size for the value display (in pixels)",
+      "template": {
+        "title": "Template Mode"
+      },
+      "template_mode": "Enable Template Mode",
+      "template_mode_desc": "Use Jinja2 templates to dynamically compute the displayed value",
+      "template": "Value Template",
+      "template_desc": "Jinja2 template for value (e.g., {{ states(\"input_number.temperature\") }})",
+      "template_examples": "Common Examples:",
+      "template_disabled": "Enable template mode to use dynamic values",
+      "styles": {
+        "flat": "Flat (Default)",
+        "glossy": "Glossy",
+        "embossed": "Embossed",
+        "inset": "Inset",
+        "gradient_overlay": "Gradient Overlay",
+        "neon_glow": "Neon Glow",
+        "outline": "Outline",
+        "glass": "Glass",
+        "metallic": "Metallic"
+      },
+      "shapes": {
+        "rounded": "Rounded Square (Default)",
+        "square": "Square",
+        "circle": "Circle"
+      }
+    },
     "layout_extra": {
       "module_name": "Module Name:",
       "module_name_placeholder": "Give this module a custom name to make it easier to identify in the editor.",
@@ -1314,6 +1410,7 @@
       "bar": "Bar Module",
       "info": "Info Module",
       "button": "Button Module",
+      "spinbox": "Spinbox Module",
       "separator": "Separator Module",
       "markdown": "Markdown Module",
       "camera": "Camera Module",

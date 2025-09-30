@@ -71,7 +71,9 @@ export interface BaseModule {
     | 'camera'
     | 'graphs'
     | 'dropdown'
-    | 'light';
+    | 'light'
+    | 'gauge'
+    | 'spinbox';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -735,6 +737,182 @@ export interface BarModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Gauge Module
+export interface GaugeModule extends BaseModule {
+  type: 'gauge';
+  // Basic Configuration
+  entity: string;
+  name?: string;
+
+  // Value Calculation
+  value_type?: 'entity' | 'attribute' | 'template';
+  value_entity?: string;
+  value_attribute_entity?: string;
+  value_attribute_name?: string;
+  value_template?: string;
+
+  // Range Configuration
+  min_value?: number;
+  max_value?: number;
+
+  // Gauge Style
+  gauge_style?:
+    | 'basic'
+    | 'speedometer'
+    | 'block'
+    | 'lines'
+    | 'modern'
+    | 'inset'
+    | '3d'
+    | 'neon'
+    | 'digital'
+    | 'minimal'
+    | 'arc'
+    | 'radial';
+  gauge_size?: number; // Gauge diameter/size in pixels
+  gauge_thickness?: number; // Thickness of gauge track (1-50)
+
+  // Pointer Configuration
+  pointer_enabled?: boolean;
+  pointer_style?:
+    | 'triangle'
+    | 'line'
+    | 'needle'
+    | 'arrow'
+    | 'circle'
+    | 'highlight'
+    | 'cap'
+    | 'custom';
+  pointer_color?: string;
+  pointer_length?: number; // Percentage of gauge radius (1-100)
+  pointer_width?: number; // Width in pixels
+
+  // Color Configuration
+  gauge_color_mode?: 'solid' | 'gradient' | 'segments';
+
+  // Solid color mode
+  gauge_color?: string;
+  gauge_background_color?: string;
+
+  // Gradient mode
+  use_gradient?: boolean;
+  gradient_display_mode?: 'full' | 'cropped' | 'value-based';
+  gradient_stops?: Array<{
+    id: string;
+    position: number; // 0-100
+    color: string;
+  }>;
+
+  // Segments mode (for discrete color sections)
+  use_segments?: boolean;
+  segments?: Array<{
+    id: string;
+    from: number;
+    to: number;
+    color: string;
+    label?: string;
+  }>;
+
+  // Display Configuration
+  show_value?: boolean;
+  value_position?: 'center' | 'top' | 'bottom' | 'none';
+  value_font_size?: number;
+  value_color?: string;
+  value_format?: string; // Format string for value display (e.g., "%.1f°C")
+  value_x_offset?: number; // X offset for value positioning
+  value_y_offset?: number; // Y offset for value positioning
+
+  show_name?: boolean;
+  name_position?: 'top' | 'bottom' | 'center' | 'none';
+  name_font_size?: number;
+  name_color?: string;
+  name_x_offset?: number; // X offset for name positioning
+  name_y_offset?: number; // Y offset for name positioning
+
+  show_min_max?: boolean;
+  min_max_font_size?: number;
+  min_max_color?: string;
+
+  // Tick Marks
+  show_ticks?: boolean;
+  tick_count?: number; // Number of major tick marks
+  tick_color?: string;
+  show_tick_labels?: boolean;
+  tick_label_font_size?: number;
+
+  // Animation
+  animation_enabled?: boolean;
+  animation_duration?: string; // Duration in milliseconds
+  animation_easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce';
+
+  // Zones/Ranges (visual indicators on gauge)
+  zones?: Array<{
+    id: string;
+    from: number;
+    to: number;
+    color: string;
+    opacity?: number;
+  }>;
+
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
 // Icon Configuration
 export interface IconConfig {
   id: string;
@@ -1213,6 +1391,98 @@ export interface ButtonModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Spinbox Module (number input with +/- buttons)
+export interface SpinboxModule extends BaseModule {
+  type: 'spinbox';
+  // Entity configuration
+  entity?: string;
+  // Value configuration
+  value?: number;
+  min_value: number;
+  max_value: number;
+  step: number;
+  // Display configuration
+  unit?: string;
+  show_unit?: boolean;
+  layout?: 'horizontal' | 'vertical';
+  show_value?: boolean;
+  value_position?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+  // Button configuration
+  button_style?:
+    | 'flat'
+    | 'glossy'
+    | 'embossed'
+    | 'inset'
+    | 'gradient-overlay'
+    | 'neon-glow'
+    | 'outline'
+    | 'glass'
+    | 'metallic';
+  button_shape?: 'rounded' | 'square' | 'circle';
+  button_size?: number;
+  button_spacing?: number;
+  button_gap?: number;
+  increment_icon?: string;
+  decrement_icon?: string;
+  button_background_color?: string;
+  button_text_color?: string;
+  // Value display configuration
+  value_color?: string;
+  value_font_size?: number;
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+}
+
 // Markdown Module
 export interface MarkdownModule extends BaseModule {
   type: 'markdown';
@@ -1630,11 +1900,25 @@ export interface GraphsModule extends BaseModule {
 export interface DropdownModule extends BaseModule {
   type: 'dropdown';
 
+  // Source Mode
+  source_mode?: 'manual' | 'entity'; // 'manual' = user-defined options, 'entity' = from select/input_select entity
+  source_entity?: string; // Entity ID for select or input_select (when source_mode is 'entity')
+
   // Basic Configuration
   placeholder?: string;
 
   // Dropdown Options
-  options: DropdownOption[];
+  options: DropdownOption[]; // Used when source_mode is 'manual'
+
+  // Entity Option Customization (optional customization when using entity source)
+  entity_option_customization?: Record<
+    string,
+    {
+      icon?: string;
+      icon_color?: string;
+      use_state_color?: boolean;
+    }
+  >;
 
   // State Tracking
   current_selection?: string; // Tracks the currently selected option label
@@ -1844,10 +2128,12 @@ export type CardModule =
   | ImageModule
   | InfoModule
   | BarModule
+  | GaugeModule
   | IconModule
   | HorizontalModule
   | VerticalModule
   | ButtonModule
+  | SpinboxModule
   | MarkdownModule
   | CameraModule
   | GraphsModule

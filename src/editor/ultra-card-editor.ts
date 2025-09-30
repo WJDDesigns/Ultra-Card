@@ -1,5 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig, HoverEffectConfig } from '../types';
 import { configValidationService } from '../services/config-validation-service';
@@ -1235,6 +1236,21 @@ export class UltraCardEditor extends LitElement {
         color: var(--primary-text-color);
       }
 
+      .beta-badge {
+        display: inline-block;
+        background: var(--warning-color);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+        vertical-align: middle;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
       .error-message {
         background: var(--error-color);
         color: white;
@@ -1704,8 +1720,14 @@ export class UltraCardEditor extends LitElement {
 
   /**
    * Render cloud sync section
+   * NOTE: Login area hidden per user request - favorites and colors are local-only
    */
   private _renderCloudSyncSection(lang: string): TemplateResult {
+    // Hide login area - favorites and colors are stored locally only
+    if (!this._cloudUser) {
+      return html``;
+    }
+
     return html`
       <div class="settings-section">
         <div class="section-header">
@@ -1747,7 +1769,7 @@ export class UltraCardEditor extends LitElement {
 
                 <div class="login-actions">
                   <button class="login-btn primary" @click=${() => (this._showLoginForm = true)}>
-                    Sign In to Ultra Card Cloud
+                    Sign In to Ultra Card Cloud <span class="beta-badge">BETA</span>
                   </button>
                   <p class="login-note">
                     Don't have an account?
@@ -1769,9 +1791,11 @@ export class UltraCardEditor extends LitElement {
   private _renderLoginForm(lang: string): TemplateResult {
     return html`
       <div class="login-form">
-        <h5>Sign In to Ultra Card Cloud</h5>
+        <h5>Sign In to Ultra Card Cloud <span class="beta-badge">BETA</span></h5>
 
-        ${this._loginError ? html`<div class="error-message">${this._loginError}</div>` : ''}
+        ${this._loginError
+          ? html`<div class="error-message">${unsafeHTML(this._loginError)}</div>`
+          : ''}
 
         <form @submit=${this._handleLogin}>
           <div class="form-group">
