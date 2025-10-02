@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta2
+
+### 🐛 Bug Fixes
+
+- **Fixed CORS issues with presets** - Resolved cross-origin resource sharing problems affecting preset loading and marketplace functionality
+
 ## Version 2.0-beta1
 
 ### 🚀 New Features

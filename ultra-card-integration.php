@@ -737,16 +737,40 @@ class UltraCardCloudSync {
     
     /**
      * Add CORS support for REST API
+     * Smart CORS handling that allows any Home Assistant instance (port 8123)
      */
     public function add_cors_support() {
         // Add CORS headers using WordPress filters
         add_filter('rest_pre_serve_request', function($served, $result, $request, $server) {
-            $origin = get_http_origin();
+            // Read origin directly from HTTP headers (not cached)
+            $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+            
+            // Validate if this is a Home Assistant instance
+            $is_home_assistant = false;
+            
             if ($origin) {
+                $parsed = parse_url($origin);
+                
+                if ($parsed && isset($parsed['port']) && $parsed['port'] == 8123) {
+                    // Any IP/domain with port 8123 is a Home Assistant instance
+                    $is_home_assistant = true;
+                } elseif ($parsed && !isset($parsed['port'])) {
+                    // Check for common HA domains without explicit port
+                    $host = $parsed['host'] ?? '';
+                    if (in_array($host, ['homeassistant.local', 'localhost', '127.0.0.1'])) {
+                        $is_home_assistant = true;
+                    }
+                }
+            }
+            
+            if ($is_home_assistant && $origin) {
+                // Return the exact requesting origin for HA instances
                 header('Access-Control-Allow-Origin: ' . $origin);
             } else {
+                // For non-HA or public requests, use wildcard (safe for read-only preset data)
                 header('Access-Control-Allow-Origin: *');
             }
+            
             header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
             header('Access-Control-Allow-Headers: Content-Type, Authorization, X-WP-Nonce');
             header('Access-Control-Allow-Credentials: true');
@@ -754,15 +778,31 @@ class UltraCardCloudSync {
             return $served;
         }, 10, 4);
         
-        // Handle OPTIONS requests
+        // Handle OPTIONS preflight requests
         add_action('init', function() {
             if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+                // Read origin directly for OPTIONS requests too
+                $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+                
+                if ($origin) {
+                    $parsed = parse_url($origin);
+                    if ($parsed && isset($parsed['port']) && $parsed['port'] == 8123) {
+                        header('Access-Control-Allow-Origin: ' . $origin);
+                    } else {
+                        header('Access-Control-Allow-Origin: *');
+                    }
+                } else {
+                    header('Access-Control-Allow-Origin: *');
+                }
+                
                 if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
                     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
                 }
                 if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
                     header('Access-Control-Allow-Headers: ' . $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']);
                 }
+                header('Access-Control-Allow-Credentials: true');
+                
                 exit(0);
             }
         });
