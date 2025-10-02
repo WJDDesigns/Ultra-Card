@@ -72,6 +72,9 @@ export class UltraInfoModule extends BaseUltraModule {
           content_alignment: 'start',
           overall_alignment: 'center',
           icon_gap: 8,
+          // Name/Value layout when icon is disabled
+          name_value_layout: 'vertical',
+          name_value_gap: 2,
         },
       ],
       // alignment: undefined, // No default alignment to allow Global Design tab control
@@ -117,6 +120,8 @@ export class UltraInfoModule extends BaseUltraModule {
       overall_alignment: entity.overall_alignment || 'center',
       icon_alignment: entity.icon_alignment || 'center',
       content_alignment: entity.content_alignment || 'start',
+      name_value_layout: entity.name_value_layout || 'vertical',
+      name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
     };
 
     return html`
@@ -166,6 +171,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 const prev = infoModule.info_entities?.[0]?.entity || '';
                 if (next === prev) return;
                 this._handleEntityChange(infoModule, 0, next, hass, updateModule);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
               }}
             ></ha-form>
           </div>
@@ -201,13 +207,15 @@ export class UltraInfoModule extends BaseUltraModule {
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
+              @value-changed=${(e: CustomEvent) => {
                 this._updateEntity(
                   infoModule,
                   0,
                   { show_icon: e.detail.value.show_icon },
                   updateModule
-                )}
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
             ></ha-form>
           </div>
 
@@ -236,6 +244,7 @@ export class UltraInfoModule extends BaseUltraModule {
                       const prev = infoModule.info_entities?.[0]?.icon || '';
                       if (next === prev) return;
                       this._updateEntity(infoModule, 0, { icon: next }, updateModule);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }}
                   ></ha-form>
                 </div>
@@ -251,13 +260,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     .value=${entity.icon_color || ''}
                     .defaultValue=${'var(--primary-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
+                    @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { icon_color: e.detail.value },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -294,13 +305,15 @@ export class UltraInfoModule extends BaseUltraModule {
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
+              @value-changed=${(e: CustomEvent) => {
                 this._updateEntity(
                   infoModule,
                   0,
                   { show_name: e.detail.value.show_name },
                   updateModule
-                )}
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
             ></ha-form>
           </div>
 
@@ -324,13 +337,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     ]}
                     .computeLabel=${(schema: any) => schema.label || schema.name}
                     .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
+                    @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { name: e.detail.value.name },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                   ></ha-form>
                 </div>
 
@@ -345,13 +360,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     .value=${entity.name_color || ''}
                     .defaultValue=${'var(--secondary-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
+                    @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { name_color: e.detail.value },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
@@ -388,13 +405,15 @@ export class UltraInfoModule extends BaseUltraModule {
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
+              @value-changed=${(e: CustomEvent) => {
                 this._updateEntity(
                   infoModule,
                   0,
                   { show_state: e.detail.value.show_state },
                   updateModule
-                )}
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
             ></ha-form>
           </div>
 
@@ -418,13 +437,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     ]}
                     .computeLabel=${(schema: any) => schema.label || schema.name}
                     .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
+                    @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { show_units: e.detail.value.show_units },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                   ></ha-form>
                 </div>
               `
@@ -442,18 +463,183 @@ export class UltraInfoModule extends BaseUltraModule {
                     .value=${entity.state_color || ''}
                     .defaultValue=${'var(--primary-text-color)'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
+                    @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { state_color: e.detail.value },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                   ></ultra-color-picker>
                 </div>
               `
             : ''}
         </div>
+
+        <!-- Name & Value Layout Section (shown when icon is disabled) -->
+        ${entity.show_icon === false
+          ? html`
+              <div
+                class="settings-section name-value-layout-section"
+                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
+              >
+                <div
+                  class="section-title"
+                  style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+                >
+                  ${localize('editor.info.name_value_layout.title', lang, 'Name & Value Layout')}
+                </div>
+
+                <div class="field-group" style="margin-bottom: 24px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+                  >
+                    ${localize(
+                      'editor.info.name_value_layout.orientation',
+                      lang,
+                      'Layout Direction'
+                    )}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.info.name_value_layout.orientation_desc',
+                      lang,
+                      'Choose how to display the name and value'
+                    )}
+                  </div>
+                  <div
+                    class="control-button-group"
+                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;"
+                  >
+                    ${[
+                      { value: 'vertical', icon: 'mdi:arrow-up-down', label: 'Vertical' },
+                      { value: 'horizontal', icon: 'mdi:arrow-left-right', label: 'Horizontal' },
+                    ].map(
+                      layout => html`
+                        <button
+                          type="button"
+                          class="control-btn ${(entity.name_value_layout || 'vertical') ===
+                          layout.value
+                            ? 'active'
+                            : ''}"
+                          @click=${() => {
+                            this._updateEntity(
+                              infoModule,
+                              0,
+                              { name_value_layout: layout.value as any },
+                              updateModule
+                            );
+                            // Delay long enough for debounced config to propagate (200ms > 100ms debounce)
+                            setTimeout(() => this.triggerPreviewUpdate(), 200);
+                          }}
+                          title="${layout.label}"
+                          style="padding: 12px 8px; gap: 8px;"
+                        >
+                          <ha-icon icon="${layout.icon}"></ha-icon>
+                          <span style="font-size: 12px;">${layout.label}</span>
+                        </button>
+                      `
+                    )}
+                  </div>
+                </div>
+
+                <div class="field-container" style="margin-bottom: 24px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.info.name_value_gap', lang, 'Name & Value Gap')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.info.name_value_gap_desc',
+                      lang,
+                      'Space between the name and value in pixels'
+                    )}
+                  </div>
+                  <div
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
+                  >
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="0"
+                      max="32"
+                      step="1"
+                      .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = Number(target.value);
+                        this._updateEntity(infoModule, 0, { name_value_gap: value }, updateModule);
+                        setTimeout(() => this.triggerPreviewUpdate(), 200);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="0"
+                      max="32"
+                      step="1"
+                      .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = Number(target.value);
+                        if (!isNaN(value)) {
+                          this._updateEntity(
+                            infoModule,
+                            0,
+                            { name_value_gap: value },
+                            updateModule
+                          );
+                          setTimeout(() => this.triggerPreviewUpdate(), 200);
+                        }
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          const target = e.target as HTMLInputElement;
+                          const currentValue = Number(target.value) || 2;
+                          const increment = e.key === 'ArrowUp' ? 1 : -1;
+                          const newValue = Math.max(0, Math.min(32, currentValue + increment));
+                          this._updateEntity(
+                            infoModule,
+                            0,
+                            { name_value_gap: newValue },
+                            updateModule
+                          );
+                          setTimeout(() => this.triggerPreviewUpdate(), 200);
+                        }
+                      }}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${() => {
+                        this._updateEntity(infoModule, 0, { name_value_gap: 2 }, updateModule);
+                        setTimeout(() => this.triggerPreviewUpdate(), 200);
+                      }}
+                      title="${localize(
+                        'editor.fields.reset_default_value',
+                        lang,
+                        'Reset to default ({value})'
+                      ).replace('{value}', '2')}"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `
+          : ''}
 
         <!-- Template Mode Section -->
         <div
@@ -495,13 +681,15 @@ export class UltraInfoModule extends BaseUltraModule {
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
+              @value-changed=${(e: CustomEvent) => {
                 this._updateEntity(
                   infoModule,
                   0,
                   { template_mode: e.detail.value.template_mode },
                   updateModule
-                )}
+                );
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
             ></ha-form>
           </div>
 
@@ -634,6 +822,7 @@ export class UltraInfoModule extends BaseUltraModule {
                           const target = e.target as HTMLInputElement;
                           const value = Number(target.value);
                           this._updateEntity(infoModule, 0, { icon_size: value }, updateModule);
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
                         }}
                       />
                       <input
@@ -648,6 +837,7 @@ export class UltraInfoModule extends BaseUltraModule {
                           const value = Number(target.value);
                           if (!isNaN(value)) {
                             this._updateEntity(infoModule, 0, { icon_size: value }, updateModule);
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
                           }
                         }}
                         @keydown=${(e: KeyboardEvent) => {
@@ -663,13 +853,16 @@ export class UltraInfoModule extends BaseUltraModule {
                               { icon_size: newValue },
                               updateModule
                             );
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
                           }
                         }}
                       />
                       <button
                         class="reset-btn"
-                        @click=${() =>
-                          this._updateEntity(infoModule, 0, { icon_size: 26 }, updateModule)}
+                        @click=${() => {
+                          this._updateEntity(infoModule, 0, { icon_size: 26 }, updateModule);
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
                         title="${localize(
                           'editor.fields.reset_default_value',
                           lang,
@@ -710,6 +903,7 @@ export class UltraInfoModule extends BaseUltraModule {
                           const target = e.target as HTMLInputElement;
                           const value = Number(target.value);
                           this._updateEntity(infoModule, 0, { name_size: value }, updateModule);
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
                         }}
                       />
                       <input
@@ -724,6 +918,7 @@ export class UltraInfoModule extends BaseUltraModule {
                           const value = Number(target.value);
                           if (!isNaN(value)) {
                             this._updateEntity(infoModule, 0, { name_size: value }, updateModule);
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
                           }
                         }}
                         @keydown=${(e: KeyboardEvent) => {
@@ -739,13 +934,16 @@ export class UltraInfoModule extends BaseUltraModule {
                               { name_size: newValue },
                               updateModule
                             );
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
                           }
                         }}
                       />
                       <button
                         class="reset-btn"
-                        @click=${() =>
-                          this._updateEntity(infoModule, 0, { name_size: 12 }, updateModule)}
+                        @click=${() => {
+                          this._updateEntity(infoModule, 0, { name_size: 12 }, updateModule);
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
                         title="${localize(
                           'editor.fields.reset_default_value',
                           lang,
@@ -785,6 +983,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     const target = e.target as HTMLInputElement;
                     const value = Number(target.value);
                     this._updateEntity(infoModule, 0, { text_size: value }, updateModule);
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
                   }}
                 />
                 <input
@@ -799,6 +998,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     const value = Number(target.value);
                     if (!isNaN(value)) {
                       this._updateEntity(infoModule, 0, { text_size: value }, updateModule);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }
                   }}
                   @keydown=${(e: KeyboardEvent) => {
@@ -809,12 +1009,16 @@ export class UltraInfoModule extends BaseUltraModule {
                       const increment = e.key === 'ArrowUp' ? 1 : -1;
                       const newValue = Math.max(8, Math.min(32, currentValue + increment));
                       this._updateEntity(infoModule, 0, { text_size: newValue }, updateModule);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }
                   }}
                 />
                 <button
                   class="reset-btn"
-                  @click=${() => this._updateEntity(infoModule, 0, { text_size: 14 }, updateModule)}
+                  @click=${() => {
+                    this._updateEntity(infoModule, 0, { text_size: 14 }, updateModule);
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }}
                   title="${localize(
                     'editor.fields.reset_default_value',
                     lang,
@@ -854,6 +1058,7 @@ export class UltraInfoModule extends BaseUltraModule {
                           const target = e.target as HTMLInputElement;
                           const value = Number(target.value);
                           this._updateEntity(infoModule, 0, { icon_gap: value }, updateModule);
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
                         }}
                       />
                       <input
@@ -868,6 +1073,7 @@ export class UltraInfoModule extends BaseUltraModule {
                           const value = Number(target.value);
                           if (!isNaN(value)) {
                             this._updateEntity(infoModule, 0, { icon_gap: value }, updateModule);
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
                           }
                         }}
                         @keydown=${(e: KeyboardEvent) => {
@@ -878,13 +1084,16 @@ export class UltraInfoModule extends BaseUltraModule {
                             const increment = e.key === 'ArrowUp' ? 1 : -1;
                             const newValue = Math.max(0, Math.min(32, currentValue + increment));
                             this._updateEntity(infoModule, 0, { icon_gap: newValue }, updateModule);
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
                           }
                         }}
                       />
                       <button
                         class="reset-btn"
-                        @click=${() =>
-                          this._updateEntity(infoModule, 0, { icon_gap: 8 }, updateModule)}
+                        @click=${() => {
+                          this._updateEntity(infoModule, 0, { icon_gap: 8 }, updateModule);
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
                         title="${localize(
                           'editor.fields.reset_default_value',
                           lang,
@@ -936,13 +1145,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     class="control-btn ${(entity.icon_position || 'left') === position.value
                       ? 'active'
                       : ''}"
-                    @click=${() =>
+                    @click=${() => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { icon_position: position.value as any },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                     title="${position.value.charAt(0).toUpperCase() + position.value.slice(1)}"
                   >
                     <ha-icon icon="${position.icon}"></ha-icon>
@@ -975,13 +1186,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     class="control-btn ${(entity.overall_alignment || 'center') === alignment.value
                       ? 'active'
                       : ''}"
-                    @click=${() =>
+                    @click=${() => {
                       this._updateEntity(
                         infoModule,
                         0,
                         { overall_alignment: alignment.value as any },
                         updateModule
-                      )}
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
                     title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
                   >
                     <ha-icon icon="${alignment.icon}"></ha-icon>
@@ -1018,13 +1231,15 @@ export class UltraInfoModule extends BaseUltraModule {
                       class="control-btn ${(entity.icon_alignment || 'center') === alignment.value
                         ? 'active'
                         : ''}"
-                      @click=${() =>
+                      @click=${() => {
                         this._updateEntity(
                           infoModule,
                           0,
                           { icon_alignment: alignment.value as any },
                           updateModule
-                        )}
+                        );
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
                       title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
                     >
                       <ha-icon icon="${alignment.icon}"></ha-icon>
@@ -1057,13 +1272,15 @@ export class UltraInfoModule extends BaseUltraModule {
                       class="control-btn ${(entity.content_alignment || 'start') === alignment.value
                         ? 'active'
                         : ''}"
-                      @click=${() =>
+                      @click=${() => {
                         this._updateEntity(
                           infoModule,
                           0,
                           { content_alignment: alignment.value as any },
                           updateModule
-                        )}
+                        );
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
                       title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
                     >
                       <ha-icon icon="${alignment.icon}"></ha-icon>
@@ -1144,6 +1361,12 @@ export class UltraInfoModule extends BaseUltraModule {
         ></ha-form>
       </div>
     `;
+  }
+
+  // Split preview for module settings popup - delegate to layout tab's wrapper
+  renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+    // Just render the module content - let the layout tab handle card container styling
+    return this.renderPreview(module, hass);
   }
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
@@ -1318,7 +1541,7 @@ export class UltraInfoModule extends BaseUltraModule {
         moduleWithDesign.padding_left ||
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
-          : '0',
+          : '16px',
       // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
@@ -1412,6 +1635,8 @@ export class UltraInfoModule extends BaseUltraModule {
                 overall_alignment: entity.overall_alignment || 'center',
                 icon_alignment: entity.icon_alignment || 'center',
                 content_alignment: entity.content_alignment || 'start',
+                name_value_layout: entity.name_value_layout || 'vertical',
+                name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
               };
 
               const entityState = hass?.states[entity.entity];
@@ -1528,12 +1753,26 @@ export class UltraInfoModule extends BaseUltraModule {
                 return 'none';
               };
 
+              // Determine layout direction for name/value when icon is disabled
+              const nameValueLayout =
+                entity.show_icon === false ? entity.name_value_layout || 'vertical' : 'vertical';
+              const nameValueGap = entity.name_value_gap !== undefined ? entity.name_value_gap : 2;
+
               const contentElement = html`
                 <div
                   class="entity-content"
+                  data-layout="${nameValueLayout}"
+                  data-gap="${nameValueGap}"
+                  data-entity-gap="${entity.name_value_gap}"
+                  data-show-icon="${entity.show_icon}"
                   style="
-                  align-items: ${getFlexAlignment(entity)};
+                  display: flex;
+                  align-items: ${nameValueLayout === 'horizontal'
+                    ? 'center'
+                    : getFlexAlignment(entity)};
                   text-align: ${getTextAlignment(entity)};
+                  flex-direction: ${nameValueLayout === 'horizontal' ? 'row' : 'column'};
+                  gap: ${nameValueGap}px;
                 "
                 >
                   ${entity.show_name !== false
@@ -1560,6 +1799,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     letter-spacing: ${designProperties.letter_spacing || 'inherit'};
                     text-align: ${getTextAlignment(entity)};
                     text-shadow: ${getTextShadow()};
+                    ${nameValueLayout === 'horizontal' ? 'white-space: nowrap;' : ''}
                   "
                         >
                           ${displayName}
@@ -1720,8 +1960,6 @@ export class UltraInfoModule extends BaseUltraModule {
       
       .entity-content {
         display: flex;
-        flex-direction: column;
-        gap: 2px;
         min-width: 0;
         flex: 1;
       }
@@ -2230,6 +2468,9 @@ export class UltraInfoModule extends BaseUltraModule {
       content_alignment: 'start',
       overall_alignment: 'center',
       icon_gap: 8,
+      // Name/Value layout when icon is disabled
+      name_value_layout: 'vertical',
+      name_value_gap: 2,
     };
 
     const updatedEntities = [...infoModule.info_entities, newEntity];

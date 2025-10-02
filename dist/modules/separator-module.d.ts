@@ -22,6 +22,5 @@ export declare class UltraSeparatorModule extends BaseUltraModule {
     private _colorWithAlpha;
     private getBackgroundImageCSS;
     private styleObjectToCss;
-    private triggerPreviewUpdate;
     private addPixelUnit;
 }

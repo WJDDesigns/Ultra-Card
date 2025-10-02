@@ -21,6 +21,9 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     private holdTimeout;
     private isHolding;
     private expandedEntities;
+    private readonly DEFAULT_COLORS;
+    private readonly FORECAST_ATTRIBUTE_LABELS;
+    private readonly FORECAST_ATTRIBUTE_UNITS;
     createDefault(id?: string, hass?: HomeAssistant): GraphsModule;
     private getChartTypeOptions;
     private getTimePeriodOptions;
@@ -48,6 +51,13 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     private _fetchHistoryDataAsync;
     private _processHistoryData;
     private _coerceNumber;
+    private _fetchForecastData;
+    private _processForecastData;
+    private _generateForecastTimePoints;
+    private _getForecastAttributeLabel;
+    private _getForecastAttributeUnit;
+    private _loadForecastData;
+    private _fetchForecastDataAsync;
     private _getDefaultColor;
     private _addEntity;
     private _removeEntity;
@@ -83,5 +93,4 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     getStyles(): string;
     cleanup(): void;
     requestUpdate(): void;
-    private triggerPreviewUpdate;
 }

@@ -7,16 +7,24 @@ import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { ucCloudSyncService, SyncStatus } from '../services/uc-cloud-sync-service';
+import { ucCloudBackupService, BackupStatus } from '../services/uc-cloud-backup-service';
+import { ucSnapshotService } from '../services/uc-snapshot-service';
+import { ucCardBackupService } from '../services/uc-card-backup-service';
+import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-service';
+import { UcConfigEncoder } from '../utils/uc-config-encoder';
 import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
 import '../components/uc-favorite-colors-manager';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
+import '../components/uc-snapshot-history-modal';
+import '../components/uc-snapshot-settings-dialog';
+import '../components/uc-manual-backup-dialog';
 import { getModuleRegistry } from '../modules';
 import { localize } from '../localize/localize';
 
-type EditorTab = 'layout' | 'settings' | 'about';
+type EditorTab = 'layout' | 'settings' | 'pro' | 'about';
 
 @customElement('ultra-card-editor')
 export class UltraCardEditor extends LitElement {
@@ -30,9 +38,15 @@ export class UltraCardEditor extends LitElement {
   // Cloud sync state
   @state() private _cloudUser: CloudUser | null = null;
   @state() private _syncStatus: SyncStatus | null = null;
+  @state() private _backupStatus: BackupStatus | null = null;
   @state() private _showLoginForm: boolean = false;
   @state() private _loginError: string = '';
   @state() private _isLoggingIn: boolean = false;
+  @state() private _showBackupHistory: boolean = false;
+  @state() private _showCreateSnapshot: boolean = false;
+  @state() private _showManualBackup: boolean = false;
+  @state() private _newerBackupAvailable: any = null;
+  @state() private _showSyncNotification: boolean = false;
 
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
@@ -178,6 +192,11 @@ export class UltraCardEditor extends LitElement {
         composed: true,
       });
       this.dispatchEvent(event);
+
+      // Trigger cloud backup auto-save if authenticated
+      if (ucCloudAuthService.isAuthenticated()) {
+        ucCloudBackupService.autoSave(finalConfig);
+      }
     }, 100); // 100ms debounce delay
   }
 
@@ -220,6 +239,12 @@ export class UltraCardEditor extends LitElement {
                   @click=${() => (this._activeTab = 'settings')}
                 >
                   ${localize('editor.tabs.settings', lang, 'Settings')}
+                </button>
+                <button
+                  class="tab ${this._activeTab === 'pro' ? 'active' : ''}"
+                  @click=${() => (this._activeTab = 'pro')}
+                >
+                  ${localize('editor.tabs.pro', lang, 'PRO')}
                 </button>
                 <button
                   class="tab ${this._activeTab === 'about' ? 'active' : ''}"
@@ -266,7 +291,9 @@ export class UltraCardEditor extends LitElement {
               ></ultra-layout-tab>`
             : this._activeTab === 'settings'
               ? this._renderSettingsTab()
-              : html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`}
+              : this._activeTab === 'pro'
+                ? this._renderProTab()
+                : html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`}
         </div>
       </div>
     `;
@@ -591,9 +618,6 @@ export class UltraCardEditor extends LitElement {
 
             <uc-favorite-colors-manager .hass=${this.hass}></uc-favorite-colors-manager>
           </div>
-
-          <!-- Cloud Sync Section -->
-          ${this._renderCloudSyncSection(lang)}
         </div>
       </div>
     `;
@@ -912,7 +936,8 @@ export class UltraCardEditor extends LitElement {
         min-height: calc(100vh - 120px);
       }
 
-      .settings-tab {
+      .settings-tab,
+      .pro-tab-content {
         padding: 12px;
         background: var(--card-background-color);
         border-radius: 8px;
@@ -1628,6 +1653,567 @@ export class UltraCardEditor extends LitElement {
           width: 100%;
         }
       }
+
+      /* ============================================
+         ULTRA CARD PRO STYLES
+         ============================================ */
+
+      /* Pro Banner */
+      .ultra-pro-banner {
+        position: relative;
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .ultra-pro-banner-minimal {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .ultra-pro-banner-free {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+      }
+
+      .ultra-pro-banner-pro {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        box-shadow: 0 8px 24px rgba(245, 87, 108, 0.3);
+        animation: proPulse 3s ease-in-out infinite;
+      }
+
+      @keyframes proPulse {
+        0%,
+        100% {
+          box-shadow: 0 8px 24px rgba(245, 87, 108, 0.3);
+        }
+        50% {
+          box-shadow: 0 12px 32px rgba(245, 87, 108, 0.5);
+        }
+      }
+
+      .banner-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+        pointer-events: none;
+      }
+
+      .banner-icon {
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        backdrop-filter: blur(10px);
+      }
+
+      .banner-icon ha-icon {
+        --mdc-icon-size: 32px;
+      }
+
+      .banner-content {
+        flex: 1;
+      }
+
+      .banner-content h3 {
+        margin: 0 0 6px 0;
+        font-size: 22px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .banner-content h3 ha-icon {
+        --mdc-icon-size: 24px;
+        animation: starRotate 4s linear infinite;
+      }
+
+      @keyframes starRotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .banner-content p {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 14px;
+      }
+
+      .pro-badge {
+        flex-shrink: 0;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(10px);
+      }
+
+      .pro-badge ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .free-badge {
+        flex-shrink: 0;
+        padding: 6px 14px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 13px;
+        backdrop-filter: blur(10px);
+      }
+
+      /* Auth Section */
+      .ultra-pro-auth-section {
+        margin-bottom: 24px;
+      }
+
+      .feature-showcase {
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+      }
+
+      .feature-showcase h4 {
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        color: var(--primary-text-color);
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .feature-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px;
+        background: var(--secondary-background-color);
+        border-radius: 12px;
+        transition: all 0.3s;
+      }
+
+      .feature-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-item ha-icon {
+        --mdc-icon-size: 32px;
+        color: var(--primary-color);
+      }
+
+      .feature-item span {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+
+      .auth-note {
+        margin-top: 16px;
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+
+      .auth-note a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .auth-note a:hover {
+        text-decoration: underline;
+      }
+
+      /* User Section */
+      .ultra-pro-user-section {
+        margin-bottom: 24px;
+      }
+
+      .user-card {
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+      }
+
+      .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-avatar-icon {
+        --mdc-icon-size: 48px;
+        color: var(--primary-color);
+      }
+
+      .user-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .user-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--primary-text-color);
+      }
+
+      .user-email {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+
+      /* Card Name Setting */
+      .ultra-pro-card-name {
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+
+      .setting-header {
+        margin-bottom: 12px;
+      }
+
+      .setting-header label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--primary-text-color);
+        margin-bottom: 6px;
+      }
+
+      .setting-header label ha-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+      }
+
+      .ultra-pro-card-name ha-textfield {
+        width: 100%;
+      }
+
+      /* Pro Actions */
+      .ultra-pro-actions {
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+
+      .actions-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .actions-header h4 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary-text-color);
+      }
+
+      .actions-header h4 ha-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+      }
+
+      .backup-count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        font-weight: 500;
+      }
+
+      .backup-count ha-icon {
+        --mdc-icon-size: 16px;
+        color: var(--primary-color);
+      }
+
+      .limit-warning {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #f44336;
+        font-weight: 600;
+      }
+
+      .limit-warning ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px;
+      }
+
+      .action-card {
+        background: var(--secondary-background-color);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+      }
+
+      .action-card:hover:not(:disabled) {
+        transform: translateY(-4px);
+        border-color: var(--primary-color);
+        box-shadow: 0 8px 16px rgba(3, 169, 244, 0.2);
+      }
+
+      .action-card:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .action-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+      }
+
+      .action-icon.export {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .action-icon.import {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+
+      .action-icon.backup {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      .action-icon ha-icon {
+        --mdc-icon-size: 28px;
+        color: white;
+      }
+
+      .action-card:hover:not(:disabled) .action-icon {
+        transform: scale(1.1);
+      }
+
+      .action-label {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--primary-text-color);
+      }
+
+      /* Upgrade Section */
+      .ultra-pro-upgrade {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 24px;
+        color: white;
+      }
+
+      .upgrade-content {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .upgrade-content > ha-icon {
+        flex-shrink: 0;
+        --mdc-icon-size: 48px;
+        opacity: 0.9;
+      }
+
+      .upgrade-text h4 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .upgrade-text p {
+        margin: 0 0 16px 0;
+        opacity: 0.95;
+        font-size: 14px;
+      }
+
+      .upgrade-features {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .upgrade-features li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+      }
+
+      .upgrade-features li ha-icon {
+        --mdc-icon-size: 18px;
+        flex-shrink: 0;
+      }
+
+      /* View Backups Button */
+      .ultra-pro-view-backups {
+        margin-bottom: 24px;
+      }
+
+      /* Buttons */
+      .ultra-btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .ultra-btn ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .ultra-btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #00796b 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
+      }
+
+      .ultra-btn-primary:hover {
+        box-shadow: 0 6px 16px rgba(3, 169, 244, 0.4);
+        transform: translateY(-2px);
+      }
+
+      .ultra-btn-secondary {
+        background: transparent;
+        color: var(--primary-text-color);
+        border: 2px solid var(--divider-color);
+      }
+
+      .ultra-btn-secondary:hover {
+        background: var(--secondary-background-color);
+        border-color: var(--primary-color);
+      }
+
+      .ultra-btn-upgrade {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .ultra-btn-upgrade:hover {
+        background: rgba(255, 255, 255, 0.35);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .ultra-btn-view-backups {
+        background: var(--card-background-color);
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
+      }
+
+      .ultra-btn-view-backups:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
+      }
+
+      /* Responsive for Ultra Card Pro */
+      @media (max-width: 600px) {
+        .ultra-pro-banner {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .features-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .actions-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .upgrade-content {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .user-card {
+          flex-direction: column;
+        }
+      }
     `;
   }
 
@@ -1679,6 +2265,7 @@ export class UltraCardEditor extends LitElement {
 
   private _authListener?: (user: CloudUser | null) => void;
   private _syncListener?: (status: SyncStatus) => void;
+  private _backupListener?: (status: BackupStatus) => void;
 
   /**
    * Setup cloud sync listeners
@@ -1687,6 +2274,7 @@ export class UltraCardEditor extends LitElement {
     // Get initial state
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._syncStatus = ucCloudSyncService.getSyncStatus();
+    this._backupStatus = ucCloudBackupService.getStatus();
 
     // Setup auth listener
     this._authListener = (user: CloudUser | null) => {
@@ -1702,6 +2290,33 @@ export class UltraCardEditor extends LitElement {
       this.requestUpdate();
     };
     ucCloudSyncService.addListener(this._syncListener);
+
+    // Setup backup listener
+    this._backupListener = (status: BackupStatus) => {
+      this._backupStatus = status;
+      this.requestUpdate();
+    };
+    ucCloudBackupService.addListener(this._backupListener);
+
+    // Check for newer backups (smart sync)
+    if (this._cloudUser) {
+      this._checkForNewerBackup();
+    }
+  }
+
+  /**
+   * Check for newer backup on server (smart sync)
+   */
+  private async _checkForNewerBackup() {
+    try {
+      const newerBackup = await ucCloudBackupService.checkForUpdates();
+      if (newerBackup) {
+        this._newerBackupAvailable = newerBackup;
+        this._showSyncNotification = true;
+      }
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+    }
   }
 
   /**
@@ -1716,36 +2331,586 @@ export class UltraCardEditor extends LitElement {
       ucCloudSyncService.removeListener(this._syncListener);
       this._syncListener = undefined;
     }
+    if (this._backupListener) {
+      ucCloudBackupService.removeListener(this._backupListener);
+      this._backupListener = undefined;
+    }
   }
 
   /**
-   * Render cloud sync section
-   * NOTE: Login area hidden per user request - favorites and colors are local-only
+   * Render PRO TAB (New dedicated tab for all Pro features)
    */
-  private _renderCloudSyncSection(lang: string): TemplateResult {
-    // Hide login area - favorites and colors are stored locally only
-    if (!this._cloudUser) {
-      return html``;
-    }
+  private _renderProTab(): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const isPro = this._cloudUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!this._cloudUser;
 
     return html`
-      <div class="settings-section">
-        <div class="section-header">
-          <h4>${localize('editor.cloud_sync.title', lang, 'Cloud Sync')}</h4>
+      <div class="pro-tab-content">
+        <!-- ULTRA CARD PRO BRANDED BANNER -->
+        ${this._renderProBanner(lang, isPro, isLoggedIn)}
+
+        <!-- LOGIN/LOGOUT SECTION -->
+        ${this._renderAuthSection(lang, isLoggedIn, isPro)}
+
+        <!-- CARD NAME SETTING (Always visible when logged in) -->
+        ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
+
+        <!-- EXPORT/IMPORT/BACKUP ACTIONS (Pro features) -->
+        ${isLoggedIn ? this._renderProActions(lang, isPro) : ''}
+
+        <!-- VIEW ALL BACKUPS BUTTON -->
+        ${isLoggedIn ? this._renderViewBackupsButton(lang) : ''}
+
+        <!-- MODALS -->
+        ${this._showBackupHistory && this._cloudUser
+          ? html`
+              <uc-snapshot-history-modal
+                .open="${this._showBackupHistory}"
+                .hass="${this.hass}"
+                .subscription="${this._cloudUser.subscription!}"
+                @close-modal="${() => (this._showBackupHistory = false)}"
+                @snapshot-restored="${this._handleSnapshotRestored}"
+                @card-backup-restored="${this._handleCardBackupRestored}"
+              ></uc-snapshot-history-modal>
+            `
+          : ''}
+        ${this._showManualBackup && this._cloudUser
+          ? html`
+              <uc-manual-backup-dialog
+                .open="${this._showManualBackup}"
+                .config="${this.config}"
+                @dialog-closed="${() => (this._showManualBackup = false)}"
+                @backup-created="${this._handleManualBackupCreated}"
+              ></uc-manual-backup-dialog>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render Ultra Card Pro section (DEPRECATED - kept for backward compatibility)
+   */
+  private _renderCloudSyncSection(lang: string): TemplateResult {
+    const isPro = this._cloudUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!this._cloudUser;
+
+    return html`
+      <div class="settings-section ultra-card-pro-section">
+        <!-- ULTRA CARD PRO BRANDED BANNER -->
+        ${this._renderProBanner(lang, isPro, isLoggedIn)}
+
+        <!-- LOGIN/LOGOUT SECTION -->
+        ${this._renderAuthSection(lang, isLoggedIn, isPro)}
+
+        <!-- CARD NAME SETTING (Always visible when logged in) -->
+        ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
+
+        <!-- EXPORT/IMPORT/BACKUP ACTIONS (Pro features) -->
+        ${isLoggedIn ? this._renderProActions(lang, isPro) : ''}
+
+        <!-- VIEW ALL BACKUPS BUTTON -->
+        ${isLoggedIn ? this._renderViewBackupsButton(lang) : ''}
+
+        <!-- MODALS -->
+        ${this._showBackupHistory && this._cloudUser
+          ? html`
+              <uc-snapshot-history-modal
+                .open="${this._showBackupHistory}"
+                .hass="${this.hass}"
+                .subscription="${this._cloudUser.subscription!}"
+                @close-modal="${() => (this._showBackupHistory = false)}"
+                @snapshot-restored="${this._handleSnapshotRestored}"
+                @card-backup-restored="${this._handleCardBackupRestored}"
+              ></uc-snapshot-history-modal>
+            `
+          : ''}
+        ${this._showManualBackup && this._cloudUser
+          ? html`
+              <uc-manual-backup-dialog
+                .open="${this._showManualBackup}"
+                .config="${this.config}"
+                @dialog-closed="${() => (this._showManualBackup = false)}"
+                @backup-created="${this._handleManualBackupCreated}"
+              ></uc-manual-backup-dialog>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render Pro Banner (Free or Pro variant)
+   */
+  private _renderProBanner(lang: string, isPro: boolean, isLoggedIn: boolean): TemplateResult {
+    if (!isLoggedIn) {
+      // Show minimal banner for logged out users
+      return html`
+        <div class="ultra-pro-banner ultra-pro-banner-minimal">
+          <div class="banner-icon">
+            <ha-icon icon="mdi:star-circle"></ha-icon>
+          </div>
+          <div class="banner-content">
+            <h3>${localize('editor.ultra_card_pro.title', lang, 'Ultra Card Pro')}</h3>
+            <p>
+              ${localize(
+                'editor.ultra_card_pro.free_banner_subtitle',
+                lang,
+                'Professional card management and cloud backups'
+              )}
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    if (isPro) {
+      // PRO USER BANNER
+      return html`
+        <div class="ultra-pro-banner ultra-pro-banner-pro">
+          <div class="banner-gradient"></div>
+          <div class="banner-icon">
+            <ha-icon icon="mdi:star-circle"></ha-icon>
+          </div>
+          <div class="banner-content">
+            <h3>
+              <ha-icon icon="mdi:star"></ha-icon>
+              ${localize('editor.ultra_card_pro.pro_banner_title', lang, 'Ultra Card Pro')}
+            </h3>
+            <p>
+              ${localize(
+                'editor.ultra_card_pro.pro_banner_subtitle',
+                lang,
+                'Thank you for being a Pro member!'
+              )}
+            </p>
+          </div>
+          <div class="pro-badge">
+            <ha-icon icon="mdi:check-decagram"></ha-icon>
+            PRO
+          </div>
+        </div>
+      `;
+    }
+
+    // FREE USER BANNER
+    return html`
+      <div class="ultra-pro-banner ultra-pro-banner-free">
+        <div class="banner-icon">
+          <ha-icon icon="mdi:star-circle-outline"></ha-icon>
+        </div>
+        <div class="banner-content">
+          <h3>${localize('editor.ultra_card_pro.free_banner_title', lang, 'Ultra Card Pro')}</h3>
           <p>
             ${localize(
-              'editor.cloud_sync.description',
+              'editor.ultra_card_pro.free_banner_subtitle',
               lang,
-              'Sync your favorites, colors, and reviews across all your devices using your ultracard.io account.'
+              'Professional card management and cloud backups'
             )}
           </p>
         </div>
+        <div class="free-badge">FREE</div>
+      </div>
+    `;
+  }
 
-        <div class="cloud-sync-container">
-          ${this._cloudUser ? this._renderSyncControls(lang) : this._renderLoginSection(lang)}
+  /**
+   * Render Auth Section (Login or Logout)
+   */
+  private _renderAuthSection(lang: string, isLoggedIn: boolean, isPro: boolean): TemplateResult {
+    if (!isLoggedIn) {
+      return html`
+        <div class="ultra-pro-auth-section">
+          ${!this._showLoginForm
+            ? html`
+                <div class="feature-showcase">
+                  <h4>${localize('editor.ultra_card_pro.features_title', lang, 'What You Get')}</h4>
+                  <div class="features-grid">
+                    <div class="feature-item">
+                      <ha-icon icon="mdi:cloud-upload"></ha-icon>
+                      <span>Auto cloud backups</span>
+                    </div>
+                    <div class="feature-item">
+                      <ha-icon icon="mdi:bookmark-multiple"></ha-icon>
+                      <span>Manual backups (Pro)</span>
+                    </div>
+                    <div class="feature-item">
+                      <ha-icon icon="mdi:export"></ha-icon>
+                      <span>Export configs (Pro)</span>
+                    </div>
+                    <div class="feature-item">
+                      <ha-icon icon="mdi:import"></ha-icon>
+                      <span>Import configs (Pro)</span>
+                    </div>
+                  </div>
+                  <button
+                    class="ultra-btn ultra-btn-primary"
+                    @click="${() => (this._showLoginForm = true)}"
+                  >
+                    <ha-icon icon="mdi:login"></ha-icon>
+                    Sign In to Get Started
+                  </button>
+                  <p class="auth-note">
+                    Don't have an account?
+                    <a href="https://ultracard.io/register" target="_blank" rel="noopener"
+                      >Create one free</a
+                    >
+                  </p>
+                </div>
+              `
+            : this._renderLoginForm(lang)}
+        </div>
+      `;
+    }
+
+    // Logged in - show user info with logout
+    return html`
+      <div class="ultra-pro-user-section">
+        <div class="user-card">
+          <div class="user-info">
+            ${this._cloudUser?.avatar
+              ? html`<img src="${this._cloudUser.avatar}" alt="Avatar" class="user-avatar" />`
+              : html`<ha-icon icon="mdi:account-circle" class="user-avatar-icon"></ha-icon>`}
+            <div class="user-details">
+              <div class="user-name">${this._cloudUser?.displayName}</div>
+              <div class="user-email">${this._cloudUser?.email}</div>
+            </div>
+          </div>
+          <button class="ultra-btn ultra-btn-secondary" @click="${this._handleLogout}">
+            <ha-icon icon="mdi:logout"></ha-icon>
+            Logout
+          </button>
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Render Card Name Setting
+   */
+  private _renderCardNameSetting(lang: string): TemplateResult {
+    return html`
+      <div class="ultra-pro-card-name">
+        <div class="setting-header">
+          <label for="card-name">
+            <ha-icon icon="mdi:card-text"></ha-icon>
+            ${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}
+          </label>
+          <p class="setting-description">
+            ${localize(
+              'editor.ultra_card_pro.card_name_desc',
+              lang,
+              'Give this card a name to identify it in your backups'
+            )}
+          </p>
+        </div>
+        <ha-textfield
+          id="card-name"
+          .value="${this.config.card_name || ''}"
+          @input="${this._handleCardNameChange}"
+          placeholder="${localize(
+            'editor.ultra_card_pro.card_name_placeholder',
+            lang,
+            'My Ultra Card'
+          )}"
+          maxlength="100"
+        ></ha-textfield>
+      </div>
+    `;
+  }
+
+  /**
+   * Render Pro Actions (Export/Import/Backup)
+   */
+  private _renderProActions(lang: string, isPro: boolean): TemplateResult {
+    if (!isPro) {
+      // Show upgrade prompt for free users
+      return html`
+        <div class="ultra-pro-upgrade">
+          <div class="upgrade-content">
+            <ha-icon icon="mdi:star-box"></ha-icon>
+            <div class="upgrade-text">
+              <h4>
+                ${localize('editor.ultra_card_pro.upgrade_title', lang, 'Unlock Pro Features')}
+              </h4>
+              <p>
+                ${localize(
+                  'editor.ultra_card_pro.upgrade_subtitle',
+                  lang,
+                  'Get export, import, and manual backups for all your cards'
+                )}
+              </p>
+              <ul class="upgrade-features">
+                <li>
+                  <ha-icon icon="mdi:check"></ha-icon>
+                  ${localize(
+                    'editor.ultra_card_pro.features.export',
+                    lang,
+                    'Export full card configs'
+                  )}
+                </li>
+                <li>
+                  <ha-icon icon="mdi:check"></ha-icon>
+                  ${localize('editor.ultra_card_pro.features.import', lang, 'Import card configs')}
+                </li>
+                <li>
+                  <ha-icon icon="mdi:check"></ha-icon>
+                  ${localize(
+                    'editor.ultra_card_pro.features.backups',
+                    lang,
+                    '30 manual backups across all cards'
+                  )}
+                </li>
+                <li>
+                  <ha-icon icon="mdi:check"></ha-icon>
+                  ${localize(
+                    'editor.ultra_card_pro.features.naming',
+                    lang,
+                    'Name your cards and backups'
+                  )}
+                </li>
+                <li>
+                  <ha-icon icon="mdi:check"></ha-icon>
+                  ${localize('editor.ultra_card_pro.features.support', lang, 'Priority support')}
+                </li>
+              </ul>
+            </div>
+          </div>
+          <button
+            class="ultra-btn ultra-btn-upgrade"
+            @click="${() => window.open('https://ultracard.io/pro', '_blank')}"
+          >
+            <ha-icon icon="mdi:star"></ha-icon>
+            ${localize(
+              'editor.ultra_card_pro.upgrade_button',
+              lang,
+              'Upgrade to Pro - $4.99/month'
+            )}
+          </button>
+        </div>
+      `;
+    }
+
+    // PRO USER - Show action buttons
+    const subscription = this._cloudUser!.subscription!;
+    const backupCount = subscription.snapshot_count || 0;
+    const backupLimit = subscription.snapshot_limit || 30;
+    const canCreateBackup = backupCount < backupLimit;
+
+    return html`
+      <div class="ultra-pro-actions">
+        <div class="actions-header">
+          <h4>
+            <ha-icon icon="mdi:tools"></ha-icon>
+            Pro Tools
+          </h4>
+          ${!canCreateBackup
+            ? html`
+                <div class="limit-warning">
+                  <ha-icon icon="mdi:alert"></ha-icon>
+                  Backup limit reached (${backupCount}/${backupLimit})
+                </div>
+              `
+            : html`
+                <div class="backup-count">
+                  <ha-icon icon="mdi:bookmark-multiple"></ha-icon>
+                  ${backupCount} / ${backupLimit} backups
+                </div>
+              `}
+        </div>
+        <div class="actions-grid">
+          <button class="action-card" @click="${this._handleExport}">
+            <div class="action-icon export">
+              <ha-icon icon="mdi:export"></ha-icon>
+            </div>
+            <div class="action-label">
+              ${localize('editor.ultra_card_pro.export_card', lang, 'Export Card')}
+            </div>
+          </button>
+          <button class="action-card" @click="${this._handleImport}">
+            <div class="action-icon import">
+              <ha-icon icon="mdi:import"></ha-icon>
+            </div>
+            <div class="action-label">
+              ${localize('editor.ultra_card_pro.import_card', lang, 'Import Card')}
+            </div>
+          </button>
+          <button
+            class="action-card"
+            @click="${this._handleCreateBackup}"
+            ?disabled="${!canCreateBackup}"
+          >
+            <div class="action-icon backup">
+              <ha-icon icon="mdi:bookmark-plus"></ha-icon>
+            </div>
+            <div class="action-label">
+              ${localize('editor.ultra_card_pro.backup_card', lang, 'Create Backup')}
+            </div>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render View Backups Button
+   */
+  private _renderViewBackupsButton(lang: string): TemplateResult {
+    return html`
+      <div class="ultra-pro-view-backups">
+        <button
+          class="ultra-btn ultra-btn-view-backups"
+          @click="${() => (this._showBackupHistory = true)}"
+        >
+          <ha-icon icon="mdi:history"></ha-icon>
+          ${localize('editor.ultra_card_pro.view_backups', lang, 'View All Backups')}
+        </button>
+      </div>
+    `;
+  }
+
+  private _handleCardNameChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const newConfig = { ...this.config, card_name: input.value };
+    this._updateConfig(newConfig);
+  }
+
+  private _handleExport() {
+    try {
+      // Use new encoded format (compressed + Base64)
+      UcConfigEncoder.exportToFile(
+        this.config,
+        `${(this.config.card_name || 'ultra-card').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.txt`
+      );
+
+      const lang = 'en';
+      alert(localize('editor.ultra_card_pro.export_success', lang, 'Card configuration exported!'));
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export card configuration');
+    }
+  }
+
+  private _handleImport() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.json'; // Accept both encoded (.txt) and plain JSON
+
+    input.onchange = async (e: Event) => {
+      try {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        // Use the new encoder which handles both formats
+        const config = await UcConfigEncoder.importFromFile(file);
+
+        // Validate it's an Ultra Card config
+        if (config.type !== 'custom:ultra-card' || !config.layout) {
+          throw new Error('Invalid Ultra Card configuration file');
+        }
+
+        if (confirm('Import this card configuration? Your current config will be replaced.')) {
+          this._updateConfig(config);
+          const lang = 'en';
+          alert(
+            localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
+          );
+        }
+      } catch (error) {
+        console.error('Import failed:', error);
+        alert(
+          'Failed to import card configuration: ' +
+            (error instanceof Error ? error.message : 'Unknown error')
+        );
+      }
+    };
+
+    input.click();
+  }
+
+  private _handleCreateBackup() {
+    this._showManualBackup = true;
+  }
+
+  private _handleManualBackupCreated(e: CustomEvent) {
+    const lang = 'en';
+    const { name } = e.detail;
+
+    // Refresh subscription to update count
+    if (this._cloudUser) {
+      ucCloudBackupService.getSubscription().then(subscription => {
+        if (this._cloudUser) {
+          this._cloudUser.subscription = subscription;
+          this.requestUpdate();
+        }
+      });
+    }
+
+    alert(
+      localize('editor.ultra_card_pro.backup_created', lang, 'Backup created successfully!') +
+        `\n\n"${name}"`
+    );
+  }
+
+  private _handleBackupRestored(e: CustomEvent) {
+    const { config } = e.detail;
+    this._updateConfig(config);
+    alert('Backup restored successfully!');
+  }
+
+  private _handleSnapshotCreated(e: CustomEvent) {
+    // Refresh user subscription to update snapshot count
+    if (this._cloudUser) {
+      ucCloudBackupService.getSubscription().then(subscription => {
+        if (this._cloudUser) {
+          this._cloudUser.subscription = subscription;
+          this.requestUpdate();
+        }
+      });
+    }
+    alert('Snapshot created successfully!');
+  }
+
+  private _handleSnapshotRestored(e: CustomEvent) {
+    const { result } = e.detail;
+    alert('Snapshot restoration ready!\n\n' + result.instructions);
+  }
+
+  private _handleCardBackupRestored(e: CustomEvent) {
+    const { config } = e.detail;
+    this._updateConfig(config);
+    alert('Card backup restored successfully!');
+  }
+
+  private async _handleLoadNewerBackup() {
+    if (!this._newerBackupAvailable) return;
+
+    if (
+      !confirm(
+        'Load the newer backup from another device? Your current unsaved changes will be lost.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const config = await ucCloudBackupService.restoreBackup(this._newerBackupAvailable.id);
+      this._updateConfig(config);
+      this._showSyncNotification = false;
+      this._newerBackupAvailable = null;
+      alert('Newer backup loaded successfully!');
+    } catch (error) {
+      console.error('Failed to load newer backup:', error);
+      alert(
+        'Failed to load newer backup: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    }
+  }
+
+  private _handleDismissSyncNotification() {
+    this._showSyncNotification = false;
+    this._newerBackupAvailable = null;
   }
 
   /**
@@ -2007,13 +3172,21 @@ export class UltraCardEditor extends LitElement {
     this._loginError = '';
 
     try {
-      await ucCloudAuthService.login({ username, password });
+      const user = await ucCloudAuthService.login({ username, password });
       this._showLoginForm = false;
+
+      // Initialize new snapshot services with WordPress URL
+      const wordpressUrl = 'https://ultracard.io'; // TODO: Make this configurable
+      if (this.hass) {
+        ucSnapshotService.initialize(this.hass, wordpressUrl);
+        ucDashboardScannerService.initialize(this.hass);
+      }
+      ucCardBackupService.initialize(wordpressUrl);
 
       // Enable sync by default after successful login
       await ucCloudSyncService.setSyncEnabled(true);
 
-      console.log('✅ Successfully logged in and enabled sync');
+      console.log('✅ Successfully logged in and initialized all services');
     } catch (error) {
       this._loginError = error instanceof Error ? error.message : 'Login failed';
       console.error('❌ Login failed:', error);

@@ -1727,16 +1727,6 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .join('; ');
   }
 
-  // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
-  }
-
   // Helper method to ensure border radius values have proper units
   private addPixelUnit(value: string | undefined): string | undefined {
     if (!value) return value;

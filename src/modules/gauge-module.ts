@@ -39,7 +39,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       max_value: 100,
 
       // Gauge Style
-      gauge_style: 'speedometer',
+      gauge_style: '3d',
       gauge_size: 200,
       gauge_thickness: 15,
 
@@ -1411,6 +1411,12 @@ export class UltraGaugeModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as GaugeModule, hass, updates => updateModule(updates));
   }
 
+  // Split preview for module settings popup - delegate to layout tab's wrapper
+  renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
+    // Just render the module content - let the layout tab handle card container styling
+    return this.renderPreview(module, hass);
+  }
+
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const gaugeModule = module as GaugeModule;
     const value = this.calculateGaugeValue(gaugeModule, hass);
@@ -1426,7 +1432,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             `
           : ''}
 
-        <div class="uc-gauge-wrapper">
+        <div class="uc-gauge-wrapper" style="position: relative; display: inline-block;">
           ${gaugeModule.show_value && gaugeModule.value_position === 'top'
             ? html`
                 <div class="uc-gauge-value-top" style="${this.getValueStyles(gaugeModule)}">
@@ -2128,17 +2134,18 @@ export class UltraGaugeModule extends BaseUltraModule {
     for (let i = 0; i < blockCount; i++) {
       const blockStartAngle = startAngle + i * blockAngle;
       const blockEndAngle = blockStartAngle + blockAngle - gapAngle;
-      const blockPercentage = ((i + 1) / blockCount) * 100;
+      const blockStartPercentage = (i / blockCount) * 100;
+      const blockEndPercentage = ((i + 1) / blockCount) * 100;
 
       let color: string;
       if (gaugeModule.gauge_color_mode === 'segments') {
         // For segments mode, always show the segment color regardless of current value
-        color = this.getColorAtValue(gaugeModule, blockPercentage);
+        color = this.getColorAtValue(gaugeModule, blockEndPercentage);
       } else {
-        // For gradient/solid modes, only show active blocks
-        const isActive = blockPercentage <= clampedPercentage;
+        // For gradient/solid modes, light up blocks if the pointer is within or past the block
+        const isActive = clampedPercentage >= blockStartPercentage;
         if (isActive) {
-          color = this.getColorAtValue(gaugeModule, blockPercentage);
+          color = this.getColorAtValue(gaugeModule, blockEndPercentage);
         } else {
           color = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
         }
@@ -2306,6 +2313,16 @@ export class UltraGaugeModule extends BaseUltraModule {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <filter id="3d-separator-shadow-${gaugeModule.id}" x="-75%" y="-75%" width="250%" height="250%">
+          <!-- CSS-like shadow: 0 0 6px 3px #000 for separator edge -->
+          <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="spread" />
+          <feGaussianBlur in="spread" stdDeviation="3" result="blur" />
+          <feColorMatrix in="blur" type="matrix"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0" result="shadow" />
+          <feMerge>
+            <feMergeNode in="shadow" />
+          </feMerge>
+        </filter>
       </defs>
       
       <!-- Outer background arc -->
@@ -2471,22 +2488,23 @@ export class UltraGaugeModule extends BaseUltraModule {
           </feMerge>
         </filter>
         <filter id="3d-box-shadow-${gaugeModule.id}" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
-          <feOffset dx="2" dy="2" result="offsetblur" />
-          <feFlood flood-color="rgba(0,0,0,0.2)" />
+          <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+          <feOffset dx="0" dy="6" result="offsetblur" />
+          <feFlood flood-color="rgba(0,0,0,0.5)" />
           <feComposite in2="offsetblur" operator="in" />
           <feMerge>
             <feMergeNode />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        <filter id="3d-segment-shadow-${gaugeModule.id}" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="1" />
-          <feOffset dx="1" dy="1" result="offsetblur" />
-          <feFlood flood-color="rgba(0,0,0,0.3)" />
-          <feComposite in2="offsetblur" operator="in" />
+        <filter id="3d-segment-shadow-${gaugeModule.id}" x="-75%" y="-75%" width="250%" height="250%">
+          <!-- CSS-like shadow: 0 0 8px 4px #000 (no directional offset) -->
+          <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="spread" />
+          <feGaussianBlur in="spread" stdDeviation="4" result="blur" />
+          <feColorMatrix in="blur" type="matrix"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0" result="shadow" />
           <feMerge>
-            <feMergeNode />
+            <feMergeNode in="shadow" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
@@ -2700,16 +2718,17 @@ export class UltraGaugeModule extends BaseUltraModule {
       ${
         gaugeModule.gauge_color_mode === 'segments'
           ? svg`
-              <!-- Outer glow around entire gauge for segments -->
+              <!-- Subtle glow behind entire filled section -->
               <path
-                d="${backgroundArc}"
+                d="${valueArc}"
                 fill="none"
                 stroke="${glowColor}"
-                stroke-width="${thickness + 8}"
+                stroke-width="${thickness * 1.5}"
                 stroke-linecap="butt"
                 opacity="0.3"
                 filter="url(#neon-glow-${gaugeModule.id})"
               />
+              
               ${this.renderSegmentedArcs(
                 gaugeModule,
                 centerX,
@@ -2734,6 +2753,17 @@ export class UltraGaugeModule extends BaseUltraModule {
             `
           : gaugeModule.gauge_color_mode === 'gradient'
             ? svg`
+              <!-- Subtle glow behind entire arc -->
+              <path
+                d="${valueArc}"
+                fill="none"
+                stroke="url(#gradient-${gaugeModule.id})"
+                stroke-width="${thickness * 1.5}"
+                stroke-linecap="butt"
+                opacity="0.3"
+                filter="url(#neon-glow-${gaugeModule.id})"
+              />
+              
               <!-- Main gradient arc -->
               <path
                 d="${valueArc}"
@@ -2760,6 +2790,17 @@ export class UltraGaugeModule extends BaseUltraModule {
               )}
             `
             : svg`
+              <!-- Subtle glow behind entire arc -->
+              <path
+                d="${valueArc}"
+                fill="none"
+                stroke="${color}"
+                stroke-width="${thickness * 1.5}"
+                stroke-linecap="butt"
+                opacity="0.3"
+                filter="url(#neon-glow-${gaugeModule.id})"
+              />
+              
               <!-- Main solid color arc -->
               <path
                 d="${valueArc}"
@@ -2835,45 +2876,56 @@ export class UltraGaugeModule extends BaseUltraModule {
     const angleRange = endAngle - startAngle;
     const valueAngle = startAngle + (angleRange * clampedPercentage) / 100;
 
-    // Create small to large blocks structure
-    const blockCount = 12; // Number of blocks (reduced for more spacing)
+    // Create small to large blocks structure with narrow widths and more spacing
+    const blockCount = 12; // Number of blocks
     const blocks = [];
 
     for (let i = 0; i < blockCount; i++) {
       const blockAngle = startAngle + (angleRange * i) / blockCount;
       const nextBlockAngle = startAngle + (angleRange * (i + 1)) / blockCount;
-      const blockPercentage = ((i + 1) / blockCount) * 100;
+      const blockStartPercentage = (i / blockCount) * 100;
+      const blockEndPercentage = ((i + 1) / blockCount) * 100;
 
-      // Block size increases from small to large (reduced for more spacing)
-      const blockSizeRatio = (i + 1) / blockCount; // 0.05 to 1.0
+      // Block size increases from small to large (height/thickness)
+      const blockSizeRatio = (i + 1) / blockCount;
       const minBlockSize = 6;
       const maxBlockSize = 18;
       const blockSize = minBlockSize + (maxBlockSize - minBlockSize) * blockSizeRatio;
 
-      // Block position
+      // Block position - center of the segment
       const blockRadius = radius - blockSize / 2;
+      const segmentCenterAngle = (blockAngle + nextBlockAngle) / 2;
+      const blockCenterPoint = this.polarToCartesian(
+        centerX,
+        centerY,
+        blockRadius,
+        segmentCenterAngle
+      );
+
+      // Calculate block width as a fraction of the available arc space (much narrower)
       const blockStartPoint = this.polarToCartesian(centerX, centerY, blockRadius, blockAngle);
       const blockEndPoint = this.polarToCartesian(centerX, centerY, blockRadius, nextBlockAngle);
-
-      // Calculate block position and rotation
-      const blockCenterX = (blockStartPoint.x + blockEndPoint.x) / 2;
-      const blockCenterY = (blockStartPoint.y + blockEndPoint.y) / 2;
-      const blockLength = Math.sqrt(
+      const maxBlockLength = Math.sqrt(
         Math.pow(blockEndPoint.x - blockStartPoint.x, 2) +
           Math.pow(blockEndPoint.y - blockStartPoint.y, 2)
       );
-      const blockRotation =
-        Math.atan2(blockEndPoint.y - blockStartPoint.y, blockEndPoint.x - blockStartPoint.x) *
-        (180 / Math.PI);
+
+      // Make blocks only 30% of the available width to create more spacing
+      const blockLength = maxBlockLength * 0.3;
+
+      const blockCenterX = blockCenterPoint.x;
+      const blockCenterY = blockCenterPoint.y;
+      const blockRotation = segmentCenterAngle;
 
       let blockColor: string;
       if (gaugeModule.gauge_color_mode === 'segments') {
         // For segments mode, always show the segment color regardless of current value
-        blockColor = this.getColorAtValue(gaugeModule, blockPercentage);
+        blockColor = this.getColorAtValue(gaugeModule, blockEndPercentage);
       } else {
-        // For gradient/solid modes, only show active blocks
-        if (blockPercentage <= clampedPercentage) {
-          blockColor = this.getColorAtValue(gaugeModule, blockPercentage);
+        // For gradient/solid modes, light up blocks if the pointer is within or past the block
+        const isActive = clampedPercentage >= blockStartPercentage;
+        if (isActive) {
+          blockColor = this.getColorAtValue(gaugeModule, blockEndPercentage);
         } else {
           blockColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
         }
@@ -3084,6 +3136,8 @@ export class UltraGaugeModule extends BaseUltraModule {
       const start = angle - highlightAngle / 2;
       const end = angle + highlightAngle / 2;
       const arc = this.describeArc(centerX, centerY, radius, start, end);
+      const highlightPoint = this.polarToCartesian(centerX, centerY, radius, angle);
+
       return svg`
         <path d="${arc}" fill="none" stroke="${pointerColor}" stroke-width="${thickness}" stroke-linecap="round" />
       `;
@@ -3093,6 +3147,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       // A rounded cap at the end of the value arc sitting on the track
       const thickness = gaugeModule.gauge_thickness || 15;
       const capPoint = this.polarToCartesian(centerX, centerY, radius, angle);
+
       return svg`
         <circle cx="${capPoint.x}" cy="${capPoint.y}" r="${thickness / 2}" fill="${pointerColor}" />
       `;
@@ -3365,7 +3420,6 @@ export class UltraGaugeModule extends BaseUltraModule {
     const maxValue = gaugeModule.max_value || 100;
     const angleRange = endAngle - startAngle;
     const segments = [];
-    const gapAngle = 2; // Gap between segments in degrees
 
     // Sort segments by from value
     const sortedSegments = [...gaugeModule.segments].sort((a, b) => a.from - b.from);
@@ -3379,33 +3433,37 @@ export class UltraGaugeModule extends BaseUltraModule {
       const segmentStartAngle = startAngle + (angleRange * segmentStartPercentage) / 100;
       const segmentEndAngle = startAngle + (angleRange * segmentEndPercentage) / 100;
 
-      // Add gap between segments (except for the first segment)
-      const actualStartAngle = i === 0 ? segmentStartAngle : segmentStartAngle + gapAngle / 2;
-      const actualEndAngle =
-        i === sortedSegments.length - 1 ? segmentEndAngle : segmentEndAngle - gapAngle / 2;
-
-      // Render the segment with gaps
-      if (actualEndAngle > actualStartAngle) {
+      // Render segments without gaps for seamless appearance
+      if (segmentEndAngle > segmentStartAngle) {
         const segmentArc = this.describeArc(
           centerX,
           centerY,
           radius,
-          actualStartAngle,
-          actualEndAngle
+          segmentStartAngle,
+          segmentEndAngle
+        );
+
+        // 1) Draw a thin separator shadow just before the segment start to simulate elevation
+        // This creates the perception that the current segment is floating above the previous one
+        const separatorStart = Math.max(segmentStartAngle - 0.5, startAngle);
+        const separatorArc = this.describeArc(
+          centerX,
+          centerY,
+          radius,
+          separatorStart,
+          segmentStartAngle
         );
 
         segments.push(svg`
-          <!-- Box shadow effect for floating appearance -->
           <path
-            d="${segmentArc}"
+            d="${separatorArc}"
             fill="none"
-            stroke="rgba(0,0,0,0.3)"
-            stroke-width="${thickness + 8}"
+            stroke="rgba(0,0,0,0.15)"
+            stroke-width="${thickness}"
             stroke-linecap="butt"
-            opacity="0.4"
-            filter="url(#3d-box-shadow-${gaugeModule.id})"
+            filter="url(#3d-separator-shadow-${gaugeModule.id})"
           />
-          <!-- Main segment with subtle shadow -->
+          <!-- Main segment with its own shadow for depth -->
           <path
             d="${segmentArc}"
             fill="none"
@@ -3437,39 +3495,57 @@ export class UltraGaugeModule extends BaseUltraModule {
     const percentage = ((value - minValue) / (maxValue - minValue)) * 100;
     const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
 
-    const angleRange = endAngle - startAngle;
-    const valueAngle = startAngle + (angleRange * clampedPercentage) / 100;
-
-    // Create a shorter arc that only glows at the very end
-    const glowStartAngle = valueAngle - 5; // Shorter arc for subtle glow
-    const glowEndAngle = valueAngle + 3; // Minimal extension beyond the end point
-
-    if (glowStartAngle >= valueAngle) {
+    if (clampedPercentage <= 0) {
       return svg``; // No glow if no fill
     }
 
-    const glowArc = this.describeArc(centerX, centerY, radius, glowStartAngle, glowEndAngle);
+    const angleRange = endAngle - startAngle;
+    const valueAngle = startAngle + (angleRange * clampedPercentage) / 100;
 
+    // Calculate the endpoint of the arc
+    const endPoint = this.polarToCartesian(centerX, centerY, radius, valueAngle);
+
+    // Create unique gradient ID for this glow
+    const glowGradientId = `neon-glow-radial-${gaugeModule.id}-${Date.now()}`;
+
+    // Create smooth radial gradient for natural glow effect
     return svg`
-      <!-- Subtle light shining through effect -->
-      <path
-        d="${glowArc}"
-        fill="none"
-        stroke="${color}"
-        stroke-width="${thickness}"
-        stroke-linecap="round"
-        opacity="0.4"
-        filter="url(#light-shine-filter-${gaugeModule.id})"
+      <defs>
+        <radialGradient id="${glowGradientId}">
+          <stop offset="0%" stop-color="${color}" stop-opacity="1" />
+          <stop offset="30%" stop-color="${color}" stop-opacity="0.8" />
+          <stop offset="50%" stop-color="${color}" stop-opacity="0.4" />
+          <stop offset="70%" stop-color="${color}" stop-opacity="0.15" />
+          <stop offset="100%" stop-color="${color}" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      
+      <!-- Outer soft glow halo -->
+      <circle
+        cx="${endPoint.x}"
+        cy="${endPoint.y}"
+        r="${thickness * 2.0}"
+        fill="url(#${glowGradientId})"
+        opacity="0.6"
       />
-      <!-- Core glow -->
-      <path
-        d="${glowArc}"
-        fill="none"
-        stroke="${color}"
-        stroke-width="${thickness * 0.8}"
-        stroke-linecap="round"
-        opacity="0.7"
-        filter="url(#neon-glow-filter-${gaugeModule.id})"
+      
+      <!-- Middle glow layer -->
+      <circle
+        cx="${endPoint.x}"
+        cy="${endPoint.y}"
+        r="${thickness * 1.2}"
+        fill="url(#${glowGradientId})"
+        opacity="0.8"
+      />
+      
+      <!-- Bright inner core -->
+      <circle
+        cx="${endPoint.x}"
+        cy="${endPoint.y}"
+        r="${thickness * 0.5}"
+        fill="${color}"
+        opacity="1"
+        style="filter: brightness(1.5);"
       />
     `;
   }
@@ -3618,7 +3694,6 @@ export class UltraGaugeModule extends BaseUltraModule {
       'align-items: center',
       'justify-content: center',
       'width: 100%',
-      'padding: 16px',
     ];
 
     return styles.join('; ');
@@ -3704,15 +3779,6 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     return styles.join('; ');
-  }
-
-  // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

@@ -786,16 +786,6 @@ export class UltraVerticalModule extends BaseUltraModule {
     }
   }
 
-  // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
-  }
-
   getStyles(): string {
     return `
       /* Vertical Module Styles */

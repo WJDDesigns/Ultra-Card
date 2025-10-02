@@ -1172,14 +1172,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
       .join('; ');
   }
 
-  private triggerPreviewUpdate(): void {
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
-  }
-
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
     const imageType = moduleWithDesign.background_image_type;
     const backgroundImage = moduleWithDesign.background_image;

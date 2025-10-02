@@ -456,4 +456,21 @@ export abstract class BaseUltraModule implements UltraModule {
   protected colorField = UcFormUtils.color;
   protected gridField = UcFormUtils.grid;
   protected expandableField = UcFormUtils.expandable;
+
+  /**
+   * Trigger a preview update event
+   *
+   * Call this method after making changes that should update the Live Preview
+   * (e.g., template evaluation, dynamic content updates)
+   *
+   * This dispatches a global event that both the editor popup preview
+   * and the actual card listen for to trigger re-renders.
+   */
+  protected triggerPreviewUpdate(): void {
+    const event = new CustomEvent('ultra-card-template-update', {
+      bubbles: true,
+      composed: true,
+    });
+    window.dispatchEvent(event);
+  }
 }

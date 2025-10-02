@@ -15,6 +15,7 @@ import { getImageUrl } from '../utils/image-upload';
 import { logicService } from '../services/logic-service';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { ucModulePreviewService } from '../services/uc-module-preview-service';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
@@ -56,6 +57,12 @@ export class UltraCard extends LitElement {
       this._updateHoverEffectStyles();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+
+    // Listen for slider state changes
+    this.addEventListener('slider-state-changed', (e: Event) => {
+      e.stopPropagation();
+      this.requestUpdate();
+    });
   }
 
   disconnectedCallback(): void {
@@ -553,8 +560,6 @@ export class UltraCard extends LitElement {
     const previouslyVisible = this._moduleVisibilityState.get(moduleId);
     const isAnimating = this._animatingModules.has(moduleId);
 
-    // Animation state tracking (debug logging removed for cleaner console)
-
     // Get animation properties from module design
     const introAnimation =
       moduleWithDesign.intro_animation || moduleWithDesign.design?.intro_animation || 'none';
@@ -581,34 +586,23 @@ export class UltraCard extends LitElement {
     const stateAnimationState =
       moduleWithDesign.animation_state || moduleWithDesign.design?.animation_state;
 
-    // Removed verbose animation property logging for cleaner console
-
     // Evaluate state-based animation condition
     let shouldTriggerStateAnimation = false;
     if (stateAnimationType && stateAnimationType !== 'none') {
-      // If no entity is configured, play animation continuously
       if (!stateAnimationEntity) {
         shouldTriggerStateAnimation = true;
-        // No console output: continuous animation when no entity is set
-      }
-      // If entity is configured, check the state/attribute condition
-      else if (stateAnimationState && this.hass) {
+      } else if (stateAnimationState && this.hass) {
         const entity = this.hass.states[stateAnimationEntity];
         if (entity) {
           if (stateAnimationTriggerType === 'attribute' && stateAnimationAttribute) {
-            // Check attribute value
             const attributeValue = entity.attributes[stateAnimationAttribute];
             shouldTriggerStateAnimation = String(attributeValue) === stateAnimationState;
           } else {
-            // Check entity state
             shouldTriggerStateAnimation = entity.state === stateAnimationState;
           }
-          // No console output for entity state checks
         }
       }
     }
-
-    // Animation state tracking
 
     // Determine animation state and class BEFORE updating visibility state
     let animationClass = '';
@@ -617,20 +611,14 @@ export class UltraCard extends LitElement {
     // Handle state-based animations first (priority over intro/outro)
     if (shouldTriggerStateAnimation && stateAnimationType !== 'none') {
       animationClass = `animation-${stateAnimationType}`;
-      // No console output when applying state animation class
-      // State-based animations are continuous when condition is met
     }
     // Handle visibility changes with animations (only if no state animation active)
     else if (previouslyVisible !== undefined && previouslyVisible !== isVisible) {
       if (isVisible && introAnimation !== 'none') {
-        // Prevent duplicate animations - only start if not already animating
         if (!isAnimating) {
-          // Module becoming visible - apply intro animation immediately
           animationClass = `animation-${introAnimation}`;
           willStartAnimation = true;
           this._animatingModules.add(moduleId);
-
-          // Schedule animation cleanup
           setTimeout(
             () => {
               this._animatingModules.delete(moduleId);
@@ -640,18 +628,13 @@ export class UltraCard extends LitElement {
               this._parseAnimationDuration(animationDelay)
           );
         } else {
-          // Still apply the animation class if already animating
           animationClass = `animation-${introAnimation}`;
         }
       } else if (!isVisible && outroAnimation !== 'none') {
-        // Prevent duplicate animations - only start if not already animating
         if (!isAnimating) {
-          // Module becoming hidden - apply outro animation immediately
           animationClass = `animation-${outroAnimation}`;
           willStartAnimation = true;
           this._animatingModules.add(moduleId);
-
-          // Schedule animation cleanup
           setTimeout(
             () => {
               this._animatingModules.delete(moduleId);
@@ -661,7 +644,6 @@ export class UltraCard extends LitElement {
               this._parseAnimationDuration(animationDelay)
           );
         } else {
-          // Still apply the animation class if already animating
           animationClass = `animation-${outroAnimation}`;
         }
       }
@@ -671,7 +653,6 @@ export class UltraCard extends LitElement {
       animationClass = `animation-${introAnimation}`;
       willStartAnimation = true;
       this._animatingModules.add(moduleId);
-
       setTimeout(
         () => {
           this._animatingModules.delete(moduleId);
@@ -681,7 +662,6 @@ export class UltraCard extends LitElement {
           this._parseAnimationDuration(animationDelay)
       );
     } else if (isAnimating) {
-      // Currently animating - determine which animation class to apply
       if (isVisible && introAnimation !== 'none') {
         animationClass = `animation-${introAnimation}`;
       } else if (!isVisible && outroAnimation !== 'none') {
@@ -697,52 +677,20 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-
-    let moduleContent: TemplateResult;
-    if (moduleHandler && this.hass) {
-      moduleContent = moduleHandler.renderPreview(module, this.hass, this.config);
-    } else {
-      // Fallback for unknown module types
-      moduleContent = html`
-        <div class="unknown-module">
-          <span>Unknown Module: ${module.type}</span>
-        </div>
-      `;
+    // Use centralized preview service for consistent rendering
+    if (!this.hass || !this.config) {
+      return html``;
     }
 
-    // Get hover effect configuration from module design
-    const hoverEffect = moduleWithDesign.design?.hover_effect;
-    const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
-
-    // Apply animation wrapper if needed (or if module has animation properties)
-    if (
-      animationClass ||
-      introAnimation !== 'none' ||
-      outroAnimation !== 'none' ||
-      shouldTriggerStateAnimation
-    ) {
-      return html`
-        <div
-          class="module-animation-wrapper ${animationClass} ${hoverEffectClass}"
-          style="
-            --animation-duration: ${animationDuration};
-            --animation-delay: ${animationDelay};
-            --animation-timing: ${animationTiming};
-          "
-        >
-          ${moduleContent}
-        </div>
-      `;
-    }
-
-    // Apply hover effect wrapper if needed
-    if (hoverEffectClass) {
-      return html` <div class="module-hover-wrapper ${hoverEffectClass}">${moduleContent}</div> `;
-    }
-
-    return moduleContent;
+    return ucModulePreviewService.renderModuleContent(module, this.hass, this.config, {
+      animationClass,
+      animationDuration,
+      animationDelay,
+      animationTiming,
+      introAnimation,
+      outroAnimation,
+      shouldTriggerStateAnimation,
+    });
   }
 
   private _parseAnimationDuration(duration: string): number {

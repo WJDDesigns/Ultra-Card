@@ -30,7 +30,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -280,6 +280,8 @@ export interface InfoEntityConfig {
     content_alignment?: 'start' | 'center' | 'end';
     overall_alignment?: 'left' | 'center' | 'right';
     icon_gap?: number;
+    name_value_layout?: 'vertical' | 'horizontal';
+    name_value_gap?: number;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
@@ -732,6 +734,70 @@ export interface VerticalModule extends BaseModule {
         service_data?: Record<string, any>;
     };
 }
+export interface PageBreakModule extends BaseModule {
+    type: 'pagebreak';
+}
+export interface SliderModule extends BaseModule {
+    type: 'slider';
+    modules: CardModule[];
+    show_pagination?: boolean;
+    pagination_style?: 'dots' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar';
+    pagination_position?: 'top' | 'bottom' | 'left' | 'right';
+    pagination_color?: string;
+    pagination_active_color?: string;
+    pagination_size?: number;
+    show_arrows?: boolean;
+    arrow_position?: 'inside' | 'outside';
+    arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
+    arrow_size?: number;
+    arrow_color?: string;
+    arrow_background_color?: string;
+    prev_arrow_icon?: string;
+    next_arrow_icon?: string;
+    arrows_always_visible?: boolean;
+    transition_effect?: 'slide-left' | 'slide-right' | 'slide-top' | 'slide-bottom' | 'fade' | 'zoom-in' | 'zoom-out' | 'circle';
+    transition_speed?: number;
+    transition_easing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
+    auto_play?: boolean;
+    auto_play_delay?: number;
+    pause_on_hover?: boolean;
+    loop?: boolean;
+    allow_swipe?: boolean;
+    allow_keyboard?: boolean;
+    allow_mousewheel?: boolean;
+    slider_height?: number;
+    slider_width?: string;
+    gap?: number;
+    slides_per_view?: number;
+    space_between?: number;
+    vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
+    mobile_slides_per_view?: number;
+    mobile_space_between?: number;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
 export interface ButtonModule extends BaseModule {
     type: 'button';
     label: string;
@@ -888,6 +954,7 @@ export interface CameraModule extends BaseModule {
     image_quality?: 'high' | 'medium' | 'low';
     rotation?: number;
     live_view?: boolean;
+    audio_enabled?: boolean;
     show_unavailable?: boolean;
     fallback_image?: string;
     tap_action?: {
@@ -924,6 +991,7 @@ export interface GraphEntityConfig {
     entity: string;
     name?: string;
     attribute?: string;
+    forecast_attribute?: 'temperature' | 'precipitation' | 'wind_speed' | 'humidity' | 'pressure' | 'cloud_coverage' | string;
     color?: string;
     chart_type_override?: string;
     show_points?: boolean;
@@ -936,6 +1004,9 @@ export interface GraphEntityConfig {
 }
 export interface GraphsModule extends BaseModule {
     type: 'graphs';
+    data_source?: 'history' | 'forecast';
+    forecast_type?: 'hourly' | 'daily';
+    forecast_entity?: string;
     chart_type: 'line' | 'bar' | 'area' | 'scatter' | 'bubble' | 'pie' | 'donut' | 'radar' | 'histogram' | 'heatmap' | 'waterfall' | 'combo';
     entities: GraphEntityConfig[];
     time_period: '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';
@@ -950,6 +1021,7 @@ export interface GraphsModule extends BaseModule {
     normalize_values?: boolean;
     legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
     show_grid?: boolean;
+    show_grid_values?: boolean;
     grid_color?: string;
     background_color?: string;
     chart_width?: string;
@@ -1170,7 +1242,7 @@ export interface DropdownOption {
         };
     };
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -1354,6 +1426,7 @@ export interface UltraCardConfig {
     display_conditions?: DisplayCondition[];
     favorite_colors?: FavoriteColor[];
     haptic_feedback?: boolean;
+    card_name?: string;
 }
 export interface CustomCard {
     type: string;

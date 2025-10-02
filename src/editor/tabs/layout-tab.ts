@@ -27,6 +27,7 @@ import { localize } from '../../localize/localize';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ucExportImportService } from '../../services/uc-export-import-service';
+import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { PresetDefinition, FavoriteRow, ExportData, HoverEffectConfig } from '../../types';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
@@ -160,9 +161,25 @@ export class LayoutTab extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this._templateUpdateListener = () => {
+      // Force Lit to detect changes by requesting update
+      // The config object is already updated in place by _updateModule
       this.requestUpdate();
+      // Also force update on next frame to ensure nested property changes are detected
+      requestAnimationFrame(() => {
+        this.requestUpdate();
+        // Force a complete re-render by updating the config timestamp
+        // This ensures module previews refresh their internal state
+        const event = new CustomEvent('config-changed', {
+          detail: { config: { ...this.config, _forceUpdate: Date.now() } },
+          bubbles: true,
+          composed: true,
+        });
+        this.dispatchEvent(event);
+      });
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+    // Also listen for slider updates
+    window.addEventListener('ultra-card-slider-update', this._templateUpdateListener);
 
     // Add window resize listener for popup repositioning
     this._windowResizeListener = () => {
@@ -530,6 +547,7 @@ export class LayoutTab extends LitElement {
     // Remove template update listener
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+      window.removeEventListener('ultra-card-slider-update', this._templateUpdateListener);
       this._templateUpdateListener = undefined;
     }
     // Remove window resize listener
@@ -885,6 +903,11 @@ export class LayoutTab extends LitElement {
       composed: true,
     });
     this.dispatchEvent(event);
+
+    // Dispatch template update event to refresh live preview
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+    }, 0);
   }
 
   private _updateLayout(layout: { rows: CardRow[] }): void {
@@ -1584,6 +1607,142 @@ export class LayoutTab extends LitElement {
     this._selectedColumnIndex = -1;
     this._selectedLayoutModuleIndex = -1;
     this._selectedNestedChildIndex = -1;
+  }
+
+  private _addPageBreakToSlider(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    sliderChildIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const registry = getModuleRegistry();
+
+    // Get the parent layout module
+    const parentLayout = layout.rows[parentRowIndex].columns[parentColumnIndex].modules[
+      parentModuleIndex
+    ] as any;
+
+    if (!parentLayout || !parentLayout.modules || !parentLayout.modules[sliderChildIndex]) {
+      console.error('Parent layout or slider child not found');
+      return;
+    }
+
+    // Get the slider module
+    const sliderModule = parentLayout.modules[sliderChildIndex] as any;
+
+    if (!sliderModule || sliderModule.type !== 'slider') {
+      console.error('Target is not a slider module');
+      return;
+    }
+
+    // Create a new page break module
+    const pageBreakModule = registry.createDefaultModule('pagebreak');
+    if (!pageBreakModule) {
+      console.error('Could not create page break module');
+      return;
+    }
+
+    // Add the page break to the end of the slider's modules
+    const newLayout = {
+      rows: layout.rows.map((row, rIndex) => {
+        if (rIndex === parentRowIndex) {
+          return {
+            ...row,
+            columns: row.columns.map((col, cIndex) => {
+              if (cIndex === parentColumnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((module, mIndex) => {
+                    if (mIndex === parentModuleIndex) {
+                      const layoutModule = module as any;
+                      return {
+                        ...layoutModule,
+                        modules: layoutModule.modules.map(
+                          (childModule: any, childIndex: number) => {
+                            if (childIndex === sliderChildIndex) {
+                              // This is the slider module we want to add to
+                              return {
+                                ...childModule,
+                                modules: [...(childModule.modules || []), pageBreakModule],
+                              };
+                            }
+                            return childModule;
+                          }
+                        ),
+                      };
+                    }
+                    return module;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return row;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+    this.requestUpdate();
+  }
+
+  private _addPageBreakToColumnSlider(
+    rowIndex: number,
+    columnIndex: number,
+    moduleIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const registry = getModuleRegistry();
+
+    // Get the slider module
+    const sliderModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+
+    if (!sliderModule || sliderModule.type !== 'slider') {
+      console.error('Target is not a slider module');
+      return;
+    }
+
+    // Create a new page break module
+    const pageBreakModule = registry.createDefaultModule('pagebreak');
+    if (!pageBreakModule) {
+      console.error('Could not create page break module');
+      return;
+    }
+
+    // Add the page break to the end of the slider's modules
+    const newLayout = {
+      rows: layout.rows.map((row, rIndex) => {
+        if (rIndex === rowIndex) {
+          return {
+            ...row,
+            columns: row.columns.map((col, cIndex) => {
+              if (cIndex === columnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((module, mIndex) => {
+                    if (mIndex === moduleIndex) {
+                      // This is the slider module we want to add to
+                      return {
+                        ...module,
+                        modules: [...((module as any).modules || []), pageBreakModule],
+                      };
+                    }
+                    return module;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return row;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+    this.requestUpdate();
   }
 
   private _addPreset(preset: PresetDefinition): void {
@@ -3078,17 +3237,15 @@ export class LayoutTab extends LitElement {
     const lang = this.hass?.locale?.language || 'en';
 
     const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-    const module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+    // Always get a fresh reference to the module from the current config
+    // This ensures we're rendering the latest data, not a stale object reference
+    const module =
+      this.config.layout?.rows?.[rowIndex]?.columns?.[columnIndex]?.modules?.[moduleIndex];
 
     if (!module) return html``;
 
-    // Prefer module-specific split preview when available (e.g., icon module)
-    const registry = getModuleRegistry();
-    const handler = registry.getModule(module.type) as any;
-    const previewContent =
-      handler && typeof handler.renderSplitPreview === 'function'
-        ? handler.renderSplitPreview(module, this.hass)
-        : this._renderSingleModuleWithAnimation(module);
+    // Always use _renderSingleModuleWithAnimation which wraps in card container
+    const previewContent = this._renderSingleModuleWithAnimation(module);
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
@@ -3167,8 +3324,8 @@ export class LayoutTab extends LitElement {
       description: 'Unknown module type',
     };
 
-    // Check if this is a layout module (horizontal or vertical)
-    const isLayoutModule = module.type === 'horizontal' || module.type === 'vertical';
+    // Check if this is a layout module (horizontal, vertical, or slider)
+    const isLayoutModule = this._isLayoutModule(module.type);
 
     if (isLayoutModule) {
       return this._renderLayoutModuleAsColumn(module, rowIndex, columnIndex, moduleIndex, metadata);
@@ -3249,10 +3406,21 @@ export class LayoutTab extends LitElement {
     metadata?: any
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const layoutModule = module as any; // HorizontalModule or VerticalModule
+    const layoutModule = module as any; // HorizontalModule, VerticalModule, or SliderModule
     const hasChildren = layoutModule.modules && layoutModule.modules.length > 0;
     const isHorizontal = module.type === 'horizontal';
     const isVertical = module.type === 'vertical';
+    const isSlider = module.type === 'slider';
+
+    // Get layout title
+    let layoutTitle = metadata?.title || 'Layout';
+    if (isHorizontal) {
+      layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
+    } else if (isVertical) {
+      layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isSlider) {
+      layoutTitle = localize('editor.layout.slider_layout', lang, 'Slider Layout');
+    }
 
     return html`
       <div class="layout-module-container">
@@ -3269,11 +3437,7 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
             <ha-icon icon="${metadata?.icon || 'mdi:view-sequential'}"></ha-icon>
-            <span
-              >${isHorizontal
-                ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
-                : localize('editor.layout.vertical_layout', lang, 'Vertical Layout')}</span
-            >
+            <span>${layoutTitle}</span>
           </div>
           <div class="layout-module-actions">
             ${rowIndex !== undefined && columnIndex !== undefined && moduleIndex !== undefined
@@ -3294,6 +3458,26 @@ export class LayoutTab extends LitElement {
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                   </button>
+                  ${isSlider
+                    ? html`
+                        <button
+                          class="layout-module-add-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._addPageBreakToColumnSlider(rowIndex, columnIndex, moduleIndex);
+                          }}
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          @dragstart=${(e: Event) => e.preventDefault()}
+                          title="${localize(
+                            'editor.layout.add_page_break',
+                            lang,
+                            'Add Page Separator'
+                          )}"
+                        >
+                          <ha-icon icon="mdi:format-page-break"></ha-icon>
+                        </button>
+                      `
+                    : ''}
                   <button
                     class="layout-module-settings-btn"
                     @click=${(e: Event) => {
@@ -3479,9 +3663,11 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
 
-    // Check if this child module is itself a layout module (horizontal or vertical)
+    // Check if this child module is itself a layout module (horizontal, vertical, or slider)
     const isNestedLayoutModule =
-      childModule.type === 'horizontal' || childModule.type === 'vertical';
+      childModule.type === 'horizontal' ||
+      childModule.type === 'vertical' ||
+      childModule.type === 'slider';
 
     if (isNestedLayoutModule) {
       // Render nested layout modules with full layout functionality
@@ -3510,9 +3696,16 @@ export class LayoutTab extends LitElement {
     const moduleInfo = this._generateModuleInfo(childModule);
     const moduleTitle = this._getModuleDisplayName(childModule);
 
+    // Check if this is a page break module - give it special styling
+    const isPageBreak = childModule.type === 'pagebreak';
+    const pageBreakStyle = isPageBreak
+      ? 'background: rgba(var(--rgb-primary-color), 0.08); border-left: 3px solid rgba(var(--rgb-primary-color), 0.3);'
+      : '';
+
     return html`
       <div
-        class="layout-child-simplified-module"
+        class="layout-child-simplified-module ${isPageBreak ? 'pagebreak-module' : ''}"
+        style="${pageBreakStyle}"
         @click=${(e: Event) => {
           // Only open settings if not clicking on action buttons or drag handle
           const target = e.target as HTMLElement;
@@ -3634,10 +3827,11 @@ export class LayoutTab extends LitElement {
     childIndex?: number
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const nestedLayout = layoutModule as any; // HorizontalModule or VerticalModule
+    const nestedLayout = layoutModule as any; // HorizontalModule, VerticalModule, or SliderModule
     const hasChildren = nestedLayout.modules && nestedLayout.modules.length > 0;
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isSlider = layoutModule.type === 'slider';
 
     // Get module metadata
     const registry = getModuleRegistry();
@@ -3647,6 +3841,16 @@ export class LayoutTab extends LitElement {
       title: 'Unknown Layout',
       description: 'Unknown layout type',
     };
+
+    // Get layout title
+    let layoutTitle = metadata.title || 'Layout';
+    if (isHorizontal) {
+      layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
+    } else if (isVertical) {
+      layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isSlider) {
+      layoutTitle = localize('editor.layout.slider_module', lang, 'Slider Module');
+    }
 
     return html`
       <div class="nested-layout-module-container layout-module-container">
@@ -3663,11 +3867,7 @@ export class LayoutTab extends LitElement {
               <ha-icon icon="mdi:drag"></ha-icon>
             </div>
             <ha-icon icon="${metadata.icon}"></ha-icon>
-            <span
-              >${isHorizontal
-                ? localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout')
-                : localize('editor.layout.vertical_layout', lang, 'Vertical Layout')}</span
-            >
+            <span>${layoutTitle}</span>
           </div>
           <div class="nested-layout-module-actions layout-module-actions">
             ${parentRowIndex !== undefined &&
@@ -3696,6 +3896,31 @@ export class LayoutTab extends LitElement {
                   >
                     <ha-icon icon="mdi:plus"></ha-icon>
                   </button>
+                  ${isSlider
+                    ? html`
+                        <button
+                          class="layout-module-add-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._addPageBreakToSlider(
+                              parentRowIndex,
+                              parentColumnIndex,
+                              parentModuleIndex,
+                              childIndex
+                            );
+                          }}
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          @dragstart=${(e: Event) => e.preventDefault()}
+                          title="${localize(
+                            'editor.layout.add_page_break',
+                            lang,
+                            'Add Page Separator'
+                          )}"
+                        >
+                          <ha-icon icon="mdi:format-page-break"></ha-icon>
+                        </button>
+                      `
+                    : ''}
                   <button
                     class="layout-module-settings-btn"
                     @click=${(e: Event) => {
@@ -3990,7 +4215,9 @@ export class LayoutTab extends LitElement {
 
     // Check if this child module is itself a layout module (for 3+ level nesting, which we prevent)
     const isNestedLayoutModule =
-      childModule.type === 'horizontal' || childModule.type === 'vertical';
+      childModule.type === 'horizontal' ||
+      childModule.type === 'vertical' ||
+      childModule.type === 'slider';
 
     if (isNestedLayoutModule) {
       // This would be a 3rd level of nesting, which we don't allow
@@ -5279,135 +5506,10 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderSingleModuleWithAnimation(module: CardModule): TemplateResult {
-    // Initialize logic service with current hass instance
-    logicService.setHass(this.hass);
-
-    // Check module visibility using the same logic as the runtime card
-    const shouldShow = logicService.evaluateModuleVisibility(module);
-
-    // Also check global design logic properties if they exist
-    const moduleWithDesign = module as any;
-    const globalLogicVisible = logicService.evaluateLogicProperties({
-      logic_entity: moduleWithDesign.design?.logic_entity,
-      logic_attribute: moduleWithDesign.design?.logic_attribute,
-      logic_operator: moduleWithDesign.design?.logic_operator,
-      logic_value: moduleWithDesign.design?.logic_value,
+    // Use centralized preview service that mirrors HA preview window behavior
+    return ucModulePreviewService.renderModuleInCard(module, this.hass, this.config, {
+      showLogicOverlay: true,
     });
-
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
-    const lang = this.hass?.locale?.language || 'en';
-
-    // Always render the module, but dim it if logic conditions are not met
-    const isLogicHidden = !shouldShow || !globalLogicVisible;
-
-    let moduleContent;
-    if (moduleHandler) {
-      moduleContent = moduleHandler.renderPreview(module, this.hass);
-    } else {
-      // Fallback for unknown module types
-      moduleContent = html`
-        <div class="module-placeholder">
-          <ha-icon icon="mdi:help-circle"></ha-icon>
-          <span>Unknown Module: ${module.type}</span>
-        </div>
-      `;
-    }
-
-    // Get animation class and duration for preview (show animation if configured)
-    const animationData = this._getPreviewAnimationData(moduleWithDesign);
-
-    // Wrap with logic status indicator and animation
-    return html`
-      <div class="module-with-logic ${isLogicHidden ? 'logic-hidden' : ''}">
-        ${animationData.class
-          ? html`
-              <div
-                class="${animationData.class}"
-                style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${animationData.duration};"
-              >
-                ${moduleContent}
-              </div>
-            `
-          : moduleContent}
-        ${isLogicHidden
-          ? html`
-              <div class="logic-overlay">
-                <ha-icon icon="mdi:eye-off-outline"></ha-icon>
-                <span
-                  >${localize(
-                    'editor.layout.hidden_by_logic',
-                    this.hass?.locale?.language || 'en',
-                    'Hidden by Logic'
-                  )}</span
-                >
-              </div>
-            `
-          : ''}
-      </div>
-    `;
-  }
-
-  private _getPreviewAnimationData(moduleWithDesign: any): { class: string; duration: string } {
-    // Check if module has animation configured
-    const animationType =
-      moduleWithDesign.animation_type || moduleWithDesign.design?.animation_type;
-
-    if (!animationType || animationType === 'none') {
-      return { class: '', duration: '2s' };
-    }
-
-    // Get animation duration or use default
-    const animationDuration =
-      moduleWithDesign.animation_duration || moduleWithDesign.design?.animation_duration || '2s';
-
-    // Check if entity condition is configured and evaluate it
-    const animationEntity =
-      moduleWithDesign.animation_entity || moduleWithDesign.design?.animation_entity;
-    const animationTriggerType =
-      moduleWithDesign.animation_trigger_type ||
-      moduleWithDesign.design?.animation_trigger_type ||
-      'state';
-    const animationAttribute =
-      moduleWithDesign.animation_attribute || moduleWithDesign.design?.animation_attribute;
-    const animationState =
-      moduleWithDesign.animation_state || moduleWithDesign.design?.animation_state;
-
-    // If no entity configured, always show animation
-    if (!animationEntity) {
-      return {
-        class: `animation-${animationType}`,
-        duration: animationDuration,
-      };
-    }
-
-    // If entity is configured, check actual state to match real card behavior
-    if (animationState && this.hass) {
-      const entity = this.hass.states[animationEntity];
-      if (entity) {
-        let shouldTriggerAnimation = false;
-
-        if (animationTriggerType === 'attribute' && animationAttribute) {
-          // Check attribute value
-          const attributeValue = entity.attributes[animationAttribute];
-          shouldTriggerAnimation = String(attributeValue) === animationState;
-        } else {
-          // Check entity state
-          shouldTriggerAnimation = entity.state === animationState;
-        }
-
-        // Only show animation if condition is met (matching actual card behavior)
-        if (shouldTriggerAnimation) {
-          return {
-            class: `animation-${animationType}`,
-            duration: animationDuration,
-          };
-        }
-      }
-    }
-
-    // Entity configured but condition not met - no animation
-    return { class: '', duration: animationDuration };
   }
 
   private _getRowPreviewAnimationData(row: any): { class: string; duration: string } {
@@ -9182,8 +9284,10 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
-    const layoutModules = allModules.filter(m => m.metadata.category === 'layout');
-    const contentModules = allModules.filter(m => m.metadata.category !== 'layout');
+    const layoutModules = allModules.filter(
+      m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak'
+    );
+    let contentModules = allModules.filter(m => m.metadata.category !== 'layout');
 
     // Get the parent layout module and check nesting depth if we're adding to a layout module
     let parentLayoutType: string | null = null;
@@ -9216,17 +9320,28 @@ export class LayoutTab extends LitElement {
       // Calculate current nesting depth by checking if parent has layout children
       if (
         parentModule &&
-        (parentModule.type === 'horizontal' || parentModule.type === 'vertical')
+        (parentModule.type === 'horizontal' ||
+          parentModule.type === 'vertical' ||
+          parentModule.type === 'slider')
       ) {
         const layoutParent = parentModule as any;
         if (layoutParent.modules && layoutParent.modules.length > 0) {
           // Check if any existing children are layout modules (indicating we're at max depth)
           const hasLayoutChildren = layoutParent.modules.some(
-            (child: any) => child.type === 'horizontal' || child.type === 'vertical'
+            (child: any) =>
+              child.type === 'horizontal' || child.type === 'vertical' || child.type === 'slider'
           );
           if (hasLayoutChildren && nestingDepth >= 2) {
             nestingDepth = 3; // Would exceed maximum depth
           }
+        }
+      }
+
+      // If adding to a slider, include pagebreak in content modules
+      if (parentLayoutType === 'slider') {
+        const pageBreakModule = allModules.find(m => m.metadata.type === 'pagebreak');
+        if (pageBreakModule) {
+          contentModules = [pageBreakModule, ...contentModules];
         }
       }
     }
@@ -9878,7 +9993,7 @@ export class LayoutTab extends LitElement {
 
   // Layout Module Rules - centralized logic for layout module behavior
   private _isLayoutModule(moduleType: string): boolean {
-    const layoutModuleTypes = ['horizontal', 'vertical'];
+    const layoutModuleTypes = ['horizontal', 'vertical', 'slider'];
     return layoutModuleTypes.includes(moduleType);
   }
 
@@ -11570,7 +11685,10 @@ export class LayoutTab extends LitElement {
 
       /* Ensure pinned preview content has solid background */
       .module-preview.pinned .preview-content {
-        background: var(--card-background-color);
+        background: var(
+          --view-background,
+          var(--lovelace-background, var(--primary-background-color))
+        );
       }
 
       .preview-header {
@@ -11622,6 +11740,10 @@ export class LayoutTab extends LitElement {
         display: block;
         max-width: 100%;
         overflow: hidden; /* ensure preview content doesn't overflow */
+        background: var(
+          --view-background,
+          var(--lovelace-background, var(--primary-background-color))
+        );
       }
 
       /* Module Tabs */

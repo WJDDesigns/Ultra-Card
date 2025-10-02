@@ -29,6 +29,5 @@ export declare class UltraVerticalModule extends BaseUltraModule {
     private getBorderCSS;
     private getJustifyContent;
     private getAlignItems;
-    private triggerPreviewUpdate;
     getStyles(): string;
 }

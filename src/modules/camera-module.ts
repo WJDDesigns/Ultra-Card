@@ -56,6 +56,7 @@ export class UltraCameraModule extends BaseUltraModule {
       live_view: true,
       auto_refresh: true,
       refresh_interval: 30,
+      audio_enabled: false,
 
       // Image quality
       image_quality: 'high',
@@ -315,6 +316,24 @@ export class UltraCameraModule extends BaseUltraModule {
             )}
           </div>
 
+          ${cameraModule.live_view !== false
+            ? html`
+                <div style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.camera.audio_enabled.title', lang, 'Enable Audio'),
+                    localize(
+                      'editor.camera.audio_enabled.desc',
+                      lang,
+                      'Enable audio for live camera streams. Audio is only available when Live View is enabled.'
+                    ),
+                    hass,
+                    { audio_enabled: cameraModule.audio_enabled === true },
+                    [this.booleanField('audio_enabled')],
+                    (e: CustomEvent) => updateModule(e.detail.value)
+                  )}
+                </div>
+              `
+            : ''}
           ${cameraModule.live_view === false
             ? html`
                 <div style="margin-top: 24px;">
@@ -1547,6 +1566,7 @@ export class UltraCameraModule extends BaseUltraModule {
                     .hass=${hass}
                     .cameraImage=${cameraEntity}
                     .cameraView=${cameraModule.live_view ? 'live' : 'auto'}
+                    .muted=${cameraModule.audio_enabled !== true}
                     style=${this.styleObjectToCss(imageStyles)}
                     class="camera-image"
                     @error=${() => {}}
@@ -2109,6 +2129,7 @@ export class UltraCameraModule extends BaseUltraModule {
           (huiImage as any).hass = hass;
           (huiImage as any).cameraImage = cameraEntity;
           (huiImage as any).cameraView = module.live_view ? 'live' : 'auto';
+          (huiImage as any).muted = module.audio_enabled !== true;
 
           huiImage.style.cssText = `
             width: 100vw !important;
@@ -2754,6 +2775,7 @@ export class UltraCameraModule extends BaseUltraModule {
         (cameraImg as any).hass = hass;
         (cameraImg as any).cameraImage = cameraEntity;
         (cameraImg as any).cameraView = module.live_view ? 'live' : 'auto';
+        (cameraImg as any).muted = module.audio_enabled !== true;
 
         cameraImg.style.cssText = `
           width: 100%;

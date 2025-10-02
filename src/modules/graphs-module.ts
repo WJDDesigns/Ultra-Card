@@ -60,11 +60,18 @@ export class UltraGraphsModule extends BaseUltraModule {
   }
 
   private _makeCacheKey(module: GraphsModule): string {
+    const dataSource = module.data_source || 'history';
+
+    if (dataSource === 'forecast') {
+      return `forecast::${module.forecast_entity}::${module.forecast_type}::${module.time_period}`;
+    }
+
+    // History mode key
     const ids = (module.entities || [])
       .filter(e => e.entity)
       .map(e => `${e.entity}|${e.attribute || 'state'}`)
       .join(';');
-    return `${ids}::${module.time_period}`;
+    return `history::${ids}::${module.time_period}`;
   }
 
   private _tryReadCache(module: GraphsModule): any | null {
@@ -96,6 +103,38 @@ export class UltraGraphsModule extends BaseUltraModule {
   // Track expanded state of entity cards
   private expandedEntities: Set<number> = new Set();
 
+  // Chart rendering constants
+  private readonly DEFAULT_COLORS = [
+    '#2196F3', // Blue
+    '#4CAF50', // Green
+    '#FF9800', // Orange
+    '#F44336', // Red
+    '#9C27B0', // Purple
+    '#00BCD4', // Cyan
+    '#FFEB3B', // Yellow
+    '#795548', // Brown
+    '#607D8B', // Blue Grey
+    '#E91E63', // Pink
+  ];
+
+  private readonly FORECAST_ATTRIBUTE_LABELS: Record<string, string> = {
+    temperature: 'Temperature',
+    precipitation: 'Precipitation',
+    wind_speed: 'Wind Speed',
+    humidity: 'Humidity',
+    pressure: 'Pressure',
+    cloud_coverage: 'Cloud Coverage',
+  };
+
+  private readonly FORECAST_ATTRIBUTE_UNITS: Record<string, string> = {
+    temperature: '°',
+    precipitation: 'mm',
+    wind_speed: 'km/h',
+    humidity: '%',
+    pressure: 'hPa',
+    cloud_coverage: '%',
+  };
+
   createDefault(id?: string, hass?: HomeAssistant): GraphsModule {
     const defaultId = id || this.generateId('graphs');
 
@@ -103,6 +142,11 @@ export class UltraGraphsModule extends BaseUltraModule {
       id: defaultId,
       type: 'graphs',
       name: 'New Graph',
+
+      // Data source defaults
+      data_source: 'history', // backward compatible default
+      forecast_type: 'hourly',
+      forecast_entity: '',
 
       // Chart configuration
       chart_type: 'line',
@@ -158,18 +202,22 @@ export class UltraGraphsModule extends BaseUltraModule {
     ];
   }
 
-  private getTimePeriodOptions(lang: string): Array<{ value: string; label: string }> {
+  private getTimePeriodOptions(
+    lang: string,
+    dataSource?: string
+  ): Array<{ value: string; label: string }> {
+    const prefix = dataSource === 'forecast' ? 'Next' : 'Last';
     return [
-      { value: '1h', label: localize('editor.graphs.period.1h', lang, 'Last Hour') },
-      { value: '3h', label: localize('editor.graphs.period.3h', lang, 'Last 3 Hours') },
-      { value: '6h', label: localize('editor.graphs.period.6h', lang, 'Last 6 Hours') },
-      { value: '12h', label: localize('editor.graphs.period.12h', lang, 'Last 12 Hours') },
-      { value: '24h', label: localize('editor.graphs.period.24h', lang, 'Last 24 Hours') },
-      { value: '2d', label: localize('editor.graphs.period.2d', lang, 'Last 2 Days') },
-      { value: '7d', label: localize('editor.graphs.period.7d', lang, 'Last Week') },
-      { value: '30d', label: localize('editor.graphs.period.30d', lang, 'Last Month') },
-      { value: '90d', label: localize('editor.graphs.period.90d', lang, 'Last 3 Months') },
-      { value: '365d', label: localize('editor.graphs.period.365d', lang, 'Last Year') },
+      { value: '1h', label: localize('editor.graphs.period.1h', lang, `${prefix} Hour`) },
+      { value: '3h', label: localize('editor.graphs.period.3h', lang, `${prefix} 3 Hours`) },
+      { value: '6h', label: localize('editor.graphs.period.6h', lang, `${prefix} 6 Hours`) },
+      { value: '12h', label: localize('editor.graphs.period.12h', lang, `${prefix} 12 Hours`) },
+      { value: '24h', label: localize('editor.graphs.period.24h', lang, `${prefix} 24 Hours`) },
+      { value: '2d', label: localize('editor.graphs.period.2d', lang, `${prefix} 2 Days`) },
+      { value: '7d', label: localize('editor.graphs.period.7d', lang, `${prefix} Week`) },
+      { value: '30d', label: localize('editor.graphs.period.30d', lang, `${prefix} Month`) },
+      { value: '90d', label: localize('editor.graphs.period.90d', lang, `${prefix} 3 Months`) },
+      { value: '365d', label: localize('editor.graphs.period.365d', lang, `${prefix} Year`) },
     ];
   }
 
@@ -209,6 +257,111 @@ export class UltraGraphsModule extends BaseUltraModule {
     return html`
       <div class="uc-graphs-general-tab">
         ${FormUtils.injectCleanFormStyles()}
+
+        <!-- Data Source Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+        >
+          <div
+            class="section-title"
+            style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"
+          >
+            <ha-icon icon="mdi:database" style="color: var(--primary-color);"></ha-icon>
+            ${localize('editor.graphs.data_source.title', lang, 'Data Source')}
+          </div>
+
+          ${this.renderFieldSection(
+            localize('editor.graphs.data_source.mode', lang, 'Mode'),
+            localize(
+              'editor.graphs.data_source.desc',
+              lang,
+              'Choose between historical data or weather forecasts.'
+            ),
+            hass,
+            { data_source: graphsModule.data_source || 'history' },
+            [
+              this.selectField('data_source', [
+                {
+                  value: 'history',
+                  label: localize('editor.graphs.mode.history', lang, 'History'),
+                },
+                {
+                  value: 'forecast',
+                  label: localize('editor.graphs.mode.forecast', lang, 'Forecast'),
+                },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.data_source;
+              if (next === (graphsModule.data_source || 'history')) return;
+              updateModule({ data_source: next });
+              // Clear cached data when switching modes
+              delete this._historyData[graphsModule.id];
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
+          ${graphsModule.data_source === 'forecast'
+            ? html`
+                <div class="conditional-fields-group" style="padding: 16px; margin-top: 12px;">
+                  ${FormUtils.renderField(
+                    localize('editor.graphs.forecast_entity', lang, 'Weather Entity'),
+                    localize(
+                      'editor.graphs.forecast_entity_desc',
+                      lang,
+                      'Select a weather entity for forecasts.'
+                    ),
+                    hass,
+                    { forecast_entity: graphsModule.forecast_entity || '' },
+                    [
+                      FormUtils.createSchemaItem('forecast_entity', {
+                        entity: { domain: 'weather' },
+                      }),
+                    ],
+                    (e: CustomEvent) => {
+                      updateModule({
+                        forecast_entity: e.detail.value?.forecast_entity || e.detail.value,
+                      });
+                    }
+                  )}
+                  <div style="margin-top: 16px;">
+                    ${this.renderFieldSection(
+                      localize('editor.graphs.forecast_type', lang, 'Forecast Type'),
+                      localize(
+                        'editor.graphs.forecast_type_desc',
+                        lang,
+                        'Hourly or daily forecasts.'
+                      ),
+                      hass,
+                      { forecast_type: graphsModule.forecast_type || 'hourly' },
+                      [
+                        this.selectField('forecast_type', [
+                          {
+                            value: 'hourly',
+                            label: localize('editor.graphs.type.hourly', lang, 'Hourly'),
+                          },
+                          {
+                            value: 'daily',
+                            label: localize('editor.graphs.type.daily', lang, 'Daily'),
+                          },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const next = e.detail.value.forecast_type;
+                        if (next === graphsModule.forecast_type) return;
+                        updateModule({ forecast_type: next });
+                        delete this._historyData[graphsModule.id];
+                        delete this._historyError[graphsModule.id];
+                        delete this._historyLoading[graphsModule.id];
+                        delete this._deferredHistoryScheduled[graphsModule.id];
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }
+                    )}
+                  </div>
+                </div>
+              `
+            : ''}
+        </div>
 
         <!-- Chart Type Section -->
         <div
@@ -256,8 +409,21 @@ export class UltraGraphsModule extends BaseUltraModule {
             style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;"
           >
             <ha-icon icon="mdi:database" style="color: var(--primary-color);"></ha-icon>
-            ${localize('editor.graphs.data_sources.title', lang, 'Data Sources')}
+            ${graphsModule.data_source === 'forecast'
+              ? localize('editor.graphs.forecast_attributes.title', lang, 'Forecast Attributes')
+              : localize('editor.graphs.data_sources.title', lang, 'Data Sources')}
           </div>
+          ${graphsModule.data_source === 'forecast'
+            ? html`<div
+                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: 8px; border-left: 3px solid var(--primary-color);"
+              >
+                ${localize(
+                  'editor.graphs.forecast_attributes.desc',
+                  lang,
+                  'Select which forecast values to display from the weather entity configured above. Each attribute will be shown as a separate line on the graph.'
+                )}
+              </div>`
+            : ''}
 
           <div class="entities-grid" style="display: grid; gap: 12px;">
             ${graphsModule.entities?.map(
@@ -323,27 +489,114 @@ export class UltraGraphsModule extends BaseUltraModule {
 
                     <!-- Basic Settings (Always Visible) -->
                     <div style="display: grid; gap: 12px;">
-                      <!-- Entity Picker -->
-                      ${FormUtils.renderField(
-                        localize('editor.graphs.entity.label', lang, 'Entity'),
-                        localize('editor.graphs.entity.desc', lang, 'Select an entity to plot.'),
-                        hass,
-                        { entity: entity.entity || '' },
-                        [FormUtils.createSchemaItem('entity', { entity: {} })],
-                        (e: CustomEvent) => {
-                          this._updateEntity(
-                            graphsModule,
-                            index,
-                            {
-                              entity:
-                                (e.detail as any).value?.entity ||
-                                e.detail.value?.entity ||
-                                e.detail.value,
-                            },
-                            updateModule
-                          );
-                        }
-                      )}
+                      <!-- Entity Picker (History Mode Only) -->
+                      ${graphsModule.data_source !== 'forecast'
+                        ? FormUtils.renderField(
+                            localize('editor.graphs.entity.label', lang, 'Entity'),
+                            localize(
+                              'editor.graphs.entity.desc',
+                              lang,
+                              'Select an entity to plot.'
+                            ),
+                            hass,
+                            { entity: entity.entity || '' },
+                            [FormUtils.createSchemaItem('entity', { entity: {} })],
+                            (e: CustomEvent) => {
+                              this._updateEntity(
+                                graphsModule,
+                                index,
+                                {
+                                  entity:
+                                    (e.detail as any).value?.entity ||
+                                    e.detail.value?.entity ||
+                                    e.detail.value,
+                                },
+                                updateModule
+                              );
+                            }
+                          )
+                        : ''}
+
+                      <!-- Forecast Attribute Selection (Forecast Mode - Always Visible) -->
+                      ${graphsModule.data_source === 'forecast'
+                        ? this.renderFieldSection(
+                            localize(
+                              'editor.graphs.entity.forecast_attr',
+                              lang,
+                              'Forecast Attribute'
+                            ),
+                            localize(
+                              'editor.graphs.entity.forecast_attr_desc',
+                              lang,
+                              'Which forecast value to plot on the graph.'
+                            ),
+                            hass,
+                            { forecast_attribute: entity.forecast_attribute || 'temperature' },
+                            [
+                              this.selectField('forecast_attribute', [
+                                {
+                                  value: 'temperature',
+                                  label: localize(
+                                    'editor.graphs.forecast.temp',
+                                    lang,
+                                    'Temperature'
+                                  ),
+                                },
+                                {
+                                  value: 'precipitation',
+                                  label: localize(
+                                    'editor.graphs.forecast.precip',
+                                    lang,
+                                    'Precipitation'
+                                  ),
+                                },
+                                {
+                                  value: 'wind_speed',
+                                  label: localize(
+                                    'editor.graphs.forecast.wind',
+                                    lang,
+                                    'Wind Speed'
+                                  ),
+                                },
+                                {
+                                  value: 'humidity',
+                                  label: localize(
+                                    'editor.graphs.forecast.humidity',
+                                    lang,
+                                    'Humidity'
+                                  ),
+                                },
+                                {
+                                  value: 'pressure',
+                                  label: localize(
+                                    'editor.graphs.forecast.pressure',
+                                    lang,
+                                    'Pressure'
+                                  ),
+                                },
+                                {
+                                  value: 'cloud_coverage',
+                                  label: localize(
+                                    'editor.graphs.forecast.clouds',
+                                    lang,
+                                    'Cloud Coverage'
+                                  ),
+                                },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const next = e.detail.value.forecast_attribute;
+                              if (next === entity.forecast_attribute) return;
+                              this._updateEntity(
+                                graphsModule,
+                                index,
+                                { forecast_attribute: next },
+                                updateModule
+                              );
+                              setTimeout(() => this.triggerPreviewUpdate(), 50);
+                            }
+                          )
+                        : ''}
 
                       <!-- Display Name -->
                       <input
@@ -450,43 +703,45 @@ export class UltraGraphsModule extends BaseUltraModule {
                       "
                     >
                       <div style="padding-top: 16px; display: grid; gap: 16px;">
-                        <!-- Attribute Selection -->
-                        ${FormUtils.renderField(
-                          localize('editor.graphs.entity.attribute', lang, 'Attribute'),
-                          localize(
-                            'editor.graphs.entity.attribute_desc',
-                            lang,
-                            'Use entity state or select a specific attribute to track.'
-                          ),
-                          hass,
-                          { attribute: entity.attribute || '' },
-                          [
-                            FormUtils.createSchemaItem('attribute', {
-                              select: {
-                                options: [
-                                  {
-                                    value: '',
-                                    label: localize(
-                                      'editor.graphs.entity.state_default',
-                                      lang,
-                                      'State (default)'
-                                    ),
+                        <!-- Attribute Selection (History Mode) -->
+                        ${graphsModule.data_source !== 'forecast'
+                          ? FormUtils.renderField(
+                              localize('editor.graphs.entity.attribute', lang, 'Attribute'),
+                              localize(
+                                'editor.graphs.entity.attribute_desc',
+                                lang,
+                                'Use entity state or select a specific attribute to track.'
+                              ),
+                              hass,
+                              { attribute: entity.attribute || '' },
+                              [
+                                FormUtils.createSchemaItem('attribute', {
+                                  select: {
+                                    options: [
+                                      {
+                                        value: '',
+                                        label: localize(
+                                          'editor.graphs.entity.state_default',
+                                          lang,
+                                          'State (default)'
+                                        ),
+                                      },
+                                      ...this._getEntityAttributes(entity.entity, hass),
+                                    ],
+                                    mode: 'dropdown',
                                   },
-                                  ...this._getEntityAttributes(entity.entity, hass),
-                                ],
-                                mode: 'dropdown',
-                              },
-                            }),
-                          ],
-                          (e: CustomEvent) => {
-                            this._updateEntity(
-                              graphsModule,
-                              index,
-                              { attribute: e.detail.value.attribute },
-                              updateModule
-                            );
-                          }
-                        )}
+                                }),
+                              ],
+                              (e: CustomEvent) => {
+                                this._updateEntity(
+                                  graphsModule,
+                                  index,
+                                  { attribute: e.detail.value.attribute },
+                                  updateModule
+                                );
+                              }
+                            )
+                          : ''}
 
                         <!-- Line Chart Specific Options -->
                         ${['line', 'area'].includes(graphsModule.chart_type)
@@ -841,63 +1096,96 @@ export class UltraGraphsModule extends BaseUltraModule {
                 </div>`
               : ''}
 
-            <!-- Time Period -->
-            ${this.renderFieldSection(
-              localize('editor.graphs.display.time_period', lang, 'Time Period'),
-              localize(
-                'editor.graphs.display.time_period_desc',
-                lang,
-                'How much historical data to show.'
-              ),
-              hass,
-              { time_period: graphsModule.time_period },
-              [this.selectField('time_period', this.getTimePeriodOptions(lang))],
-              (e: CustomEvent) => {
-                const newPeriod = e.detail.value.time_period;
-                const prev = graphsModule.time_period;
-                if (newPeriod === prev) return;
-                updateModule({ time_period: newPeriod });
-                delete this._historyData[graphsModule.id];
-                delete this._historyError[graphsModule.id];
-                delete this._historyLoading[graphsModule.id];
-                delete this._deferredHistoryScheduled[graphsModule.id];
-                const updated = { ...graphsModule, time_period: newPeriod } as any;
-                this._loadHistoryData(updated, hass);
-                this._triggerHistoryLoad(updated, hass);
-                this.requestUpdate();
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              }
-            )}
-
-            <!-- Normalize Values Toggle -->
-            <div style="margin-bottom: 16px;">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <ha-switch
-                  .checked=${graphsModule.normalize_values || false}
-                  @change=${(e: Event) =>
-                    updateModule({ normalize_values: (e.target as any).checked })}
-                ></ha-switch>
-                <span style="font-size: 14px;"
-                  >${localize(
-                    'editor.graphs.display.normalize_values',
+            <!-- Time Period (History Mode Only) -->
+            ${graphsModule.data_source !== 'forecast'
+              ? this.renderFieldSection(
+                  localize('editor.graphs.display.time_period', lang, 'Time Period'),
+                  localize(
+                    'editor.graphs.display.time_period_desc',
                     lang,
-                    'Normalize values to same scale'
-                  )}</span
+                    'How much historical data to show.'
+                  ),
+                  hass,
+                  { time_period: graphsModule.time_period },
+                  [
+                    this.selectField(
+                      'time_period',
+                      this.getTimePeriodOptions(lang, graphsModule.data_source)
+                    ),
+                  ],
+                  (e: CustomEvent) => {
+                    const newPeriod = e.detail.value.time_period;
+                    const prev = graphsModule.time_period;
+                    if (newPeriod === prev) return;
+                    updateModule({ time_period: newPeriod });
+                    delete this._historyData[graphsModule.id];
+                    delete this._historyError[graphsModule.id];
+                    delete this._historyLoading[graphsModule.id];
+                    delete this._deferredHistoryScheduled[graphsModule.id];
+                    const updated = { ...graphsModule, time_period: newPeriod } as any;
+                    this._loadHistoryData(updated, hass);
+                    this._triggerHistoryLoad(updated, hass);
+                    this.requestUpdate();
+                    // Trigger re-render to update dropdown UI
+                    setTimeout(() => {
+                      this.triggerPreviewUpdate();
+                    }, 50);
+                  }
+                )
+              : ''}
+
+            <!-- Forecast Info (Forecast Mode Only) -->
+            ${graphsModule.data_source === 'forecast'
+              ? html`<div
+                  style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.08); border-radius: 8px; border-left: 3px solid var(--primary-color); margin-bottom: 16px;"
                 >
-              </label>
-              <div
-                style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; margin-left: 40px;"
-              >
-                ${localize(
-                  'editor.graphs.display.normalize_desc',
-                  lang,
-                  'Useful when comparing entities with different units (e.g., % vs miles)'
-                )}
-              </div>
-            </div>
+                  <div style="font-size: 13px; color: var(--primary-text-color); font-weight: 500;">
+                    ${localize('editor.graphs.forecast_info.title', lang, 'Forecast Display')}
+                  </div>
+                  <div
+                    style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;"
+                  >
+                    ${localize(
+                      'editor.graphs.forecast_info.desc',
+                      lang,
+                      'Forecasts display all available data from your weather service. The forecast type (hourly/daily) determines the time range shown.'
+                    )}
+                  </div>
+                </div>`
+              : ''}
+
+            <!-- Normalize Values Toggle (only show when multiple entities) -->
+            ${(graphsModule.entities?.filter(e =>
+              graphsModule.data_source === 'forecast' ? e.forecast_attribute : e.entity
+            ).length || 0) > 1
+              ? html`
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                      <ha-switch
+                        .checked=${graphsModule.normalize_values || false}
+                        @change=${(e: Event) =>
+                          updateModule({ normalize_values: (e.target as any).checked })}
+                      ></ha-switch>
+                      <span style="font-size: 14px;"
+                        >${localize(
+                          'editor.graphs.display.normalize_values',
+                          lang,
+                          'Normalize values to same scale'
+                        )}</span
+                      >
+                    </label>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; margin-left: 40px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.normalize_desc',
+                        lang,
+                        'Useful when comparing entities with different units (e.g., % vs miles)'
+                      )}
+                    </div>
+                  </div>
+                `
+              : ''}
 
             <!-- Chart Height -->
             <div>
@@ -1201,96 +1489,128 @@ export class UltraGraphsModule extends BaseUltraModule {
               style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 8px;"
               >${localize('editor.graphs.display.chart_options', lang, 'Chart Options')}</label
             >
-            <label
-              style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
+            <div
+              style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;"
             >
-              <ha-switch
-                .checked=${graphsModule.show_legend !== false}
-                @change=${(e: Event) => {
-                  const t = e.target as any;
-                  updateModule({ show_legend: t.checked });
-                }}
-              ></ha-switch>
-              <span>${localize('editor.graphs.display.show_legend', lang, 'Show Legend')}</span>
-            </label>
-            ${graphsModule.chart_type === 'line'
-              ? html`<label
-                  style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                >
-                  <ha-switch
-                    .checked=${graphsModule.show_grid !== false}
-                    @change=${(e: Event) => {
-                      const t = e.target as any;
-                      updateModule({ show_grid: t.checked });
-                    }}
-                  ></ha-switch>
-                  <span>${localize('editor.graphs.display.show_grid', lang, 'Show Grid')}</span>
-                </label>`
-              : ''}
-            ${['pie', 'donut'].includes(graphsModule.chart_type)
-              ? html`
-                  <label
+              <label
+                style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
+              >
+                <ha-switch
+                  .checked=${graphsModule.show_legend !== false}
+                  @change=${(e: Event) => {
+                    const t = e.target as any;
+                    updateModule({ show_legend: t.checked });
+                  }}
+                ></ha-switch>
+                <span>${localize('editor.graphs.display.show_legend', lang, 'Show Legend')}</span>
+              </label>
+              ${graphsModule.chart_type === 'line'
+                ? html`<label
                     style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
                   >
                     <ha-switch
-                      .checked=${Number((graphsModule as any).slice_gap || 0) > 0}
+                      .checked=${graphsModule.show_grid !== false}
                       @change=${(e: Event) => {
                         const t = e.target as any;
-                        // Use a responsive default (approx 2–4 degrees depending on count)
-                        const entitiesCount = (graphsModule.entities || []).filter(
-                          en => en?.entity
-                        ).length;
-                        const computed = Math.max(
-                          2,
-                          Math.min(4, Math.round(360 / Math.max(entitiesCount * 30, 1)))
-                        );
-                        updateModule({ slice_gap: t.checked ? computed : 0 } as any);
+                        updateModule({ show_grid: t.checked });
+                      }}
+                    ></ha-switch>
+                    <span>${localize('editor.graphs.display.show_grid', lang, 'Show Grid')}</span>
+                  </label>`
+                : ''}
+              ${graphsModule.chart_type === 'line' && graphsModule.show_grid !== false
+                ? html`<label
+                    style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
+                  >
+                    <ha-switch
+                      .checked=${(graphsModule as any).show_grid_values !== false}
+                      @change=${(e: Event) => {
+                        const t = e.target as any;
+                        updateModule({ show_grid_values: t.checked } as any);
                       }}
                     ></ha-switch>
                     <span
                       >${localize(
-                        'editor.graphs.display.add_slice_gap',
+                        'editor.graphs.display.show_grid_values',
                         lang,
-                        'Add Slice Gap'
+                        'Show Grid Values'
                       )}</span
                     >
-                  </label>
-                `
-              : ''}
-            ${graphsModule.chart_type === 'line'
-              ? html`
-                  <label
+                  </label>`
+                : ''}
+              ${['pie', 'donut'].includes(graphsModule.chart_type)
+                ? html`
+                    <label
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
+                    >
+                      <ha-switch
+                        .checked=${Number((graphsModule as any).slice_gap || 0) > 0}
+                        @change=${(e: Event) => {
+                          const t = e.target as any;
+                          // Use a responsive default (approx 2–4 degrees depending on count)
+                          const entitiesCount = (graphsModule.entities || []).filter(
+                            en => en?.entity
+                          ).length;
+                          const computed = Math.max(
+                            2,
+                            Math.min(4, Math.round(360 / Math.max(entitiesCount * 30, 1)))
+                          );
+                          updateModule({ slice_gap: t.checked ? computed : 0 } as any);
+                        }}
+                      ></ha-switch>
+                      <span
+                        >${localize(
+                          'editor.graphs.display.add_slice_gap',
+                          lang,
+                          'Add Slice Gap'
+                        )}</span
+                      >
+                    </label>
+                  `
+                : ''}
+              ${graphsModule.chart_type === 'line'
+                ? html`
+                    <label
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
+                    >
+                      <ha-switch
+                        .checked=${graphsModule.smooth_curves !== false}
+                        @change=${(e: Event) => {
+                          const t = e.target as any;
+                          updateModule({ smooth_curves: t.checked });
+                        }}
+                      ></ha-switch>
+                      <span
+                        >${localize(
+                          'editor.graphs.display.smooth_lines',
+                          lang,
+                          'Smooth Lines'
+                        )}</span
+                      >
+                    </label>
+                  `
+                : ''}
+              ${graphsModule.chart_type === 'line'
+                ? html`<label
                     style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
                   >
                     <ha-switch
-                      .checked=${graphsModule.smooth_curves !== false}
+                      .checked=${graphsModule.show_tooltips !== false}
                       @change=${(e: Event) => {
                         const t = e.target as any;
-                        updateModule({ smooth_curves: t.checked });
+                        updateModule({ show_tooltips: t.checked });
                       }}
                     ></ha-switch>
                     <span
-                      >${localize('editor.graphs.display.smooth_lines', lang, 'Smooth Lines')}</span
+                      >${localize(
+                        'editor.graphs.display.show_tooltips',
+                        lang,
+                        'Show Tooltips'
+                      )}</span
                     >
-                  </label>
-                `
-              : ''}
-            ${graphsModule.chart_type === 'line'
-              ? html`<label
-                  style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
-                >
-                  <ha-switch
-                    .checked=${graphsModule.show_tooltips !== false}
-                    @change=${(e: Event) => {
-                      const t = e.target as any;
-                      updateModule({ show_tooltips: t.checked });
-                    }}
-                  ></ha-switch>
-                  <span
-                    >${localize('editor.graphs.display.show_tooltips', lang, 'Show Tooltips')}</span
-                  >
-                </label>`
-              : ''}
+                  </label>`
+                : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -1462,7 +1782,9 @@ export class UltraGraphsModule extends BaseUltraModule {
     const hasEntities =
       graphsModule.entities &&
       graphsModule.entities.length > 0 &&
-      graphsModule.entities.some(e => e.entity);
+      (graphsModule.data_source === 'forecast'
+        ? graphsModule.entities.some(e => e.forecast_attribute)
+        : graphsModule.entities.some(e => e.entity));
 
     if (!hasEntities) {
       const resolvedBgColor = resolvedBackgroundColor;
@@ -1518,14 +1840,32 @@ export class UltraGraphsModule extends BaseUltraModule {
     const primaryValue =
       typeof primaryValueRaw === 'number' ? primaryValueRaw : parseFloat(primaryValueRaw);
 
-    // Generate simple preview chart
-    const chartData = this._prepareSimpleChartData(graphsModule, hass);
+    // Generate simple preview chart (or use forecast data for legend)
+    let chartData = this._prepareSimpleChartData(graphsModule, hass);
+
+    // In forecast mode, prepare chart data from stored forecast data for legend
+    if (graphsModule.data_source === 'forecast' && this._historyData[graphsModule.id]) {
+      const forecastData = this._historyData[graphsModule.id];
+      chartData = forecastData.datasets.map((dataset: any) => ({
+        name: dataset.name,
+        value: dataset.values[dataset.values.length - 1] || 0, // Use last value
+        color: dataset.color,
+        unit: dataset.unit,
+        entityId: dataset.entityId,
+      }));
+    }
 
     const headerPos = graphsModule.info_position || 'top_left';
+    const showGridValues =
+      graphsModule.chart_type === 'line' &&
+      graphsModule.show_grid !== false &&
+      (graphsModule as any).show_grid_values !== false;
+    // Only add extra padding when grid values are shown AND position is on the left side
+    const leftPadding = showGridValues ? '32px' : '16px';
     const posMap: Record<string, string> = {
-      top_left: 'top:12px; left:16px; text-align:left;',
+      top_left: `top:12px; left:${leftPadding}; text-align:left;`,
       top_right: 'top:12px; right:16px; text-align:right;',
-      bottom_left: 'bottom:12px; left:16px; text-align:left;',
+      bottom_left: `bottom:12px; left:${leftPadding}; text-align:left;`,
       bottom_right: 'bottom:12px; right:16px; text-align:right;',
       middle: 'top:50%; left:50%; transform: translate(-50%, -50%); text-align:center;',
     };
@@ -1847,7 +2187,11 @@ export class UltraGraphsModule extends BaseUltraModule {
     textStyle?: string,
     align?: 'left' | 'center' | 'right'
   ): TemplateResult {
-    if (data.length === 0) {
+    // In forecast mode, data comes from _historyData, not from _prepareSimpleChartData
+    // So we skip the empty data check for forecast mode
+    const hasForecastData = module.data_source === 'forecast' && this._historyData[module.id];
+
+    if (data.length === 0 && !hasForecastData) {
       return html` <div style="color: var(--secondary-text-color);">No data available</div> `;
     }
 
@@ -2203,33 +2547,10 @@ export class UltraGraphsModule extends BaseUltraModule {
           box-sizing: border-box; 
           margin: 0; 
           padding: 0;
-          overflow: hidden;
+          overflow: visible;
           contain: layout style;
         "
       >
-        <!-- Debug info badge with refresh button -->
-
-        ${module.show_tooltips !== false
-          ? html`
-              <div
-                id="graph-tooltip-${module.id}"
-                style="
-              position: absolute;
-              display: none;
-              background: var(--card-background-color);
-              border: 1px solid var(--divider-color);
-              border-radius: 4px;
-              padding: 8px 12px;
-              font-size: 14px;
-              color: var(--primary-text-color);
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-              pointer-events: none;
-              z-index: 1000;
-              white-space: nowrap;
-            "
-              ></div>
-            `
-          : ''}
         <svg
           width="100%"
           height="100%"
@@ -2247,7 +2568,22 @@ export class UltraGraphsModule extends BaseUltraModule {
           ${grid
             ? svg`${Array.from({ length: 4 }, (_, i) => {
                 const y = ((i + 1) * 100) / 5; // 20,40,60,80 across full height
-                return svg`<line x1="0" y1="${y}" x2="300" y2="${y}" stroke="rgba(255,255,255,.08)" stroke-width="0.5" />`;
+                const gridValue = maxValue - ((i + 1) / 5) * valueRange;
+                const showValues = (module as any).show_grid_values !== false;
+                return svg`
+                  <line x1="0" y1="${y}" x2="300" y2="${y}" stroke="rgba(255,255,255,.08)" stroke-width="0.5" />
+                  ${
+                    showValues
+                      ? svg`<text 
+                          x="2" 
+                          y="${y - 2}" 
+                          font-size="8" 
+                          fill="var(--secondary-text-color)" 
+                          opacity="0.6"
+                        >${Math.round(gridValue)}</text>`
+                      : ''
+                  }
+                `;
               })}`
             : ''}
           ${(() => {
@@ -2572,54 +2908,62 @@ export class UltraGraphsModule extends BaseUltraModule {
     formattedValue: string,
     timePoint: string
   ): void {
-    // Get the circle element and find the tooltip in the same container
+    // Get the circle element
     const circle = event.target as SVGCircleElement;
-    const container = circle.closest('div');
-    const tooltip = container?.querySelector(`#graph-tooltip-${moduleId}`) as HTMLElement;
 
-    if (!tooltip || !container) return;
+    // Find or create tooltip element on body (to avoid overflow clipping)
+    let tooltip = document.getElementById(`graph-tooltip-${moduleId}`) as HTMLElement;
+
+    if (!tooltip) {
+      // Create tooltip if it doesn't exist
+      tooltip = document.createElement('div');
+      tooltip.id = `graph-tooltip-${moduleId}`;
+      tooltip.style.cssText = `
+        position: fixed;
+        display: none;
+        background: var(--card-background-color);
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--primary-text-color);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        z-index: 10000;
+        white-space: nowrap;
+      `;
+      document.body.appendChild(tooltip);
+    }
 
     // Create tooltip content
     tooltip.innerHTML = `
       <div style="font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;">${seriesName}</div>
       <div style="color: var(--secondary-text-color); font-size: 12px;">${timePoint}</div>
-      <div style="font-size: 16px; margin-top: 4px;">${formattedValue}</div>
+      <div style="font-size: 16px; margin-top: 4px; color: var(--primary-color);">${formattedValue}</div>
     `;
 
-    // Get positions
-    const containerRect = container.getBoundingClientRect();
+    // Get circle position in viewport
     const circleRect = circle.getBoundingClientRect();
 
-    // Calculate tooltip position relative to container
-    const x = circleRect.left - containerRect.left + circleRect.width / 2;
-    const y = circleRect.top - containerRect.top;
+    // Position tooltip above the point using fixed positioning
+    const x = circleRect.left + circleRect.width / 2;
+    const y = circleRect.top;
 
     // Show tooltip
     tooltip.style.display = 'block';
 
-    // Position tooltip above the point
+    // Position tooltip above the point with fixed positioning
     tooltip.style.left = `${x}px`;
     tooltip.style.top = `${y - 10}px`;
     tooltip.style.transform = 'translate(-50%, -100%)';
   }
 
   private _hideTooltip(moduleId: string, event?: MouseEvent): void {
-    // Try to get tooltip from event target first, then fall back to document search
-    if (event) {
-      const element = event.currentTarget as SVGCircleElement;
-      const container = element?.closest('div');
-      const tooltip = container?.querySelector(`#graph-tooltip-${moduleId}`) as HTMLElement;
-      if (tooltip) {
-        tooltip.style.display = 'none';
-        return;
-      }
+    // Get tooltip from document (it's appended to body)
+    const tooltip = document.getElementById(`graph-tooltip-${moduleId}`) as HTMLElement;
+    if (tooltip) {
+      tooltip.style.display = 'none';
     }
-
-    // Fallback: search in document
-    const tooltips = document.querySelectorAll(`#graph-tooltip-${moduleId}`);
-    tooltips.forEach(tooltip => {
-      (tooltip as HTMLElement).style.display = 'none';
-    });
   }
 
   private _generateTimePoints(timePeriod: string): string[] {
@@ -2753,6 +3097,12 @@ export class UltraGraphsModule extends BaseUltraModule {
 
   private _loadHistoryData(module: GraphsModule, hass: HomeAssistant): void {
     if (!module.entities || module.entities.length === 0) return;
+
+    // Handle forecast mode
+    if (module.data_source === 'forecast') {
+      this._loadForecastData(module, hass);
+      return;
+    }
 
     // Try cache first for an instant historical curve on reload
     if (!this._historyData[module.id]) {
@@ -3223,20 +3573,159 @@ export class UltraGraphsModule extends BaseUltraModule {
     return isNaN(n) ? null : n;
   }
 
+  // ============================================================================
+  // FORECAST DATA METHODS
+  // ============================================================================
+
+  private async _fetchForecastData(module: GraphsModule, hass: HomeAssistant): Promise<any> {
+    if (!module.forecast_entity || !hass) {
+      throw new Error('Forecast entity not configured');
+    }
+
+    try {
+      // Call weather.get_forecasts service using WebSocket API (requires return_response)
+      const response = (await hass.callWS({
+        type: 'call_service',
+        domain: 'weather',
+        service: 'get_forecasts',
+        service_data: {
+          type: module.forecast_type || 'hourly',
+        },
+        target: {
+          entity_id: module.forecast_entity,
+        },
+        return_response: true,
+      })) as any;
+
+      // Response format: { response: { [entity_id]: { forecast: [...] } } }
+      const forecastData = response?.response?.[module.forecast_entity]?.forecast;
+
+      if (!forecastData || !Array.isArray(forecastData)) {
+        console.error('Ultra Card: Invalid forecast data received from weather service');
+        throw new Error('Invalid forecast data received from weather service');
+      }
+
+      return forecastData;
+    } catch (error) {
+      console.error('Ultra Card: Failed to fetch forecast data:', error);
+      throw error;
+    }
+  }
+
+  private _processForecastData(
+    forecastData: any[],
+    module: GraphsModule,
+    timePoints: string[]
+  ): any {
+    const datasets = (module.entities || [])
+      .filter(e => e.forecast_attribute)
+      .map((entityConfig, index) => {
+        const attr = entityConfig.forecast_attribute!;
+
+        // Extract values from forecast array
+        const values = forecastData.map(forecast => {
+          const val = forecast[attr];
+          return typeof val === 'number' ? val : parseFloat(val) || 0;
+        });
+
+        // Limit to requested time points
+        const limitedValues = values.slice(0, timePoints.length);
+
+        return {
+          name: entityConfig.name || this._getForecastAttributeLabel(attr),
+          color: this._formatColor(entityConfig.color) || this._getDefaultColor(index),
+          values: limitedValues,
+          lineWidth: entityConfig.line_width ?? 2,
+          showPoints: entityConfig.show_points !== false,
+          fillArea: entityConfig.fill_area === true,
+          lineStyle: entityConfig.line_style || 'solid',
+          unit: this._getForecastAttributeUnit(attr),
+          entityId: module.forecast_entity,
+        };
+      });
+
+    const result = {
+      timePoints: this._generateForecastTimePoints(forecastData, module.forecast_type),
+      datasets,
+      min: Math.min(...datasets.flatMap(d => d.values)),
+      max: Math.max(...datasets.flatMap(d => d.values)),
+      lastUpdated: Date.now(),
+      source: 'forecast',
+    };
+
+    return result;
+  }
+
+  private _generateForecastTimePoints(forecastData: any[], type?: string): string[] {
+    return forecastData.map(forecast => {
+      const date = new Date(forecast.datetime);
+      return type === 'daily'
+        ? date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+        : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    });
+  }
+
+  private _getForecastAttributeLabel(attr: string): string {
+    return this.FORECAST_ATTRIBUTE_LABELS[attr] || attr;
+  }
+
+  private _getForecastAttributeUnit(attr: string): string {
+    return this.FORECAST_ATTRIBUTE_UNITS[attr] || '';
+  }
+
+  private _loadForecastData(module: GraphsModule, hass: HomeAssistant): void {
+    if (!module.forecast_entity) return;
+
+    // Check cache first
+    if (!this._historyData[module.id]) {
+      const cached = this._tryReadCache(module);
+      if (cached && cached.source === 'forecast') {
+        this._historyData[module.id] = cached;
+      }
+    }
+
+    // Schedule forecast fetch
+    if (!this._historyLoading[module.id] && !this._deferredHistoryScheduled[module.id]) {
+      this._deferredHistoryScheduled[module.id] = true;
+      this._historyLoading[module.id] = true;
+      this._fetchForecastDataAsync(module, hass);
+    }
+  }
+
+  private async _fetchForecastDataAsync(module: GraphsModule, hass: HomeAssistant): Promise<void> {
+    try {
+      const forecastData = await this._fetchForecastData(module, hass);
+      const timePoints = this._generateForecastTimePoints(forecastData, module.forecast_type);
+      const processed = this._processForecastData(forecastData, module, timePoints);
+
+      this._historyData[module.id] = processed;
+      this._historyLoading[module.id] = false;
+      this._writeCache(module, processed);
+      this.requestUpdate();
+
+      // Force a full card re-render
+      setTimeout(() => {
+        this.triggerPreviewUpdate();
+        // Try to force the parent card element to update
+        const cardElement = document.querySelector('ultra-card');
+        if (cardElement && (cardElement as any).requestUpdate) {
+          (cardElement as any).requestUpdate();
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Ultra Card: Failed to load forecast data:', error);
+      this._historyError[module.id] = 'Failed to load forecast data';
+      this._historyLoading[module.id] = false;
+      this.requestUpdate();
+    }
+  }
+
+  // ============================================================================
+  // END FORECAST DATA METHODS
+  // ============================================================================
+
   private _getDefaultColor(index: number): string {
-    const colors = [
-      '#2196F3', // Blue
-      '#4CAF50', // Green
-      '#FF9800', // Orange
-      '#F44336', // Red
-      '#9C27B0', // Purple
-      '#00BCD4', // Cyan
-      '#FFEB3B', // Yellow
-      '#795548', // Brown
-      '#607D8B', // Blue Grey
-      '#E91E63', // Pink
-    ];
-    return colors[index % colors.length];
+    return this.DEFAULT_COLORS[index % this.DEFAULT_COLORS.length];
   }
 
   private _addEntity(
@@ -3254,6 +3743,11 @@ export class UltraGraphsModule extends BaseUltraModule {
       line_width: 2,
       line_style: 'solid',
     };
+
+    // In forecast mode, add default forecast_attribute
+    if (graphsModule.data_source === 'forecast') {
+      newEntity.forecast_attribute = 'temperature';
+    }
 
     const updatedEntities = [...(graphsModule.entities || []), newEntity];
     updateModule({ entities: updatedEntities });
@@ -3789,14 +4283,32 @@ export class UltraGraphsModule extends BaseUltraModule {
       errors.push('Chart type is required');
     }
 
-    if (!graphsModule.entities || graphsModule.entities.length === 0) {
-      errors.push('At least one entity is required');
+    // Forecast mode validation
+    if (graphsModule.data_source === 'forecast') {
+      if (!graphsModule.forecast_entity) {
+        errors.push('Weather entity is required for forecast mode');
+      }
+
+      if (!graphsModule.entities || graphsModule.entities.length === 0) {
+        errors.push('At least one forecast attribute is required');
+      } else {
+        graphsModule.entities.forEach((entity, index) => {
+          if (!entity.forecast_attribute) {
+            errors.push(`Entity ${index + 1}: Forecast attribute selection is required`);
+          }
+        });
+      }
     } else {
-      graphsModule.entities.forEach((entity, index) => {
-        if (!entity.entity) {
-          errors.push(`Entity ${index + 1}: Entity selection is required`);
-        }
-      });
+      // History mode validation
+      if (!graphsModule.entities || graphsModule.entities.length === 0) {
+        errors.push('At least one entity is required');
+      } else {
+        graphsModule.entities.forEach((entity, index) => {
+          if (!entity.entity) {
+            errors.push(`Entity ${index + 1}: Entity selection is required`);
+          }
+        });
+      }
     }
 
     if (graphsModule.time_period === 'custom') {
@@ -4203,11 +4715,14 @@ export class UltraGraphsModule extends BaseUltraModule {
         user-select: none;
       }
       
-      /* Ensure tooltips stay within bounds */
-      .uc-graphs-module [id^="graph-tooltip-"] {
+      /* Ensure tooltips stay within bounds and appear above everything */
+      [id^="graph-tooltip-"] {
+        position: fixed !important;
+        z-index: 10000 !important;
         max-width: calc(100vw - 32px);
         word-wrap: break-word;
         box-sizing: border-box;
+        pointer-events: none !important;
       }
     `;
   }
@@ -4218,22 +4733,27 @@ export class UltraGraphsModule extends BaseUltraModule {
     if (this._updateInterval) {
       clearInterval(this._updateInterval);
     }
+
+    // Remove any tooltips created by this module
+    Object.keys(this._historyData).forEach(moduleId => {
+      const tooltip = document.getElementById(`graph-tooltip-${moduleId}`);
+      if (tooltip && tooltip.parentNode === document.body) {
+        document.body.removeChild(tooltip);
+      }
+    });
   }
 
   requestUpdate(): void {
     // Trigger a re-render by dispatching a custom event
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ultra-card-update'));
+      // Also dispatch the template update event for consistency
+      window.dispatchEvent(
+        new CustomEvent('ultra-card-template-update', {
+          bubbles: true,
+          composed: true,
+        })
+      );
     }
-  }
-
-  // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
   }
 }

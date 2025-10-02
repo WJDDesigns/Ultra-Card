@@ -1704,16 +1704,6 @@ export class UltraLightModule extends BaseUltraModule {
     return 'color'; // Default to color mode
   }
 
-  // Trigger preview update for immediate visual feedback
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
-  }
-
   private exportPresets(lightModule: LightModule): void {
     const data = {
       presets: lightModule.presets || [],

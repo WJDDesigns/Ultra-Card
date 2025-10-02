@@ -713,14 +713,6 @@ export class UltraButtonModule extends BaseUltraModule {
   }
 
   // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
-  }
 
   // Resolve background images from global design (upload/url/entity)
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {

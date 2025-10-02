@@ -66,6 +66,8 @@ export interface BaseModule {
     | 'separator'
     | 'horizontal'
     | 'vertical'
+    | 'slider'
+    | 'pagebreak'
     | 'button'
     | 'markdown'
     | 'camera'
@@ -462,6 +464,9 @@ export interface InfoEntityConfig {
   content_alignment?: 'start' | 'center' | 'end';
   overall_alignment?: 'left' | 'center' | 'right';
   icon_gap?: number;
+  // Name/Value layout when icon is disabled
+  name_value_layout?: 'vertical' | 'horizontal';
+  name_value_gap?: number;
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -1313,6 +1318,123 @@ export interface VerticalModule extends BaseModule {
   };
 }
 
+// Page Break Module (used in sliders to separate pages)
+export interface PageBreakModule extends BaseModule {
+  type: 'pagebreak';
+  // No additional properties - just a separator
+}
+
+// Slider Layout Module
+export interface SliderModule extends BaseModule {
+  type: 'slider';
+  modules: CardModule[]; // Flat array of modules with pagebreak modules as separators
+
+  // Pagination Configuration
+  show_pagination?: boolean;
+  pagination_style?: 'dots' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar';
+  pagination_position?: 'top' | 'bottom' | 'left' | 'right';
+  pagination_color?: string;
+  pagination_active_color?: string;
+  pagination_size?: number;
+
+  // Navigation Arrows Configuration
+  show_arrows?: boolean;
+  arrow_position?: 'inside' | 'outside';
+  arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
+  arrow_size?: number;
+  arrow_color?: string;
+  arrow_background_color?: string;
+  prev_arrow_icon?: string;
+  next_arrow_icon?: string;
+  arrows_always_visible?: boolean;
+
+  // Transition Configuration
+  transition_effect?:
+    | 'slide-left'
+    | 'slide-right'
+    | 'slide-top'
+    | 'slide-bottom'
+    | 'fade'
+    | 'zoom-in'
+    | 'zoom-out'
+    | 'circle';
+  transition_speed?: number;
+  transition_easing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
+
+  // Auto-play Configuration
+  auto_play?: boolean;
+  auto_play_delay?: number;
+  pause_on_hover?: boolean;
+  loop?: boolean;
+
+  // Interaction Configuration
+  allow_swipe?: boolean;
+  allow_keyboard?: boolean;
+  allow_mousewheel?: boolean;
+
+  // Layout Configuration
+  slider_height?: number;
+  slider_width?: string;
+  gap?: number;
+  slides_per_view?: number;
+  space_between?: number;
+  vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
+
+  // Mobile Configuration
+  mobile_slides_per_view?: number;
+  mobile_space_between?: number;
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+}
+
 // Button Module
 export interface ButtonModule extends BaseModule {
   type: 'button';
@@ -1605,6 +1727,7 @@ export interface CameraModule extends BaseModule {
 
   // Live view (streaming)
   live_view?: boolean;
+  audio_enabled?: boolean;
 
   // Error handling
   show_unavailable?: boolean;
@@ -1674,6 +1797,15 @@ export interface GraphEntityConfig {
   entity: string;
   name?: string;
   attribute?: string;
+  // Forecast-specific attribute mapping
+  forecast_attribute?:
+    | 'temperature'
+    | 'precipitation'
+    | 'wind_speed'
+    | 'humidity'
+    | 'pressure'
+    | 'cloud_coverage'
+    | string;
   color?: string;
   chart_type_override?: string;
   show_points?: boolean;
@@ -1691,6 +1823,13 @@ export interface GraphEntityConfig {
 // Graphs Module
 export interface GraphsModule extends BaseModule {
   type: 'graphs';
+
+  // Data source selection
+  data_source?: 'history' | 'forecast'; // defaults to 'history' for backward compatibility
+
+  // Forecast configuration
+  forecast_type?: 'hourly' | 'daily'; // for weather.get_forecasts
+  forecast_entity?: string; // weather entity for forecasts
 
   // Chart configuration
   chart_type:
@@ -1728,6 +1867,7 @@ export interface GraphsModule extends BaseModule {
   legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
 
   show_grid?: boolean;
+  show_grid_values?: boolean;
   grid_color?: string;
 
   background_color?: string;
@@ -2132,6 +2272,8 @@ export type CardModule =
   | IconModule
   | HorizontalModule
   | VerticalModule
+  | SliderModule
+  | PageBreakModule
   | ButtonModule
   | SpinboxModule
   | MarkdownModule
@@ -2465,6 +2607,8 @@ export interface UltraCardConfig {
   favorite_colors?: FavoriteColor[];
   // Haptic feedback configuration
   haptic_feedback?: boolean;
+  // Card identification for backups (Ultra Card Pro)
+  card_name?: string;
 }
 
 // Custom card interface for registration

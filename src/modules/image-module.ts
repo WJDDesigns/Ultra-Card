@@ -42,7 +42,7 @@ export class UltraImageModule extends BaseUltraModule {
       width: '100%' as any,
       height: '200px' as any,
       aspect_ratio: 'auto',
-      object_fit: 'cover',
+      object_fit: 'contain',
 
       // Alignment
       // alignment: undefined, // No default alignment to allow Global Design tab control
@@ -1486,16 +1486,6 @@ export class UltraImageModule extends BaseUltraModule {
         box-sizing: border-box;
       }
     `;
-  }
-
-  // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
   }
 
   // Helper method to ensure border radius values have proper units

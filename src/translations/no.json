@@ -3,7 +3,8 @@
     "tabs": {
       "layout": "Layoutbygger",
       "settings": "Innstillinger",
-      "about": "Om"
+      "about": "Om",
+      "pro": "Pro"
     },
     "settings": {
       "title": "Kortinnstillinger",
@@ -651,7 +652,8 @@
         "smooth_lines": "Glatte linjer",
         "time_period": "Tidsperiode",
         "time_period_desc": "Hvor mye historisk data som skal vises.",
-        "title": "Visningsalternativer"
+        "title": "Visningsalternativer",
+        "show_grid_values": "Show Grid Values"
       },
       "line": {
         "fill_area": "Fyll område",
@@ -680,6 +682,39 @@
         "top": "Topp",
         "top_left": "Øverst til venstre",
         "top_right": "Øverst til høyre"
+      },
+      "data_source": {
+        "title": "Data Source",
+        "mode": "Mode",
+        "desc": "Choose between historical data or weather forecasts"
+      },
+      "mode": {
+        "history": "History",
+        "forecast": "Forecast"
+      },
+      "forecast_entity": "Weather Entity",
+      "forecast_entity_desc": "Select a weather entity for forecasts",
+      "forecast_type": "Forecast Type",
+      "forecast_type_desc": "Choose hourly or daily forecasts",
+      "type": {
+        "hourly": "Hourly",
+        "daily": "Daily"
+      },
+      "forecast": {
+        "temp": "Temperature",
+        "precip": "Precipitation",
+        "wind": "Wind Speed",
+        "humidity": "Humidity",
+        "pressure": "Pressure",
+        "clouds": "Cloud Coverage"
+      },
+      "forecast_attributes": {
+        "title": "Forecast Attributes",
+        "desc": "Select which forecast values to display from the weather entity configured above. Each attribute will be shown as a separate line on the graph."
+      },
+      "forecast_info": {
+        "title": "Forecast Display",
+        "desc": "Forecasts display all available data from your weather service. The forecast type (hourly/daily) determines the time range shown."
       }
     },
     "button": {
@@ -1520,6 +1555,67 @@
       },
       "button_gap": "Button Gap",
       "button_gap_desc": "Space between increment and decrement buttons in pixels"
+    },
+    "cloud_backup": {
+      "title": "Cloud Backup",
+      "description": "Automatically backup your card configuration to the cloud. Never lose your work again!",
+      "auto_save": "Auto-save enabled",
+      "last_backup": "Last backup: {time}",
+      "create_snapshot": "Create Snapshot",
+      "manage_backups": "View Backup History",
+      "upgrade_pro": "Upgrade to Pro",
+      "snapshot_limit": "{current} / {max} snapshots",
+      "saving": "Saving backup...",
+      "saved": "Saved to cloud",
+      "pending": "Changes pending",
+      "sync_notification": {
+        "title": "Newer Backup Available",
+        "description": "A newer backup was found from another device",
+        "load": "Load Newer Version",
+        "dismiss": "Keep Current"
+      }
+    },
+    "ultra_card_pro": {
+      "title": "Ultra Card Pro",
+      "free_banner_title": "Ultra Card Pro",
+      "free_banner_subtitle": "Professional card management and cloud backups",
+      "pro_banner_title": "Ultra Card Pro",
+      "pro_banner_subtitle": "Thank you for being a Pro member!",
+      "card_name": "Card Name",
+      "card_name_desc": "Give this card a name to identify it in your backups",
+      "card_name_placeholder": "My Ultra Card",
+      "export_card": "Export Card",
+      "import_card": "Import Card",
+      "backup_card": "Create Backup",
+      "view_backups": "View All Backups",
+      "manual_backup_title": "Name Your Backup",
+      "manual_backup_placeholder": "Enter backup name...",
+      "manual_backup_desc": "Create a manual backup that will be stored alongside backups from all your other Ultra Cards (max 30 total)",
+      "backup_created": "Backup created successfully!",
+      "export_success": "Card configuration exported!",
+      "import_success": "Card configuration imported!",
+      "upgrade_title": "Unlock Pro Features",
+      "upgrade_subtitle": "Get export, import, and manual backups for all your cards",
+      "upgrade_button": "Upgrade to Pro - $4.99/month",
+      "features_title": "What You Get",
+      "features": {
+        "export": "Export full card configs",
+        "import": "Import card configs",
+        "backups": "30 manual backups across all cards",
+        "naming": "Name your cards and backups",
+        "support": "Priority support"
+      },
+      "auto_save": "Auto-save enabled",
+      "last_backup": "Last backup: {time}",
+      "saving": "Saving backup...",
+      "saved": "Saved to cloud",
+      "pending": "Changes pending",
+      "sync_notification": {
+        "title": "Newer Backup Available",
+        "description": "A newer backup was found from another device",
+        "load": "Load Newer Version",
+        "dismiss": "Keep Current"
+      }
     }
   }
 }

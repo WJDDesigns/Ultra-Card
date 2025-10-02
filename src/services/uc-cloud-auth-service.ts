@@ -3,6 +3,22 @@
  * Handles user authentication with ultracard.io WordPress site using JWT
  */
 
+export interface SubscriptionFeatures {
+  auto_backups: boolean;
+  snapshots_enabled: boolean;
+  snapshot_limit: number;
+  backup_retention_days: number;
+}
+
+export interface UserSubscription {
+  tier: 'free' | 'pro';
+  status: 'active' | 'expired';
+  expires?: number;
+  features: SubscriptionFeatures;
+  snapshot_count: number;
+  snapshot_limit: number;
+}
+
 export interface CloudUser {
   id: number;
   username: string;
@@ -12,6 +28,7 @@ export interface CloudUser {
   token: string;
   refreshToken?: string;
   expiresAt: number;
+  subscription?: UserSubscription;
 }
 
 export interface LoginCredentials {
@@ -97,6 +114,9 @@ class UcCloudAuthService {
 
       const authData: AuthResponse = await response.json();
       const user = this._createUserFromAuth(authData);
+
+      // Fetch subscription data
+      await this._fetchSubscriptionData(user);
 
       this._setCurrentUser(user);
       this._saveToStorage();
@@ -364,6 +384,57 @@ class UcCloudAuthService {
     if (this._refreshTimer) {
       clearTimeout(this._refreshTimer);
       this._refreshTimer = undefined;
+    }
+  }
+
+  /**
+   * Fetch subscription data for user
+   */
+  private async _fetchSubscriptionData(user: CloudUser): Promise<void> {
+    try {
+      const response = await fetch(`${UcCloudAuthService.API_BASE}/ultra-card/v1/subscription`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const subscription: UserSubscription = await response.json();
+        user.subscription = subscription;
+        console.log(`Subscription loaded: ${subscription.tier} (${subscription.status})`);
+      } else {
+        console.warn('Failed to fetch subscription, defaulting to free tier');
+        // Default to free tier if fetch fails
+        user.subscription = {
+          tier: 'free',
+          status: 'active',
+          features: {
+            auto_backups: true,
+            snapshots_enabled: false,
+            snapshot_limit: 0,
+            backup_retention_days: 30,
+          },
+          snapshot_count: 0,
+          snapshot_limit: 0,
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      // Default to free tier on error
+      user.subscription = {
+        tier: 'free',
+        status: 'active',
+        features: {
+          auto_backups: true,
+          snapshots_enabled: false,
+          snapshot_limit: 0,
+          backup_retention_days: 30,
+        },
+        snapshot_count: 0,
+        snapshot_limit: 0,
+      };
     }
   }
 

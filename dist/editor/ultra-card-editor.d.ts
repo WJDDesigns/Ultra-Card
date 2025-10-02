@@ -7,6 +7,9 @@ import '../components/ultra-color-picker';
 import '../components/uc-favorite-colors-manager';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
+import '../components/uc-snapshot-history-modal';
+import '../components/uc-snapshot-settings-dialog';
+import '../components/uc-manual-backup-dialog';
 export declare class UltraCardEditor extends LitElement {
     hass?: HomeAssistant;
     config: UltraCardConfig;
@@ -16,9 +19,15 @@ export declare class UltraCardEditor extends LitElement {
     private _isMobile;
     private _cloudUser;
     private _syncStatus;
+    private _backupStatus;
     private _showLoginForm;
     private _loginError;
     private _isLoggingIn;
+    private _showBackupHistory;
+    private _showCreateSnapshot;
+    private _showManualBackup;
+    private _newerBackupAvailable;
+    private _showSyncNotification;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
@@ -49,19 +58,58 @@ export declare class UltraCardEditor extends LitElement {
     private _updateHoverEffectStyles;
     private _authListener?;
     private _syncListener?;
+    private _backupListener?;
     /**
      * Setup cloud sync listeners
      */
     private _setupCloudSyncListeners;
     /**
+     * Check for newer backup on server (smart sync)
+     */
+    private _checkForNewerBackup;
+    /**
      * Cleanup cloud sync listeners
      */
     private _cleanupCloudSyncListeners;
     /**
-     * Render cloud sync section
-     * NOTE: Login area hidden per user request - favorites and colors are local-only
+     * Render PRO TAB (New dedicated tab for all Pro features)
+     */
+    private _renderProTab;
+    /**
+     * Render Ultra Card Pro section (DEPRECATED - kept for backward compatibility)
      */
     private _renderCloudSyncSection;
+    /**
+     * Render Pro Banner (Free or Pro variant)
+     */
+    private _renderProBanner;
+    /**
+     * Render Auth Section (Login or Logout)
+     */
+    private _renderAuthSection;
+    /**
+     * Render Card Name Setting
+     */
+    private _renderCardNameSetting;
+    /**
+     * Render Pro Actions (Export/Import/Backup)
+     */
+    private _renderProActions;
+    /**
+     * Render View Backups Button
+     */
+    private _renderViewBackupsButton;
+    private _handleCardNameChange;
+    private _handleExport;
+    private _handleImport;
+    private _handleCreateBackup;
+    private _handleManualBackupCreated;
+    private _handleBackupRestored;
+    private _handleSnapshotCreated;
+    private _handleSnapshotRestored;
+    private _handleCardBackupRestored;
+    private _handleLoadNewerBackup;
+    private _handleDismissSyncNotification;
     /**
      * Render login section for unauthenticated users
      */

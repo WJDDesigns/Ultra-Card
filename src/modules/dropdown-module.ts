@@ -26,14 +26,6 @@ export class UltraDropdownModule extends BaseUltraModule {
   private currentSelection: Map<string, string> = new Map(); // moduleId -> selectedOption
 
   // Trigger preview update for reactive UI
-  private triggerPreviewUpdate(): void {
-    // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
-  }
 
   createDefault(id?: string, hass?: HomeAssistant): DropdownModule {
     return {

@@ -11,6 +11,8 @@ import { UltraSpinboxModule } from './spinbox-module';
 import { UltraMarkdownModule } from './markdown-module';
 import { UltraHorizontalModule } from './horizontal-module';
 import { UltraVerticalModule } from './vertical-module';
+import { UltraSliderModule } from './slider-module';
+import { UltraPageBreakModule } from './pagebreak-module';
 import { UltraCameraModule } from './camera-module';
 import { UltraGraphsModule } from './graphs-module';
 import { UltraDropdownModule } from './dropdown-module';
@@ -49,6 +51,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraMarkdownModule());
     this.registerModule(new UltraHorizontalModule());
     this.registerModule(new UltraVerticalModule());
+    this.registerModule(new UltraSliderModule());
+    this.registerModule(new UltraPageBreakModule());
     this.registerModule(new UltraCameraModule());
     this.registerModule(new UltraGraphsModule());
     this.registerModule(new UltraDropdownModule());
@@ -272,6 +276,13 @@ export class ModuleRegistry {
         --container-secondary-color: #c5cae9;
         --container-accent-color: #303f9f;
         --container-border-color: #7986cb;
+      }
+
+      .slider-module-preview.container-module {
+        --container-primary-color: #00bcd4; /* Cyan for slider */
+        --container-secondary-color: #b2ebf2;
+        --container-accent-color: #0097a7;
+        --container-border-color: #4dd0e1;
       }
       
       .form-field input[type="text"],

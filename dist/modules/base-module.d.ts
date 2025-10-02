@@ -150,4 +150,14 @@ export declare abstract class BaseUltraModule implements UltraModule {
     protected colorField: typeof UcFormUtils.color;
     protected gridField: typeof UcFormUtils.grid;
     protected expandableField: typeof UcFormUtils.expandable;
+    /**
+     * Trigger a preview update event
+     *
+     * Call this method after making changes that should update the Live Preview
+     * (e.g., template evaluation, dynamic content updates)
+     *
+     * This dispatches a global event that both the editor popup preview
+     * and the actual card listen for to trigger re-renders.
+     */
+    protected triggerPreviewUpdate(): void;
 }

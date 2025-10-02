@@ -1,5 +1,24 @@
 # Release Notes
 
+## Version 2.0-beta1
+
+### 🚀 New Features
+
+- **New Slider Module** - Interactive slider control for numeric inputs and adjustable values
+- **Enhanced Camera Module** - Added audio toggle control for camera feeds with audio support
+- **Forecast Controls for Graphs Module** - New forecast display options and controls for weather and prediction graphs
+- **Vertical and Horizontal Info Controls** - New layout options for info module items with flexible orientation
+
+### 🎨 UI/UX Improvements
+
+- **Improved Live Preview** - Enhanced real-time preview functionality with better responsiveness and accuracy
+- **Ultra Card Pro Integration** - Added dedicated Pro tab for Ultra Card Pro features and settings
+
+### 🐛 Bug Fixes
+
+- **Fixed gauge styling issues** - Resolved visual inconsistencies and display problems with gauge modules
+- **Fixed gauge padding** - Corrected padding and spacing issues affecting gauge module layouts
+
 ## Version 1.2.0-beta16
 
 ### 🚀 New Features

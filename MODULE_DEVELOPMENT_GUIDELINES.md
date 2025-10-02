@@ -346,6 +346,56 @@ Migration guidance:
 
 ## Preview Rendering
 
+### Centralized Preview System
+
+Ultra Card uses a centralized preview service (`uc-module-preview-service.ts`) that ensures consistent rendering between the editor popup Live Preview and the Home Assistant preview window. This eliminates fragmentation and simplifies module development.
+
+**Key Benefits:**
+
+- Popup Live Preview automatically matches HA preview window
+- Modules only need to implement their core content
+- Animation and hover effect wrappers are handled automatically
+- New modules get proper previews without extra work
+
+**How it Works:**
+
+The preview service provides two main methods:
+
+1. **`renderModuleInCard()`** - Used by the editor popup
+
+   - Wraps module in a card container
+   - Shows "Hidden by Logic" overlay when logic conditions not met
+   - Perfect for isolated module preview
+
+2. **`renderModuleContent()`** - Used by the card at runtime
+   - Wraps module content with animation/hover effects
+   - Animation state tracking handled by calling component
+   - Used for rendering modules within rows/columns
+
+**Module Implementation:**
+
+Modules call `moduleHandler.renderPreview(module, hass, config)` which returns the module's complete content including its own styling. The preview service then wraps this with:
+
+- Card container (for popup preview)
+- Animation wrappers (intro/outro/state-based)
+- Hover effect wrappers
+- Logic visibility indicators
+
+**What Modules Should Do:**
+
+Modules should implement `renderPreview()` to return their complete content with their own container styling. **Do NOT** try to handle animation wrappers or card container wrapping - the service handles this automatically.
+
+**Triggering Preview Updates:**
+
+When your module updates dynamically (e.g., template evaluation), call the base class helper:
+
+```typescript
+// Trigger preview update after template evaluation or dynamic content changes
+this.triggerPreviewUpdate();
+```
+
+This dispatches a global event that both the editor popup and the actual card listen for.
+
 ### 1. Design Properties Integration
 
 Always support design properties with fallbacks:

@@ -100,6 +100,8 @@ export declare class LayoutTab extends LitElement {
     private _getCurrentLayoutDisplay;
     private _openModuleSelector;
     private _addModule;
+    private _addPageBreakToSlider;
+    private _addPageBreakToColumnSlider;
     private _addPreset;
     private _addFavorite;
     private _saveRowAsFavorite;
@@ -172,7 +174,6 @@ export declare class LayoutTab extends LitElement {
     private _getModuleDisplayName;
     private _generateModuleInfo;
     private _renderSingleModuleWithAnimation;
-    private _getPreviewAnimationData;
     private _getRowPreviewAnimationData;
     private _getColumnPreviewAnimationData;
     private _renderRowPreview;
