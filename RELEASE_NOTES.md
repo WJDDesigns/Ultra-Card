@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 2.0-beta3
+
+### 🐛 Bug Fixes & Improvements
+
+- **Improved pinch to zoom** - Enhanced touch gesture handling for better zoom functionality on mobile devices
+- **Remove gap field limits for vertical layout module** - Removed restrictive limits on gap field values for more flexible vertical layouts
+- **Fix mobile overflow menu visibility** - Resolved issues with overflow menus not displaying properly on mobile devices
+- **Add card shadow options in settings** - New shadow customization options available in card settings
+- **Fix dropdown module display issue** - Resolved display problems with dropdown modules
+- **Fix slider autoplay timing** - Corrected timing issues with slider autoplay functionality
+
 ## Version 2.0-beta2
 
 ### 🐛 Bug Fixes
