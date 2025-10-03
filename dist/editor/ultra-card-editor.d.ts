@@ -26,6 +26,8 @@ export declare class UltraCardEditor extends LitElement {
     private _showBackupHistory;
     private _showCreateSnapshot;
     private _showManualBackup;
+    private _showSnapshotSettings;
+    private _snapshotSchedulerStatus;
     private _newerBackupAvailable;
     private _showSyncNotification;
     /** Flag to ensure module CSS for animations is injected once */
@@ -99,6 +101,12 @@ export declare class UltraCardEditor extends LitElement {
      * Render View Backups Button
      */
     private _renderViewBackupsButton;
+    /**
+     * Render Snapshot Status Section (Pro only)
+     */
+    private _renderSnapshotStatusSection;
+    private _formatNextSnapshotTime;
+    private _formatLastSnapshotTime;
     private _handleCardNameChange;
     private _handleExport;
     private _handleImport;
@@ -108,6 +116,8 @@ export declare class UltraCardEditor extends LitElement {
     private _handleSnapshotCreated;
     private _handleSnapshotRestored;
     private _handleCardBackupRestored;
+    private _handleSnapshotSettingsSaved;
+    private _updateSnapshotSchedulerStatus;
     private _handleLoadNewerBackup;
     private _handleDismissSyncNotification;
     /**

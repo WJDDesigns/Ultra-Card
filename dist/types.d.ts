@@ -1422,6 +1422,12 @@ export interface UltraCardConfig {
     card_border_width?: number;
     card_padding?: number;
     card_margin?: number;
+    card_shadow_enabled?: boolean;
+    card_shadow_color?: string;
+    card_shadow_horizontal?: number;
+    card_shadow_vertical?: number;
+    card_shadow_blur?: number;
+    card_shadow_spread?: number;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
     favorite_colors?: FavoriteColor[];
