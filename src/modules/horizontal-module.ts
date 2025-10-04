@@ -196,7 +196,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
               ${localize(
                 'editor.horizontal.gap.desc',
                 lang,
-                'Set the spacing between horizontal items (in rem units). Use negative values to overlap items.'
+                'Set the spacing between horizontal items (in rem units). Use negative values to overlap items. Any value is allowed.'
               )}
             </div>
             <div
@@ -206,8 +206,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
               <input
                 type="range"
                 class="gap-slider"
-                min="-5"
-                max="10"
+                min="-50"
+                max="50"
                 step="0.1"
                 .value="${horizontalModule.gap || 0.7}"
                 @input=${(e: Event) => {
@@ -220,8 +220,6 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 type="number"
                 class="gap-input"
                 style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
-                min="-5"
-                max="10"
                 step="0.1"
                 .value="${horizontalModule.gap || 0.7}"
                 @input=${(e: Event) => {
@@ -237,7 +235,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                     const target = e.target as HTMLInputElement;
                     const currentValue = parseFloat(target.value) || 0.7;
                     const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
-                    const newValue = Math.max(-5, Math.min(10, currentValue + increment));
+                    const newValue = currentValue + increment;
                     const roundedValue = Math.round(newValue * 10) / 10;
                     updateModule({ gap: roundedValue });
                   }
@@ -703,10 +701,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const horizontalModule = module as HorizontalModule;
     const errors = [...baseValidation.errors];
 
-    // Validate gap value - allow negative values for overlapping
-    if (horizontalModule.gap && (horizontalModule.gap < -5 || horizontalModule.gap > 10)) {
-      errors.push('Gap must be between -5 and 10 rem');
-    }
+    // Gap validation removed - users can set any value they want
 
     // Validate vertical alignment value
     if (

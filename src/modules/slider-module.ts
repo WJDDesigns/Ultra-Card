@@ -13,13 +13,20 @@ import { logicService } from '../services/logic-service';
 class SliderStateManager {
   private static states = new Map<string, number>();
   private static timers = new Map<string, any>();
+  private static initialized = new Map<string, boolean>();
+  private static renderCount = new Map<string, number>();
+  private static lastSlideChange = new Map<string, number>();
+  private static currentDelay = new Map<string, number>();
 
   static getCurrentSlide(sliderId: string): number {
     return this.states.get(sliderId) || 0;
   }
 
   static setCurrentSlide(sliderId: string, index: number): void {
+    const now = Date.now();
     this.states.set(sliderId, index);
+    this.lastSlideChange.set(sliderId, now);
+
     // Dispatch event to trigger re-render in split preview
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ultra-card-slider-update'));
@@ -40,6 +47,37 @@ class SliderStateManager {
       clearInterval(timer);
       this.timers.delete(sliderId);
     }
+  }
+
+  static isInitialized(sliderId: string): boolean {
+    return this.initialized.get(sliderId) || false;
+  }
+
+  static setInitialized(sliderId: string, value: boolean): void {
+    this.initialized.set(sliderId, value);
+  }
+
+  static incrementRenderCount(sliderId: string): number {
+    const count = (this.renderCount.get(sliderId) || 0) + 1;
+    this.renderCount.set(sliderId, count);
+    return count;
+  }
+
+  static getCurrentDelay(sliderId: string): number | undefined {
+    return this.currentDelay.get(sliderId);
+  }
+
+  static setCurrentDelay(sliderId: string, delay: number): void {
+    this.currentDelay.set(sliderId, delay);
+  }
+
+  static cleanup(sliderId: string): void {
+    this.clearTimer(sliderId);
+    this.states.delete(sliderId);
+    this.initialized.delete(sliderId);
+    this.renderCount.delete(sliderId);
+    this.lastSlideChange.delete(sliderId);
+    this.currentDelay.delete(sliderId);
   }
 }
 
@@ -161,7 +199,33 @@ export class UltraSliderModule extends BaseUltraModule {
             letter-spacing: 0.5px;
             margin-bottom: 0;
           }
+          .preview-note {
+            background: var(--info-color, #2196f3);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+          .preview-note ha-icon {
+            flex-shrink: 0;
+            margin-top: 2px;
+          }
         </style>
+
+        <!-- Preview Note -->
+        <div class="preview-note">
+          <ha-icon icon="mdi:information-outline"></ha-icon>
+          <div>
+            <strong>Note:</strong> Slider transitions may not appear in the Home Assistant
+            Configuration Preview Window. To see transitions, check the
+            <strong>Live Preview</strong> popup in the editor or view the card on your dashboard.
+          </div>
+        </div>
 
         <!-- SLIDER LAYOUT -->
         <div
@@ -701,6 +765,9 @@ export class UltraSliderModule extends BaseUltraModule {
     const sliderModule = module as SliderModule;
     const registry = getModuleRegistry();
 
+    // Track render count for internal state management
+    SliderStateManager.incrementRenderCount(sliderModule.id);
+
     // Group modules by page breaks
     const pages: CardModule[][] = [];
     let currentPageModules: CardModule[] = [];
@@ -772,10 +839,18 @@ export class UltraSliderModule extends BaseUltraModule {
         SliderStateManager.setCurrentSlide(sliderModule.id, index);
       }
 
+      // Reset auto-play timer on manual navigation to maintain consistent timing
+      if (sliderModule.auto_play && event) {
+        // Manual navigation - restart timer to maintain consistent timing
+        startAutoPlay();
+      }
+
       // Dispatch custom event to trigger card re-render
+      // Try to find the slider element to dispatch the event
       const target =
         (event?.target as HTMLElement) ||
         document.querySelector(`[data-slider-id="${sliderModule.id}"]`);
+
       if (target) {
         const customEvent = new CustomEvent('slider-state-changed', {
           bubbles: true,
@@ -783,6 +858,15 @@ export class UltraSliderModule extends BaseUltraModule {
           detail: { sliderId: sliderModule.id, index },
         });
         target.dispatchEvent(customEvent);
+      } else {
+        // Fallback: dispatch on window if we can't find the element
+        window.dispatchEvent(
+          new CustomEvent('slider-state-changed', {
+            bubbles: true,
+            composed: true,
+            detail: { sliderId: sliderModule.id, index },
+          })
+        );
       }
     };
 
@@ -844,15 +928,17 @@ export class UltraSliderModule extends BaseUltraModule {
         } else {
           prevSlide(e);
         }
+        // Auto-play timer will be restarted by goToSlide if needed
+      } else {
+        // No slide change occurred, restart auto-play if it was running
+        if (sliderModule.auto_play) {
+          startAutoPlay();
+        }
       }
 
       touchStartX = 0;
       touchStartY = 0;
       isSwiping = false;
-
-      if (sliderModule.auto_play) {
-        startAutoPlay();
-      }
     };
 
     // Mouse drag handlers
@@ -906,15 +992,17 @@ export class UltraSliderModule extends BaseUltraModule {
         } else {
           prevSlide(e);
         }
+        // Auto-play timer will be restarted by goToSlide if needed
+      } else {
+        // No slide change occurred, restart auto-play if it was running
+        if (sliderModule.auto_play) {
+          startAutoPlay();
+        }
       }
 
       mouseStartX = 0;
       mouseStartY = 0;
       isMouseDragging = false;
-
-      if (sliderModule.auto_play) {
-        startAutoPlay();
-      }
     };
 
     const handleMouseLeave = () => {
@@ -922,6 +1010,7 @@ export class UltraSliderModule extends BaseUltraModule {
         isMouseDragging = false;
         mouseStartX = 0;
         mouseStartY = 0;
+        // Only restart auto-play if no slide change occurred during drag
         if (sliderModule.auto_play) {
           startAutoPlay();
         }
@@ -931,10 +1020,13 @@ export class UltraSliderModule extends BaseUltraModule {
     // Auto-play functionality
     const startAutoPlay = () => {
       if (!sliderModule.auto_play) return;
-      SliderStateManager.clearTimer(sliderModule.id);
+
+      // Check if timer already exists - don't restart if it's already running
+      const existingTimer = SliderStateManager.getTimer(sliderModule.id);
+      if (existingTimer) return;
 
       const timer = setInterval(() => {
-        nextSlide();
+        nextSlide(); // No event parameter - this is auto-play, not manual navigation
       }, sliderModule.auto_play_delay || 3000);
 
       SliderStateManager.setTimer(sliderModule.id, timer);
@@ -944,9 +1036,30 @@ export class UltraSliderModule extends BaseUltraModule {
       SliderStateManager.clearTimer(sliderModule.id);
     };
 
-    // Start auto-play if enabled
+    // If auto-play is disabled, ensure cleanup
+    if (!sliderModule.auto_play && SliderStateManager.isInitialized(sliderModule.id)) {
+      SliderStateManager.clearTimer(sliderModule.id);
+      SliderStateManager.setInitialized(sliderModule.id, false);
+    }
+
+    // Check if delay has changed - if so, restart timer
+    const currentDelay = SliderStateManager.getCurrentDelay(sliderModule.id);
+    const newDelay = sliderModule.auto_play_delay || 3000;
+    const delayChanged = currentDelay !== undefined && currentDelay !== newDelay;
+
+    if (delayChanged && sliderModule.auto_play) {
+      SliderStateManager.clearTimer(sliderModule.id);
+      SliderStateManager.setInitialized(sliderModule.id, false);
+    }
+
+    // Start auto-play if enabled (ONLY if not already initialized)
+    // This prevents creating multiple timers on re-renders
     const existingTimer = SliderStateManager.getTimer(sliderModule.id);
-    if (sliderModule.auto_play && !existingTimer) {
+    const isInit = SliderStateManager.isInitialized(sliderModule.id);
+
+    if (sliderModule.auto_play && !existingTimer && !isInit) {
+      SliderStateManager.setInitialized(sliderModule.id, true);
+      SliderStateManager.setCurrentDelay(sliderModule.id, newDelay);
       setTimeout(() => startAutoPlay(), 100);
     }
 
@@ -1330,7 +1443,10 @@ export class UltraSliderModule extends BaseUltraModule {
         @mouseup=${handleMouseUp}
         @mouseleave=${(e: MouseEvent) => {
           handleMouseLeave();
-          if (sliderModule.pause_on_hover && sliderModule.auto_play) startAutoPlay();
+          // Only restart auto-play if pause_on_hover is enabled and no drag occurred
+          if (sliderModule.pause_on_hover && sliderModule.auto_play && !isMouseDragging) {
+            startAutoPlay();
+          }
         }}
         @mouseenter=${() => sliderModule.pause_on_hover && stopAutoPlay()}
         @keydown=${(e: KeyboardEvent) => {

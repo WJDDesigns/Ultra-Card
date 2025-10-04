@@ -165,13 +165,19 @@ class UcSnapshotService {
     }
 
     try {
-      const response = await this.apiCall(`/snapshots?limit=${limit}`, {
+      // Add cache-busting timestamp to prevent stale data
+      // Note: Using timestamp in URL is sufficient; custom headers cause CORS issues
+      const timestamp = Date.now();
+      console.log(`📋 Fetching snapshot list with cache-busting timestamp: ${timestamp}`);
+
+      const response = await this.apiCall(`/snapshots?limit=${limit}&_=${timestamp}`, {
         method: 'GET',
       });
 
+      console.log(`✅ Snapshot list received:`, response);
       return response as SnapshotListItem[];
     } catch (error) {
-      console.error('Failed to list snapshots:', error);
+      console.error('❌ Failed to list snapshots:', error);
       throw error;
     }
   }

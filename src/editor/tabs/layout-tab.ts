@@ -10244,8 +10244,8 @@ export class LayoutTab extends LitElement {
         color: white;
         font-weight: 500;
         border-bottom: 2px solid var(--primary-color);
-        position: static;
-        z-index: 1;
+        position: relative;
+        z-index: 10;
         border-radius: 8px 8px 0px 0px;
       }
 
@@ -10443,8 +10443,8 @@ export class LayoutTab extends LitElement {
         background: var(--accent-color, var(--orange-color, #ff9800));
         color: white;
         border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));
-        position: static;
-        z-index: 0;
+        position: relative;
+        z-index: 5;
         border-radius: 6px 6px 0px 0px;
       }
 
@@ -14362,6 +14362,7 @@ export class LayoutTab extends LitElement {
       .row-more-container {
         position: relative;
         display: none; /* Hidden on desktop */
+        z-index: 100;
       }
 
       .row-more-btn {
@@ -14388,7 +14389,7 @@ export class LayoutTab extends LitElement {
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        z-index: 1000;
+        z-index: 10000;
         min-width: 180px;
         overflow: hidden;
         margin-top: 4px;

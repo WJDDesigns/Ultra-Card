@@ -1284,7 +1284,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
-                style="position: absolute; top: 100%; left: 0; right: 0; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 999; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: absolute; top: 100%; left: 0; right: 0; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
               >
@@ -1755,7 +1755,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       .dropdown-options {
         position: absolute !important;
-        z-index: 999 !important;
+        z-index: 10 !important;
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
@@ -1789,7 +1789,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       /* Capture all events within dropdown container */
       .dropdown-module-container {
         position: relative;
-        z-index: 1000;
+        z-index: 1;
       }
 
       .dropdown-module-container::before {
@@ -1843,7 +1843,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         opacity: 0.7;
         transform: rotate(2deg) scale(0.95);
         box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        z-index: 1000;
+        z-index: 100;
         position: relative;
       }
 

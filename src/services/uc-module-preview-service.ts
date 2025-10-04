@@ -245,6 +245,16 @@ class UcModulePreviewService {
       styles.push(`margin: ${config.card_margin}px`);
     }
 
+    // Apply custom shadow
+    if (config.card_shadow_enabled) {
+      const shadowColor = config.card_shadow_color || 'rgba(0, 0, 0, 0.15)';
+      const horizontal = config.card_shadow_horizontal ?? 0;
+      const vertical = config.card_shadow_vertical ?? 2;
+      const blur = config.card_shadow_blur ?? 8;
+      const spread = config.card_shadow_spread ?? 0;
+      styles.push(`box-shadow: ${horizontal}px ${vertical}px ${blur}px ${spread}px ${shadowColor}`);
+    }
+
     return styles.join('; ');
   }
 

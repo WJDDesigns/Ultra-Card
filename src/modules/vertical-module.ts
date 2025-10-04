@@ -158,7 +158,7 @@ export class UltraVerticalModule extends BaseUltraModule {
               ${localize(
                 'editor.vertical.gap.desc',
                 lang,
-                'Set the spacing between vertical items (in rem units). Use negative values to overlap items. Note: Gap is disabled when using Space Between or Space Around distribution.'
+                'Set the spacing between vertical items (in rem units). Use negative values to overlap items. Any value is allowed. Note: Gap is disabled when using Space Between or Space Around distribution.'
               )}
             </div>
             <div
@@ -171,8 +171,8 @@ export class UltraVerticalModule extends BaseUltraModule {
               <input
                 type="range"
                 class="gap-slider"
-                min="-5"
-                max="10"
+                min="-50"
+                max="50"
                 step="0.1"
                 .value="${verticalModule.gap || 1.2}"
                 @input=${(e: Event) => {
@@ -185,8 +185,6 @@ export class UltraVerticalModule extends BaseUltraModule {
                 type="number"
                 class="gap-input"
                 style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
-                min="-5"
-                max="10"
                 step="0.1"
                 .value="${verticalModule.gap || 1.2}"
                 @input=${(e: Event) => {
@@ -202,7 +200,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                     const target = e.target as HTMLInputElement;
                     const currentValue = parseFloat(target.value) || 1.2;
                     const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
-                    const newValue = Math.max(-5, Math.min(10, currentValue + increment));
+                    const newValue = currentValue + increment;
                     const roundedValue = Math.round(newValue * 10) / 10;
                     updateModule({ gap: roundedValue });
                   }
@@ -601,10 +599,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     const verticalModule = module as VerticalModule;
     const errors = [...baseValidation.errors];
 
-    // Validate gap value - allow negative values for overlapping
-    if (verticalModule.gap && (verticalModule.gap < -5 || verticalModule.gap > 10)) {
-      errors.push('Gap must be between -5 and 10 rem');
-    }
+    // Gap validation removed - users can set any value they want
 
     // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
     if (verticalModule.modules && verticalModule.modules.length > 0) {

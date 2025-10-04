@@ -33,7 +33,19 @@
       "card_border_color": "Border Color",
       "card_border_color_desc": "The border color of the card",
       "card_border_width": "Border Width",
-      "card_border_width_desc": "The thickness of the card border (in pixels)"
+      "card_border_width_desc": "The thickness of the card border (in pixels)",
+      "card_shadow_enabled": "Enable Shadow",
+      "card_shadow_enabled_desc": "Enable custom shadow for the card",
+      "card_shadow_color": "Shadow Color",
+      "card_shadow_color_desc": "The color of the card shadow",
+      "card_shadow_horizontal": "Horizontal Offset",
+      "card_shadow_horizontal_desc": "Horizontal position of the shadow (negative = left, positive = right)",
+      "card_shadow_vertical": "Vertical Offset",
+      "card_shadow_vertical_desc": "Vertical position of the shadow (negative = up, positive = down)",
+      "card_shadow_blur": "Blur Radius",
+      "card_shadow_blur_desc": "How blurred the shadow appears",
+      "card_shadow_spread": "Spread Radius",
+      "card_shadow_spread_desc": "How much the shadow expands or contracts"
     },
     "tooltips": {
       "enter_fullscreen": "Fullskjerm",

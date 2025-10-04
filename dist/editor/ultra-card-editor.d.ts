@@ -30,6 +30,7 @@ export declare class UltraCardEditor extends LitElement {
     private _snapshotSchedulerStatus;
     private _newerBackupAvailable;
     private _showSyncNotification;
+    private _isCreatingManualSnapshot;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
@@ -110,6 +111,7 @@ export declare class UltraCardEditor extends LitElement {
     private _handleCardNameChange;
     private _handleExport;
     private _handleImport;
+    private _handleSnapshotImport;
     private _handleCreateBackup;
     private _handleManualBackupCreated;
     private _handleBackupRestored;
@@ -118,6 +120,10 @@ export declare class UltraCardEditor extends LitElement {
     private _handleCardBackupRestored;
     private _handleSnapshotSettingsSaved;
     private _updateSnapshotSchedulerStatus;
+    /**
+     * Handle manual snapshot creation
+     */
+    private _handleManualSnapshot;
     private _handleLoadNewerBackup;
     private _handleDismissSyncNotification;
     /**
@@ -136,6 +142,11 @@ export declare class UltraCardEditor extends LitElement {
      * Render sync conflicts
      */
     private _renderConflicts;
+    /**
+     * Initialize Pro services after successful authentication
+     * Called both on fresh login and when restoring session from storage
+     */
+    private _initializeProServices;
     /**
      * Handle login form submission
      */

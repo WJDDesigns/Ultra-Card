@@ -11,6 +11,8 @@ import { ucSnapshotService, SnapshotListItem } from '../services/uc-snapshot-ser
 import { ucCardBackupService, CardBackup } from '../services/uc-card-backup-service';
 import { UserSubscription } from '../services/uc-cloud-auth-service';
 import { UltraCardConfig } from '../types';
+import './uc-snapshot-restore-dialog';
+import type { RestoreMethodChoice } from './uc-snapshot-restore-dialog';
 
 type TabType = 'snapshots' | 'card-backups';
 
@@ -26,6 +28,8 @@ export class UcSnapshotHistoryModal extends LitElement {
   @state() private _loading = false;
   @state() private _error: string | null = null;
   @state() private _expandedSnapshotId: number | null = null;
+  @state() private _showRestoreDialog = false;
+  @state() private _pendingRestoreSnapshot: SnapshotListItem | null = null;
 
   connectedCallback() {
     super.connectedCallback();
@@ -41,17 +45,22 @@ export class UcSnapshotHistoryModal extends LitElement {
   }
 
   private async _loadData() {
+    console.log(`🔄 Modal _loadData() called - Active tab: ${this._activeTab}`);
     this._loading = true;
     this._error = null;
 
     try {
       if (this._activeTab === 'snapshots') {
+        console.log('📋 Requesting snapshot list...');
         this._snapshots = await ucSnapshotService.listSnapshots(30);
+        console.log(`✅ Loaded ${this._snapshots.length} snapshots`);
       } else {
+        console.log('💾 Requesting card backups...');
         this._cardBackups = await ucCardBackupService.listBackups(30);
+        console.log(`✅ Loaded ${this._cardBackups.length} card backups`);
       }
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('❌ Failed to load data:', error);
       this._error = error instanceof Error ? error.message : 'Failed to load data';
     } finally {
       this._loading = false;
@@ -65,35 +74,493 @@ export class UcSnapshotHistoryModal extends LitElement {
   }
 
   private async _handleRestoreSnapshot(snapshot: SnapshotListItem) {
-    if (
-      !confirm(
-        `Restore entire dashboard from snapshot? This will provide configs for ${snapshot.card_count} cards.`
-      )
-    ) {
+    // Show restore dialog
+    this._pendingRestoreSnapshot = snapshot;
+    this._showRestoreDialog = true;
+  }
+
+  private async _handleMethodSelected(e: CustomEvent<RestoreMethodChoice>) {
+    const { method } = e.detail;
+    const snapshot = this._pendingRestoreSnapshot;
+
+    if (!method || !snapshot) {
       return;
     }
+
+    // Close dialog
+    this._showRestoreDialog = false;
+    this._pendingRestoreSnapshot = null;
 
     try {
       const result = await ucSnapshotService.restoreSnapshot(snapshot.id);
 
-      // Fire event with restore instructions
+      // Perform the actual dashboard restoration
+      const stats =
+        method === 'smart'
+          ? await this._performSmartRestore(result.snapshot_data)
+          : await this._performCleanRestore(result.snapshot_data);
+
+      alert(
+        `✅ Snapshot Restored Successfully!\n\n` +
+          `${stats.restored} Ultra Cards restored\n` +
+          `${stats.deleted > 0 ? `${stats.deleted} cards deleted\n` : ''}` +
+          `${stats.skipped > 0 ? `${stats.skipped} cards skipped (no match)\n` : ''}` +
+          `\nRefreshing page...`
+      );
+
+      // Fire success event
       this.dispatchEvent(
         new CustomEvent('snapshot-restored', {
-          detail: { snapshot, result },
+          detail: { snapshot, result, stats },
           bubbles: true,
           composed: true,
         })
       );
 
-      alert(
-        `Snapshot ready! ${snapshot.card_count} card configs available for restoration.\n\n${result.instructions}`
-      );
+      // Reload the page to show updated cards
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       console.error('Failed to restore snapshot:', error);
       alert(
-        `Failed to restore snapshot: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `❌ Snapshot Restore Failed\n\n` +
+          `Error: ${error instanceof Error ? error.message : 'Unknown error'}\n\n` +
+          `Your dashboard has not been modified.`
       );
     }
+  }
+
+  private async _performDashboardRestore(snapshotData: any): Promise<void> {
+    console.log('🔄 Starting dashboard restore...');
+
+    // Get current Lovelace config
+    const lovelaceConfig = await this._getLovelaceConfig();
+
+    if (!lovelaceConfig) {
+      throw new Error('Could not access dashboard configuration');
+    }
+
+    console.log('📋 Current dashboard config loaded');
+
+    // Get all views
+    const views = lovelaceConfig.views || [];
+    let totalRestored = 0;
+
+    // Group snapshot cards by view path/id
+    const cardsByViewPath: { [key: string]: any[] } = {};
+    snapshotData.cards.forEach((card: any) => {
+      const viewPath = card.view_path || card.view_id;
+      if (!cardsByViewPath[viewPath]) {
+        cardsByViewPath[viewPath] = [];
+      }
+      cardsByViewPath[viewPath].push(card);
+    });
+
+    // Update each view
+    views.forEach((view: any, viewIndex: number) => {
+      const viewPath = view.path || `view-${viewIndex}`;
+      const viewId = view.id || viewPath;
+      const snapshotCardsForView = cardsByViewPath[viewPath] || cardsByViewPath[viewId] || [];
+
+      if (snapshotCardsForView.length === 0) {
+        return;
+      }
+
+      console.log(
+        `  📝 Restoring ${snapshotCardsForView.length} cards in view: ${view.title || viewPath}`
+      );
+
+      // Sort snapshot cards by their original index
+      snapshotCardsForView.sort((a, b) => a.card_index - b.card_index);
+
+      // Handle both regular views and sections views
+      if (view.type === 'sections' && view.sections) {
+        // Sections view - need to update cards within sections
+        view.sections.forEach((section: any) => {
+          if (section.cards) {
+            section.cards = section.cards.map((card: any, cardIndex: number) => {
+              // Check if this card is an Ultra Card
+              if (card.type === 'custom:ultra-card') {
+                // Find matching card in snapshot
+                const snapshotCard = snapshotCardsForView.find(sc => sc.card_index === cardIndex);
+                if (snapshotCard && snapshotCard.config) {
+                  console.log(`    ✅ Restored card at index ${cardIndex}`);
+                  totalRestored++;
+                  return snapshotCard.config;
+                }
+              }
+              return card;
+            });
+          }
+        });
+      } else if (view.cards) {
+        // Regular view - update cards array directly
+        view.cards = view.cards.map((card: any, cardIndex: number) => {
+          // Check if this card is an Ultra Card
+          if (card.type === 'custom:ultra-card') {
+            // Find matching card in snapshot
+            const snapshotCard = snapshotCardsForView.find(sc => sc.card_index === cardIndex);
+            if (snapshotCard && snapshotCard.config) {
+              console.log(`    ✅ Restored card at index ${cardIndex}`);
+              totalRestored++;
+              return snapshotCard.config;
+            }
+          }
+          return card;
+        });
+      }
+    });
+
+    console.log(`✅ Total cards restored: ${totalRestored}`);
+
+    if (totalRestored === 0) {
+      throw new Error(
+        'No Ultra Cards were found to restore. Dashboard may have changed since snapshot was taken.'
+      );
+    }
+
+    // Save the updated config back to Home Assistant
+    await this._saveLovelaceConfig(lovelaceConfig);
+
+    console.log('💾 Dashboard configuration saved successfully');
+  }
+
+  /**
+   * SMART REPLACE: Match cards by name and view, replace in-place
+   * Safest method - no duplicates, only replaces matching cards
+   */
+  private async _performSmartRestore(snapshotData: any): Promise<{
+    restored: number;
+    deleted: number;
+    skipped: number;
+  }> {
+    console.log('🧠 Starting SMART REPLACE restore...');
+
+    const lovelaceConfig = await this._getLovelaceConfig();
+    if (!lovelaceConfig) {
+      throw new Error('Could not access dashboard configuration');
+    }
+
+    const views = lovelaceConfig.views || [];
+    let restored = 0;
+    let skipped = 0;
+
+    // Build TWO indices for smart matching:
+    // 1. Custom names (user-set names) - match by name
+    // 2. Auto-generated names (starts with "Ultra Card ") - match by position
+    const customNameIndex: { [key: string]: any } = {};
+    const positionIndex: { [key: string]: any } = {};
+
+    snapshotData.cards.forEach((card: any) => {
+      const viewKey = card.view_path || card.view_id;
+      const cardName = card.card_name || card.config?.card_name || '';
+
+      // Check if this is a custom name or auto-generated
+      const isCustomName = cardName && !cardName.startsWith('Ultra Card ');
+
+      if (isCustomName) {
+        // Use name-based matching for custom names
+        const key = `${viewKey}::${cardName}`;
+        customNameIndex[key] = card;
+      } else {
+        // Use position-based matching for auto-generated names
+        const posKey = `${viewKey}::${card.card_index}`;
+        positionIndex[posKey] = card;
+      }
+    });
+
+    console.log(
+      `📋 Indexed ${Object.keys(customNameIndex).length} custom-named cards and ${Object.keys(positionIndex).length} position-based cards`
+    );
+
+    // Update each view
+    views.forEach((view: any, viewIndex: number) => {
+      const viewPath = view.path || `view-${viewIndex}`;
+      const viewId = view.id || viewPath;
+      let currentCardIndex = 0;
+
+      if (view.type === 'sections' && view.sections) {
+        // Sections view
+        view.sections.forEach((section: any) => {
+          if (section.cards) {
+            section.cards = section.cards.map((card: any) => {
+              if (card.type === 'custom:ultra-card') {
+                const cardName = card.card_name || '';
+                const isCustomName = cardName && !cardName.startsWith('Ultra Card ');
+                let snapshotCard = null;
+
+                if (isCustomName) {
+                  // Try name-based match for custom names
+                  const nameKey = `${viewPath}::${cardName}`;
+                  snapshotCard =
+                    customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
+
+                  if (snapshotCard) {
+                    console.log(
+                      `  ✅ Name match: "${cardName}" in ${view.title || viewPath}`
+                    );
+                  }
+                } else {
+                  // Use position-based match for auto-generated names
+                  const posKey = `${viewPath}::${currentCardIndex}`;
+                  snapshotCard =
+                    positionIndex[posKey] || positionIndex[`${viewId}::${currentCardIndex}`];
+
+                  if (snapshotCard) {
+                    console.log(
+                      `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
+                    );
+                  }
+                }
+
+                currentCardIndex++;
+
+                if (snapshotCard && snapshotCard.config) {
+                  restored++;
+                  return snapshotCard.config;
+                } else {
+                  console.log(
+                    `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
+                  );
+                  skipped++;
+                }
+              }
+              return card;
+            });
+          }
+        });
+      } else if (view.cards) {
+        // Regular view
+        view.cards = view.cards.map((card: any) => {
+          if (card.type === 'custom:ultra-card') {
+            const cardName = card.card_name || '';
+            const isCustomName = cardName && !cardName.startsWith('Ultra Card ');
+            let snapshotCard = null;
+
+            if (isCustomName) {
+              // Try name-based match for custom names
+              const nameKey = `${viewPath}::${cardName}`;
+              snapshotCard =
+                customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
+
+              if (snapshotCard) {
+                console.log(`  ✅ Name match: "${cardName}" in ${view.title || viewPath}`);
+              }
+            } else {
+              // Use position-based match for auto-generated names
+              const posKey = `${viewPath}::${currentCardIndex}`;
+              snapshotCard =
+                positionIndex[posKey] || positionIndex[`${viewId}::${currentCardIndex}`];
+
+              if (snapshotCard) {
+                console.log(
+                  `  ✅ Position match: card ${currentCardIndex} in ${view.title || viewPath}`
+                );
+              }
+            }
+
+            currentCardIndex++;
+
+            if (snapshotCard && snapshotCard.config) {
+              restored++;
+              return snapshotCard.config;
+            } else {
+              console.log(
+                `  ⏭️ Skipped: "${cardName}" at position ${currentCardIndex - 1} (no match)`
+              );
+              skipped++;
+            }
+          }
+          return card;
+        });
+      }
+    });
+
+    console.log(`✅ Smart restore complete: ${restored} replaced, ${skipped} skipped`);
+
+    if (restored === 0) {
+      throw new Error('No matching cards found. Check that your dashboard structure matches.');
+    }
+
+    await this._saveLovelaceConfig(lovelaceConfig);
+    return { restored, deleted: 0, skipped };
+  }
+
+  /**
+   * CLEAN & RESTORE: Delete all Ultra Cards, then restore snapshot cards in exact positions
+   * Nuclear option - use when dashboard is messed up with duplicates
+   */
+  private async _performCleanRestore(snapshotData: any): Promise<{
+    restored: number;
+    deleted: number;
+    skipped: number;
+  }> {
+    console.log('🧹 Starting CLEAN & RESTORE...');
+
+    const lovelaceConfig = await this._getLovelaceConfig();
+    if (!lovelaceConfig) {
+      throw new Error('Could not access dashboard configuration');
+    }
+
+    const views = lovelaceConfig.views || [];
+    let deleted = 0;
+    let restored = 0;
+
+    // Step 1: Delete ALL Ultra Cards
+    console.log('🗑️ Step 1: Deleting all existing Ultra Cards...');
+    views.forEach((view: any) => {
+      if (view.type === 'sections' && view.sections) {
+        view.sections.forEach((section: any) => {
+          if (section.cards) {
+            const before = section.cards.length;
+            section.cards = section.cards.filter((card: any) => {
+              if (card.type === 'custom:ultra-card') {
+                deleted++;
+                return false;
+              }
+              return true;
+            });
+            console.log(
+              `  🗑️ Deleted ${before - section.cards.length} Ultra Cards from section in ${view.title || 'view'}`
+            );
+          }
+        });
+      } else if (view.cards) {
+        const before = view.cards.length;
+        view.cards = view.cards.filter((card: any) => {
+          if (card.type === 'custom:ultra-card') {
+            deleted++;
+            return false;
+          }
+          return true;
+        });
+        console.log(
+          `  🗑️ Deleted ${before - view.cards.length} Ultra Cards from ${view.title || 'view'}`
+        );
+      }
+    });
+
+    // Step 2: Group snapshot cards by view
+    console.log('📦 Step 2: Restoring snapshot cards...');
+    const cardsByView: { [key: string]: any[] } = {};
+    snapshotData.cards.forEach((card: any) => {
+      const viewKey = card.view_path || card.view_id;
+      if (!cardsByView[viewKey]) {
+        cardsByView[viewKey] = [];
+      }
+      cardsByView[viewKey].push(card);
+    });
+
+    // Step 3: Restore cards to their original views and positions
+    views.forEach((view: any, viewIndex: number) => {
+      const viewPath = view.path || `view-${viewIndex}`;
+      const viewId = view.id || viewPath;
+      const viewCards = cardsByView[viewPath] || cardsByView[viewId] || [];
+
+      if (viewCards.length === 0) return;
+
+      console.log(`  ➕ Restoring ${viewCards.length} cards to ${view.title || viewPath}`);
+
+      if (view.type === 'sections' && view.sections) {
+        // Check if snapshot has section information
+        const hasSectionInfo = viewCards.some(card => card.section_index !== undefined);
+
+        if (hasSectionInfo) {
+          // NEW SNAPSHOTS: Restore to original sections using captured section_index
+          console.log('    ✓ Using section info from snapshot (new format)');
+          const cardsBySection: { [sectionIndex: number]: any[] } = {};
+          viewCards.forEach(card => {
+            const sectionIndex = card.section_index ?? 0;
+            if (!cardsBySection[sectionIndex]) {
+              cardsBySection[sectionIndex] = [];
+            }
+            cardsBySection[sectionIndex].push(card);
+          });
+
+          // Ensure we have enough sections
+          Object.keys(cardsBySection).forEach(sectionIndexStr => {
+            const sectionIndex = parseInt(sectionIndexStr);
+            while (view.sections.length <= sectionIndex) {
+              view.sections.push({ cards: [] });
+            }
+            if (!view.sections[sectionIndex].cards) {
+              view.sections[sectionIndex].cards = [];
+            }
+          });
+
+          // Restore cards to their original sections in order
+          Object.entries(cardsBySection).forEach(([sectionIndexStr, cards]) => {
+            const sectionIndex = parseInt(sectionIndexStr);
+            cards.sort((a, b) => {
+              const aIdx = a.card_index_in_section ?? a.card_index;
+              const bIdx = b.card_index_in_section ?? b.card_index;
+              return aIdx - bIdx;
+            });
+            cards.forEach(snapshotCard => {
+              view.sections[sectionIndex].cards.push(snapshotCard.config);
+              restored++;
+            });
+          });
+        } else {
+          // OLD SNAPSHOTS: Intelligently distribute across existing sections
+          console.log(
+            '    ⚠️ No section info - distributing evenly across sections (old snapshot format)'
+          );
+
+          // Sort cards by original index
+          viewCards.sort((a, b) => a.card_index - b.card_index);
+
+          // Distribute cards evenly across existing sections
+          const numSections = view.sections.length;
+          const cardsPerSection = Math.ceil(viewCards.length / numSections);
+
+          viewCards.forEach((snapshotCard, index) => {
+            const targetSection = Math.floor(index / cardsPerSection);
+
+            // Ensure section exists and has cards array
+            if (!view.sections[targetSection]) {
+              view.sections[targetSection] = { cards: [] };
+            }
+            if (!view.sections[targetSection].cards) {
+              view.sections[targetSection].cards = [];
+            }
+
+            view.sections[targetSection].cards.push(snapshotCard.config);
+            restored++;
+          });
+        }
+      } else {
+        // For regular view, restore in order
+        if (!view.cards) {
+          view.cards = [];
+        }
+        // Sort by original card index
+        viewCards.sort((a, b) => a.card_index - b.card_index);
+        viewCards.forEach(snapshotCard => {
+          view.cards.push(snapshotCard.config);
+          restored++;
+        });
+      }
+    });
+
+    console.log(`✅ Clean restore complete: ${deleted} deleted, ${restored} restored`);
+
+    await this._saveLovelaceConfig(lovelaceConfig);
+    return { restored, deleted, skipped: 0 };
+  }
+
+  private async _getLovelaceConfig(): Promise<any> {
+    return this.hass.callWS({
+      type: 'lovelace/config',
+    });
+  }
+
+  private async _saveLovelaceConfig(config: any): Promise<void> {
+    await this.hass.callWS({
+      type: 'lovelace/config/save',
+      config: config,
+    });
   }
 
   private async _handleRestoreCardBackup(backup: CardBackup) {
@@ -260,6 +727,22 @@ export class UcSnapshotHistoryModal extends LitElement {
           </div>
         </div>
       </div>
+
+      <!-- Restore Method Dialog -->
+      ${this._showRestoreDialog && this._pendingRestoreSnapshot
+        ? html`
+            <uc-snapshot-restore-dialog
+              .open="${this._showRestoreDialog}"
+              .cardCount="${this._pendingRestoreSnapshot.card_count}"
+              .viewNames="${Object.keys(this._pendingRestoreSnapshot.views_breakdown)}"
+              @method-selected="${this._handleMethodSelected}"
+              @dialog-closed="${() => {
+                this._showRestoreDialog = false;
+                this._pendingRestoreSnapshot = null;
+              }}"
+            ></uc-snapshot-restore-dialog>
+          `
+        : ''}
     `;
   }
 
@@ -586,6 +1069,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       border-radius: 12px;
       font-weight: 600;
       text-transform: uppercase;
+      margin-right: 12px;
     }
 
     .badge.auto {

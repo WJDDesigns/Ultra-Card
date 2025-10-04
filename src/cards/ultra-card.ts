@@ -58,11 +58,13 @@ export class UltraCard extends LitElement {
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 
-    // Listen for slider state changes
-    this.addEventListener('slider-state-changed', (e: Event) => {
-      e.stopPropagation();
+    // Listen for slider state changes (both on element and window for reliability)
+    const sliderStateHandler = (e: Event) => {
+      e.stopPropagation?.();
       this.requestUpdate();
-    });
+    };
+    this.addEventListener('slider-state-changed', sliderStateHandler);
+    window.addEventListener('slider-state-changed', sliderStateHandler);
   }
 
   disconnectedCallback(): void {
@@ -275,6 +277,16 @@ export class UltraCard extends LitElement {
     // Apply margin
     if (this.config.card_margin !== undefined) {
       styles.push(`margin: ${this.config.card_margin}px`);
+    }
+
+    // Apply custom shadow
+    if (this.config.card_shadow_enabled) {
+      const shadowColor = this.config.card_shadow_color || 'rgba(0, 0, 0, 0.15)';
+      const horizontal = this.config.card_shadow_horizontal ?? 0;
+      const vertical = this.config.card_shadow_vertical ?? 2;
+      const blur = this.config.card_shadow_blur ?? 8;
+      const spread = this.config.card_shadow_spread ?? 0;
+      styles.push(`box-shadow: ${horizontal}px ${vertical}px ${blur}px ${spread}px ${shadowColor}`);
     }
 
     return styles.join('; ');

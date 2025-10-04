@@ -448,7 +448,22 @@ class UcCloudAuthService {
         const user: CloudUser = JSON.parse(stored);
         if (this._isValidStoredUser(user)) {
           this._currentUser = user;
-          console.log(`Loaded cloud auth for user: ${user.displayName}`);
+
+          // Check token expiration and log status
+          const isExpired = Date.now() >= user.expiresAt;
+          const hasRefreshToken = !!user.refreshToken;
+
+          if (isExpired && hasRefreshToken) {
+            console.log(
+              `Loaded auth for ${user.displayName} (token expired, will attempt refresh)`
+            );
+          } else if (isExpired && !hasRefreshToken) {
+            console.warn(
+              `Loaded auth for ${user.displayName} (token expired, no refresh token - re-login required)`
+            );
+          } else {
+            console.log(`Loaded cloud auth for user: ${user.displayName}`);
+          }
         } else {
           console.warn('Invalid stored user data, clearing');
           this._clearStorage();
@@ -466,7 +481,17 @@ class UcCloudAuthService {
   private _saveToStorage(): void {
     try {
       if (this._currentUser) {
-        localStorage.setItem(UcCloudAuthService.STORAGE_KEY, JSON.stringify(this._currentUser));
+        const userJson = JSON.stringify(this._currentUser);
+        localStorage.setItem(UcCloudAuthService.STORAGE_KEY, userJson);
+        console.log('💾 Saved user to localStorage:', {
+          id: this._currentUser.id,
+          username: this._currentUser.username,
+          email: this._currentUser.email,
+          displayName: this._currentUser.displayName,
+          hasToken: !!this._currentUser.token,
+          hasRefreshToken: !!this._currentUser.refreshToken,
+          expiresAt: this._currentUser.expiresAt,
+        });
       } else {
         this._clearStorage();
       }
@@ -490,11 +515,38 @@ class UcCloudAuthService {
    * Validate stored user data
    */
   private _isValidStoredUser(user: any): user is CloudUser {
+    // Debug log to see what's wrong
+    if (!user) {
+      console.warn('❌ Validation failed: user is null/undefined');
+      return false;
+    }
+
+    const checks = {
+      'user exists': !!user,
+      'id is number': typeof user.id === 'number',
+      'username is string': typeof user.username === 'string',
+      'email is string': typeof user.email === 'string',
+      'displayName is string': typeof user.displayName === 'string',
+      'token is string': typeof user.token === 'string',
+      'expiresAt is number': typeof user.expiresAt === 'number',
+    };
+
+    const failedChecks = Object.entries(checks)
+      .filter(([_, passed]) => !passed)
+      .map(([check]) => check);
+
+    if (failedChecks.length > 0) {
+      console.warn('❌ Validation failed. Failed checks:', failedChecks);
+      console.warn('   User data:', JSON.stringify(user, null, 2));
+      return false;
+    }
+
     return (
       user &&
       typeof user.id === 'number' &&
       typeof user.username === 'string' &&
       typeof user.email === 'string' &&
+      typeof user.displayName === 'string' &&
       typeof user.token === 'string' &&
       typeof user.expiresAt === 'number'
     );

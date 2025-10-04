@@ -3,7 +3,7 @@
  * Plugin Name: Ultra Card Integration
  * Plugin URI: https://ultracard.io
  * Description: Complete Ultra Card integration for WordPress - includes cloud sync functionality and Directories Pro dashboard panels for managing favorites, colors, and reviews.
- * Version: 1.2.0
+ * Version: 1.2.6
  * Author: WJD Designs
  * Author URI: https://wjddesigns.com
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('ULTRA_CARD_INTEGRATION_VERSION', '1.2.0');
+define('ULTRA_CARD_INTEGRATION_VERSION', '1.2.6');
 define('ULTRA_CARD_INTEGRATION_PLUGIN_FILE', __FILE__);
 define('ULTRA_CARD_INTEGRATION_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ULTRA_CARD_INTEGRATION_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -41,6 +41,9 @@ class UltraCardCloudSync {
         add_action('rest_api_init', array($this, 'add_cors_support'));
         add_action('init', array($this, 'schedule_backup_pruning'));
         add_action('ultra_card_prune_backups', array($this, 'prune_old_backups'));
+        
+        // JWT Authentication - Ensure user_id is in response
+        add_filter('jwt_auth_token_before_dispatch', array($this, 'add_user_id_to_jwt_response'), 10, 2);
         
         // WooCommerce Subscriptions Integration
         add_action('woocommerce_subscription_status_active', array($this, 'grant_pro_access'));
@@ -167,6 +170,26 @@ class UltraCardCloudSync {
                 error_log("Ultra Card: Revoked Pro access from user {$user_id}");
             }
         }
+    }
+    
+    /**
+     * Add user_id to JWT authentication response
+     * Fixes authentication persistence issue where user_id was missing
+     * @param array $data The response data
+     * @param WP_User $user The authenticated user
+     * @return array Modified response data
+     */
+    public function add_user_id_to_jwt_response($data, $user) {
+        // Ensure user_id is always in the response (frontend needs this!)
+        if (!isset($data['user_id']) && isset($user->ID)) {
+            $data['user_id'] = $user->ID;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Ultra Card: JWT response - user_id=' . ($data['user_id'] ?? 'MISSING'));
+        }
+        
+        return $data;
     }
     
     /**
@@ -629,6 +652,12 @@ class UltraCardCloudSync {
             'permission_callback' => array($this, 'check_user_permission'),
         ));
         
+        register_rest_route('ultra-card/v1', '/backups/(?P<id>\d+)/download', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'download_backup'),
+            'permission_callback' => array($this, 'check_download_permission'), // Cookie + JWT auth
+        ));
+        
         // Subscription endpoint
         register_rest_route('ultra-card/v1', '/subscription', array(
             'methods' => 'GET',
@@ -813,6 +842,24 @@ class UltraCardCloudSync {
      */
     public function check_user_permission($request) {
         return is_user_logged_in() && current_user_can('read');
+    }
+    
+    /**
+     * Permission callback for download endpoint
+     * Allows downloads for logged-in users via WordPress admin cookies
+     */
+    public function check_download_permission($request) {
+        // Allow if user is logged into WordPress (via cookies)
+        if (is_user_logged_in()) {
+            return true;
+        }
+        
+        // Also allow if authenticated via JWT (for API access)
+        if (get_current_user_id() > 0) {
+            return true;
+        }
+        
+        return false;
     }
     
     // Favorites CRUD operations
@@ -1331,6 +1378,119 @@ class UltraCardCloudSync {
     }
     
     /**
+     * Download backup/snapshot as JSON file
+     * Handles BOTH old compressed backups AND new uncompressed snapshots
+     */
+    public function download_backup($request) {
+        $id = $request['id'];
+        
+        // Support both cookie-based (WordPress dashboard) and JWT auth (REST API)
+        $user_id = get_current_user_id();
+        
+        if (!$user_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ Download failed: User not authenticated');
+            }
+            return new WP_Error('unauthorized', 'You must be logged in to download backups', array('status' => 401));
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📥 Download backup request: ID=' . $id . ', User=' . $user_id);
+        }
+        
+        $backup = get_post($id);
+        if (!$backup) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ Backup not found: ID=' . $id);
+            }
+            return new WP_Error('not_found', 'Backup not found', array('status' => 404));
+        }
+        
+        // Verify ownership
+        if ($backup->post_author != $user_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ Permission denied: Backup author=' . $backup->post_author . ', Current user=' . $user_id);
+            }
+            return new WP_Error('forbidden', 'You do not have permission to download this backup', array('status' => 403));
+        }
+        
+        $post_type = get_post_type($id);
+        $config_data = null;
+        $filename = 'ultra-card-backup-' . date('Y-m-d') . '.json';
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📦 Backup type: ' . $post_type);
+        }
+        
+        // Determine backup type and extract data
+        if ($post_type === 'ultra_snapshot') {
+            // NEW SNAPSHOT SYSTEM - Base64-encoded JSON
+            $snapshot_data_encoded = get_post_meta($id, 'snapshot_data', true);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('📊 Snapshot data encoded size: ' . strlen($snapshot_data_encoded) . ' bytes');
+            }
+            
+            // Decode base64 (new format as of fix for WordPress character escaping)
+            $snapshot_data_json = base64_decode($snapshot_data_encoded, true);
+            if ($snapshot_data_json === false) {
+                // Not base64 encoded - try direct decode (legacy format)
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ Base64 decode failed for snapshot download, trying legacy format');
+                }
+                $snapshot_data_json = $snapshot_data_encoded;
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ Base64 decoded for download: ' . strlen($snapshot_data_json) . ' bytes');
+                }
+            }
+            
+            $config_data = json_decode($snapshot_data_json, true);
+            $filename = 'ultra-card-snapshot-' . date('Y-m-d-His') . '.json';
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                $card_count = isset($config_data['cards']) ? count($config_data['cards']) : 0;
+                error_log('📊 Cards in snapshot: ' . $card_count);
+            }
+        } else {
+            // OLD BACKUP SYSTEM - Compressed JSON
+            $config_json_compressed = get_post_meta($id, 'config_json', true);
+            if ($config_json_compressed) {
+                $config_json = @gzuncompress($config_json_compressed);
+                if ($config_json) {
+                    $config_data = json_decode($config_json, true);
+                }
+            }
+            
+            $version = get_post_meta($id, 'version_number', true);
+            if ($version) {
+                $filename = 'ultra-card-backup-v' . $version . '.json';
+            }
+        }
+        
+        if (!$config_data || empty($config_data)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ No config data found or data is empty');
+            }
+            return new WP_Error('no_data', 'Backup data not found or corrupted', array('status' => 404));
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ Download successful: ' . $filename);
+        }
+        
+        // Set headers for file download
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Expires: 0');
+        
+        // Output JSON and exit
+        echo json_encode($config_data, JSON_PRETTY_PRINT);
+        exit;
+    }
+    
+    /**
      * Get user subscription status
      */
     public function get_subscription($request) {
@@ -1373,23 +1533,138 @@ class UltraCardCloudSync {
     
     /**
      * Format backup for list view (without full config)
+     * Handles BOTH old compressed backups (ultra_backup/ultra_card_backup) 
+     * AND new uncompressed snapshots (ultra_snapshot)
      */
     public function format_backup_list_item($backup) {
-        $meta = get_post_meta($backup->ID);
-        $config_json = gzuncompress(get_post_meta($backup->ID, 'config_json', true));
-        $size_kb = $config_json ? round(strlen($config_json) / 1024, 2) : 0;
+        $post_type = get_post_type($backup->ID);
         
+        // NEW SNAPSHOT SYSTEM (ultra_snapshot) - Base64-encoded JSON
+        if ($post_type === 'ultra_snapshot') {
+            $snapshot_data_encoded = get_post_meta($backup->ID, 'snapshot_data', true);
+            
+            // Validate encoded data exists
+            if (empty($snapshot_data_encoded)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("⚠️ Snapshot {$backup->ID} has no snapshot_data");
+                }
+                return array(
+                    'id' => $backup->ID,
+                    'name' => 'Dashboard Snapshot (CORRUPTED)',
+                    'type' => get_post_meta($backup->ID, 'snapshot_type', true) ?: 'auto',
+                    'created' => $backup->post_date,
+                    'card_count' => 0,
+                    'views_breakdown' => array(),
+                    'size' => '0 KB',
+                    'stats' => 'ERROR: No data',
+                    'corrupted' => true,
+                );
+            }
+            
+            // Decode base64 (new format as of fix for WordPress character escaping)
+            $snapshot_data_json = base64_decode($snapshot_data_encoded, true);
+            if ($snapshot_data_json === false) {
+                // Not base64 encoded - try direct decode (legacy format)
+                $snapshot_data_json = $snapshot_data_encoded;
+            }
+            
+            $snapshot_data = json_decode($snapshot_data_json, true);
+            
+            // Validate JSON decode succeeded
+            if ($snapshot_data === null || json_last_error() !== JSON_ERROR_NONE) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("⚠️ Snapshot {$backup->ID} JSON decode failed: " . json_last_error_msg());
+                    error_log("   JSON length: " . strlen($snapshot_data_json) . " bytes");
+                }
+                return array(
+                    'id' => $backup->ID,
+                    'name' => 'Dashboard Snapshot (CORRUPTED)',
+                    'type' => get_post_meta($backup->ID, 'snapshot_type', true) ?: 'auto',
+                    'created' => $backup->post_date,
+                    'card_count' => 0,
+                    'views_breakdown' => array(),
+                    'size' => round(strlen($snapshot_data_json) / 1024, 2) . ' KB',
+                    'stats' => 'ERROR: ' . json_last_error_msg(),
+                    'corrupted' => true,
+                );
+            }
+            
+            // Validate cards array exists
+            if (!isset($snapshot_data['cards']) || !is_array($snapshot_data['cards'])) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("⚠️ Snapshot {$backup->ID} has no cards array");
+                    error_log("   Available keys: " . implode(', ', array_keys($snapshot_data)));
+                }
+                return array(
+                    'id' => $backup->ID,
+                    'name' => 'Dashboard Snapshot (INVALID)',
+                    'type' => get_post_meta($backup->ID, 'snapshot_type', true) ?: 'auto',
+                    'created' => $backup->post_date,
+                    'card_count' => 0,
+                    'views_breakdown' => array(),
+                    'size' => round(strlen($snapshot_data_json) / 1024, 2) . ' KB',
+                    'stats' => 'ERROR: No cards array',
+                    'corrupted' => true,
+                );
+            }
+            
+            $card_count = count($snapshot_data['cards']);
+            
+            // Group by views
+            $views_breakdown = array();
+            foreach ($snapshot_data['cards'] as $card) {
+                $view_title = $card['view_title'] ?? 'Unknown View';
+                if (!isset($views_breakdown[$view_title])) {
+                    $views_breakdown[$view_title] = 0;
+                }
+                $views_breakdown[$view_title]++;
+            }
+            
+            return array(
+                'id' => $backup->ID,
+                'name' => 'Dashboard Snapshot',
+                'type' => get_post_meta($backup->ID, 'snapshot_type', true) ?: 'auto',
+                'created' => $backup->post_date,
+                'card_count' => $card_count,
+                'views_breakdown' => $views_breakdown,
+                'size' => round(strlen($snapshot_data_json) / 1024, 2) . ' KB',
+                'stats' => $card_count . ' cards across ' . count($views_breakdown) . ' views',
+            );
+        }
+        
+        // OLD BACKUP SYSTEM (ultra_backup, ultra_card_backup) - Compressed JSON
+        $config_json_compressed = get_post_meta($backup->ID, 'config_json', true);
+        $config_json = false;
+        
+        // Try to decompress if data exists
+        if ($config_json_compressed && is_string($config_json_compressed)) {
+            $config_json = @gzuncompress($config_json_compressed);
+        }
+        
+        $size_kb = $config_json ? round(strlen($config_json) / 1024, 2) : 0;
         $card_stats = json_decode(get_post_meta($backup->ID, 'card_stats', true), true);
+        
+        // Format stats for display
+        $stats_display = '';
+        if (is_array($card_stats)) {
+            $parts = array();
+            if (isset($card_stats['row_count'])) $parts[] = $card_stats['row_count'] . ' rows';
+            if (isset($card_stats['module_count'])) $parts[] = $card_stats['module_count'] . ' modules';
+            $stats_display = !empty($parts) ? implode(', ', $parts) : 'No stats';
+        }
         
         return array(
             'id' => $backup->ID,
-            'type' => get_post_meta($backup->ID, 'backup_type', true),
+            'name' => get_post_meta($backup->ID, 'snapshot_name', true) ?: get_post_meta($backup->ID, 'card_name', true) ?: 'Card Backup v' . intval(get_post_meta($backup->ID, 'version_number', true)),
+            'type' => get_post_meta($backup->ID, 'backup_type', true) ?: 'manual',
             'version_number' => intval(get_post_meta($backup->ID, 'version_number', true)),
             'snapshot_name' => get_post_meta($backup->ID, 'snapshot_name', true),
             'snapshot_description' => get_post_meta($backup->ID, 'snapshot_description', true),
             'created' => $backup->post_date,
+            'size' => $size_kb > 0 ? $size_kb . ' KB' : 'Unknown',
             'size_kb' => $size_kb,
             'card_stats' => $card_stats,
+            'stats' => $stats_display,
             'device_info' => get_post_meta($backup->ID, 'device_info', true),
             'restore_count' => intval(get_post_meta($backup->ID, 'restore_count', true))
         );
@@ -1974,6 +2249,14 @@ class UltraCardCloudSync {
         $user_id = get_current_user_id();
         $limit = intval($request->get_param('limit') ?? 30);
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('========================================');
+            error_log('Ultra Card: GET SNAPSHOTS DEBUG');
+            error_log('========================================');
+            error_log('User ID: ' . $user_id);
+            error_log('Limit: ' . $limit);
+        }
+        
         $args = array(
             'post_type' => 'ultra_snapshot',
             'author' => $user_id,
@@ -1983,12 +2266,38 @@ class UltraCardCloudSync {
         );
         
         $snapshots = get_posts($args);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Found ' . count($snapshots) . ' snapshot posts for user ' . $user_id);
+        }
+        
         $result = array();
         
         foreach ($snapshots as $snapshot) {
-            $snapshot_data_json = get_post_meta($snapshot->ID, 'snapshot_data', true);
+            $snapshot_data_encoded = get_post_meta($snapshot->ID, 'snapshot_data', true);
+            
+            // Decode base64 (new format as of fix for WordPress character escaping)
+            $snapshot_data_json = base64_decode($snapshot_data_encoded, true);
+            if ($snapshot_data_json === false) {
+                // Not base64 encoded - try direct decode (legacy format)
+                $snapshot_data_json = $snapshot_data_encoded;
+            }
+            
             $snapshot_data = json_decode($snapshot_data_json, true);
             $card_count = count($snapshot_data['cards'] ?? []);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('  Snapshot ID ' . $snapshot->ID . ':');
+                error_log('    - JSON length: ' . strlen($snapshot_data_json) . ' bytes');
+                error_log('    - Decoded successfully: ' . (is_array($snapshot_data) ? 'YES' : 'NO'));
+                error_log('    - Has cards key: ' . (isset($snapshot_data['cards']) ? 'YES' : 'NO'));
+                error_log('    - Card count: ' . $card_count);
+                
+                if ($card_count === 0 && strlen($snapshot_data_json) > 100) {
+                    error_log('    ⚠️ WARNING: Snapshot has data but 0 cards!');
+                    error_log('    - Snapshot data keys: ' . (is_array($snapshot_data) ? implode(', ', array_keys($snapshot_data)) : 'NOT AN ARRAY'));
+                }
+            }
             
             // Group by views
             $views_breakdown = array();
@@ -2012,6 +2321,11 @@ class UltraCardCloudSync {
             );
         }
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Returning ' . count($result) . ' snapshots to frontend');
+            error_log('========================================');
+        }
+        
         return rest_ensure_response($result);
     }
     
@@ -2023,7 +2337,36 @@ class UltraCardCloudSync {
         $snapshot_type = $request->get_param('type') ?? 'manual';
         $snapshot_data = $request->get_param('snapshot_data');
         
+        // COMPREHENSIVE DEBUGGING - ALWAYS LOG (remove WP_DEBUG check temporarily)
+        error_log('========================================');
+        error_log('Ultra Card: CREATE SNAPSHOT DEBUG');
+        error_log('========================================');
+        error_log('User ID: ' . $user_id);
+        error_log('Snapshot Type: ' . $snapshot_type);
+        error_log('Request Params: ' . print_r($request->get_params(), true));
+        error_log('Snapshot Data Type: ' . gettype($snapshot_data));
+        error_log('Is snapshot_data array? ' . (is_array($snapshot_data) ? 'YES' : 'NO'));
+        
+        if (is_array($snapshot_data)) {
+            error_log('snapshot_data keys: ' . implode(', ', array_keys($snapshot_data)));
+            error_log('Has "cards" key? ' . (isset($snapshot_data['cards']) ? 'YES' : 'NO'));
+            
+            if (isset($snapshot_data['cards'])) {
+                error_log('Number of cards: ' . count($snapshot_data['cards']));
+                if (count($snapshot_data['cards']) > 0) {
+                    error_log('First card sample: ' . substr(print_r($snapshot_data['cards'][0], true), 0, 500));
+                }
+            } else {
+                error_log('NO CARDS KEY! Available keys: ' . print_r(array_keys($snapshot_data), true));
+            }
+        } else {
+            error_log('Snapshot data is NOT an array! Raw value: ' . print_r($snapshot_data, true));
+        }
+        
         if (!$snapshot_data || !isset($snapshot_data['cards'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ VALIDATION FAILED: Missing snapshot_data or cards');
+            }
             return new WP_Error('invalid_data', 'Snapshot data is required', array('status' => 400));
         }
         
@@ -2031,6 +2374,9 @@ class UltraCardCloudSync {
         if ($snapshot_type === 'manual') {
             $subscription = $this->get_user_subscription_data($user_id);
             if ($subscription['tier'] !== 'pro') {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('❌ Pro subscription required, user tier: ' . $subscription['tier']);
+                }
                 return new WP_Error('pro_required', 'Pro subscription required for manual snapshots', array('status' => 403));
             }
         }
@@ -2044,18 +2390,107 @@ class UltraCardCloudSync {
         ));
         
         if (is_wp_error($post_id)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ Failed to create post: ' . $post_id->get_error_message());
+            }
             return $post_id;
         }
         
-        // Store metadata
+        // Log snapshot post creation
+        error_log('✅ Snapshot post created: ID ' . $post_id);
+        
+        // Store metadata with proper JSON encoding
+        error_log('📝 Encoding snapshot data to JSON...');
+        error_log('  - Input card count: ' . count($snapshot_data['cards']));
+        error_log('  - Input has "views": ' . (isset($snapshot_data['views']) ? 'YES' : 'NO'));
+        error_log('  - Input has "dashboard_path": ' . (isset($snapshot_data['dashboard_path']) ? 'YES (' . $snapshot_data['dashboard_path'] . ')' : 'NO'));
+        
+        // Use JSON flags to handle special characters properly
+        $json_data = json_encode($snapshot_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        
+        if ($json_data === false || $json_data === null) {
+            error_log('❌ CRITICAL: json_encode() FAILED!');
+            error_log('   Error: ' . json_last_error_msg());
+            error_log('   Error code: ' . json_last_error());
+            wp_delete_post($post_id, true); // Clean up the empty post
+            return new WP_Error('json_encode_failed', 'Failed to encode snapshot data: ' . json_last_error_msg(), array('status' => 500));
+        }
+        
+        error_log('✅ JSON encoding successful');
+        error_log('  - Encoded JSON size: ' . strlen($json_data) . ' bytes');
+        error_log('  - Encoded JSON size (KB): ' . round(strlen($json_data) / 1024, 2) . ' KB');
+        
+        // CRITICAL FIX: Base64 encode to prevent WordPress from corrupting special characters
+        // WordPress's add_slashes() corrupts JSON with templates/special chars
+        error_log('🔐 Base64 encoding JSON to prevent WordPress corruption...');
+        $json_data_safe = base64_encode($json_data);
+        error_log('  - Base64 encoded size: ' . strlen($json_data_safe) . ' bytes');
+        
+        // Store the metadata
+        error_log('💾 Storing snapshot data in post meta...');
+        $meta_result = update_post_meta($post_id, 'snapshot_data', $json_data_safe);
+        error_log('  - update_post_meta result: ' . ($meta_result ? 'SUCCESS' : 'FAILED'));
+        
         update_post_meta($post_id, 'snapshot_type', $snapshot_type);
         update_post_meta($post_id, 'snapshot_date', date('Y-m-d'));
-        update_post_meta($post_id, 'snapshot_data', json_encode($snapshot_data));
         update_post_meta($post_id, 'card_count', count($snapshot_data['cards']));
+        
+        error_log('✅ Metadata stored');
+        error_log('  - snapshot_type: ' . $snapshot_type);
+        error_log('  - card_count: ' . count($snapshot_data['cards']));
+        error_log('  - JSON size: ' . strlen($json_data) . ' bytes');
+        
+        // ALWAYS verify the data was actually saved correctly
+        error_log('🔍 VERIFYING saved data...');
+        $verify_data_encoded = get_post_meta($post_id, 'snapshot_data', true);
+        error_log('  - Retrieved meta value type: ' . gettype($verify_data_encoded));
+        error_log('  - Retrieved base64 size: ' . strlen($verify_data_encoded) . ' bytes');
+        error_log('  - Sizes match? ' . (strlen($verify_data_encoded) === strlen($json_data_safe) ? 'YES ✅' : 'NO ❌ MISMATCH!'));
+        
+        if (strlen($verify_data_encoded) !== strlen($json_data_safe)) {
+            error_log('❌ CRITICAL: Stored data size mismatch!');
+            error_log('   Original base64: ' . strlen($json_data_safe) . ' bytes');
+            error_log('   Retrieved base64: ' . strlen($verify_data_encoded) . ' bytes');
+            error_log('   Difference: ' . (strlen($json_data_safe) - strlen($verify_data_encoded)) . ' bytes LOST');
+        }
+        
+        // Decode base64 and verify JSON
+        error_log('🔓 Decoding base64...');
+        $verify_data = base64_decode($verify_data_encoded, true);
+        if ($verify_data === false) {
+            error_log('❌ CRITICAL: Base64 decode failed!');
+        } else {
+            error_log('  - Decoded JSON size: ' . strlen($verify_data) . ' bytes');
+            error_log('  - JSON size matches original? ' . (strlen($verify_data) === strlen($json_data) ? 'YES ✅' : 'NO ❌'));
+            
+            $verify_decoded = json_decode($verify_data, true);
+            error_log('  - JSON decode successful? ' . ($verify_decoded !== null ? 'YES ✅' : 'NO ❌'));
+            
+            if ($verify_decoded === null) {
+                error_log('❌ CRITICAL: Retrieved data cannot be decoded!');
+                error_log('   JSON error: ' . json_last_error_msg());
+                error_log('   First 500 chars of retrieved data: ' . substr($verify_data, 0, 500));
+            } else {
+                error_log('  - Has "cards" key? ' . (isset($verify_decoded['cards']) ? 'YES ✅' : 'NO ❌'));
+                error_log('  - Cards in retrieved data: ' . (isset($verify_decoded['cards']) ? count($verify_decoded['cards']) : 'NO CARDS KEY'));
+                
+                if (!isset($verify_decoded['cards']) || count($verify_decoded['cards']) !== count($snapshot_data['cards'])) {
+                    error_log('❌ CRITICAL: Card count mismatch or missing!');
+                    error_log('   Expected: ' . count($snapshot_data['cards']));
+                    error_log('   Retrieved: ' . (isset($verify_decoded['cards']) ? count($verify_decoded['cards']) : 'NO CARDS'));
+                }
+            }
+        }
         
         // Prune old auto-snapshots (keep 30 days)
         if ($snapshot_type === 'auto') {
             $this->prune_old_snapshots($user_id);
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('========================================');
+            error_log('Ultra Card: SNAPSHOT CREATED SUCCESSFULLY');
+            error_log('========================================');
         }
         
         return rest_ensure_response(array(
@@ -2072,18 +2507,70 @@ class UltraCardCloudSync {
         $snapshot_id = intval($request['id']);
         $user_id = get_current_user_id();
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("🔍 GET SNAPSHOT: ID {$snapshot_id}, User {$user_id}");
+        }
+        
         $snapshot = get_post($snapshot_id);
         
         if (!$snapshot || $snapshot->post_type !== 'ultra_snapshot') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot not found or wrong type");
+            }
             return new WP_Error('not_found', 'Snapshot not found', array('status' => 404));
         }
         
         if ($snapshot->post_author != $user_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Access denied: author={$snapshot->post_author}, user={$user_id}");
+            }
             return new WP_Error('forbidden', 'Access denied', array('status' => 403));
         }
         
-        $snapshot_data_json = get_post_meta($snapshot_id, 'snapshot_data', true);
+        $snapshot_data_encoded = get_post_meta($snapshot_id, 'snapshot_data', true);
+        
+        if (empty($snapshot_data_encoded)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot {$snapshot_id} has no snapshot_data");
+            }
+            return new WP_Error('corrupted_snapshot', 'Snapshot data is missing', array('status' => 500));
+        }
+        
+        // Decode base64 (new format as of fix for WordPress character escaping)
+        $snapshot_data_json = base64_decode($snapshot_data_encoded, true);
+        if ($snapshot_data_json === false) {
+            // Not base64 encoded - try direct decode (legacy format)
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("⚠️ Base64 decode failed for snapshot {$snapshot_id}, trying legacy format");
+            }
+            $snapshot_data_json = $snapshot_data_encoded;
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("✅ Base64 decoded snapshot {$snapshot_id}: " . strlen($snapshot_data_json) . " bytes");
+            }
+        }
+        
         $snapshot_data = json_decode($snapshot_data_json, true);
+        
+        if ($snapshot_data === null || json_last_error() !== JSON_ERROR_NONE) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot {$snapshot_id} JSON decode failed: " . json_last_error_msg());
+                error_log("   JSON length: " . strlen($snapshot_data_json) . " bytes");
+            }
+            return new WP_Error('corrupted_snapshot', 'Failed to decode snapshot data: ' . json_last_error_msg(), array('status' => 500));
+        }
+        
+        if (!isset($snapshot_data['cards']) || !is_array($snapshot_data['cards'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot {$snapshot_id} has no cards array");
+                error_log("   Available keys: " . implode(', ', array_keys($snapshot_data)));
+            }
+            return new WP_Error('invalid_snapshot', 'Snapshot has no cards data', array('status' => 500));
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("✅ Snapshot {$snapshot_id} retrieved successfully: " . count($snapshot_data['cards']) . " cards");
+        }
         
         return rest_ensure_response(array(
             'id' => $snapshot->ID,
@@ -2133,18 +2620,82 @@ class UltraCardCloudSync {
         $snapshot_id = intval($request['id']);
         $user_id = get_current_user_id();
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("🔄 RESTORE SNAPSHOT: ID {$snapshot_id}, User {$user_id}");
+        }
+        
         $snapshot = get_post($snapshot_id);
         
         if (!$snapshot || $snapshot->post_type !== 'ultra_snapshot') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot not found or wrong type");
+            }
             return new WP_Error('not_found', 'Snapshot not found', array('status' => 404));
         }
         
         if ($snapshot->post_author != $user_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Access denied: author={$snapshot->post_author}, user={$user_id}");
+            }
             return new WP_Error('forbidden', 'Access denied', array('status' => 403));
         }
         
-        $snapshot_data_json = get_post_meta($snapshot_id, 'snapshot_data', true);
+        $snapshot_data_encoded = get_post_meta($snapshot_id, 'snapshot_data', true);
+        
+        if (empty($snapshot_data_encoded)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot {$snapshot_id} has no snapshot_data");
+            }
+            return new WP_Error('corrupted_snapshot', 'Snapshot data is missing', array('status' => 500));
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("📦 Snapshot data encoded size: " . strlen($snapshot_data_encoded) . " bytes");
+        }
+        
+        // Decode base64 (new format as of fix for WordPress character escaping)
+        $snapshot_data_json = base64_decode($snapshot_data_encoded, true);
+        if ($snapshot_data_json === false) {
+            // Not base64 encoded - try direct decode (legacy format)
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("⚠️ Base64 decode failed for snapshot {$snapshot_id}, trying legacy format");
+            }
+            $snapshot_data_json = $snapshot_data_encoded;
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("✅ Base64 decoded snapshot {$snapshot_id}: " . strlen($snapshot_data_json) . " bytes");
+            }
+        }
+        
         $snapshot_data = json_decode($snapshot_data_json, true);
+        
+        if ($snapshot_data === null || json_last_error() !== JSON_ERROR_NONE) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot {$snapshot_id} JSON decode failed: " . json_last_error_msg());
+                error_log("   JSON length: " . strlen($snapshot_data_json) . " bytes");
+                error_log("   First 200 chars: " . substr($snapshot_data_json, 0, 200));
+            }
+            return new WP_Error('corrupted_snapshot', 'Failed to decode snapshot data: ' . json_last_error_msg(), array('status' => 500));
+        }
+        
+        if (!isset($snapshot_data['cards']) || !is_array($snapshot_data['cards'])) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("❌ Snapshot {$snapshot_id} has no cards array");
+                error_log("   Snapshot data type: " . gettype($snapshot_data));
+                if (is_array($snapshot_data)) {
+                    error_log("   Available keys: " . implode(', ', array_keys($snapshot_data)));
+                } else {
+                    error_log("   Data is not an array!");
+                }
+            }
+            return new WP_Error('invalid_snapshot', 'Snapshot has no cards data', array('status' => 500));
+        }
+        
+        $card_count = count($snapshot_data['cards']);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("✅ Snapshot {$snapshot_id} restored: {$card_count} cards");
+        }
         
         // Increment restore count
         $restore_count = intval(get_post_meta($snapshot_id, 'restore_count', true));
@@ -2640,6 +3191,13 @@ class UltraCardDashboardIntegration {
                 'icon' => 'fas fa-bookmark',
                 'weight' => 3,
             );
+            
+            // Add settings tab for Pro users
+            $panel_links['settings'] = array(
+                'title' => __('Snapshot Settings', 'ultra-card'),
+                'icon' => 'fas fa-cog',
+                'weight' => 4,
+            );
         }
         
         return $panel_links;
@@ -2661,6 +3219,11 @@ class UltraCardDashboardIntegration {
         }
         
         $user_id = get_current_user_id();
+        
+        // Handle settings tab for Pro users
+        if ($link === 'settings') {
+            return $this->render_snapshot_settings_panel($user_id);
+        }
         
         // Determine backup type filter based on $link parameter
         $backup_type = null;
@@ -2853,6 +3416,43 @@ class UltraCardDashboardIntegration {
                 font-size: 18px;
             }
             
+            /* Bulk Actions */
+            .ucp-bulk-actions {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .ucp-bulk-select-all {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                color: #666;
+                cursor: pointer;
+            }
+            
+            .ucp-bulk-delete-btn {
+                background: #e74c3c;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: none;
+            }
+            
+            .ucp-bulk-delete-btn.active {
+                display: block;
+            }
+            
+            .ucp-bulk-delete-btn:hover {
+                background: #c0392b;
+            }
+            
             /* Backup List */
             .ucp-backup-list {
                 display: flex;
@@ -2876,6 +3476,13 @@ class UltraCardDashboardIntegration {
                 background: white;
                 border-color: #667eea;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            }
+            
+            .ucp-backup-checkbox {
+                flex-shrink: 0;
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
             }
             
             .ucp-backup-info {
@@ -3064,6 +3671,17 @@ class UltraCardDashboardIntegration {
                         <span class="ucp-section-icon"><i class="fas <?php echo esc_attr($section_icon); ?>"></i></span>
                         <?php echo esc_html($section_title); ?>
                     </h3>
+                    <?php if (!empty($backups)): ?>
+                    <div class="ucp-bulk-actions">
+                        <label class="ucp-bulk-select-all">
+                            <input type="checkbox" id="select-all-backups" onchange="ucToggleAllBackups(this)">
+                            <span>Select All</span>
+                        </label>
+                        <button class="ucp-bulk-delete-btn" id="bulk-delete-btn" onclick="ucBulkDeleteBackups()">
+                            🗑️ Delete Selected
+                        </button>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <?php if (empty($backups)): ?>
@@ -3080,6 +3698,10 @@ class UltraCardDashboardIntegration {
                                 $backup_data = $this->cloud_sync->format_backup_list_item($backup);
                         ?>
                             <div class="ucp-backup-item">
+                                <input type="checkbox" 
+                                       class="ucp-backup-checkbox backup-checkbox" 
+                                       data-backup-id="<?php echo $backup->ID; ?>"
+                                       onchange="ucUpdateBulkDeleteButton()">
                                 <div class="ucp-backup-info">
                                     <div class="ucp-backup-name">
                                         <?php echo esc_html($backup_data['name']); ?>
@@ -3102,9 +3724,6 @@ class UltraCardDashboardIntegration {
                                     </div>
                                 </div>
                                 <div class="ucp-backup-actions">
-                                    <button class="ucp-action-btn" onclick="ucViewBackup(<?php echo $backup->ID; ?>)">
-                                        👁️ View
-                                    </button>
                                     <button class="ucp-action-btn primary" onclick="ucDownloadBackup(<?php echo $backup->ID; ?>)">
                                         ⬇️ Download
                                     </button>
@@ -3126,12 +3745,10 @@ class UltraCardDashboardIntegration {
         </div>
         
         <script>
-        function ucViewBackup(id) {
-            alert('View backup #' + id + ' - Feature coming soon!');
-        }
-        
         function ucDownloadBackup(id) {
-            window.location.href = '<?php echo rest_url('ultra-card/v1/backups/'); ?>' + id + '/download';
+            // Add nonce to URL for WordPress REST API authentication
+            const nonce = '<?php echo wp_create_nonce('wp_rest'); ?>';
+            window.location.href = '<?php echo rest_url('ultra-card/v1/backups/'); ?>' + id + '/download?_wpnonce=' + nonce;
         }
         
         function ucDeleteBackup(id) {
@@ -3150,6 +3767,76 @@ class UltraCardDashboardIntegration {
                 });
             }
         }
+        
+        function ucToggleAllBackups(checkbox) {
+            const checkboxes = document.querySelectorAll('.backup-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+            ucUpdateBulkDeleteButton();
+        }
+        
+        function ucUpdateBulkDeleteButton() {
+            const checkboxes = document.querySelectorAll('.backup-checkbox:checked');
+            const bulkBtn = document.getElementById('bulk-delete-btn');
+            const selectAllCheckbox = document.getElementById('select-all-backups');
+            
+            if (checkboxes.length > 0) {
+                bulkBtn.classList.add('active');
+                bulkBtn.textContent = `🗑️ Delete Selected (${checkboxes.length})`;
+            } else {
+                bulkBtn.classList.remove('active');
+                bulkBtn.textContent = '🗑️ Delete Selected';
+            }
+            
+            // Update "Select All" checkbox state
+            const allCheckboxes = document.querySelectorAll('.backup-checkbox');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = checkboxes.length === allCheckboxes.length && allCheckboxes.length > 0;
+            }
+        }
+        
+        function ucBulkDeleteBackups() {
+            const checkboxes = document.querySelectorAll('.backup-checkbox:checked');
+            const ids = Array.from(checkboxes).map(cb => cb.getAttribute('data-backup-id'));
+            
+            if (ids.length === 0) {
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete ${ids.length} backup(s)? This cannot be undone.`)) {
+                return;
+            }
+            
+            // Delete all selected backups
+            const nonce = '<?php echo wp_create_nonce('wp_rest'); ?>';
+            const baseUrl = '<?php echo rest_url('ultra-card/v1/backups/'); ?>';
+            
+            let completed = 0;
+            let failed = 0;
+            
+            Promise.all(ids.map(id => 
+                fetch(baseUrl + id, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-WP-Nonce': nonce
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        completed++;
+                    } else {
+                        failed++;
+                    }
+                }).catch(() => {
+                    failed++;
+                })
+            )).then(() => {
+                if (failed > 0) {
+                    alert(`Deleted ${completed} backup(s). Failed to delete ${failed} backup(s).`);
+                }
+                location.reload();
+            });
+        }
         </script>
         <?php
         
@@ -3160,6 +3847,269 @@ class UltraCardDashboardIntegration {
      * Render Ultra Card Membership panel content
      * Shows WooCommerce subscription and billing info
      */
+    /**
+     * Render snapshot settings panel
+     */
+    private function render_snapshot_settings_panel($user_id) {
+        // Get current settings
+        $enabled = get_user_meta($user_id, 'ultra_snapshot_enabled', true);
+        $time = get_user_meta($user_id, 'ultra_snapshot_time', true) ?: '03:00';
+        $timezone = get_user_meta($user_id, 'ultra_snapshot_timezone', true) ?: 'UTC';
+        
+        // Handle form submission
+        if (isset($_POST['save_snapshot_settings']) && wp_verify_nonce($_POST['_wpnonce'], 'ultra_snapshot_settings')) {
+            $enabled = isset($_POST['snapshot_enabled']) ? 1 : 0;
+            $time = sanitize_text_field($_POST['snapshot_time']);
+            $timezone = sanitize_text_field($_POST['snapshot_timezone']);
+            
+            update_user_meta($user_id, 'ultra_snapshot_enabled', $enabled);
+            update_user_meta($user_id, 'ultra_snapshot_time', $time);
+            update_user_meta($user_id, 'ultra_snapshot_timezone', $timezone);
+            
+            echo '<div class="ucp-success-message">✅ Settings saved successfully!</div>';
+        }
+        
+        // Common timezones
+        $timezones = array(
+            'UTC' => 'UTC',
+            'America/New_York' => 'Eastern Time (ET)',
+            'America/Chicago' => 'Central Time (CT)',
+            'America/Denver' => 'Mountain Time (MT)',
+            'America/Los_Angeles' => 'Pacific Time (PT)',
+            'Europe/London' => 'London',
+            'Europe/Paris' => 'Paris',
+            'Europe/Berlin' => 'Berlin',
+            'Asia/Tokyo' => 'Tokyo',
+            'Asia/Shanghai' => 'Shanghai',
+            'Australia/Sydney' => 'Sydney',
+        );
+        
+        ob_start();
+        ?>
+        <style>
+            .ucp-settings-panel {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            
+            .ucp-settings-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 16px;
+                padding: 32px;
+                margin-bottom: 32px;
+                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            }
+            
+            .ucp-settings-header h2 {
+                margin: 0 0 8px 0;
+                font-size: 28px;
+                font-weight: 700;
+            }
+            
+            .ucp-settings-header p {
+                margin: 0;
+                opacity: 0.95;
+                font-size: 16px;
+            }
+            
+            .ucp-settings-card {
+                background: white;
+                border-radius: 12px;
+                padding: 32px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                margin-bottom: 24px;
+            }
+            
+            .ucp-settings-group {
+                margin-bottom: 28px;
+            }
+            
+            .ucp-settings-group:last-child {
+                margin-bottom: 0;
+            }
+            
+            .ucp-settings-group label {
+                display: block;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 8px;
+            }
+            
+            .ucp-settings-help {
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 12px;
+            }
+            
+            .ucp-settings-group input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                margin-right: 10px;
+                cursor: pointer;
+            }
+            
+            .ucp-settings-group input[type="time"],
+            .ucp-settings-group select {
+                width: 100%;
+                padding: 12px 16px;
+                font-size: 15px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+            
+            .ucp-settings-group input[type="time"]:focus,
+            .ucp-settings-group select:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+            
+            .ucp-toggle-label {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 16px;
+                background: #f5f5f5;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            
+            .ucp-toggle-label input[type="checkbox"] {
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+            
+            .ucp-toggle-label:hover {
+                background: #e8e8e8;
+            }
+            
+            .ucp-info-box {
+                background: #f0f4ff;
+                border-left: 4px solid #667eea;
+                padding: 16px 20px;
+                border-radius: 8px;
+                margin-top: 24px;
+            }
+            
+            .ucp-info-box h4 {
+                margin: 0 0 8px 0;
+                color: #667eea;
+                font-size: 16px;
+            }
+            
+            .ucp-info-box p {
+                margin: 0;
+                color: #555;
+                line-height: 1.6;
+            }
+            
+            .ucp-save-button {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 14px 32px;
+                font-size: 16px;
+                font-weight: 600;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+            
+            .ucp-save-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+            }
+            
+            .ucp-success-message {
+                background: #d4edda;
+                border: 1px solid #c3e6cb;
+                color: #155724;
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 24px;
+                font-weight: 500;
+            }
+        </style>
+        
+        <div class="ucp-settings-panel">
+            <div class="ucp-settings-header">
+                <h2>⚙️ Snapshot Settings</h2>
+                <p>Configure automatic daily dashboard snapshots</p>
+            </div>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('ultra_snapshot_settings'); ?>
+                
+                <div class="ucp-settings-card">
+                    <div class="ucp-settings-group">
+                        <label class="ucp-toggle-label">
+                            <input 
+                                type="checkbox" 
+                                name="snapshot_enabled" 
+                                value="1" 
+                                <?php checked($enabled, 1); ?>
+                            />
+                            <div>
+                                <strong>Enable Daily Auto-Snapshots</strong>
+                                <div class="ucp-settings-help">
+                                    Automatically backup all Ultra Cards across your entire dashboard once per day
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="ucp-settings-group">
+                        <label for="snapshot_time">Snapshot Time</label>
+                        <div class="ucp-settings-help">
+                            What time should snapshots be created? (24-hour format)
+                        </div>
+                        <input 
+                            type="time" 
+                            id="snapshot_time" 
+                            name="snapshot_time" 
+                            value="<?php echo esc_attr($time); ?>"
+                        />
+                    </div>
+                    
+                    <div class="ucp-settings-group">
+                        <label for="snapshot_timezone">Timezone</label>
+                        <div class="ucp-settings-help">
+                            Snapshot time will use this timezone
+                        </div>
+                        <select id="snapshot_timezone" name="snapshot_timezone">
+                            <?php foreach ($timezones as $value => $label): ?>
+                                <option value="<?php echo esc_attr($value); ?>" <?php selected($timezone, $value); ?>>
+                                    <?php echo esc_html($label); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="ucp-info-box">
+                        <h4>📅 How it works</h4>
+                        <p>
+                            <strong>Dashboard Snapshots</strong> automatically back up <strong>all</strong> your Ultra Cards 
+                            across your entire dashboard once per day. Snapshots are kept for <strong>30 days</strong> and 
+                            include card positions for easy restoration.
+                        </p>
+                    </div>
+                </div>
+                
+                <button type="submit" name="save_snapshot_settings" class="ucp-save-button">
+                    💾 Save Settings
+                </button>
+            </form>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    
     private function render_membership_panel_content($link) {
         $user_id = get_current_user_id();
         

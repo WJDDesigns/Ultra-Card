@@ -11,6 +11,10 @@ import { ucCloudBackupService, BackupStatus } from '../services/uc-cloud-backup-
 import { ucSnapshotService } from '../services/uc-snapshot-service';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-service';
+import {
+  ucSnapshotSchedulerService,
+  SnapshotSchedulerStatus,
+} from '../services/uc-snapshot-scheduler-service';
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
 import './tabs/about-tab';
 import './tabs/layout-tab';
@@ -45,8 +49,11 @@ export class UltraCardEditor extends LitElement {
   @state() private _showBackupHistory: boolean = false;
   @state() private _showCreateSnapshot: boolean = false;
   @state() private _showManualBackup: boolean = false;
+  @state() private _showSnapshotSettings: boolean = false;
+  @state() private _snapshotSchedulerStatus: SnapshotSchedulerStatus | null = null;
   @state() private _newerBackupAvailable: any = null;
   @state() private _showSyncNotification: boolean = false;
+  @state() private _isCreatingManualSnapshot: boolean = false;
 
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
@@ -453,6 +460,235 @@ export class UltraCardEditor extends LitElement {
                   </button>
                 </div>
               </div>
+
+              <!-- Card Shadow Settings -->
+              <div class="setting-item" style="grid-column: 1 / -1;">
+                <div
+                  style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;"
+                >
+                  <label style="margin: 0; font-weight: 500;">
+                    ${localize('editor.fields.card_shadow_enabled', lang, 'Custom Drop Shadow')}
+                  </label>
+                  <ha-switch
+                    .checked=${this.config.card_shadow_enabled || false}
+                    @change=${(e: Event) => {
+                      const target = e.target as any;
+                      this._updateConfig({ card_shadow_enabled: target.checked });
+                    }}
+                  ></ha-switch>
+                </div>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.fields.card_shadow_enabled_desc',
+                    lang,
+                    'Enable custom shadow for the card'
+                  )}
+                </div>
+              </div>
+
+              ${this.config.card_shadow_enabled
+                ? html`
+                    <div
+                      class="conditional-fields-group"
+                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
+                    >
+                      <div class="settings-grid">
+                        <div class="setting-item">
+                          <label>
+                            ${localize('editor.fields.card_shadow_color', lang, 'Shadow Color')}
+                          </label>
+                          <div class="setting-description">
+                            ${localize(
+                              'editor.fields.card_shadow_color_desc',
+                              lang,
+                              'The color of the card shadow'
+                            )}
+                          </div>
+                          <ultra-color-picker
+                            .label=${'Shadow Color'}
+                            .value=${this.config.card_shadow_color || 'rgba(0, 0, 0, 0.15)'}
+                            .defaultValue=${'rgba(0, 0, 0, 0.15)'}
+                            .hass=${this.hass}
+                            @value-changed=${(e: CustomEvent) =>
+                              this._updateConfig({ card_shadow_color: e.detail.value })}
+                          ></ultra-color-picker>
+                        </div>
+
+                        <div class="setting-item">
+                          <label>
+                            ${localize(
+                              'editor.fields.card_shadow_horizontal',
+                              lang,
+                              'Horizontal Offset'
+                            )}
+                          </label>
+                          <div class="setting-description">
+                            ${localize(
+                              'editor.fields.card_shadow_horizontal_desc',
+                              lang,
+                              'Horizontal position of the shadow (negative = left, positive = right)'
+                            )}
+                          </div>
+                          <div class="input-with-unit">
+                            <input
+                              type="number"
+                              min="-50"
+                              max="50"
+                              .value=${this.config.card_shadow_horizontal ?? 0}
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                this._updateConfig({
+                                  card_shadow_horizontal: Number(target.value),
+                                });
+                              }}
+                            />
+                            <span class="unit"
+                              >${localize('editor.fields.unit_px', lang, 'px')}</span
+                            >
+                            <button
+                              class="reset-btn"
+                              @click=${() => this._updateConfig({ card_shadow_horizontal: 0 })}
+                              title=${localize(
+                                'editor.fields.reset_default_value',
+                                lang,
+                                'Reset to default ({value})'
+                              ).replace('{value}', '0px')}
+                            >
+                              ↺
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="setting-item">
+                          <label>
+                            ${localize(
+                              'editor.fields.card_shadow_vertical',
+                              lang,
+                              'Vertical Offset'
+                            )}
+                          </label>
+                          <div class="setting-description">
+                            ${localize(
+                              'editor.fields.card_shadow_vertical_desc',
+                              lang,
+                              'Vertical position of the shadow (negative = up, positive = down)'
+                            )}
+                          </div>
+                          <div class="input-with-unit">
+                            <input
+                              type="number"
+                              min="-50"
+                              max="50"
+                              .value=${this.config.card_shadow_vertical ?? 2}
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                this._updateConfig({
+                                  card_shadow_vertical: Number(target.value),
+                                });
+                              }}
+                            />
+                            <span class="unit"
+                              >${localize('editor.fields.unit_px', lang, 'px')}</span
+                            >
+                            <button
+                              class="reset-btn"
+                              @click=${() => this._updateConfig({ card_shadow_vertical: 2 })}
+                              title=${localize(
+                                'editor.fields.reset_default_value',
+                                lang,
+                                'Reset to default ({value})'
+                              ).replace('{value}', '2px')}
+                            >
+                              ↺
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="setting-item">
+                          <label>
+                            ${localize('editor.fields.card_shadow_blur', lang, 'Blur Radius')}
+                          </label>
+                          <div class="setting-description">
+                            ${localize(
+                              'editor.fields.card_shadow_blur_desc',
+                              lang,
+                              'How blurred the shadow appears'
+                            )}
+                          </div>
+                          <div class="input-with-unit">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              .value=${this.config.card_shadow_blur ?? 8}
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                this._updateConfig({
+                                  card_shadow_blur: Number(target.value),
+                                });
+                              }}
+                            />
+                            <span class="unit"
+                              >${localize('editor.fields.unit_px', lang, 'px')}</span
+                            >
+                            <button
+                              class="reset-btn"
+                              @click=${() => this._updateConfig({ card_shadow_blur: 8 })}
+                              title=${localize(
+                                'editor.fields.reset_default_value',
+                                lang,
+                                'Reset to default ({value})'
+                              ).replace('{value}', '8px')}
+                            >
+                              ↺
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="setting-item">
+                          <label>
+                            ${localize('editor.fields.card_shadow_spread', lang, 'Spread Radius')}
+                          </label>
+                          <div class="setting-description">
+                            ${localize(
+                              'editor.fields.card_shadow_spread_desc',
+                              lang,
+                              'How much the shadow expands or contracts'
+                            )}
+                          </div>
+                          <div class="input-with-unit">
+                            <input
+                              type="number"
+                              min="-50"
+                              max="50"
+                              .value=${this.config.card_shadow_spread ?? 0}
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                this._updateConfig({
+                                  card_shadow_spread: Number(target.value),
+                                });
+                              }}
+                            />
+                            <span class="unit"
+                              >${localize('editor.fields.unit_px', lang, 'px')}</span
+                            >
+                            <button
+                              class="reset-btn"
+                              @click=${() => this._updateConfig({ card_shadow_spread: 0 })}
+                              title=${localize(
+                                'editor.fields.reset_default_value',
+                                lang,
+                                'Reset to default ({value})'
+                              ).replace('{value}', '0px')}
+                            >
+                              ↺
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `
+                : ''}
             </div>
           </div>
 
@@ -2270,11 +2506,48 @@ export class UltraCardEditor extends LitElement {
   /**
    * Setup cloud sync listeners
    */
-  private _setupCloudSyncListeners(): void {
+  private async _setupCloudSyncListeners(): Promise<void> {
     // Get initial state
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._syncStatus = ucCloudSyncService.getSyncStatus();
     this._backupStatus = ucCloudBackupService.getStatus();
+
+    console.log('🔍 Setup Cloud Sync - User from storage:', this._cloudUser ? 'Found' : 'None');
+    console.log('🔍 Is authenticated?', ucCloudAuthService.isAuthenticated());
+
+    // If user exists in storage, attempt to restore session
+    if (this._cloudUser && ucCloudAuthService.isAuthenticated()) {
+      console.log('🔄 Restoring Pro session from storage...');
+      console.log('   User:', this._cloudUser.displayName);
+      console.log('   Tier:', this._cloudUser.subscription?.tier);
+      try {
+        await this._initializeProServices(this._cloudUser);
+        console.log('✅ Pro session restored successfully');
+      } catch (error) {
+        console.error('❌ Failed to restore Pro session:', error);
+      }
+    } else if (this._cloudUser && !ucCloudAuthService.isAuthenticated()) {
+      // Token expired but user exists - attempt refresh
+      console.log('🔄 Token expired, attempting refresh...');
+      console.log('   Stored user:', this._cloudUser.displayName);
+      console.log('   Has refresh token?', !!this._cloudUser.refreshToken);
+      try {
+        await ucCloudAuthService.refreshToken();
+        this._cloudUser = ucCloudAuthService.getCurrentUser();
+        if (this._cloudUser) {
+          await this._initializeProServices(this._cloudUser);
+          console.log('✅ Token refreshed and session restored');
+        } else {
+          console.warn('❌ Refresh succeeded but no user returned');
+        }
+      } catch (error) {
+        console.warn('❌ Token refresh failed:', error);
+        console.warn('   User needs to login again');
+        this._cloudUser = null;
+      }
+    } else {
+      console.log('ℹ️ No stored session to restore - user needs to login');
+    }
 
     // Setup auth listener
     this._authListener = (user: CloudUser | null) => {
@@ -2353,6 +2626,9 @@ export class UltraCardEditor extends LitElement {
         <!-- LOGIN/LOGOUT SECTION -->
         ${this._renderAuthSection(lang, isLoggedIn, isPro)}
 
+        <!-- SNAPSHOT STATUS & SETTINGS (Pro users only) -->
+        ${isLoggedIn && isPro ? this._renderSnapshotStatusSection(lang) : ''}
+
         <!-- CARD NAME SETTING (Always visible when logged in) -->
         ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
 
@@ -2383,6 +2659,15 @@ export class UltraCardEditor extends LitElement {
                 @dialog-closed="${() => (this._showManualBackup = false)}"
                 @backup-created="${this._handleManualBackupCreated}"
               ></uc-manual-backup-dialog>
+            `
+          : ''}
+        ${this._showSnapshotSettings
+          ? html`
+              <uc-snapshot-settings-dialog
+                .open="${this._showSnapshotSettings}"
+                @dialog-closed="${() => (this._showSnapshotSettings = false)}"
+                @settings-saved="${this._handleSnapshotSettingsSaved}"
+              ></uc-snapshot-settings-dialog>
             `
           : ''}
       </div>
@@ -2770,6 +3055,518 @@ export class UltraCardEditor extends LitElement {
     `;
   }
 
+  /**
+   * Render Snapshot Status Section (Pro only)
+   */
+  private _renderSnapshotStatusSection(lang: string): TemplateResult {
+    const status = this._snapshotSchedulerStatus;
+
+    return html`
+      <div class="ultra-pro-snapshot-section">
+        <div class="snapshot-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <ha-icon icon="mdi:camera-timer"></ha-icon>
+            </div>
+            <div class="header-text">
+              <h3>Auto Dashboard Snapshots</h3>
+              <p>Automatic daily backups of your entire dashboard</p>
+            </div>
+          </div>
+          <button
+            class="snapshot-settings-btn"
+            @click="${() => (this._showSnapshotSettings = true)}"
+            title="Configure snapshot settings"
+          >
+            <ha-icon icon="mdi:cog"></ha-icon>
+          </button>
+        </div>
+
+        <div class="snapshot-status-container">
+          ${status
+            ? html`
+                <div class="status-card ${status.enabled ? 'enabled' : 'paused'}">
+                  <div class="status-primary">
+                    <ha-icon
+                      icon="${status.enabled ? 'mdi:check-circle' : 'mdi:pause-circle'}"
+                      class="status-icon"
+                    ></ha-icon>
+                    <div class="status-text">
+                      <strong>${status.enabled ? 'Enabled' : 'Paused'}</strong>
+                      <span class="status-desc">
+                        ${status.enabled
+                          ? 'Daily snapshots are active'
+                          : 'Daily snapshots are paused'}
+                      </span>
+                    </div>
+                  </div>
+
+                  ${status.enabled && status.nextSnapshotTime
+                    ? html`
+                        <div class="status-detail">
+                          <div class="detail-icon">
+                            <ha-icon icon="mdi:calendar-clock"></ha-icon>
+                          </div>
+                          <div class="detail-content">
+                            <span class="detail-label">Next Snapshot</span>
+                            <span class="detail-value">
+                              ${this._formatNextSnapshotTime(status.nextSnapshotTime)}
+                            </span>
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                  ${status.lastSnapshotTime
+                    ? html`
+                        <div class="status-detail">
+                          <div class="detail-icon">
+                            <ha-icon icon="mdi:history"></ha-icon>
+                          </div>
+                          <div class="detail-content">
+                            <span class="detail-label">Last Snapshot</span>
+                            <span class="detail-value">
+                              ${this._formatLastSnapshotTime(status.lastSnapshotTime)}
+                            </span>
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                  ${status.isRunning
+                    ? html`
+                        <div class="status-detail running">
+                          <div class="detail-icon">
+                            <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
+                          </div>
+                          <div class="detail-content">
+                            <span class="detail-value">Creating snapshot...</span>
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                </div>
+              `
+            : html`
+                <div class="status-card loading">
+                  <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
+                  <span>Loading snapshot status...</span>
+                </div>
+              `}
+
+          <div class="manual-snapshot-action">
+            <button
+              class="ultra-btn ultra-btn-manual-snapshot"
+              @click="${this._handleManualSnapshot}"
+              ?disabled="${this._isCreatingManualSnapshot || status?.isRunning}"
+            >
+              <ha-icon
+                icon="${this._isCreatingManualSnapshot ? 'mdi:loading' : 'mdi:camera-plus'}"
+                class="${this._isCreatingManualSnapshot ? 'spinning' : ''}"
+              ></ha-icon>
+              ${this._isCreatingManualSnapshot
+                ? 'Creating Snapshot...'
+                : 'Perform Manual Dashboard Snapshot'}
+            </button>
+            <p class="manual-snapshot-note">
+              <ha-icon icon="mdi:information"></ha-icon>
+              Manual snapshots count towards your 30-day snapshot history.
+            </p>
+          </div>
+
+          <div class="snapshot-info-card">
+            <div class="info-icon-container">
+              <ha-icon icon="mdi:information-outline"></ha-icon>
+            </div>
+            <div class="info-content">
+              <h4>What are Dashboard Snapshots?</h4>
+              <p>
+                Automatically backs up <strong>all</strong> your Ultra Cards across your entire
+                dashboard once per day. Both auto and manual snapshots are kept for
+                <strong>30 days</strong> and include card positions for easy restoration.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <style>
+          .ultra-pro-snapshot-section {
+            margin: 16px 0;
+            padding: 20px;
+            background: var(--card-background-color);
+            border-radius: 12px;
+            border: 2px solid var(--primary-color, #03a9f4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          }
+
+          .snapshot-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--divider-color, #e0e0e0);
+          }
+
+          .header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+          }
+
+          .header-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
+          }
+
+          .header-icon ha-icon {
+            --mdc-icon-size: 28px;
+            color: white;
+          }
+
+          .header-text h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+          }
+
+          .header-text p {
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            opacity: 0.8;
+          }
+
+          .snapshot-settings-btn {
+            padding: 10px;
+            background: var(--secondary-background-color, #f5f5f5);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--primary-text-color);
+          }
+
+          .snapshot-settings-btn:hover {
+            background: var(--divider-color, #e0e0e0);
+            transform: rotate(90deg);
+          }
+
+          .snapshot-settings-btn ha-icon {
+            --mdc-icon-size: 20px;
+          }
+
+          .snapshot-status-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+
+          .status-card {
+            background: var(--secondary-background-color, #f5f5f5);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+
+          .status-card.enabled {
+            border-left: 4px solid var(--success-color, #4caf50);
+          }
+
+          .status-card.paused {
+            border-left: 4px solid var(--warning-color, #ff9800);
+          }
+
+          .status-card.loading {
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+            color: var(--secondary-text-color);
+          }
+
+          .status-primary {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+          }
+
+          .status-icon {
+            --mdc-icon-size: 32px;
+          }
+
+          .status-card.enabled .status-icon {
+            color: var(--success-color, #4caf50);
+          }
+
+          .status-card.paused .status-icon {
+            color: var(--warning-color, #ff9800);
+          }
+
+          .status-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .status-text strong {
+            font-size: 16px;
+            color: var(--primary-text-color);
+          }
+
+          .status-desc {
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            opacity: 0.9;
+          }
+
+          .status-detail {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--card-background-color);
+            border-radius: 8px;
+          }
+
+          .status-detail.running {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+          }
+
+          .status-detail.running .detail-value {
+            color: white;
+          }
+
+          .detail-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: var(--secondary-background-color, #f5f5f5);
+            border-radius: 8px;
+          }
+
+          .status-detail.running .detail-icon {
+            background: rgba(255, 255, 255, 0.2);
+          }
+
+          .detail-icon ha-icon {
+            --mdc-icon-size: 20px;
+            color: var(--primary-color, #03a9f4);
+          }
+
+          .status-detail.running .detail-icon ha-icon {
+            color: white;
+          }
+
+          .detail-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+
+          .detail-label {
+            font-size: 12px;
+            color: var(--secondary-text-color);
+            opacity: 0.8;
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+          }
+
+          .detail-value {
+            font-size: 14px;
+            color: var(--primary-text-color);
+            font-weight: 500;
+          }
+
+          .manual-snapshot-action {
+            margin: 20px 0;
+            padding: 16px;
+            background: linear-gradient(
+              135deg,
+              rgba(3, 169, 244, 0.05) 0%,
+              rgba(2, 136, 209, 0.08) 100%
+            );
+            border-radius: 10px;
+            border: 2px dashed var(--primary-color, #03a9f4);
+          }
+
+          .ultra-btn-manual-snapshot {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary-color, #03a9f4) 0%, #0288d1 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(3, 169, 244, 0.3);
+          }
+
+          .ultra-btn-manual-snapshot:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(3, 169, 244, 0.4);
+          }
+
+          .ultra-btn-manual-snapshot:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+          }
+
+          .ultra-btn-manual-snapshot ha-icon {
+            --mdc-icon-size: 22px;
+          }
+
+          .manual-snapshot-note {
+            margin: 12px 0 0 0;
+            padding: 0;
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+          }
+
+          .manual-snapshot-note ha-icon {
+            --mdc-icon-size: 16px;
+            color: var(--primary-color, #03a9f4);
+          }
+
+          .snapshot-info-card {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: var(--secondary-background-color, #f5f5f5);
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color, #03a9f4);
+          }
+
+          .info-icon-container {
+            display: flex;
+            align-items: flex-start;
+            padding-top: 2px;
+          }
+
+          .info-icon-container ha-icon {
+            --mdc-icon-size: 24px;
+            color: var(--primary-color, #03a9f4);
+          }
+
+          .info-content {
+            flex: 1;
+          }
+
+          .info-content h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+          }
+
+          .info-content p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--secondary-text-color);
+          }
+
+          .info-content strong {
+            color: var(--primary-text-color);
+            font-weight: 600;
+          }
+
+          .spinning {
+            animation: spin 1s linear infinite;
+          }
+
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          @media (max-width: 768px) {
+            .ultra-pro-snapshot-section {
+              padding: 16px;
+            }
+
+            .header-content {
+              gap: 12px;
+            }
+
+            .header-icon {
+              width: 40px;
+              height: 40px;
+            }
+
+            .header-icon ha-icon {
+              --mdc-icon-size: 24px;
+            }
+
+            .header-text h3 {
+              font-size: 16px;
+            }
+
+            .header-text p {
+              font-size: 12px;
+            }
+
+            .status-primary {
+              flex-direction: column;
+              align-items: flex-start;
+            }
+          }
+        </style>
+      </div>
+    `;
+  }
+
+  private _formatNextSnapshotTime(time: Date): string {
+    const now = new Date();
+    const isToday = time.getDate() === now.getDate();
+    const timeString = time.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `${isToday ? 'Today' : 'Tomorrow'} at ${timeString}`;
+  }
+
+  private _formatLastSnapshotTime(time: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return time.toLocaleDateString();
+  }
+
   private _handleCardNameChange(e: Event) {
     const input = e.target as HTMLInputElement;
     const newConfig = { ...this.config, card_name: input.value };
@@ -2802,8 +3599,25 @@ export class UltraCardEditor extends LitElement {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        // Use the new encoder which handles both formats
-        const config = await UcConfigEncoder.importFromFile(file);
+        const text = await file.text();
+        let data: any;
+
+        // Try to parse as JSON first (snapshot format)
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // If JSON parsing fails, try as encoded format
+          data = await UcConfigEncoder.importFromFile(file);
+        }
+
+        // Check if this is a snapshot file (multiple cards)
+        if (data.cards && Array.isArray(data.cards)) {
+          this._handleSnapshotImport(data);
+          return;
+        }
+
+        // Single card config
+        const config = data.type ? data : await UcConfigEncoder.importFromFile(file);
 
         // Validate it's an Ultra Card config
         if (config.type !== 'custom:ultra-card' || !config.layout) {
@@ -2827,6 +3641,72 @@ export class UltraCardEditor extends LitElement {
     };
 
     input.click();
+  }
+
+  private _handleSnapshotImport(snapshotData: any) {
+    const cards = snapshotData.cards || [];
+
+    if (cards.length === 0) {
+      alert('No cards found in snapshot file');
+      return;
+    }
+
+    // Build selection message
+    let message = `📸 Snapshot Import\n\n`;
+    message += `Found ${cards.length} cards in this snapshot.\n\n`;
+    message += `Select a card to import:\n\n`;
+
+    // Group cards by view
+    const cardsByView: { [key: string]: any[] } = {};
+    cards.forEach((card: any, index: number) => {
+      const viewTitle = card.view_title || 'Unknown View';
+      if (!cardsByView[viewTitle]) {
+        cardsByView[viewTitle] = [];
+      }
+      cardsByView[viewTitle].push({ ...card, originalIndex: index });
+    });
+
+    // Build selection options
+    let cardIndex = 0;
+    const cardOptions: any[] = [];
+
+    Object.entries(cardsByView).forEach(([viewTitle, viewCards]) => {
+      message += `\n📋 ${viewTitle}:\n`;
+      viewCards.forEach((card: any) => {
+        cardIndex++;
+        const cardName = card.card_name || card.config?.card_name || `Card ${card.card_index + 1}`;
+        message += `  ${cardIndex}. ${cardName}\n`;
+        cardOptions.push(card);
+      });
+    });
+
+    message += `\n\nEnter the number of the card you want to import (1-${cardOptions.length}):`;
+
+    const selection = prompt(message);
+    if (!selection) return;
+
+    const selectedNum = parseInt(selection);
+    if (isNaN(selectedNum) || selectedNum < 1 || selectedNum > cardOptions.length) {
+      alert('Invalid selection');
+      return;
+    }
+
+    const selectedCard = cardOptions[selectedNum - 1];
+    const config = selectedCard.config;
+
+    if (!config || config.type !== 'custom:ultra-card') {
+      alert('Invalid card configuration in snapshot');
+      return;
+    }
+
+    if (
+      confirm(
+        `Import "${selectedCard.card_name || 'this card'}"?\n\nThis will replace your current card configuration.`
+      )
+    ) {
+      this._updateConfig(config);
+      alert(`✅ Card imported successfully from snapshot!`);
+    }
   }
 
   private _handleCreateBackup() {
@@ -2873,14 +3753,70 @@ export class UltraCardEditor extends LitElement {
   }
 
   private _handleSnapshotRestored(e: CustomEvent) {
-    const { result } = e.detail;
-    alert('Snapshot restoration ready!\n\n' + result.instructions);
+    // Snapshot has been automatically restored to the dashboard
+    console.log('✅ Snapshot restored - page will reload');
   }
 
   private _handleCardBackupRestored(e: CustomEvent) {
     const { config } = e.detail;
     this._updateConfig(config);
     alert('Card backup restored successfully!');
+  }
+
+  private async _handleSnapshotSettingsSaved() {
+    console.log('✅ Snapshot settings saved');
+    // Refresh scheduler status
+    this._updateSnapshotSchedulerStatus();
+  }
+
+  private async _updateSnapshotSchedulerStatus() {
+    try {
+      this._snapshotSchedulerStatus = await ucSnapshotSchedulerService.getStatus();
+    } catch (error) {
+      console.error('Failed to get snapshot scheduler status:', error);
+    }
+  }
+
+  /**
+   * Handle manual snapshot creation
+   */
+  private async _handleManualSnapshot(): Promise<void> {
+    if (this._isCreatingManualSnapshot) {
+      return;
+    }
+
+    try {
+      this._isCreatingManualSnapshot = true;
+      console.log('📸 Starting manual dashboard snapshot...');
+
+      // Create the snapshot
+      await ucSnapshotService.createSnapshot();
+
+      // Update the last snapshot timestamp
+      ucSnapshotSchedulerService.updateLastSnapshotTime();
+
+      // Refresh the scheduler status to update the display
+      await this._updateSnapshotSchedulerStatus();
+
+      // Show success notification using HA toast
+      const event = new CustomEvent('hass-notification', {
+        detail: {
+          message: '✅ Manual dashboard snapshot created successfully!',
+          duration: 5000,
+        },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(event);
+
+      console.log('✅ Manual snapshot completed successfully');
+    } catch (error) {
+      console.error('❌ Manual snapshot failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to create manual snapshot: ${errorMessage}`);
+    } finally {
+      this._isCreatingManualSnapshot = false;
+    }
   }
 
   private async _handleLoadNewerBackup() {
@@ -3153,6 +4089,35 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
+   * Initialize Pro services after successful authentication
+   * Called both on fresh login and when restoring session from storage
+   */
+  private async _initializeProServices(user: CloudUser): Promise<void> {
+    const wordpressUrl = 'https://ultracard.io'; // TODO: Make this configurable
+
+    // Initialize services
+    if (this.hass) {
+      ucSnapshotService.initialize(this.hass, wordpressUrl);
+      ucDashboardScannerService.initialize(this.hass);
+    }
+    ucCardBackupService.initialize(wordpressUrl);
+
+    // Enable sync by default
+    await ucCloudSyncService.setSyncEnabled(true);
+
+    // Start auto-snapshot scheduler for Pro users
+    if (user?.subscription?.tier === 'pro') {
+      ucSnapshotSchedulerService.start();
+      // Subscribe to status updates
+      ucSnapshotSchedulerService.subscribe(status => {
+        this._snapshotSchedulerStatus = status;
+      });
+      // Get initial status
+      this._updateSnapshotSchedulerStatus();
+    }
+  }
+
+  /**
    * Handle login form submission
    */
   private async _handleLogin(e: Event): Promise<void> {
@@ -3175,16 +4140,8 @@ export class UltraCardEditor extends LitElement {
       const user = await ucCloudAuthService.login({ username, password });
       this._showLoginForm = false;
 
-      // Initialize new snapshot services with WordPress URL
-      const wordpressUrl = 'https://ultracard.io'; // TODO: Make this configurable
-      if (this.hass) {
-        ucSnapshotService.initialize(this.hass, wordpressUrl);
-        ucDashboardScannerService.initialize(this.hass);
-      }
-      ucCardBackupService.initialize(wordpressUrl);
-
-      // Enable sync by default after successful login
-      await ucCloudSyncService.setSyncEnabled(true);
+      // Initialize Pro services
+      await this._initializeProServices(user);
 
       console.log('✅ Successfully logged in and initialized all services');
     } catch (error) {
@@ -3200,6 +4157,10 @@ export class UltraCardEditor extends LitElement {
    */
   private async _handleLogout(): Promise<void> {
     try {
+      // Stop snapshot scheduler
+      ucSnapshotSchedulerService.stop();
+      this._snapshotSchedulerStatus = null;
+
       await ucCloudAuthService.logout();
       this._showLoginForm = false;
       console.log('✅ Successfully logged out');

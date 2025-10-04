@@ -108,6 +108,7 @@ class UcCloudSyncService {
 
   /**
    * Sync all data types
+   * Note: Favorites and colors are LOCAL-ONLY and not synced to cloud
    */
   async syncAll(): Promise<{ favorites: SyncResult; colors: SyncResult; reviews: SyncResult }> {
     if (!this._canSync()) {
@@ -118,15 +119,32 @@ class UcCloudSyncService {
     this._notifyListeners();
 
     try {
-      const [favorites, colors, reviews] = await Promise.all([
-        this.syncFavorites(),
-        this.syncFavoriteColors(),
-        this.syncReviews(),
-      ]);
+      // Only sync reviews - favorites and colors remain local
+      const reviews = await this.syncReviews();
+
+      // Return empty success results for favorites/colors (not synced)
+      const favorites: SyncResult = {
+        success: true,
+        synced: 0,
+        conflicts: 0,
+        errors: [],
+        lastSync: new Date().toISOString(),
+      };
+
+      const colors: SyncResult = {
+        success: true,
+        synced: 0,
+        conflicts: 0,
+        errors: [],
+        lastSync: new Date().toISOString(),
+      };
 
       this._syncStatus.lastSync = new Date();
       this._syncStatus.pendingChanges = 0;
       this._clearPendingChanges();
+
+      console.log('✅ Favorites: Local-only (not synced)');
+      console.log('✅ Colors: Local-only (not synced)');
 
       return { favorites, colors, reviews };
     } finally {
