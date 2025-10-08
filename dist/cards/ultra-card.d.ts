@@ -11,8 +11,10 @@ export declare class UltraCard extends LitElement {
     private _columnVisibilityState;
     private _animatingRows;
     private _animatingColumns;
+    private _cloudUser;
     private _lastHassChangeTime;
     private _templateUpdateListener?;
+    private _authListener?;
     /**
      * Flag to ensure module CSS is injected only once per card instance.
      */
@@ -32,7 +34,24 @@ export declare class UltraCard extends LitElement {
     static getConfigElement(): HTMLElement;
     static getStubConfig(): UltraCardConfig;
     protected render(): TemplateResult;
+    updated(changedProperties: Map<string, any>): void;
+    private _setupResponsiveScaling;
+    private _resizeObserver?;
+    private _scaleDebounceTimer?;
+    private _currentScale;
+    private _lastMeasuredWidth;
+    private _visibilityChangeHandler?;
+    private _windowResizeHandler?;
+    private _isScalingInProgress;
+    private _scheduleScaleCheck;
+    private _forceResetScale;
+    private _isScalingEnabled;
+    private _checkAndScaleContent;
     private _getCardStyle;
+    /**
+     * Get the card background image URL based on the configured type
+     */
+    private _getCardBackgroundImageUrl;
     private _renderRow;
     private _renderColumn;
     private _renderModule;
@@ -78,6 +97,15 @@ export declare class UltraCard extends LitElement {
      * Convert style object to CSS string
      */
     private _styleObjectToCss;
+    /**
+     * Check if a module is a pro module by checking its metadata tags
+     */
+    private _isProModule;
+    /**
+     * Check if the current user has pro access
+     * Must be authenticated AND have active pro subscription
+     */
+    private _hasProAccess;
     /**
      * Inject a <style> block containing the combined styles from every registered
      * module into the card's shadow-root. This is required for features such as

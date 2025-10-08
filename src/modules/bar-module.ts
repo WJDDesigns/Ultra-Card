@@ -8,6 +8,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
+import '../components/ultra-template-editor';
 import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
@@ -31,6 +32,7 @@ export class UltraBarModule extends BaseUltraModule {
   };
 
   private _templateService?: TemplateService;
+  private _templateInputDebounce: any = null;
 
   createDefault(id?: string, hass?: HomeAssistant): BarModule {
     // Auto-detect suitable battery sensor
@@ -1534,8 +1536,9 @@ export class UltraBarModule extends BaseUltraModule {
                             ]}
                             .computeLabel=${(schema: any) => schema.label || schema.name}
                             .computeDescription=${(schema: any) => schema.description || ''}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateModule({ left_template: e.detail.value.left_template })}
+                            @value-changed=${(e: CustomEvent) => {
+                              updateModule({ left_template: e.detail.value.left_template });
+                            }}
                           ></ha-form>
                         </div>
                       `
@@ -1773,30 +1776,31 @@ export class UltraBarModule extends BaseUltraModule {
                           )}
                         </div>
                         <div class="field-group" style="margin-bottom: 0;">
-                          <ha-form
+                          <div
+                            class="field-title"
+                            style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                          >
+                            ${localize('editor.bar.right.value_template', lang, 'Value Template')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                          >
+                            ${localize(
+                              'editor.bar.right.value_template_desc',
+                              lang,
+                              'Template to format the right-side value using Jinja2 syntax'
+                            )}
+                          </div>
+                          <ultra-template-editor
                             .hass=${hass}
-                            .data=${{ right_template: barModule.right_template || '' }}
-                            .schema=${[
-                              {
-                                name: 'right_template',
-                                label: localize(
-                                  'editor.bar.right.value_template',
-                                  lang,
-                                  'Value Template'
-                                ),
-                                description: localize(
-                                  'editor.bar.right.value_template_desc',
-                                  lang,
-                                  'Template to format the right-side value using Jinja2 syntax'
-                                ),
-                                selector: { text: { multiline: true } },
-                              },
-                            ]}
-                            .computeLabel=${(schema: any) => schema.label || schema.name}
-                            .computeDescription=${(schema: any) => schema.description || ''}
+                            .value=${barModule.right_template || ''}
+                            .placeholder=${"{{ states('sensor.example') }}"}
+                            .minHeight=${100}
+                            .maxHeight=${300}
                             @value-changed=${(e: CustomEvent) =>
-                              updateModule({ right_template: e.detail.value.right_template })}
-                          ></ha-form>
+                              updateModule({ right_template: e.detail.value })}
+                          ></ultra-template-editor>
                         </div>
                       `
                     : ''}
@@ -2637,7 +2641,13 @@ export class UltraBarModule extends BaseUltraModule {
         if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
           this._templateService.subscribeToTemplate(tpl, key, () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              // Use global debounced update
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
             }
           });
         }
@@ -2714,7 +2724,13 @@ export class UltraBarModule extends BaseUltraModule {
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           this._templateService.subscribeToTemplate(barModule.left_template, templateKey, () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              // Use global debounced update
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
             }
           });
         }
@@ -2746,7 +2762,13 @@ export class UltraBarModule extends BaseUltraModule {
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           this._templateService.subscribeToTemplate(barModule.right_template, templateKey, () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              // Use global debounced update
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
             }
           });
         }

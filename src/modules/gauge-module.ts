@@ -67,10 +67,24 @@ export class UltraGaugeModule extends BaseUltraModule {
       value_font_size: 24,
       value_color: 'var(--primary-text-color)',
 
+      // Value formatting defaults
+      value_bold: false,
+      value_italic: false,
+      value_underline: false,
+      value_uppercase: false,
+      value_strikethrough: false,
+
       show_name: true,
       name_position: 'top',
       name_font_size: 16,
       name_color: 'var(--secondary-text-color)',
+
+      // Name formatting defaults
+      name_bold: false,
+      name_italic: false,
+      name_underline: false,
+      name_uppercase: false,
+      name_strikethrough: false,
 
       show_min_max: true,
       min_max_font_size: 12,
@@ -1004,6 +1018,78 @@ export class UltraGaugeModule extends BaseUltraModule {
                   ></ultra-color-picker>
                 </div>
 
+                <div class="field-container" style="margin-bottom: 16px;">
+                  <div class="field-title">Value Text Formatting</div>
+                  <div class="field-description">Apply formatting styles to the value text.</div>
+                  <div class="format-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button
+                      class="format-btn ${gaugeModule.value_bold ? 'active' : ''}"
+                      @click=${() => updateModule({ value_bold: !gaugeModule.value_bold })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.value_bold
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_bold
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Bold"
+                    >
+                      <ha-icon icon="mdi:format-bold"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.value_italic ? 'active' : ''}"
+                      @click=${() => updateModule({ value_italic: !gaugeModule.value_italic })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.value_italic
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_italic
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Italic"
+                    >
+                      <ha-icon icon="mdi:format-italic"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.value_underline ? 'active' : ''}"
+                      @click=${() =>
+                        updateModule({ value_underline: !gaugeModule.value_underline })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.value_underline
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_underline
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Underline"
+                    >
+                      <ha-icon icon="mdi:format-underline"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.value_uppercase ? 'active' : ''}"
+                      @click=${() =>
+                        updateModule({ value_uppercase: !gaugeModule.value_uppercase })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.value_uppercase
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_uppercase
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Uppercase"
+                    >
+                      <ha-icon icon="mdi:format-letter-case-upper"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.value_strikethrough ? 'active' : ''}"
+                      @click=${() =>
+                        updateModule({
+                          value_strikethrough: !gaugeModule.value_strikethrough,
+                        })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.value_strikethrough
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.value_strikethrough
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Strikethrough"
+                    >
+                      <ha-icon icon="mdi:format-strikethrough"></ha-icon>
+                    </button>
+                  </div>
+                </div>
+
                 ${FormUtils.renderField(
                   'Value Format',
                   'Optional format string (e.g., "%.1f°C", "%.0f%%").',
@@ -1122,6 +1208,76 @@ export class UltraGaugeModule extends BaseUltraModule {
                     @value-changed=${(e: CustomEvent) =>
                       updateModule({ name_color: e.detail.value })}
                   ></ultra-color-picker>
+                </div>
+
+                <div class="field-container" style="margin-bottom: 16px;">
+                  <div class="field-title">Name Text Formatting</div>
+                  <div class="field-description">Apply formatting styles to the name text.</div>
+                  <div class="format-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button
+                      class="format-btn ${gaugeModule.name_bold ? 'active' : ''}"
+                      @click=${() => updateModule({ name_bold: !gaugeModule.name_bold })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.name_bold
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_bold
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Bold"
+                    >
+                      <ha-icon icon="mdi:format-bold"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.name_italic ? 'active' : ''}"
+                      @click=${() => updateModule({ name_italic: !gaugeModule.name_italic })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.name_italic
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_italic
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Italic"
+                    >
+                      <ha-icon icon="mdi:format-italic"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.name_underline ? 'active' : ''}"
+                      @click=${() => updateModule({ name_underline: !gaugeModule.name_underline })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.name_underline
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_underline
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Underline"
+                    >
+                      <ha-icon icon="mdi:format-underline"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.name_uppercase ? 'active' : ''}"
+                      @click=${() => updateModule({ name_uppercase: !gaugeModule.name_uppercase })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.name_uppercase
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_uppercase
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Uppercase"
+                    >
+                      <ha-icon icon="mdi:format-letter-case-upper"></ha-icon>
+                    </button>
+                    <button
+                      class="format-btn ${gaugeModule.name_strikethrough ? 'active' : ''}"
+                      @click=${() =>
+                        updateModule({
+                          name_strikethrough: !gaugeModule.name_strikethrough,
+                        })}
+                      style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${gaugeModule.name_strikethrough
+                        ? 'var(--primary-color)'
+                        : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${gaugeModule.name_strikethrough
+                        ? 'white'
+                        : 'var(--primary-text-color)'};"
+                      title="Strikethrough"
+                    >
+                      <ha-icon icon="mdi:format-strikethrough"></ha-icon>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="field-container" style="margin-bottom: 16px;">
@@ -1432,7 +1588,10 @@ export class UltraGaugeModule extends BaseUltraModule {
             `
           : ''}
 
-        <div class="uc-gauge-wrapper" style="position: relative; display: inline-block;">
+        <div
+          class="uc-gauge-wrapper"
+          style="position: relative; display: inline-block; overflow: hidden;"
+        >
           ${gaugeModule.show_value && gaugeModule.value_position === 'top'
             ? html`
                 <div class="uc-gauge-value-top" style="${this.getValueStyles(gaugeModule)}">
@@ -1445,7 +1604,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             viewBox="0 0 ${gaugeModule.gauge_size} ${gaugeModule.gauge_size}"
             width="${gaugeModule.gauge_size}"
             height="${gaugeModule.gauge_size}"
-            style="overflow: visible;"
+            style="overflow: hidden;"
           >
             ${this.renderGaugeByStyle(gaugeModule, value, hass)}
           </svg>
@@ -3694,6 +3853,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       'align-items: center',
       'justify-content: center',
       'width: 100%',
+      'overflow: hidden',
     ];
 
     return styles.join('; ');
@@ -3703,9 +3863,19 @@ export class UltraGaugeModule extends BaseUltraModule {
     const styles: string[] = [
       `font-size: ${gaugeModule.name_font_size || 16}px`,
       `color: ${gaugeModule.name_color || 'var(--secondary-text-color)'}`,
-      'font-weight: 500',
+      `font-weight: ${gaugeModule.name_bold ? 'bold' : 'normal'}`,
+      `font-style: ${gaugeModule.name_italic ? 'italic' : 'normal'}`,
+      `text-transform: ${gaugeModule.name_uppercase ? 'uppercase' : 'none'}`,
       'text-align: center',
     ];
+
+    // Handle text decoration (underline and strikethrough)
+    const decorations: string[] = [];
+    if (gaugeModule.name_underline) decorations.push('underline');
+    if (gaugeModule.name_strikethrough) decorations.push('line-through');
+    if (decorations.length > 0) {
+      styles.push(`text-decoration: ${decorations.join(' ')}`);
+    }
 
     // Apply X and Y offsets
     const xOffset = gaugeModule.name_x_offset || 0;
@@ -3731,9 +3901,19 @@ export class UltraGaugeModule extends BaseUltraModule {
     const styles: string[] = [
       `font-size: ${gaugeModule.value_font_size || 24}px`,
       `color: ${gaugeModule.value_color || 'var(--primary-text-color)'}`,
-      'font-weight: 600',
+      `font-weight: ${gaugeModule.value_bold ? 'bold' : 'normal'}`,
+      `font-style: ${gaugeModule.value_italic ? 'italic' : 'normal'}`,
+      `text-transform: ${gaugeModule.value_uppercase ? 'uppercase' : 'none'}`,
       'text-align: center',
     ];
+
+    // Handle text decoration (underline and strikethrough)
+    const decorations: string[] = [];
+    if (gaugeModule.value_underline) decorations.push('underline');
+    if (gaugeModule.value_strikethrough) decorations.push('line-through');
+    if (decorations.length > 0) {
+      styles.push(`text-decoration: ${decorations.join(' ')}`);
+    }
 
     const size = gaugeModule.gauge_size || 200;
     const centerX = size / 2;

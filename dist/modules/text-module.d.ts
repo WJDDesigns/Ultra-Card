@@ -3,10 +3,12 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, TextModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 export declare class UltraTextModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private clickTimeout;
     private _templateService?;
+    private _templateInputDebounce;
     createDefault(id?: string, hass?: HomeAssistant): TextModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;

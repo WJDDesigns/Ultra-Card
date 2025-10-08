@@ -19,6 +19,7 @@ export interface DesignProperties {
     background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
     background_size?: 'cover' | 'contain' | 'auto' | string;
     backdrop_filter?: string;
+    background_filter?: string;
     width?: string;
     height?: string;
     max_width?: string;

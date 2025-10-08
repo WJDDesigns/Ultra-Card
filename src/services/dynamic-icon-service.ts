@@ -58,52 +58,9 @@ export class DynamicIconService {
   }
 
   /**
-   * Evaluates an icon template string and returns an icon name
-   * @param template The template string to evaluate
-   * @returns Promise resolving to a string representing the icon name
+   * REMOVED: evaluateIconTemplate method - use subscribeToIconTemplate instead
+   * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
    */
-  public async evaluateIconTemplate(template: string): Promise<string> {
-    if (!template || !this.hass) {
-      return 'mdi:help-circle-outline'; // Default fallback icon
-    }
-
-    const trimmedTemplate = template.trim();
-    if (!trimmedTemplate) {
-      return 'mdi:help-circle-outline';
-    }
-
-    // Check if we have a cached result
-    const cacheKey = `icon_eval_${trimmedTemplate}`;
-    const cached = this._iconEvaluationCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.value;
-    }
-
-    try {
-      // Call HA API to render the template
-      const renderedResult = await this.hass.callApi<string>('POST', 'template', {
-        template: trimmedTemplate,
-      });
-
-      // Process the rendered result as an icon name
-      const iconValue = this.parseIconResult(renderedResult);
-
-      // Cache the result
-      this._iconEvaluationCache.set(cacheKey, {
-        value: iconValue,
-        timestamp: Date.now(),
-      });
-
-      return iconValue;
-    } catch (e: any) {
-      // Log specific HA API error if available
-      const errorMessage = e.error?.message || e.message || String(e);
-      console.error(
-        `[UltraVehicleCard] Error evaluating icon template via API: ${trimmedTemplate}. Error: ${errorMessage}`
-      );
-      return 'mdi:help-circle-outline'; // Return default icon on error
-    }
-  }
 
   /**
    * Subscribe to an icon template and store results for later use
@@ -120,20 +77,10 @@ export class DynamicIconService {
       return;
     }
 
-    // If we already have a subscription for this key, unsubscribe first
+    // If we already have a subscription for this key, DO NOT recreate it
+    // Just return early - the existing subscription is still active
     if (this._iconSubscriptions.has(templateKey)) {
-      try {
-        const existingSubPromise = this._iconSubscriptions.get(templateKey);
-        if (existingSubPromise) {
-          const unsubFn = await existingSubPromise;
-          if (unsubFn && typeof unsubFn === 'function') {
-            await unsubFn();
-          }
-        }
-      } catch (err) {
-        // Silently handle unsubscribe errors
-      }
-      this._iconSubscriptions.delete(templateKey);
+      return; // Subscription already exists, don't create a duplicate
     }
 
     try {

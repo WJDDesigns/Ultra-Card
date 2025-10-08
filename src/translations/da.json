@@ -1197,7 +1197,8 @@
       "position_relative": "Relativ",
       "position_absolute": "Absolut",
       "position_fixed": "Fast",
-      "position_sticky": "Klæbrig"
+      "position_sticky": "Klæbrig",
+      "background_filter": "Background Filter"
     },
     "modules": {
       "text": "Tekstmodul",

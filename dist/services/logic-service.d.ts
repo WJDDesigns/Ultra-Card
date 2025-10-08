@@ -11,6 +11,10 @@ export declare class LogicService {
     static getInstance(): LogicService;
     setHass(hass: HomeAssistant): void;
     /**
+     * Clean up all active subscriptions
+     */
+    cleanup(): void;
+    /**
      * Evaluate display conditions to determine if an element should be visible
      * @param conditions Array of display conditions
      * @param displayMode 'always' | 'every' | 'any' - how to combine conditions
@@ -68,5 +72,9 @@ export declare class LogicService {
         logic_operator?: string;
         logic_value?: string;
     }): boolean;
+    /**
+     * Simple, stable string hash for template keys
+     */
+    private _hashString;
 }
 export declare const logicService: LogicService;

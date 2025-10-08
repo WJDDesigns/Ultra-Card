@@ -61,7 +61,7 @@ class UcSnapshotService {
     // Initialize dashboard scanner
     ucDashboardScannerService.initialize(hass);
 
-    console.log('📸 Snapshot service initialized');
+    // Snapshot service init log removed for cleaner console
   }
 
   /**

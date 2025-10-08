@@ -2,4 +2,4 @@
  * Ultra Card Version
  * This is the single source of truth for version information
  */
-export const VERSION = '2.0-beta3';
+export const VERSION = '2.0-beta4';

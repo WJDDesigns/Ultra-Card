@@ -58,52 +58,9 @@ export class DynamicColorService {
   }
 
   /**
-   * Evaluates a color template string and returns a color value
-   * @param template The template string to evaluate
-   * @returns Promise resolving to a string representing the color value
+   * REMOVED: evaluateColorTemplate method - use subscribeToColorTemplate instead
+   * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
    */
-  public async evaluateColorTemplate(template: string): Promise<string> {
-    if (!template || !this.hass) {
-      return 'var(--primary-color)'; // Default fallback color
-    }
-
-    const trimmedTemplate = template.trim();
-    if (!trimmedTemplate) {
-      return 'var(--primary-color)';
-    }
-
-    // Check if we have a cached result
-    const cacheKey = `color_eval_${trimmedTemplate}`;
-    const cached = this._colorEvaluationCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.value;
-    }
-
-    try {
-      // Call HA API to render the template
-      const renderedResult = await this.hass.callApi<string>('POST', 'template', {
-        template: trimmedTemplate,
-      });
-
-      // Process the rendered result as a color value
-      const colorValue = this.parseColorResult(renderedResult);
-
-      // Cache the result
-      this._colorEvaluationCache.set(cacheKey, {
-        value: colorValue,
-        timestamp: Date.now(),
-      });
-
-      return colorValue;
-    } catch (e: any) {
-      // Log specific HA API error if available
-      const errorMessage = e.error?.message || e.message || String(e);
-      console.error(
-        `[UltraVehicleCard] Error evaluating color template via API: ${trimmedTemplate}. Error: ${errorMessage}`
-      );
-      return 'var(--primary-color)'; // Return default color on error
-    }
-  }
 
   /**
    * Subscribe to a color template and store results for later use
@@ -120,20 +77,10 @@ export class DynamicColorService {
       return;
     }
 
-    // If we already have a subscription for this key, unsubscribe first
+    // If we already have a subscription for this key, DO NOT recreate it
+    // Just return early - the existing subscription is still active
     if (this._colorSubscriptions.has(templateKey)) {
-      try {
-        const existingSubPromise = this._colorSubscriptions.get(templateKey);
-        if (existingSubPromise) {
-          const unsubFn = await existingSubPromise;
-          if (unsubFn && typeof unsubFn === 'function') {
-            await unsubFn();
-          }
-        }
-      } catch (err) {
-        // Silently handle unsubscribe errors
-      }
-      this._colorSubscriptions.delete(templateKey);
+      return; // Subscription already exists, don't create a duplicate
     }
 
     try {

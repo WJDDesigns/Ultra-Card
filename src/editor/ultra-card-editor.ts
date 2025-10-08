@@ -16,6 +16,7 @@ import {
   SnapshotSchedulerStatus,
 } from '../services/uc-snapshot-scheduler-service';
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
+import { uploadImage } from '../utils/image-upload';
 import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
@@ -295,6 +296,8 @@ export class UltraCardEditor extends LitElement {
                 .hass=${this.hass}
                 .config=${this.config}
                 .isFullScreen=${this._isFullScreen}
+                .cloudUser=${this._cloudUser}
+                @switch-tab=${(e: CustomEvent) => (this._activeTab = e.detail.tab)}
               ></ultra-layout-tab>`
             : this._activeTab === 'settings'
               ? this._renderSettingsTab()
@@ -358,6 +361,297 @@ export class UltraCardEditor extends LitElement {
                     this._updateConfig({ card_background: e.detail.value })}
                 ></ultra-color-picker>
               </div>
+
+              <!-- Card Background Image Settings -->
+              <div class="setting-item" style="grid-column: 1 / -1;">
+                <label>
+                  ${localize(
+                    'editor.fields.card_background_image_type',
+                    lang,
+                    'Background Image Type'
+                  )}
+                </label>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.fields.card_background_image_type_desc',
+                    lang,
+                    'Add a background image to your card'
+                  )}
+                </div>
+                <select
+                  .value=${this.config.card_background_image_type || 'none'}
+                  @change=${(e: Event) => {
+                    const value = (e.target as HTMLSelectElement).value as
+                      | 'none'
+                      | 'upload'
+                      | 'entity'
+                      | 'url';
+                    this._updateConfig({ card_background_image_type: value });
+                  }}
+                  class="property-select"
+                  style="width: 100%;"
+                >
+                  <option value="none">${localize('editor.design.bg_none', lang, 'None')}</option>
+                  <option value="upload">
+                    ${localize('editor.design.bg_upload', lang, 'Upload Image')}
+                  </option>
+                  <option value="entity">
+                    ${localize('editor.design.bg_entity', lang, 'Entity Image')}
+                  </option>
+                  <option value="url">
+                    ${localize('editor.design.bg_url', lang, 'Image URL')}
+                  </option>
+                </select>
+              </div>
+
+              ${this.config.card_background_image_type === 'upload'
+                ? html`
+                    <div
+                      class="conditional-fields-group"
+                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
+                    >
+                      <div class="settings-grid">
+                        <div class="setting-item" style="grid-column: 1 / -1;">
+                          <label>
+                            ${localize(
+                              'editor.design.upload_bg_image',
+                              lang,
+                              'Upload Background Image'
+                            )}
+                          </label>
+                          <div class="upload-container" style="margin-top: 8px;">
+                            <div class="file-upload-row">
+                              <label class="file-upload-button">
+                                <div class="button-content">
+                                  <ha-icon icon="mdi:upload"></ha-icon>
+                                  <span class="button-label"
+                                    >${localize(
+                                      'editor.design.choose_file',
+                                      lang,
+                                      'Choose File'
+                                    )}</span
+                                  >
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  @change=${this._handleCardBackgroundImageUpload}
+                                  style="display: none"
+                                />
+                              </label>
+                              <div class="path-display">
+                                ${this.config.card_background_image
+                                  ? html`<span
+                                      class="uploaded-path"
+                                      title="${this.config.card_background_image}"
+                                    >
+                                      ${this._truncatePath(this.config.card_background_image)}
+                                    </span>`
+                                  : html`<span class="no-file"
+                                      >${localize(
+                                        'editor.design.no_file_chosen',
+                                        lang,
+                                        'No file chosen'
+                                      )}</span
+                                    >`}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `
+                : ''}
+              ${this.config.card_background_image_type === 'entity'
+                ? html`
+                    <div
+                      class="conditional-fields-group"
+                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
+                    >
+                      <div class="settings-grid">
+                        <div class="setting-item" style="grid-column: 1 / -1;">
+                          <label>
+                            ${localize(
+                              'editor.design.bg_image_entity',
+                              lang,
+                              'Background Image Entity'
+                            )}
+                          </label>
+                          <ha-entity-picker
+                            .hass=${this.hass}
+                            .value=${this.config.card_background_image_entity || ''}
+                            @value-changed=${(e: CustomEvent) =>
+                              this._updateConfig({ card_background_image_entity: e.detail.value })}
+                            .label=${'Select entity with image attribute'}
+                            allow-custom-entity
+                          ></ha-entity-picker>
+                        </div>
+                      </div>
+                    </div>
+                  `
+                : ''}
+              ${this.config.card_background_image_type === 'url'
+                ? html`
+                    <div
+                      class="conditional-fields-group"
+                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
+                    >
+                      <div class="settings-grid">
+                        <div class="setting-item" style="grid-column: 1 / -1;">
+                          <label>
+                            ${localize('editor.design.bg_image_url', lang, 'Background Image URL')}
+                          </label>
+                          <input
+                            type="text"
+                            .value=${this.config.card_background_image || ''}
+                            @input=${(e: Event) => {
+                              const value = (e.target as HTMLInputElement).value;
+                              this._updateConfig({ card_background_image: value });
+                            }}
+                            placeholder="https://example.com/image.jpg"
+                            class="property-input"
+                            style="width: 100%;"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  `
+                : ''}
+              ${this.config.card_background_image_type &&
+              this.config.card_background_image_type !== 'none'
+                ? html`
+                    <div
+                      class="conditional-fields-group"
+                      style="grid-column: 1 / -1; padding: 16px; margin-top: 8px;"
+                    >
+                      <div class="settings-grid">
+                        <div class="setting-item">
+                          <label>Background Size</label>
+                          <div class="setting-description">How the image fills the card area</div>
+                          <select
+                            .value=${this._getBackgroundSizeDropdownValue(
+                              this.config.card_background_size
+                            )}
+                            @change=${(e: Event) => {
+                              const value = (e.target as HTMLSelectElement).value;
+                              this._updateConfig({ card_background_size: value });
+                            }}
+                            class="property-select"
+                            style="width: 100%;"
+                          >
+                            <option value="cover">Cover</option>
+                            <option value="contain">Contain</option>
+                            <option value="auto">Auto</option>
+                            <option value="custom">Custom</option>
+                          </select>
+                        </div>
+
+                        ${this._getBackgroundSizeDropdownValue(this.config.card_background_size) ===
+                        'custom'
+                          ? html`
+                              <div class="setting-item">
+                                <label>Custom Width</label>
+                                <input
+                                  type="text"
+                                  .value=${this._getCustomSizeValue(
+                                    this.config.card_background_size,
+                                    'width'
+                                  )}
+                                  @input=${(e: Event) => {
+                                    const width = (e.target as HTMLInputElement).value;
+                                    const height = this._getCustomSizeValue(
+                                      this.config.card_background_size,
+                                      'height'
+                                    );
+                                    const customSize =
+                                      width && height
+                                        ? `${width} ${height}`
+                                        : width || height || 'auto';
+                                    this._updateConfig({ card_background_size: customSize });
+                                  }}
+                                  placeholder="100px, 50%, auto"
+                                  class="property-input"
+                                  style="width: 100%;"
+                                />
+                              </div>
+                              <div class="setting-item">
+                                <label>Custom Height</label>
+                                <input
+                                  type="text"
+                                  .value=${this._getCustomSizeValue(
+                                    this.config.card_background_size,
+                                    'height'
+                                  )}
+                                  @input=${(e: Event) => {
+                                    const height = (e.target as HTMLInputElement).value;
+                                    const width = this._getCustomSizeValue(
+                                      this.config.card_background_size,
+                                      'width'
+                                    );
+                                    const customSize =
+                                      width && height
+                                        ? `${width} ${height}`
+                                        : width || height || 'auto';
+                                    this._updateConfig({ card_background_size: customSize });
+                                  }}
+                                  placeholder="100px, 50%, auto"
+                                  class="property-input"
+                                  style="width: 100%;"
+                                />
+                              </div>
+                            `
+                          : ''}
+
+                        <div class="setting-item">
+                          <label>Background Repeat</label>
+                          <div class="setting-description">How the image repeats</div>
+                          <select
+                            .value=${this.config.card_background_repeat || 'no-repeat'}
+                            @change=${(e: Event) => {
+                              const value = (e.target as HTMLSelectElement).value as
+                                | 'repeat'
+                                | 'repeat-x'
+                                | 'repeat-y'
+                                | 'no-repeat';
+                              this._updateConfig({ card_background_repeat: value });
+                            }}
+                            class="property-select"
+                            style="width: 100%;"
+                          >
+                            <option value="no-repeat">No Repeat</option>
+                            <option value="repeat">Repeat</option>
+                            <option value="repeat-x">Repeat X</option>
+                            <option value="repeat-y">Repeat Y</option>
+                          </select>
+                        </div>
+
+                        <div class="setting-item">
+                          <label>Background Position</label>
+                          <div class="setting-description">Where the image is positioned</div>
+                          <select
+                            .value=${this.config.card_background_position || 'center center'}
+                            @change=${(e: Event) => {
+                              const value = (e.target as HTMLSelectElement).value;
+                              this._updateConfig({ card_background_position: value });
+                            }}
+                            class="property-select"
+                            style="width: 100%;"
+                          >
+                            <option value="left top">Left Top</option>
+                            <option value="left center">Left Center</option>
+                            <option value="left bottom">Left Bottom</option>
+                            <option value="center top">Center Top</option>
+                            <option value="center center">Center</option>
+                            <option value="center bottom">Center Bottom</option>
+                            <option value="right top">Right Top</option>
+                            <option value="right center">Right Center</option>
+                            <option value="right bottom">Right Bottom</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  `
+                : ''}
 
               <div class="setting-item">
                 <label> ${localize('editor.fields.border_radius', lang, 'Border Radius')} </label>
@@ -800,7 +1094,7 @@ export class UltraCardEditor extends LitElement {
             </div>
 
             <div class="settings-grid">
-              <div class="setting-item">
+              <div class="setting-item setting-inline">
                 <label>
                   ${localize('editor.actions.haptic_feedback', lang, 'Haptic Feedback')}
                 </label>
@@ -836,6 +1130,43 @@ export class UltraCardEditor extends LitElement {
                   }}
                 ></ha-form>
               </div>
+
+              <div class="setting-item setting-inline">
+                <label>
+                  ${localize('editor.behavior.responsive_scaling', lang, 'Smart Scaling')}
+                </label>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.behavior.responsive_scaling_desc',
+                    lang,
+                    'Intelligently scales content to fit tighter columns or edit panels (experimental)'
+                  )}
+                  <br /><small style="opacity: 0.7;"
+                    >⚠️ Experimental: Smart Scaling adapts the card when space is tight (edit mode,
+                    small columns). Disable if you prefer fixed sizing.</small
+                  >
+                </div>
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{ responsive_scaling: this.config.responsive_scaling !== false }}
+                  .schema=${[
+                    {
+                      name: 'responsive_scaling',
+                      label: '',
+                      selector: {
+                        boolean: {},
+                      },
+                    },
+                  ]}
+                  .computeLabel=${() => ''}
+                  @value-changed=${(e: CustomEvent) => {
+                    const enabled = (e.detail as any)?.value?.responsive_scaling;
+                    if (enabled !== undefined) {
+                      this._updateConfig({ responsive_scaling: enabled });
+                    }
+                  }}
+                ></ha-form>
+              </div>
             </div>
           </div>
 
@@ -857,6 +1188,82 @@ export class UltraCardEditor extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Handle card background image upload
+   */
+  private async _handleCardBackgroundImageUpload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.hass) return;
+
+    try {
+      const imagePath = await uploadImage(this.hass, file);
+      this._updateConfig({
+        card_background_image: imagePath,
+        card_background_image_type: 'upload' as const,
+      });
+    } catch (error) {
+      console.error('Failed to upload card background image:', error);
+      alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      // Reset the input so the same file can be selected again if needed
+      input.value = '';
+    }
+  }
+
+  /**
+   * Truncate long file paths for display
+   */
+  private _truncatePath(path: string): string {
+    if (!path) return '';
+    const maxLength = 30;
+    if (path.length <= maxLength) return path;
+    return '...' + path.slice(-maxLength + 3);
+  }
+
+  /**
+   * Get the dropdown value for background size
+   */
+  private _getBackgroundSizeDropdownValue(backgroundSize: string | undefined): string {
+    if (!backgroundSize) {
+      return 'cover';
+    }
+
+    // If it's one of the preset values, return it as-is
+    if (['cover', 'contain', 'auto'].includes(backgroundSize)) {
+      return backgroundSize;
+    }
+
+    // If it's 'custom' or any other custom value, return 'custom'
+    return 'custom';
+  }
+
+  /**
+   * Get custom size value (width or height) from background size string
+   */
+  private _getCustomSizeValue(
+    backgroundSize: string | undefined,
+    dimension: 'width' | 'height'
+  ): string {
+    if (!backgroundSize || ['cover', 'contain', 'auto'].includes(backgroundSize)) {
+      return '';
+    }
+
+    // If it's just 'custom' without actual values, return empty
+    if (backgroundSize === 'custom') {
+      return '';
+    }
+
+    // Parse custom size value like "100px 200px" or "50% auto"
+    const parts = backgroundSize.split(' ');
+    if (dimension === 'width') {
+      return parts[0] || '';
+    } else if (dimension === 'height') {
+      return parts[1] || parts[0] || '';
+    }
+    return '';
   }
 
   /**
@@ -1229,8 +1636,9 @@ export class UltraCardEditor extends LitElement {
       .section-header h4 {
         margin: 0 0 6px 0;
         color: var(--primary-text-color);
-        font-size: 16px;
-        font-weight: 600;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -1247,12 +1655,102 @@ export class UltraCardEditor extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 20px;
+        width: 100%;
       }
 
       .setting-item {
         display: flex;
         flex-direction: column;
         gap: 8px;
+        width: 100%;
+      }
+
+      /* Inline layout: title (left), toggle (right), description below */
+      .setting-inline {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap; /* allow description on its own row */
+        gap: 12px;
+        width: 100%;
+      }
+      .setting-inline > label {
+        flex: 1 1 auto;
+        margin-right: 12px;
+      }
+      .setting-inline ha-form {
+        margin-left: auto; /* push toggle to right */
+      }
+      .setting-inline > .setting-description {
+        order: 3;
+        width: 100%; /* force onto next line below title+toggle */
+        margin: 6px 0 0 0;
+      }
+
+      /* Conditional fields group styling */
+      .conditional-fields-group {
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
+        border-left: 3px solid var(--primary-color);
+        border-radius: 4px;
+      }
+
+      /* Upload container styling */
+      .upload-container {
+        width: 100%;
+      }
+
+      .file-upload-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .file-upload-button {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-width: 120px;
+      }
+
+      .file-upload-button:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .button-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .button-label {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .path-display {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .uploaded-path {
+        color: var(--primary-text-color);
+        font-size: 12px;
+        word-break: break-all;
+      }
+
+      .no-file {
+        color: var(--secondary-text-color);
+        font-size: 12px;
+        font-style: italic;
       }
 
       .setting-item label {
@@ -1332,7 +1830,8 @@ export class UltraCardEditor extends LitElement {
       }
 
       .setting-item ultra-color-picker {
-        max-width: 300px;
+        width: 100%;
+        max-width: none;
       }
 
       /* Responsive adjustments */
@@ -2502,35 +3001,40 @@ export class UltraCardEditor extends LitElement {
   private _authListener?: (user: CloudUser | null) => void;
   private _syncListener?: (status: SyncStatus) => void;
   private _backupListener?: (status: BackupStatus) => void;
+  private static _hasLoggedTokenStatus = false; // Track if we've logged token status this session
+  private static _tokenCheckDone = false; // Track if we've done the initial token check
 
   /**
    * Setup cloud sync listeners
    */
   private async _setupCloudSyncListeners(): Promise<void> {
+    // Skip token check if already done this session
+    if (UltraCardEditor._tokenCheckDone) {
+      return;
+    }
+    UltraCardEditor._tokenCheckDone = true;
+
     // Get initial state
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._syncStatus = ucCloudSyncService.getSyncStatus();
     this._backupStatus = ucCloudBackupService.getStatus();
 
-    console.log('🔍 Setup Cloud Sync - User from storage:', this._cloudUser ? 'Found' : 'None');
-    console.log('🔍 Is authenticated?', ucCloudAuthService.isAuthenticated());
-
     // If user exists in storage, attempt to restore session
     if (this._cloudUser && ucCloudAuthService.isAuthenticated()) {
-      console.log('🔄 Restoring Pro session from storage...');
-      console.log('   User:', this._cloudUser.displayName);
-      console.log('   Tier:', this._cloudUser.subscription?.tier);
       try {
         await this._initializeProServices(this._cloudUser);
-        console.log('✅ Pro session restored successfully');
       } catch (error) {
         console.error('❌ Failed to restore Pro session:', error);
       }
     } else if (this._cloudUser && !ucCloudAuthService.isAuthenticated()) {
       // Token expired but user exists - attempt refresh
-      console.log('🔄 Token expired, attempting refresh...');
-      console.log('   Stored user:', this._cloudUser.displayName);
-      console.log('   Has refresh token?', !!this._cloudUser.refreshToken);
+      // Only log detailed status once per session to avoid console spam
+      if (!UltraCardEditor._hasLoggedTokenStatus) {
+        console.log('🔄 Token expired, attempting refresh...');
+        console.log('   Stored user:', this._cloudUser.displayName);
+        console.log('   Has refresh token?', !!this._cloudUser.refreshToken);
+        UltraCardEditor._hasLoggedTokenStatus = true;
+      }
       try {
         await ucCloudAuthService.refreshToken();
         this._cloudUser = ucCloudAuthService.getCurrentUser();
@@ -2538,15 +3042,23 @@ export class UltraCardEditor extends LitElement {
           await this._initializeProServices(this._cloudUser);
           console.log('✅ Token refreshed and session restored');
         } else {
-          console.warn('❌ Refresh succeeded but no user returned');
+          if (!UltraCardEditor._hasLoggedTokenStatus) {
+            console.warn('❌ Refresh succeeded but no user returned');
+          }
         }
       } catch (error) {
-        console.warn('❌ Token refresh failed:', error);
-        console.warn('   User needs to login again');
+        // Only log the error details once per session
+        if (!UltraCardEditor._hasLoggedTokenStatus) {
+          console.warn('❌ Token refresh failed:', error);
+          console.warn('   User needs to login again');
+          UltraCardEditor._hasLoggedTokenStatus = true;
+        }
         this._cloudUser = null;
       }
-    } else {
+    } else if (!UltraCardEditor._hasLoggedTokenStatus) {
+      // Only log "no session" message once per page load
       console.log('ℹ️ No stored session to restore - user needs to login');
+      UltraCardEditor._hasLoggedTokenStatus = true;
     }
 
     // Setup auth listener

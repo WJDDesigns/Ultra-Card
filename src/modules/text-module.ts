@@ -10,6 +10,7 @@ import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 
 export class UltraTextModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -25,6 +26,7 @@ export class UltraTextModule extends BaseUltraModule {
 
   private clickTimeout: any = null;
   private _templateService?: TemplateService;
+  private _templateInputDebounce: any = null;
 
   createDefault(id?: string, hass?: HomeAssistant): TextModule {
     return {
@@ -327,26 +329,32 @@ export class UltraTextModule extends BaseUltraModule {
           ${textModule.template_mode
             ? html`
                 <div class="field-group" style="margin-bottom: 16px;">
-                  <ha-form
+                  <div
+                    class="field-title"
+                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.text.value_template', lang, 'Value Template')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.text.value_template_desc',
+                      lang,
+                      'Template to render the text using Jinja2 syntax'
+                    )}
+                  </div>
+                  <ultra-template-editor
                     .hass=${hass}
-                    .data=${{ template: textModule.template || '' }}
-                    .schema=${[
-                      {
-                        name: 'template',
-                        label: localize('editor.text.value_template', lang, 'Value Template'),
-                        description: localize(
-                          'editor.text.value_template_desc',
-                          lang,
-                          'Template to render the text using Jinja2 syntax'
-                        ),
-                        selector: { text: { multiline: true } },
-                      },
-                    ]}
-                    .computeLabel=${(schema: any) => schema.label || schema.name}
-                    .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ template: e.detail.value.template })}
-                  ></ha-form>
+                    .value=${textModule.template || ''}
+                    .placeholder=${"{{ states('sensor.example') }}"}
+                    .minHeight=${100}
+                    .maxHeight=${300}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ template: e.detail.value });
+                    }}
+                  ></ultra-template-editor>
                 </div>
 
                 <div class="template-examples">
@@ -453,8 +461,8 @@ export class UltraTextModule extends BaseUltraModule {
           return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
         }
         if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
-        // Default font size for text modules when no design or module font_size is set
-        return '26px';
+        // Default font size for text modules when no design or module font_size is set - use clamp for responsive scaling
+        return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
       color: designProperties.color || moduleWithDesign.color || 'inherit',
@@ -520,22 +528,36 @@ export class UltraTextModule extends BaseUltraModule {
           hass.__uvc_template_strings = {};
         }
         const templateHash = this._hashString(textModule.template);
-        const templateKey = `state_text_text_${textModule.id}_${templateHash}`; // prefix to preserve string
+        // Use only template hash for key to prevent subscription leaks when module ID changes
+        // Module ID can change during editor updates, but template content is stable
+        const templateKey = `state_text_text_${templateHash}`;
 
         // Subscribe if needed
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           this._templateService.subscribeToTemplate(textModule.template, templateKey, () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              // Use global debounced update
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
             }
           });
         }
 
-        // Use latest rendered string if available
+        // Use latest rendered string if available from WebSocket subscription
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined && String(rendered).trim() !== '') {
           displayText = String(rendered);
+        } else {
+          // Show template error message instead of "Hidden by Logic"
+          displayText = 'Template Error: Invalid or incomplete template';
         }
+        // NOTE: API fallback removed to prevent resource exhaustion
+        // Templates will show placeholder until WebSocket subscription completes
+        // This typically happens within 100-200ms and is much safer than flooding HA with API calls
       }
     }
 

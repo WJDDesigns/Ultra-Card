@@ -1,5 +1,41 @@
 # Release Notes
 
+## Version 2.0-beta4
+
+### 🚀 New Features
+
+- **Ultra Card Pro Integration** - Added comprehensive Pro tier system with enhanced features and cloud sync capabilities. Register at [ultracard.io](https://ultracard.io) to unlock Pro features.
+- **New PRO Modules (Requires Pro Account)**:
+  - **Animated Clock** - Beautiful flip clock with smooth animations and customizable styles
+  - **Animated Weather** - Current weather display with animated weather icons
+  - **Animated Forecast** - Multi-day weather forecast with animated icons and detailed information
+- **Pro Tab in Editor** - New dedicated Pro tab showing account status, cloud sync features, auto-snapshot status, and backup management
+- **Smart Scaling (Experimental)** - New responsive scaling feature that intelligently adapts card content to fit tighter columns or edit panels. The card automatically scales down when space is limited (edit mode, narrow columns) while maintaining readability and layout. Can be enabled/disabled in card settings under Behavior section.
+- **Auto Dashboard Snapshots (Pro)** - Automatic daily snapshots of all Ultra Cards across your entire dashboard with 30-day retention
+- **Manual Card Backups (Pro)** - Create named backups of individual cards with up to 30 backups total
+- **Smart Replace Restore** - Enhanced snapshot restore that matches cards by custom name or position for accurate recovery
+
+### 🐛 Bug Fixes & Improvements
+
+- **Fixed inactive icon picker visual bug** - Resolved display issues with the inactive icon picker component
+- **Fixed intensity gauge display issue** - Corrected rendering problems with the intensity gauge module
+- **Fixed background filters not affecting images** - CSS filters now properly apply to background images
+- **Fixed custom background option for cards** - Implemented ability to set custom backgrounds at the card level
+- **Fixed intensity gauge formatting and resizing** - Improved layout and sizing behavior of intensity gauge module
+- **Improved template fields with CodeMirror** - Enhanced template input fields with better code editing experience and syntax highlighting
+- **Improved template function and console logging** - Enhanced template evaluation system with better error logging and debugging
+- **Fixed clock module styling** - Enhanced clock module with additional styling options and improved appearance
+- **Enhanced snapshot Smart Replace feature** - Smart Replace now works with both custom and auto-generated card names, matching by name for custom cards and by position for auto-generated cards
+- **Fixed Vaadin component deprecation warnings** - Addressed deprecation warnings and CORS-related issues
+
+### 🎨 UI/UX Improvements
+
+- Improved camera module responsiveness and display options
+- Enhanced slider module autoplay timing and interaction
+- Better mobile menu visibility and overflow handling
+- Professional Pro/Free tier banners and visual indicators
+- Modernized Pro tab interface matching Home Assistant design patterns
+
 ## Version 2.0-beta3
 
 ### 🐛 Bug Fixes & Improvements

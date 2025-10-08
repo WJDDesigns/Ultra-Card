@@ -34,7 +34,7 @@ class UcSnapshotSchedulerService {
    */
   start(): void {
     if (this._checkInterval) {
-      console.log('📸 Snapshot scheduler already running');
+      // Scheduler already running log removed for cleaner console
       return;
     }
 

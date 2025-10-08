@@ -1,5 +1,10 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { LinkAction } from './services/link-service';
+declare global {
+    interface Window {
+        _ultraCardUpdateTimer?: ReturnType<typeof setTimeout> | null;
+    }
+}
 export type ActionType = 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
 export interface ModuleActionConfig {
     action: ActionType;
@@ -30,7 +35,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -468,12 +473,22 @@ export interface GaugeModule extends BaseModule {
     value_format?: string;
     value_x_offset?: number;
     value_y_offset?: number;
+    value_bold?: boolean;
+    value_italic?: boolean;
+    value_underline?: boolean;
+    value_uppercase?: boolean;
+    value_strikethrough?: boolean;
     show_name?: boolean;
     name_position?: 'top' | 'bottom' | 'center' | 'none';
     name_font_size?: number;
     name_color?: string;
     name_x_offset?: number;
     name_y_offset?: number;
+    name_bold?: boolean;
+    name_italic?: boolean;
+    name_underline?: boolean;
+    name_uppercase?: boolean;
+    name_strikethrough?: boolean;
     show_min_max?: boolean;
     min_max_font_size?: number;
     min_max_color?: string;
@@ -1220,6 +1235,189 @@ export interface LightModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
+export interface AnimatedClockModule extends BaseModule {
+    type: 'animated_clock';
+    time_format?: '12' | '24';
+    clock_style?: 'flip' | 'digital' | 'analog' | 'binary' | 'minimal' | 'retro' | 'word' | 'neon' | 'material' | 'terminal';
+    update_frequency?: '1' | '60';
+    analog_show_seconds?: boolean;
+    analog_smooth_seconds?: boolean;
+    analog_show_hour_hand?: boolean;
+    analog_show_minute_hand?: boolean;
+    analog_show_hour_markers?: boolean;
+    analog_show_center_dot?: boolean;
+    analog_show_numbers?: boolean;
+    analog_show_hour_ticks?: boolean;
+    analog_show_minute_ticks?: boolean;
+    analog_hour_hand_color?: string;
+    analog_minute_hand_color?: string;
+    analog_second_hand_color?: string;
+    analog_hour_marker_color?: string;
+    analog_center_dot_color?: string;
+    analog_numbers_color?: string;
+    analog_hour_ticks_color?: string;
+    analog_minute_ticks_color?: string;
+    analog_face_outline_color?: string;
+    analog_face_background_color?: string;
+    analog_face_background_type?: 'color' | 'entity' | 'upload' | 'url';
+    analog_face_background_image_entity?: string;
+    analog_face_background_image_upload?: string;
+    analog_face_background_image_url?: string;
+    analog_face_background_size?: string;
+    analog_face_background_position?: string;
+    analog_face_background_repeat?: string;
+    show_hours?: boolean;
+    show_minutes?: boolean;
+    show_seconds?: boolean;
+    show_ampm?: boolean;
+    show_separators?: boolean;
+    show_labels?: boolean;
+    show_prefix?: boolean;
+    show_prompt?: boolean;
+    show_command?: boolean;
+    show_cursor?: boolean;
+    clock_size?: number;
+    clock_color?: string;
+    clock_background?: string;
+    flip_tile_color?: string;
+    flip_hours_color?: string;
+    flip_minutes_color?: string;
+    flip_separator_color?: string;
+    flip_ampm_color?: string;
+    digital_background_color?: string;
+    digital_hours_color?: string;
+    digital_minutes_color?: string;
+    digital_seconds_color?: string;
+    digital_separator_color?: string;
+    digital_ampm_color?: string;
+    digital_glow_color?: string;
+    binary_hours_empty_color?: string;
+    binary_hours_filled_color?: string;
+    binary_minutes_empty_color?: string;
+    binary_minutes_filled_color?: string;
+    binary_seconds_empty_color?: string;
+    binary_seconds_filled_color?: string;
+    binary_separator_color?: string;
+    binary_hours_label_color?: string;
+    binary_minutes_label_color?: string;
+    binary_seconds_label_color?: string;
+    minimal_hours_color?: string;
+    minimal_minutes_color?: string;
+    minimal_seconds_color?: string;
+    minimal_separator_color?: string;
+    minimal_ampm_color?: string;
+    retro_background_color?: string;
+    retro_hours_tile_color?: string;
+    retro_minutes_tile_color?: string;
+    retro_seconds_tile_color?: string;
+    retro_separator_tile_color?: string;
+    retro_hours_color?: string;
+    retro_minutes_color?: string;
+    retro_seconds_color?: string;
+    retro_separator_color?: string;
+    retro_ampm_color?: string;
+    text_orientation?: 'horizontal' | 'vertical';
+    text_word_gap?: number;
+    text_prefix_color?: string;
+    text_prefix_size?: number;
+    text_hours_color?: string;
+    text_hours_size?: number;
+    text_minutes_color?: string;
+    text_minutes_size?: number;
+    text_ampm_color?: string;
+    text_ampm_size?: number;
+    neon_padding?: number;
+    neon_hours_color?: string;
+    neon_minutes_color?: string;
+    neon_seconds_color?: string;
+    neon_separator_color?: string;
+    neon_ampm_color?: string;
+    material_vertical_gap?: number;
+    material_background_color?: string;
+    material_hours_color?: string;
+    material_minutes_color?: string;
+    material_seconds_color?: string;
+    material_separator_color?: string;
+    material_ampm_color?: string;
+    terminal_background_color?: string;
+    terminal_line1_color?: string;
+    terminal_line2_color?: string;
+    terminal_cursor_color?: string;
+    terminal_hours_color?: string;
+    terminal_minutes_color?: string;
+    terminal_seconds_color?: string;
+    terminal_separator_color?: string;
+    terminal_ampm_color?: string;
+    terminal_vertical_spacing?: number;
+    terminal_line1_size?: number;
+    terminal_line2_size?: number;
+    terminal_output_size?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+}
+export interface AnimatedWeatherModule extends BaseModule {
+    type: 'animated_weather';
+    weather_entity?: string;
+    temperature_entity?: string;
+    condition_entity?: string;
+    custom_entity?: string;
+    custom_entity_name?: string;
+    show_left_column?: boolean;
+    show_center_column?: boolean;
+    show_right_column?: boolean;
+    column_gap?: number;
+    left_column_gap?: number;
+    right_column_gap?: number;
+    temperature_unit?: 'F' | 'C';
+    location_override_mode?: 'text' | 'entity';
+    location_name?: string;
+    location_entity?: string;
+    show_location?: boolean;
+    show_condition?: boolean;
+    show_custom_entity?: boolean;
+    show_date?: boolean;
+    show_temperature?: boolean;
+    show_temp_range?: boolean;
+    location_size?: number;
+    condition_size?: number;
+    custom_entity_size?: number;
+    location_color?: string;
+    condition_color?: string;
+    custom_entity_color?: string;
+    main_icon_size?: number;
+    icon_style?: 'fill' | 'line';
+    date_size?: number;
+    temperature_size?: number;
+    temp_range_size?: number;
+    date_color?: string;
+    temperature_color?: string;
+    temp_range_color?: string;
+    module_background?: string;
+    module_border?: string;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+}
+export interface AnimatedForecastModule extends BaseModule {
+    type: 'animated_forecast';
+    weather_entity?: string;
+    forecast_entity?: string;
+    forecast_days?: number;
+    temperature_unit?: 'F' | 'C';
+    forecast_day_size?: number;
+    forecast_temp_size?: number;
+    forecast_icon_size?: number;
+    icon_style?: 'fill' | 'line';
+    text_color?: string;
+    accent_color?: string;
+    forecast_day_color?: string;
+    forecast_temp_color?: string;
+    forecast_background?: string;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+}
 export interface DropdownOption {
     id: string;
     label: string;
@@ -1242,7 +1440,7 @@ export interface DropdownOption {
         };
     };
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -1275,6 +1473,7 @@ export interface SharedDesignProperties {
     background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
     background_size?: 'cover' | 'contain' | 'auto' | string;
     backdrop_filter?: string;
+    background_filter?: string;
     width?: string;
     height?: string;
     max_width?: string;
@@ -1428,11 +1627,18 @@ export interface UltraCardConfig {
     card_shadow_vertical?: number;
     card_shadow_blur?: number;
     card_shadow_spread?: number;
+    card_background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+    card_background_image?: string;
+    card_background_image_entity?: string;
+    card_background_size?: string;
+    card_background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+    card_background_position?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
     favorite_colors?: FavoriteColor[];
     haptic_feedback?: boolean;
     card_name?: string;
+    responsive_scaling?: boolean;
 }
 export interface CustomCard {
     type: string;

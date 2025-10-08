@@ -2,7 +2,16 @@ import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, CameraModule, UltraCardConfig } from '../types';
+import '../components/ultra-template-editor';
 export declare class UltraCameraModule extends BaseUltraModule {
+    private _templateInputDebounce;
+    private _lastRenderedEntity;
+    private _renderDebounce;
+    private _webrtcUpdateTimer;
+    private _pendingCameraProps?;
+    private _lastAppliedEntity?;
+    private _lastAppliedLive?;
+    private _huiImageRef;
     metadata: ModuleMetadata;
     private clickTimeout;
     private holdTimeout;

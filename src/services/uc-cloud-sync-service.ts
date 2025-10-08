@@ -143,8 +143,7 @@ class UcCloudSyncService {
       this._syncStatus.pendingChanges = 0;
       this._clearPendingChanges();
 
-      console.log('✅ Favorites: Local-only (not synced)');
-      console.log('✅ Colors: Local-only (not synced)');
+      // Sync logs removed for cleaner console
 
       return { favorites, colors, reviews };
     } finally {
@@ -283,9 +282,7 @@ class UcCloudSyncService {
       result.synced = uploadResults.length + downloadResults.length;
       result.conflicts = conflicts.length;
 
-      console.log(
-        `✅ Reviews sync completed: ${result.synced} synced, ${result.conflicts} conflicts`
-      );
+      // Reviews sync log removed for cleaner console
     } catch (error) {
       console.error('❌ Reviews sync failed:', error);
       result.errors.push(error instanceof Error ? error.message : 'Unknown error');

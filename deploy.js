@@ -1,101 +1,119 @@
-/**
- * Ultra Card Simple Deploy Script
- * Builds and deploys to Home Assistant via network share
- */
+#!/usr/bin/env node
+
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
-// Configuration
 const CONFIG = {
-  // Your Home Assistant path (network mounted volume)
-  targetPath: '/Volumes/config/www/community/Ultra-Card',
-  // Source build directory
-  sourceDir: path.join(__dirname, 'dist'),
+  instances: [
+    {
+      name: 'HA Instance 1',
+      url: 'http://192.168.4.244:8123/',
+      path: '/Volumes/config/www/community/Ultra-Card',
+    },
+    {
+      name: 'HA Instance 2',
+      url: 'http://192.168.4.55:8123/',
+      path: '/Volumes/config/www/community/Ultra-Card',
+    },
+  ],
+  sourceFiles: ['dist/ultra-card.js', 'dist/ultra-card.js.LICENSE.txt'],
 };
 
-// Function to check if target directory is accessible
-function checkTargetPath() {
-  try {
-    // Check if the network volume is mounted
-    if (!fs.existsSync('/Volumes/config')) {
-      console.error('❌ Home Assistant network volume not mounted at /Volumes/config');
-      console.error('Please mount your Home Assistant share first');
-      return false;
-    }
+console.log('🚀 Ultra Card Deployment Script\n');
 
+// Check if volume is mounted
+function isVolumeMounted() {
+  try {
+    return fs.existsSync('/Volumes/config');
+  } catch (error) {
+    return false;
+  }
+}
+
+// Check if HA instance is reachable
+function checkInstance(url) {
+  try {
+    execSync(`curl -s --connect-timeout 2 "${url}" > /dev/null 2>&1`, { stdio: 'ignore' });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Deploy files to target path
+function deployFiles(targetPath) {
+  try {
     // Create target directory if it doesn't exist
-    if (!fs.existsSync(CONFIG.targetPath)) {
-      console.log('📁 Creating target directory...');
-      fs.mkdirSync(CONFIG.targetPath, { recursive: true });
+    if (!fs.existsSync(targetPath)) {
+      console.log(`  📁 Creating directory: ${targetPath}`);
+      fs.mkdirSync(targetPath, { recursive: true });
     }
 
+    // Copy files
+    CONFIG.sourceFiles.forEach(file => {
+      const sourcePath = path.resolve(__dirname, file);
+      const targetFile = path.join(targetPath, path.basename(file));
+
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, targetFile);
+        console.log(`  ✅ Copied: ${path.basename(file)}`);
+      } else {
+        console.log(`  ⚠️  Not found: ${file}`);
+      }
+    });
+
     return true;
   } catch (error) {
-    console.error('❌ Cannot access target path:', error.message);
+    console.error(`  ❌ Deployment failed: ${error.message}`);
     return false;
   }
 }
 
-// Function to copy files
-function copyFiles() {
-  try {
-    console.log('📋 Copying files...');
-
-    // Use rsync for better file copying with exclusions
-    // This automatically excludes .DS_Store files and other system files
-    execSync(
-      `rsync -av --delete --exclude='.DS_Store' --exclude='._*' --exclude='.Spotlight-V100' --exclude='.Trashes' "${CONFIG.sourceDir}/" "${CONFIG.targetPath}/"`,
-      { stdio: 'inherit' }
-    );
-
-    console.log('✅ Files copied successfully!');
-    return true;
-  } catch (error) {
-    console.error('❌ Error copying files:', error.message);
-    return false;
-  }
-}
-
-// Function to build the project
-function build() {
-  try {
-    console.log('🔨 Building Ultra Card...');
-    execSync('npm run build', { stdio: 'inherit' });
-    console.log('✅ Build completed!');
-    return true;
-  } catch (error) {
-    console.error('❌ Build failed:', error.message);
-    return false;
-  }
-}
-
-// Main deploy function
-function deploy() {
-  console.log('🚀 Ultra Card Build & Deploy');
-  console.log('=============================');
-
-  // Step 1: Build
-  if (!build()) {
+// Main deployment process
+async function deploy() {
+  // Check if volume is mounted
+  if (!isVolumeMounted()) {
+    console.log('❌ Config volume not mounted at /Volumes/config');
+    console.log('   Please mount your Home Assistant config volume first.\n');
     process.exit(1);
   }
 
-  // Step 2: Check target path
-  if (!checkTargetPath()) {
-    process.exit(1);
+  console.log('✅ Config volume is mounted\n');
+
+  // Check which instances are available
+  console.log('🔍 Checking Home Assistant instances...\n');
+
+  let deployed = false;
+  for (const instance of CONFIG.instances) {
+    console.log(`📡 ${instance.name} (${instance.url})`);
+
+    const isReachable = checkInstance(instance.url);
+    if (isReachable) {
+      console.log('  ✅ Instance is reachable');
+      console.log('  📦 Deploying files...');
+
+      if (deployFiles(instance.path)) {
+        console.log('  🎉 Deployment successful!\n');
+        deployed = true;
+      } else {
+        console.log('  ❌ Deployment failed\n');
+      }
+    } else {
+      console.log('  ⚠️  Instance not reachable (skipping)\n');
+    }
   }
 
-  // Step 3: Copy files
-  if (!copyFiles()) {
+  if (deployed) {
+    console.log('✨ Deployment complete! Refresh your Home Assistant dashboard to see changes.\n');
+  } else {
+    console.log('⚠️  No instances were successfully deployed to.\n');
     process.exit(1);
   }
-
-  console.log('\n🎉 Deployment successful!');
-  console.log(`📍 Deployed to: ${CONFIG.targetPath}`);
-  console.log('\nNext steps:');
-  console.log('1. Clear browser cache (Cmd+Shift+R)');
-  console.log('2. Refresh Home Assistant frontend');
 }
 
 // Run deployment
-deploy();
+deploy().catch(error => {
+  console.error('💥 Deployment error:', error.message);
+  process.exit(1);
+});

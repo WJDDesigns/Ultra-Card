@@ -1,0 +1,381 @@
+import { TemplateResult, html } from 'lit';
+import { HomeAssistant } from 'custom-card-helpers';
+import { BaseUltraModule, ModuleMetadata } from './base-module';
+import { CardModule, AnimatedForecastModule, UltraCardConfig } from '../types';
+import '../components/ultra-color-picker';
+import { renderAnimatedForecastModuleEditor } from './animated-forecast-module-editor';
+
+export class UltraAnimatedForecastModule extends BaseUltraModule {
+  metadata: ModuleMetadata = {
+    type: 'animated_forecast',
+    title: 'Animated Forecast (PRO)',
+    description: 'Multi-day weather forecast with animated icons',
+    author: 'WJD Designs',
+    version: '1.0.0',
+    icon: 'mdi:weather-cloudy',
+    category: 'content',
+    tags: ['weather', 'forecast', 'pro', 'premium', 'animated'],
+  };
+
+  createDefault(id?: string, hass?: HomeAssistant): AnimatedForecastModule {
+    // Auto-detect suitable weather entity
+    const autoWeatherEntity = this._findWeatherEntity(hass);
+
+    return {
+      id: id || this.generateId('animated_forecast'),
+      type: 'animated_forecast',
+
+      // Entity Configuration
+      weather_entity: autoWeatherEntity,
+      forecast_entity: '',
+
+      // Configuration
+      forecast_days: 5,
+      temperature_unit: 'F',
+
+      // Styling - Text Sizes
+      forecast_day_size: 14,
+      forecast_temp_size: 14,
+
+      // Styling - Icon
+      forecast_icon_size: 48,
+      icon_style: 'fill',
+
+      // Styling - Colors
+      text_color: 'var(--primary-text-color)',
+      accent_color: 'var(--primary-color)',
+      forecast_day_color: 'var(--primary-text-color)',
+      forecast_temp_color: 'var(--primary-text-color)',
+
+      // Styling - Background
+      forecast_background: 'rgba(var(--rgb-primary-text-color), 0.05)',
+
+      // Standard Ultra Card properties
+      tap_action: { action: 'more-info' },
+      hold_action: { action: 'nothing' },
+      double_tap_action: { action: 'nothing' },
+      display_mode: 'always',
+      display_conditions: [],
+    };
+  }
+
+  /**
+   * Find a suitable weather entity from Home Assistant
+   */
+  private _findWeatherEntity(hass?: HomeAssistant): string {
+    if (!hass) return '';
+
+    // Look for weather.* entities
+    const weatherEntities = Object.keys(hass.states).filter(id => id.startsWith('weather.'));
+
+    return weatherEntities.length > 0 ? weatherEntities[0] : '';
+  }
+
+  renderGeneralTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return renderAnimatedForecastModuleEditor(this, module, hass, config, updateModule);
+  }
+
+  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+    const forecastModule = module as AnimatedForecastModule;
+    const weatherData = this._getWeatherData(hass, forecastModule);
+    const iconStyle = forecastModule.icon_style || 'fill';
+
+    return html`
+      <style>
+        ${this.getStyles()}
+      </style>
+      <div
+        class="animated-forecast-module-container"
+        style="
+          --forecast-days: ${forecastModule.forecast_days || 5};
+          --forecast-day-size: ${forecastModule.forecast_day_size || 14}px;
+          --forecast-temp-size: ${forecastModule.forecast_temp_size || 14}px;
+          --forecast-icon-size: ${forecastModule.forecast_icon_size || 48}px;
+          --forecast-day-color: ${forecastModule.forecast_day_color || 'var(--primary-text-color)'};
+          --forecast-temp-color: ${forecastModule.forecast_temp_color ||
+        'var(--primary-text-color)'};
+          --forecast-background: ${forecastModule.forecast_background ||
+        'rgba(var(--rgb-primary-text-color), 0.05)'};
+        "
+      >
+        <div class="weather-forecast">
+          ${weatherData.forecast && weatherData.forecast.length > 0
+            ? weatherData.forecast.slice(0, forecastModule.forecast_days || 5).map((day: any) => {
+                const dayDate = new Date(day.datetime);
+                const dayName = dayDate.toLocaleDateString(hass.locale?.language || 'en', {
+                  weekday: 'short',
+                });
+                const fHighTemp = this._convertTemperature(
+                  day.temperature,
+                  forecastModule.temperature_unit || 'F'
+                );
+                const fLowTemp = this._convertTemperature(
+                  day.templow ?? day.temperature - 10,
+                  forecastModule.temperature_unit || 'F'
+                );
+
+                return html`
+                  <div class="forecast-day">
+                    <div class="forecast-day-name">${dayName}</div>
+                    <img
+                      src="${this._getWeatherIcon(day.condition, iconStyle)}"
+                      alt="${day.condition}"
+                      class="forecast-icon meteocon-icon"
+                    />
+                    <div class="forecast-temps">
+                      <span class="forecast-high">${fHighTemp}°</span>
+                      <span class="forecast-low">${fLowTemp}°</span>
+                    </div>
+                  </div>
+                `;
+              })
+            : html`<div style="text-align: center; opacity: 0.6; padding: 16px;">
+                No forecast data available
+              </div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Get weather data from entities
+   */
+  private _getWeatherData(hass: HomeAssistant, module: AnimatedForecastModule) {
+    const weatherEntity = hass.states[module.weather_entity || ''];
+
+    // Try to get forecast from different possible locations
+    let forecast = weatherEntity?.attributes?.forecast || [];
+
+    // Some integrations use a separate forecast entity
+    if (forecast.length === 0 && module.forecast_entity) {
+      const forecastEntity = hass.states[module.forecast_entity];
+      forecast = forecastEntity?.attributes?.forecast || [];
+    }
+
+    // PirateWeather and some integrations store it differently
+    if (forecast.length === 0 && weatherEntity) {
+      // Try alternative attribute names
+      forecast =
+        weatherEntity.attributes?.['forecast_daily'] ||
+        weatherEntity.attributes?.['daily'] ||
+        weatherEntity.attributes?.['forecasts'] ||
+        [];
+    }
+
+    // If still no forecast, try fetching via service (HA 2024.3+)
+    if (forecast.length === 0 && module.weather_entity && hass?.callWS) {
+      this._fetchForecastData(hass, module);
+    }
+
+    return {
+      forecast: forecast,
+    };
+  }
+
+  /**
+   * Fetch forecast data via weather service (for HA 2024.3+)
+   */
+  private async _fetchForecastData(
+    hass: HomeAssistant,
+    module: AnimatedForecastModule
+  ): Promise<void> {
+    if (!module.weather_entity || !hass?.callWS) return;
+
+    try {
+      const response = (await hass.callWS({
+        type: 'call_service',
+        domain: 'weather',
+        service: 'get_forecasts',
+        service_data: {
+          type: 'daily',
+        },
+        target: {
+          entity_id: module.weather_entity,
+        },
+        return_response: true,
+      })) as any;
+
+      const forecastData = response?.response?.[module.weather_entity]?.forecast;
+
+      if (forecastData && Array.isArray(forecastData) && forecastData.length > 0) {
+        // Store forecast in the entity's attributes temporarily for next render
+        const weatherEntity = hass.states[module.weather_entity];
+        if (weatherEntity && weatherEntity.attributes) {
+          weatherEntity.attributes.forecast = forecastData;
+        }
+        // Trigger a re-render
+        setTimeout(() => this.triggerPreviewUpdate(), 100);
+      }
+    } catch (error) {
+      console.debug('Ultra Card Forecast: Could not fetch forecast via service:', error);
+    }
+  }
+
+  /**
+   * Get Meteocons icon name for weather condition
+   * Icons from https://github.com/basmilius/weather-icons
+   */
+  private _getWeatherIcon(condition: string, iconStyle: string = 'fill'): string {
+    const iconMap: Record<string, string> = {
+      'clear-night': 'clear-night',
+      'clear-day': 'clear-day',
+      cloudy: 'cloudy',
+      exceptional: 'not-available',
+      fog: 'fog',
+      hail: 'hail',
+      lightning: 'thunderstorms',
+      'lightning-rainy': 'thunderstorms-rain',
+      partlycloudy: 'partly-cloudy-day',
+      'partly-cloudy-night': 'partly-cloudy-night',
+      pouring: 'extreme-rain',
+      rainy: 'rain',
+      snowy: 'snow',
+      'snowy-rainy': 'sleet',
+      sunny: 'clear-day',
+      windy: 'wind',
+      'windy-variant': 'extreme-wind',
+    };
+
+    // Map Home Assistant conditions to Meteocons
+    const iconName = iconMap[condition] || 'partly-cloudy-day';
+
+    // Return CDN URL for Meteocons animated SVG from dev branch
+    return `https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/${iconStyle}/svg/${iconName}.svg`;
+  }
+
+  /**
+   * Convert temperature between F and C
+   */
+  private _convertTemperature(temp: number, unit: 'F' | 'C'): number {
+    if (unit === 'C') {
+      // Convert to Celsius if not already
+      return Math.round((temp - 32) * (5 / 9));
+    }
+    // Return as Fahrenheit (or convert from C if needed)
+    return Math.round(temp);
+  }
+
+  getStyles(): string {
+    return `
+      .animated-forecast-module-container {
+        padding: clamp(12px, 2.5%, 20px) clamp(12px, 2%, 16px);
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* ========== FORECAST ========== */
+      .weather-forecast {
+        display: grid;
+        grid-template-columns: repeat(var(--forecast-days, 5), 1fr);
+        gap: 16px;
+        padding: 20px 16px 16px 16px;
+        background: var(--forecast-background);
+        border-radius: 12px;
+      }
+
+      .forecast-day {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .forecast-day-name {
+        font-size: var(--forecast-day-size);
+        font-weight: 600;
+        color: var(--forecast-day-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .forecast-icon {
+        width: var(--forecast-icon-size);
+        height: var(--forecast-icon-size);
+      }
+
+      .meteocon-icon {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .forecast-temps {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        font-size: var(--forecast-temp-size);
+        color: var(--forecast-temp-color);
+      }
+
+      .forecast-high {
+        font-weight: 600;
+      }
+
+      .forecast-low {
+        opacity: 0.7;
+      }
+
+      /* ========== RESPONSIVE ========== */
+      @media (max-width: 768px) {
+        .weather-forecast {
+          gap: clamp(10px, 2%, 12px);
+        }
+
+        .forecast-icon {
+          width: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 40px));
+          height: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 40px));
+        }
+      }
+
+      @media (max-width: 480px) {
+        .animated-forecast-module-container {
+          padding: clamp(12px, 3%, 16px);
+        }
+
+        .weather-forecast {
+          gap: clamp(6px, 1.5%, 8px);
+        }
+
+        .forecast-day-name {
+          font-size: min(var(--forecast-day-size), 12px);
+        }
+
+        .forecast-temps {
+          font-size: min(var(--forecast-temp-size), 12px);
+        }
+
+        .forecast-icon {
+          width: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 30px));
+          height: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 30px));
+        }
+      }
+    `;
+  }
+
+  validate(module: CardModule): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const forecastModule = module as AnimatedForecastModule;
+
+    if (!forecastModule.weather_entity) {
+      errors.push('Weather entity is required for forecast data');
+    }
+
+    if (
+      forecastModule.forecast_days &&
+      (forecastModule.forecast_days < 3 || forecastModule.forecast_days > 7)
+    ) {
+      errors.push('Forecast days must be between 3 and 7');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+}

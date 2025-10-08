@@ -41,7 +41,7 @@ class UcCardBackupService {
    */
   initialize(wordpressUrl: string): void {
     this.apiBase = `${wordpressUrl}/wp-json/ultra-card/v1`;
-    console.log('💾 Card backup service initialized');
+    // Card backup init log removed for cleaner console
   }
 
   /**

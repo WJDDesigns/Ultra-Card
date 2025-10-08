@@ -1,15 +1,14 @@
 {
   "name": "ultra-card",
-  "version": "2.0-beta2",
+  "version": "2.0-beta4",
   "description": "Ultra Card - A modular card builder for Home Assistant",
   "main": "dist/ultra-card.js",
   "scripts": {
     "prebuild": "node prepare-build.js",
     "build": "webpack --mode production",
     "postbuild": "cp dist/ultra-card.js . && cp dist/ultra-card.js.LICENSE.txt .",
-    "build:deploy": "node deploy.js",
-    "build:deploy:local": "npm run prebuild && webpack --mode production && mkdir -p /Volumes/config/www/community/Ultra-Card/ && cp -R dist/* /Volumes/config/www/community/Ultra-Card/",
-    "restart:ha": "./deploy-with-restart.sh",
+    "build:deploy": "npm run build && node deploy.js",
+    "deploy": "node deploy.js",
     "watch": "webpack --watch --mode development",
     "start": "webpack serve --mode development --open",
     "dev": "webpack serve --mode development --open",
@@ -17,9 +16,7 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "validate:translations": "node scripts/validate-translations.js",
     "translations:stats": "node scripts/translation-stats.js",
-    "version:update": "node prepare-build.js --set-version",
-    "version:bump": "npm version patch",
-    "release": "node create-release.js"
+    "sync:translations": "node prepare-build.js"
   },
   "keywords": [
     "home-assistant",
@@ -36,6 +33,14 @@
     "url": "https://github.com/WJDDesigns/Ultra-Card"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.3",
+    "@codemirror/commands": "^6.7.1",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/language": "^6.10.6",
+    "@codemirror/lint": "^6.8.2",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.34.2",
+    "@lezer/highlight": "^1.2.1",
     "@mdi/js": "^7.4.47",
     "custom-card-helpers": "^1.9.0",
     "home-assistant-js-websocket": "^8.0.1",

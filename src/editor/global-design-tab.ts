@@ -32,6 +32,7 @@ export interface DesignProperties {
     | 'right bottom';
   background_size?: 'cover' | 'contain' | 'auto' | string;
   backdrop_filter?: string;
+  background_filter?: string;
   width?: string;
   height?: string;
   max_width?: string;
@@ -1606,6 +1607,24 @@ export class GlobalDesignTab extends LitElement {
                 @input=${(e: Event) =>
                   this._updateProperty('backdrop_filter', (e.target as HTMLInputElement).value)}
                 placeholder="blur(10px), grayscale(100%), invert(75%)"
+                class="property-input"
+              />
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize(
+                  'editor.design.background_filter',
+                  this.hass?.locale?.language || 'en',
+                  'Background Filter'
+                )}:</label
+              >
+              <input
+                type="text"
+                .value=${this.designProperties.background_filter || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('background_filter', (e.target as HTMLInputElement).value)}
+                placeholder="grayscale(100%), blur(10px), brightness(0.5)"
                 class="property-input"
               />
             </div>

@@ -1,0 +1,55 @@
+# Source files (not needed in npm package)
+src/
+tsconfig.json
+webpack.config.js
+
+# Development scripts
+prepare-build.js
+deploy.js
+deploy-branch.js
+deploy.sh
+create-release.js
+
+# All documentation except essentials
+*.md
+!README.md
+
+# Git and IDE
+.git/
+.github/
+.vscode/
+.cursor/
+.gitignore
+
+# Development files
+scripts/
+assets/
+--help/
+
+# Temporary folders
+temp/
+temp_*/
+node_modules/
+
+# License file variations (keep the one named 'license')
+LICENSE
+LICENSE.txt
+LICENSE.md
+
+# Configuration files not needed for distribution
+.eslintrc*
+.prettierrc*
+package-lock.json
+
+# Build output (we only want specific files)
+dist/*
+!dist/ultra-card.js
+!dist/ultra-card.js.LICENSE.txt
+
+# Only include these files in npm package:
+# - ultra-card.js (root)
+# - ultra-card.js.LICENSE.txt (root)
+# - hacs.json
+# - README.md
+# - license
+

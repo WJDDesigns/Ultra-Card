@@ -60,71 +60,9 @@ export class TemplateService {
   }
 
   /**
-   * Evaluates a template string and returns a boolean result
-   * @param template The template string to evaluate
-   * @returns Promise resolving to a boolean representing the template evaluation
+   * REMOVED: evaluateTemplate method - use subscribeToTemplate instead
+   * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
    */
-  public async evaluateTemplate(template: string): Promise<boolean> {
-    if (!template || !this.hass) {
-      return false;
-    }
-
-    const trimmedTemplate = template.trim();
-    if (!trimmedTemplate) {
-      return false;
-    }
-
-    // Check if we have a cached result
-    const cacheKey = `eval_${trimmedTemplate}`;
-    const cached = this._evaluationCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.value;
-    }
-
-    try {
-      // Call HA API to render the template
-      const renderedResult = await this.hass.callApi<string>('POST', 'template', {
-        template: trimmedTemplate,
-      });
-
-      // Interpret the rendered string as a boolean
-      const lowerResult = renderedResult.toLowerCase().trim();
-
-      let result: boolean;
-      if (['true', 'on', 'yes', '1'].includes(lowerResult)) result = true;
-      else if (
-        ['false', 'off', 'no', '0', 'unavailable', 'unknown', 'none', ''].includes(lowerResult)
-      )
-        result = false;
-      else {
-        // Handle numeric results (any non-zero number is true)
-        const numResult = parseFloat(lowerResult);
-        if (!isNaN(numResult)) result = numResult !== 0;
-        else {
-          console.warn(
-            `[UltraVehicleCard] Template evaluated to ambiguous string '${renderedResult}', interpreting as false.`
-          );
-          result = false;
-        }
-      }
-
-      // Cache the result
-      this._evaluationCache.set(cacheKey, {
-        value: result,
-        timestamp: Date.now(),
-        stringValue: renderedResult,
-      });
-
-      return result;
-    } catch (e: any) {
-      // Log specific HA API error if available
-      const errorMessage = e.error?.message || e.message || String(e);
-      console.error(
-        `[UltraVehicleCard] Error evaluating template via API: ${trimmedTemplate}. Error: ${errorMessage}`
-      );
-      return false; // Return false on error
-    }
-  }
 
   /**
    * Subscribe to a template and store results for later use
@@ -140,20 +78,10 @@ export class TemplateService {
       return;
     }
 
-    // If we already have a subscription for this key, unsubscribe first
+    // If we already have a subscription for this key, DO NOT recreate it
+    // Just return early - the existing subscription is still active
     if (this._templateSubscriptions.has(templateKey)) {
-      try {
-        const existingSubPromise = this._templateSubscriptions.get(templateKey);
-        if (existingSubPromise) {
-          const unsubFn = await existingSubPromise;
-          if (unsubFn && typeof unsubFn === 'function') {
-            await unsubFn();
-          }
-        }
-      } catch (err) {
-        // Silently handle unsubscribe errors
-      }
-      this._templateSubscriptions.delete(templateKey);
+      return; // Subscription already exists, don't create a duplicate
     }
 
     try {

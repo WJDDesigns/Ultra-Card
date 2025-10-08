@@ -11,6 +11,7 @@ import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 
 export class UltraInfoModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -25,6 +26,7 @@ export class UltraInfoModule extends BaseUltraModule {
   };
 
   private _templateService?: TemplateService;
+  private _templateInputDebounce: any = null;
 
   createDefault(id?: string, hass?: HomeAssistant): InfoModule {
     return {
@@ -696,34 +698,33 @@ export class UltraInfoModule extends BaseUltraModule {
           ${entity.template_mode
             ? html`
                 <div class="field-group" style="margin-bottom: 16px;">
-                  <ha-form
+                  <div
+                    class="field-title"
+                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.info.template.value', lang, 'Value Template')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.info.template.value_desc',
+                      lang,
+                      'Template to format the entity value using Jinja2 syntax'
+                    )}
+                  </div>
+                  <ultra-template-editor
                     .hass=${hass}
-                    .data=${{ template: entity.template || '' }}
-                    .schema=${[
-                      {
-                        name: 'template',
-                        label: localize('editor.info.template.value', lang, 'Value Template'),
-                        description: localize(
-                          'editor.info.template.value_desc',
-                          lang,
-                          'Template to format the entity value using Jinja2 syntax'
-                        ),
-                        selector: { text: { multiline: true } },
-                      },
-                    ]}
-                    .computeLabel=${(schema: any) => schema.label || schema.name}
-                    .computeDescription=${(schema: any) => schema.description || ''}
+                    .value=${entity.template || ''}
+                    .placeholder=${"{{ states('sensor.example') }}"}
+                    .minHeight=${100}
+                    .maxHeight=${300}
                     @value-changed=${(e: CustomEvent) => {
-                      this._updateEntity(
-                        infoModule,
-                        0,
-                        { template: e.detail.value.template },
-                        updateModule
-                      );
-                      // Immediately evaluate for editor live preview responsiveness
-                      this._handleTemplateChange(e.detail.value.template, infoModule, 0, hass);
+                      this._updateEntity(infoModule, 0, { template: e.detail.value }, updateModule);
+                      this._handleTemplateChange(e.detail.value, infoModule, 0, hass);
                     }}
-                  ></ha-form>
+                  ></ultra-template-editor>
                 </div>
 
                 <div class="template-examples">
@@ -1479,7 +1480,7 @@ export class UltraInfoModule extends BaseUltraModule {
           ? fallbackSize
           : `${fallbackSize}px`;
       }
-      return '26px';
+      return 'clamp(18px, 4vw, 26px)';
     };
 
     // Get text alignment from design properties with priority.
@@ -1655,9 +1656,9 @@ export class UltraInfoModule extends BaseUltraModule {
                     hass.__uvc_template_strings = {};
                   }
                   const templateHash = this._hashString(entity.template);
-                  // Use a stable key based on module id and index to avoid re-render key churn
-                  const stableKeyBase = infoModule.id ? `${infoModule.id}_${index}` : `${index}`;
-                  const templateKey = `info_entity_${stableKeyBase}_${templateHash}`;
+                  // Use only template hash and index for key to prevent subscription leaks when module ID changes
+                  // Module ID can change during editor updates, but template content + index is stable
+                  const templateKey = `info_entity_${index}_${templateHash}`;
 
                   // Subscribe if needed
                   if (
@@ -1666,7 +1667,19 @@ export class UltraInfoModule extends BaseUltraModule {
                   ) {
                     this._templateService.subscribeToTemplate(entity.template, templateKey, () => {
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                        // Use global debounced update
+                        if (!window._ultraCardUpdateTimer) {
+                          window._ultraCardUpdateTimer = setTimeout(() => {
+                            // Use global debounced update
+                            if (!window._ultraCardUpdateTimer) {
+                              window._ultraCardUpdateTimer = setTimeout(() => {
+                                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                                window._ultraCardUpdateTimer = null;
+                              }, 50);
+                            }
+                            window._ultraCardUpdateTimer = null;
+                          }, 50);
+                        }
                       }
                     });
                   }
@@ -1676,7 +1689,8 @@ export class UltraInfoModule extends BaseUltraModule {
                   if (rendered !== undefined && String(rendered).trim() !== '') {
                     displayValue = String(rendered);
                   } else {
-                    displayValue = entityState ? entityState.state : 'N/A';
+                    // Show template error message instead of entity state
+                    displayValue = 'Template Error: Invalid or incomplete template';
                   }
                 }
               } else {
@@ -2695,27 +2709,47 @@ export class UltraInfoModule extends BaseUltraModule {
   ): Promise<void> {
     if (!template || !hass) return;
 
-    try {
-      // Evaluate template immediately for snappy live preview
-      const result = await hass.callApi<string>('POST', 'template', { template });
-
-      // Store result in template cache with the same key format used by subscriptions
-      if (!hass.__uvc_template_strings) {
-        hass.__uvc_template_strings = {} as any;
-      }
-
-      const templateHash = this._hashString(template);
-      const stableKeyBase = infoModule.id ? `${infoModule.id}_${entityIndex}` : `${entityIndex}`;
-      const templateKey = `info_entity_${stableKeyBase}_${templateHash}`;
-      hass.__uvc_template_strings[templateKey] = result;
-
-      // Trigger UI update for any listeners (editor popup + main card)
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-      }
-    } catch (error) {
-      // Silent fail - template may be incomplete while typing
+    // Clear previous debounce timer
+    if (this._templateInputDebounce) {
+      clearTimeout(this._templateInputDebounce);
     }
+
+    // Aggressively debounce API calls - only call after 3 seconds of no typing
+    // This prevents API flooding while still providing live preview for finished templates
+    this._templateInputDebounce = setTimeout(async () => {
+      try {
+        // Only evaluate if template looks complete (starts with {{ and ends with }})
+        const trimmed = template.trim();
+        if (!trimmed.startsWith('{{') || !trimmed.endsWith('}}')) {
+          return; // Don't make API call for incomplete templates
+        }
+
+        const result = await hass.callApi<string>('POST', 'template', { template });
+
+        // Store result in template cache with the same key format used by subscriptions
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {} as any;
+        }
+
+        const templateHash = this._hashString(template);
+        // Use only template hash and index for key to prevent subscription leaks when module ID changes
+        const templateKey = `info_entity_${entityIndex}_${templateHash}`;
+        hass.__uvc_template_strings[templateKey] = result;
+
+        // Trigger UI update for any listeners (editor popup + main card)
+        if (typeof window !== 'undefined') {
+          // Use global debounced update
+          if (!window._ultraCardUpdateTimer) {
+            window._ultraCardUpdateTimer = setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              window._ultraCardUpdateTimer = null;
+            }, 50);
+          }
+        }
+      } catch (error) {
+        // Silent fail - template may be incomplete or invalid
+      }
+    }, 3000); // Wait 3 seconds after user stops typing
   }
 
   /**

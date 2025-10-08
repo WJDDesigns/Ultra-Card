@@ -1584,7 +1584,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
           ? `${design.font_size}px`
           : String(design.font_size);
       }
-      return `${separatorModule.title_size || 14}px`;
+      return separatorModule.title_size
+        ? `${separatorModule.title_size}px`
+        : 'clamp(12px, 3vw, 14px)';
     };
 
     const styles: Record<string, string> = {

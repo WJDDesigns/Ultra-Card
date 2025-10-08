@@ -4748,12 +4748,17 @@ export class UltraGraphsModule extends BaseUltraModule {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('ultra-card-update'));
       // Also dispatch the template update event for consistency
-      window.dispatchEvent(
-        new CustomEvent('ultra-card-template-update', {
-          bubbles: true,
-          composed: true,
-        })
-      );
+      if (!window._ultraCardUpdateTimer) {
+        window._ultraCardUpdateTimer = setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('ultra-card-template-update', {
+              bubbles: true,
+              composed: true,
+            })
+          );
+          window._ultraCardUpdateTimer = null;
+        }, 50);
+      }
     }
   }
 }

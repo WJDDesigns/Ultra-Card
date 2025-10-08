@@ -297,9 +297,7 @@ export class UcSnapshotHistoryModal extends LitElement {
                     customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
 
                   if (snapshotCard) {
-                    console.log(
-                      `  ✅ Name match: "${cardName}" in ${view.title || viewPath}`
-                    );
+                    console.log(`  ✅ Name match: "${cardName}" in ${view.title || viewPath}`);
                   }
                 } else {
                   // Use position-based match for auto-generated names
@@ -341,8 +339,7 @@ export class UcSnapshotHistoryModal extends LitElement {
             if (isCustomName) {
               // Try name-based match for custom names
               const nameKey = `${viewPath}::${cardName}`;
-              snapshotCard =
-                customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
+              snapshotCard = customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
 
               if (snapshotCard) {
                 console.log(`  ✅ Name match: "${cardName}" in ${view.title || viewPath}`);

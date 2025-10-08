@@ -15,6 +15,7 @@ import { localize } from '../localize/localize';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 
 export class UltraIconModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -629,7 +630,7 @@ export class UltraIconModule extends BaseUltraModule {
                                     'Icon to show when inactive'
                                   ),
                                   hass,
-                                  data: iconModule,
+                                  data: { icon_inactive: icon.icon_inactive || '' },
                                   schema: [this.iconField('icon_inactive')],
                                   onChange: (e: CustomEvent) =>
                                     this._updateIconWithLockSync(
@@ -1586,21 +1587,21 @@ export class UltraIconModule extends BaseUltraModule {
                 ${icon.template_mode
                   ? html`
                       <div class="template-content">
-                        <textarea
+                        <ultra-template-editor
+                          .hass=${hass}
                           .value=${icon.template || ''}
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLTextAreaElement;
+                          .placeholder=${"{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"}
+                          .minHeight=${150}
+                          .maxHeight=${400}
+                          @value-changed=${(e: CustomEvent) => {
                             this._updateIcon(
                               iconModule,
                               index,
-                              { template: target.value },
+                              { template: e.detail.value },
                               updateModule
                             );
                           }}
-                          placeholder="{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"
-                          class="template-editor"
-                          rows="6"
-                        ></textarea>
+                        ></ultra-template-editor>
                         <div class="template-help">
                           <p><strong>For visibility control, return a boolean:</strong></p>
                           <ul>
@@ -1678,21 +1679,21 @@ export class UltraIconModule extends BaseUltraModule {
                 ${icon.dynamic_color_template_mode
                   ? html`
                       <div class="template-content">
-                        <textarea
+                        <ultra-template-editor
+                          .hass=${hass}
                           .value=${icon.dynamic_color_template || ''}
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLTextAreaElement;
+                          .placeholder=${"{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"}
+                          .minHeight=${100}
+                          .maxHeight=${300}
+                          @value-changed=${(e: CustomEvent) => {
                             this._updateIcon(
                               iconModule,
                               index,
-                              { dynamic_color_template: target.value },
+                              { dynamic_color_template: e.detail.value },
                               updateModule
                             );
                           }}
-                          placeholder="{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"
-                          class="template-editor"
-                          rows="4"
-                        ></textarea>
+                        ></ultra-template-editor>
                         <div class="template-help">
                           <p><strong>Return a CSS color value:</strong></p>
                           <ul>
@@ -2165,7 +2166,13 @@ export class UltraIconModule extends BaseUltraModule {
                     () => {
                       // Force re-render when template updates
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                        // Use global debounced update
+                        if (!window._ultraCardUpdateTimer) {
+                          window._ultraCardUpdateTimer = setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            window._ultraCardUpdateTimer = null;
+                          }, 50);
+                        }
                       }
                     }
                   );
@@ -2225,7 +2232,13 @@ export class UltraIconModule extends BaseUltraModule {
                     () => {
                       // Force re-render when template updates
                       if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                        // Use global debounced update
+                        if (!window._ultraCardUpdateTimer) {
+                          window._ultraCardUpdateTimer = setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            window._ultraCardUpdateTimer = null;
+                          }, 50);
+                        }
                       }
                     }
                   );

@@ -26,12 +26,6 @@ export class FormUtils {
     schema: any[],
     onChange: (e: CustomEvent) => void
   ): TemplateResult {
-    console.log('🔧 RENDER CLEAN FORM:', {
-      data,
-      schema,
-      dataKeys: Object.keys(data),
-      timestamp: Date.now(),
-    });
     // Generate a unique ID for this form instance
     const formId = `clean-form-${Math.random().toString(36).substr(2, 9)}`;
 

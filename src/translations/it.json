@@ -1274,7 +1274,8 @@
       "position_relative": "Relativo",
       "position_absolute": "Assoluto",
       "position_fixed": "Fisso",
-      "position_sticky": "Adesivo"
+      "position_sticky": "Adesivo",
+      "background_filter": "Background Filter"
     },
     "modules": {
       "text": "Modulo testo",

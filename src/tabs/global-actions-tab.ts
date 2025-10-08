@@ -9,11 +9,17 @@ export class GlobalActionsTab {
   // Trigger preview update for reactive UI
   private static triggerPreviewUpdate(): void {
     // Dispatch custom event to update any live previews
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
+    // Use global debounced update
+    if (!window._ultraCardUpdateTimer) {
+      window._ultraCardUpdateTimer = setTimeout(() => {
+        const event = new CustomEvent('ultra-card-template-update', {
+          bubbles: true,
+          composed: true,
+        });
+        window.dispatchEvent(event);
+        window._ultraCardUpdateTimer = null;
+      }, 50);
+    }
   }
 
   static render<M extends CardModule>(

@@ -13,6 +13,7 @@ import { getImageUrl } from '../utils/image-upload';
 
 export class UltraSpinboxModule extends BaseUltraModule {
   private _templateService?: TemplateService;
+  private _templateInputDebounce: any = null;
 
   metadata: ModuleMetadata = {
     type: 'spinbox',
@@ -615,7 +616,9 @@ export class UltraSpinboxModule extends BaseUltraModule {
                     ]}
                     .computeLabel=${(schema: any) => schema.label || schema.name}
                     .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) => updateModule(e.detail.value)}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                    }}
                   ></ha-form>
                 </div>
 
@@ -716,7 +719,13 @@ export class UltraSpinboxModule extends BaseUltraModule {
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           this._templateService.subscribeToTemplate(spinboxModule.template, templateKey, () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              // Use global debounced update
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
             }
           });
         }

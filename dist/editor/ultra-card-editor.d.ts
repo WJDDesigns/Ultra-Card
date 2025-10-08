@@ -45,6 +45,22 @@ export declare class UltraCardEditor extends LitElement {
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;
     /**
+     * Handle card background image upload
+     */
+    private _handleCardBackgroundImageUpload;
+    /**
+     * Truncate long file paths for display
+     */
+    private _truncatePath;
+    /**
+     * Get the dropdown value for background size
+     */
+    private _getBackgroundSizeDropdownValue;
+    /**
+     * Get custom size value (width or height) from background size string
+     */
+    private _getCustomSizeValue;
+    /**
      * Inject a <style> element containing the combined CSS returned by the
      * ModuleRegistry so that module previews benefit from their specific styles
      * (especially animations) while editing.
@@ -62,6 +78,8 @@ export declare class UltraCardEditor extends LitElement {
     private _authListener?;
     private _syncListener?;
     private _backupListener?;
+    private static _hasLoggedTokenStatus;
+    private static _tokenCheckDone;
     /**
      * Setup cloud sync listeners
      */

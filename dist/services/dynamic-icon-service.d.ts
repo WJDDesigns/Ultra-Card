@@ -32,11 +32,9 @@ export declare class DynamicIconService {
      */
     getAllIconResults(): Map<string, string>;
     /**
-     * Evaluates an icon template string and returns an icon name
-     * @param template The template string to evaluate
-     * @returns Promise resolving to a string representing the icon name
+     * REMOVED: evaluateIconTemplate method - use subscribeToIconTemplate instead
+     * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
      */
-    evaluateIconTemplate(template: string): Promise<string>;
     /**
      * Subscribe to an icon template and store results for later use
      * @param template The template string to subscribe to

@@ -1,4 +1,6 @@
 import { html, TemplateResult } from 'lit';
+import { cache } from 'lit/directives/cache.js';
+import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, CameraModule, UltraCardConfig } from '../types';
@@ -9,8 +11,18 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import '../components/ultra-template-editor';
 
 export class UltraCameraModule extends BaseUltraModule {
+  private _templateInputDebounce: any = null;
+  private _lastRenderedEntity: string | null = null;
+  private _renderDebounce: any = null;
+  private _webrtcUpdateTimer: any = null;
+  private _pendingCameraProps?: { entity: string; live: boolean };
+  private _lastAppliedEntity?: string;
+  private _lastAppliedLive?: boolean;
+  private _huiImageRef: Ref<any> = createRef();
+
   metadata: ModuleMetadata = {
     type: 'camera',
     title: 'Camera Module',
@@ -1216,30 +1228,36 @@ export class UltraCameraModule extends BaseUltraModule {
           ${cameraModule.template_mode
             ? html`
                 <div class="field-group" style="margin-bottom: 16px;">
-                  <ha-form
+                  <div
+                    class="field-title"
+                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                  >
+                    ${localize(
+                      'editor.camera.template.camera_template_label',
+                      lang,
+                      'Camera Template'
+                    )}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.camera.template.camera_template_desc',
+                      lang,
+                      'Template to dynamically set the camera entity using Jinja2 syntax'
+                    )}
+                  </div>
+                  <ultra-template-editor
                     .hass=${hass}
-                    .data=${{ template: cameraModule.template || '' }}
-                    .schema=${[
-                      {
-                        name: 'template',
-                        label: localize(
-                          'editor.camera.template.camera_template_label',
-                          lang,
-                          'Camera Template'
-                        ),
-                        description: localize(
-                          'editor.camera.template.camera_template_desc',
-                          lang,
-                          'Template to dynamically set the camera entity using Jinja2 syntax'
-                        ),
-                        selector: { text: { multiline: true } },
-                      },
-                    ]}
-                    .computeLabel=${(schema: any) => schema.label || schema.name}
-                    .computeDescription=${(schema: any) => schema.description || ''}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ template: e.detail.value.template })}
-                  ></ha-form>
+                    .value=${cameraModule.template || ''}
+                    .placeholder=${"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}"}
+                    .minHeight=${100}
+                    .maxHeight=${300}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ template: e.detail.value });
+                    }}
+                  ></ultra-template-editor>
                 </div>
 
                 <div class="template-examples">
@@ -1331,12 +1349,12 @@ export class UltraCameraModule extends BaseUltraModule {
     // Extract design properties from global design tab
     const designProperties = moduleWithDesign.design || {};
 
-    // Get camera entity
+    // Get camera entity - evaluate template first to check if it changed
     let cameraEntity = cameraModule.entity;
 
     // Debug logging removed in production builds
 
-    // Handle template mode
+    // Handle template mode - evaluate to get the actual entity
     if (cameraModule.template_mode && cameraModule.template) {
       try {
         // Simple template evaluation for common patterns
@@ -1389,10 +1407,46 @@ export class UltraCameraModule extends BaseUltraModule {
       }
     }
 
+    const desiredLive = cameraModule.live_view !== false;
+
+    // When editor is open, keep live but serialize updates to avoid overlapping negotiations
+    // We render using last applied props and schedule a debounced apply for desired props
+    if ((this as any)._isEditorOpen()) {
+      const effectiveEntity = this._lastAppliedEntity ?? cameraEntity;
+      const effectiveLive = this._lastAppliedLive ?? desiredLive;
+      // Schedule an atomic update to desired props (200ms debounce)
+      if (cameraEntity) {
+        (this as any)._scheduleCameraUpdate(cameraEntity, desiredLive, cameraModule, hass);
+      }
+      cameraEntity = effectiveEntity || '';
+      // Note: We will pass desiredLive to hui-image below via effectiveLive
+      // but we also record it to avoid churn
+      this._lastAppliedLive = effectiveLive;
+    } else {
+      // Outside editor: apply immediately
+      // Validate the entity before applying to avoid renegotiation on bad values
+      const isValid = cameraEntity ? (this as any)._isValidCameraEntity(hass, cameraEntity) : false;
+      this._lastAppliedEntity = isValid ? cameraEntity : this._lastAppliedEntity;
+      this._lastAppliedLive = desiredLive;
+    }
+
     const entity = cameraEntity ? hass.states[cameraEntity] : null;
     const isUnavailable = !entity || entity.state === 'unavailable';
 
     // Debug logging removed in production builds
+
+    // CRITICAL FIX: Prevent WebRTC re-initialization when template is being edited
+    // Only re-render camera if the evaluated entity actually changed
+    if (cameraModule.template_mode && cameraEntity === this._lastRenderedEntity && cameraEntity) {
+      // Same entity - add stable key to prevent Lit from recreating hui-image
+      // This prevents WebRTC SDP errors during template editing
+      (cameraModule as any)._cameraStableKey = `camera_${cameraModule.id}_${cameraEntity}`;
+    } else {
+      // Entity changed - allow re-render and update cache
+      this._lastRenderedEntity = cameraEntity;
+      (cameraModule as any)._cameraStableKey =
+        `camera_${cameraModule.id}_${cameraEntity || 'none'}_${Date.now()}`;
+    }
 
     // Get camera name
     const cameraName =
@@ -1506,7 +1560,11 @@ export class UltraCameraModule extends BaseUltraModule {
 
     // Camera content
     const cameraContent = html`
-      <div class="camera-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      <div
+        class="camera-module-container"
+        data-uc-camera-id="${cameraModule.id}"
+        style=${this.styleObjectToCss(containerStyles)}
+      >
         <div class="camera-image-container" style=${this.styleObjectToCss(containerImageStyles)}>
           ${!cameraEntity
             ? html`
@@ -1560,12 +1618,15 @@ export class UltraCameraModule extends BaseUltraModule {
                   : ''}
               `
             : !isUnavailable
-              ? html`
+              ? cache(html`
                   <!-- Use HA's native camera image component - same as picture-glance card -->
+                  <!-- Cache directive prevents WebRTC re-initialization during template editing -->
                   <hui-image
+                    ${ref(this._huiImageRef)}
+                    data-camera-key=${(cameraModule as any)._cameraStableKey || cameraEntity}
                     .hass=${hass}
                     .cameraImage=${cameraEntity}
-                    .cameraView=${cameraModule.live_view ? 'live' : 'auto'}
+                    .cameraView=${this._lastAppliedLive ? 'live' : 'auto'}
                     .muted=${cameraModule.audio_enabled !== true}
                     style=${this.styleObjectToCss(imageStyles)}
                     class="camera-image"
@@ -1606,7 +1667,7 @@ export class UltraCameraModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
-                `
+                `)
               : html`
                   <div
                     class="camera-unavailable"
@@ -2126,6 +2187,8 @@ export class UltraCameraModule extends BaseUltraModule {
         if (hass) {
           // Create hui-image element
           const huiImage = document.createElement('hui-image');
+          // Add stable identifier to prevent WebRTC re-initialization
+          huiImage.setAttribute('data-camera-fullscreen', cameraEntity || '');
           (huiImage as any).hass = hass;
           (huiImage as any).cameraImage = cameraEntity;
           (huiImage as any).cameraView = module.live_view ? 'live' : 'auto';
@@ -4100,3 +4163,92 @@ export class UltraCameraModule extends BaseUltraModule {
     `;
   }
 }
+
+// Debounced, editor-aware camera update helpers
+// Note: Do not redeclare requestIdleCallback/cancelIdleCallback typings to avoid conflicts
+
+// Instance methods on class (placed after class to avoid reformatting large class body)
+(UltraCameraModule as any).prototype._isEditorOpen = function (): boolean {
+  try {
+    return !!document.querySelector('hui-dialog-edit-card, hui-card-edit-mode');
+  } catch {
+    return false;
+  }
+};
+
+(UltraCameraModule as any).prototype._isValidCameraEntity = function (
+  hass: HomeAssistant,
+  entityId: string
+): boolean {
+  if (!hass || !entityId) return false;
+  const st = hass.states?.[entityId];
+  if (!st) return false;
+  const domain = entityId.split('.')[0];
+  if (domain !== 'camera') return false;
+  if (st.state === 'unavailable' || st.state === 'unknown') return false;
+  return true;
+};
+
+(UltraCameraModule as any).prototype._scheduleCameraUpdate = function (
+  entity: string,
+  live: boolean,
+  cameraModule: CameraModule,
+  hass: HomeAssistant
+): void {
+  // Skip if no change
+  if (this._lastAppliedEntity === entity && this._lastAppliedLive === live) {
+    return;
+  }
+
+  this._pendingCameraProps = { entity, live };
+
+  // Debounce 200ms to serialize offers during editor churn
+  if (this._webrtcUpdateTimer) {
+    clearTimeout(this._webrtcUpdateTimer);
+  }
+  this._webrtcUpdateTimer = setTimeout(() => {
+    const pending = this._pendingCameraProps;
+    if (!pending) return;
+
+    // Validate target camera before touching the player
+    if (!(this as any)._isValidCameraEntity(hass, pending.entity)) {
+      // Ignore invalid entity while editing; keep current live stream
+      return;
+    }
+
+    // Find current hui-image rendered for this module
+    const host = (this as any).renderRoot || (this as any).shadowRoot || (this as any);
+    const container: HTMLElement | null = host.querySelector(
+      `.camera-module-container[data-uc-camera-id="${cameraModule.id}"] .camera-image-container`
+    );
+    if (container) {
+      // Ensure only one hui-image child exists
+      const images = Array.from(container.querySelectorAll('hui-image')) as any[];
+      for (let i = 1; i < images.length; i++) {
+        images[i].remove();
+      }
+
+      // Mutate existing hui-image imperatively when available
+      const node = this._huiImageRef?.value || images[0];
+      if (node) {
+        // During editor churn and entity switch, briefly set 'auto' then to desired live in next microtask
+        if ((this as any)._isEditorOpen() && this._lastAppliedEntity !== pending.entity) {
+          node.cameraView = 'auto';
+        }
+        node.cameraImage = pending.entity;
+        queueMicrotask(() => {
+          node.cameraView = pending.live ? 'live' : 'auto';
+        });
+
+        this._lastAppliedEntity = pending.entity;
+        this._lastAppliedLive = pending.live;
+        this._lastRenderedEntity = pending.entity;
+      } else {
+        // Fallback: request a rerender which will bind ref
+        this._lastAppliedEntity = pending.entity;
+        this._lastAppliedLive = pending.live;
+        this.requestUpdate();
+      }
+    }
+  }, 200);
+};

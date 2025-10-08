@@ -5,6 +5,7 @@ import { CardModule, MarkdownModule, UltraCardConfig } from '../types';
 export declare class UltraMarkdownModule extends BaseUltraModule {
     private _templateService;
     private _renderedContentCache;
+    private _templateInputDebounce;
     private _hashString;
     private _clearMarkdownCache;
     metadata: ModuleMetadata;

@@ -1197,7 +1197,8 @@
       "position_relative": "Relativní",
       "position_absolute": "Absolutní",
       "position_fixed": "Pevná",
-      "position_sticky": "Lepkavá"
+      "position_sticky": "Lepkavá",
+      "background_filter": "Background Filter"
     },
     "modules": {
       "text": "Textový modul",

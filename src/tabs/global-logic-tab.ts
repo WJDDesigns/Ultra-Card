@@ -3,6 +3,7 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import { FormUtils } from '../utils/form-utils';
 import type { CardModule } from '../types';
 import { localize } from '../localize/localize';
+import '../components/ultra-template-editor';
 
 export class GlobalLogicTab {
   static render<M extends CardModule>(
@@ -463,22 +464,35 @@ export class GlobalLogicTab {
                                   `;
                                 }
 
-                                return FormUtils.renderField(
-                                  localize(
-                                    'editor.layout_logic.condition_fields.template',
-                                    lang,
-                                    'Template'
-                                  ),
-                                  'Jinja2 template that should evaluate to true/false.',
-                                  hass,
-                                  { template: (cond as any).template || '' },
-                                  [
-                                    FormUtils.createSchemaItem('template', {
-                                      text: { multiline: true },
-                                    }),
-                                  ],
-                                  (e: CustomEvent) => onChange(e.detail.value)
-                                );
+                                return html`
+                                  <div class="field-container" style="margin-bottom: 16px;">
+                                    <div
+                                      class="field-title"
+                                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                                    >
+                                      ${localize(
+                                        'editor.layout_logic.condition_fields.template',
+                                        lang,
+                                        'Template'
+                                      )}
+                                    </div>
+                                    <div
+                                      class="field-description"
+                                      style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                                    >
+                                      Jinja2 template that should evaluate to true/false.
+                                    </div>
+                                    <ultra-template-editor
+                                      .hass=${hass}
+                                      .value=${(cond as any).template || ''}
+                                      .placeholder=${"{% if states('sensor.example') | int > 50 %}true{% else %}false{% endif %}"}
+                                      .minHeight=${100}
+                                      .maxHeight=${300}
+                                      @value-changed=${(e: CustomEvent) =>
+                                        onChange({ template: e.detail.value })}
+                                    ></ultra-template-editor>
+                                  </div>
+                                `;
                               })()}
                             </div>
                           `

@@ -93,6 +93,7 @@ const WEB_SAFE_FONTS = [
 export class LayoutTab extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) public config!: UltraCardConfig;
+  @property({ attribute: false }) public cloudUser?: any | null;
 
   @state() private _showModuleSelector = false;
   @state() private _selectedRowIndex = -1;
@@ -140,6 +141,7 @@ export class LayoutTab extends LitElement {
 
   // New state properties for presets, favorites, and export/import
   @state() private _activeModuleSelectorTab: 'modules' | 'presets' | 'favorites' = 'modules';
+  @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
   @state() private _selectedPresetCategory: 'all' | 'badges' | 'layouts' | 'widgets' | 'custom' =
     'all';
   @state() private _showFavoriteDialog = false;
@@ -158,24 +160,25 @@ export class LayoutTab extends LitElement {
   private _documentClickListener?: (e: Event) => void;
   private _keydownListener?: (e: KeyboardEvent) => void;
 
+  // Debouncing for template updates to prevent animation loops
+  private _templateUpdateTimer?: number;
+  private _lastTemplateUpdate = 0;
+
   connectedCallback(): void {
     super.connectedCallback();
     this._templateUpdateListener = () => {
-      // Force Lit to detect changes by requesting update
-      // The config object is already updated in place by _updateModule
-      this.requestUpdate();
-      // Also force update on next frame to ensure nested property changes are detected
-      requestAnimationFrame(() => {
-        this.requestUpdate();
-        // Force a complete re-render by updating the config timestamp
-        // This ensures module previews refresh their internal state
-        const event = new CustomEvent('config-changed', {
-          detail: { config: { ...this.config, _forceUpdate: Date.now() } },
-          bubbles: true,
-          composed: true,
-        });
-        this.dispatchEvent(event);
-      });
+      // Debounce: only update once every 100ms to prevent animation loops
+      const now = Date.now();
+      if (now - this._lastTemplateUpdate < 100) {
+        clearTimeout(this._templateUpdateTimer);
+        this._templateUpdateTimer = window.setTimeout(() => {
+          this._performTemplateUpdate();
+        }, 100);
+        return;
+      }
+
+      this._lastTemplateUpdate = now;
+      this._performTemplateUpdate();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
     // Also listen for slider updates
@@ -437,13 +440,14 @@ export class LayoutTab extends LitElement {
     const type = design?.background_image_type;
     const backgroundImage = design?.background_image;
 
-    // Support legacy direct path when no explicit type is set
-    if (!type || type === 'none') {
-      if (backgroundImage) {
-        const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
-        return `url("${resolved}")`;
-      }
+    // If explicitly set to none, return none regardless of stored path
+    if (type === 'none') {
       return 'none';
+    }
+    // Support legacy direct path when no explicit type is set
+    if (!type && backgroundImage) {
+      const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
+      return `url("${resolved}")`;
     }
 
     if (type === 'upload' || type === 'url') {
@@ -570,8 +574,27 @@ export class LayoutTab extends LitElement {
       document.removeEventListener('keydown', this._keydownListener);
       this._keydownListener = undefined;
     }
+    // Clear template update timer
+    if (this._templateUpdateTimer) {
+      clearTimeout(this._templateUpdateTimer);
+      this._templateUpdateTimer = undefined;
+    }
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
+  }
+
+  /**
+   * Perform template update with single requestUpdate() call
+   * This prevents animation loops caused by redundant re-renders
+   */
+  private _performTemplateUpdate(): void {
+    // Single update is sufficient for Lit to detect changes
+    // The config object is already updated in place by _updateModule
+    this.requestUpdate();
+
+    // Note: We intentionally do NOT dispatch config-changed with _forceUpdate timestamp here
+    // That would cause animations to restart on every template update, creating loops
+    // The _forceUpdate timestamp is only used for explicit user actions (add/delete/reorder)
   }
 
   // Popup drag and resize functionality
@@ -2382,6 +2405,8 @@ export class LayoutTab extends LitElement {
       moduleUpdates.background_image_entity = updates.background_image_entity;
     if (updates.hasOwnProperty('backdrop_filter'))
       moduleUpdates.backdrop_filter = updates.backdrop_filter;
+    if (updates.hasOwnProperty('background_filter'))
+      moduleUpdates.background_filter = updates.background_filter;
     if (updates.hasOwnProperty('width')) {
       // Check if this is a bar module that stores width in design object
       const layout = this._ensureLayout();
@@ -5637,8 +5662,9 @@ export class LayoutTab extends LitElement {
         row.background_color ||
         'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${rowBgImageCSS}; background-size: ${rd.background_size ||
         'cover'}; background-position: ${rd.background_position ||
-        'center'}; background-repeat: ${rd.background_repeat || 'no-repeat'};gap: ${row.gap ??
-        16}px;"
+        'center'}; background-repeat: ${rd.background_repeat ||
+        'no-repeat'}; backdrop-filter: ${rd.backdrop_filter ||
+        'none'}; filter: ${rd.background_filter || 'none'}; gap: ${row.gap ?? 16}px;"
       >
         ${row.columns.map(
           (column, columnIndex) => html`<div class="column-preview">Column ${columnIndex + 1}</div>`
@@ -5694,7 +5720,9 @@ export class LayoutTab extends LitElement {
         column.background_color ||
         'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${bgImageCSS}; background-size: ${d.background_size ||
         'cover'}; background-position: ${d.background_position ||
-        'center'}; background-repeat: ${d.background_repeat || 'no-repeat'};"
+        'center'}; background-repeat: ${d.background_repeat ||
+        'no-repeat'}; backdrop-filter: ${d.backdrop_filter ||
+        'none'}; filter: ${d.background_filter || 'none'};"
       >
         <p>
           ${localize(
@@ -6297,6 +6325,8 @@ export class LayoutTab extends LitElement {
         (module as any).background_position || (module as any).design?.background_position,
       background_size: (module as any).background_size || (module as any).design?.background_size,
       backdrop_filter: (module as any).backdrop_filter || (module as any).design?.backdrop_filter,
+      background_filter:
+        (module as any).background_filter || (module as any).design?.background_filter,
       width: (module as any).width || (module as any).design?.width,
       height: (module as any).height || (module as any).design?.height,
       max_width: (module as any).max_width || (module as any).design?.max_width,
@@ -7873,6 +7903,7 @@ export class LayoutTab extends LitElement {
       background_image_type: (module as any).background_image_type,
       background_image_entity: (module as any).background_image_entity,
       backdrop_filter: (module as any).backdrop_filter,
+      background_filter: (module as any).background_filter,
       // For Bar modules, the top-level height is the bar thickness, not container height.
       // Use design-scoped size values only so default bar height doesn't mark Sizes as edited.
       width: (isBarModule ? (module as any).design?.width : (module as any).width) as any,
@@ -9186,6 +9217,141 @@ export class LayoutTab extends LitElement {
     const isAddingToLayoutModule = this._selectedLayoutModuleIndex >= 0;
 
     return html`
+      <style>
+        .module-category-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+          padding: 12px;
+          background: var(--secondary-background-color);
+          border-radius: 12px;
+        }
+
+        .category-tab {
+          flex: 1;
+          padding: 12px 16px;
+          border: 2px solid transparent;
+          border-radius: 8px;
+          background: var(--card-background-color);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-weight: 600;
+          transition: all 0.3s;
+          font-family: inherit;
+        }
+
+        .category-tab.active {
+          border-color: var(--primary-color);
+          background: linear-gradient(
+            135deg,
+            rgba(3, 169, 244, 0.1) 0%,
+            rgba(3, 169, 244, 0.05) 100%
+          );
+        }
+
+        .category-tab.pro-tab {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        .category-tab.pro-tab.active {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          border-color: rgba(255, 255, 255, 0.3);
+          box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+        }
+
+        .pro-badge-mini {
+          font-size: 12px;
+        }
+
+        .pro-upgrade-prompt {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 32px;
+          border-radius: 16px;
+          text-align: center;
+        }
+
+        .pro-upgrade-prompt .pro-icon {
+          font-size: 64px;
+          margin-bottom: 16px;
+          animation: proPulse 2s ease-in-out infinite;
+        }
+
+        .pro-upgrade-prompt .pro-icon ha-icon {
+          --mdc-icon-size: 64px;
+        }
+
+        @keyframes proPulse {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+          }
+        }
+
+        .pro-upgrade-prompt h3 {
+          font-size: 24px;
+          margin: 0 0 12px 0;
+          font-weight: 700;
+        }
+
+        .pro-upgrade-prompt p {
+          opacity: 0.95;
+          margin: 0 0 20px 0;
+          font-size: 16px;
+        }
+
+        .pro-features {
+          list-style: none;
+          padding: 0;
+          margin: 24px 0;
+          display: grid;
+          gap: 12px;
+          text-align: left;
+          max-width: 300px;
+          margin: 24px auto;
+        }
+
+        .pro-features li {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 15px;
+          font-weight: 500;
+        }
+
+        .pro-features li ha-icon {
+          --mdc-icon-size: 20px;
+        }
+
+        .upgrade-btn {
+          padding: 14px 32px;
+          background: rgba(255, 255, 255, 0.25);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 8px;
+          color: white;
+          font-weight: 700;
+          font-size: 16px;
+          cursor: pointer;
+          backdrop-filter: blur(10px);
+          transition: all 0.3s;
+          font-family: inherit;
+        }
+
+        .upgrade-btn:hover {
+          background: rgba(255, 255, 255, 0.35);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+      </style>
       <div class="module-selector-popup">
         <div
           class="popup-overlay"
@@ -9284,10 +9450,21 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
-    const layoutModules = allModules.filter(
+    const isPro = this.cloudUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!this.cloudUser;
+
+    // Filter modules by PRO status
+    const standardModules = allModules.filter(m => !m.metadata.tags?.includes('pro'));
+    const proModules = allModules.filter(m => m.metadata.tags?.includes('pro'));
+
+    // Apply active category filter
+    const filteredModules =
+      this._activeModuleCategoryTab === 'standard' ? standardModules : proModules;
+
+    const layoutModules = filteredModules.filter(
       m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak'
     );
-    let contentModules = allModules.filter(m => m.metadata.category !== 'layout');
+    let contentModules = filteredModules.filter(m => m.metadata.category !== 'layout');
 
     // Get the parent layout module and check nesting depth if we're adding to a layout module
     let parentLayoutType: string | null = null;
@@ -9360,69 +9537,133 @@ export class LayoutTab extends LitElement {
     }
 
     return html`
-      ${allowedLayoutModules.length > 0
-        ? html`
-            <div class="module-category layout-containers">
-              <h4 class="category-title">Layout Containers</h4>
-              <p class="category-description">
-                ${isAddingToLayoutModule
-                  ? nestingDepth < 2
-                    ? `Add horizontal or vertical layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
-                    : 'Maximum nesting depth reached - only content modules allowed'
-                  : 'Create containers to organize your modules'}
-              </p>
-              <div class="module-types layout-modules">
-                ${allowedLayoutModules.map(module => {
-                  const metadata = module.metadata;
-                  const isHorizontal = metadata.type === 'horizontal';
-                  const isVertical = metadata.type === 'vertical';
-                  return html`
-                    <button
-                      class="module-type-btn layout-module ${isHorizontal
-                        ? 'horizontal-layout'
-                        : ''} ${isVertical ? 'vertical-layout' : ''}"
-                      @click=${() => this._addModule(metadata.type)}
-                      title="${metadata.description}"
-                    >
-                      <ha-icon icon="${metadata.icon}"></ha-icon>
-                      <div class="module-info">
-                        <span class="module-title">${metadata.title}</span>
-                        <span class="module-description">${metadata.description}</span>
-                      </div>
-                    </button>
-                  `;
-                })}
-              </div>
-            </div>
-          `
-        : ''}
-      ${contentModules.length > 0
-        ? html`
-            <div class="module-category">
-              <h4 class="category-title">Content Modules</h4>
-              <p class="category-description">Add content and interactive elements</p>
-              <div class="module-types content-modules">
-                ${contentModules.map(module => {
-                  const metadata = module.metadata;
-                  return html`
-                    <button
-                      class="module-type-btn content-module"
-                      @click=${() => this._addModule(metadata.type)}
-                      title="${metadata.description}"
-                    >
-                      <ha-icon icon="${metadata.icon}"></ha-icon>
-                      <div class="module-info">
-                        <span class="module-title">${metadata.title}</span>
-                        <span class="module-description">${metadata.description}</span>
-                      </div>
-                    </button>
-                  `;
-                })}
-              </div>
-            </div>
-          `
-        : ''}
+      <!-- PRO/Standard Tab Navigation -->
+      <div class="module-category-tabs">
+        <button
+          class="category-tab ${this._activeModuleCategoryTab === 'standard' ? 'active' : ''}"
+          @click=${() => (this._activeModuleCategoryTab = 'standard')}
+        >
+          <ha-icon icon="mdi:puzzle"></ha-icon>
+          <span>Standard</span>
+        </button>
+        <button
+          class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro' ? 'active' : ''}"
+          @click=${() => (this._activeModuleCategoryTab = 'pro')}
+        >
+          <ha-icon icon="mdi:star-circle"></ha-icon>
+          <span>PRO</span>
+          <span class="pro-badge-mini">⭐</span>
+        </button>
+      </div>
+
+      ${this._activeModuleCategoryTab === 'pro' && !isPro
+        ? this._renderProUpgradePrompt(isLoggedIn)
+        : html`
+            ${allowedLayoutModules.length > 0
+              ? html`
+                  <div class="module-category layout-containers">
+                    <h4 class="category-title">Layout Containers</h4>
+                    <p class="category-description">
+                      ${isAddingToLayoutModule
+                        ? nestingDepth < 2
+                          ? `Add horizontal or vertical layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
+                          : 'Maximum nesting depth reached - only content modules allowed'
+                        : 'Create containers to organize your modules'}
+                    </p>
+                    <div class="module-types layout-modules">
+                      ${allowedLayoutModules.map(module => {
+                        const metadata = module.metadata;
+                        const isHorizontal = metadata.type === 'horizontal';
+                        const isVertical = metadata.type === 'vertical';
+                        return html`
+                          <button
+                            class="module-type-btn layout-module ${isHorizontal
+                              ? 'horizontal-layout'
+                              : ''} ${isVertical ? 'vertical-layout' : ''}"
+                            @click=${() => this._addModule(metadata.type)}
+                            title="${metadata.description}"
+                          >
+                            <ha-icon icon="${metadata.icon}"></ha-icon>
+                            <div class="module-info">
+                              <span class="module-title">${metadata.title}</span>
+                              <span class="module-description">${metadata.description}</span>
+                            </div>
+                          </button>
+                        `;
+                      })}
+                    </div>
+                  </div>
+                `
+              : ''}
+            ${contentModules.length > 0
+              ? html`
+                  <div class="module-category">
+                    <h4 class="category-title">Content Modules</h4>
+                    <p class="category-description">Add content and interactive elements</p>
+                    <div class="module-types content-modules">
+                      ${contentModules.map(module => {
+                        const metadata = module.metadata;
+                        return html`
+                          <button
+                            class="module-type-btn content-module"
+                            @click=${() => this._addModule(metadata.type)}
+                            title="${metadata.description}"
+                          >
+                            <ha-icon icon="${metadata.icon}"></ha-icon>
+                            <div class="module-info">
+                              <span class="module-title">${metadata.title}</span>
+                              <span class="module-description">${metadata.description}</span>
+                            </div>
+                          </button>
+                        `;
+                      })}
+                    </div>
+                  </div>
+                `
+              : ''}
+          `}
     `;
+  }
+
+  /**
+   * Render PRO upgrade prompt for non-Pro users
+   */
+  private _renderProUpgradePrompt(isLoggedIn: boolean): TemplateResult {
+    return html`
+      <div class="pro-upgrade-prompt">
+        <div class="pro-icon">
+          <ha-icon icon="mdi:star-circle"></ha-icon>
+        </div>
+        <h3>Ultra Card PRO</h3>
+        <p>
+          Access premium modules like Weather Forecast, advanced animations, and more exclusive
+          features.
+        </p>
+        <ul class="pro-features">
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> Premium Modules</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> Cloud Backups</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> Auto Snapshots</li>
+          <li><ha-icon icon="mdi:check-circle"></ha-icon> Priority Support</li>
+        </ul>
+        <button class="upgrade-btn" @click=${this._handleUpgradeClick}>
+          ${isLoggedIn ? 'Upgrade to PRO' : 'Login or Upgrade'}
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Handle upgrade button click - navigate to PRO tab
+   */
+  private _handleUpgradeClick(): void {
+    // Dispatch event to parent to switch to PRO tab
+    this.dispatchEvent(
+      new CustomEvent('switch-tab', {
+        detail: { tab: 'pro' },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _renderPresetImages(preset: any, wpPreset: any): TemplateResult {

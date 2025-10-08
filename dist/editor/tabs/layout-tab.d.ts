@@ -8,6 +8,7 @@ import '../../components/uc-import-dialog';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
+    cloudUser?: any | null;
     private _showModuleSelector;
     private _selectedRowIndex;
     private _selectedColumnIndex;
@@ -29,6 +30,7 @@ export declare class LayoutTab extends LitElement {
     private _isPreviewPinned;
     private _draggingCondition;
     private _activeModuleSelectorTab;
+    private _activeModuleCategoryTab;
     private _selectedPresetCategory;
     private _showFavoriteDialog;
     private _favoriteRowToSave;
@@ -42,6 +44,8 @@ export declare class LayoutTab extends LitElement {
     private _templateUpdateListener?;
     private _documentClickListener?;
     private _keydownListener?;
+    private _templateUpdateTimer?;
+    private _lastTemplateUpdate;
     connectedCallback(): void;
     /** Determine if current device/viewport should be treated as mobile */
     private _isMobileDevice;
@@ -69,6 +73,11 @@ export declare class LayoutTab extends LitElement {
     private _windowResizeListener;
     private _resizeTimeout;
     disconnectedCallback(): void;
+    /**
+     * Perform template update with single requestUpdate() call
+     * This prevents animation loops caused by redundant re-renders
+     */
+    private _performTemplateUpdate;
     private _startPopupDrag;
     private _handlePopupDrag;
     private _endPopupDrag;
@@ -227,6 +236,14 @@ export declare class LayoutTab extends LitElement {
     private _renderModuleSelector;
     private _formatCategoryTitle;
     private _renderModulesTab;
+    /**
+     * Render PRO upgrade prompt for non-Pro users
+     */
+    private _renderProUpgradePrompt;
+    /**
+     * Handle upgrade button click - navigate to PRO tab
+     */
+    private _handleUpgradeClick;
     private _renderPresetImages;
     private _navigateSlider;
     private _goToSlide;

@@ -14,6 +14,7 @@ import { marked } from 'marked';
 export class UltraMarkdownModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
   private _renderedContentCache: Map<string, string> = new Map();
+  private _templateInputDebounce: any = null;
 
   // Hash function for template caching
   private _hashString(str: string): string {
@@ -75,6 +76,9 @@ All standard markdown features are automatically enabled!`,
       enable_html: false,
       enable_tables: true,
       enable_code_highlighting: true,
+      // Template configuration
+      template_mode: false,
+      template: '',
       // Global action configuration
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -126,8 +130,9 @@ All standard markdown features are automatically enabled!`,
               ]}
               .computeLabel=${(schema: any) => schema.label || schema.name}
               .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ markdown_content: e.detail.value.markdown_content })}
+              @value-changed=${(e: CustomEvent) => {
+                updateModule({ markdown_content: e.detail.value.markdown_content });
+              }}
             ></ha-form>
           </div>
         </div>
@@ -166,6 +171,160 @@ All standard markdown features are automatically enabled!`,
                 updateModule({ enable_html: e.detail.value.enable_html })}
             ></ha-form>
           </div>
+        </div>
+
+        <!-- Template Configuration -->
+        <div
+          class="settings-section template-mode-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+          >
+            ${localize('editor.markdown.template_mode', lang, 'Template Mode')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+          >
+            ${localize(
+              'editor.markdown.template_mode_desc',
+              lang,
+              'Use Home Assistant templating syntax to render markdown content dynamically'
+            )}
+          </div>
+
+          <div class="field-group" style="margin-bottom: 16px;">
+            <ha-form
+              .hass=${hass}
+              .data=${{ template_mode: markdownModule.template_mode || false }}
+              .schema=${[
+                {
+                  name: 'template_mode',
+                  label: localize('editor.markdown.template_mode', lang, 'Template Mode'),
+                  description: localize(
+                    'editor.markdown.template_mode_desc',
+                    lang,
+                    'Use Home Assistant templating syntax to render markdown content dynamically'
+                  ),
+                  selector: { boolean: {} },
+                },
+              ]}
+              .computeLabel=${(schema: any) => schema.label || schema.name}
+              .computeDescription=${(schema: any) => schema.description || ''}
+              @value-changed=${(e: CustomEvent) =>
+                updateModule({ template_mode: e.detail.value.template_mode })}
+            ></ha-form>
+          </div>
+
+          ${markdownModule.template_mode
+            ? html`
+                <div class="field-group" style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.markdown.template.content', lang, 'Template Content')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.markdown.template.content_desc',
+                      lang,
+                      'Enter markdown content with Jinja2 templates that will be processed dynamically'
+                    )}
+                  </div>
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${markdownModule.template || markdownModule.markdown_content || ''}
+                    .placeholder=${"# Welcome Home\n\nToday is **{{ now().strftime('%A, %B %d') }}**\n\nCurrent temperature: {{ states('sensor.temperature') }}°F"}
+                    .minHeight=${200}
+                    .maxHeight=${400}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ template: e.detail.value });
+                    }}
+                  ></ultra-template-editor>
+                </div>
+
+                <div class="template-examples">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+                  >
+                    ${localize('editor.markdown.template.examples_title', lang, 'Common Examples:')}
+                  </div>
+
+                  <div class="example-item" style="margin-bottom: 16px;">
+                    <div
+                      class="example-code"
+                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
+                    >
+                      # Dashboard Header<br />
+                      Today is **{{ now().strftime('%A, %B %d') }}**<br />
+                      Temperature: {{ states('sensor.temperature') }}°F
+                    </div>
+                    <div
+                      class="example-description"
+                      style="font-size: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize(
+                        'editor.markdown.template.examples.header',
+                        lang,
+                        'Dynamic header with current date and sensor values'
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="example-item" style="margin-bottom: 16px;">
+                    <div
+                      class="example-code"
+                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
+                    >
+                      ## System Status<br />
+                      - ✅ Internet: Connected<br />
+                      - ✅ Security: {{ states('alarm_control_panel.home') }}<br />
+                      - ⚠️ Backup: {{ states('sensor.backup_status') }}
+                    </div>
+                    <div
+                      class="example-description"
+                      style="font-size: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize(
+                        'editor.markdown.template.examples.status',
+                        lang,
+                        'Status list with dynamic entity states'
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="example-item" style="margin-bottom: 16px;">
+                    <div
+                      class="example-code"
+                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
+                    >
+                      ### Quick Info<br /><br />
+                      | Sensor | Value |<br />
+                      | ----------- | ------------------------------------ |<br />
+                      | Temperature | {{ states('sensor.temperature') }}°F |<br />
+                      | Humidity | {{ states('sensor.humidity') }}% |
+                    </div>
+                    <div
+                      class="example-description"
+                      style="font-size: 12px; color: var(--secondary-text-color);"
+                    >
+                      ${localize(
+                        'editor.markdown.template.examples.table',
+                        lang,
+                        'Table with dynamic sensor data'
+                      )}
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''}
         </div>
       </div>
     `;
@@ -350,8 +509,8 @@ All standard markdown features are automatically enabled!`,
           return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
         }
         if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
-        // Default font size for markdown modules when no design or module font_size is set
-        return '14px'; // Match HA default
+        // Default font size for markdown modules when no design or module font_size is set - use clamp for responsive scaling
+        return 'clamp(12px, 3vw, 14px)'; // Match HA default with responsive scaling
       })(),
       fontFamily:
         designProperties.font_family ||
@@ -439,41 +598,23 @@ All standard markdown features are automatically enabled!`,
         if (!this._templateService.hasTemplateSubscription(templateKey)) {
           this._templateService.subscribeToTemplate(content, templateKey, () => {
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              // Use global debounced update
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
             }
           });
         }
 
-        // Use latest rendered string if available
+        // Use latest rendered string if available from WebSocket subscription
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined) {
           processedContent = String(rendered);
-        } else {
-          // Try immediate template evaluation as fallback
-          try {
-            hass
-              .callApi<string>('POST', 'template', { template: content })
-              .then(result => {
-                if (!hass.__uvc_template_strings) {
-                  hass.__uvc_template_strings = {};
-                }
-                hass.__uvc_template_strings[templateKey] = result;
-
-                // Clear the cache so it will re-render with the new content
-                this._clearMarkdownCache(markdownModule.id);
-
-                // Trigger re-render
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                }
-              })
-              .catch(() => {
-                // Silent fail for invalid templates
-              });
-          } catch {
-            // Silent fail for invalid templates
-          }
         }
+        // If no rendered result yet, the WebSocket subscription will trigger an update when ready
       }
 
       // Configure marked.js options like Home Assistant
@@ -508,24 +649,29 @@ All standard markdown features are automatically enabled!`,
     };
 
     // Create a cache key for this content
-    const contentKey = `${markdownModule.id}_${this._hashString(markdownModule.markdown_content || '')}`;
+    // Use template content if template mode is enabled, otherwise use markdown content
+    const sourceContent =
+      markdownModule.template_mode && markdownModule.template
+        ? markdownModule.template
+        : markdownModule.markdown_content || '';
+
+    const contentKey = `${markdownModule.id}_${this._hashString(sourceContent)}`;
 
     // Check if we already have rendered content
-    let renderedContent =
-      this._renderedContentCache.get(contentKey) || markdownModule.markdown_content || '';
+    let renderedContent = this._renderedContentCache.get(contentKey) || sourceContent;
 
     // Only process if we don't have cached content
     if (!this._renderedContentCache.has(contentKey)) {
       try {
         // Process markdown synchronously
-        const result = renderMarkdown(markdownModule.markdown_content || '');
+        const result = renderMarkdown(sourceContent);
         // Cache the result
         this._renderedContentCache.set(contentKey, result);
         renderedContent = result;
       } catch (error) {
         console.warn('Ultra Card: Failed to render markdown:', error);
         // Use original content as fallback
-        renderedContent = markdownModule.markdown_content || '';
+        renderedContent = sourceContent;
       }
     }
 

@@ -21,4 +21,53 @@ yarn-error.log*
 .idea
 
 # Cursor IDE
-.cursor/ 
+.cursor/
+
+# Planning and implementation documents
+*_PLAN.md
+*_FIX.md
+*_FIXES.md
+*_FIX_*.md
+*_IMPLEMENTATION*.md
+*_GUIDE.md
+*_SUMMARY.md
+*_CHECKLIST.md
+*_INSTRUCTIONS.md
+Animation_Accordion_Fix_Plan.md
+
+# WordPress files and snippets
+*.php
+
+# Debug and troubleshooting files
+debug-*.md
+debug-*.php
+diagnose-*.php
+verify-*.md
+cors-test.js
+cleanup-temp-files.txt
+
+# Development scripts (keep deploy.js and prepare-build.js)
+deploy-branch.js
+deploy.sh
+create-release.js
+
+# Temporary and submission folders
+temp/
+temp_*/
+hacs-default-temp/
+hacs-default-submission/
+
+# Miscellaneous development files
+*.sql
+forum-post.md
+hacs-pr-template.md
+hacs-submission-instructions.md
+update-for-directories-pro.md
+directories-pro-presets-service-update.ts
+
+# Keep essential docs (exceptions to above patterns)
+!README.md
+!CONTRIBUTING_TRANSLATIONS.md
+!MODULE_DEVELOPMENT_GUIDELINES.md
+!RELEASE_NOTES.md
+!docs/ 

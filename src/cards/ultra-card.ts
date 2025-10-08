@@ -16,6 +16,8 @@ import { logicService } from '../services/logic-service';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
+import { clockUpdateService } from '../services/clock-update-service';
+import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
@@ -31,8 +33,10 @@ export class UltraCard extends LitElement {
   @state() private _columnVisibilityState = new Map<string, boolean>();
   @state() private _animatingRows = new Set<string>();
   @state() private _animatingColumns = new Set<string>();
+  @state() private _cloudUser: CloudUser | null = null;
   private _lastHassChangeTime = 0;
   private _templateUpdateListener?: () => void;
+  private _authListener?: (user: CloudUser | null) => void;
   /**
    * Flag to ensure module CSS is injected only once per card instance.
    */
@@ -50,6 +54,11 @@ export class UltraCard extends LitElement {
     // Inject hover effect styles into this card's shadow root
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
 
+    // Set up clock update service to trigger re-renders for clock modules
+    clockUpdateService.setUpdateCallback(() => {
+      this.requestUpdate();
+    });
+
     // Listen for template updates from modules
     this._templateUpdateListener = () => {
       this.requestUpdate();
@@ -65,6 +74,39 @@ export class UltraCard extends LitElement {
     };
     this.addEventListener('slider-state-changed', sliderStateHandler);
     window.addEventListener('slider-state-changed', sliderStateHandler);
+
+    // Set up auth listener to track pro status changes
+    this._cloudUser = ucCloudAuthService.getCurrentUser();
+    this._authListener = (user: CloudUser | null) => {
+      this._cloudUser = user;
+      this.requestUpdate(); // Re-render when auth status changes
+    };
+    ucCloudAuthService.addListener(this._authListener);
+
+    // Set up responsive scaling
+    this._setupResponsiveScaling();
+
+    // Only set up event listeners if feature is enabled
+    if (this._isScalingEnabled()) {
+      // Listen for visibility changes (edit mode exit/enter)
+      this._visibilityChangeHandler = () => {
+        // Hard reset first to native size, then schedule measurement
+        this._forceResetScale();
+        setTimeout(() => {
+          this._lastMeasuredWidth = 0; // Reset to force recalculation
+          this._scheduleScaleCheck();
+        }, 150);
+      };
+      document.addEventListener('visibilitychange', this._visibilityChangeHandler);
+
+      // Also check on window resize
+      this._windowResizeHandler = () => {
+        this._forceResetScale();
+        this._lastMeasuredWidth = 0; // Reset to force recalculation
+        this._scheduleScaleCheck();
+      };
+      window.addEventListener('resize', this._windowResizeHandler);
+    }
   }
 
   disconnectedCallback(): void {
@@ -73,9 +115,39 @@ export class UltraCard extends LitElement {
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
 
+    // Clean up clock timers
+    clockUpdateService.clearAll();
+
+    // Clean up logic service and all template WebSocket subscriptions
+    // This prevents subscription leaks that cause "Connection lost" errors
+    logicService.cleanup();
+
     // Clean up event listener
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+    }
+
+    // Clean up auth listener
+    if (this._authListener) {
+      ucCloudAuthService.removeListener(this._authListener);
+    }
+
+    // Clean up responsive scaling observer
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+    }
+
+    // Clean up visibility and resize handlers
+    if (this._visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this._visibilityChangeHandler);
+    }
+    if (this._windowResizeHandler) {
+      window.removeEventListener('resize', this._windowResizeHandler);
+    }
+
+    // Clear any pending timers
+    if (this._scaleDebounceTimer) {
+      clearTimeout(this._scaleDebounceTimer);
     }
   }
 
@@ -246,6 +318,210 @@ export class UltraCard extends LitElement {
     `;
   }
 
+  updated(changedProperties: Map<string, any>) {
+    super.updated(changedProperties);
+    if (changedProperties.has('config')) {
+      // Hard reset before re-initializing scaling logic
+      this._forceResetScale();
+      this._setupResponsiveScaling();
+    }
+
+    // Only check scaling when config or hass changes (not on every render) and feature is enabled
+    if (
+      (changedProperties.has('config') || changedProperties.has('hass')) &&
+      this._isScalingEnabled()
+    ) {
+      // Ensure native size before new measurement
+      this._forceResetScale();
+      this._scheduleScaleCheck();
+    }
+  }
+
+  private _setupResponsiveScaling() {
+    // Remove existing observer
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+    }
+
+    // Clear any pending timers
+    if (this._scaleDebounceTimer) {
+      clearTimeout(this._scaleDebounceTimer);
+      this._scaleDebounceTimer = undefined;
+    }
+
+    // Only setup if responsive scaling is explicitly enabled
+    if (!this._isScalingEnabled()) {
+      // Reset any existing scaling
+      const container = this.shadowRoot?.querySelector('.card-container') as HTMLElement;
+      if (container) {
+        container.style.transform = '';
+        container.style.transformOrigin = '';
+        container.style.width = '';
+      }
+      this._currentScale = 1;
+      return;
+    }
+
+    // Setup resize observer to watch for size changes
+    this._resizeObserver = new ResizeObserver(entries => {
+      // Only react to host element size changes, not container
+      for (const entry of entries) {
+        if (entry.target === this) {
+          this._scheduleScaleCheck();
+        }
+      }
+    });
+
+    // Observe only the host element for size changes
+    this._resizeObserver.observe(this);
+
+    // Run initial check after a short delay to ensure DOM is ready
+    this._scheduleScaleCheck();
+  }
+
+  private _resizeObserver?: ResizeObserver;
+  private _scaleDebounceTimer?: number;
+  private _currentScale: number = 1;
+  private _lastMeasuredWidth: number = 0;
+  private _visibilityChangeHandler?: () => void;
+  private _windowResizeHandler?: () => void;
+  private _isScalingInProgress: boolean = false;
+
+  private _scheduleScaleCheck() {
+    // Clear any existing timer
+    if (this._scaleDebounceTimer) {
+      clearTimeout(this._scaleDebounceTimer);
+    }
+
+    // Debounce the scale check to prevent rapid recalculations
+    this._scaleDebounceTimer = window.setTimeout(() => {
+      this._checkAndScaleContent();
+    }, 100);
+  }
+
+  // Immediately clear any transforms/width overrides so layout returns to native size.
+  // Used before scheduling a fresh measurement on layout transitions.
+  private _forceResetScale(): void {
+    const container = this.shadowRoot?.querySelector('.card-container') as HTMLElement | null;
+    if (!container) return;
+    container.style.transform = '';
+    container.style.transformOrigin = '';
+    container.style.width = '';
+    this._currentScale = 1;
+  }
+
+  private _isScalingEnabled(): boolean {
+    // Default ON for new/unspecified configs; allow opt-out by setting to false
+    return this.config?.responsive_scaling !== false;
+  }
+
+  private _checkAndScaleContent() {
+    if (!this._isScalingEnabled()) {
+      return;
+    }
+
+    if (this._isScalingInProgress) {
+      // Avoid overlapping scale calculations that can compound the scale
+      return;
+    }
+    this._isScalingInProgress = true;
+
+    const container = this.shadowRoot?.querySelector('.card-container') as HTMLElement;
+    if (!container) {
+      this._isScalingInProgress = false;
+      return;
+    }
+
+    // Get the container's available width (from parent)
+    const availableWidth = this.offsetWidth;
+
+    // If lastMeasuredWidth is 0, this is a forced recalculation - always proceed
+    const forcedCheck = this._lastMeasuredWidth === 0;
+    const currentlyScaledDown = this._currentScale < 1;
+
+    if (!forcedCheck && !currentlyScaledDown) {
+      // Skip if width hasn't changed significantly (prevents feedback loops)
+      // BUT always allow check if we need to reset scale back to 1 (when going from narrow to wide)
+      const widthChanged = Math.abs(availableWidth - this._lastMeasuredWidth) >= 5;
+      const needsReset = availableWidth > this._lastMeasuredWidth;
+
+      if (!widthChanged && !needsReset) {
+        this._isScalingInProgress = false;
+        return;
+      }
+    }
+
+    this._lastMeasuredWidth = availableWidth;
+
+    // Temporarily disable observer to prevent feedback loop
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+    }
+
+    // Reset to native size before measuring
+    this._forceResetScale();
+    container.style.transformOrigin = 'top left';
+
+    // Force a layout recalculation
+    void container.offsetHeight;
+
+    // Wait for next frame to ensure layout is complete
+    requestAnimationFrame(() => {
+      // Get the actual content width (including overflow)
+      const contentWidth = container.scrollWidth;
+
+      // Calculate scale needed
+      let finalScale = 1;
+
+      // Only scale if content is actually wider than available space
+      // Add a small threshold to prevent unnecessary scaling for minor differences
+      if (contentWidth > availableWidth + 10 && availableWidth > 0) {
+        const scale = availableWidth / contentWidth;
+        // Use exact scale (no shrinking margin) and clamp
+        finalScale = Math.max(0.5, Math.min(1, scale));
+      }
+
+      // Avoid tiny repeated downscales; if new target is within 0.02 of current, keep current
+      if (this._currentScale < 1 && finalScale < 1) {
+        if (Math.abs(finalScale - this._currentScale) < 0.02) {
+          finalScale = this._currentScale;
+        }
+      }
+
+      // If the available width grew relative to last measure, prefer resetting to 1.0
+      if (availableWidth >= this._lastMeasuredWidth) {
+        finalScale = 1;
+      }
+
+      // Always apply the calculated scale (even if it's 1.0) to ensure proper reset
+      this._currentScale = finalScale;
+
+      if (finalScale < 1) {
+        container.style.transform = `scale(${finalScale})`;
+        container.style.transformOrigin = 'top left';
+        container.style.width = `${100 / finalScale}%`;
+      } else {
+        // Explicitly reset to ensure we return to normal size
+        container.style.transform = '';
+        container.style.width = '';
+        container.style.transformOrigin = '';
+      }
+
+      // Re-enable observer after changes are applied
+      if (this._resizeObserver && this._isScalingEnabled()) {
+        // Re-observe on next frame to avoid immediate feedback
+        requestAnimationFrame(() => {
+          if (this._resizeObserver && this._isScalingEnabled()) {
+            this._resizeObserver.observe(this);
+          }
+          this._isScalingInProgress = false;
+        });
+      } else {
+        this._isScalingInProgress = false;
+      }
+    });
+  }
+
   private _getCardStyle(): string {
     if (!this.config) return '';
 
@@ -253,7 +529,30 @@ export class UltraCard extends LitElement {
 
     // Apply background color
     if (this.config.card_background) {
-      styles.push(`background: ${this.config.card_background}`);
+      styles.push(`background-color: ${this.config.card_background}`);
+    }
+
+    // Apply background image
+    if (
+      this.config.card_background_image_type &&
+      this.config.card_background_image_type !== 'none'
+    ) {
+      const backgroundImageUrl = this._getCardBackgroundImageUrl();
+      if (backgroundImageUrl) {
+        styles.push(`background-image: url('${backgroundImageUrl}')`);
+
+        // Apply background size
+        const backgroundSize = this.config.card_background_size || 'cover';
+        styles.push(`background-size: ${backgroundSize}`);
+
+        // Apply background repeat
+        const backgroundRepeat = this.config.card_background_repeat || 'no-repeat';
+        styles.push(`background-repeat: ${backgroundRepeat}`);
+
+        // Apply background position
+        const backgroundPosition = this.config.card_background_position || 'center center';
+        styles.push(`background-position: ${backgroundPosition}`);
+      }
     }
 
     // Apply border radius
@@ -290,6 +589,48 @@ export class UltraCard extends LitElement {
     }
 
     return styles.join('; ');
+  }
+
+  /**
+   * Get the card background image URL based on the configured type
+   */
+  private _getCardBackgroundImageUrl(): string {
+    if (!this.config || !this.hass) return '';
+
+    const imageType = this.config.card_background_image_type;
+
+    switch (imageType) {
+      case 'upload':
+        // For uploads, use getImageUrl to properly resolve the path
+        if (this.config.card_background_image) {
+          return getImageUrl(this.hass, this.config.card_background_image);
+        }
+        return '';
+
+      case 'url':
+        // For direct URLs, use as-is
+        return this.config.card_background_image || '';
+
+      case 'entity':
+        // For entity type, get the entity picture from the entity state
+        const entityId = this.config.card_background_image_entity;
+        if (entityId && this.hass.states[entityId]) {
+          const entity = this.hass.states[entityId];
+          // Try entity_picture first, then entity_picture_local
+          const imageUrl =
+            entity.attributes.entity_picture ||
+            entity.attributes.entity_picture_local ||
+            entity.attributes.picture ||
+            '';
+          if (imageUrl) {
+            return getImageUrl(this.hass, imageUrl);
+          }
+        }
+        return '';
+
+      default:
+        return '';
+    }
   }
 
   private _renderRow(row: CardRow): TemplateResult {
@@ -555,6 +896,13 @@ export class UltraCard extends LitElement {
   }
 
   private _renderModule(module: CardModule): TemplateResult {
+    // Check if this is a pro module and if user has access
+    const isProModule = this._isProModule(module);
+    const hasProAccess = this._hasProAccess();
+    const shouldShowProOverlay = isProModule && !hasProAccess;
+
+    // Debug logging for pro module detection removed
+
     // Check module display conditions (handles both template_mode and regular conditions)
     const shouldShow = logicService.evaluateModuleVisibility(module);
 
@@ -694,15 +1042,60 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    return ucModulePreviewService.renderModuleContent(module, this.hass, this.config, {
-      animationClass,
-      animationDuration,
-      animationDelay,
-      animationTiming,
-      introAnimation,
-      outroAnimation,
-      shouldTriggerStateAnimation,
-    });
+    const moduleContent = ucModulePreviewService.renderModuleContent(
+      module,
+      this.hass,
+      this.config,
+      {
+        animationClass,
+        animationDuration,
+        animationDelay,
+        animationTiming,
+        introAnimation,
+        outroAnimation,
+        shouldTriggerStateAnimation,
+      }
+    );
+
+    // If this is a pro module and user doesn't have access, show overlay
+    if (shouldShowProOverlay) {
+      return html`
+        <div
+          class="pro-module-locked"
+          @contextmenu=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          @click=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          ${moduleContent}
+          <div
+            class="pro-module-overlay"
+            @contextmenu=${(e: Event) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            @click=${(e: Event) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <div class="pro-module-message">
+              <ha-icon icon="mdi:lock"></ha-icon>
+              <div class="pro-module-text">
+                <strong>Pro Module</strong>
+                <span>Please login to view this module</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return moduleContent;
   }
 
   private _parseAnimationDuration(duration: string): number {
@@ -1007,6 +1400,7 @@ export class UltraCard extends LitElement {
       overflow: design.overflow || 'visible',
       clipPath: design.clip_path || 'none',
       backdropFilter: design.backdrop_filter || 'none',
+      filter: design.background_filter || 'none',
       // Shadow
       boxShadow:
         design.box_shadow_h && design.box_shadow_v
@@ -1108,6 +1502,7 @@ export class UltraCard extends LitElement {
       overflow: design.overflow || 'visible',
       clipPath: design.clip_path || 'none',
       backdropFilter: design.backdrop_filter || 'none',
+      filter: design.background_filter || 'none',
       // Shadow
       boxShadow:
         design.box_shadow_h && design.box_shadow_v
@@ -1134,13 +1529,14 @@ export class UltraCard extends LitElement {
     const type = design?.background_image_type;
     const backgroundImage = design?.background_image;
 
-    // If no explicit type set, support legacy direct path
-    if (!type || type === 'none') {
-      if (backgroundImage) {
-        const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
-        return `url("${resolved}")`;
-      }
+    // If explicitly set to none, return none regardless of stored path
+    if (type === 'none') {
       return 'none';
+    }
+    // Support legacy direct path when no explicit type is set
+    if (!type && backgroundImage) {
+      const resolved = hass ? getImageUrl(hass, backgroundImage) : backgroundImage;
+      return `url("${resolved}")`;
     }
 
     if (type === 'upload' || type === 'url') {
@@ -1181,6 +1577,42 @@ export class UltraCard extends LitElement {
         return `${kebabKey}: ${value}`;
       })
       .join('; ');
+  }
+
+  /**
+   * Check if a module is a pro module by checking its metadata tags
+   */
+  private _isProModule(module: CardModule): boolean {
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+    if (!moduleHandler || !moduleHandler.metadata) {
+      return false;
+    }
+    const tags = moduleHandler.metadata.tags || [];
+    return tags.includes('pro') || tags.includes('premium');
+  }
+
+  /**
+   * Check if the current user has pro access
+   * Must be authenticated AND have active pro subscription
+   */
+  private _hasProAccess(): boolean {
+    // Must be authenticated with valid token
+    if (!ucCloudAuthService.isAuthenticated()) {
+      return false;
+    }
+
+    // Must have user data
+    if (!this._cloudUser) {
+      return false;
+    }
+
+    // Must have active pro subscription
+    const hasPro =
+      this._cloudUser.subscription?.tier === 'pro' &&
+      this._cloudUser.subscription?.status === 'active';
+
+    return hasPro;
   }
 
   /**
@@ -1242,6 +1674,8 @@ export class UltraCard extends LitElement {
 
       .card-row {
         /* No default margins - spacing controlled by individual modules */
+        min-width: 0; /* allow columns to shrink inside row */
+        width: 100%;
       }
 
       .card-row:last-child {
@@ -1252,6 +1686,18 @@ export class UltraCard extends LitElement {
         display: flex;
         flex-direction: column;
         /* Gap is now controlled via inline styles from column.gap property */
+        box-sizing: border-box;
+        min-width: 0; /* critical: prevent overflow from long content */
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden; /* keep column from exceeding its card area */
+      }
+
+      /* Ensure media inside columns never exceed the column width */
+      .card-column img,
+      .card-column svg {
+        max-width: 100%;
+        height: auto;
       }
 
       .unknown-module {
@@ -2000,10 +2446,6 @@ export class UltraCard extends LitElement {
 
       /* Container queries for responsive behavior in sections view */
       @container (max-width: 300px) {
-        .card-container {
-          padding: 12px;
-        }
-
         .card-row {
           margin-bottom: 8px;
         }
@@ -2014,23 +2456,96 @@ export class UltraCard extends LitElement {
       }
 
       @container (min-width: 500px) {
-        .card-container {
-          padding: 20px;
-        }
-
         .card-row {
           margin-bottom: 16px;
         }
       }
 
-      @container (max-height: 200px) {
-        .card-container {
-          padding: 8px 16px;
-        }
+      /* Pro Module Locked Overlay */
+      .pro-module-locked {
+        position: relative;
+        width: 100%;
+        min-height: 200px;
+        isolation: isolate;
+        display: block !important;
+      }
 
-        .welcome-text {
-          padding: 16px;
-        }
+      .pro-module-locked > *:first-child {
+        position: relative;
+        z-index: 1;
+        filter: blur(3px);
+        opacity: 0.4;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .pro-module-overlay {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(20, 20, 20, 0.85) !important;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 9999 !important;
+        border-radius: 8px;
+        cursor: not-allowed !important;
+        pointer-events: all !important;
+        user-select: none !important;
+      }
+
+      .pro-module-message {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 28px;
+        background: linear-gradient(
+          135deg,
+          rgba(var(--rgb-primary-color, 33, 150, 243), 0.95),
+          rgba(var(--rgb-accent-color, 255, 152, 0), 0.85)
+        );
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        color: white !important;
+        position: relative;
+        z-index: 10000;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .pro-module-message ha-icon {
+        --mdc-icon-size: 36px;
+        color: white !important;
+        flex-shrink: 0;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+      }
+
+      .pro-module-text {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        user-select: none;
+      }
+
+      .pro-module-text strong {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: white !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+
+      .pro-module-text span {
+        font-size: 14px;
+        opacity: 0.95;
+        line-height: 1.3;
+        color: white !important;
       }
     `;
   }

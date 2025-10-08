@@ -467,10 +467,16 @@ export abstract class BaseUltraModule implements UltraModule {
    * and the actual card listen for to trigger re-renders.
    */
   protected triggerPreviewUpdate(): void {
-    const event = new CustomEvent('ultra-card-template-update', {
-      bubbles: true,
-      composed: true,
-    });
-    window.dispatchEvent(event);
+    // Global debouncing to prevent multiple modules from triggering rapid updates
+    if (!window._ultraCardUpdateTimer) {
+      window._ultraCardUpdateTimer = setTimeout(() => {
+        const event = new CustomEvent('ultra-card-template-update', {
+          bubbles: true,
+          composed: true,
+        });
+        window.dispatchEvent(event);
+        window._ultraCardUpdateTimer = null;
+      }, 50); // Debounce to 50ms to allow multiple modules to batch their updates
+    }
   }
 }

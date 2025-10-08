@@ -473,7 +473,7 @@ export class DirectoriesProPresetsAPI {
 
       return await response.json();
     } catch (error) {
-      console.warn('Direct fetch failed, trying CORS proxies:', error);
+      // Direct fetch failed, trying CORS proxies silently
 
       // Method 2: Try CORS proxies
       for (const proxy of this.corsProxies) {
@@ -495,7 +495,7 @@ export class DirectoriesProPresetsAPI {
           console.log(`Successfully fetched via proxy: ${proxy}`);
           return data;
         } catch (proxyError) {
-          console.warn(`Proxy ${proxy} failed:`, proxyError);
+          // Proxy failed silently, try next one
           continue; // Try next proxy
         }
       }

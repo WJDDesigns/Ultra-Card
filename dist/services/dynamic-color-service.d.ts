@@ -32,11 +32,9 @@ export declare class DynamicColorService {
      */
     getAllColorResults(): Map<string, string>;
     /**
-     * Evaluates a color template string and returns a color value
-     * @param template The template string to evaluate
-     * @returns Promise resolving to a string representing the color value
+     * REMOVED: evaluateColorTemplate method - use subscribeToColorTemplate instead
+     * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
      */
-    evaluateColorTemplate(template: string): Promise<string>;
     /**
      * Subscribe to a color template and store results for later use
      * @param template The template string to subscribe to

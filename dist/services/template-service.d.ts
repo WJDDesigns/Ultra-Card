@@ -33,11 +33,9 @@ export declare class TemplateService {
      */
     getAllTemplateResults(): Map<string, boolean>;
     /**
-     * Evaluates a template string and returns a boolean result
-     * @param template The template string to evaluate
-     * @returns Promise resolving to a boolean representing the template evaluation
+     * REMOVED: evaluateTemplate method - use subscribeToTemplate instead
+     * This method was causing API flooding and is no longer needed since we use WebSocket subscriptions
      */
-    evaluateTemplate(template: string): Promise<boolean>;
     /**
      * Subscribe to a template and store results for later use
      * @param template The template string to subscribe to

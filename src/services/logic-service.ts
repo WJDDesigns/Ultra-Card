@@ -9,6 +9,7 @@ export class LogicService {
   private static instance: LogicService;
   private hass: HomeAssistant | null = null;
   private templateService: TemplateService | null = null;
+  // Removed API fallback tracking - relying entirely on WebSocket subscriptions
 
   private constructor() {}
 
@@ -21,10 +22,25 @@ export class LogicService {
 
   public setHass(hass: HomeAssistant): void {
     this.hass = hass;
+    // Clean up old template service before creating a new one to prevent WebSocket subscription leaks
+    if (this.templateService) {
+      this.templateService.unsubscribeAllTemplates();
+    }
     // Initialize template service when hass is available
     if (hass) {
       this.templateService = new TemplateService(hass);
     }
+  }
+
+  /**
+   * Clean up all active subscriptions
+   */
+  public cleanup(): void {
+    if (this.templateService) {
+      this.templateService.unsubscribeAllTemplates();
+      this.templateService = null;
+    }
+    this.hass = null;
   }
 
   /**
@@ -72,22 +88,22 @@ export class LogicService {
       return true; // Show by default if hass not available
     }
 
-    // Check if template mode is enabled
-    if (module.template_mode && module.template) {
-      // Use template evaluation directly
-      const condition: DisplayCondition = {
-        id: `template_${module.id}`,
-        type: 'template',
-        template: module.template,
-      };
-      return this.evaluateTemplateCondition(condition);
+    const displayMode = module.display_mode || 'always';
+
+    // If display mode is "always", show the module regardless of template content
+    if (displayMode === 'always') {
+      return true;
     }
 
-    // Fall back to normal condition evaluation
-    return this.evaluateDisplayConditions(
-      module.display_conditions || [],
-      module.display_mode || 'always'
-    );
+    // For "every" or "any" modes, ONLY evaluate conditions from the Logic tab
+    // The value template (module.template) is for rendering the value, NOT for visibility
+    const conditions: DisplayCondition[] = [...(module.display_conditions || [])];
+
+    // REMOVED: Do NOT add the value template as a display condition
+    // The value template should only control what text is displayed, not visibility
+    // Users add visibility conditions explicitly in the Logic tab via display_conditions
+
+    return this.evaluateDisplayConditions(conditions, displayMode);
   }
 
   /**
@@ -323,8 +339,9 @@ export class LogicService {
     }
 
     try {
-      // Create a unique key for this template
-      const templateKey = `logic_condition_${condition.id}_${condition.template}`;
+      // Create a unique key for this template (use only template hash to prevent subscription leaks)
+      const templateHash = this._hashString(condition.template);
+      const templateKey = `logic_condition_${templateHash}`;
 
       // If we have a template service, try to get cached result
       if (this.templateService) {
@@ -343,45 +360,9 @@ export class LogicService {
         }
       }
 
-      // Fall back to Home Assistant template API call (synchronous approach)
-      if (this.hass.callApi) {
-        // Try to use HA's template rendering directly
-        this.hass
-          .callApi<string>('POST', 'template', {
-            template: condition.template,
-          })
-          .then(renderedResult => {
-            // Parse the result as boolean
-            const lowerResult = renderedResult.toLowerCase().trim();
-            let result: boolean;
-
-            if (['true', 'on', 'yes', '1'].includes(lowerResult)) {
-              result = true;
-            } else if (
-              ['false', 'off', 'no', '0', 'unavailable', 'unknown', 'none', ''].includes(
-                lowerResult
-              )
-            ) {
-              result = false;
-            } else {
-              // Handle numeric results (any non-zero number is true)
-              const numResult = parseFloat(lowerResult);
-              if (!isNaN(numResult)) {
-                result = numResult !== 0;
-              } else {
-                result = false;
-              }
-            }
-
-            // Cache the result if we have template service
-            if (this.templateService) {
-              this.templateService['_templateResults'].set(templateKey, result);
-            }
-          })
-          .catch(error => {
-            console.warn('[LogicService] Error evaluating template via API:', error);
-          });
-      }
+      // NOTE: API fallback completely removed to prevent resource exhaustion
+      // Template conditions rely entirely on WebSocket subscriptions
+      // which are initialized above and update the cache automatically
 
       // For immediate evaluation, try basic pattern matching
       const template = condition.template;
@@ -415,10 +396,36 @@ export class LogicService {
         }
       }
 
+      // Handle {{ states('entity') == 'value' }} pattern matching
+      const stateComparePattern =
+        /\{\{\s*states\(['"]([^'"]+)['"]\)\s*(==|!=)\s*['"]([^'"]+)['"]\s*\}\}/g;
+      let match;
+      while ((match = stateComparePattern.exec(template)) !== null) {
+        const entityId = match[1];
+        const operator = match[2];
+        const compareValue = match[3];
+
+        const entity = this.hass.states[entityId];
+        if (entity) {
+          const entityState = entity.state;
+          let result = false;
+
+          if (operator === '==') {
+            result = entityState === compareValue;
+          } else if (operator === '!=') {
+            result = entityState !== compareValue;
+          }
+
+          // If this is the only pattern in the template, return the result directly
+          if (template.trim() === match[0].trim()) {
+            return result;
+          }
+        }
+      }
+
       // Simple {{ states('entity.id') }} pattern matching for basic conditions
       const statePattern = /\{\{\s*states\(['"]([^'"]+)['"]\)\s*\}\}/g;
       let evaluatedTemplate = template;
-      let match;
       while ((match = statePattern.exec(template)) !== null) {
         const entityId = match[1];
         const entity = this.hass.states[entityId];
@@ -440,7 +447,6 @@ export class LogicService {
 
       return true; // Default to true for unrecognized patterns
     } catch (error) {
-      console.warn('[LogicService] Error evaluating template condition:', error);
       return true; // Show by default on error
     }
   }
@@ -485,6 +491,19 @@ export class LogicService {
     };
 
     return this.evaluateSingleCondition(condition);
+  }
+
+  /**
+   * Simple, stable string hash for template keys
+   */
+  private _hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      const chr = str.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
   }
 }
 

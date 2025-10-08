@@ -1,6 +1,13 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { LinkAction } from './services/link-service';
 
+// Global window interface extensions
+declare global {
+  interface Window {
+    _ultraCardUpdateTimer?: ReturnType<typeof setTimeout> | null;
+  }
+}
+
 // Action type definition (without 'default')
 export type ActionType =
   | 'more-info'
@@ -75,7 +82,10 @@ export interface BaseModule {
     | 'dropdown'
     | 'light'
     | 'gauge'
-    | 'spinbox';
+    | 'spinbox'
+    | 'animated_clock'
+    | 'animated_weather'
+    | 'animated_forecast';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -827,12 +837,26 @@ export interface GaugeModule extends BaseModule {
   value_x_offset?: number; // X offset for value positioning
   value_y_offset?: number; // Y offset for value positioning
 
+  // Value formatting
+  value_bold?: boolean;
+  value_italic?: boolean;
+  value_underline?: boolean;
+  value_uppercase?: boolean;
+  value_strikethrough?: boolean;
+
   show_name?: boolean;
   name_position?: 'top' | 'bottom' | 'center' | 'none';
   name_font_size?: number;
   name_color?: string;
   name_x_offset?: number; // X offset for name positioning
   name_y_offset?: number; // Y offset for name positioning
+
+  // Name formatting
+  name_bold?: boolean;
+  name_italic?: boolean;
+  name_underline?: boolean;
+  name_uppercase?: boolean;
+  name_strikethrough?: boolean;
 
   show_min_max?: boolean;
   min_max_font_size?: number;
@@ -2235,6 +2259,275 @@ export interface LightModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Animated Clock Module (PRO)
+export interface AnimatedClockModule extends BaseModule {
+  type: 'animated_clock';
+
+  // Configuration
+  time_format?: '12' | '24'; // 12 or 24 hour format (default: 12)
+  clock_style?:
+    | 'flip'
+    | 'digital'
+    | 'analog'
+    | 'binary'
+    | 'minimal'
+    | 'retro'
+    | 'word'
+    | 'neon'
+    | 'material'
+    | 'terminal'; // Clock display style (default: flip)
+  update_frequency?: '1' | '60'; // Update frequency in seconds (default: 1 = every second)
+
+  // Analog Clock Options (only for analog style)
+  analog_show_seconds?: boolean; // Show seconds hand on analog clock (default: true)
+  analog_smooth_seconds?: boolean; // Smooth sweeping seconds hand vs ticking (default: true)
+  analog_show_hour_hand?: boolean; // Show hour hand (default: true)
+  analog_show_minute_hand?: boolean; // Show minute hand (default: true)
+  analog_show_hour_markers?: boolean; // Show hour markers (default: true)
+  analog_show_center_dot?: boolean; // Show center dot (default: true)
+  analog_show_numbers?: boolean; // Show clock numbers 1-12 (default: false)
+  analog_show_hour_ticks?: boolean; // Show hour tick marks (12 major ticks) (default: false)
+  analog_show_minute_ticks?: boolean; // Show minute tick marks (48 minor ticks) (default: false)
+  analog_hour_hand_color?: string; // Hour hand color (default: clock_color)
+  analog_minute_hand_color?: string; // Minute hand color (default: clock_color)
+  analog_second_hand_color?: string; // Second hand color (default: #ff4444)
+  analog_hour_marker_color?: string; // Hour marker color (default: clock_color)
+  analog_center_dot_color?: string; // Center dot color (default: clock_color)
+  analog_numbers_color?: string; // Clock numbers color (default: clock_color)
+  analog_hour_ticks_color?: string; // Hour tick marks color (default: clock_color)
+  analog_minute_ticks_color?: string; // Minute tick marks color (default: clock_color)
+  analog_face_outline_color?: string; // Clock face outline color (default: clock_color)
+  analog_face_background_color?: string; // Clock face background color (default: clock_background)
+  analog_face_background_type?: 'color' | 'entity' | 'upload' | 'url'; // Background type (default: color)
+  analog_face_background_image_entity?: string; // Entity ID for entity image background
+  analog_face_background_image_upload?: string; // Uploaded image path
+  analog_face_background_image_url?: string; // Image URL for background
+  analog_face_background_size?: string; // Background size (default: cover)
+  analog_face_background_position?: string; // Background position (default: center)
+  analog_face_background_repeat?: string; // Background repeat (default: no-repeat)
+
+  // Element Visibility Toggles (universal)
+  show_hours?: boolean; // Show hours (default: true)
+  show_minutes?: boolean; // Show minutes (default: true)
+  show_seconds?: boolean; // Show seconds (default: true)
+  show_ampm?: boolean; // Show AM/PM (default: true)
+  show_separators?: boolean; // Show time separators like : (default: true)
+
+  // Style-specific Visibility Toggles
+  show_labels?: boolean; // Show labels (e.g., H M S in binary) (default: true)
+  show_prefix?: boolean; // Show prefix text (e.g., "It is" in text clock) (default: true)
+  show_prompt?: boolean; // Show terminal prompt (default: true)
+  show_command?: boolean; // Show terminal command (default: true)
+  show_cursor?: boolean; // Show terminal cursor (default: true)
+
+  // Styling
+  clock_size?: number; // Clock digit size in pixels (default: 48)
+  clock_color?: string; // Clock digit color (default: primary-text-color)
+  clock_background?: string; // Clock card background (default: card-background-color)
+
+  // Flip Clock Options
+  flip_tile_color?: string; // Flip tile background color (default: rgba(0, 0, 0, 0.5))
+  flip_hours_color?: string; // Color for hours (default: clock_color)
+  flip_minutes_color?: string; // Color for minutes (default: clock_color)
+  flip_separator_color?: string; // Color for separators (default: clock_color)
+  flip_ampm_color?: string; // Color for AM/PM (default: clock_color)
+
+  // Digital LED Clock Options
+  digital_background_color?: string; // Digital display background color (default: #000)
+  digital_hours_color?: string; // Hours color (default: #ff3333)
+  digital_minutes_color?: string; // Minutes color (default: #ff3333)
+  digital_seconds_color?: string; // Seconds color (default: #ff3333)
+  digital_separator_color?: string; // Separator color (default: #ff3333)
+  digital_ampm_color?: string; // AM/PM color (default: #33ff33)
+  digital_glow_color?: string; // Glow color (default: #ff0000)
+
+  // Binary Clock Options
+  binary_hours_empty_color?: string; // Empty hour dots color (default: rgba(128, 128, 128, 0.2))
+  binary_hours_filled_color?: string; // Filled hour dots color (default: clock_color)
+  binary_minutes_empty_color?: string; // Empty minute dots color (default: rgba(128, 128, 128, 0.2))
+  binary_minutes_filled_color?: string; // Filled minute dots color (default: clock_color)
+  binary_seconds_empty_color?: string; // Empty second dots color (default: rgba(128, 128, 128, 0.2))
+  binary_seconds_filled_color?: string; // Filled second dots color (default: clock_color)
+  binary_separator_color?: string; // Separator color (default: clock_color)
+  binary_hours_label_color?: string; // HH label color (default: clock_color)
+  binary_minutes_label_color?: string; // MM label color (default: clock_color)
+  binary_seconds_label_color?: string; // SS label color (default: clock_color)
+
+  // Minimal Clock Options
+  minimal_hours_color?: string; // Hours color (default: clock_color)
+  minimal_minutes_color?: string; // Minutes color (default: clock_color)
+  minimal_seconds_color?: string; // Seconds color (default: clock_color)
+  minimal_separator_color?: string; // Separator color (default: clock_color)
+  minimal_ampm_color?: string; // AM/PM color (default: clock_color)
+
+  // Retro 7-Segment Clock Options
+  retro_background_color?: string; // Display background color (default: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%))
+  retro_hours_tile_color?: string; // Hours tile background (default: rgba(0, 0, 0, 0.3))
+  retro_minutes_tile_color?: string; // Minutes tile background (default: rgba(0, 0, 0, 0.3))
+  retro_seconds_tile_color?: string; // Seconds tile background (default: rgba(0, 0, 0, 0.3))
+  retro_separator_tile_color?: string; // Separator tile background (default: rgba(0, 0, 0, 0.3))
+  retro_hours_color?: string; // Hours digit color (default: #ffa500)
+  retro_minutes_color?: string; // Minutes digit color (default: #ffa500)
+  retro_seconds_color?: string; // Seconds digit color (default: #ffa500)
+  retro_separator_color?: string; // Separator color (default: #ffa500)
+  retro_ampm_color?: string; // AM/PM color (default: #00ff00)
+
+  // Text Clock (word) Options
+  text_orientation?: 'horizontal' | 'vertical'; // Text layout orientation (default: horizontal)
+  text_word_gap?: number; // Gap between words in pixels (default: 8)
+  text_prefix_color?: string; // Color for prefix text (e.g., "It is")
+  text_prefix_size?: number; // Font size for prefix (default: 38)
+  text_hours_color?: string; // Color for hours text
+  text_hours_size?: number; // Font size for hours (default: 48)
+  text_minutes_color?: string; // Color for minutes text
+  text_minutes_size?: number; // Font size for minutes (default: 48)
+  text_ampm_color?: string; // Color for AM/PM text
+  text_ampm_size?: number; // Font size for AM/PM (default: 24)
+
+  // Neon Clock Options
+  neon_padding?: number; // Padding around neon display in em (default: 4)
+  neon_hours_color?: string; // Color for hours (default: #00ffff)
+  neon_minutes_color?: string; // Color for minutes (default: #00ffff)
+  neon_seconds_color?: string; // Color for seconds (default: #00ffff)
+  neon_separator_color?: string; // Color for separators (default: #ff00ff)
+  neon_ampm_color?: string; // Color for AM/PM (default: #00ff00)
+
+  // Material Design Options
+  material_vertical_gap?: number; // Vertical gap between time and seconds in pixels (default: 8)
+  material_background_color?: string; // Card background color (default: clock_background)
+  material_hours_color?: string; // Hours color (default: clock_color)
+  material_minutes_color?: string; // Minutes color (default: clock_color)
+  material_seconds_color?: string; // Seconds color (default: clock_color)
+  material_separator_color?: string; // Separator color (default: clock_color)
+  material_ampm_color?: string; // AM/PM color (default: clock_color)
+
+  // Terminal Clock Options
+  terminal_background_color?: string; // Terminal background color (default: #1e1e1e)
+  terminal_line1_color?: string; // Color for line 1 (prompt) (default: #4ec9b0)
+  terminal_line2_color?: string; // Color for line 2 (command) (default: #ce9178)
+  terminal_cursor_color?: string; // Color for cursor (default: #4ec9b0)
+  terminal_hours_color?: string; // Color for hours (default: #d4d4d4)
+  terminal_minutes_color?: string; // Color for minutes (default: #d4d4d4)
+  terminal_seconds_color?: string; // Color for seconds (default: #d4d4d4)
+  terminal_separator_color?: string; // Color for separators (default: #d4d4d4)
+  terminal_ampm_color?: string; // Color for AM/PM (default: #d4d4d4)
+  terminal_vertical_spacing?: number; // Vertical spacing between lines in pixels (default: 8)
+  terminal_line1_size?: number; // Font size for line 1 in pixels (default: 17)
+  terminal_line2_size?: number; // Font size for line 2 in pixels (default: 17)
+  terminal_output_size?: number; // Font size for output in pixels (default: 38)
+
+  // Global action configuration
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Animated Weather Module (PRO)
+export interface AnimatedWeatherModule extends BaseModule {
+  type: 'animated_weather';
+
+  // Entity Configuration
+  weather_entity?: string; // weather.* entity (primary)
+  temperature_entity?: string; // Individual sensor fallback
+  condition_entity?: string; // Individual sensor fallback
+  custom_entity?: string; // Optional custom entity to display (shows as "name: state")
+  custom_entity_name?: string; // Custom name override for custom entity display
+
+  // Column Display Toggles
+  show_left_column?: boolean; // Show left column (location/condition/custom) (default: true)
+  show_center_column?: boolean; // Show center column (weather icon) (default: true)
+  show_right_column?: boolean; // Show right column (date/temp/range) (default: true)
+
+  // Layout Configuration
+  column_gap?: number; // Gap between columns in pixels (default: 12)
+  left_column_gap?: number; // Vertical gap within left column (default: 8)
+  right_column_gap?: number; // Vertical gap within right column (default: 8)
+  temperature_unit?: 'F' | 'C'; // Temperature unit (default: F)
+
+  // Location Configuration
+  location_override_mode?: 'text' | 'entity'; // How to override location (default: text)
+  location_name?: string; // Text override for location name
+  location_entity?: string; // Entity to use for location (e.g., tracker)
+
+  // Left Column Display Toggles
+  show_location?: boolean; // Show location name (default: true)
+  show_condition?: boolean; // Show weather condition (default: true)
+  show_custom_entity?: boolean; // Show custom entity (default: true if entity set)
+
+  // Right Column Display Toggles
+  show_date?: boolean; // Show date (default: true)
+  show_temperature?: boolean; // Show main temperature (default: true)
+  show_temp_range?: boolean; // Show high/low range (default: true)
+
+  // Left Column - Text Sizes
+  location_size?: number; // Location text size (default: 16)
+  condition_size?: number; // Weather condition size (default: 24)
+  custom_entity_size?: number; // Custom entity size (default: 18)
+
+  // Left Column - Colors
+  location_color?: string; // Location text color (default: primary-text-color)
+  condition_color?: string; // Condition text color (default: primary-text-color)
+  custom_entity_color?: string; // Custom entity color (default: primary-text-color)
+
+  // Center Column - Icon Styling
+  main_icon_size?: number; // Main weather icon size (default: 120)
+  icon_style?: 'fill' | 'line'; // Icon style: filled or outlined (default: fill)
+
+  // Right Column - Text Sizes
+  date_size?: number; // Date text size (default: 16)
+  temperature_size?: number; // Main temperature size (default: 64)
+  temp_range_size?: number; // High/low range size (default: 18)
+
+  // Right Column - Colors
+  date_color?: string; // Date text color (default: primary-text-color)
+  temperature_color?: string; // Main temperature color (default: primary-text-color)
+  temp_range_color?: string; // High/low temperature color (default: primary-text-color)
+
+  // Styling - Backgrounds
+  module_background?: string; // Overall module background (default: transparent)
+  module_border?: string; // Module border color (default: transparent)
+
+  // Global action configuration
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
+// Animated Forecast Module (PRO)
+export interface AnimatedForecastModule extends BaseModule {
+  type: 'animated_forecast';
+
+  // Entity Configuration
+  weather_entity?: string; // weather.* entity with forecast data
+  forecast_entity?: string; // forecast.* entity for daily forecast
+
+  // Configuration
+  forecast_days?: number; // Number of forecast days (default: 5, range: 3-7)
+  temperature_unit?: 'F' | 'C'; // Temperature unit (default: F)
+
+  // Styling - Text Sizes
+  forecast_day_size?: number; // Forecast day name size (default: 14)
+  forecast_temp_size?: number; // Forecast temperature size (default: 14)
+
+  // Styling - Icon
+  forecast_icon_size?: number; // Forecast icon size (default: 48)
+  icon_style?: 'fill' | 'line'; // Icon style: filled or outlined (default: fill)
+
+  // Styling - Colors
+  text_color?: string; // General text color (default: primary-text-color)
+  accent_color?: string; // Accent color for highlights (default: primary-color)
+  forecast_day_color?: string; // Forecast day name color (default: text_color)
+  forecast_temp_color?: string; // Forecast temperature color (default: text_color)
+
+  // Styling - Background
+  forecast_background?: string; // Background for forecast section (default: theme-aware transparent)
+
+  // Global action configuration
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+}
+
 // Dropdown option configuration
 export interface DropdownOption {
   id: string;
@@ -2280,7 +2573,10 @@ export type CardModule =
   | CameraModule
   | GraphsModule
   | DropdownModule
-  | LightModule;
+  | LightModule
+  | AnimatedClockModule
+  | AnimatedWeatherModule
+  | AnimatedForecastModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -2347,6 +2643,7 @@ export interface SharedDesignProperties {
     | 'right bottom';
   background_size?: 'cover' | 'contain' | 'auto' | string; // string to allow custom values like '100% 100%'
   backdrop_filter?: string;
+  background_filter?: string;
   // Size properties
   width?: string;
   height?: string;
@@ -2607,6 +2904,13 @@ export interface UltraCardConfig {
   card_shadow_vertical?: number; // Y offset
   card_shadow_blur?: number;
   card_shadow_spread?: number;
+  // Card background image properties
+  card_background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+  card_background_image?: string;
+  card_background_image_entity?: string;
+  card_background_size?: string; // 'cover' | 'contain' | 'auto' | custom values
+  card_background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+  card_background_position?: string; // e.g., 'center center', 'left top', etc.
   // Card-level conditional display
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
@@ -2616,6 +2920,8 @@ export interface UltraCardConfig {
   haptic_feedback?: boolean;
   // Card identification for backups (Ultra Card Pro)
   card_name?: string;
+  // Responsive scaling configuration
+  responsive_scaling?: boolean;
 }
 
 // Custom card interface for registration

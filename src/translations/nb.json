@@ -1197,7 +1197,8 @@
       "position_relative": "Relativ",
       "position_absolute": "Absolutt",
       "position_fixed": "Fast",
-      "position_sticky": "Klebrig"
+      "position_sticky": "Klebrig",
+      "background_filter": "Background Filter"
     },
     "modules": {
       "text": "Tekstmodul",
