@@ -78,8 +78,7 @@ export declare class UltraCardEditor extends LitElement {
     private _authListener?;
     private _syncListener?;
     private _backupListener?;
-    private static _hasLoggedTokenStatus;
-    private static _tokenCheckDone;
+    private _hasInitializedAuth;
     /**
      * Setup cloud sync listeners
      */

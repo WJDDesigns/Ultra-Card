@@ -1,5 +1,32 @@
 # Release Notes
 
+## Version 2.0-beta8
+
+### 🔐 Critical Authentication Fixes
+
+- **Fixed users being logged out after page refresh** - Resolved critical bug where valid authentication sessions were incorrectly treated as expired, causing users to be logged out on every page refresh
+- **Improved token validation logic** - Separated actual token expiry checks from proactive refresh checks, ensuring users stay logged in with valid tokens
+- **Added retry mechanism for token refresh** - Implemented exponential backoff (3 retries) for token refresh failures to handle temporary network issues gracefully
+- **Fixed race conditions** - Replaced static flags with instance-level authentication tracking to prevent conflicts when multiple editor instances are created/destroyed
+- **Enhanced error handling** - Network errors during token refresh no longer log users out; the system now distinguishes between connection issues and invalid credentials
+- **Reduced console logging** - Minimized verbose success messages, keeping only essential errors and warnings for cleaner console output
+
+### 🛡️ Security & Reliability
+
+- Token refresh now retries up to 3 times with exponential backoff before failing
+- Users remain logged in during temporary network issues as long as token is still valid
+- Invalid refresh tokens (4xx errors) immediately logout, while server errors (5xx) trigger retries
+- Each editor instance manages authentication independently to prevent conflicts
+- Session persistence is now bulletproof and reliable
+
+### 📝 Technical Details
+
+For developers: See `ULTRA_PRO_AUTH_FIXES.md` for detailed technical documentation including:
+- Token validation improvements
+- Retry logic implementation
+- Session restoration flow
+- Testing scenarios
+
 ## Version 2.0-beta4
 
 ### 🚀 New Features

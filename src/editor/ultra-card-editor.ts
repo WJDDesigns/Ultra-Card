@@ -3001,18 +3001,17 @@ export class UltraCardEditor extends LitElement {
   private _authListener?: (user: CloudUser | null) => void;
   private _syncListener?: (status: SyncStatus) => void;
   private _backupListener?: (status: BackupStatus) => void;
-  private static _hasLoggedTokenStatus = false; // Track if we've logged token status this session
-  private static _tokenCheckDone = false; // Track if we've done the initial token check
+  private _hasInitializedAuth = false; // Track if we've initialized auth for this instance
 
   /**
    * Setup cloud sync listeners
    */
   private async _setupCloudSyncListeners(): Promise<void> {
-    // Skip token check if already done this session
-    if (UltraCardEditor._tokenCheckDone) {
+    // Skip if already initialized for this instance
+    if (this._hasInitializedAuth) {
       return;
     }
-    UltraCardEditor._tokenCheckDone = true;
+    this._hasInitializedAuth = true;
 
     // Get initial state
     this._cloudUser = ucCloudAuthService.getCurrentUser();
@@ -3021,44 +3020,25 @@ export class UltraCardEditor extends LitElement {
 
     // If user exists in storage, attempt to restore session
     if (this._cloudUser && ucCloudAuthService.isAuthenticated()) {
+      // Token is valid, just restore services
       try {
         await this._initializeProServices(this._cloudUser);
       } catch (error) {
         console.error('❌ Failed to restore Pro session:', error);
       }
-    } else if (this._cloudUser && !ucCloudAuthService.isAuthenticated()) {
-      // Token expired but user exists - attempt refresh
-      // Only log detailed status once per session to avoid console spam
-      if (!UltraCardEditor._hasLoggedTokenStatus) {
-        console.log('🔄 Token expired, attempting refresh...');
-        console.log('   Stored user:', this._cloudUser.displayName);
-        console.log('   Has refresh token?', !!this._cloudUser.refreshToken);
-        UltraCardEditor._hasLoggedTokenStatus = true;
-      }
+    } else if (this._cloudUser && this._cloudUser.refreshToken) {
+      // Token needs refresh - attempt it but don't logout on failure
       try {
         await ucCloudAuthService.refreshToken();
         this._cloudUser = ucCloudAuthService.getCurrentUser();
         if (this._cloudUser) {
           await this._initializeProServices(this._cloudUser);
-          console.log('✅ Token refreshed and session restored');
-        } else {
-          if (!UltraCardEditor._hasLoggedTokenStatus) {
-            console.warn('❌ Refresh succeeded but no user returned');
-          }
         }
       } catch (error) {
-        // Only log the error details once per session
-        if (!UltraCardEditor._hasLoggedTokenStatus) {
-          console.warn('❌ Token refresh failed:', error);
-          console.warn('   User needs to login again');
-          UltraCardEditor._hasLoggedTokenStatus = true;
-        }
-        this._cloudUser = null;
+        // Don't clear session on refresh failure - user might have network issues
+        // The auth service will handle logging them out if truly invalid
+        console.warn('⚠️ Session restore failed, please check your connection');
       }
-    } else if (!UltraCardEditor._hasLoggedTokenStatus) {
-      // Only log "no session" message once per page load
-      console.log('ℹ️ No stored session to restore - user needs to login');
-      UltraCardEditor._hasLoggedTokenStatus = true;
     }
 
     // Setup auth listener

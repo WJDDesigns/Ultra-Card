@@ -82,10 +82,17 @@ class UcCloudAuthService {
   }
 
   /**
-   * Check if user is authenticated
+   * Check if user is authenticated (has valid, non-expired token)
    */
   isAuthenticated(): boolean {
     return this._currentUser !== null && this._isTokenValid();
+  }
+
+  /**
+   * Check if token should be refreshed proactively (before it expires)
+   */
+  shouldRefreshToken(): boolean {
+    return this._shouldRefreshToken();
   }
 
   /**
@@ -122,7 +129,6 @@ class UcCloudAuthService {
       this._saveToStorage();
       this._setupAutoRefresh();
 
-      console.log('✅ Successfully logged in to Ultra Card Cloud');
       return user;
     } catch (error) {
       console.error('❌ Login failed:', error);
@@ -169,9 +175,12 @@ class UcCloudAuthService {
   }
 
   /**
-   * Refresh the current JWT token
+   * Refresh the current JWT token with retry logic
    */
-  async refreshToken(): Promise<string> {
+  async refreshToken(retryCount = 0): Promise<string> {
+    const MAX_RETRIES = 3;
+    const BASE_DELAY = 1000; // 1 second
+
     if (!this._currentUser?.refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -191,6 +200,12 @@ class UcCloudAuthService {
       );
 
       if (!response.ok) {
+        // Check if it's a 4xx error (invalid credentials) vs 5xx (server error)
+        const isClientError = response.status >= 400 && response.status < 500;
+        if (isClientError) {
+          // Invalid refresh token - don't retry
+          throw new Error(`Invalid refresh token (${response.status})`);
+        }
         throw new Error(`Token refresh failed: ${response.statusText}`);
       }
 
@@ -206,12 +221,38 @@ class UcCloudAuthService {
       this._saveToStorage();
       this._notifyListeners();
 
-      console.log('✅ Token refreshed successfully');
       return authData.token;
     } catch (error) {
-      console.error('❌ Token refresh failed:', error);
-      // If refresh fails, logout user
-      await this.logout();
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isInvalidToken = errorMessage.includes('Invalid refresh token');
+
+      // Don't retry if token is invalid
+      if (isInvalidToken) {
+        console.error('❌ Refresh token invalid, logging out');
+        await this.logout();
+        throw error;
+      }
+
+      // Retry with exponential backoff for network errors
+      if (retryCount < MAX_RETRIES) {
+        const delay = BASE_DELAY * Math.pow(2, retryCount);
+        console.warn(
+          `⚠️ Token refresh failed (attempt ${retryCount + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`
+        );
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.refreshToken(retryCount + 1);
+      }
+
+      // All retries exhausted
+      // Only logout if token is actually expired
+      if (!this._isTokenValid()) {
+        console.error('❌ All refresh attempts failed and token expired, logging out');
+        await this.logout();
+      } else {
+        console.warn('⚠️ Refresh failed but token still valid, keeping session');
+      }
+
       throw error;
     }
   }
@@ -239,7 +280,6 @@ class UcCloudAuthService {
       this._setCurrentUser(null);
       this._clearStorage();
       this._clearAutoRefresh();
-      console.log('✅ Logged out successfully');
     }
   }
 
@@ -347,11 +387,21 @@ class UcCloudAuthService {
   }
 
   /**
-   * Check if current token is valid
+   * Check if current token is valid (not actually expired)
+   * This checks the ACTUAL expiry time, not the refresh threshold
    */
   private _isTokenValid(): boolean {
     if (!this._currentUser) return false;
-    return Date.now() < this._currentUser.expiresAt - UcCloudAuthService.REFRESH_THRESHOLD;
+    return Date.now() < this._currentUser.expiresAt;
+  }
+
+  /**
+   * Check if we should proactively refresh the token
+   * (within REFRESH_THRESHOLD of expiry)
+   */
+  private _shouldRefreshToken(): boolean {
+    if (!this._currentUser) return false;
+    return Date.now() >= this._currentUser.expiresAt - UcCloudAuthService.REFRESH_THRESHOLD;
   }
 
   /**
@@ -403,9 +453,8 @@ class UcCloudAuthService {
       if (response.ok) {
         const subscription: UserSubscription = await response.json();
         user.subscription = subscription;
-        console.log(`Subscription loaded: ${subscription.tier} (${subscription.status})`);
       } else {
-        console.warn('Failed to fetch subscription, defaulting to free tier');
+        console.warn('⚠️ Failed to fetch subscription, defaulting to free tier');
         // Default to free tier if fetch fails
         user.subscription = {
           tier: 'free',
@@ -421,7 +470,7 @@ class UcCloudAuthService {
         };
       }
     } catch (error) {
-      console.error('Error fetching subscription:', error);
+      console.error('❌ Error fetching subscription:', error);
       // Default to free tier on error
       user.subscription = {
         tier: 'free',
@@ -449,28 +498,20 @@ class UcCloudAuthService {
         if (this._isValidStoredUser(user)) {
           this._currentUser = user;
 
-          // Check token expiration and log status
+          // Only log warnings for problematic states
           const isExpired = Date.now() >= user.expiresAt;
           const hasRefreshToken = !!user.refreshToken;
 
-          if (isExpired && hasRefreshToken) {
-            console.log(
-              `Loaded auth for ${user.displayName} (token expired, will attempt refresh)`
-            );
-          } else if (isExpired && !hasRefreshToken) {
-            console.warn(
-              `Loaded auth for ${user.displayName} (token expired, no refresh token - re-login required)`
-            );
-          } else {
-            console.log(`Loaded cloud auth for user: ${user.displayName}`);
+          if (isExpired && !hasRefreshToken) {
+            console.warn('⚠️ Session expired and no refresh token - re-login required');
           }
         } else {
-          console.warn('Invalid stored user data, clearing');
+          console.warn('⚠️ Invalid stored user data, clearing');
           this._clearStorage();
         }
       }
     } catch (error) {
-      console.error('Failed to load auth from storage:', error);
+      console.error('❌ Failed to load auth from storage:', error);
       this._clearStorage();
     }
   }
@@ -483,20 +524,11 @@ class UcCloudAuthService {
       if (this._currentUser) {
         const userJson = JSON.stringify(this._currentUser);
         localStorage.setItem(UcCloudAuthService.STORAGE_KEY, userJson);
-        console.log('💾 Saved user to localStorage:', {
-          id: this._currentUser.id,
-          username: this._currentUser.username,
-          email: this._currentUser.email,
-          displayName: this._currentUser.displayName,
-          hasToken: !!this._currentUser.token,
-          hasRefreshToken: !!this._currentUser.refreshToken,
-          expiresAt: this._currentUser.expiresAt,
-        });
       } else {
         this._clearStorage();
       }
     } catch (error) {
-      console.error('Failed to save auth to storage:', error);
+      console.error('❌ Failed to save auth to storage:', error);
     }
   }
 
@@ -507,7 +539,7 @@ class UcCloudAuthService {
     try {
       localStorage.removeItem(UcCloudAuthService.STORAGE_KEY);
     } catch (error) {
-      console.error('Failed to clear auth storage:', error);
+      console.error('❌ Failed to clear auth storage:', error);
     }
   }
 
