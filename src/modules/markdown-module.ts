@@ -660,8 +660,11 @@ All standard markdown features are automatically enabled!`,
     // Check if we already have rendered content
     let renderedContent = this._renderedContentCache.get(contentKey) || sourceContent;
 
-    // Only process if we don't have cached content
-    if (!this._renderedContentCache.has(contentKey)) {
+    // Check if content contains templates - if so, always re-process to get latest template values
+    const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(sourceContent);
+    const shouldReProcess = !this._renderedContentCache.has(contentKey) || hasTemplates;
+
+    if (shouldReProcess) {
       try {
         // Process markdown synchronously
         const result = renderMarkdown(sourceContent);
@@ -672,6 +675,19 @@ All standard markdown features are automatically enabled!`,
         console.warn('Ultra Card: Failed to render markdown:', error);
         // Use original content as fallback
         renderedContent = sourceContent;
+      }
+    } else {
+      // For template content, always use the latest rendered result from template subscription
+      if (hasTemplates && hass) {
+        const templateHash = this._hashString(sourceContent);
+        const templateKey = `state_text_markdown_${markdownModule.id}_${templateHash}`;
+        const rendered = hass.__uvc_template_strings?.[templateKey];
+        if (rendered !== undefined) {
+          // Re-process with the latest template result
+          const result = renderMarkdown(sourceContent);
+          this._renderedContentCache.set(contentKey, result);
+          renderedContent = result;
+        }
       }
     }
 
