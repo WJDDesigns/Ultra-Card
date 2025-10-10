@@ -31,7 +31,6 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
       // Configuration
       forecast_days: 5,
-      temperature_unit: 'F',
 
       // Styling - Text Sizes
       forecast_day_size: 14,
@@ -85,6 +84,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     const weatherData = this._getWeatherData(hass, forecastModule);
     const iconStyle = forecastModule.icon_style || 'fill';
 
+    // Get temperature unit from weather entity (no conversion needed)
+    const tempUnit = weatherData.temperatureUnit;
+
     return html`
       <style>
         ${this.getStyles()}
@@ -110,14 +112,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
                 const dayName = dayDate.toLocaleDateString(hass.locale?.language || 'en', {
                   weekday: 'short',
                 });
-                const fHighTemp = this._convertTemperature(
-                  day.temperature,
-                  forecastModule.temperature_unit || 'F'
-                );
-                const fLowTemp = this._convertTemperature(
-                  day.templow ?? day.temperature - 10,
-                  forecastModule.temperature_unit || 'F'
-                );
+                // Use temperatures directly from forecast (already in correct unit)
+                const fHighTemp = Math.round(day.temperature);
+                const fLowTemp = Math.round(day.templow ?? day.temperature - 10);
 
                 return html`
                   <div class="forecast-day">
@@ -172,8 +169,12 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       this._fetchForecastData(hass, module);
     }
 
+    // Get temperature unit from weather entity attributes
+    const temperatureUnit = weatherEntity?.attributes?.temperature_unit || '°F';
+
     return {
       forecast: forecast,
+      temperatureUnit: temperatureUnit,
     };
   }
 
@@ -246,18 +247,6 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
     // Return CDN URL for Meteocons animated SVG from dev branch
     return `https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/${iconStyle}/svg/${iconName}.svg`;
-  }
-
-  /**
-   * Convert temperature between F and C
-   */
-  private _convertTemperature(temp: number, unit: 'F' | 'C'): number {
-    if (unit === 'C') {
-      // Convert to Celsius if not already
-      return Math.round((temp - 32) * (5 / 9));
-    }
-    // Return as Fahrenheit (or convert from C if needed)
-    return Math.round(temp);
   }
 
   getStyles(): string {

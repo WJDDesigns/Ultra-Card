@@ -221,8 +221,6 @@ class UcPresetsService {
       this._wordpressPresets = response.presets.map(this._convertWordPressPreset.bind(this));
       this._wordpressError = null;
 
-      console.log(`Successfully loaded ${response.presets.length} presets from ultracard.io`);
-
       // Notify listeners of new presets
       this._notifyListeners();
     } catch (error) {

@@ -41,7 +41,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       column_gap: 12,
       left_column_gap: 8,
       right_column_gap: 8,
-      temperature_unit: 'F',
 
       // Location Configuration
       location_override_mode: 'text',
@@ -128,25 +127,20 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       day: 'numeric',
     });
 
-    // Temperature conversion
-    const temp = this._convertTemperature(
-      weatherData.temperature,
-      weatherModule.temperature_unit || 'F'
-    );
+    // Get temperature unit from weather entity
+    const tempUnit = weatherData.temperatureUnit;
+
+    // Use temperatures directly from the weather entity (already in correct unit)
+    const temp = Math.round(weatherData.temperature);
 
     // Styling
     const iconStyle = weatherModule.icon_style || 'fill';
 
     // Get high/low temps for today
     const todayForecast = weatherData.forecast[0];
-    const highTemp = todayForecast
-      ? this._convertTemperature(todayForecast.temperature, weatherModule.temperature_unit || 'F')
-      : temp;
+    const highTemp = todayForecast ? Math.round(todayForecast.temperature) : temp;
     const lowTemp = todayForecast
-      ? this._convertTemperature(
-          todayForecast.templow ?? todayForecast.temperature - 10,
-          weatherModule.temperature_unit || 'F'
-        )
+      ? Math.round(todayForecast.templow ?? todayForecast.temperature - 10)
       : temp - 10;
 
     // Determine which columns are visible
@@ -300,8 +294,12 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       location = weatherEntity?.attributes?.friendly_name || location;
     }
 
+    // Get temperature unit from weather entity attributes
+    const temperatureUnit = weatherEntity?.attributes?.temperature_unit || '°F';
+
     return {
       temperature: weatherEntity?.attributes?.temperature || parseFloat(tempEntity?.state) || 72,
+      temperatureUnit: temperatureUnit,
       condition: weatherEntity?.state || conditionEntity?.state || 'sunny',
       location: location,
       forecast: forecast,
@@ -350,18 +348,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-  }
-
-  /**
-   * Convert temperature between F and C
-   */
-  private _convertTemperature(temp: number, unit: 'F' | 'C'): number {
-    if (unit === 'C') {
-      // Convert to Celsius if not already
-      return Math.round((temp - 32) * (5 / 9));
-    }
-    // Return as Fahrenheit (or convert from C if needed)
-    return Math.round(temp);
   }
 
   getStyles(): string {

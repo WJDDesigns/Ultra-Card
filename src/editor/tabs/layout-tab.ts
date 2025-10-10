@@ -5656,16 +5656,36 @@ export class LayoutTab extends LitElement {
     const rd: any = row.design || {};
     const rowBgImageCSS = this._resolvePreviewBackgroundImageCSS(rd);
 
+    // Check if background filter is present for pseudo-element approach
+    const hasBackgroundFilter = rd.background_filter && rd.background_filter !== 'none';
+    const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
+
     const rowContent = html`
       <div
-        class="row-preview-content"
-        style="background: ${row.design?.background_color ||
-        row.background_color ||
-        'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${rowBgImageCSS}; background-size: ${rd.background_size ||
-        'cover'}; background-position: ${rd.background_position ||
-        'center'}; background-repeat: ${rd.background_repeat ||
-        'no-repeat'}; backdrop-filter: ${rd.backdrop_filter ||
-        'none'}; filter: ${rd.background_filter || 'none'}; gap: ${row.gap ?? 16}px;"
+        class="row-preview-content ${filterClass}"
+        style="background: ${hasBackgroundFilter
+          ? 'transparent'
+          : row.design?.background_color ||
+            row.background_color ||
+            'var(--ha-card-background, var(--card-background-color, #fff))'}; 
+        background-image: ${hasBackgroundFilter ? 'none' : rowBgImageCSS}; 
+        background-size: ${hasBackgroundFilter ? 'auto' : rd.background_size || 'cover'}; 
+        background-position: ${hasBackgroundFilter
+          ? 'center'
+          : rd.background_position || 'center'}; 
+        background-repeat: ${hasBackgroundFilter ? 'repeat' : rd.background_repeat || 'no-repeat'}; 
+        backdrop-filter: ${rd.backdrop_filter || 'none'}; 
+        gap: ${row.gap ?? 16}px;
+        ${hasBackgroundFilter
+          ? `
+          position: relative;
+          --bg-image: ${rowBgImageCSS};
+          --bg-size: ${rd.background_size || 'cover'};
+          --bg-position: ${rd.background_position || 'center'};
+          --bg-repeat: ${rd.background_repeat || 'no-repeat'};
+          --bg-filter: ${rd.background_filter};
+        `
+          : ''}"
       >
         ${row.columns.map(
           (column, columnIndex) => html`<div class="column-preview">Column ${columnIndex + 1}</div>`
@@ -5714,16 +5734,33 @@ export class LayoutTab extends LitElement {
     const d: any = column.design || {};
     const bgImageCSS = this._resolvePreviewBackgroundImageCSS(d);
 
+    // Check if background filter is present for pseudo-element approach
+    const hasBackgroundFilter = d.background_filter && d.background_filter !== 'none';
+    const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
+
     const columnContent = html`
       <div
-        class="column-preview-content"
-        style="background: ${column.design?.background_color ||
-        column.background_color ||
-        'var(--ha-card-background, var(--card-background-color, #fff))'}; background-image: ${bgImageCSS}; background-size: ${d.background_size ||
-        'cover'}; background-position: ${d.background_position ||
-        'center'}; background-repeat: ${d.background_repeat ||
-        'no-repeat'}; backdrop-filter: ${d.backdrop_filter ||
-        'none'}; filter: ${d.background_filter || 'none'};"
+        class="column-preview-content ${filterClass}"
+        style="background: ${hasBackgroundFilter
+          ? 'transparent'
+          : column.design?.background_color ||
+            column.background_color ||
+            'var(--ha-card-background, var(--card-background-color, #fff))'}; 
+        background-image: ${hasBackgroundFilter ? 'none' : bgImageCSS}; 
+        background-size: ${hasBackgroundFilter ? 'auto' : d.background_size || 'cover'}; 
+        background-position: ${hasBackgroundFilter ? 'center' : d.background_position || 'center'}; 
+        background-repeat: ${hasBackgroundFilter ? 'repeat' : d.background_repeat || 'no-repeat'}; 
+        backdrop-filter: ${d.backdrop_filter || 'none'};
+        ${hasBackgroundFilter
+          ? `
+          position: relative;
+          --bg-image: ${bgImageCSS};
+          --bg-size: ${d.background_size || 'cover'};
+          --bg-position: ${d.background_position || 'center'};
+          --bg-repeat: ${d.background_repeat || 'no-repeat'};
+          --bg-filter: ${d.background_filter};
+        `
+          : ''}"
       >
         <p>
           ${localize(
@@ -13246,6 +13283,32 @@ export class LayoutTab extends LitElement {
         margin: 0 0 8px 0;
         font-weight: 500;
         color: var(--primary-text-color);
+      }
+
+      /* Background filter support for previews - use pseudo-element to avoid blurring content */
+      .row-preview-content.has-background-filter,
+      .column-preview-content.has-background-filter {
+        position: relative;
+        isolation: isolate;
+      }
+
+      .row-preview-content.has-background-filter::before,
+      .column-preview-content.has-background-filter::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: inherit;
+        background-image: var(--bg-image);
+        background-size: var(--bg-size);
+        background-position: var(--bg-position);
+        background-repeat: var(--bg-repeat);
+        filter: var(--bg-filter);
+        border-radius: inherit;
+        z-index: -1;
+        pointer-events: none;
       }
 
       .module-count {

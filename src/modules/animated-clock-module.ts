@@ -174,6 +174,8 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
     const clockModule = module as AnimatedClockModule;
+    const moduleWithDesign = clockModule as any;
+    const designProperties = moduleWithDesign.design || {};
 
     // Register this clock with the update service
     const updateFrequency = parseInt(clockModule.update_frequency || '1');
@@ -235,20 +237,93 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         clockContent = this._renderFlipClock(hours, minutes, ampm, clockModule);
     }
 
+    // Container styles for design system integration - properly handle global design properties
+    const containerStyles = {
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
+        moduleWithDesign.padding_top ||
+        moduleWithDesign.padding_bottom ||
+        moduleWithDesign.padding_left ||
+        moduleWithDesign.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : '16px',
+      // Standard 8px top/bottom margin for proper web design spacing
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
+        moduleWithDesign.margin_top ||
+        moduleWithDesign.margin_bottom ||
+        moduleWithDesign.margin_left ||
+        moduleWithDesign.margin_right
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '8px 0',
+      background:
+        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      border:
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${designProperties.border_width || moduleWithDesign.border_width || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
+          : 'none',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
+      position: designProperties.position || moduleWithDesign.position || 'static',
+      top: designProperties.top || moduleWithDesign.top || 'auto',
+      bottom: designProperties.bottom || moduleWithDesign.bottom || 'auto',
+      left: designProperties.left || moduleWithDesign.left || 'auto',
+      right: designProperties.right || moduleWithDesign.right || 'auto',
+      zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
+      // Sizing - apply to container for proper responsive behavior
+      width: designProperties.width || moduleWithDesign.width || '100%',
+      height: designProperties.height || moduleWithDesign.height || 'auto',
+      maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
+      maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
+      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'auto',
+      minHeight: designProperties.min_height || moduleWithDesign.min_height || '50px',
+      // Effects
+      boxShadow: designProperties.box_shadow || moduleWithDesign.box_shadow || undefined,
+      backdropFilter:
+        designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || undefined,
+      clipPath: designProperties.clip_path || moduleWithDesign.clip_path || undefined,
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      // Flexbox for proper centering and responsive behavior
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexDirection: 'column',
+      boxSizing: 'border-box',
+    };
+
     return html`
       <style>
         ${this.getStyles()}
       </style>
-      <div
-        class="animated-clock-module-container"
-        style="
-          --clock-size: ${clockModule.clock_size || 50}px;
-          --clock-size-value: ${clockModule.clock_size || 50};
-          --clock-color: ${clockModule.clock_color || 'var(--primary-text-color)'};
-          --clock-background: ${clockModule.clock_background || 'var(--card-background-color)'};
-        "
-      >
-        ${clockContent}
+      <div style=${this.objectToStyleString(containerStyles)}>
+        <div
+          class="animated-clock-module-container"
+          style="
+            --clock-size: ${clockModule.clock_size || 50}px;
+            --clock-size-value: ${clockModule.clock_size || 50};
+            --clock-color: ${clockModule.clock_color || 'var(--primary-text-color)'};
+            --clock-background: ${clockModule.clock_background || 'var(--card-background-color)'};
+          "
+        >
+          ${clockContent}
+        </div>
       </div>
     `;
   }
@@ -1274,6 +1349,49 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     return String(num);
   }
 
+  // Helper method to convert object to CSS style string
+  private objectToStyleString(styles: Record<string, any>): string {
+    return Object.entries(styles)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+      .join('; ');
+  }
+
+  // Helper method to add pixel unit if needed
+  private addPixelUnit(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    if (
+      typeof value === 'string' &&
+      (value.includes('px') ||
+        value.includes('%') ||
+        value.includes('em') ||
+        value.includes('rem') ||
+        value.includes('vh') ||
+        value.includes('vw'))
+    ) {
+      return value;
+    }
+    return `${value}px`;
+  }
+
+  // Helper method to get background image CSS
+  private getBackgroundImageCSS(moduleWithDesign: any, hass?: HomeAssistant): string {
+    const backgroundType = moduleWithDesign.background_type || 'color';
+
+    if (backgroundType === 'entity' && moduleWithDesign.background_image_entity && hass) {
+      const entity = hass.states[moduleWithDesign.background_image_entity];
+      if (entity && entity.attributes.entity_picture) {
+        return `url('${entity.attributes.entity_picture}')`;
+      }
+    } else if (backgroundType === 'upload' && moduleWithDesign.background_image_upload) {
+      return `url('${moduleWithDesign.background_image_upload}')`;
+    } else if (backgroundType === 'url' && moduleWithDesign.background_image_url) {
+      return `url('${moduleWithDesign.background_image_url}')`;
+    }
+
+    return '';
+  }
+
   getStyles(): string {
     return `
       .animated-clock-module-container {
@@ -1282,12 +1400,13 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         align-items: center;
         padding: 0;
         width: 100%;
+        min-height: 50px;
         box-sizing: border-box;
-        overflow: hidden;
+        overflow: visible;
         --clock-scale: calc(var(--clock-size-value) / 115);
       }
 
-      /* Ensure all clock styles fit within container */
+      /* Ensure all clock styles fit within container and are responsive */
       .flip-clock,
       .digital-clock,
       .analog-clock,
@@ -1299,26 +1418,33 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       .material-clock,
       .terminal-clock {
         max-width: 100%;
+        width: auto;
         transform-origin: center;
+        box-sizing: border-box;
+        overflow: visible;
       }
 
       /* ========== FLIP CLOCK ========== */
       .flip-clock {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: calc(6px * var(--clock-scale));
         max-width: 100%;
+        width: 100%;
+        flex-wrap: nowrap;
       }
 
       .flip-unit {
         position: relative;
-        width: calc(56px * var(--clock-scale));
-        height: calc(77px * var(--clock-scale));
+        width: min(calc(56px * var(--clock-scale)), 12vw);
+        height: min(calc(77px * var(--clock-scale)), 16vw);
         background: var(--flip-tile-color, rgba(0, 0, 0, 0.5));
         border-radius: calc(8px * var(--clock-scale));
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         overflow: hidden;
-        flex-shrink: 0;
+        flex-shrink: 1;
+        min-width: 0;
       }
 
       .flip-digit-display {
@@ -1330,10 +1456,12 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: clamp(24px, calc(48px * var(--clock-scale)), 8vw);
+        font-size: min(calc(48px * var(--clock-scale)), 8vw);
         font-weight: 700;
         color: var(--clock-color);
         line-height: 1;
+        overflow: hidden;
+        text-overflow: clip;
       }
 
       .flip-unit::before {
@@ -1348,11 +1476,12 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       }
 
       .flip-separator {
-        font-size: calc(48px * var(--clock-scale));
+        font-size: min(calc(48px * var(--clock-scale)), 8vw);
         font-weight: 700;
         color: var(--clock-color);
         animation: blink 1s ease-in-out infinite;
-        flex-shrink: 0;
+        flex-shrink: 1;
+        min-width: 0;
       }
 
       @keyframes blink {
@@ -1361,14 +1490,15 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       }
 
       .flip-ampm {
-        font-size: calc(19px * var(--clock-scale));
+        font-size: min(calc(19px * var(--clock-scale)), 3vw);
         font-weight: 600;
         color: var(--clock-color);
         opacity: 0.9;
         align-self: flex-end;
         margin-bottom: calc(8px * var(--clock-scale));
         margin-left: calc(4px * var(--clock-scale));
-        flex-shrink: 0;
+        flex-shrink: 1;
+        min-width: 0;
       }
 
       /* ========== DIGITAL CLOCK ========== */
@@ -1859,9 +1989,14 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       }
 
       /* ========== RESPONSIVE SIZING ========== */
+      /* Improved responsive behavior with better viewport constraints */
       @media (max-width: 768px) {
+        .animated-clock-module-container {
+          --clock-scale: min(calc(var(--clock-size-value) / 115), calc(100vw / 300));
+        }
+        
         .digital-time {
-          font-size: clamp(48px, 8vw, calc(96px * var(--clock-scale)));
+          font-size: clamp(32px, 6vw, calc(96px * var(--clock-scale)));
         }
         
         .flip-unit {
@@ -1870,51 +2005,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         }
         
         .flip-digit-display {
-          font-size: clamp(32px, 7vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .analog-clock-dial {
-          width: min(calc(192px * var(--clock-scale)), 40vw);
-          height: min(calc(192px * var(--clock-scale)), 40vw);
-        }
-        
-        .retro-digit, .retro-colon {
-          font-size: clamp(32px, 6vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .neon-digit {
-          font-size: clamp(32px, 6vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .material-time {
-          font-size: clamp(32px, 6vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .terminal-output {
-          font-size: clamp(24px, 5vw, calc(38px * var(--clock-scale)));
-        }
-        
-        .text-word {
-          font-size: clamp(32px, 6vw, calc(48px * var(--clock-scale)));
-        }
-      }
-
-      @media (max-width: 480px) {
-        .digital-time {
-          font-size: clamp(36px, 7vw, calc(64px * var(--clock-scale)));
-        }
-        
-        .digital-display {
-          padding: calc(16px * var(--clock-scale)) calc(20px * var(--clock-scale));
-        }
-
-        .flip-unit {
-          width: min(calc(56px * var(--clock-scale)), 15vw);
-          height: min(calc(77px * var(--clock-scale)), 20vw);
-        }
-        
-        .flip-digit-display {
-          font-size: clamp(24px, 6vw, calc(48px * var(--clock-scale)));
+          font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
         }
         
         .analog-clock-dial {
@@ -1940,6 +2031,84 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         
         .text-word {
           font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
+        }
+        
+        .binary-dot {
+          width: min(calc(19px * var(--clock-scale)), 4vw);
+          height: min(calc(19px * var(--clock-scale)), 4vw);
+        }
+        
+        .digital-display {
+          padding: calc(16px * var(--clock-scale)) calc(20px * var(--clock-scale));
+        }
+        
+        .material-card {
+          padding: calc(16px * var(--clock-scale)) calc(24px * var(--clock-scale));
+        }
+        
+        .terminal-clock {
+          padding: calc(16px * var(--clock-scale));
+        }
+      }
+
+      @media (max-width: 480px) {
+        .animated-clock-module-container {
+          --clock-scale: min(calc(var(--clock-size-value) / 115), calc(100vw / 200));
+        }
+        
+        .digital-time {
+          font-size: clamp(24px, 5vw, calc(64px * var(--clock-scale)));
+        }
+        
+        .digital-display {
+          padding: calc(12px * var(--clock-scale)) calc(16px * var(--clock-scale));
+        }
+
+        .flip-unit {
+          width: min(calc(56px * var(--clock-scale)), 15vw);
+          height: min(calc(77px * var(--clock-scale)), 20vw);
+        }
+        
+        .flip-digit-display {
+          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
+        }
+        
+        .analog-clock-dial {
+          width: min(calc(192px * var(--clock-scale)), 60vw);
+          height: min(calc(192px * var(--clock-scale)), 60vw);
+        }
+        
+        .retro-digit, .retro-colon {
+          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
+        }
+        
+        .neon-digit {
+          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
+        }
+        
+        .material-time {
+          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
+        }
+        
+        .terminal-output {
+          font-size: clamp(14px, 3vw, calc(38px * var(--clock-scale)));
+        }
+        
+        .text-word {
+          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
+        }
+        
+        .binary-dot {
+          width: min(calc(19px * var(--clock-scale)), 5vw);
+          height: min(calc(19px * var(--clock-scale)), 5vw);
+        }
+        
+        .material-card {
+          padding: calc(12px * var(--clock-scale)) calc(20px * var(--clock-scale));
+        }
+        
+        .terminal-clock {
+          padding: calc(12px * var(--clock-scale));
         }
       }
 

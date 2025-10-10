@@ -230,47 +230,6 @@ export function renderAnimatedWeatherModuleEditor(
       </div>
 
       <!-- ============================================ -->
-      <!-- GENERAL CONFIGURATION -->
-      <!-- ============================================ -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-        >
-          General Configuration
-        </div>
-
-        <!-- Temperature Unit -->
-        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          Temperature Unit
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Fahrenheit or Celsius
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { temperature_unit: weatherModule.temperature_unit || 'F' },
-          [
-            context.selectField('temperature_unit', [
-              { value: 'F', label: 'Fahrenheit (°F)' },
-              { value: 'C', label: 'Celsius (°C)' },
-            ]),
-          ],
-          (e: CustomEvent) => {
-            const next = e.detail.value.temperature_unit;
-            const prev = weatherModule.temperature_unit;
-            if (next === prev) return;
-            updateModule(e.detail.value);
-            setTimeout(() => context.triggerPreviewUpdate(), 50);
-          },
-          false
-        )}
-      </div>
-
-      <!-- ============================================ -->
       <!-- LEFT COLUMN SETTINGS -->
       <!-- ============================================ -->
       ${weatherModule.show_left_column !== false

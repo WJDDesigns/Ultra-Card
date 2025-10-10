@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 2.0-beta9
+
+### 🐛 Bug Fixes
+
+- **Fixed Background Filter Blurring Content** - Background filters now only blur the background layer, keeping icons and text sharp and readable
+- **Fixed Animated Clock Module Smart Sizing** - Animated Clock module now properly responds to Smart Scaling feature
+- **Reduced Console Logging** - Removed excess debug logging for cleaner console output
+
 ## Version 2.0-beta8
 
 ### 🔐 Critical Authentication Fixes

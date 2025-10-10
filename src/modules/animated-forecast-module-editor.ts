@@ -111,39 +111,6 @@ export function renderAnimatedForecastModuleEditor(
           (e: CustomEvent) => updateModule(e.detail.value),
           false
         )}
-
-        <!-- Temperature Unit -->
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
-        >
-          ${localize('editor.animated_forecast.temperature_unit', lang, 'Temperature Unit')}
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          ${localize(
-            'editor.animated_forecast.temperature_unit_desc',
-            lang,
-            'Fahrenheit or Celsius'
-          )}
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { temperature_unit: forecastModule.temperature_unit || 'F' },
-          [
-            context.selectField('temperature_unit', [
-              { value: 'F', label: 'Fahrenheit (°F)' },
-              { value: 'C', label: 'Celsius (°C)' },
-            ]),
-          ],
-          (e: CustomEvent) => {
-            const next = e.detail.value.temperature_unit;
-            const prev = forecastModule.temperature_unit;
-            if (next === prev) return;
-            updateModule(e.detail.value);
-            setTimeout(() => context.triggerPreviewUpdate(), 50);
-          },
-          false
-        )}
       </div>
 
       <!-- ============================================ -->

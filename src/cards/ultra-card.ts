@@ -748,8 +748,13 @@ export class UltraCard extends LitElement {
     const hoverEffect = row.design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    // Add class for background filter support
+    const hasBackgroundFilter =
+      row.design?.background_filter && row.design.background_filter !== 'none';
+    const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
+
     const rowContent = html`
-      <div class="card-row ${hoverEffectClass}" style=${rowStyles}>
+      <div class="card-row ${hoverEffectClass} ${filterClass}" style=${rowStyles}>
         ${row.columns.map(column => this._renderColumn(column))}
       </div>
     `;
@@ -874,8 +879,13 @@ export class UltraCard extends LitElement {
     const hoverEffect = column.design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    // Add class for background filter support
+    const hasBackgroundFilter =
+      column.design?.background_filter && column.design.background_filter !== 'none';
+    const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
+
     const columnContent = html`
-      <div class="card-column ${hoverEffectClass}" style=${columnStyles}>
+      <div class="card-column ${hoverEffectClass} ${filterClass}" style=${columnStyles}>
         ${column.modules.map(module => this._renderModule(module))}
       </div>
     `;
@@ -1359,7 +1369,10 @@ export class UltraCard extends LitElement {
       baseStyles.justifyItems = justifyItemsValue;
     }
 
-    const designStyles = {
+    // Check if background filter is applied - if so, use CSS variables for ::before pseudo-element
+    const hasBackgroundFilter = design.background_filter && design.background_filter !== 'none';
+
+    const designStyles: Record<string, string> = {
       // Padding
       padding:
         design.padding_top || design.padding_bottom || design.padding_left || design.padding_right
@@ -1374,14 +1387,20 @@ export class UltraCard extends LitElement {
           : row.margin
             ? `${row.margin}px`
             : undefined,
-      // Background
-      background: design.background_color || row.background_color || 'transparent',
-      backgroundImage: this._resolveBackgroundImageCSS(design),
-      backgroundSize: design.background_size || (design.background_image ? 'cover' : undefined),
-      backgroundPosition:
-        design.background_position || (design.background_image ? 'center' : undefined),
-      backgroundRepeat:
-        design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+      // Background - when filter is present, move to CSS variables for ::before element
+      background: hasBackgroundFilter
+        ? 'transparent'
+        : design.background_color || row.background_color || 'transparent',
+      backgroundImage: hasBackgroundFilter ? 'none' : this._resolveBackgroundImageCSS(design),
+      backgroundSize: hasBackgroundFilter
+        ? undefined
+        : design.background_size || (design.background_image ? 'cover' : undefined),
+      backgroundPosition: hasBackgroundFilter
+        ? undefined
+        : design.background_position || (design.background_image ? 'center' : undefined),
+      backgroundRepeat: hasBackgroundFilter
+        ? undefined
+        : design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1390,8 +1409,8 @@ export class UltraCard extends LitElement {
       borderRadius:
         this._addPixelUnit(design.border_radius) ||
         (row.border_radius ? `${row.border_radius}px` : '0'),
-      // Position
-      position: design.position || 'inherit',
+      // Position - force relative when filter is present to create positioning context
+      position: hasBackgroundFilter ? 'relative' : design.position || 'inherit',
       top: design.top || 'auto',
       bottom: design.bottom || 'auto',
       left: design.left || 'auto',
@@ -1408,7 +1427,7 @@ export class UltraCard extends LitElement {
       overflow: design.overflow || 'visible',
       clipPath: design.clip_path || 'none',
       backdropFilter: design.backdrop_filter || 'none',
-      filter: design.background_filter || 'none',
+      // NO direct filter - moved to ::before pseudo-element via CSS variables
       // Shadow
       boxShadow:
         design.box_shadow_h && design.box_shadow_v
@@ -1416,6 +1435,20 @@ export class UltraCard extends LitElement {
           : 'none',
       boxSizing: 'border-box',
     };
+
+    // Add CSS variables for background filter support (used by ::before pseudo-element)
+    if (hasBackgroundFilter) {
+      designStyles['--bg-image'] = this._resolveBackgroundImageCSS(design);
+      designStyles['--bg-size'] =
+        design.background_size || (design.background_image ? 'cover' : 'auto');
+      designStyles['--bg-position'] =
+        design.background_position || (design.background_image ? 'center' : 'center');
+      designStyles['--bg-repeat'] =
+        design.background_repeat || (design.background_image ? 'no-repeat' : 'repeat');
+      designStyles['--bg-filter'] = design.background_filter;
+      // Set actual background color on main element (not on ::before)
+      designStyles.background = design.background_color || row.background_color || 'transparent';
+    }
 
     // Filter out undefined values and combine styles
     const allStyles = { ...baseStyles, ...designStyles };
@@ -1461,7 +1494,10 @@ export class UltraCard extends LitElement {
               : 'center';
     }
 
-    const designStyles = {
+    // Check if background filter is applied - if so, use CSS variables for ::before pseudo-element
+    const hasBackgroundFilter = design.background_filter && design.background_filter !== 'none';
+
+    const designStyles: Record<string, string> = {
       // Padding
       padding:
         design.padding_top || design.padding_bottom || design.padding_left || design.padding_right
@@ -1476,14 +1512,20 @@ export class UltraCard extends LitElement {
           : column.margin
             ? `${column.margin}px`
             : undefined,
-      // Background
-      background: design.background_color || column.background_color || 'transparent',
-      backgroundImage: this._resolveBackgroundImageCSS(design),
-      backgroundSize: design.background_size || (design.background_image ? 'cover' : undefined),
-      backgroundPosition:
-        design.background_position || (design.background_image ? 'center' : undefined),
-      backgroundRepeat:
-        design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+      // Background - when filter is present, move to CSS variables for ::before element
+      background: hasBackgroundFilter
+        ? 'transparent'
+        : design.background_color || column.background_color || 'transparent',
+      backgroundImage: hasBackgroundFilter ? 'none' : this._resolveBackgroundImageCSS(design),
+      backgroundSize: hasBackgroundFilter
+        ? undefined
+        : design.background_size || (design.background_image ? 'cover' : undefined),
+      backgroundPosition: hasBackgroundFilter
+        ? undefined
+        : design.background_position || (design.background_image ? 'center' : undefined),
+      backgroundRepeat: hasBackgroundFilter
+        ? undefined
+        : design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1492,8 +1534,8 @@ export class UltraCard extends LitElement {
       borderRadius:
         this._addPixelUnit(design.border_radius) ||
         (column.border_radius ? `${column.border_radius}px` : '0'),
-      // Position
-      position: design.position || 'inherit',
+      // Position - force relative when filter is present to create positioning context
+      position: hasBackgroundFilter ? 'relative' : design.position || 'inherit',
       top: design.top || 'auto',
       bottom: design.bottom || 'auto',
       left: design.left || 'auto',
@@ -1510,7 +1552,7 @@ export class UltraCard extends LitElement {
       overflow: design.overflow || 'visible',
       clipPath: design.clip_path || 'none',
       backdropFilter: design.backdrop_filter || 'none',
-      filter: design.background_filter || 'none',
+      // NO direct filter - moved to ::before pseudo-element via CSS variables
       // Shadow
       boxShadow:
         design.box_shadow_h && design.box_shadow_v
@@ -1518,6 +1560,20 @@ export class UltraCard extends LitElement {
           : 'none',
       boxSizing: 'border-box',
     };
+
+    // Add CSS variables for background filter support (used by ::before pseudo-element)
+    if (hasBackgroundFilter) {
+      designStyles['--bg-image'] = this._resolveBackgroundImageCSS(design);
+      designStyles['--bg-size'] =
+        design.background_size || (design.background_image ? 'cover' : 'auto');
+      designStyles['--bg-position'] =
+        design.background_position || (design.background_image ? 'center' : 'center');
+      designStyles['--bg-repeat'] =
+        design.background_repeat || (design.background_image ? 'no-repeat' : 'repeat');
+      designStyles['--bg-filter'] = design.background_filter;
+      // Set actual background color on main element (not on ::before)
+      designStyles.background = design.background_color || column.background_color || 'transparent';
+    }
 
     // Filter out undefined values and combine styles
     const allStyles = { ...baseStyles, ...designStyles };
@@ -1606,16 +1662,12 @@ export class UltraCard extends LitElement {
   private _loadCloudUser(): void {
     if (!this.hass) return;
 
-    console.log('🔄 Ultra Card: Loading cloud user...');
-
     // Priority 1: Check for integration auth
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
       this._cloudUser = integrationUser;
       // Set the user in the auth service so isAuthenticated() works properly
       ucCloudAuthService.setIntegrationUser(integrationUser);
-      console.log('✅ Ultra Card: Using Pro Cloud integration for PRO features');
-      console.log('✅ Loaded user from integration:', integrationUser);
       return;
     }
 
@@ -1717,6 +1769,32 @@ export class UltraCard extends LitElement {
         /* No default margins - spacing controlled by individual modules */
         min-width: 0; /* allow columns to shrink inside row */
         width: 100%;
+      }
+
+      /* Background blur support - use pseudo-element to avoid blurring content */
+      .card-row.has-background-filter,
+      .card-column.has-background-filter {
+        position: relative;
+        isolation: isolate; /* Create new stacking context */
+      }
+
+      .card-row.has-background-filter::before,
+      .card-column.has-background-filter::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: inherit;
+        background-image: var(--bg-image);
+        background-size: var(--bg-size);
+        background-position: var(--bg-position);
+        background-repeat: var(--bg-repeat);
+        filter: var(--bg-filter);
+        border-radius: inherit;
+        z-index: -1; /* Place behind content */
+        pointer-events: none;
       }
 
       .card-row:last-child {

@@ -93,19 +93,13 @@ class UcCloudAuthService {
    */
   checkIntegrationAuth(hass: any): CloudUser | null {
     try {
-      console.log('🔍 Checking for Ultra Card Pro Cloud integration...');
-
       // Check for the protected sensor entity
       const sensorEntityId = 'sensor.ultra_card_pro_cloud_authentication_status';
       const sensorState = hass?.states?.[sensorEntityId];
 
       if (!sensorState) {
-        console.log('📝 Ultra Card Pro Cloud integration not installed (sensor not found)');
         return null;
       }
-
-      console.log('✅ Found Ultra Card Pro Cloud sensor:', sensorState.state);
-      console.log('   Attributes:', sensorState.attributes);
 
       // Check if authenticated
       if (sensorState.state !== 'connected' || !sensorState.attributes?.authenticated) {
@@ -137,9 +131,6 @@ class UcCloudAuthService {
           snapshot_limit: attrs.subscription_tier === 'pro' ? 10 : 0,
         },
       };
-
-      console.log('✅ Ultra Card Pro Cloud connected!', user);
-      console.log(`   💫 Connected at: ${attrs.connected_at}`);
 
       return user;
     } catch (error) {
