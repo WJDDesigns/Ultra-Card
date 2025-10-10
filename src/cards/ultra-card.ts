@@ -54,6 +54,9 @@ export class UltraCard extends LitElement {
     // Inject hover effect styles into this card's shadow root
     UcHoverEffectsService.injectHoverEffectStyles(this.shadowRoot!);
 
+    // Check for integration auth and load cloud user
+    this._loadCloudUser();
+
     // Set up clock update service to trigger re-renders for clock modules
     clockUpdateService.setUpdateCallback(() => {
       this.requestUpdate();
@@ -166,6 +169,11 @@ export class UltraCard extends LitElement {
   }
 
   protected willUpdate(changedProps: PropertyValues): void {
+    // Check for integration auth when hass updates
+    if (changedProps.has('hass') && this.hass) {
+      this._loadCloudUser();
+    }
+
     if (changedProps.has('config')) {
       // Only clear states if this is a substantial config change (not just internal updates)
       const oldConfig = changedProps.get('config') as UltraCardConfig;
@@ -1593,17 +1601,50 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Load cloud user from integration or card auth
+   */
+  private _loadCloudUser(): void {
+    if (!this.hass) return;
+
+    console.log('🔄 Ultra Card: Loading cloud user...');
+
+    // Priority 1: Check for integration auth
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    if (integrationUser) {
+      this._cloudUser = integrationUser;
+      // Set the user in the auth service so isAuthenticated() works properly
+      ucCloudAuthService.setIntegrationUser(integrationUser);
+      console.log('✅ Ultra Card: Using Pro Cloud integration for PRO features');
+      console.log('✅ Loaded user from integration:', integrationUser);
+      return;
+    }
+
+    // Priority 2: Check card-based auth
+    const cardUser = ucCloudAuthService.getCurrentUser();
+    if (cardUser) {
+      this._cloudUser = cardUser;
+      console.log('✅ Loaded user from card auth:', cardUser);
+    } else {
+      console.log('ℹ️ No cloud user found (integration or card auth)');
+    }
+  }
+
+  /**
    * Check if the current user has pro access
    * Must be authenticated AND have active pro subscription
    */
   private _hasProAccess(): boolean {
-    // Must be authenticated with valid token
-    if (!ucCloudAuthService.isAuthenticated()) {
-      return false;
+    // Priority 1: Check for integration auth (cross-device, server-side)
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    if (
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active'
+    ) {
+      return true;
     }
 
-    // Must have user data
-    if (!this._cloudUser) {
+    // Priority 2: Check card-based auth (single device, localStorage)
+    if (!ucCloudAuthService.isAuthenticated() || !this._cloudUser) {
       return false;
     }
 

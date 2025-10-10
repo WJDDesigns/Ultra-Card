@@ -28,6 +28,7 @@ import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ucExportImportService } from '../../services/uc-export-import-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
+import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
 import { PresetDefinition, FavoriteRow, ExportData, HoverEffectConfig } from '../../types';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
@@ -9450,8 +9451,11 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
-    const isPro = this.cloudUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!this.cloudUser;
+    // Check integration auth first, then fall back to card auth
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const effectiveUser = integrationUser || this.cloudUser;
+    const isPro = effectiveUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!effectiveUser;
 
     // Filter modules by PRO status
     const standardModules = allModules.filter(m => !m.metadata.tags?.includes('pro'));

@@ -66,6 +66,21 @@ export class UltraCardEditor extends LitElement {
     };
   }
 
+  protected willUpdate(changedProperties: Map<string, any>): void {
+    super.willUpdate(changedProperties);
+
+    // Check for integration auth when hass updates
+    if (changedProperties.has('hass') && this.hass) {
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+
+      // If integration is authenticated and we don't have a card user, use integration
+      if (integrationUser && !ucCloudAuthService.getCurrentUser()) {
+        console.log('✅ Integration auth detected, updating PRO status');
+        this._cloudUser = integrationUser;
+      }
+    }
+  }
+
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener('config-changed', this._handleConfigChanged as EventListener);
@@ -327,6 +342,37 @@ export class UltraCardEditor extends LitElement {
         </div>
 
         <div class="settings-container">
+          <!-- Card Name Section -->
+          <div class="settings-section">
+            <div class="section-header">
+              <h4>${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}</h4>
+              <p>
+                ${localize(
+                  'editor.ultra_card_pro.card_name_desc',
+                  lang,
+                  'Give this card a name to identify it in your backups'
+                )}
+              </p>
+            </div>
+
+            <div class="setting-item">
+              <label for="card-name">
+                ${localize('editor.ultra_card_pro.card_name', lang, 'Card Name')}
+              </label>
+              <ha-textfield
+                id="card-name"
+                .value="${this.config.card_name || ''}"
+                @input="${this._handleCardNameChange}"
+                placeholder="${localize(
+                  'editor.ultra_card_pro.card_name_placeholder',
+                  lang,
+                  'My Ultra Card'
+                )}"
+                maxlength="100"
+              ></ha-textfield>
+            </div>
+          </div>
+
           <!-- Appearance Section -->
           <div class="settings-section">
             <div class="section-header">
@@ -2394,6 +2440,237 @@ export class UltraCardEditor extends LitElement {
          ============================================ */
 
       /* Pro Banner */
+      /* Integration Status Card Styles */
+      .integration-status-card {
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 2px solid;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .integration-status-card .status-icon {
+        flex-shrink: 0;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+
+      .integration-status-card .status-content {
+        flex: 1;
+      }
+
+      .integration-status-card .status-content h4 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .integration-status-card .status-content p {
+        margin: 4px 0;
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      .integration-status-card .status-note {
+        margin-top: 12px;
+        font-size: 13px;
+        opacity: 0.8;
+      }
+
+      .integration-status-card .status-note-small {
+        margin-top: 8px;
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
+      .integration-status-card .status-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 12px;
+      }
+
+      .integration-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+
+      .integration-button ha-icon {
+        font-size: 18px;
+      }
+
+      /* Authenticated State - Green */
+      .integration-authenticated {
+        background-color: rgba(76, 175, 80, 0.1);
+        border-color: #4caf50;
+        color: var(--primary-text-color);
+      }
+
+      .integration-authenticated .status-icon {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .integration-authenticated a {
+        color: #4caf50;
+        font-weight: 600;
+      }
+
+      /* Not Configured State - Orange/Yellow */
+      .integration-not-configured {
+        background-color: rgba(255, 152, 0, 0.1);
+        border-color: #ff9800;
+        color: var(--primary-text-color);
+      }
+
+      .integration-not-configured .status-icon {
+        background-color: #ff9800;
+        color: white;
+      }
+
+      .integration-not-configured .integration-button {
+        background-color: #ff9800;
+        color: white;
+      }
+
+      .integration-not-configured .integration-button:hover {
+        background-color: #f57c00;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+      }
+
+      /* Not Installed State - Blue */
+      .integration-not-installed {
+        background-color: rgba(33, 150, 243, 0.1);
+        border-color: #2196f3;
+        color: var(--primary-text-color);
+      }
+
+      .integration-not-installed .status-icon {
+        background-color: #2196f3;
+        color: white;
+      }
+
+      .integration-not-installed .integration-button {
+        background-color: #f5f5f5;
+        color: var(--primary-text-color);
+        border: 1px solid var(--divider-color);
+      }
+
+      .integration-not-installed .integration-button-primary {
+        background-color: #2196f3;
+        color: white;
+        border: none;
+      }
+
+      .integration-not-installed .integration-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .integration-not-installed .integration-button-primary:hover {
+        background-color: #1976d2;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+      }
+
+      /* Benefits List */
+      .benefits-list {
+        margin: 16px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .benefit-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 14px;
+      }
+
+      .benefit-item ha-icon {
+        color: #4caf50;
+        font-size: 20px;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .benefit-item div {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .benefit-description {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
+      .integration-subtitle {
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 8px;
+      }
+
+      /* Install Steps */
+      .install-steps {
+        margin: 20px 0;
+        padding: 16px;
+        background-color: rgba(var(--rgb-primary-color), 0.05);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color);
+      }
+
+      .install-steps h5 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .install-steps ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .install-steps li {
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 6px;
+        color: var(--primary-text-color);
+      }
+
+      .install-steps strong {
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+
       .ultra-pro-banner {
         position: relative;
         padding: 24px;
@@ -2672,7 +2949,54 @@ export class UltraCardEditor extends LitElement {
         width: 100%;
       }
 
-      /* Pro Actions */
+      /* Pro Tools Sections */
+      .pro-tools-section {
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .header-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .header-icon ha-icon {
+        --mdc-icon-size: 24px;
+        color: white;
+      }
+
+      .header-content h3 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .header-content p {
+        margin: 4px 0 0 0;
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+
+      /* Pro Actions (Legacy) */
       .ultra-pro-actions {
         background: var(--card-background-color);
         border: 2px solid var(--divider-color);
@@ -2730,6 +3054,96 @@ export class UltraCardEditor extends LitElement {
         --mdc-icon-size: 16px;
       }
 
+      /* New Tools Grid */
+      .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .tool-card {
+        background: var(--secondary-background-color);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: left;
+      }
+
+      .tool-card:hover:not(:disabled) {
+        transform: translateY(-4px);
+        border-color: var(--primary-color);
+        box-shadow: 0 8px 16px rgba(3, 169, 244, 0.2);
+      }
+
+      .tool-card:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .tool-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .tool-icon.export {
+        background: linear-gradient(135deg, #4caf50, #66bb6a);
+      }
+
+      .tool-icon.import {
+        background: linear-gradient(135deg, #2196f3, #42a5f5);
+      }
+
+      .tool-icon.backup {
+        background: linear-gradient(135deg, #ff9800, #ffb74d);
+      }
+
+      .tool-icon.restore {
+        background: linear-gradient(135deg, #9c27b0, #ba68c8);
+      }
+
+      .tool-icon.history {
+        background: linear-gradient(135deg, #607d8b, #78909c);
+      }
+
+      .tool-icon.snapshot {
+        background: linear-gradient(135deg, #f44336, #ef5350);
+      }
+
+      .tool-icon.settings {
+        background: linear-gradient(135deg, #795548, #8d6e63);
+      }
+
+      .tool-icon ha-icon {
+        --mdc-icon-size: 24px;
+        color: white;
+      }
+
+      .tool-content h4 {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .tool-content p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+      }
+
+      /* Legacy Actions Grid */
       .actions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2796,6 +3210,107 @@ export class UltraCardEditor extends LitElement {
         font-weight: 600;
         font-size: 14px;
         color: var(--primary-text-color);
+      }
+
+      /* Status Sections */
+      .backup-status,
+      .snapshot-status {
+        margin-top: 16px;
+        padding: 16px;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        border-left: 4px solid var(--primary-color);
+      }
+
+      .status-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #ff9800;
+        font-weight: 500;
+      }
+
+      .status-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary-text-color);
+        font-weight: 500;
+      }
+
+      .status-warning ha-icon,
+      .status-info ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .status-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .status-primary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .status-icon {
+        --mdc-icon-size: 24px;
+      }
+
+      .status-card.enabled .status-icon {
+        color: #4caf50;
+      }
+
+      .status-card.paused .status-icon {
+        color: #ff9800;
+      }
+
+      .status-text strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 2px;
+      }
+
+      .status-desc {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+
+      .status-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--secondary-text-color);
+        margin-left: 36px;
+      }
+
+      .status-detail ha-icon {
+        --mdc-icon-size: 16px;
+      }
+
+      .status-loading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+
+      .status-loading ha-icon {
+        --mdc-icon-size: 18px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       /* Upgrade Section */
@@ -2940,6 +3455,22 @@ export class UltraCardEditor extends LitElement {
           grid-template-columns: 1fr;
         }
 
+        .tools-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .tool-card {
+          flex-direction: column;
+          text-align: center;
+          gap: 12px;
+        }
+
+        .section-header {
+          flex-direction: column;
+          text-align: center;
+          gap: 12px;
+        }
+
         .upgrade-content {
           flex-direction: column;
           text-align: center;
@@ -3013,8 +3544,16 @@ export class UltraCardEditor extends LitElement {
     }
     this._hasInitializedAuth = true;
 
-    // Get initial state
-    this._cloudUser = ucCloudAuthService.getCurrentUser();
+    // Priority 1: Check for integration auth (cross-device)
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    if (integrationUser) {
+      console.log('✅ Using Ultra Card Pro Cloud integration for authentication');
+      this._cloudUser = integrationUser;
+    } else {
+      // Priority 2: Fall back to card-based auth (single device)
+      this._cloudUser = ucCloudAuthService.getCurrentUser();
+    }
+
     this._syncStatus = ucCloudSyncService.getSyncStatus();
     this._backupStatus = ucCloudBackupService.getStatus();
 
@@ -3107,28 +3646,32 @@ export class UltraCardEditor extends LitElement {
    */
   private _renderProTab(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const isPro = this._cloudUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!this._cloudUser;
+
+    // Priority 1: Check for Ultra Card Pro Cloud integration
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const isIntegrationInstalled = ucCloudAuthService.isIntegrationInstalled(this.hass);
+
+    // Priority 2: Fall back to card-based auth
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' ||
+      this._cloudUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!integrationUser || !!this._cloudUser;
+    const currentUser = integrationUser || this._cloudUser;
 
     return html`
       <div class="pro-tab-content">
+        <!-- INTEGRATION STATUS (if installed) -->
+        ${this._renderIntegrationStatus(lang, integrationUser, isIntegrationInstalled)}
+
         <!-- ULTRA CARD PRO BRANDED BANNER -->
         ${this._renderProBanner(lang, isPro, isLoggedIn)}
 
-        <!-- LOGIN/LOGOUT SECTION -->
-        ${this._renderAuthSection(lang, isLoggedIn, isPro)}
+        <!-- LOGIN/LOGOUT SECTION (only show if integration not authenticated) -->
+        ${!integrationUser ? this._renderAuthSection(lang, isLoggedIn, isPro) : ''}
 
-        <!-- SNAPSHOT STATUS & SETTINGS (Pro users only) -->
-        ${isLoggedIn && isPro ? this._renderSnapshotStatusSection(lang) : ''}
-
-        <!-- CARD NAME SETTING (Always visible when logged in) -->
-        ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
-
-        <!-- EXPORT/IMPORT/BACKUP ACTIONS (Pro features) -->
-        ${isLoggedIn ? this._renderProActions(lang, isPro) : ''}
-
-        <!-- VIEW ALL BACKUPS BUTTON -->
-        ${isLoggedIn ? this._renderViewBackupsButton(lang) : ''}
+        <!-- PRO TOOLS SECTIONS -->
+        ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
+        ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
 
         <!-- MODALS -->
         ${this._showBackupHistory && this._cloudUser
@@ -3184,11 +3727,9 @@ export class UltraCardEditor extends LitElement {
         <!-- CARD NAME SETTING (Always visible when logged in) -->
         ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
 
-        <!-- EXPORT/IMPORT/BACKUP ACTIONS (Pro features) -->
-        ${isLoggedIn ? this._renderProActions(lang, isPro) : ''}
-
-        <!-- VIEW ALL BACKUPS BUTTON -->
-        ${isLoggedIn ? this._renderViewBackupsButton(lang) : ''}
+        <!-- PRO TOOLS SECTIONS -->
+        ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
+        ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
 
         <!-- MODALS -->
         ${this._showBackupHistory && this._cloudUser
@@ -3215,6 +3756,147 @@ export class UltraCardEditor extends LitElement {
           : ''}
       </div>
     `;
+  }
+
+  /**
+   * Render Integration Status Section
+   */
+  private _renderIntegrationStatus(
+    lang: string,
+    integrationUser: CloudUser | null,
+    isIntegrationInstalled: boolean
+  ): TemplateResult {
+    // Integration installed and authenticated
+    if (integrationUser) {
+      const isPro = integrationUser.subscription?.tier === 'pro';
+      return html`
+        <div class="integration-status-card integration-authenticated">
+          <div class="status-icon">
+            <ha-icon icon="mdi:check-circle"></ha-icon>
+          </div>
+          <div class="status-content">
+            <h4>✅ PRO Features Unlocked via Ultra Card Pro Cloud</h4>
+            <p>
+              <strong
+                >${integrationUser.displayName}${integrationUser.email
+                  ? ` • ${integrationUser.email}`
+                  : ''}</strong
+              >
+            </p>
+            <p>
+              Subscription: <strong>${isPro ? 'PRO' : 'Free'}</strong>
+              ${isPro ? '⭐' : ''}
+            </p>
+            <p class="status-note">
+              All your devices are automatically unlocked. Manage this in Home Assistant Settings →
+              <a href="/config/integrations/integration/ultra_card_pro_cloud" target="_top">
+                Integrations
+              </a>
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    // Integration installed but not configured
+    if (isIntegrationInstalled) {
+      return html`
+        <div class="integration-status-card integration-not-configured">
+          <div class="status-icon">
+            <ha-icon icon="mdi:alert-circle"></ha-icon>
+          </div>
+          <div class="status-content">
+            <h4>🔧 Ultra Card Pro Cloud Integration Detected</h4>
+            <p>The integration is installed but not configured.</p>
+            <div class="status-actions">
+              <a
+                href="/config/integrations/integration/ultra_card_pro_cloud"
+                target="_top"
+                class="integration-button"
+              >
+                <ha-icon icon="mdi:cog"></ha-icon>
+                Configure Now
+              </a>
+            </div>
+            <p class="status-note">Takes 30 seconds to unlock all devices</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // Integration not installed - show install instructions
+    if (!isIntegrationInstalled && !this._cloudUser) {
+      return html`
+        <div class="integration-status-card integration-not-installed">
+          <div class="status-icon">
+            <ha-icon icon="mdi:cloud-lock"></ha-icon>
+          </div>
+          <div class="status-content">
+            <h4>⭐ Unlock PRO Features Across All Devices</h4>
+            <p class="integration-subtitle">
+              Install <strong>Ultra Card Pro Cloud</strong> integration once, and every device
+              connected to this Home Assistant automatically gets PRO features.
+            </p>
+            <div class="benefits-list">
+              <div class="benefit-item">
+                <ha-icon icon="mdi:check-circle"></ha-icon>
+                <div>
+                  <strong>Login Once</strong>
+                  <span class="benefit-description">Works on desktop, mobile, tablet, TV</span>
+                </div>
+              </div>
+              <div class="benefit-item">
+                <ha-icon icon="mdi:sync"></ha-icon>
+                <div>
+                  <strong>Auto-Sync</strong>
+                  <span class="benefit-description">No per-device configuration needed</span>
+                </div>
+              </div>
+              <div class="benefit-item">
+                <ha-icon icon="mdi:shield-check"></ha-icon>
+                <div>
+                  <strong>Secure & Reliable</strong>
+                  <span class="benefit-description">Server-side auth, automatic token refresh</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="install-steps">
+              <h5>📋 Quick Install (2 minutes):</h5>
+              <ol>
+                <li>Click <strong>"Install via HACS"</strong> below</li>
+                <li>In HACS: Search "<strong>Ultra Card Pro Cloud</strong>"</li>
+                <li>Click <strong>Download</strong></li>
+                <li>Restart Home Assistant</li>
+                <li>Go to Settings → Integrations → Add Integration</li>
+                <li>Search and add "<strong>Ultra Card Pro Cloud</strong>"</li>
+                <li>Enter your <strong>ultracard.io</strong> credentials</li>
+              </ol>
+            </div>
+
+            <div class="status-actions">
+              <a
+                href="https://github.com/WJDDesigns/ultra-card-pro-cloud"
+                target="_blank"
+                class="integration-button integration-button-primary"
+              >
+                <ha-icon icon="mdi:cloud-download"></ha-icon>
+                Install via HACS
+              </a>
+              <a href="https://ultracard.io" target="_blank" class="integration-button">
+                <ha-icon icon="mdi:cart"></ha-icon>
+                Get PRO Subscription
+              </a>
+            </div>
+            <p class="status-note-small">
+              💡 Prefer single-device? Use the card login below instead.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    return html``;
   }
 
   /**
@@ -3398,9 +4080,9 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
-   * Render Pro Actions (Export/Import/Backup)
+   * Render Card Pro Tools Section
    */
-  private _renderProActions(lang: string, isPro: boolean): TemplateResult {
+  private _renderCardProTools(lang: string, isPro: boolean): TemplateResult {
     if (!isPro) {
       // Show upgrade prompt for free users
       return html`
@@ -3469,62 +4151,239 @@ export class UltraCardEditor extends LitElement {
       `;
     }
 
-    // PRO USER - Show action buttons
+    // PRO USER - Show Card Pro Tools
     const subscription = this._cloudUser!.subscription!;
     const backupCount = subscription.snapshot_count || 0;
     const backupLimit = subscription.snapshot_limit || 30;
     const canCreateBackup = backupCount < backupLimit;
 
     return html`
-      <div class="ultra-pro-actions">
-        <div class="actions-header">
-          <h4>
-            <ha-icon icon="mdi:tools"></ha-icon>
-            Pro Tools
-          </h4>
+      <div class="pro-tools-section">
+        <div class="section-header">
+          <div class="header-icon">
+            <ha-icon icon="mdi:card"></ha-icon>
+          </div>
+          <div class="header-content">
+            <h3>Card Pro Tools</h3>
+            <p>Manage individual card configurations</p>
+          </div>
+        </div>
+
+        <div class="tools-grid">
+          <!-- Export Card -->
+          <button class="tool-card" @click="${this._handleExport}">
+            <div class="tool-icon export">
+              <ha-icon icon="mdi:export"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>Export Card</h4>
+              <p>Download this card's configuration</p>
+            </div>
+          </button>
+
+          <!-- Import Card -->
+          <button class="tool-card" @click="${this._handleImport}">
+            <div class="tool-icon import">
+              <ha-icon icon="mdi:import"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>Import Card</h4>
+              <p>Load configuration from file</p>
+            </div>
+          </button>
+
+          <!-- Backup Card -->
+          <button
+            class="tool-card"
+            @click="${this._handleCreateBackup}"
+            ?disabled="${!canCreateBackup}"
+          >
+            <div class="tool-icon backup">
+              <ha-icon icon="mdi:bookmark-plus"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>Backup Card</h4>
+              <p>Save current card state</p>
+            </div>
+          </button>
+
+          <!-- Restore Card -->
+          <button class="tool-card" @click="${() => (this._showBackupHistory = true)}">
+            <div class="tool-icon restore">
+              <ha-icon icon="mdi:backup-restore"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>Restore Card</h4>
+              <p>Restore from saved backup</p>
+            </div>
+          </button>
+
+          <!-- View All Backups -->
+          <button class="tool-card" @click="${() => (this._showBackupHistory = true)}">
+            <div class="tool-icon history">
+              <ha-icon icon="mdi:history"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>View All Backups</h4>
+              <p>Browse all card backups</p>
+            </div>
+          </button>
+        </div>
+
+        <!-- Backup Status -->
+        <div class="backup-status">
           ${!canCreateBackup
             ? html`
-                <div class="limit-warning">
+                <div class="status-warning">
                   <ha-icon icon="mdi:alert"></ha-icon>
                   Backup limit reached (${backupCount}/${backupLimit})
                 </div>
               `
             : html`
-                <div class="backup-count">
+                <div class="status-info">
                   <ha-icon icon="mdi:bookmark-multiple"></ha-icon>
-                  ${backupCount} / ${backupLimit} backups
+                  ${backupCount} / ${backupLimit} backups used
                 </div>
               `}
         </div>
-        <div class="actions-grid">
-          <button class="action-card" @click="${this._handleExport}">
-            <div class="action-icon export">
+      </div>
+    `;
+  }
+
+  /**
+   * Render Dashboard Pro Tools Section
+   */
+  private _renderDashboardProTools(lang: string): TemplateResult {
+    const status = this._snapshotSchedulerStatus;
+
+    return html`
+      <div class="pro-tools-section">
+        <div class="section-header">
+          <div class="header-icon">
+            <ha-icon icon="mdi:view-dashboard"></ha-icon>
+          </div>
+          <div class="header-content">
+            <h3>Dashboard Pro Tools</h3>
+            <p>Manage entire dashboard snapshots</p>
+          </div>
+        </div>
+
+        <div class="tools-grid">
+          <!-- Export Dashboard -->
+          <button class="tool-card" @click="${this._handleExportDashboard}">
+            <div class="tool-icon export">
               <ha-icon icon="mdi:export"></ha-icon>
             </div>
-            <div class="action-label">
-              ${localize('editor.ultra_card_pro.export_card', lang, 'Export Card')}
+            <div class="tool-content">
+              <h4>Export Dashboard</h4>
+              <p>Download entire dashboard config</p>
             </div>
           </button>
-          <button class="action-card" @click="${this._handleImport}">
-            <div class="action-icon import">
+
+          <!-- Import Dashboard -->
+          <button class="tool-card" @click="${this._handleImportDashboard}">
+            <div class="tool-icon import">
               <ha-icon icon="mdi:import"></ha-icon>
             </div>
-            <div class="action-label">
-              ${localize('editor.ultra_card_pro.import_card', lang, 'Import Card')}
+            <div class="tool-content">
+              <h4>Import Dashboard</h4>
+              <p>Load dashboard from file</p>
             </div>
           </button>
-          <button
-            class="action-card"
-            @click="${this._handleCreateBackup}"
-            ?disabled="${!canCreateBackup}"
-          >
-            <div class="action-icon backup">
-              <ha-icon icon="mdi:bookmark-plus"></ha-icon>
+
+          <!-- Create Snapshot -->
+          <button class="tool-card" @click="${this._handleCreateSnapshot}">
+            <div class="tool-icon snapshot">
+              <ha-icon icon="mdi:camera-plus"></ha-icon>
             </div>
-            <div class="action-label">
-              ${localize('editor.ultra_card_pro.backup_card', lang, 'Create Backup')}
+            <div class="tool-content">
+              <h4>Create Snapshot</h4>
+              <p>Manual dashboard snapshot</p>
             </div>
           </button>
+
+          <!-- Restore Snapshot -->
+          <button class="tool-card" @click="${this._handleRestoreSnapshot}">
+            <div class="tool-icon restore">
+              <ha-icon icon="mdi:backup-restore"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>Restore Snapshot</h4>
+              <p>Restore dashboard state</p>
+            </div>
+          </button>
+
+          <!-- View Snapshots -->
+          <button class="tool-card" @click="${this._handleViewSnapshots}">
+            <div class="tool-icon history">
+              <ha-icon icon="mdi:history"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>View Snapshots</h4>
+              <p>Browse dashboard snapshots</p>
+            </div>
+          </button>
+
+          <!-- Snapshot Settings -->
+          <button class="tool-card" @click="${() => (this._showSnapshotSettings = true)}">
+            <div class="tool-icon settings">
+              <ha-icon icon="mdi:cog"></ha-icon>
+            </div>
+            <div class="tool-content">
+              <h4>Snapshot Settings</h4>
+              <p>Configure auto-snapshots</p>
+            </div>
+          </button>
+        </div>
+
+        <!-- Snapshot Status -->
+        <div class="snapshot-status">
+          ${status
+            ? html`
+                <div class="status-card ${status.enabled ? 'enabled' : 'paused'}">
+                  <div class="status-primary">
+                    <ha-icon
+                      icon="${status.enabled ? 'mdi:check-circle' : 'mdi:pause-circle'}"
+                      class="status-icon"
+                    ></ha-icon>
+                    <div class="status-text">
+                      <strong>Auto-snapshots: ${status.enabled ? 'Enabled' : 'Paused'}</strong>
+                      <span class="status-desc">
+                        ${status.enabled
+                          ? 'Daily snapshots are active'
+                          : 'Daily snapshots are paused'}
+                      </span>
+                    </div>
+                  </div>
+
+                  ${status.enabled && status.nextSnapshotTime
+                    ? html`
+                        <div class="status-detail">
+                          <ha-icon icon="mdi:calendar-clock"></ha-icon>
+                          <span
+                            >Next: ${this._formatNextSnapshotTime(status.nextSnapshotTime)}</span
+                          >
+                        </div>
+                      `
+                    : ''}
+                  ${status.lastSnapshotTime
+                    ? html`
+                        <div class="status-detail">
+                          <ha-icon icon="mdi:history"></ha-icon>
+                          <span
+                            >Last: ${this._formatLastSnapshotTime(status.lastSnapshotTime)}</span
+                          >
+                        </div>
+                      `
+                    : ''}
+                </div>
+              `
+            : html`
+                <div class="status-loading">
+                  <ha-icon icon="mdi:loading"></ha-icon>
+                  Loading snapshot status...
+                </div>
+              `}
         </div>
       </div>
     `;
@@ -4203,6 +5062,88 @@ export class UltraCardEditor extends LitElement {
 
   private _handleCreateBackup() {
     this._showManualBackup = true;
+  }
+
+  // Dashboard Pro Tools Handlers
+  private _handleExportDashboard() {
+    try {
+      // Export current dashboard configuration
+      const dashboardConfig = {
+        views: this.hass?.panels?.['lovelace']?.config?.views || [],
+        dashboard_path: this.hass?.panels?.['lovelace']?.config?.dashboard_path || 'default',
+        exported_at: new Date().toISOString(),
+        exported_by: this._cloudUser?.username || 'Unknown',
+      };
+
+      const blob = new Blob([JSON.stringify(dashboardConfig, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert('Dashboard configuration exported successfully!');
+    } catch (error) {
+      console.error('Dashboard export failed:', error);
+      alert('Failed to export dashboard configuration');
+    }
+  }
+
+  private _handleImportDashboard() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (e: Event) => {
+      try {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (!data.views || !Array.isArray(data.views)) {
+          throw new Error('Invalid dashboard configuration file');
+        }
+
+        if (
+          confirm('Import this dashboard configuration? This will replace your current dashboard.')
+        ) {
+          // This would need to be implemented with proper Home Assistant API calls
+          alert(
+            'Dashboard import functionality requires Home Assistant API integration.\nPlease use the Home Assistant UI to import dashboard configurations.'
+          );
+        }
+      } catch (error) {
+        console.error('Dashboard import failed:', error);
+        alert(
+          'Failed to import dashboard configuration: ' +
+            (error instanceof Error ? error.message : 'Unknown error')
+        );
+      }
+    };
+
+    input.click();
+  }
+
+  private _handleCreateSnapshot() {
+    // Use the existing manual snapshot functionality
+    this._handleManualSnapshot();
+  }
+
+  private _handleRestoreSnapshot() {
+    // This will open the snapshot history modal for restoration
+    this._showBackupHistory = true;
+  }
+
+  private _handleViewSnapshots() {
+    // This will open the snapshot history modal
+    this._showBackupHistory = true;
   }
 
   private _handleManualBackupCreated(e: CustomEvent) {

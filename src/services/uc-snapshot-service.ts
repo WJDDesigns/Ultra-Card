@@ -120,14 +120,9 @@ class UcSnapshotService {
    * This is typically called by a background service
    */
   async createAutoSnapshot(): Promise<void> {
-    if (!ucCloudAuthService.isAuthenticated()) {
-      console.log('⏭️ Skipping auto snapshot - not authenticated');
-      return;
-    }
-
     const user = ucCloudAuthService.getCurrentUser();
     if (!user || user.subscription?.tier !== 'pro') {
-      console.log('⏭️ Skipping auto snapshot - not a Pro user');
+      console.log('⏭️ Skipping auto snapshot - not authenticated or not a Pro user');
       return;
     }
 

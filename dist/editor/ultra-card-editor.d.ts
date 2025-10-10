@@ -34,6 +34,7 @@ export declare class UltraCardEditor extends LitElement {
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
+    protected willUpdate(changedProperties: Map<string, any>): void;
     connectedCallback(): void;
     private _resizeListener?;
     disconnectedCallback(): void;
@@ -100,6 +101,10 @@ export declare class UltraCardEditor extends LitElement {
      */
     private _renderCloudSyncSection;
     /**
+     * Render Integration Status Section
+     */
+    private _renderIntegrationStatus;
+    /**
      * Render Pro Banner (Free or Pro variant)
      */
     private _renderProBanner;
@@ -112,9 +117,13 @@ export declare class UltraCardEditor extends LitElement {
      */
     private _renderCardNameSetting;
     /**
-     * Render Pro Actions (Export/Import/Backup)
+     * Render Card Pro Tools Section
      */
-    private _renderProActions;
+    private _renderCardProTools;
+    /**
+     * Render Dashboard Pro Tools Section
+     */
+    private _renderDashboardProTools;
     /**
      * Render View Backups Button
      */
@@ -130,6 +139,11 @@ export declare class UltraCardEditor extends LitElement {
     private _handleImport;
     private _handleSnapshotImport;
     private _handleCreateBackup;
+    private _handleExportDashboard;
+    private _handleImportDashboard;
+    private _handleCreateSnapshot;
+    private _handleRestoreSnapshot;
+    private _handleViewSnapshots;
     private _handleManualBackupCreated;
     private _handleBackupRestored;
     private _handleSnapshotCreated;

@@ -72,11 +72,7 @@ class UcSnapshotSchedulerService {
       return;
     }
 
-    // Check if user is authenticated and Pro
-    if (!ucCloudAuthService.isAuthenticated()) {
-      return;
-    }
-
+    // Check if user is authenticated and Pro (integration or card auth)
     const user = ucCloudAuthService.getCurrentUser();
     if (!user || user.subscription?.tier !== 'pro') {
       return;

@@ -22,6 +22,7 @@
 ### 📝 Technical Details
 
 For developers: See `ULTRA_PRO_AUTH_FIXES.md` for detailed technical documentation including:
+
 - Token validation improvements
 - Retry logic implementation
 - Session restoration flow

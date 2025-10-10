@@ -1,7 +1,10 @@
 /**
  * Ultra Card Cloud Authentication Service
  * Handles user authentication with ultracard.io WordPress site using JWT
+ * Supports cross-device session sync via cloud sessions
  */
+
+import { ucSessionSyncService } from './uc-session-sync-service';
 
 export interface SubscriptionFeatures {
   auto_backups: boolean;
@@ -72,6 +75,212 @@ class UcCloudAuthService {
   constructor() {
     this._loadFromStorage();
     this._setupAutoRefresh();
+
+    // DISABLED: Old cloud session sync system
+    // Now using Ultra Card Pro Cloud integration instead
+    // ucSessionSyncService.enable();
+    // this._checkCloudSession();
+    // this._retryCloudSessionCheck();
+  }
+
+  /**
+   * Check if Ultra Card Pro Cloud integration is installed and authenticated
+   * Returns integration auth data if available, null otherwise
+   *
+   * SECURITY: This reads from a protected sensor entity that users cannot manipulate.
+   * The sensor is created by the Ultra Card Pro Cloud integration after successful
+   * authentication with ultracard.io.
+   */
+  checkIntegrationAuth(hass: any): CloudUser | null {
+    try {
+      console.log('🔍 Checking for Ultra Card Pro Cloud integration...');
+
+      // Check for the protected sensor entity
+      const sensorEntityId = 'sensor.ultra_card_pro_cloud_authentication_status';
+      const sensorState = hass?.states?.[sensorEntityId];
+
+      if (!sensorState) {
+        console.log('📝 Ultra Card Pro Cloud integration not installed (sensor not found)');
+        return null;
+      }
+
+      console.log('✅ Found Ultra Card Pro Cloud sensor:', sensorState.state);
+      console.log('   Attributes:', sensorState.attributes);
+
+      // Check if authenticated
+      if (sensorState.state !== 'connected' || !sensorState.attributes?.authenticated) {
+        console.log('📝 Integration installed but not authenticated');
+        return null;
+      }
+
+      const attrs = sensorState.attributes;
+
+      // Convert sensor data to CloudUser format
+      const user: CloudUser = {
+        id: attrs.user_id,
+        username: attrs.username || '',
+        email: attrs.email || '',
+        displayName: attrs.display_name || attrs.username || '',
+        token: attrs.token || '', // Use token from sensor attributes for API calls
+        expiresAt: 0, // Managed by integration server-side
+        subscription: {
+          tier: attrs.subscription_tier || 'free',
+          status: attrs.subscription_status || 'expired',
+          expires: attrs.subscription_expires,
+          features: attrs.features || {
+            auto_backups: attrs.subscription_tier === 'pro',
+            snapshots_enabled: attrs.subscription_tier === 'pro',
+            snapshot_limit: attrs.subscription_tier === 'pro' ? 10 : 0,
+            backup_retention_days: 90,
+          },
+          snapshot_count: 0,
+          snapshot_limit: attrs.subscription_tier === 'pro' ? 10 : 0,
+        },
+      };
+
+      console.log('✅ Ultra Card Pro Cloud connected!', user);
+      console.log(`   💫 Connected at: ${attrs.connected_at}`);
+
+      return user;
+    } catch (error) {
+      console.debug('No Ultra Card Pro Cloud integration found:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if integration is installed (whether authenticated or not)
+   */
+  isIntegrationInstalled(hass: any): boolean {
+    try {
+      const sensorEntityId = 'sensor.ultra_card_pro_cloud_authentication_status';
+      return !!hass?.states?.[sensorEntityId];
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get Home Assistant user ID from hass object
+   * First tries window.hass, then tries to find hass from any ultra-card element
+   */
+  private _getHassUserId(): string | null {
+    try {
+      // Try window.hass first
+      let hass = (window as any).hass;
+
+      // If not available, try to get from any ultra-card element in the DOM
+      if (!hass) {
+        const ultraCards = document.querySelectorAll('ultra-card');
+        for (const card of Array.from(ultraCards)) {
+          const cardHass = (card as any).hass;
+          if (cardHass && cardHass.user) {
+            hass = cardHass;
+            break;
+          }
+        }
+      }
+
+      // If still not available, try home-assistant element
+      if (!hass) {
+        const homeAssistant = document.querySelector('home-assistant');
+        if (homeAssistant) {
+          hass = (homeAssistant as any).hass;
+        }
+      }
+
+      const userId = hass?.user?.id || null;
+
+      if (!userId) {
+        console.log(
+          '📝 HA user ID not available yet, hass object:',
+          hass ? 'exists' : 'missing',
+          'user:',
+          hass?.user ? 'exists' : 'missing'
+        );
+      } else {
+        console.log('✅ HA user ID found:', userId);
+      }
+
+      return userId;
+    } catch (error) {
+      console.warn('Failed to get HA user ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Retry cloud session check multiple times until HA user ID is available
+   */
+  private _retryCloudSessionCheck(): void {
+    const maxRetries = 10;
+    let retryCount = 0;
+
+    const retry = () => {
+      retryCount++;
+      const haUserId = this._getHassUserId();
+
+      if (haUserId && !this._currentUser) {
+        console.log(
+          '🔄 Retrying cloud session check with now-available HA user ID (attempt',
+          retryCount,
+          ')'
+        );
+        this._checkCloudSession();
+      } else if (retryCount < maxRetries) {
+        // Retry every 500ms for up to 5 seconds
+        setTimeout(retry, 500);
+      } else {
+        console.log('📝 Max retries reached, HA user ID still not available');
+      }
+    };
+
+    // Start first retry after 500ms
+    setTimeout(retry, 500);
+  }
+
+  /**
+   * Check for active cloud session (cross-device sync)
+   */
+  private async _checkCloudSession(): Promise<void> {
+    if (!ucSessionSyncService.isEnabled()) {
+      return; // Cloud session sync not enabled yet
+    }
+
+    console.log('🔄 Checking for active cloud session...');
+
+    // Always check for cloud session first (cross-device sync)
+    // Pass HA user ID for magic cross-device sync
+    const storedUser = this._getFromLocalStorage();
+    const haUserId = this._getHassUserId();
+    const cloudUser = await ucSessionSyncService.getCurrentSession(haUserId, storedUser?.token);
+
+    if (cloudUser) {
+      console.log('✅ Found active cloud session, syncing authentication');
+      this._setCurrentUser(cloudUser);
+      this._saveToStorage();
+      this._setupAutoRefresh();
+
+      // Start polling
+      ucSessionSyncService.startPolling(cloudUser.token, () => {
+        this.logout();
+      });
+      return; // Found cloud session, we're done
+    }
+
+    // No cloud session found, validate local session if we have one
+    if (this._currentUser) {
+      const valid = await ucSessionSyncService.validateSession(this._currentUser.token);
+      if (!valid) {
+        console.warn('⚠️ Local session invalidated remotely');
+        await this.logout();
+      } else {
+        // Start polling for session validation
+        ucSessionSyncService.startPolling(this._currentUser.token, () => {
+          this.logout();
+        });
+      }
+    }
   }
 
   /**
@@ -82,10 +291,27 @@ class UcCloudAuthService {
   }
 
   /**
+   * Set current user from integration data (for Ultra Card Pro Cloud integration)
+   */
+  setIntegrationUser(user: CloudUser): void {
+    this._setCurrentUser(user);
+    this._saveToStorage();
+  }
+
+  /**
    * Check if user is authenticated (has valid, non-expired token)
+   * For integration users with tokens, validate the token
    */
   isAuthenticated(): boolean {
-    return this._currentUser !== null && this._isTokenValid();
+    if (!this._currentUser) return false;
+
+    // If user has a token (from integration or card auth), validate it
+    if (this._currentUser.token && this._currentUser.token !== '') {
+      return this._isTokenValid();
+    }
+
+    // If no token but user exists, they came from integration without token - always valid
+    return true;
   }
 
   /**
@@ -128,6 +354,21 @@ class UcCloudAuthService {
       this._setCurrentUser(user);
       this._saveToStorage();
       this._setupAutoRefresh();
+
+      // Create cloud session for cross-device sync
+      if (ucSessionSyncService.isEnabled()) {
+        const haUserId = this._getHassUserId();
+        if (haUserId) {
+          await ucSessionSyncService.createSession(user, haUserId);
+
+          // Start session validation polling
+          ucSessionSyncService.startPolling(user.token, () => {
+            this.logout();
+          });
+        } else {
+          console.warn('⚠️ HA user ID not available, cloud session sync disabled');
+        }
+      }
 
       return user;
     } catch (error) {
@@ -262,6 +503,12 @@ class UcCloudAuthService {
    */
   async logout(): Promise<void> {
     try {
+      // Invalidate cloud session (affects all devices)
+      if (this._currentUser?.token && ucSessionSyncService.isEnabled()) {
+        await ucSessionSyncService.invalidateSession(this._currentUser.token);
+        ucSessionSyncService.stopPolling();
+      }
+
       // Optionally invalidate token on server
       if (this._currentUser?.token) {
         await fetch(
@@ -389,9 +636,16 @@ class UcCloudAuthService {
   /**
    * Check if current token is valid (not actually expired)
    * This checks the ACTUAL expiry time, not the refresh threshold
+   * For integration users without expiresAt, always return true
    */
   private _isTokenValid(): boolean {
     if (!this._currentUser) return false;
+
+    // If no expiresAt, user came from integration - always valid
+    if (!this._currentUser.expiresAt || this._currentUser.expiresAt === 0) {
+      return true;
+    }
+
     return Date.now() < this._currentUser.expiresAt;
   }
 
@@ -544,7 +798,23 @@ class UcCloudAuthService {
   }
 
   /**
+   * Get user from localStorage (helper for cloud session check)
+   */
+  private _getFromLocalStorage(): CloudUser | null {
+    try {
+      const stored = localStorage.getItem(UcCloudAuthService.STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('❌ Failed to read from storage:', error);
+    }
+    return null;
+  }
+
+  /**
    * Validate stored user data
+   * Note: Token and expiresAt are optional for integration-based auth
    */
   private _isValidStoredUser(user: any): user is CloudUser {
     // Debug log to see what's wrong
@@ -553,17 +823,16 @@ class UcCloudAuthService {
       return false;
     }
 
-    const checks = {
+    // Basic required fields
+    const requiredChecks = {
       'user exists': !!user,
       'id is number': typeof user.id === 'number',
       'username is string': typeof user.username === 'string',
       'email is string': typeof user.email === 'string',
       'displayName is string': typeof user.displayName === 'string',
-      'token is string': typeof user.token === 'string',
-      'expiresAt is number': typeof user.expiresAt === 'number',
     };
 
-    const failedChecks = Object.entries(checks)
+    const failedChecks = Object.entries(requiredChecks)
       .filter(([_, passed]) => !passed)
       .map(([check]) => check);
 
@@ -573,15 +842,18 @@ class UcCloudAuthService {
       return false;
     }
 
-    return (
-      user &&
-      typeof user.id === 'number' &&
-      typeof user.username === 'string' &&
-      typeof user.email === 'string' &&
-      typeof user.displayName === 'string' &&
-      typeof user.token === 'string' &&
-      typeof user.expiresAt === 'number'
-    );
+    // Token and expiresAt are optional (managed by integration)
+    // Only validate them if they exist
+    if (user.token !== undefined && typeof user.token !== 'string') {
+      console.warn('❌ Validation failed: token exists but is not a string');
+      return false;
+    }
+    if (user.expiresAt !== undefined && typeof user.expiresAt !== 'number') {
+      console.warn('❌ Validation failed: expiresAt exists but is not a number');
+      return false;
+    }
+
+    return true;
   }
 }
 
