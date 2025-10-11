@@ -20,11 +20,13 @@ class UcExternalCardsService {
       return [];
     }
 
-    // Return a copy to prevent external modification
-    return [...win.customCards].sort((a, b) => {
-      // Sort alphabetically by name
-      return (a.name || a.type).localeCompare(b.name || b.type);
-    });
+    // Filter out Ultra Card to prevent recursive embedding
+    return [...win.customCards]
+      .filter(card => card.type !== 'ultra-card')
+      .sort((a, b) => {
+        // Sort alphabetically by name
+        return (a.name || a.type).localeCompare(b.name || b.type);
+      });
   }
 
   /**
