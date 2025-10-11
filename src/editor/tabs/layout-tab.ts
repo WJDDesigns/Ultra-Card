@@ -29,9 +29,11 @@ import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ucExportImportService } from '../../services/uc-export-import-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
+import { ucExternalCardsService } from '../../services/uc-external-cards-service';
 import { PresetDefinition, FavoriteRow, ExportData, HoverEffectConfig } from '../../types';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
+import '../../components/uc-native-card-dialog';
 
 // Typography and font definitions matching the professional interface
 const DEFAULT_FONTS = [{ value: 'default', label: '– Default –', category: 'default' }];
@@ -141,7 +143,8 @@ export class LayoutTab extends LitElement {
     | null = null;
 
   // New state properties for presets, favorites, and export/import
-  @state() private _activeModuleSelectorTab: 'modules' | 'presets' | 'favorites' = 'modules';
+  @state() private _activeModuleSelectorTab: 'modules' | '3rdparty' | 'presets' | 'favorites' =
+    'modules';
   @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
   @state() private _selectedPresetCategory: 'all' | 'badges' | 'layouts' | 'widgets' | 'custom' =
     'all';
@@ -149,6 +152,16 @@ export class LayoutTab extends LitElement {
   @state() private _favoriteRowToSave: CardRow | null = null;
   @state() private _showImportDialog = false;
   @state() private _openMoreMenuRowIndex: number = -1;
+
+  // Native card dialog state for 3rd party cards
+  @state() private _showNativeCardDialog = false;
+  @state() private _nativeCardDialogModule: {
+    rowIndex: number;
+    columnIndex: number;
+    moduleIndex: number;
+    isChildModule?: boolean;
+    childIndex?: number;
+  } | null = null;
 
   // Undo/Redo state management
   @state() private _undoStack: { rows: CardRow[] }[] = [];
@@ -2131,6 +2144,14 @@ export class LayoutTab extends LitElement {
     const column = row.columns[columnIndex];
     if (!column.modules || !column.modules[moduleIndex]) return;
 
+    // Cleanup external card cache if this is an external card
+    const moduleToDelete = column.modules[moduleIndex];
+    if (moduleToDelete && moduleToDelete.type === 'external_card') {
+      import('../../modules/external-card-module').then(({ cleanupExternalCardCache }) => {
+        cleanupExternalCardCache(moduleToDelete.id);
+      });
+    }
+
     // Create new layout without the deleted module
     const newLayout = {
       rows: layout.rows.map((r, rIndex) => {
@@ -2156,6 +2177,16 @@ export class LayoutTab extends LitElement {
   }
 
   private _openModuleSettings(rowIndex: number, columnIndex: number, moduleIndex: number): void {
+    const module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+
+    // External cards use native HA dialog instead of Ultra Card settings popup
+    if (module?.type === 'external_card') {
+      this._showNativeCardDialog = true;
+      this._nativeCardDialogModule = { rowIndex, columnIndex, moduleIndex };
+      return;
+    }
+
+    // Regular modules use Ultra Card settings popup
     this._selectedModule = { rowIndex, columnIndex, moduleIndex };
     this._showModuleSettings = true;
   }
@@ -2704,6 +2735,120 @@ export class LayoutTab extends LitElement {
     this.requestUpdate();
   }
 
+  private _handleNativeCardSave(e: CustomEvent): void {
+    if (!this._nativeCardDialogModule) return;
+
+    const { config } = e.detail;
+    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
+      this._nativeCardDialogModule;
+
+    // Update the module with the new config
+    const layout = this._ensureLayout();
+    const newLayout = {
+      rows: layout.rows.map((row, rIndex) => {
+        if (rIndex === rowIndex) {
+          return {
+            ...row,
+            columns: row.columns.map((col, cIndex) => {
+              if (cIndex === columnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((mod, mIndex) => {
+                    if (mIndex === moduleIndex) {
+                      // Handle child modules
+                      if (isChildModule && childIndex !== undefined) {
+                        const layoutMod = mod as any;
+                        if (layoutMod.modules) {
+                          return {
+                            ...layoutMod,
+                            modules: layoutMod.modules.map((childMod: any, cIndex: number) => {
+                              if (cIndex === childIndex) {
+                                return {
+                                  ...childMod,
+                                  card_config: config,
+                                };
+                              }
+                              return childMod;
+                            }),
+                          };
+                        }
+                      }
+                      // Handle top-level modules
+                      return {
+                        ...mod,
+                        card_config: config,
+                      };
+                    }
+                    return mod;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return row;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+    this._showNativeCardDialog = false;
+    this._nativeCardDialogModule = null;
+  }
+
+  private _handleNativeCardCancel(): void {
+    this._showNativeCardDialog = false;
+    this._nativeCardDialogModule = null;
+  }
+
+  private _handleNativeCardDuplicate(): void {
+    if (!this._nativeCardDialogModule) return;
+
+    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
+      this._nativeCardDialogModule;
+
+    if (isChildModule && childIndex !== undefined) {
+      // Duplicate child module
+      this._duplicateLayoutChildModule(rowIndex, columnIndex, moduleIndex, childIndex);
+    } else {
+      // Duplicate top-level module
+      this._duplicateModule(rowIndex, columnIndex, moduleIndex);
+    }
+
+    // Close dialog after duplicate
+    this._showNativeCardDialog = false;
+    this._nativeCardDialogModule = null;
+  }
+
+  private _handleNativeCardDelete(): void {
+    if (!this._nativeCardDialogModule) return;
+
+    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
+      this._nativeCardDialogModule;
+
+    if (isChildModule && childIndex !== undefined) {
+      // Delete child module
+      this._deleteLayoutChildModule(rowIndex, columnIndex, moduleIndex, childIndex);
+    } else {
+      // Delete top-level module
+      this._deleteModule(rowIndex, columnIndex, moduleIndex);
+    }
+
+    // Close dialog after delete
+    this._showNativeCardDialog = false;
+    this._nativeCardDialogModule = null;
+  }
+
+  private _navigateToPro(): void {
+    // Navigate to the Pro tab in the Ultra Card editor
+    const event = new CustomEvent('navigate-to-tab', {
+      detail: { tab: 'pro' },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
+  }
+
   private _closeLayoutChildSettings(): void {
     this._showLayoutChildSettings = false;
     this._selectedLayoutChild = null;
@@ -2890,8 +3035,6 @@ export class LayoutTab extends LitElement {
   ): void {
     e.preventDefault();
     e.stopPropagation();
-
-    // debug removed
 
     // Reset visual feedback
     const target = e.currentTarget as HTMLElement;
@@ -5071,6 +5214,33 @@ export class LayoutTab extends LitElement {
     parentModuleIndex: number,
     childIndex: number
   ): void {
+    // Get the child module
+    const layout = this._ensureLayout();
+    const row = layout.rows[parentRowIndex];
+    if (!row || !row.columns[parentColumnIndex]) return;
+
+    const column = row.columns[parentColumnIndex];
+    if (!column.modules || !column.modules[parentModuleIndex]) return;
+
+    const layoutModule = column.modules[parentModuleIndex] as any;
+    if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
+
+    const childModule = layoutModule.modules[childIndex];
+
+    // External cards use native HA dialog
+    if (childModule.type === 'external_card') {
+      this._showNativeCardDialog = true;
+      this._nativeCardDialogModule = {
+        rowIndex: parentRowIndex,
+        columnIndex: parentColumnIndex,
+        moduleIndex: parentModuleIndex,
+        isChildModule: true,
+        childIndex: childIndex,
+      };
+      return;
+    }
+
+    // Regular modules use Ultra Card child settings popup
     this._selectedLayoutChild = {
       parentRowIndex,
       parentColumnIndex,
@@ -5380,11 +5550,37 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
   }
 
+  private _getModuleSettingsTitle(module: CardModule, lang: string): string {
+    // For external cards, show the friendly card name
+    if (module.type === 'external_card') {
+      const moduleAny = module as any;
+      if (moduleAny.name) {
+        return moduleAny.name; // e.g., "Bubble Card", "Mushroom Fan Card"
+      }
+      if (moduleAny.card_type) {
+        const cardInfo = ucExternalCardsService.getCardInfo(moduleAny.card_type);
+        if (cardInfo) {
+          return cardInfo.name;
+        }
+        return moduleAny.card_type;
+      }
+      return '3rd Party Card';
+    }
+
+    // For other modules, use the standard pattern
+    return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${module.type.charAt(0).toUpperCase() + module.type.slice(1)}`;
+  }
+
   private _getModuleDisplayName(module: CardModule): string {
     // Check for custom module name first (for editor organization)
     const moduleAny = module as any;
     if (moduleAny.module_name && moduleAny.module_name.trim()) {
       return moduleAny.module_name;
+    }
+
+    // For external cards, use the stored name or card type
+    if (module.type === 'external_card' && module.name) {
+      return module.name;
     }
 
     // Fallback to consistent module type names
@@ -5410,6 +5606,8 @@ export class LayoutTab extends LitElement {
         return localize('editor.modules.camera', lang, 'Camera Module');
       case 'graphs':
         return localize('editor.modules.graphs', lang, 'Graphs Module');
+      case 'external_card':
+        return '3rd Party Card';
       default:
         return module.type.charAt(0).toUpperCase() + module.type.slice(1) + ' Module';
     }
@@ -5519,6 +5717,13 @@ export class LayoutTab extends LitElement {
           sepInfo.push(`${moduleAny.width_percent}% width`);
         if (sepInfo.length > 0) return sepInfo.join(' • ');
         return 'Visual separator';
+
+      case 'external_card':
+        // Show the card type for external cards
+        if (moduleAny.card_type) {
+          return `Card: ${moduleAny.card_type}`;
+        }
+        return 'No card type configured';
 
       default:
         // Try to find the most relevant info for any module
@@ -5823,8 +6028,11 @@ export class LayoutTab extends LitElement {
     // Determine which extra tabs are supported by this module
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
+    // External cards don't have Actions tab (they handle their own actions)
     const hasActionsTab =
-      moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
+      module.type !== 'external_card' &&
+      moduleHandler &&
+      typeof (moduleHandler as any).renderActionsTab === 'function';
     // Globally disable the legacy "Other" tab across modules
     const hasOtherTab = false;
 
@@ -5852,10 +6060,7 @@ export class LayoutTab extends LitElement {
               if (popup) this._startPopupDrag(e, popup);
             }}
           >
-            <h3>
-              ${localize('editor.layout.module_settings_title', lang, 'Module Settings')} -
-              ${module.type.charAt(0).toUpperCase() + module.type.slice(1)}
-            </h3>
+            <h3>${this._getModuleSettingsTitle(module, lang)}</h3>
             <div class="header-actions">
               <button
                 class="action-button duplicate-button"
@@ -6967,31 +7172,34 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
 
-    // Render Module Name field first for all modules
-    const moduleNameField = html`
-      <div class="settings-section">
-        <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
-        <input
-          type="text"
-          .value=${(module as any).module_name || ''}
-          @input=${(e: Event) =>
-            this._updateModule({ module_name: (e.target as HTMLInputElement).value } as any)}
-          placeholder="${localize(
-            'editor.layout_extra.module_name_placeholder',
-            lang,
-            'Give this module a custom name to make it easier to identify in the editor.'
-          )}"
-          class="module-name-input"
-        />
-        <div class="field-help">
-          ${localize(
-            'editor.layout_extra.module_name_help',
-            lang,
-            'Give this module a custom name to make it easier to identify in the editor.'
-          )}
-        </div>
-      </div>
-    `;
+    // Render Module Name field for all modules except external_card
+    const moduleNameField =
+      module.type !== 'external_card'
+        ? html`
+            <div class="settings-section">
+              <label>${localize('editor.layout_extra.module_name', lang, 'Module Name:')}</label>
+              <input
+                type="text"
+                .value=${(module as any).module_name || ''}
+                @input=${(e: Event) =>
+                  this._updateModule({ module_name: (e.target as HTMLInputElement).value } as any)}
+                placeholder="${localize(
+                  'editor.layout_extra.module_name_placeholder',
+                  lang,
+                  'Give this module a custom name to make it easier to identify in the editor.'
+                )}"
+                class="module-name-input"
+              />
+              <div class="field-help">
+                ${localize(
+                  'editor.layout_extra.module_name_help',
+                  lang,
+                  'Give this module a custom name to make it easier to identify in the editor.'
+                )}
+              </div>
+            </div>
+          `
+        : '';
 
     if (moduleHandler) {
       const moduleContent = moduleHandler.renderGeneralTab(
@@ -7000,6 +7208,11 @@ export class LayoutTab extends LitElement {
         this.config,
         updates => this._updateModule(updates)
       );
+
+      // For external cards, don't show Module Name field
+      if (module.type === 'external_card') {
+        return moduleContent;
+      }
 
       // For image modules, just render normally - the Image Name field will be removed later
       if (module.type === 'image') {
@@ -9245,6 +9458,7 @@ export class LayoutTab extends LitElement {
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
+        ${this._renderNativeCardDialog()}
       </div>
     `;
   }
@@ -9440,6 +9654,13 @@ export class LayoutTab extends LitElement {
               <span>Modules</span>
             </button>
             <button
+              class="tab-button ${this._activeModuleSelectorTab === '3rdparty' ? 'active' : ''}"
+              @click=${() => (this._activeModuleSelectorTab = '3rdparty')}
+            >
+              <ha-icon icon="mdi:card-multiple"></ha-icon>
+              <span>3rd Party</span>
+            </button>
+            <button
               class="tab-button ${this._activeModuleSelectorTab === 'presets' ? 'active' : ''}"
               @click=${() => {
                 this._activeModuleSelectorTab = 'presets';
@@ -9463,6 +9684,7 @@ export class LayoutTab extends LitElement {
             ${this._activeModuleSelectorTab === 'modules'
               ? this._renderModulesTab(allModules, isAddingToLayoutModule)
               : ''}
+            ${this._activeModuleSelectorTab === '3rdparty' ? this._render3rdPartyTab() : ''}
             ${this._activeModuleSelectorTab === 'presets' ? this._renderPresetsTab() : ''}
             ${this._activeModuleSelectorTab === 'favorites' ? this._renderFavoritesTab() : ''}
           </div>
@@ -10204,6 +10426,556 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _render3rdPartyTab(): TemplateResult {
+    // Check Pro access
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const effectiveUser = integrationUser || this.cloudUser;
+    const isPro = effectiveUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!effectiveUser;
+
+    const availableCards = ucExternalCardsService.getAvailableCards();
+    const popularCards = ucExternalCardsService.getPopularCards();
+    const lang = this.hass?.locale?.language || 'en';
+
+    return html`
+      <div class="thirdparty-container ${!isPro ? 'pro-locked' : ''}">
+        <div class="thirdparty-header">
+          <h4>3rd Party Cards</h4>
+          <button class="refresh-btn" @click=${() => this.requestUpdate()}>
+            <ha-icon icon="mdi:refresh"></ha-icon>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        ${availableCards.length > 0
+          ? html`
+              <div class="thirdparty-section">
+                <h5 class="section-title">Installed Cards (${availableCards.length})</h5>
+                <div class="cards-grid">
+                  ${availableCards.map(
+                    card => html`
+                      <div class="card-item" @click=${() => this._addCardFromTab(card.type)}>
+                        <div class="card-icon">
+                          <ha-icon icon="mdi:card-bulleted"></ha-icon>
+                        </div>
+                        <div class="card-info">
+                          <div class="card-name">${card.name}</div>
+                          <div class="card-type">${card.type}</div>
+                          ${card.version
+                            ? html`<div class="card-version">v${card.version}</div>`
+                            : ''}
+                        </div>
+                        <div class="card-add-hint">
+                          <ha-icon icon="mdi:plus-circle"></ha-icon>
+                        </div>
+                      </div>
+                    `
+                  )}
+                </div>
+              </div>
+            `
+          : ''}
+        ${popularCards.length > 0
+          ? html`
+              <div class="thirdparty-section popular-section">
+                <h5 class="section-title">
+                  ${availableCards.length > 0 ? 'Popular Cards' : 'Popular Cards (Not Installed)'}
+                </h5>
+                <div class="popular-cards-list">
+                  ${popularCards.map(card => {
+                    const isInstalled = ucExternalCardsService.isCardAvailable(card.type);
+                    return html`
+                      <div class="popular-card ${isInstalled ? 'installed' : 'not-installed'}">
+                        <div class="popular-card-content">
+                          <ha-icon
+                            icon="${isInstalled ? 'mdi:check-circle' : 'mdi:information'}"
+                            class="status-icon"
+                          ></ha-icon>
+                          <div class="popular-card-info">
+                            <div class="popular-card-name">${card.name}</div>
+                            <div class="popular-card-desc">${card.description}</div>
+                          </div>
+                        </div>
+                        ${!isInstalled
+                          ? html`
+                              <a
+                                href="${ucExternalCardsService.getHACSUrl(card.type) || '#'}"
+                                target="_blank"
+                                class="install-link"
+                              >
+                                <ha-icon icon="mdi:open-in-new"></ha-icon>
+                                View
+                              </a>
+                            `
+                          : html`<span class="installed-badge">Installed</span>`}
+                      </div>
+                    `;
+                  })}
+                </div>
+              </div>
+            `
+          : ''}
+        ${availableCards.length === 0 && popularCards.length === 0
+          ? html`
+              <div class="empty-state">
+                <ha-icon icon="mdi:card-off"></ha-icon>
+                <p>No 3rd party cards detected</p>
+                <p class="empty-hint">Install custom cards via HACS to use them here</p>
+              </div>
+            `
+          : ''}
+
+        <div class="thirdparty-info">
+          <ha-icon icon="mdi:information"></ha-icon>
+          <div class="info-content">
+            <strong>How to use:</strong>
+            <p>
+              Click any installed card to add it to your selected column. When you click the pencil
+              to edit, the card's native editor will open automatically.
+            </p>
+          </div>
+        </div>
+
+        <!-- Pro Access Overlay -->
+        ${!isPro
+          ? html`
+              <div class="pro-overlay">
+                <div class="pro-overlay-content">
+                  <ha-icon icon="mdi:lock"></ha-icon>
+                  <h3>Ultra Card Pro Feature</h3>
+                  <p>
+                    ${isLoggedIn
+                      ? 'Upgrade to Pro to integrate 3rd party cards seamlessly with Ultra Card'
+                      : 'Sign in and upgrade to Pro to unlock 3rd party card integration'}
+                  </p>
+                  ${isLoggedIn
+                    ? html`
+                        <a
+                          href="https://ultracardpro.com/upgrade"
+                          target="_blank"
+                          class="upgrade-button"
+                        >
+                          <ha-icon icon="mdi:crown"></ha-icon>
+                          Upgrade to Pro
+                        </a>
+                      `
+                    : html`
+                        <button class="signin-button" @click=${() => this._navigateToPro()}>
+                          <ha-icon icon="mdi:login"></ha-icon>
+                          Sign In
+                        </button>
+                      `}
+                </div>
+              </div>
+            `
+          : ''}
+      </div>
+
+      <style>
+        .thirdparty-container {
+          padding: 20px;
+          overflow-y: auto;
+          max-height: calc(100vh - 300px);
+        }
+
+        .thirdparty-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid var(--divider-color);
+        }
+
+        .thirdparty-header h4 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .refresh-btn {
+          padding: 8px 16px;
+          background: var(--primary-color);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 500;
+          transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+          background: var(--primary-color-hover);
+        }
+
+        .thirdparty-section {
+          margin-bottom: 32px;
+        }
+
+        .section-title {
+          margin: 0 0 12px 0;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--secondary-text-color);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 12px;
+        }
+
+        .card-item {
+          padding: 16px;
+          background: var(--card-background-color);
+          border: 2px solid var(--divider-color);
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .card-item:hover {
+          border-color: var(--primary-color);
+          box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.2);
+          transform: translateY(-2px);
+        }
+
+        .card-item:active {
+          transform: translateY(0px);
+        }
+
+        .card-icon {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(var(--rgb-primary-color), 0.1);
+          border-radius: 8px;
+          flex-shrink: 0;
+        }
+
+        .card-icon ha-icon {
+          --mdc-icon-size: 24px;
+          color: var(--primary-color);
+        }
+
+        .card-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .card-name {
+          font-weight: 600;
+          font-size: 14px;
+          color: var(--primary-text-color);
+          margin-bottom: 4px;
+        }
+
+        .card-type {
+          font-size: 12px;
+          color: var(--secondary-text-color);
+          font-family: 'Courier New', monospace;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .card-version {
+          font-size: 11px;
+          color: var(--secondary-text-color);
+          margin-top: 2px;
+        }
+
+        .card-add-hint {
+          opacity: 0.5;
+          transition: opacity 0.2s;
+          color: var(--primary-color);
+        }
+
+        .card-add-hint ha-icon {
+          --mdc-icon-size: 24px;
+        }
+
+        .card-item:hover .card-add-hint {
+          opacity: 1;
+        }
+
+        .popular-cards-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .popular-card {
+          padding: 12px;
+          background: var(--card-background-color);
+          border: 1px solid var(--divider-color);
+          border-radius: 6px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .popular-card.not-installed {
+          background: rgba(255, 152, 0, 0.05);
+          border-color: rgba(255, 152, 0, 0.2);
+        }
+
+        .popular-card-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .status-icon {
+          --mdc-icon-size: 20px;
+          flex-shrink: 0;
+        }
+
+        .popular-card.installed .status-icon {
+          color: #4caf50;
+        }
+
+        .popular-card.not-installed .status-icon {
+          color: #ff9800;
+        }
+
+        .popular-card-info {
+          flex: 1;
+        }
+
+        .popular-card-name {
+          font-weight: 600;
+          font-size: 13px;
+          color: var(--primary-text-color);
+        }
+
+        .popular-card-desc {
+          font-size: 12px;
+          color: var(--secondary-text-color);
+          margin-top: 2px;
+        }
+
+        .install-link {
+          padding: 6px 12px;
+          background: var(--primary-color);
+          color: white;
+          text-decoration: none;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: background 0.2s;
+          white-space: nowrap;
+        }
+
+        .install-link:hover {
+          background: var(--primary-color-hover);
+        }
+
+        .installed-badge {
+          padding: 6px 12px;
+          background: rgba(76, 175, 80, 0.1);
+          color: #4caf50;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .thirdparty-info {
+          margin-top: 24px;
+          padding: 16px;
+          background: rgba(var(--rgb-primary-color), 0.05);
+          border-radius: 8px;
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+        }
+
+        .thirdparty-info ha-icon {
+          color: var(--primary-color);
+          --mdc-icon-size: 20px;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .info-content {
+          flex: 1;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .info-content strong {
+          display: block;
+          margin-bottom: 4px;
+          color: var(--primary-text-color);
+        }
+
+        .info-content p {
+          margin: 0;
+          color: var(--secondary-text-color);
+        }
+
+        .empty-state {
+          padding: 60px 20px;
+          text-align: center;
+          color: var(--secondary-text-color);
+        }
+
+        .empty-state ha-icon {
+          --mdc-icon-size: 64px;
+          opacity: 0.3;
+          margin-bottom: 16px;
+        }
+
+        .empty-state p {
+          margin: 8px 0;
+        }
+
+        .empty-hint {
+          font-size: 13px;
+          color: var(--secondary-text-color);
+          opacity: 0.7;
+        }
+
+        /* Pro Access Overlay */
+        .thirdparty-container.pro-locked {
+          position: relative;
+        }
+
+        .thirdparty-container.pro-locked > :not(.pro-overlay) {
+          filter: blur(8px);
+          pointer-events: none;
+          user-select: none;
+        }
+
+        .pro-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+          background: rgba(0, 0, 0, 0.02);
+        }
+
+        .pro-overlay-content {
+          background: var(--card-background-color);
+          border-radius: 16px;
+          padding: 48px 40px;
+          max-width: 450px;
+          text-align: center;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+          border: 2px solid var(--divider-color);
+        }
+
+        .pro-overlay-content ha-icon {
+          --mdc-icon-size: 64px;
+          color: var(--primary-color);
+          opacity: 0.8;
+          margin-bottom: 24px;
+        }
+
+        .pro-overlay-content h3 {
+          margin: 0 0 16px 0;
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--primary-text-color);
+        }
+
+        .pro-overlay-content p {
+          margin: 0 0 32px 0;
+          font-size: 15px;
+          line-height: 1.6;
+          color: var(--secondary-text-color);
+        }
+
+        .upgrade-button,
+        .signin-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 14px 32px;
+          border: none;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          text-decoration: none;
+          font-family: inherit;
+        }
+
+        .upgrade-button {
+          background: linear-gradient(
+            135deg,
+            var(--primary-color) 0%,
+            var(--accent-color, var(--primary-color)) 100%
+          );
+          color: white;
+        }
+
+        .upgrade-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(var(--rgb-primary-color), 0.4);
+        }
+
+        .signin-button {
+          background: var(--primary-color);
+          color: white;
+        }
+
+        .signin-button:hover {
+          background: var(--primary-color-hover, var(--primary-color));
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(var(--rgb-primary-color), 0.4);
+        }
+
+        .upgrade-button ha-icon,
+        .signin-button ha-icon {
+          --mdc-icon-size: 20px;
+          margin: 0;
+          padding: 0;
+          flex-shrink: 0;
+        }
+      </style>
+    `;
+  }
+
+  private _addCardFromTab(cardType: string): void {
+    // Check if a column is selected
+    if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
+      // Show error message to user
+      const lang = this.hass?.locale?.language || 'en';
+      alert(
+        localize(
+          'editor.layout.select_column_first',
+          lang,
+          'Please select a column first by clicking "Add Module" on the column where you want to add this card.'
+        )
+      );
+      return;
+    }
+
+    // Add the card
+    this._add3rdPartyCard(cardType);
+  }
+
   private _renderFavoriteDialog(): TemplateResult {
     if (!this._showFavoriteDialog || !this._favoriteRowToSave) {
       return html``;
@@ -10231,6 +11003,46 @@ export class LayoutTab extends LitElement {
         @close=${() => (this._showImportDialog = false)}
         @import=${this._handleImport}
       ></uc-import-dialog>
+    `;
+  }
+
+  private _renderNativeCardDialog(): TemplateResult {
+    if (!this._showNativeCardDialog || !this._nativeCardDialogModule) {
+      return html``;
+    }
+
+    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
+      this._nativeCardDialogModule;
+
+    let module: any;
+
+    if (isChildModule && childIndex !== undefined) {
+      // Get child module from layout module (horizontal/vertical)
+      const layoutModule = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[
+        moduleIndex
+      ] as any;
+      module = layoutModule?.modules?.[childIndex];
+    } else {
+      // Get top-level module
+      module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[
+        moduleIndex
+      ] as any;
+    }
+
+    if (!module || module.type !== 'external_card') {
+      return html``;
+    }
+
+    return html`
+      <uc-native-card-dialog
+        .module=${module}
+        .hass=${this.hass}
+        .open=${this._showNativeCardDialog}
+        @save=${this._handleNativeCardSave}
+        @cancel=${this._handleNativeCardCancel}
+        @duplicate=${this._handleNativeCardDuplicate}
+        @delete=${this._handleNativeCardDelete}
+      ></uc-native-card-dialog>
     `;
   }
 
@@ -10274,6 +11086,95 @@ export class LayoutTab extends LitElement {
   }
 
   // Layout Module Rules - centralized logic for layout module behavior
+  private _getDefaultCardConfig(cardType: string, fullCardType: string): any {
+    // Provide better default configs for popular cards that require specific properties
+    const config: any = {
+      type: fullCardType,
+    };
+
+    // Mushroom Chips Card requires chips array
+    if (cardType.includes('mushroom-chips')) {
+      config.chips = [];
+    }
+
+    // Bubble Card requires card_type
+    if (cardType.includes('bubble-card')) {
+      config.card_type = 'button';
+    }
+
+    // Mini Graph Card could use some defaults
+    if (cardType.includes('mini-graph-card')) {
+      config.entities = [];
+      config.hours_to_show = 24;
+      config.points_per_hour = 4;
+    }
+
+    return config;
+  }
+
+  private _add3rdPartyCard(cardType: string): void {
+    if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
+      console.error('No row or column selected');
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const row = layout.rows[this._selectedRowIndex];
+    const column = row.columns[this._selectedColumnIndex];
+
+    // Ensure card type has custom: prefix if needed
+    let fullCardType = cardType;
+    if (!cardType.startsWith('custom:') && !cardType.startsWith('hui-')) {
+      fullCardType = `custom:${cardType}`;
+    }
+
+    // Get card info for better display name
+    const cardInfo = ucExternalCardsService.getCardInfo(cardType);
+    const cardName = cardInfo ? cardInfo.name : cardType;
+
+    // Create external card module with better default config
+    const newModule = {
+      id: `external-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'external_card' as const,
+      name: cardName, // Use the card's friendly name
+      card_type: cardType, // Store the original type (without custom: prefix)
+      card_config: this._getDefaultCardConfig(cardType, fullCardType),
+    };
+
+    // Add to column
+    const newLayout = {
+      rows: layout.rows.map((r, rIndex) => {
+        if (rIndex === this._selectedRowIndex) {
+          return {
+            ...r,
+            columns: r.columns.map((c, cIndex) => {
+              if (cIndex === this._selectedColumnIndex) {
+                return {
+                  ...c,
+                  modules: [...(c.modules || []), newModule as any],
+                };
+              }
+              return c;
+            }),
+          };
+        }
+        return r;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+    this._showModuleSelector = false;
+
+    // Open native dialog immediately for configuration
+    const moduleIndex = (column.modules || []).length;
+    this._showNativeCardDialog = true;
+    this._nativeCardDialogModule = {
+      rowIndex: this._selectedRowIndex,
+      columnIndex: this._selectedColumnIndex,
+      moduleIndex: moduleIndex,
+    };
+  }
+
   private _isLayoutModule(moduleType: string): boolean {
     const layoutModuleTypes = ['horizontal', 'vertical', 'slider'];
     return layoutModuleTypes.includes(moduleType);
@@ -11697,7 +12598,9 @@ export class LayoutTab extends LitElement {
       /* Dropdown positioning fixes for popup context -
          ensure menus anchor to fields inside transformed draggable popups */
       .popup-content ha-select,
-      .selector-content ha-select {
+      .selector-content ha-select,
+      .popup-content mwc-select,
+      .popup-content ha-combo-box {
         position: relative !important;
         overflow: visible !important;
         z-index: 9999 !important;
@@ -11707,6 +12610,9 @@ export class LayoutTab extends LitElement {
       .popup-content ha-select mwc-menu,
       .popup-content ha-select .mdc-menu,
       .popup-content ha-select ha-menu,
+      .popup-content mwc-menu,
+      .popup-content ha-menu,
+      .popup-content .mdc-menu-surface,
       .selector-content ha-select .mdc-select__menu,
       .selector-content ha-select mwc-menu,
       .selector-content ha-select .mdc-menu,
@@ -11716,6 +12622,14 @@ export class LayoutTab extends LitElement {
         max-height: 300px !important;
         overflow-y: auto !important;
         max-width: min(360px, 95vw) !important;
+      }
+
+      /* Ensure native editor dropdowns appear above module tabs (which have z-index: 4) */
+      .module-tab-content ha-select,
+      .module-tab-content mwc-select,
+      .module-tab-content ha-combo-box,
+      .module-tab-content mwc-menu-surface {
+        z-index: 10000 !important;
       }
 
       /* Allow dropdown overflow; keep inner content scrollable */

@@ -85,7 +85,8 @@ export interface BaseModule {
     | 'spinbox'
     | 'animated_clock'
     | 'animated_weather'
-    | 'animated_forecast';
+    | 'animated_forecast'
+    | 'external_card';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -2554,6 +2555,14 @@ export interface DropdownOption {
   };
 }
 
+// External Card Module (PRO)
+export interface ExternalCardModule extends BaseModule {
+  type: 'external_card';
+  card_type: string; // e.g., 'weather-card', 'mini-graph-card', 'mushroom-entity-card'
+  card_config: Record<string, any>; // The card's native configuration
+  // Note: No tap_action/hold_action - external cards handle their own actions
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -2576,7 +2585,8 @@ export type CardModule =
   | LightModule
   | AnimatedClockModule
   | AnimatedWeatherModule
-  | AnimatedForecastModule;
+  | AnimatedForecastModule
+  | ExternalCardModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

@@ -41,16 +41,46 @@ function checkInstance(url) {
   }
 }
 
+// Count files in directory
+function countFiles(dir) {
+  let count = 0;
+  try {
+    const items = fs.readdirSync(dir);
+
+    items.forEach(item => {
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        count += countFiles(fullPath);
+      } else {
+        count++;
+      }
+    });
+  } catch (error) {
+    // Directory doesn't exist or is inaccessible
+    return 0;
+  }
+
+  return count;
+}
+
 // Deploy files to target path
 function deployFiles(targetPath) {
   try {
-    // Create target directory if it doesn't exist
-    if (!fs.existsSync(targetPath)) {
-      console.log(`  📁 Creating directory: ${targetPath}`);
-      fs.mkdirSync(targetPath, { recursive: true });
+    // Remove old version if exists (ensures clean deployment)
+    if (fs.existsSync(targetPath)) {
+      console.log(`  🗑️  Removing old version...`);
+      fs.rmSync(targetPath, { recursive: true, force: true });
     }
 
+    // Create target directory
+    console.log(`  📁 Creating directory: ${targetPath}`);
+    fs.mkdirSync(targetPath, { recursive: true });
+
     // Copy files
+    console.log(`  📦 Copying files...`);
+    let copiedCount = 0;
     CONFIG.sourceFiles.forEach(file => {
       const sourcePath = path.resolve(__dirname, file);
       const targetFile = path.join(targetPath, path.basename(file));
@@ -58,12 +88,17 @@ function deployFiles(targetPath) {
       if (fs.existsSync(sourcePath)) {
         fs.copyFileSync(sourcePath, targetFile);
         console.log(`  ✅ Copied: ${path.basename(file)}`);
+        copiedCount++;
       } else {
         console.log(`  ⚠️  Not found: ${file}`);
       }
     });
 
-    return true;
+    // Verify deployment
+    const fileCount = countFiles(targetPath);
+    console.log(`  ✅ Deployed ${fileCount} file(s)`);
+
+    return copiedCount > 0;
   } catch (error) {
     console.error(`  ❌ Deployment failed: ${error.message}`);
     return false;

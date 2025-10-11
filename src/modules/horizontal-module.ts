@@ -9,7 +9,7 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
-
+import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 // Use the existing HorizontalModule and VerticalModule interfaces from types
 import { HorizontalModule, VerticalModule } from '../types';
 
@@ -454,34 +454,40 @@ export class UltraHorizontalModule extends BaseUltraModule {
                     (childModule as any)?.type === 'separator' &&
                     ((childModule as any)?.orientation === 'horizontal' ||
                       !(childModule as any)?.orientation);
+                  const isExternalCard = (childModule as any)?.type === 'external_card';
                   const allowGrowForAll = horizontalModule.alignment === 'justify';
                   const shouldGrow = isBar || isHorizontalSeparator || allowGrowForAll;
                   const flexGrow = shouldGrow ? 1 : 0;
-                  const flexShrink = shouldGrow ? 1 : 0; // keep icons/text stable, allow bars and separators to shrink
+                  // Allow external cards to shrink to fit within container
+                  const flexShrink = shouldGrow || isExternalCard ? 1 : 0;
                   // Use content-based sizing for non-expanding modules so they size to their content
-                  const flexBasis = shouldGrow ? '0' : 'content';
-                  // Ensure bars and horizontal separators always remain visible even if a sibling tries to expand
+                  // External cards use 'auto' instead of 'content' to fix Bubble Card rendering
+                  const flexBasis = shouldGrow ? '0' : isExternalCard ? 'auto' : 'content';
+                  // Ensure bars and separators remain visible
                   const minWidth = isBar ? '80px' : isHorizontalSeparator ? '20px' : '0';
-                  const childWidth = 'auto';
                   const alignSelf = 'auto';
+
+                  // Build style string - external cards don't get explicit width
+                  const baseStyles = `
+                    overflow: visible;
+                    flex-grow: ${flexGrow};
+                    flex-shrink: ${flexShrink};
+                    flex-basis: ${flexBasis};
+                    min-width: ${minWidth};
+                    ${!isExternalCard ? `width: auto;` : ''}
+                    ${isExternalCard ? `max-width: 100%;` : ''}
+                    align-self: ${alignSelf};
+                    box-sizing: border-box;
+                    margin: ${childMargin};
+                  `;
+                  const negativeGapStyles = isNegativeGap
+                    ? 'padding: 0; border: none; background: transparent;'
+                    : '';
 
                   return html`
                     <div
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                      style="
-                          overflow: visible;
-                          flex-grow: ${flexGrow};
-                          flex-shrink: ${flexShrink};
-                          flex-basis: ${flexBasis};
-                          min-width: ${minWidth};
-                          width: ${childWidth};
-                          align-self: ${alignSelf};
-                          box-sizing: border-box;
-                          margin: ${childMargin};
-                          ${isNegativeGap
-                        ? 'padding: 0; border: none; background: transparent;'
-                        : ''}
-                        "
+                      style="${baseStyles} ${negativeGapStyles}"
                     >
                       ${this._renderChildModulePreview(childModule, hass, moduleWithDesign)}
                     </div>
@@ -548,12 +554,78 @@ export class UltraHorizontalModule extends BaseUltraModule {
       return html``;
     }
 
-    // Render actual module content using the registry
+    // Check if this is a pro module and if user has access (imported from ultra-card.ts logic)
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(moduleToRender.type);
 
+    if (!moduleHandler) {
+      return html``;
+    }
+
+    // Check Pro access for child modules
+    const isProModule =
+      moduleHandler.metadata?.tags?.includes('pro') ||
+      moduleHandler.metadata?.tags?.includes('premium') ||
+      false;
+
+    // Check for Pro access using the same logic as ultra-card.ts
+    let hasProAccess = false;
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
+    if (
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active'
+    ) {
+      hasProAccess = true;
+    } else if (ucCloudAuthService.isAuthenticated()) {
+      const cloudUser = ucCloudAuthService.getCurrentUser();
+      if (cloudUser?.subscription?.tier === 'pro' && cloudUser?.subscription?.status === 'active') {
+        hasProAccess = true;
+      }
+    }
+
+    const shouldShowProOverlay = isProModule && !hasProAccess;
+
     if (moduleHandler) {
       const moduleContent = moduleHandler.renderPreview(moduleToRender, hass);
+
+      // If this is a pro module and user doesn't have access, show overlay
+      if (shouldShowProOverlay) {
+        return html`
+          <div class="pro-module-locked" style="position: relative;">
+            ${moduleContent}
+            <div
+              class="pro-module-overlay"
+              style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: rgba(0, 0, 0, 0.8);
+              backdrop-filter: blur(8px);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 12px;
+              z-index: 10;
+            "
+            >
+              <div
+                class="pro-module-message"
+                style="
+                text-align: center;
+                color: white;
+                padding: 20px;
+              "
+              >
+                <ha-icon icon="mdi:lock" style="font-size: 48px; margin-bottom: 12px;"></ha-icon>
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Pro Module</div>
+                <div style="font-size: 14px; opacity: 0.8;">Please login to view this module</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
 
       // Apply state-based animation wrapper for child modules when configured
       const m: any = moduleToRender as any;
@@ -918,12 +990,18 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border: none;
         border-radius: 4px;
         padding: 0;
-        transition: all 0.2s ease;
+        transition: all 0.2s ease, transform 0.3s ease;
         /* Ensure modules maintain readable size */
         min-width: max-content;
         min-height: 0;
         overflow: visible;
         box-sizing: border-box;
+      }
+
+      /* Ensure external card wrappers handle scaling properly */
+      .child-module-preview:has(.external-card-wrapper) {
+        overflow: visible;
+        transform-origin: center center;
       }
 
       .child-module-preview.negative-gap {

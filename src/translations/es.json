@@ -1629,6 +1629,29 @@
         "load": "Load Newer Version",
         "dismiss": "Keep Current"
       }
+    },
+    "external_card": {
+      "title": "3rd Party Card",
+      "description": "Embed any custom Home Assistant card into Ultra Card. The card will have full Logic and Design support.",
+      "select_card": "Select Card Type",
+      "select_card_desc": "Choose which custom card to embed. Only cards installed in your Home Assistant are shown.",
+      "no_selection": "-- Select a Card --",
+      "no_cards": "No Custom Cards Detected",
+      "no_cards_desc": "Install custom cards via HACS or manually to use this feature.",
+      "card_not_found": "Card not found",
+      "configure": "Card Configuration",
+      "configure_desc": "Configure the card using its native editor.",
+      "yaml_mode": "YAML Configuration",
+      "yaml_help": "Enter card configuration in JSON format. Refer to the card's documentation for available options.",
+      "preview": "Card Preview",
+      "invalid_config": "Invalid card configuration",
+      "note": "Note: Actions are not supported for 3rd party cards. Use the card's native tap/hold/double-tap actions in its configuration.",
+      "no_card_selected": "No card selected",
+      "select_card_prompt": "Select a 3rd party card to display",
+      "available_cards": "Available 3rd Party Cards",
+      "category_desc": "Embed any custom Home Assistant card into Ultra Card with full Logic and Design support",
+      "upgrade_required": "Upgrade to Pro to embed 3rd party cards",
+      "login_required": "Login with Pro account to embed 3rd party cards"
     }
   }
 }

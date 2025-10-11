@@ -35,7 +35,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -1440,7 +1440,12 @@ export interface DropdownOption {
         };
     };
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule;
+export interface ExternalCardModule extends BaseModule {
+    type: 'external_card';
+    card_type: string;
+    card_config: Record<string, any>;
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

@@ -8,6 +8,7 @@ import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
+import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 
 // Use the existing VerticalModule and HorizontalModule interfaces from types
 import { VerticalModule, HorizontalModule } from '../types';
@@ -443,12 +444,78 @@ export class UltraVerticalModule extends BaseUltraModule {
       return html``;
     }
 
-    // Render actual module content using the registry
+    // Check if this is a pro module and if user has access (same logic as horizontal module)
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(moduleToRender.type);
 
+    if (!moduleHandler) {
+      return html``;
+    }
+
+    // Check Pro access for child modules
+    const isProModule =
+      moduleHandler.metadata?.tags?.includes('pro') ||
+      moduleHandler.metadata?.tags?.includes('premium') ||
+      false;
+
+    // Check for Pro access using the same logic as ultra-card.ts
+    let hasProAccess = false;
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
+    if (
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active'
+    ) {
+      hasProAccess = true;
+    } else if (ucCloudAuthService.isAuthenticated()) {
+      const cloudUser = ucCloudAuthService.getCurrentUser();
+      if (cloudUser?.subscription?.tier === 'pro' && cloudUser?.subscription?.status === 'active') {
+        hasProAccess = true;
+      }
+    }
+
+    const shouldShowProOverlay = isProModule && !hasProAccess;
+
     if (moduleHandler) {
       const moduleContent = moduleHandler.renderPreview(moduleToRender, hass);
+
+      // If this is a pro module and user doesn't have access, show overlay
+      if (shouldShowProOverlay) {
+        return html`
+          <div class="pro-module-locked" style="position: relative;">
+            ${moduleContent}
+            <div
+              class="pro-module-overlay"
+              style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: rgba(0, 0, 0, 0.8);
+              backdrop-filter: blur(8px);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 12px;
+              z-index: 10;
+            "
+            >
+              <div
+                class="pro-module-message"
+                style="
+                text-align: center;
+                color: white;
+                padding: 20px;
+              "
+              >
+                <ha-icon icon="mdi:lock" style="font-size: 48px; margin-bottom: 12px;"></ha-icon>
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Pro Module</div>
+                <div style="font-size: 14px; opacity: 0.8;">Please login to view this module</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
 
       // Apply state-based animation wrapper for child modules when configured
       const m: any = moduleToRender as any;

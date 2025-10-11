@@ -5,6 +5,7 @@ import '../../components/ultra-color-picker';
 import '../global-design-tab';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
+import '../../components/uc-native-card-dialog';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
@@ -36,6 +37,8 @@ export declare class LayoutTab extends LitElement {
     private _favoriteRowToSave;
     private _showImportDialog;
     private _openMoreMenuRowIndex;
+    private _showNativeCardDialog;
+    private _nativeCardDialogModule;
     private _undoStack;
     private _redoStack;
     private _maxHistorySize;
@@ -128,6 +131,11 @@ export declare class LayoutTab extends LitElement {
     private _updateLayoutChildModule;
     private _updateModuleDesign;
     private _closeModuleSettings;
+    private _handleNativeCardSave;
+    private _handleNativeCardCancel;
+    private _handleNativeCardDuplicate;
+    private _handleNativeCardDelete;
+    private _navigateToPro;
     private _closeLayoutChildSettings;
     private _onDragStart;
     private _onDragEnd;
@@ -180,6 +188,7 @@ export declare class LayoutTab extends LitElement {
     private _openNestedChildSettings;
     private _regenerateModuleIds;
     private _deleteLayoutChildModule;
+    private _getModuleSettingsTitle;
     private _getModuleDisplayName;
     private _generateModuleInfo;
     private _renderSingleModuleWithAnimation;
@@ -251,9 +260,14 @@ export declare class LayoutTab extends LitElement {
     private _handleSliderTouchStart;
     private _renderPresetsTab;
     private _renderFavoritesTab;
+    private _render3rdPartyTab;
+    private _addCardFromTab;
     private _renderFavoriteDialog;
     private _renderImportDialog;
+    private _renderNativeCardDialog;
     private _handleImport;
+    private _getDefaultCardConfig;
+    private _add3rdPartyCard;
     private _isLayoutModule;
     private _shouldAutoOpenSettings;
     private _getLayoutModuleColor;

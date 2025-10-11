@@ -20,6 +20,7 @@ import { UltraLightModule } from './light-module';
 import { UltraAnimatedClockModule } from './animated-clock-module';
 import { UltraAnimatedWeatherModule } from './animated-weather-module';
 import { UltraAnimatedForecastModule } from './animated-forecast-module';
+import { UltraExternalCardModule } from './external-card-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -63,6 +64,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraAnimatedClockModule());
     this.registerModule(new UltraAnimatedWeatherModule());
     this.registerModule(new UltraAnimatedForecastModule());
+    this.registerModule(new UltraExternalCardModule());
   }
 
   // Register a new module (for core modules or third-party modules)
