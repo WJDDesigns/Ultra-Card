@@ -1102,18 +1102,18 @@ export class UltraLightModule extends BaseUltraModule {
                 updates.white = undefined;
               } else if (detail.mode === 'color_temp') {
                 updates.color_temp = detail.color_temp;
-                updates.rgb_color = undefined;
-                updates.hs_color = undefined;
-                updates.xy_color = undefined;
+                // For RGBWW lights, keep color values when setting color_temp
+                // Only clear rgbw_color, rgbww_color, and white which conflict
                 updates.rgbw_color = undefined;
                 updates.rgbww_color = undefined;
                 updates.white = undefined;
-                updates.effect = ''; // Clear effect when setting color
+                updates.effect = ''; // Clear effect when setting color temp
               } else {
                 updates.rgb_color = detail.rgb_color;
                 updates.hs_color = detail.hs_color;
                 updates.xy_color = detail.xy_color;
-                updates.color_temp = undefined;
+                // For RGBWW lights, keep color_temp when setting RGB/HS color
+                // Only clear conflicting color modes
                 updates.rgbw_color = undefined;
                 updates.rgbww_color = undefined;
                 updates.white = undefined;
@@ -1690,17 +1690,20 @@ export class UltraLightModule extends BaseUltraModule {
   }
 
   private getPresetColorMode(preset: LightPreset): 'rgb' | 'hs' | 'xy' | 'color_temp' {
-    if (preset.color_temp) return 'color_temp';
+    // For RGBWW lights that may have both color and color_temp set,
+    // prioritize showing the color mode over color_temp for better UX
     if (preset.hs_color) return 'hs';
     if (preset.xy_color) return 'xy';
     if (preset.rgb_color) return 'rgb';
+    if (preset.color_temp) return 'color_temp';
     return 'hs'; // Default to HS mode
   }
 
   private getPresetLightMode(preset: LightPreset): 'color' | 'white' | 'effect' {
     if (preset.effect && preset.effect.trim() !== '') return 'effect';
-    if (preset.color_temp) return 'white';
+    // For RGBWW lights, prioritize showing color tab when color values are set
     if (preset.rgb_color || preset.hs_color || preset.xy_color) return 'color';
+    if (preset.color_temp) return 'white';
     return 'color'; // Default to color mode
   }
 
@@ -1810,7 +1813,7 @@ export class UltraLightModule extends BaseUltraModule {
         serviceData.brightness = preset.brightness;
       }
 
-      // Add color - only ONE color mode at a time to avoid conflicts
+      // Add color - support BOTH color and color_temp for RGBWW lights
       if (preset.effect && preset.effect.trim() !== '') {
         // Check if this entity supports the selected effect
         const entityEffectList = this.getEffectList(entityId, hass);
@@ -1856,40 +1859,47 @@ export class UltraLightModule extends BaseUltraModule {
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
-      } else if (preset.color_temp !== undefined) {
-        // Color temperature mode
-        serviceData.color_temp = preset.color_temp;
-      } else if (isWLED && preset.rgb_color !== undefined) {
-        // For WLED devices, prioritize RGB color mode and clear effects
-        serviceData.rgb_color = preset.rgb_color;
-        serviceData.effect = 'Solid'; // Explicitly set to Solid effect to clear any active effects
-      } else if (preset.hs_color !== undefined) {
-        // HS color mode (preferred for Home Assistant)
-        serviceData.hs_color = preset.hs_color;
-        if (isWLED) {
-          serviceData.effect = 'Solid'; // Clear effects for WLED devices
+      } else {
+        // Handle color modes - for RGBWW lights, allow both color AND color_temp
+        // First, set the primary color mode
+        if (isWLED && preset.rgb_color !== undefined) {
+          // For WLED devices, prioritize RGB color mode and clear effects
+          serviceData.rgb_color = preset.rgb_color;
+          serviceData.effect = 'Solid'; // Explicitly set to Solid effect to clear any active effects
+        } else if (preset.hs_color !== undefined) {
+          // HS color mode (preferred for Home Assistant)
+          serviceData.hs_color = preset.hs_color;
+          if (isWLED) {
+            serviceData.effect = 'Solid'; // Clear effects for WLED devices
+          }
+        } else if (preset.xy_color !== undefined) {
+          // XY color mode
+          serviceData.xy_color = preset.xy_color;
+          if (isWLED) {
+            serviceData.effect = 'Solid'; // Clear effects for WLED devices
+          }
+        } else if (preset.rgb_color !== undefined) {
+          // RGB color mode - fallback for non-WLED devices
+          serviceData.rgb_color = preset.rgb_color;
+          if (isWLED) {
+            serviceData.effect = 'Solid'; // Clear effects for WLED devices
+          }
+        } else if (preset.rgbw_color !== undefined) {
+          // RGBW color mode
+          serviceData.rgbw_color = preset.rgbw_color;
+        } else if (preset.rgbww_color !== undefined) {
+          // RGBWW color mode
+          serviceData.rgbww_color = preset.rgbww_color;
+        } else if (preset.white !== undefined) {
+          // White value mode
+          serviceData.white = preset.white;
         }
-      } else if (preset.xy_color !== undefined) {
-        // XY color mode
-        serviceData.xy_color = preset.xy_color;
-        if (isWLED) {
-          serviceData.effect = 'Solid'; // Clear effects for WLED devices
+
+        // For RGBWW lights, ALSO add color_temp if it's defined
+        // This allows controlling both the RGB LEDs and the white LED temperature simultaneously
+        if (preset.color_temp !== undefined) {
+          serviceData.color_temp = preset.color_temp;
         }
-      } else if (preset.rgb_color !== undefined) {
-        // RGB color mode - fallback for non-WLED devices
-        serviceData.rgb_color = preset.rgb_color;
-        if (isWLED) {
-          serviceData.effect = 'Solid'; // Clear effects for WLED devices
-        }
-      } else if (preset.rgbw_color !== undefined) {
-        // RGBW color mode
-        serviceData.rgbw_color = preset.rgbw_color;
-      } else if (preset.rgbww_color !== undefined) {
-        // RGBWW color mode
-        serviceData.rgbww_color = preset.rgbww_color;
-      } else if (preset.white !== undefined) {
-        // White value mode
-        serviceData.white = preset.white;
       }
 
       await this.callLightService('turn_on', entityId, serviceData, hass);
