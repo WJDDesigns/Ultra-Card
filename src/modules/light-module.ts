@@ -294,6 +294,7 @@ export class UltraLightModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     };
   }
 
@@ -303,6 +304,17 @@ export class UltraLightModule extends BaseUltraModule {
       return ['onoff'];
     }
     return entity.attributes.supported_color_modes as LightColorMode[];
+  }
+
+  private hasRgbwwSupport(entities: string[], hass: HomeAssistant): boolean {
+    if (!entities || entities.length === 0) return false;
+    return entities.some(entityId => {
+      const entity = hass.states[entityId];
+      const modes = entity?.attributes.supported_color_modes || [];
+      return modes.some(
+        (mode: string) => mode === 'rgbww' || mode === 'rgbcct' || mode === 'rgbww_color'
+      );
+    });
   }
 
   private getCurrentColorMode(entityId: string, hass: HomeAssistant): LightColorMode {
@@ -1086,6 +1098,7 @@ export class UltraLightModule extends BaseUltraModule {
               : this.getPresetColorMode(preset)}
             .min_mireds=${153}
             .max_mireds=${500}
+            .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
             @color-changed=${(e: CustomEvent) => {
               const detail = e.detail;
               const updates: Partial<LightPreset> = {};
@@ -1100,6 +1113,13 @@ export class UltraLightModule extends BaseUltraModule {
                 updates.rgbw_color = undefined;
                 updates.rgbww_color = undefined;
                 updates.white = undefined;
+              } else if (detail.mode === 'rgbww') {
+                // RGBWW mode: Keep BOTH color and temperature
+                updates.rgb_color = detail.rgb_color;
+                updates.hs_color = detail.hs_color;
+                updates.xy_color = detail.xy_color;
+                updates.color_temp = detail.color_temp;
+                updates.effect = ''; // Clear effect when setting color
               } else if (detail.mode === 'color_temp') {
                 updates.color_temp = detail.color_temp;
                 updates.rgb_color = undefined;
@@ -1810,7 +1830,11 @@ export class UltraLightModule extends BaseUltraModule {
         serviceData.brightness = preset.brightness;
       }
 
-      // Add color - only ONE color mode at a time to avoid conflicts
+      // Check if this is RGBWW mode (both color and temp defined)
+      const isRgbwwMode =
+        (preset.rgb_color || preset.hs_color || preset.xy_color) && preset.color_temp !== undefined;
+
+      // Add color - handle RGBWW mode specially
       if (preset.effect && preset.effect.trim() !== '') {
         // Check if this entity supports the selected effect
         const entityEffectList = this.getEffectList(entityId, hass);
@@ -1856,8 +1880,24 @@ export class UltraLightModule extends BaseUltraModule {
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
+      } else if (isRgbwwMode) {
+        // RGBWW mode: Send BOTH color and color temperature
+        // Priority: RGB > HS > XY for color value
+        if (preset.rgb_color !== undefined) {
+          serviceData.rgb_color = preset.rgb_color;
+        } else if (preset.hs_color !== undefined) {
+          serviceData.hs_color = preset.hs_color;
+        } else if (preset.xy_color !== undefined) {
+          serviceData.xy_color = preset.xy_color;
+        }
+        // Always include color temp in RGBWW mode
+        serviceData.color_temp = preset.color_temp;
+
+        if (isWLED) {
+          serviceData.effect = 'Solid'; // Clear effects for WLED devices
+        }
       } else if (preset.color_temp !== undefined) {
-        // Color temperature mode
+        // Color temperature mode only
         serviceData.color_temp = preset.color_temp;
       } else if (isWLED && preset.rgb_color !== undefined) {
         // For WLED devices, prioritize RGB color mode and clear effects
@@ -2154,7 +2194,7 @@ export class UltraLightModule extends BaseUltraModule {
     buttonColor: string;
   } {
     // Get the light color from the preset configuration (not live state)
-    let lightColor = this.getPresetColorPreview(preset);
+    const lightColor = this.getPresetColorPreview(preset);
 
     // Note: We use the preset's configured color, not the live entity state,
     // so buttons show the colors they will set, not the current light color
@@ -2327,7 +2367,15 @@ export class UltraLightModule extends BaseUltraModule {
       errors.push('At least one entity must be selected for each preset');
     }
 
-    if (!preset.brightness && !preset.rgb_color && !preset.color_temp && !preset.effect) {
+    // Allow both color and temp for RGBWW lights - no mutual exclusivity check needed
+    if (
+      !preset.brightness &&
+      !preset.rgb_color &&
+      !preset.hs_color &&
+      !preset.xy_color &&
+      !preset.color_temp &&
+      !preset.effect
+    ) {
       errors.push('At least one light setting (brightness, color, or effect) must be configured');
     }
 

@@ -19,6 +19,7 @@ export * from './light-module';
 export * from './animated-clock-module';
 export * from './animated-weather-module';
 export * from './animated-forecast-module';
+export * from './external-card-module';
 export { getModuleRegistry } from './module-registry';
 export { ucPresetsService } from '../services/uc-presets-service';
 export { ucFavoritesService } from '../services/uc-favorites-service';

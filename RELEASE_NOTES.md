@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 2.0-beta14
+
+### 🐛 Bug Fixes
+
+- **Fixed issue with 3rd party cards being squished** - 3rd party cards now render properly without layout constraints
+
+### 🚀 New Features
+
+- **Added new transparency slider in color picker** - Color pickers now include a transparency/alpha slider for full RGBA control
+- **Added auto for bulbs that support both RGBWW/RGBCCT** - Automatic detection and support for dual white temperature bulbs
+
 ## Version 2.0-beta9
 
 ### 🐛 Bug Fixes

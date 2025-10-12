@@ -83,12 +83,16 @@ export class UltraColorPicker extends LitElement {
   @state() private _textInputValue?: string;
   @state() private _favoriteColors: FavoriteColor[] = [];
   @state() private _showAddToFavorites = false;
+  @state() private _transparency = 100; // 0-100, where 100 is fully opaque
   private _documentClickHandler?: (e: Event) => void;
   private _favoritesUnsubscribe?: () => void;
 
   protected firstUpdated(): void {
     this._currentValue = this.value;
     this._textInputValue = this.value;
+    // Extract initial transparency from the value
+    this._transparency = this._extractTransparency(this.value);
+
     // Simple click outside handler for accordion
     this._documentClickHandler = this._handleDocumentClick.bind(this);
     document.addEventListener('click', this._documentClickHandler, true);
@@ -140,6 +144,8 @@ export class UltraColorPicker extends LitElement {
     if (changedProps.has('value')) {
       this._currentValue = this.value;
       this._textInputValue = this.value;
+      // Extract transparency from the new value
+      this._transparency = this._extractTransparency(this.value);
     }
   }
 
@@ -149,29 +155,51 @@ export class UltraColorPicker extends LitElement {
       return;
     }
 
+    // When opening the palette, ensure transparency is extracted from current value
+    if (!this._showPalette) {
+      this._currentValue = this.value;
+      this._textInputValue = this.value;
+      this._transparency = this._extractTransparency(this.value);
+    }
+
     this._showPalette = !this._showPalette;
   }
 
   private _selectColor(color: string, event: Event): void {
     event.stopPropagation();
-    this._currentValue = color;
-    this.value = color; // Update the property
+
+    // Apply current transparency to the newly selected color
+    const colorWithTransparency = this._applyTransparency(color, this._transparency);
+
+    // Update preview but keep palette open so user can adjust transparency
+    this._currentValue = colorWithTransparency;
+    this._textInputValue = colorWithTransparency;
+    this.requestUpdate(); // Force re-render to show the updated color
+  }
+
+  private _applyColorSelection(): void {
+    // Finalize the color selection and close the palette
+    this.value = this._currentValue;
     this._showPalette = false;
-    this.requestUpdate(); // Force re-render
 
     const changeEvent = new CustomEvent('value-changed', {
-      detail: { value: color },
+      detail: { value: this._currentValue },
       bubbles: true,
       composed: true,
     });
     this.dispatchEvent(changeEvent);
+    this.requestUpdate();
   }
 
   private _handleNativeColorChange(event: Event): void {
     event.stopPropagation(); // Prevent accordion from closing
     const input = event.target as HTMLInputElement;
     const color = input.value;
-    this._selectColor(color, event);
+    // Update preview with current transparency
+    const colorWithTransparency = this._applyTransparency(color, this._transparency);
+    this._currentValue = colorWithTransparency;
+    this._textInputValue = colorWithTransparency;
+    this.requestUpdate();
   }
 
   private _handleTextInputChange(event: Event): void {
@@ -191,8 +219,12 @@ export class UltraColorPicker extends LitElement {
   }
 
   private _applyTextInputValue(): void {
-    if (this._textInputValue !== undefined) {
-      this._selectColor(this._textInputValue, new Event('change'));
+    if (this._textInputValue !== undefined && this._isValidColor(this._textInputValue)) {
+      // Update the current value
+      this._currentValue = this._textInputValue;
+      // Extract transparency from the input
+      this._transparency = this._extractTransparency(this._textInputValue);
+      this.requestUpdate();
     }
   }
 
@@ -389,6 +421,161 @@ export class UltraColorPicker extends LitElement {
     return 'var(--primary-text-color)';
   }
 
+  /**
+   * Extract transparency from a color value (0-100, where 100 is fully opaque)
+   */
+  private _extractTransparency(color?: string): number {
+    if (!color) return 100;
+
+    // Check for RGBA format
+    const rgbaMatch = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
+    if (rgbaMatch) {
+      const alpha = parseFloat(rgbaMatch[4]);
+      return Math.round(alpha * 100);
+    }
+
+    // Check for 8-digit hex with alpha (#RRGGBBAA)
+    const hexAlphaMatch = color.match(/^#[0-9A-Fa-f]{8}$/);
+    if (hexAlphaMatch) {
+      const alpha = parseInt(color.substring(7, 9), 16) / 255;
+      return Math.round(alpha * 100);
+    }
+
+    // Check for HSLA format
+    const hslaMatch = color.match(/hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*,\s*([\d.]+)\s*\)/);
+    if (hslaMatch) {
+      const alpha = parseFloat(hslaMatch[4]);
+      return Math.round(alpha * 100);
+    }
+
+    // For transparent keyword
+    if (color === 'transparent') {
+      return 0;
+    }
+
+    // Default to fully opaque for hex, rgb, hsl, named colors, and CSS variables
+    return 100;
+  }
+
+  /**
+   * Convert hex color to RGB values
+   */
+  private _hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
+  }
+
+  /**
+   * Get base color without alpha/transparency
+   */
+  private _getBaseColor(color?: string): string {
+    if (!color) return '#000000';
+
+    // Extract RGB from RGBA
+    const rgbaMatch = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+)?\s*\)/);
+    if (rgbaMatch) {
+      const [_, r, g, b] = rgbaMatch;
+      const toHex = (n: string) => parseInt(n).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    // Extract from 8-digit hex
+    if (color.match(/^#[0-9A-Fa-f]{8}$/)) {
+      return color.substring(0, 7);
+    }
+
+    // Extract HSL from HSLA
+    const hslaMatch = color.match(
+      /hsla?\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*(?:,\s*[\d.]+)?\s*\)/
+    );
+    if (hslaMatch) {
+      const [_, h, s, l] = hslaMatch;
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+
+    // For transparent, return white
+    if (color === 'transparent') {
+      return '#FFFFFF';
+    }
+
+    // Return as-is for hex, named colors, CSS variables
+    return color;
+  }
+
+  /**
+   * Apply transparency to a base color
+   */
+  private _applyTransparency(baseColor: string, transparency: number): string {
+    // At 100% transparency, use hex format
+    if (transparency === 100) {
+      return baseColor;
+    }
+
+    // For transparent keyword at 0%
+    if (transparency === 0) {
+      return 'transparent';
+    }
+
+    const alpha = (transparency / 100).toFixed(2);
+
+    // Handle CSS variables - wrap in rgba if not 100%
+    if (baseColor.startsWith('var(--')) {
+      return `rgba(${baseColor}, ${alpha})`;
+    }
+
+    // Handle hex colors
+    if (baseColor.startsWith('#')) {
+      const rgb = this._hexToRgb(baseColor);
+      if (rgb) {
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+      }
+    }
+
+    // Handle RGB format
+    const rgbMatch = baseColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+    if (rgbMatch) {
+      const [_, r, g, b] = rgbMatch;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // Handle HSL format
+    const hslMatch = baseColor.match(/hsl\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/);
+    if (hslMatch) {
+      const [_, h, s, l] = hslMatch;
+      return `hsla(${h}, ${s}%, ${l}%, ${alpha})`;
+    }
+
+    // For named colors, convert to rgba (approximation - may not work for all named colors)
+    return baseColor;
+  }
+
+  /**
+   * Handle transparency slider change
+   */
+  private _handleTransparencyChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const transparency = parseInt(input.value, 10);
+    this._transparency = transparency;
+
+    // Get the base color without alpha
+    const baseColor = this._getBaseColor(this._currentValue);
+
+    // Apply the new transparency
+    const newColor = this._applyTransparency(baseColor, transparency);
+
+    // Update preview but keep palette open
+    this._currentValue = newColor;
+    this._textInputValue = newColor;
+
+    this.requestUpdate();
+  }
+
   protected render(): TemplateResult {
     const displayValue = this._getDisplayValue();
     const nativeInputColor = this._getColorForNativeInput();
@@ -494,6 +681,36 @@ export class UltraColorPicker extends LitElement {
                   </div>
                 </div>
 
+                <!-- Transparency Slider Section -->
+                <div class="transparency-section">
+                  <div class="transparency-header">
+                    <label class="transparency-label">Transparency:</label>
+                    <span class="transparency-value">${this._transparency}%</span>
+                  </div>
+                  <div class="transparency-slider-wrapper">
+                    <input
+                      type="range"
+                      class="transparency-slider"
+                      min="0"
+                      max="100"
+                      step="1"
+                      .value=${this._transparency.toString()}
+                      @input=${this._handleTransparencyChange}
+                      @click=${(e: Event) => e.stopPropagation()}
+                      title="Adjust transparency (100% = fully opaque, 0% = fully transparent)"
+                    />
+                    <div class="transparency-track">
+                      <div
+                        class="transparency-preview"
+                        style="background: linear-gradient(to right, 
+                          transparent 0%, 
+                          ${this._getBaseColor(this._currentValue)} 100%
+                        );"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Color Palette Grid -->
                 <div class="palette-grid">
                   ${COLOR_PALETTE.map(
@@ -557,6 +774,22 @@ export class UltraColorPicker extends LitElement {
                       </div>
                     `
                   : ''}
+
+                <!-- Done Button -->
+                <div class="done-button-container">
+                  <button
+                    class="done-button"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._applyColorSelection();
+                    }}
+                    type="button"
+                    title="Apply color and close"
+                  >
+                    <ha-icon icon="mdi:check"></ha-icon>
+                    <span>Done</span>
+                  </button>
+                </div>
               </div>
             `
           : ''}
@@ -573,6 +806,7 @@ export class UltraColorPicker extends LitElement {
         width: 100%;
         position: relative;
         box-sizing: border-box;
+        z-index: 1000;
       }
 
       .color-label {
@@ -682,8 +916,10 @@ export class UltraColorPicker extends LitElement {
         padding: 16px;
         width: 100%;
         box-sizing: border-box;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         animation: expandDown 0.2s ease-out;
+        position: relative;
+        z-index: 50000;
       }
 
       @keyframes expandDown {
@@ -781,6 +1017,138 @@ export class UltraColorPicker extends LitElement {
 
       .apply-text-btn ha-icon {
         --mdc-icon-size: 18px;
+      }
+
+      /* Transparency Slider Section */
+      .transparency-section {
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .transparency-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .transparency-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .transparency-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-color);
+        font-family: var(--code-font-family, monospace);
+      }
+
+      .transparency-slider-wrapper {
+        position: relative;
+        width: 100%;
+        height: 32px;
+        margin-bottom: 8px;
+      }
+
+      .transparency-track {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 8px;
+        transform: translateY(-50%);
+        border-radius: 4px;
+        overflow: hidden;
+        pointer-events: none;
+        border: 1px solid var(--divider-color);
+        background:
+          linear-gradient(45deg, #ccc 25%, transparent 25%),
+          linear-gradient(-45deg, #ccc 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #ccc 75%),
+          linear-gradient(-45deg, transparent 75%, #ccc 75%);
+        background-size: 8px 8px;
+        background-position:
+          0 0,
+          0 4px,
+          4px -4px,
+          -4px 0px;
+      }
+
+      .transparency-preview {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+      }
+
+      .transparency-slider {
+        position: relative;
+        width: 100%;
+        height: 8px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        outline: none;
+        cursor: pointer;
+        z-index: 1;
+        margin: 0;
+        padding: 12px 0;
+      }
+
+      /* Webkit/Chrome slider thumb */
+      .transparency-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .transparency-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+      }
+
+      .transparency-slider::-webkit-slider-thumb:active {
+        transform: scale(1.1);
+        background: var(--primary-color-dark, var(--primary-color));
+      }
+
+      /* Firefox slider thumb */
+      .transparency-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .transparency-slider::-moz-range-thumb:hover {
+        transform: scale(1.2);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+      }
+
+      .transparency-slider::-moz-range-thumb:active {
+        transform: scale(1.1);
+        background: var(--primary-color-dark, var(--primary-color));
+      }
+
+      /* Firefox track (hide default track) */
+      .transparency-slider::-moz-range-track {
+        background: transparent;
+        border: none;
       }
 
       .palette-grid {
@@ -1030,6 +1398,48 @@ export class UltraColorPicker extends LitElement {
       .no-favorites small {
         font-size: 12px;
         opacity: 0.7;
+      }
+
+      /* Done Button */
+      .done-button-container {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--divider-color);
+        display: flex;
+        justify-content: center;
+      }
+
+      .done-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 32px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        min-width: 120px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .done-button:hover {
+        background: var(--primary-color-dark, var(--primary-color));
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .done-button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .done-button ha-icon {
+        --mdc-icon-size: 20px;
       }
 
       @media (max-width: 768px) {

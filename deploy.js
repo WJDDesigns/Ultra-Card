@@ -68,10 +68,39 @@ function countFiles(dir) {
 // Deploy files to target path
 function deployFiles(targetPath) {
   try {
+    // Check if source files exist and get their sizes
+    console.log(`  🔍 Verifying source files...`);
+    let sourceFilesValid = true;
+    CONFIG.sourceFiles.forEach(file => {
+      const sourcePath = path.resolve(__dirname, file);
+      if (fs.existsSync(sourcePath)) {
+        const stats = fs.statSync(sourcePath);
+        const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+        console.log(`  ✓ Found: ${path.basename(file)} (${sizeMB} MB)`);
+      } else {
+        console.log(`  ✗ Missing: ${file}`);
+        sourceFilesValid = false;
+      }
+    });
+
+    if (!sourceFilesValid) {
+      console.log(`  ⚠️  Some source files are missing. Run 'npm run build' first!`);
+      return false;
+    }
+
     // Remove old version if exists (ensures clean deployment)
     if (fs.existsSync(targetPath)) {
       console.log(`  🗑️  Removing old version...`);
-      fs.rmSync(targetPath, { recursive: true, force: true });
+      try {
+        // Try Node.js method first
+        fs.rmSync(targetPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+      } catch (error) {
+        // Fallback to system rm command for stubborn files
+        console.log(`  🔧 Using system rm command...`);
+        execSync(`rm -rf "${targetPath}"`, { stdio: 'ignore' });
+      }
+      // Small delay to ensure filesystem sync
+      execSync('sleep 0.5');
     }
 
     // Create target directory
@@ -87,14 +116,37 @@ function deployFiles(targetPath) {
 
       if (fs.existsSync(sourcePath)) {
         fs.copyFileSync(sourcePath, targetFile);
-        console.log(`  ✅ Copied: ${path.basename(file)}`);
+        const stats = fs.statSync(targetFile);
+        const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+        console.log(`  ✅ Copied: ${path.basename(file)} (${sizeMB} MB)`);
         copiedCount++;
       } else {
         console.log(`  ⚠️  Not found: ${file}`);
       }
     });
 
-    // Verify deployment
+    // Verify deployment by checking file sizes
+    console.log(`  🔍 Verifying deployment...`);
+    let allFilesValid = true;
+    CONFIG.sourceFiles.forEach(file => {
+      const targetFile = path.join(targetPath, path.basename(file));
+      if (fs.existsSync(targetFile)) {
+        const stats = fs.statSync(targetFile);
+        if (stats.size === 0) {
+          console.log(`  ⚠️  Warning: ${path.basename(file)} is empty!`);
+          allFilesValid = false;
+        }
+      } else {
+        console.log(`  ⚠️  Warning: ${path.basename(file)} not found in target!`);
+        allFilesValid = false;
+      }
+    });
+
+    if (!allFilesValid) {
+      console.log(`  ⚠️  Deployment verification failed!`);
+      return false;
+    }
+
     const fileCount = countFiles(targetPath);
     console.log(`  ✅ Deployed ${fileCount} file(s)`);
 
@@ -140,7 +192,11 @@ async function deploy() {
   }
 
   if (deployed) {
-    console.log('✨ Deployment complete! Refresh your Home Assistant dashboard to see changes.\n');
+    console.log('✨ Deployment complete!\n');
+    console.log('🔄 To see changes in Home Assistant:');
+    console.log('   1. Clear browser cache (Cmd+Shift+R on Mac, Ctrl+Shift+F5 on Windows)');
+    console.log('   2. Or open DevTools → Application → Clear Storage → Clear site data');
+    console.log('   3. Refresh your Home Assistant dashboard\n');
   } else {
     console.log('⚠️  No instances were successfully deployed to.\n');
     process.exit(1);

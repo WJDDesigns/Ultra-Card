@@ -13,7 +13,8 @@ export interface LightColorChangedEvent {
     effect_speed?: number;
     effect_intensity?: number;
     effect_reverse?: boolean;
-    mode: 'rgb' | 'hs' | 'xy' | 'color_temp' | 'effect';
+    mode: 'rgb' | 'hs' | 'xy' | 'color_temp' | 'effect' | 'rgbww';
+    rgbww_mode?: boolean;
   };
 }
 
@@ -197,10 +198,11 @@ export class UcLightColorPicker extends LitElement {
   @property() public effect_intensity?: number; // WLED effect intensity (0-255)
   @property() public effect_reverse?: boolean; // WLED effect direction
   @property() public effect_list?: string[]; // Available effects for the selected entities
-  @property() public mode: 'rgb' | 'hs' | 'xy' | 'color_temp' | 'effect' = 'hs';
+  @property() public mode: 'rgb' | 'hs' | 'xy' | 'color_temp' | 'effect' | 'rgbww' = 'hs';
   @property() public min_mireds = 153; // ~6500K
   @property() public max_mireds = 500; // ~2000K
   @property({ type: Boolean }) public disabled = false;
+  @property({ type: Boolean }) public rgbww_mode = false; // Enable RGBWW combined mode
 
   @state() private _isDragging = false;
   @state() private _currentRgb: number[] = [255, 255, 255];
@@ -286,6 +288,12 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private fireColorChanged(updates: Partial<LightColorChangedEvent['detail']>): void {
+    // Determine the actual mode based on RGBWW mode and current state
+    let effectiveMode = this.mode;
+    if (this.rgbww_mode && (this.mode === 'hs' || this.mode === 'rgb' || this.mode === 'xy')) {
+      effectiveMode = 'rgbww';
+    }
+
     const event = new CustomEvent('color-changed', {
       detail: {
         rgb_color: this._currentRgb,
@@ -293,7 +301,8 @@ export class UcLightColorPicker extends LitElement {
         xy_color: this._currentXy,
         color_temp: this._currentColorTemp,
         effect: this.effect,
-        mode: this.mode,
+        mode: effectiveMode,
+        rgbww_mode: this.rgbww_mode,
         ...updates,
       },
     });
@@ -409,10 +418,21 @@ export class UcLightColorPicker extends LitElement {
 
     this._currentColorTemp = Math.max(this.min_mireds, Math.min(this.max_mireds, mired));
 
-    this.fireColorChanged({
-      color_temp: this._currentColorTemp,
-      mode: 'color_temp',
-    });
+    // In RGBWW mode, keep both color and temp values
+    if (this.rgbww_mode) {
+      this.fireColorChanged({
+        rgb_color: this._currentRgb,
+        hs_color: this._currentHs,
+        xy_color: this._currentXy,
+        color_temp: this._currentColorTemp,
+        mode: 'rgbww',
+      });
+    } else {
+      this.fireColorChanged({
+        color_temp: this._currentColorTemp,
+        mode: 'color_temp',
+      });
+    }
   }
 
   private handleEffectsTabClick(): void {
@@ -622,7 +642,7 @@ export class UcLightColorPicker extends LitElement {
         <!-- Color Controls -->
         ${this.mode === 'hs'
           ? html`
-              <div class="color-controls">
+              <div class="color-controls ${this.rgbww_mode ? 'rgbww-controls' : ''}">
                 <!-- Color Wheel -->
                 <div class="color-wheel-section">
                   <div
@@ -757,6 +777,65 @@ export class UcLightColorPicker extends LitElement {
                   </div>
                 </div>
               </div>
+
+              <!-- RGBWW White Temperature Balance (shown when rgbww_mode is enabled) -->
+              ${this.rgbww_mode
+                ? html`
+                    <div class="rgbww-divider">
+                      <div class="divider-line"></div>
+                      <span class="divider-label">White Temperature Balance</span>
+                      <div class="divider-line"></div>
+                    </div>
+                    <div class="rgbww-temp-controls">
+                      <div class="color-temp-slider-container">
+                        <div class="temp-labels">
+                          <span>Warm</span>
+                          <span>${currentKelvin}K</span>
+                          <span>Cool</span>
+                        </div>
+                        <input
+                          type="range"
+                          min=${this.min_mireds}
+                          max=${this.max_mireds}
+                          step="1"
+                          .value=${this._currentColorTemp}
+                          .disabled=${this.disabled}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            this.handleColorTempChange(parseInt(target.value));
+                          }}
+                          class="color-temp-slider"
+                          style="direction: rtl;"
+                        />
+                        <div class="kelvin-markers">
+                          <span>2000K</span>
+                          <span>3000K</span>
+                          <span>4000K</span>
+                          <span>5000K</span>
+                          <span>6500K</span>
+                        </div>
+                      </div>
+
+                      <!-- Mired Input -->
+                      <div class="mired-input-group">
+                        <label>Mired</label>
+                        <input
+                          type="number"
+                          min=${this.min_mireds}
+                          max=${this.max_mireds}
+                          .value=${this._currentColorTemp}
+                          .disabled=${this.disabled}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            this.handleColorTempChange(
+                              parseInt(target.value) || this._currentColorTemp
+                            );
+                          }}
+                        />
+                      </div>
+                    </div>
+                  `
+                : ''}
             `
           : ''}
 
@@ -1471,6 +1550,41 @@ export class UcLightColorPicker extends LitElement {
         line-height: 1.4;
       }
 
+      /* RGBWW Combined Mode Styles */
+      .rgbww-controls {
+        margin-bottom: 16px;
+      }
+
+      .rgbww-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 20px 0;
+        color: var(--primary-text-color);
+      }
+
+      .rgbww-divider .divider-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--divider-color), transparent);
+      }
+
+      .rgbww-divider .divider-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-color);
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .rgbww-temp-controls {
+        background: rgba(var(--rgb-primary-color), 0.05);
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid rgba(var(--rgb-primary-color), 0.1);
+      }
+
       /* Responsive design */
       @media (max-width: 600px) {
         .color-controls {
@@ -1486,6 +1600,10 @@ export class UcLightColorPicker extends LitElement {
         .rgb-inputs {
           grid-template-columns: 1fr;
           gap: 12px;
+        }
+
+        .rgbww-divider .divider-label {
+          font-size: 11px;
         }
       }
     `;

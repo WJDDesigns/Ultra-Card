@@ -59,6 +59,14 @@ export interface UltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult;
 
+  // Optional: Render the module's YAML settings tab (for external cards)
+  renderYamlTab?(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult;
+
   // Render the module preview/content
   renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
 

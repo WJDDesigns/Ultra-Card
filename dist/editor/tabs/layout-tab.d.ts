@@ -5,7 +5,6 @@ import '../../components/ultra-color-picker';
 import '../global-design-tab';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
-import '../../components/uc-native-card-dialog';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
     config: UltraCardConfig;
@@ -37,8 +36,6 @@ export declare class LayoutTab extends LitElement {
     private _favoriteRowToSave;
     private _showImportDialog;
     private _openMoreMenuRowIndex;
-    private _showNativeCardDialog;
-    private _nativeCardDialogModule;
     private _undoStack;
     private _redoStack;
     private _maxHistorySize;
@@ -131,10 +128,6 @@ export declare class LayoutTab extends LitElement {
     private _updateLayoutChildModule;
     private _updateModuleDesign;
     private _closeModuleSettings;
-    private _handleNativeCardSave;
-    private _handleNativeCardCancel;
-    private _handleNativeCardDuplicate;
-    private _handleNativeCardDelete;
     private _navigateToPro;
     private _closeLayoutChildSettings;
     private _onDragStart;
@@ -200,6 +193,7 @@ export declare class LayoutTab extends LitElement {
     private _renderLayoutChildSettings;
     private _renderLayoutChildGeneralTab;
     private _renderLayoutChildActionsTab;
+    private _renderLayoutChildYamlTab;
     private _renderLayoutChildOtherTab;
     private _renderModuleLogicTab;
     private _renderLayoutChildLogicTab;
@@ -217,6 +211,7 @@ export declare class LayoutTab extends LitElement {
     private _renderGeneralTab;
     private _renderActionsTab;
     private _renderOtherTab;
+    private _renderYamlTab;
     private _addCondition;
     private _addRowCondition;
     private _addColumnCondition;
@@ -264,7 +259,6 @@ export declare class LayoutTab extends LitElement {
     private _addCardFromTab;
     private _renderFavoriteDialog;
     private _renderImportDialog;
-    private _renderNativeCardDialog;
     private _handleImport;
     private _getDefaultCardConfig;
     private _add3rdPartyCard;

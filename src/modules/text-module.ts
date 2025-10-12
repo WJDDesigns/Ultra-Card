@@ -57,6 +57,7 @@ export class UltraTextModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     };
   }
 

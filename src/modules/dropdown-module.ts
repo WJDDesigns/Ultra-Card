@@ -65,6 +65,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
       // Hover configuration
       enable_hover_effect: false,
       hover_background_color: 'var(--primary-color)',

@@ -16,6 +16,7 @@ export declare class UltraColorPicker extends LitElement {
     private _textInputValue?;
     private _favoriteColors;
     private _showAddToFavorites;
+    private _transparency;
     private _documentClickHandler?;
     private _favoritesUnsubscribe?;
     protected firstUpdated(): void;
@@ -24,6 +25,7 @@ export declare class UltraColorPicker extends LitElement {
     protected updated(changedProps: Map<string, any>): void;
     private _togglePalette;
     private _selectColor;
+    private _applyColorSelection;
     private _handleNativeColorChange;
     private _handleTextInputChange;
     private _handleTextInputKeyDown;
@@ -36,6 +38,26 @@ export declare class UltraColorPicker extends LitElement {
     private _getColorForNativeInput;
     private _isDefaultValue;
     private _getContrastColor;
+    /**
+     * Extract transparency from a color value (0-100, where 100 is fully opaque)
+     */
+    private _extractTransparency;
+    /**
+     * Convert hex color to RGB values
+     */
+    private _hexToRgb;
+    /**
+     * Get base color without alpha/transparency
+     */
+    private _getBaseColor;
+    /**
+     * Apply transparency to a base color
+     */
+    private _applyTransparency;
+    /**
+     * Handle transparency slider change
+     */
+    private _handleTransparencyChange;
     protected render(): TemplateResult;
     static get styles(): import("lit").CSSResult;
 }

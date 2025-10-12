@@ -91,6 +91,8 @@ export interface BaseModule {
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
+  // Smart Scaling - automatically scale content to fit within container boundaries
+  smart_scaling?: boolean; // Default: true
   // Legacy design properties (for backward compatibility)
   background_color?: string;
   background_image?: string;

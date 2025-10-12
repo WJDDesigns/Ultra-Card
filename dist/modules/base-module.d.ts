@@ -19,6 +19,7 @@ export interface UltraModule {
     renderActionsTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void, updateConfig?: (updates: Partial<UltraCardConfig>) => void): TemplateResult;
     renderOtherTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderDesignTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    renderYamlTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;

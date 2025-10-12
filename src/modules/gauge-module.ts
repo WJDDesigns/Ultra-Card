@@ -113,6 +113,10 @@ export class UltraGaugeModule extends BaseUltraModule {
       tap_action: { action: 'default' },
       hold_action: { action: 'default' },
       double_tap_action: { action: 'default' },
+      // Logic (visibility) defaults
+      display_mode: 'always',
+      display_conditions: [],
+      smart_scaling: true,
     };
   }
 

@@ -1,16 +1,22 @@
 import { html, TemplateResult, css, CSSResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { ExternalCardModule, UltraCardConfig } from '../types';
+import { ExternalCardModule, UltraCardConfig, CardModule } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
 import { ref } from 'lit/directives/ref.js';
+import '../components/ultra-template-editor';
 
-// Cache card elements by module ID to prevent flashing/reloading
-const cardElementCache = new Map<string, HTMLElement>();
+// Debounce timers for config updates to prevent rapid re-render loops from spurious events
+const updateDebounceTimers = new Map<string, number>();
 
 // Export cleanup function for when modules are deleted
 export function cleanupExternalCardCache(moduleId: string): void {
-  cardElementCache.delete(moduleId);
+  // Clear any pending debounce timers
+  const timer = updateDebounceTimers.get(moduleId);
+  if (timer) {
+    clearTimeout(timer);
+    updateDebounceTimers.delete(moduleId);
+  }
 }
 
 export class UltraExternalCardModule extends BaseUltraModule {
@@ -25,33 +31,164 @@ export class UltraExternalCardModule extends BaseUltraModule {
     tags: ['pro', 'external', 'integration', '3rd-party'],
   };
 
-  createDefault(id?: string, hass?: HomeAssistant): ExternalCardModule {
+  createDefault(): ExternalCardModule {
     return {
-      id: id || this.generateId('external-card'),
+      id: `external-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'external_card',
       card_type: '',
       card_config: {},
+      name: '',
+      display_conditions: [],
+      smart_scaling: true,
     };
   }
 
-  // External cards use native HA dialog for configuration - no embedded editor needed
-  // The native dialog is rendered by uc-native-card-dialog component in layout-tab.ts
   renderGeneralTab(
     module: ExternalCardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult {
-    // External cards don't use the module settings popup - they use the native dialog
-    // This method is only called if someone somehow opens the settings for an external card
-    // which should be prevented by the layout-tab.ts code
+    const cardInfo = ucExternalCardsService.getCardInfo(module.card_type);
+    const cardName = cardInfo?.name || module.card_type || 'External Card';
+
+    // Ref callback to set up the native editor (NO CACHING - fresh on each render)
+    const setupEditor = (container: Element | undefined) => {
+      if (!container || !module.card_type) return;
+
+      // Create a fresh editor element each time (no caching)
+      try {
+        const editorType = `${module.card_type}-editor`;
+        const editor = document.createElement(editorType) as any;
+
+        // Check if editor is actually a custom element
+        if (editor instanceof HTMLUnknownElement) {
+          container.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
+              <ha-icon icon="mdi:information-outline" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
+              <p style="font-size: 14px; margin-bottom: 8px;">This card does not have a visual editor.</p>
+              <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Set config and hass
+        if (typeof editor.setConfig === 'function') {
+          editor.setConfig(module.card_config || {});
+        } else {
+          editor.config = module.card_config || {};
+        }
+        editor.hass = hass;
+
+        // Listen for config changes with spurious event guard and debouncing
+        editor.addEventListener('config-changed', (e: CustomEvent) => {
+          e.stopPropagation();
+          if (e.detail && e.detail.config) {
+            // Check if config actually changed by comparing with current module config
+            const newConfigKey = JSON.stringify(e.detail.config);
+            const currentConfigKey = JSON.stringify(module.card_config || {});
+
+            if (newConfigKey === currentConfigKey) {
+              return; // Ignore spurious config-changed events
+            }
+
+            // Clear any existing debounce timer
+            const existingTimer = updateDebounceTimers.get(module.id);
+            if (existingTimer) {
+              clearTimeout(existingTimer);
+            }
+
+            // Debounce the update to prevent rapid re-render loops
+            const timer = window.setTimeout(() => {
+              updateModule({ card_config: { ...e.detail.config } });
+              updateDebounceTimers.delete(module.id);
+            }, 150); // 150ms debounce
+
+            updateDebounceTimers.set(module.id, timer);
+          }
+        });
+
+        // Clear and mount
+        container.innerHTML = '';
+        container.appendChild(editor);
+      } catch (error) {
+        console.error('Failed to create native editor:', error);
+        container.innerHTML = `
+          <div style="padding: 40px; text-align: center; color: var(--error-color);">
+            <ha-icon icon="mdi:alert-circle" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
+            <p style="font-size: 14px; margin-bottom: 8px;">Failed to load editor</p>
+            <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
+          </div>
+        `;
+      }
+    };
+
     return html`
-      <div style="padding: 40px; text-align: center;">
-        <ha-icon icon="mdi:information" style="font-size: 48px; opacity: 0.5;"></ha-icon>
-        <p style="margin-top: 16px;">External cards use their native configuration dialog.</p>
-        <p style="font-size: 13px; color: var(--secondary-text-color);">
-          Close this and click edit again to open the native dialog.
-        </p>
+      ${this.injectUcFormStyles()}
+      <div class="external-card-general-tab">
+        <div class="settings-section">
+          <div
+            class="section-title"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
+          >
+            USING ${cardName.toUpperCase()}'S NATIVE EDITOR
+          </div>
+          <div
+            class="section-description"
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;"
+          >
+            Configure this 3rd party card using its native configuration interface.
+          </div>
+          <div class="native-editor-container" ${ref(setupEditor)}></div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderYamlTab(
+    module: ExternalCardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<ExternalCardModule>) => void
+  ): TemplateResult {
+    const yamlString = JSON.stringify(module.card_config || {}, null, 2);
+
+    const handleYamlChange = (e: CustomEvent) => {
+      try {
+        const newConfig = JSON.parse(e.detail.value);
+        updateModule({ card_config: newConfig });
+      } catch (error) {
+        console.error('Invalid JSON in YAML editor:', error);
+      }
+    };
+
+    return html`
+      ${this.injectUcFormStyles()}
+      <div class="external-card-yaml-tab">
+        <div class="settings-section">
+          <div
+            class="section-title"
+            style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
+          >
+            CARD CONFIGURATION (YAML/JSON)
+          </div>
+          <div
+            class="section-description"
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;"
+          >
+            Edit the card's configuration directly in JSON format. Changes are applied
+            automatically.
+          </div>
+          <ultra-template-editor
+            .hass=${hass}
+            .value=${yamlString}
+            .placeholder=${'{\n  "entity": "sensor.example"\n}'}
+            .minHeight=${200}
+            .maxHeight=${600}
+            @value-changed=${handleYamlChange}
+          ></ultra-template-editor>
+        </div>
       </div>
     `;
   }
@@ -61,13 +198,130 @@ export class UltraExternalCardModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): TemplateResult {
+    const moduleWithDesign = module as any;
+
+    // Extract design properties from the design object (priority system)
+    const designProperties = {
+      padding_top: moduleWithDesign.design?.padding_top,
+      padding_bottom: moduleWithDesign.design?.padding_bottom,
+      padding_left: moduleWithDesign.design?.padding_left,
+      padding_right: moduleWithDesign.design?.padding_right,
+      margin_top: moduleWithDesign.design?.margin_top,
+      margin_bottom: moduleWithDesign.design?.margin_bottom,
+      margin_left: moduleWithDesign.design?.margin_left,
+      margin_right: moduleWithDesign.design?.margin_right,
+      background_color: moduleWithDesign.design?.background_color,
+      background_image: moduleWithDesign.design?.background_image,
+      background_image_type: moduleWithDesign.design?.background_image_type,
+      background_image_entity: moduleWithDesign.design?.background_image_entity,
+      background_size: moduleWithDesign.design?.background_size,
+      background_position: moduleWithDesign.design?.background_position,
+      background_repeat: moduleWithDesign.design?.background_repeat,
+      border_style: moduleWithDesign.design?.border_style,
+      border_width: moduleWithDesign.design?.border_width,
+      border_color: moduleWithDesign.design?.border_color,
+      border_radius: moduleWithDesign.design?.border_radius,
+      box_shadow_h: moduleWithDesign.design?.box_shadow_h,
+      box_shadow_v: moduleWithDesign.design?.box_shadow_v,
+      box_shadow_blur: moduleWithDesign.design?.box_shadow_blur,
+      box_shadow_spread: moduleWithDesign.design?.box_shadow_spread,
+      box_shadow_color: moduleWithDesign.design?.box_shadow_color,
+      position: moduleWithDesign.design?.position,
+      top: moduleWithDesign.design?.top,
+      bottom: moduleWithDesign.design?.bottom,
+      left: moduleWithDesign.design?.left,
+      right: moduleWithDesign.design?.right,
+      z_index: moduleWithDesign.design?.z_index,
+      width: moduleWithDesign.design?.width,
+      height: moduleWithDesign.design?.height,
+      max_width: moduleWithDesign.design?.max_width,
+      max_height: moduleWithDesign.design?.max_height,
+      min_width: moduleWithDesign.design?.min_width,
+      min_height: moduleWithDesign.design?.min_height,
+      overflow: moduleWithDesign.design?.overflow,
+      clip_path: moduleWithDesign.design?.clip_path,
+      backdrop_filter: moduleWithDesign.design?.backdrop_filter,
+    };
+
+    // Container styles for design system with proper priority: design properties override module properties
+    const containerStyles = {
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
+        moduleWithDesign.padding_top ||
+        moduleWithDesign.padding_bottom ||
+        moduleWithDesign.padding_left ||
+        moduleWithDesign.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : '0px',
+      // Standard 8px top/bottom margin for proper web design spacing
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
+        moduleWithDesign.margin_top ||
+        moduleWithDesign.margin_bottom ||
+        moduleWithDesign.margin_left ||
+        moduleWithDesign.margin_right
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '8px 0',
+      background:
+        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      border:
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${designProperties.border_width || moduleWithDesign.border_width || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
+          : 'none',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
+      position: designProperties.position || moduleWithDesign.position || 'relative',
+      top: designProperties.top || moduleWithDesign.top || 'auto',
+      bottom: designProperties.bottom || moduleWithDesign.bottom || 'auto',
+      left: designProperties.left || moduleWithDesign.left || 'auto',
+      right: designProperties.right || moduleWithDesign.right || 'auto',
+      zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
+      width: designProperties.width || moduleWithDesign.width || '100%',
+      height: designProperties.height || moduleWithDesign.height || 'auto',
+      maxWidth: designProperties.max_width || moduleWithDesign.max_width || 'none',
+      maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
+      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
+      backdropFilter:
+        designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
+      boxShadow:
+        (designProperties.box_shadow_h || moduleWithDesign.box_shadow_h) &&
+        (designProperties.box_shadow_v || moduleWithDesign.box_shadow_v)
+          ? `${designProperties.box_shadow_h || moduleWithDesign.box_shadow_h || '0'} ${designProperties.box_shadow_v || moduleWithDesign.box_shadow_v || '0'} ${designProperties.box_shadow_blur || moduleWithDesign.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || moduleWithDesign.box_shadow_spread || '0'} ${designProperties.box_shadow_color || moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : 'none',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+    };
+
     // Check if card type is set
     if (!module.card_type) {
       return html`
-        <div class="external-card-placeholder">
-          <ha-icon icon="mdi:card-off"></ha-icon>
-          <p>No card selected</p>
-          <p class="subtitle">Click edit to configure this card</p>
+        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div class="external-card-placeholder">
+            <ha-icon icon="mdi:card-off"></ha-icon>
+            <p>No card selected</p>
+            <p class="subtitle">Click edit to configure this card</p>
+          </div>
         </div>
       `;
     }
@@ -75,10 +329,12 @@ export class UltraExternalCardModule extends BaseUltraModule {
     // Check if card config has sufficient data (more than just 'type')
     if (!module.card_config || Object.keys(module.card_config).length <= 1) {
       return html`
-        <div class="external-card-placeholder">
-          <ha-icon icon="mdi:cog"></ha-icon>
-          <p>${module.name || module.card_type}</p>
-          <p class="subtitle">Click edit to configure this card</p>
+        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div class="external-card-placeholder">
+            <ha-icon icon="mdi:cog"></ha-icon>
+            <p>${module.name || module.card_type}</p>
+            <p class="subtitle">Click edit to configure this card</p>
+          </div>
         </div>
       `;
     }
@@ -88,48 +344,29 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
     if (!isAvailable) {
       return html`
-        <div class="external-card-error">
-          <ha-icon icon="mdi:alert-circle"></ha-icon>
-          <p><strong>Card Not Found</strong></p>
-          <p class="card-type">${module.card_type}</p>
-          <p class="subtitle">This card is not installed on your system</p>
+        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div class="external-card-error">
+            <ha-icon icon="mdi:alert-circle"></ha-icon>
+            <p><strong>Card Not Found</strong></p>
+            <p class="card-type">${module.card_type}</p>
+            <p class="subtitle">This card is not installed on your system</p>
+          </div>
         </div>
       `;
     }
 
     // Use ref callback to create and mount the card element after Lit renders the container
+    // NOTE: We don't cache preview elements because a DOM element can only exist in one place.
+    // If we cache, the element gets "stolen" from the main card view when Live Preview opens.
+    // Creating fresh elements on each render is lightweight and prevents display issues.
     const refCallback = (container: Element | undefined) => {
       if (!container) {
-        // Element is being unmounted - nothing to do
         return;
       }
 
-      // Check if we have a cached card element for this module
-      let cardElement = cardElementCache.get(module.id);
-
-      if (cardElement) {
-        // Reuse existing element - just update config and hass
-        if (typeof (cardElement as any).setConfig === 'function') {
-          try {
-            (cardElement as any).setConfig(module.card_config);
-          } catch (e) {
-            // Config update might fail during configuration
-            console.warn(`[External Card] Config update failed for ${module.card_type}:`, e);
-          }
-        }
-        (cardElement as any).hass = hass;
-
-        // Mount it if it's not already in this container
-        if (!container.contains(cardElement)) {
-          container.innerHTML = '';
-          container.appendChild(cardElement);
-        }
-        return;
-      }
-
-      // Create a fresh card element (first time only)
+      // Create a fresh card element each time (no caching for preview)
       try {
-        cardElement = ucExternalCardsService.createCardElement(
+        const cardElement = ucExternalCardsService.createCardElement(
           module.card_type,
           module.card_config,
           hass
@@ -139,12 +376,56 @@ export class UltraExternalCardModule extends BaseUltraModule {
           throw new Error('Failed to create card element');
         }
 
-        // Store in cache to prevent recreating on every render
-        cardElementCache.set(module.id, cardElement);
+        // Apply inline styles to card element to fill container
+        cardElement.style.width = '100%';
+        cardElement.style.minWidth = '0';
+        cardElement.style.flex = '1 1 auto';
+        cardElement.style.display = 'block';
 
         // Clear and mount the card element
         container.innerHTML = '';
         container.appendChild(cardElement);
+
+        // Log styles after mounting to debug sizing issues
+        setTimeout(() => {
+          const containerEl = container as HTMLElement;
+          const cardEl = cardElement as HTMLElement;
+          const containerComputed = window.getComputedStyle(containerEl);
+          const cardComputed = window.getComputedStyle(cardEl);
+
+          console.log(`[External Card Styles] ${module.card_type} (${module.id}):`, {
+            container: {
+              display: containerComputed.display,
+              flex: containerComputed.flex,
+              flexGrow: containerComputed.flexGrow,
+              flexShrink: containerComputed.flexShrink,
+              flexBasis: containerComputed.flexBasis,
+              width: containerComputed.width,
+              height: containerComputed.height,
+              minWidth: containerComputed.minWidth,
+              minHeight: containerComputed.minHeight,
+            },
+            card: {
+              display: cardComputed.display,
+              flex: cardComputed.flex,
+              flexGrow: cardComputed.flexGrow,
+              flexShrink: cardComputed.flexShrink,
+              flexBasis: cardComputed.flexBasis,
+              width: cardComputed.width,
+              height: cardComputed.height,
+              minWidth: cardComputed.minWidth,
+              minHeight: cardComputed.minHeight,
+            },
+            parentWrapper: containerEl.parentElement
+              ? {
+                  className: containerEl.parentElement.className,
+                  display: window.getComputedStyle(containerEl.parentElement).display,
+                  flex: window.getComputedStyle(containerEl.parentElement).flex,
+                  width: window.getComputedStyle(containerEl.parentElement).width,
+                }
+              : null,
+          });
+        }, 100);
       } catch (error) {
         console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
         // If card creation fails, show error in container
@@ -159,78 +440,188 @@ export class UltraExternalCardModule extends BaseUltraModule {
     };
 
     // Return the wrapper container with ref callback
+    // Wrap the card content container inside the design container
     return html`
-      <div
-        ${ref(refCallback)}
-        class="external-card-wrapper"
-        @click=${(e: Event) => e.stopPropagation()}
-      >
-        <!-- Card will be mounted here -->
+      <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        <div
+          ${ref(refCallback)}
+          class="external-card-container uc-external-card"
+          style="
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
+          "
+          @click=${(e: Event) => e.stopPropagation()}
+        >
+          <!-- Card will be mounted here -->
+        </div>
       </div>
     `;
   }
 
+  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+    if (
+      !moduleWithDesign.background_image_type ||
+      moduleWithDesign.background_image_type === 'none'
+    ) {
+      return 'none';
+    }
+
+    switch (moduleWithDesign.background_image_type) {
+      case 'upload':
+      case 'url':
+        if (moduleWithDesign.background_image) {
+          return `url("${moduleWithDesign.background_image}")`;
+        }
+        break;
+
+      case 'entity':
+        if (
+          moduleWithDesign.background_image_entity &&
+          hass?.states[moduleWithDesign.background_image_entity]
+        ) {
+          const entityState = hass.states[moduleWithDesign.background_image_entity];
+          let imageUrl = '';
+
+          // Try to get image from entity
+          if (entityState.attributes?.entity_picture) {
+            imageUrl = entityState.attributes.entity_picture;
+          } else if (entityState.attributes?.image) {
+            imageUrl = entityState.attributes.image;
+          } else if (entityState.state && typeof entityState.state === 'string') {
+            // Handle cases where state itself is an image path
+            if (entityState.state.startsWith('/') || entityState.state.startsWith('http')) {
+              imageUrl = entityState.state;
+            }
+          }
+
+          if (imageUrl) {
+            // Handle Home Assistant local paths
+            if (imageUrl.startsWith('/local/') || imageUrl.startsWith('/media/')) {
+              imageUrl = imageUrl;
+            } else if (imageUrl.startsWith('/')) {
+              imageUrl = imageUrl;
+            }
+            return `url("${imageUrl}")`;
+          }
+        }
+        break;
+    }
+
+    return 'none';
+  }
+
+  private styleObjectToCss(styleObj: Record<string, string>): string {
+    return Object.entries(styleObj)
+      .map(([key, value]) => {
+        // Convert camelCase to kebab-case
+        const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+        return `${kebabKey}: ${value}`;
+      })
+      .join('; ');
+  }
+
+  private addPixelUnit(value: string | undefined): string | undefined {
+    if (!value) return value;
+
+    // If value is just a number or contains only numbers, add px
+    if (/^\d+$/.test(value)) {
+      return `${value}px`;
+    }
+
+    // If value is a multi-value (like "5 10 15 20"), add px to each number
+    if (/^[\d\s]+$/.test(value)) {
+      return value
+        .split(' ')
+        .map(v => (v.trim() ? `${v}px` : v))
+        .join(' ');
+    }
+
+    // Otherwise return as-is (already has units like px, em, %, etc.)
+    return value;
+  }
+
   static get styles(): CSSResult {
     return css`
-      /* Let container size naturally to content, like Ultra Card's own modules */
-      :host {
-        display: block;
+      /* Outer design container that applies design properties */
+      .external-card-module-container {
+        width: 100%;
         box-sizing: border-box;
       }
 
-      .external-card-wrapper {
-        display: inline-block;
-        box-sizing: border-box;
-        position: relative;
-        min-width: fit-content;
-        /* inline-block + min-width ensures cards don't collapse in horizontal layouts */
+      /* Container works in both flex and grid layouts */
+      .external-card-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto; /* For flex parent contexts (horizontal layouts) */
+        min-width: 0; /* Allow flex shrinking below content size */
+        min-height: 0; /* Allow flex shrinking below content size */
       }
 
-      /* Allow natural sizing for child cards */
-      .external-card-wrapper > * {
-        box-sizing: border-box;
+      /* Child cards fill the container */
+      .external-card-container > * {
+        width: 100%;
+        min-width: 0; /* Allow shrinking */
+        flex: 1 1 auto; /* Let cards participate in flex */
       }
 
+      /* Unique class for targeting 3rd party cards separately */
+      .uc-external-card {
+        /* Can be styled via Design tab */
+      }
+
+      /* Placeholder styles for when card isn't configured */
       .external-card-placeholder,
       .external-card-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         padding: 40px 20px;
         text-align: center;
-        background: var(--card-background-color, #fff);
-        border-radius: 8px;
-        border: 1px dashed var(--divider-color, #e0e0e0);
+        color: var(--secondary-text-color);
+        background: var(--card-background-color, var(--ha-card-background));
+        border-radius: var(--ha-card-border-radius, 12px);
+        border: 1px dashed var(--divider-color);
       }
 
       .external-card-error {
-        border-color: #ff9800;
-        background: rgba(255, 152, 0, 0.05);
+        border-color: var(--error-color);
+        color: var(--error-color);
       }
 
       .external-card-placeholder ha-icon,
       .external-card-error ha-icon {
         font-size: 48px;
         opacity: 0.5;
-        display: block;
-        margin: 0 auto 16px;
+        margin-bottom: 16px;
       }
 
       .external-card-placeholder p,
       .external-card-error p {
-        margin: 8px 0;
-        color: var(--primary-text-color, #212121);
+        margin: 4px 0;
+        font-size: 14px;
       }
 
-      .subtitle {
-        font-size: 13px !important;
-        color: var(--secondary-text-color, #757575) !important;
+      .external-card-placeholder .subtitle,
+      .external-card-error .subtitle {
+        font-size: 12px;
+        opacity: 0.8;
       }
 
-      .card-type {
-        font-family: 'Courier New', monospace;
-        font-size: 12px !important;
-        background: rgba(0, 0, 0, 0.05);
-        padding: 4px 8px;
-        border-radius: 4px;
-        display: inline-block;
+      .external-card-error .card-type {
+        font-family: monospace;
+        font-size: 13px;
+        opacity: 0.9;
+      }
+
+      /* Native editor container */
+      .native-editor-container {
+        min-height: 200px;
       }
     `;
   }

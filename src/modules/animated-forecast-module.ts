@@ -4,6 +4,7 @@ import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedForecastModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
 import { renderAnimatedForecastModuleEditor } from './animated-forecast-module-editor';
+import { getSmartScalingStyles } from '../utils/uc-smart-scaling';
 
 export class UltraAnimatedForecastModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -55,6 +56,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     };
   }
 
@@ -84,6 +86,10 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     const weatherData = this._getWeatherData(hass, forecastModule);
     const iconStyle = forecastModule.icon_style || 'fill';
 
+    // Get smart scaling setting (default true)
+    const smartScaling = forecastModule.smart_scaling !== false;
+    const scalingStyles = getSmartScalingStyles(smartScaling);
+
     // Get temperature unit from weather entity (no conversion needed)
     const tempUnit = weatherData.temperatureUnit;
 
@@ -103,6 +109,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         'var(--primary-text-color)'};
           --forecast-background: ${forecastModule.forecast_background ||
         'rgba(var(--rgb-primary-text-color), 0.05)'};
+          overflow: ${scalingStyles.overflow};
+          max-width: ${scalingStyles.maxWidth};
+          box-sizing: ${scalingStyles.boxSizing};
         "
       >
         <div class="weather-forecast">

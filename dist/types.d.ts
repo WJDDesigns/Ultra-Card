@@ -39,6 +39,7 @@ export interface BaseModule {
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
+    smart_scaling?: boolean;
     background_color?: string;
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';

@@ -6,6 +6,7 @@ import '../components/ultra-color-picker';
 import { renderAnimatedClockModuleEditor } from './animated-clock-module-editor';
 import { clockUpdateService } from '../services/clock-update-service';
 import { getImageUrl } from '../utils/image-upload';
+import { getSmartScalingStyles } from '../utils/uc-smart-scaling';
 
 export class UltraAnimatedClockModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -123,7 +124,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       text_ampm_size: 24,
 
       // Neon Clock options
-      neon_padding: 4,
+      neon_padding: 24,
       neon_hours_color: '#00ffff',
       neon_minutes_color: '#00ffff',
       neon_seconds_color: '#00ffff',
@@ -160,6 +161,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     };
   }
 
@@ -176,6 +178,10 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     const clockModule = module as AnimatedClockModule;
     const moduleWithDesign = clockModule as any;
     const designProperties = moduleWithDesign.design || {};
+
+    // Get smart scaling setting (default true)
+    const smartScaling = clockModule.smart_scaling !== false;
+    const scalingStyles = getSmartScalingStyles(smartScaling);
 
     // Register this clock with the update service
     const updateFrequency = parseInt(clockModule.update_frequency || '1');
@@ -299,13 +305,15 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       backdropFilter:
         designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || undefined,
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || undefined,
-      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      overflow: designProperties.overflow || moduleWithDesign.overflow || scalingStyles.overflow,
       // Flexbox for proper centering and responsive behavior
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      boxSizing: 'border-box',
+      boxSizing: scalingStyles.boxSizing,
+      // Apply smart scaling constraints
+      ...(smartScaling ? { maxWidth: scalingStyles.maxWidth } : {}),
     };
 
     return html`
@@ -1113,7 +1121,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     const showAmPm = clockModule.show_ampm !== false;
     const showSeparators = clockModule.show_separators !== false;
 
-    const padding = clockModule.neon_padding || 4;
+    const padding = clockModule.neon_padding || 24;
     const hoursColor = clockModule.neon_hours_color || '#00ffff';
     const minutesColor = clockModule.neon_minutes_color || '#00ffff';
     const secondsColor = clockModule.neon_seconds_color || '#00ffff';
@@ -1125,7 +1133,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     const secondsStr = String(seconds).padStart(2, '0');
 
     return html`
-      <div class="neon-clock" style="padding: calc(${padding}em * var(--clock-scale));">
+      <div class="neon-clock" style="padding: calc(${padding}px * var(--clock-scale));">
         <div class="neon-display">
           ${showHours
             ? html`<span
@@ -1877,17 +1885,20 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         display: flex;
         justify-content: center;
         align-items: center;
+        width: 100%;
         max-width: 100%;
+        box-sizing: border-box;
       }
 
       .neon-display {
         display: flex;
         align-items: center;
         gap: calc(8px * var(--clock-scale));
+        width: 100%;
         max-width: 100%;
         flex-wrap: nowrap;
         justify-content: center;
-        overflow-x: auto;
+        box-sizing: border-box;
       }
 
       .neon-digit {

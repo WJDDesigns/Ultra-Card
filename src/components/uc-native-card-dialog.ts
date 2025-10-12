@@ -1,3 +1,5 @@
+// @deprecated - No longer used. External cards now use standard module popup. Kept for backward compatibility only.
+
 import { LitElement, html, css, TemplateResult, CSSResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';

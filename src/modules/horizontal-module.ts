@@ -456,13 +456,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
                       !(childModule as any)?.orientation);
                   const isExternalCard = (childModule as any)?.type === 'external_card';
                   const allowGrowForAll = horizontalModule.alignment === 'justify';
-                  const shouldGrow = isBar || isHorizontalSeparator || allowGrowForAll;
+                  const shouldGrow =
+                    isBar || isHorizontalSeparator || isExternalCard || allowGrowForAll;
                   const flexGrow = shouldGrow ? 1 : 0;
-                  // Allow external cards to shrink to fit within container
-                  const flexShrink = shouldGrow || isExternalCard ? 1 : 0;
-                  // Use content-based sizing for non-expanding modules so they size to their content
-                  // External cards use 'auto' instead of 'content' to fix Bubble Card rendering
-                  const flexBasis = shouldGrow ? '0' : isExternalCard ? 'auto' : 'content';
+                  const flexShrink = shouldGrow ? 1 : 0;
+                  const flexBasis = shouldGrow ? '0' : 'content';
                   // Ensure bars and separators remain visible
                   const minWidth = isBar ? '80px' : isHorizontalSeparator ? '20px' : '0';
                   const alignSelf = 'auto';
@@ -999,7 +997,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       }
 
       /* Ensure external card wrappers handle scaling properly */
-      .child-module-preview:has(.external-card-wrapper) {
+      .child-module-preview:has(.external-card-container) {
         overflow: visible;
         transform-origin: center center;
       }

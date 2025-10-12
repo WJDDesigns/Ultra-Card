@@ -714,7 +714,7 @@ export class UltraLinkComponent {
           if (domain && service) {
             // Enhanced service data handling for better target support
             // Support both modern 'data' and legacy 'service_data' properties
-            let serviceData = { ...(action.data || action.service_data) };
+            const serviceData = { ...(action.data || action.service_data) };
 
             // If entity is specified but not in service_data, add it
             if (action.entity && !serviceData.entity_id) {

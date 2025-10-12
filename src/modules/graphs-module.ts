@@ -190,6 +190,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     } as any;
   }
 
@@ -1703,7 +1704,7 @@ export class UltraGraphsModule extends BaseUltraModule {
     };
 
     // Container styles for positioning and effects - design has priority
-    let containerStyles = {
+    const containerStyles = {
       padding:
         designProperties.padding_top ||
         designProperties.padding_bottom ||
@@ -3271,7 +3272,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         }
       });
 
-      let history: any = {};
+      const history: any = {};
 
       try {
         // Try WebSocket API first (more reliable)

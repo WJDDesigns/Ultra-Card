@@ -33,7 +33,6 @@ import { ucExternalCardsService } from '../../services/uc-external-cards-service
 import { PresetDefinition, FavoriteRow, ExportData, HoverEffectConfig } from '../../types';
 import '../../components/uc-favorite-dialog';
 import '../../components/uc-import-dialog';
-import '../../components/uc-native-card-dialog';
 
 // Typography and font definitions matching the professional interface
 const DEFAULT_FONTS = [{ value: 'default', label: '– Default –', category: 'default' }];
@@ -152,16 +151,6 @@ export class LayoutTab extends LitElement {
   @state() private _favoriteRowToSave: CardRow | null = null;
   @state() private _showImportDialog = false;
   @state() private _openMoreMenuRowIndex: number = -1;
-
-  // Native card dialog state for 3rd party cards
-  @state() private _showNativeCardDialog = false;
-  @state() private _nativeCardDialogModule: {
-    rowIndex: number;
-    columnIndex: number;
-    moduleIndex: number;
-    isChildModule?: boolean;
-    childIndex?: number;
-  } | null = null;
 
   // Undo/Redo state management
   @state() private _undoStack: { rows: CardRow[] }[] = [];
@@ -2179,14 +2168,7 @@ export class LayoutTab extends LitElement {
   private _openModuleSettings(rowIndex: number, columnIndex: number, moduleIndex: number): void {
     const module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
 
-    // External cards use native HA dialog instead of Ultra Card settings popup
-    if (module?.type === 'external_card') {
-      this._showNativeCardDialog = true;
-      this._nativeCardDialogModule = { rowIndex, columnIndex, moduleIndex };
-      return;
-    }
-
-    // Regular modules use Ultra Card settings popup
+    // All modules (including external cards) now use Ultra Card settings popup
     this._selectedModule = { rowIndex, columnIndex, moduleIndex };
     this._showModuleSettings = true;
   }
@@ -2566,6 +2548,10 @@ export class LayoutTab extends LitElement {
     if (updates.hasOwnProperty('animation_timing'))
       moduleUpdates.animation_timing = updates.animation_timing;
 
+    // Handle smart scaling
+    if (updates.hasOwnProperty('smart_scaling'))
+      moduleUpdates.smart_scaling = updates.smart_scaling;
+
     // Handle margin/padding updates
     if (
       updates.hasOwnProperty('margin_top') ||
@@ -2735,109 +2721,7 @@ export class LayoutTab extends LitElement {
     this.requestUpdate();
   }
 
-  private _handleNativeCardSave(e: CustomEvent): void {
-    if (!this._nativeCardDialogModule) return;
-
-    const { config } = e.detail;
-    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
-      this._nativeCardDialogModule;
-
-    // Update the module with the new config
-    const layout = this._ensureLayout();
-    const newLayout = {
-      rows: layout.rows.map((row, rIndex) => {
-        if (rIndex === rowIndex) {
-          return {
-            ...row,
-            columns: row.columns.map((col, cIndex) => {
-              if (cIndex === columnIndex) {
-                return {
-                  ...col,
-                  modules: col.modules.map((mod, mIndex) => {
-                    if (mIndex === moduleIndex) {
-                      // Handle child modules
-                      if (isChildModule && childIndex !== undefined) {
-                        const layoutMod = mod as any;
-                        if (layoutMod.modules) {
-                          return {
-                            ...layoutMod,
-                            modules: layoutMod.modules.map((childMod: any, cIndex: number) => {
-                              if (cIndex === childIndex) {
-                                return {
-                                  ...childMod,
-                                  card_config: config,
-                                };
-                              }
-                              return childMod;
-                            }),
-                          };
-                        }
-                      }
-                      // Handle top-level modules
-                      return {
-                        ...mod,
-                        card_config: config,
-                      };
-                    }
-                    return mod;
-                  }),
-                };
-              }
-              return col;
-            }),
-          };
-        }
-        return row;
-      }),
-    };
-
-    this._updateLayout(newLayout);
-    this._showNativeCardDialog = false;
-    this._nativeCardDialogModule = null;
-  }
-
-  private _handleNativeCardCancel(): void {
-    this._showNativeCardDialog = false;
-    this._nativeCardDialogModule = null;
-  }
-
-  private _handleNativeCardDuplicate(): void {
-    if (!this._nativeCardDialogModule) return;
-
-    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
-      this._nativeCardDialogModule;
-
-    if (isChildModule && childIndex !== undefined) {
-      // Duplicate child module
-      this._duplicateLayoutChildModule(rowIndex, columnIndex, moduleIndex, childIndex);
-    } else {
-      // Duplicate top-level module
-      this._duplicateModule(rowIndex, columnIndex, moduleIndex);
-    }
-
-    // Close dialog after duplicate
-    this._showNativeCardDialog = false;
-    this._nativeCardDialogModule = null;
-  }
-
-  private _handleNativeCardDelete(): void {
-    if (!this._nativeCardDialogModule) return;
-
-    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
-      this._nativeCardDialogModule;
-
-    if (isChildModule && childIndex !== undefined) {
-      // Delete child module
-      this._deleteLayoutChildModule(rowIndex, columnIndex, moduleIndex, childIndex);
-    } else {
-      // Delete top-level module
-      this._deleteModule(rowIndex, columnIndex, moduleIndex);
-    }
-
-    // Close dialog after delete
-    this._showNativeCardDialog = false;
-    this._nativeCardDialogModule = null;
-  }
+  // Native card dialog handlers removed - external cards now use standard module popup
 
   private _navigateToPro(): void {
     // Navigate to the Pro tab in the Ultra Card editor
@@ -5225,22 +5109,7 @@ export class LayoutTab extends LitElement {
     const layoutModule = column.modules[parentModuleIndex] as any;
     if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
 
-    const childModule = layoutModule.modules[childIndex];
-
-    // External cards use native HA dialog
-    if (childModule.type === 'external_card') {
-      this._showNativeCardDialog = true;
-      this._nativeCardDialogModule = {
-        rowIndex: parentRowIndex,
-        columnIndex: parentColumnIndex,
-        moduleIndex: parentModuleIndex,
-        isChildModule: true,
-        childIndex: childIndex,
-      };
-      return;
-    }
-
-    // Regular modules use Ultra Card child settings popup
+    // All child modules (including external cards) now use Ultra Card child settings popup
     this._selectedLayoutChild = {
       parentRowIndex,
       parentColumnIndex,
@@ -6039,9 +5908,15 @@ export class LayoutTab extends LitElement {
     // Ensure active tab is valid for this module
     if (
       (this._activeModuleTab === 'actions' && !hasActionsTab) ||
-      (this._activeModuleTab === 'other' && !hasOtherTab)
+      (this._activeModuleTab === 'other' && !hasOtherTab) ||
+      (this._activeModuleTab === 'yaml' && module.type !== 'external_card')
     ) {
       this._activeModuleTab = 'general';
+    }
+
+    // For external cards, ensure we default to yaml tab if not on a valid tab
+    if (module.type === 'external_card' && this._activeModuleTab === 'actions') {
+      this._activeModuleTab = 'yaml';
     }
 
     const lang = this.hass?.locale?.language || 'en';
@@ -6108,16 +5983,25 @@ export class LayoutTab extends LitElement {
               >
                 ${localize('editor.layout.general_tab', lang, 'General')}
               </button>
-              ${hasActionsTab
+              ${module.type === 'external_card'
                 ? html`
                     <button
-                      class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
-                      @click=${() => (this._activeModuleTab = 'actions')}
+                      class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
+                      @click=${() => (this._activeModuleTab = 'yaml')}
                     >
-                      ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                      YAML
                     </button>
                   `
-                : ''}
+                : hasActionsTab
+                  ? html`
+                      <button
+                        class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                        @click=${() => (this._activeModuleTab = 'actions')}
+                      >
+                        ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                      </button>
+                    `
+                  : ''}
               ${hasOtherTab
                 ? html`
                     <button
@@ -6144,6 +6028,9 @@ export class LayoutTab extends LitElement {
 
             <div class="module-tab-content">
               ${this._activeModuleTab === 'general' ? this._renderGeneralTab(module) : ''}
+              ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
+                ? this._renderYamlTab(module)
+                : ''}
               ${this._activeModuleTab === 'actions' && hasActionsTab
                 ? this._renderActionsTab(module)
                 : ''}
@@ -6212,17 +6099,26 @@ export class LayoutTab extends LitElement {
     // Determine which extra tabs are supported by this module
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(childModule.type);
+    // External cards don't have Actions tab (they handle their own actions)
     const hasActionsTab =
-      moduleHandler && typeof (moduleHandler as any).renderActionsTab === 'function';
+      childModule.type !== 'external_card' &&
+      moduleHandler &&
+      typeof (moduleHandler as any).renderActionsTab === 'function';
     // Globally disable the legacy "Other" tab across modules (child module editor)
     const hasOtherTab = false;
 
     // Ensure active tab is valid for this module
     if (
       (this._activeModuleTab === 'actions' && !hasActionsTab) ||
-      (this._activeModuleTab === 'other' && !hasOtherTab)
+      (this._activeModuleTab === 'other' && !hasOtherTab) ||
+      (this._activeModuleTab === 'yaml' && childModule.type !== 'external_card')
     ) {
       this._activeModuleTab = 'general';
+    }
+
+    // For external cards, ensure we default to yaml tab if not on a valid tab
+    if (childModule.type === 'external_card' && this._activeModuleTab === 'actions') {
+      this._activeModuleTab = 'yaml';
     }
 
     const lang = this.hass?.locale?.language || 'en';
@@ -6248,7 +6144,11 @@ export class LayoutTab extends LitElement {
                 lang,
                 'Child Module Settings'
               )}
-              - ${childModule.type.charAt(0).toUpperCase() + childModule.type.slice(1)}
+              -
+              ${this._getModuleSettingsTitle(childModule, lang).replace(
+                /^(Module Settings - |Child Module Settings - )/,
+                ''
+              )}
             </h3>
             <div class="header-actions">
               <button
@@ -6321,16 +6221,25 @@ export class LayoutTab extends LitElement {
             >
               ${localize('editor.layout.general_tab', lang, 'General')}
             </button>
-            ${hasActionsTab
+            ${childModule.type === 'external_card'
               ? html`
                   <button
-                    class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
-                    @click=${() => (this._activeModuleTab = 'actions')}
+                    class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
+                    @click=${() => (this._activeModuleTab = 'yaml')}
                   >
-                    ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                    YAML
                   </button>
                 `
-              : ''}
+              : hasActionsTab
+                ? html`
+                    <button
+                      class="module-tab ${this._activeModuleTab === 'actions' ? 'active' : ''}"
+                      @click=${() => (this._activeModuleTab = 'actions')}
+                    >
+                      ${localize('editor.layout.actions_tab', lang, 'Actions')}
+                    </button>
+                  `
+                : ''}
             ${hasOtherTab
               ? html`
                   <button
@@ -6359,6 +6268,9 @@ export class LayoutTab extends LitElement {
             <div class="module-tab-content">
               ${this._activeModuleTab === 'general'
                 ? this._renderLayoutChildGeneralTab(childModule)
+                : ''}
+              ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
+                ? this._renderLayoutChildYamlTab(childModule)
                 : ''}
               ${this._activeModuleTab === 'actions' && hasActionsTab
                 ? this._renderLayoutChildActionsTab(childModule)
@@ -6468,6 +6380,27 @@ export class LayoutTab extends LitElement {
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
           <span>This module does not have action settings</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderLayoutChildYamlTab(module: CardModule): TemplateResult {
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+
+    if (moduleHandler && typeof (moduleHandler as any).renderYamlTab === 'function') {
+      return (moduleHandler as any).renderYamlTab(module, this.hass, this.config, updates =>
+        this._updateLayoutChildModule(updates)
+      );
+    }
+
+    // Fallback for modules without YAML tab
+    return html`
+      <div class="settings-section">
+        <div class="info-message">
+          <ha-icon icon="mdi:information"></ha-icon>
+          <span>YAML configuration not available for this module</span>
         </div>
       </div>
     `;
@@ -7276,6 +7209,27 @@ export class LayoutTab extends LitElement {
         <div class="info-message">
           <ha-icon icon="mdi:information"></ha-icon>
           <span>This module does not have other settings</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderYamlTab(module: CardModule): TemplateResult {
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(module.type);
+
+    if (moduleHandler && typeof (moduleHandler as any).renderYamlTab === 'function') {
+      return (moduleHandler as any).renderYamlTab(module, this.hass, this.config, updates =>
+        this._updateModule(updates)
+      );
+    }
+
+    // Fallback for modules without YAML tab
+    return html`
+      <div class="settings-section">
+        <div class="info-message">
+          <ha-icon icon="mdi:information"></ha-icon>
+          <span>YAML configuration not available for this module</span>
         </div>
       </div>
     `;
@@ -8208,6 +8162,8 @@ export class LayoutTab extends LitElement {
       animation_duration: (module as any).animation_duration,
       animation_delay: (module as any).animation_delay,
       animation_timing: (module as any).animation_timing,
+      // Smart Scaling
+      smart_scaling: (module as any).smart_scaling,
     };
 
     return html`
@@ -9458,7 +9414,6 @@ export class LayoutTab extends LitElement {
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
         ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
-        ${this._renderNativeCardDialog()}
       </div>
     `;
   }
@@ -11006,45 +10961,7 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  private _renderNativeCardDialog(): TemplateResult {
-    if (!this._showNativeCardDialog || !this._nativeCardDialogModule) {
-      return html``;
-    }
-
-    const { rowIndex, columnIndex, moduleIndex, isChildModule, childIndex } =
-      this._nativeCardDialogModule;
-
-    let module: any;
-
-    if (isChildModule && childIndex !== undefined) {
-      // Get child module from layout module (horizontal/vertical)
-      const layoutModule = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[
-        moduleIndex
-      ] as any;
-      module = layoutModule?.modules?.[childIndex];
-    } else {
-      // Get top-level module
-      module = this.config.layout?.rows[rowIndex]?.columns[columnIndex]?.modules[
-        moduleIndex
-      ] as any;
-    }
-
-    if (!module || module.type !== 'external_card') {
-      return html``;
-    }
-
-    return html`
-      <uc-native-card-dialog
-        .module=${module}
-        .hass=${this.hass}
-        .open=${this._showNativeCardDialog}
-        @save=${this._handleNativeCardSave}
-        @cancel=${this._handleNativeCardCancel}
-        @duplicate=${this._handleNativeCardDuplicate}
-        @delete=${this._handleNativeCardDelete}
-      ></uc-native-card-dialog>
-    `;
-  }
+  // Native card dialog removed - external cards now use standard module popup
 
   private _handleImport(e: CustomEvent<ExportData>): void {
     const importData = e.detail;
@@ -11165,14 +11082,14 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
     this._showModuleSelector = false;
 
-    // Open native dialog immediately for configuration
+    // Open standard module settings popup immediately for configuration
     const moduleIndex = (column.modules || []).length;
-    this._showNativeCardDialog = true;
-    this._nativeCardDialogModule = {
+    this._selectedModule = {
       rowIndex: this._selectedRowIndex,
       columnIndex: this._selectedColumnIndex,
       moduleIndex: moduleIndex,
     };
+    this._showModuleSettings = true;
   }
 
   private _isLayoutModule(moduleType: string): boolean {
@@ -12948,7 +12865,7 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         position: sticky;
         top: 0;
-        z-index: 4;
+        z-index: 9999;
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }

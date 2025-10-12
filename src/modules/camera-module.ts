@@ -98,6 +98,7 @@ export class UltraCameraModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     };
   }
 
@@ -1994,7 +1995,7 @@ export class UltraCameraModule extends BaseUltraModule {
       try {
         const hass = (document.querySelector('home-assistant') as any)?.hass;
         if (hass) {
-          let template = module.template;
+          const template = module.template;
           const entityMatch = template.match(/['"]([^'"]+)['"]/);
           if (entityMatch) {
             cameraEntity = entityMatch[1];
@@ -2574,7 +2575,7 @@ export class UltraCameraModule extends BaseUltraModule {
         try {
           const hass = (document.querySelector('home-assistant') as any)?.hass;
           if (hass) {
-            let template = module.template;
+            const template = module.template;
             const entityMatch = template.match(/['"]([^'"]+)['"]/);
             if (entityMatch) {
               cameraEntity = entityMatch[1];

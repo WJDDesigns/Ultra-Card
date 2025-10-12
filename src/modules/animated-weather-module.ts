@@ -91,6 +91,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
+      smart_scaling: true,
     };
   }
 
