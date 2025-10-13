@@ -35,7 +35,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
     category: 'interactive',
     author: 'Ultra Card',
     version: '1.0.0',
-    tags: ['pro', 'external', 'integration', '3rd-party'],
+    tags: ['external', 'integration', '3rd-party'],
   };
 
   createDefault(): ExternalCardModule {

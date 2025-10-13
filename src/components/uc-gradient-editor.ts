@@ -1,6 +1,7 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { Z_INDEX } from '../utils/uc-z-index';
 import './ultra-color-picker';
 
 export interface GradientStop {
@@ -235,7 +236,7 @@ export class UCGradientEditor extends LitElement {
     .stop-item.dragging {
       opacity: 0.7;
       transform: scale(1.02);
-      z-index: 1000;
+      z-index: ${Z_INDEX.MODULE_POPUP_CONTENT};
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
@@ -361,7 +362,7 @@ export class UCGradientEditor extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
+      z-index: ${Z_INDEX.MODULE_POPUP_CONTENT};
       backdrop-filter: blur(2px);
     }
 

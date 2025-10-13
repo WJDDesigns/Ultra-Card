@@ -6,6 +6,7 @@
 
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { Z_INDEX } from '../utils/uc-z-index';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucSnapshotService, SnapshotListItem } from '../services/uc-snapshot-service';
 import { ucCardBackupService, CardBackup } from '../services/uc-card-backup-service';
@@ -899,7 +900,7 @@ export class UcSnapshotHistoryModal extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10000;
+      z-index: ${Z_INDEX.DIALOG_OVERLAY};
       padding: 20px;
     }
 

@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { Z_INDEX } from '../utils/uc-z-index';
 import { localize } from '../localize/localize';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { UltraCardConfig } from '../types';
@@ -28,7 +29,7 @@ export class UcManualBackupDialog extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10000;
+      z-index: ${Z_INDEX.DIALOG_OVERLAY};
       backdrop-filter: blur(4px);
     }
 

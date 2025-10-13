@@ -11,6 +11,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import { Z_INDEX } from '../utils/uc-z-index';
 import '../components/ultra-template-editor';
 
 export class UltraCameraModule extends BaseUltraModule {
@@ -2030,7 +2031,7 @@ export class UltraCameraModule extends BaseUltraModule {
       width: 100vw !important;
       height: 100vh !important;
       background: rgba(0,0,0,0.95) !important;
-      z-index: 2147483647 !important;
+      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_OVERLAY} !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -2081,7 +2082,7 @@ export class UltraCameraModule extends BaseUltraModule {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      z-index: 2147483647 !important;
+      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
       backdrop-filter: blur(4px) !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.6) !important;
       font-family: Arial, sans-serif !important;
@@ -2609,7 +2610,7 @@ export class UltraCameraModule extends BaseUltraModule {
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          z-index: 2147483647 !important;
+          z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
           backdrop-filter: blur(10px) !important;
         " onclick="if(event.target === this) this.remove()">
           <div style="
@@ -2645,7 +2646,7 @@ export class UltraCameraModule extends BaseUltraModule {
               display: flex !important;
               align-items: center !important;
               justify-content: center !important;
-              z-index: 2147483647 !important;
+              z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
               backdrop-filter: blur(4px) !important;
               box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
               font-family: monospace !important;
@@ -2740,7 +2741,7 @@ export class UltraCameraModule extends BaseUltraModule {
         border-radius: 50%;
         cursor: pointer;
         font-size: 20px;
-        z-index: 999999;
+        z-index: ${Z_INDEX.DIALOG_CONTENT};
       `;
 
       exitButton.onclick = () => {
@@ -2804,7 +2805,7 @@ export class UltraCameraModule extends BaseUltraModule {
       width: 100vw;
       height: 100vh;
       background: rgba(0, 0, 0, 0.95);
-      z-index: 2147483647;
+      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT};
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2994,7 +2995,7 @@ export class UltraCameraModule extends BaseUltraModule {
       color: white;
       font-size: 32px;
       cursor: pointer;
-      z-index: 2147483647;
+      z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT};
       display: flex;
       align-items: center;
       justify-content: center;
@@ -4121,7 +4122,7 @@ export class UltraCameraModule extends BaseUltraModule {
       .camera-fullscreen-overlay {
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
-        z-index: 2147483647 !important;
+        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
         position: fixed !important;
       }
 
@@ -4131,24 +4132,24 @@ export class UltraCameraModule extends BaseUltraModule {
 
       /* Override HA context menus and modals */
       .camera-minimize-icon {
-        z-index: 2147483647 !important;
+        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
         position: fixed !important;
         pointer-events: auto !important;
       }
 
       /* Ensure fullscreen is above all HA elements */
       body .camera-fullscreen-overlay {
-        z-index: 2147483647 !important;
+        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
       }
 
       body .camera-minimize-icon {
-        z-index: 2147483647 !important;
+        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
       }
 
       /* When fullscreen is active, ensure our elements are always on top */
       body.camera-fullscreen-active .camera-fullscreen-overlay,
       body.camera-fullscreen-active .camera-minimize-icon {
-        z-index: 2147483647 !important;
+        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_CONTENT} !important;
         position: fixed !important;
       }
 
@@ -4157,7 +4158,7 @@ export class UltraCameraModule extends BaseUltraModule {
       body.camera-fullscreen-active ha-more-info-dialog,
       body.camera-fullscreen-active .mdc-dialog,
       body.camera-fullscreen-active .dialog-container {
-        z-index: 2147483646 !important;
+        z-index: ${Z_INDEX.CAMERA_FULLSCREEN_OVERLAY} !important;
       }
 
       .camera-minimize-icon:hover {

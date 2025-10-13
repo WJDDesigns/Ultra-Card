@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import { FavoriteColor } from '../types';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 export interface ColorChangedEvent {
   detail: {
@@ -806,7 +807,7 @@ export class UltraColorPicker extends LitElement {
         width: 100%;
         position: relative;
         box-sizing: border-box;
-        z-index: 1000;
+        z-index: ${Z_INDEX.COLOR_PICKER_CONTAINER};
       }
 
       .color-label {
@@ -823,7 +824,7 @@ export class UltraColorPicker extends LitElement {
         position: relative;
         /* Ensure palette can overflow this container */
         overflow: visible;
-        z-index: 1;
+        z-index: ${Z_INDEX.MODULE_CONTENT};
       }
 
       .color-input-field {
@@ -919,7 +920,7 @@ export class UltraColorPicker extends LitElement {
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         animation: expandDown 0.2s ease-out;
         position: relative;
-        z-index: 50000;
+        z-index: ${Z_INDEX.COLOR_PICKER_PALETTE};
       }
 
       @keyframes expandDown {
@@ -939,6 +940,8 @@ export class UltraColorPicker extends LitElement {
         margin-bottom: 16px;
         padding-bottom: 16px;
         border-bottom: 1px solid var(--divider-color);
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .input-header {
@@ -961,6 +964,8 @@ export class UltraColorPicker extends LitElement {
         display: flex;
         gap: 8px;
         align-items: stretch;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .color-text-input {
@@ -974,6 +979,9 @@ export class UltraColorPicker extends LitElement {
         font-size: 14px;
         transition: all 0.2s ease;
         outline: none;
+        box-sizing: border-box;
+        min-width: 0;
+        width: 100%;
       }
 
       .color-text-input:focus {
@@ -1094,7 +1102,7 @@ export class UltraColorPicker extends LitElement {
         background: transparent;
         outline: none;
         cursor: pointer;
-        z-index: 1;
+        z-index: ${Z_INDEX.MODULE_CONTENT};
         margin: 0;
         padding: 12px 0;
       }
@@ -1266,7 +1274,7 @@ export class UltraColorPicker extends LitElement {
         cursor: pointer;
         border: none;
         background: transparent;
-        z-index: 1;
+        z-index: ${Z_INDEX.MODULE_CONTENT};
         border-radius: 6px;
       }
 
@@ -1376,7 +1384,7 @@ export class UltraColorPicker extends LitElement {
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.2s ease;
-        z-index: 1000;
+        z-index: ${Z_INDEX.CARD_TOOLTIP};
       }
 
       .favorite-swatch:hover .favorite-tooltip {
@@ -1478,7 +1486,25 @@ export class UltraColorPicker extends LitElement {
         }
 
         .color-text-input {
+          font-size: 13px;
+          padding: 8px 10px;
+        }
+
+        .apply-text-btn {
           width: 100%;
+          justify-content: center;
+        }
+      }
+
+      /* Extra small screens - further optimize text input */
+      @media (max-width: 480px) {
+        .color-text-input {
+          font-size: 12px;
+          padding: 6px 8px;
+        }
+
+        .color-text-input::placeholder {
+          font-size: 11px;
         }
       }
     `;

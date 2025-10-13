@@ -17,6 +17,7 @@ import {
 } from '../services/uc-snapshot-scheduler-service';
 import { UcConfigEncoder } from '../utils/uc-config-encoder';
 import { uploadImage } from '../utils/image-upload';
+import { Z_INDEX } from '../utils/uc-z-index';
 import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
@@ -1355,7 +1356,7 @@ export class UltraCardEditor extends LitElement {
         top: 0 !important;
         left: 0 !important;
         height: 100vh !important;
-        z-index: 10000 !important;
+        z-index: ${Z_INDEX.FULLSCREEN_EDITOR} !important;
         background: var(--card-background-color) !important;
         overflow-y: auto !important;
         box-sizing: border-box !important;
@@ -1375,7 +1376,7 @@ export class UltraCardEditor extends LitElement {
         padding: 16px;
         position: sticky;
         top: 0;
-        z-index: 100;
+        z-index: ${Z_INDEX.EDITOR_TABS};
         justify-content: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
@@ -1441,7 +1442,7 @@ export class UltraCardEditor extends LitElement {
           left: 0 !important;
           right: 0 !important;
           bottom: 0 !important;
-          z-index: 9999 !important;
+          z-index: ${Z_INDEX.DIALOG_CONTENT} !important;
         }
 
         .mdc-dialog .mdc-dialog__surface {
@@ -1932,7 +1933,7 @@ export class UltraCardEditor extends LitElement {
           position: fixed;
           top: 0;
           left: 0;
-          z-index: 9999;
+          z-index: ${Z_INDEX.FULLSCREEN_EDITOR};
           background: var(--card-background-color);
         }
 

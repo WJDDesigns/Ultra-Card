@@ -368,6 +368,24 @@ export class UltraTemplateEditor extends LitElement {
           borderLeftColor: 'var(--primary-color)',
         },
       }),
+
+      // Prevent keyboard events from propagating to parent dialogs
+      EditorView.domEventHandlers({
+        keydown: (event: KeyboardEvent) => {
+          // Stop all keyboard events from propagating and prevent default behavior
+          // This is critical for iOS Safari which has different event handling
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          // Don't prevent default - let CodeMirror handle the key
+          return false; // Allow CodeMirror to handle the event
+        },
+        keypress: (event: KeyboardEvent) => {
+          // iOS Safari sometimes uses keypress instead of keydown
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          return false;
+        },
+      }),
     ];
 
     const state = EditorState.create({
@@ -417,8 +435,27 @@ export class UltraTemplateEditor extends LitElement {
     }
   }
 
+  private _handleKeyDown(e: KeyboardEvent): void {
+    // Prevent ALL keyboard events from leaving this component
+    // Critical for iOS Safari and preventing dialog close on Enter
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  }
+
+  private _handleKeyPress(e: KeyboardEvent): void {
+    // iOS Safari fallback - prevent keypress events from bubbling
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  }
+
   render() {
-    return html` <div class="editor-container"></div> `;
+    return html`
+      <div
+        class="editor-container"
+        @keydown=${this._handleKeyDown}
+        @keypress=${this._handleKeyPress}
+      ></div>
+    `;
   }
 }
 

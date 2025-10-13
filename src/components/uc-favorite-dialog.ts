@@ -1,5 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { Z_INDEX } from '../utils/uc-z-index';
 import { ucFavoritesService } from '../services/uc-favorites-service';
 import { CardRow } from '../types';
 
@@ -128,7 +129,7 @@ export class UcFavoriteDialog extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10000;
+      z-index: ${Z_INDEX.DIALOG_OVERLAY};
       padding: 20px;
     }
 

@@ -2,6 +2,7 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import './ultra-color-picker';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 export interface LightColorChangedEvent {
   detail: {
@@ -1252,7 +1253,7 @@ export class UcLightColorPicker extends LitElement {
         top: 100%;
         left: 0;
         right: 0;
-        z-index: 1000;
+        z-index: ${Z_INDEX.DROPDOWN_MENU};
         margin-top: 8px;
         background: var(--card-background-color);
         border: 1px solid var(--divider-color);
@@ -1378,14 +1379,14 @@ export class UcLightColorPicker extends LitElement {
         width: 100%;
         max-width: 100%;
         overflow: visible !important;
-        z-index: 9998;
+        z-index: ${Z_INDEX.DROPDOWN_SELECT};
       }
 
       /* Custom Searchable Dropdown Styles */
       .custom-select-container {
         position: relative;
         width: 100%;
-        z-index: 9999;
+        z-index: ${Z_INDEX.DROPDOWN_SELECT};
       }
 
       .custom-select-trigger {
@@ -1450,7 +1451,7 @@ export class UcLightColorPicker extends LitElement {
         border-top: none;
         border-radius: 0 0 8px 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 10001 !important;
+        z-index: ${Z_INDEX.DROPDOWN_MENU} !important;
         max-height: 300px;
         overflow: hidden;
       }

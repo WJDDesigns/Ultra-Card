@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 2.0-beta18
+
+### 🐛 Bug Fixes
+
+- **Z-index fixes** - Resolved z-index layering issues to improve UI stacking order
+- **Fixed scrolling issues in 3rd party modules** - Addressed scrolling behavior problems when using 3rd party card modules
+- **Fixed YAML editing to allow enter** - YAML editor now properly supports Enter key for line breaks
+
 ## Version 2.0-beta17
 
 ### 🐛 Bug Fixes

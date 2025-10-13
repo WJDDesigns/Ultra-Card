@@ -5,6 +5,7 @@
 
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 export interface RestoreMethodChoice {
   method: 'smart' | 'clean' | null;
@@ -183,7 +184,7 @@ export class UcSnapshotRestoreDialog extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10000;
+      z-index: ${Z_INDEX.DIALOG_OVERLAY};
       padding: 20px;
       animation: fadeIn 0.2s ease-out;
     }

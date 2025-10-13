@@ -5,6 +5,7 @@
 
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { Z_INDEX } from '../utils/uc-z-index';
 import { ucSnapshotService, SnapshotSettings } from '../services/uc-snapshot-service';
 
 @customElement('uc-snapshot-settings-dialog')
@@ -262,7 +263,7 @@ export class UcSnapshotSettingsDialog extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10000;
+      z-index: ${Z_INDEX.DIALOG_OVERLAY};
       padding: 20px;
     }
 

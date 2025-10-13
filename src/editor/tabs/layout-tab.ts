@@ -24,6 +24,7 @@ import { GlobalLogicTab } from '../../tabs/global-logic-tab';
 import { logicService } from '../../services/logic-service';
 import { getImageUrl, uploadImage } from '../../utils/image-upload';
 import { localize } from '../../localize/localize';
+import { Z_INDEX } from '../../utils/uc-z-index';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ucExportImportService } from '../../services/uc-export-import-service';
@@ -2063,7 +2064,7 @@ export class LayoutTab extends LitElement {
       background: var(--${type === 'success' ? 'success' : type === 'error' ? 'error' : 'primary'}-color);
       color: white;
       border-radius: 8px;
-      z-index: 10000;
+      z-index: ${Z_INDEX.TOAST_NOTIFICATION};
       font-size: 14px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       opacity: 0;
@@ -2201,8 +2202,10 @@ export class LayoutTab extends LitElement {
 
     // Capture scroll position before update (for mobile scroll preservation)
     const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
-    if (popupBody) {
-      this._savedScrollPosition = popupBody.scrollTop;
+    const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
+    const scrollContainer = popupBody || selectorBody;
+    if (scrollContainer) {
+      this._savedScrollPosition = scrollContainer.scrollTop;
       this._shouldRestoreScroll = true;
     }
 
@@ -2257,8 +2260,10 @@ export class LayoutTab extends LitElement {
 
     // Capture scroll position before update (for mobile scroll preservation)
     const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
-    if (popupBody) {
-      this._savedScrollPosition = popupBody.scrollTop;
+    const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
+    const scrollContainer = popupBody || selectorBody;
+    if (scrollContainer) {
+      this._savedScrollPosition = scrollContainer.scrollTop;
       this._shouldRestoreScroll = true;
     }
 
@@ -8997,15 +9002,18 @@ export class LayoutTab extends LitElement {
       // Multiple restoration attempts to handle async rendering
       const restoreScroll = () => {
         const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
-        if (popupBody && scrollPos !== null) {
+        const selectorBody = this.shadowRoot?.querySelector('.selector-body') as HTMLElement;
+        const scrollContainer = popupBody || selectorBody;
+
+        if (scrollContainer && scrollPos !== null) {
           // Force instant scroll (no smooth scrolling)
-          popupBody.style.scrollBehavior = 'auto';
-          popupBody.scrollTop = scrollPos;
+          scrollContainer.style.scrollBehavior = 'auto';
+          scrollContainer.scrollTop = scrollPos;
 
           // Restore smooth scrolling after a moment
           setTimeout(() => {
-            if (popupBody) {
-              popupBody.style.scrollBehavior = '';
+            if (scrollContainer) {
+              scrollContainer.style.scrollBehavior = '';
             }
           }, 100);
         }
@@ -10583,8 +10591,7 @@ export class LayoutTab extends LitElement {
       <style>
         .thirdparty-container {
           padding: 20px;
-          overflow-y: auto;
-          max-height: calc(100vh - 300px);
+          /* Removed overflow-y: auto to prevent nested scrolling - let .selector-body handle scrolling */
         }
 
         .thirdparty-header {
@@ -10914,7 +10921,7 @@ export class LayoutTab extends LitElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 100;
+          z-index: ${Z_INDEX.EDITOR_CONTENT};
           background: rgba(0, 0, 0, 0.02);
         }
 
@@ -11451,7 +11458,7 @@ export class LayoutTab extends LitElement {
         font-weight: 500;
         border-bottom: 2px solid var(--primary-color);
         position: relative;
-        z-index: 10;
+        z-index: ${Z_INDEX.CARD_BACKGROUND};
         border-radius: 8px 8px 0px 0px;
       }
 
@@ -11650,7 +11657,7 @@ export class LayoutTab extends LitElement {
         color: white;
         border-bottom: 2px solid var(--accent-color, var(--orange-color, #ff9800));
         position: relative;
-        z-index: 5;
+        z-index: ${Z_INDEX.MODULE_DECORATIVE};
         border-radius: 6px 6px 0px 0px;
       }
 
@@ -11782,7 +11789,7 @@ export class LayoutTab extends LitElement {
         word-break: break-word;
         pointer-events: auto;
         position: relative;
-        z-index: 1;
+        z-index: ${Z_INDEX.MODULE_CONTENT};
 
         /* Ensure content doesn't interfere with hover actions positioning */
         contain: layout style;
@@ -12037,7 +12044,7 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 1000;
+        z-index: ${Z_INDEX.MODULE_POPUP_OVERLAY};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -12073,7 +12080,7 @@ export class LayoutTab extends LitElement {
         border-radius: 0 0 8px 8px; /* maintain bottom border radius */
         /* Ensure content doesn't hide under header */
         position: relative;
-        z-index: 1;
+        z-index: ${Z_INDEX.MODULE_CONTENT};
       }
 
       /* Improve mobile scrolling behavior */
@@ -12094,7 +12101,7 @@ export class LayoutTab extends LitElement {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        z-index: 1000;
+        z-index: ${Z_INDEX.SELECTOR_POPUP};
         max-width: calc(100vw - 40px); /* Ensure 20px padding on each side */
         max-height: calc(100vh - 40px); /* Ensure 20px padding on top/bottom */
       }
@@ -12141,7 +12148,7 @@ export class LayoutTab extends LitElement {
       .selector-header {
         position: sticky; /* keep header visible while scrolling */
         top: 0;
-        z-index: 5;
+        z-index: ${Z_INDEX.POPUP_STICKY_ELEMENTS};
         background: var(--card-background-color);
         padding: 20px 24px 16px; /* add horizontal padding to match container */
         border-bottom: 1px solid var(--divider-color);
@@ -12418,7 +12425,7 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 1001;
+        z-index: ${Z_INDEX.MODULE_POPUP_CONTENT};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -12535,7 +12542,7 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 1002;
+        z-index: ${Z_INDEX.LAYOUT_CHILD_POPUP};
         display: flex;
         align-items: flex-start;
         justify-content: center;
@@ -12549,7 +12556,7 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         position: sticky;
         top: 0;
-        z-index: 4;
+        z-index: ${Z_INDEX.EDITOR_TABS};
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
@@ -12589,7 +12596,7 @@ export class LayoutTab extends LitElement {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 1001;
+        z-index: ${Z_INDEX.MODULE_POPUP_CONTENT};
         display: flex;
         align-items: flex-start;
         justify-content: center;
@@ -12626,7 +12633,7 @@ export class LayoutTab extends LitElement {
       .popup-content ha-combo-box {
         position: relative !important;
         overflow: visible !important;
-        z-index: 9999 !important;
+        z-index: ${Z_INDEX.DROPDOWN_SELECT} !important;
       }
 
       .popup-content ha-select .mdc-select__menu,
@@ -12641,7 +12648,7 @@ export class LayoutTab extends LitElement {
       .selector-content ha-select .mdc-menu,
       .selector-content ha-select ha-menu {
         /* Let HA position menus; we only ensure visibility */
-        z-index: 10001 !important;
+        z-index: ${Z_INDEX.DROPDOWN_MENU} !important;
         max-height: 300px !important;
         overflow-y: auto !important;
         max-width: min(360px, 95vw) !important;
@@ -12652,7 +12659,7 @@ export class LayoutTab extends LitElement {
       .module-tab-content mwc-select,
       .module-tab-content ha-combo-box,
       .module-tab-content mwc-menu-surface {
-        z-index: 10000 !important;
+        z-index: ${Z_INDEX.DROPDOWN_SELECT} !important;
       }
 
       /* Allow dropdown overflow; keep inner content scrollable */
@@ -12669,7 +12676,7 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         position: sticky; /* keep header visible while scrolling */
         top: 0;
-        z-index: 5; /* above tab content */
+        z-index: ${Z_INDEX.POPUP_STICKY_ELEMENTS}; /* above tab content */
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
@@ -12752,7 +12759,7 @@ export class LayoutTab extends LitElement {
         margin-top: -375px; /* half of height when 750px; responsive will adjust */
         /* Reset translate centering */
         /* transform already set to none above */
-        z-index: 1000;
+        z-index: ${Z_INDEX.MODULE_POPUP_OVERLAY};
       }
 
       /* During drag/resize, remove centering transform and use absolute positioning */
@@ -12813,7 +12820,7 @@ export class LayoutTab extends LitElement {
         background: var(--card-background-color);
         border-radius: 8px 0 8px 0;
         transition: all 0.2s ease;
-        z-index: 1000; /* ensure it stays above all content including scrollable areas */
+        z-index: ${Z_INDEX.RESIZE_HANDLE}; /* ensure it stays above all content including scrollable areas */
         pointer-events: auto; /* ensure it's always clickable */
       }
 
@@ -12833,7 +12840,7 @@ export class LayoutTab extends LitElement {
 
       .popup-dragging {
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-        z-index: 1010 !important;
+        z-index: ${Z_INDEX.POPUP_TABS} !important;
       }
 
       .popup-resizing {
@@ -12891,7 +12898,7 @@ export class LayoutTab extends LitElement {
       .module-preview.pinned {
         position: sticky;
         top: 16px;
-        z-index: 10;
+        z-index: ${Z_INDEX.POPUP_STICKY_ELEMENTS};
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         border-color: var(--primary-color);
         background: var(--card-background-color);
@@ -12971,7 +12978,7 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         position: sticky;
         top: 0;
-        z-index: 100;
+        z-index: ${Z_INDEX.EDITOR_TABS};
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
@@ -13885,7 +13892,7 @@ export class LayoutTab extends LitElement {
         font-weight: 500;
         border-radius: 4px;
         pointer-events: none;
-        z-index: 10;
+        z-index: ${Z_INDEX.CARD_BACKGROUND};
       }
 
       .logic-overlay ha-icon {
@@ -15634,7 +15641,7 @@ export class LayoutTab extends LitElement {
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        z-index: 10000;
+        z-index: ${Z_INDEX.CONTEXT_MENU};
         min-width: 180px;
         overflow: hidden;
         margin-top: 4px;
@@ -15696,7 +15703,7 @@ export class LayoutTab extends LitElement {
         .module-selector-tabs {
           position: sticky;
           top: 0;
-          z-index: 10;
+          z-index: ${Z_INDEX.EDITOR_TABS};
           background: var(--secondary-background-color);
           border-bottom: 2px solid var(--divider-color);
           gap: 0; /* Remove gap on mobile for better fit */
