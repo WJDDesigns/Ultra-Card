@@ -742,16 +742,7 @@ class UcCloudAuthService {
         const user: CloudUser = JSON.parse(stored);
         if (this._isValidStoredUser(user)) {
           this._currentUser = user;
-
-          // Only log warnings for problematic states
-          const isExpired = Date.now() >= user.expiresAt;
-          const hasRefreshToken = !!user.refreshToken;
-
-          if (isExpired && !hasRefreshToken) {
-            console.warn('⚠️ Session expired and no refresh token - re-login required');
-          }
         } else {
-          console.warn('⚠️ Invalid stored user data, clearing');
           this._clearStorage();
         }
       }

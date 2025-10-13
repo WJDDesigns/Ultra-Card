@@ -109,9 +109,9 @@ export declare class UltraCardEditor extends LitElement {
      */
     private _renderProBanner;
     /**
-     * Render Auth Section (Login or Logout)
+     * Render Auth Info (Integration-based authentication only)
      */
-    private _renderAuthSection;
+    private _renderAuthInfo;
     /**
      * Render Card Name Setting
      */

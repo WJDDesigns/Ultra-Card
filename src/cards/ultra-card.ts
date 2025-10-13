@@ -1668,7 +1668,6 @@ export class UltraCard extends LitElement {
 
     // If sensor exists and is explicitly disconnected, sign out everywhere
     if (sensorState && (sensorState.state === 'disconnected' || sensorState.state === 'error')) {
-      console.log('🔌 Integration disconnected - signing out from all auth methods');
       // Sign out both integration and card auth
       ucCloudAuthService.logout();
       this._cloudUser = null;
@@ -1688,37 +1687,20 @@ export class UltraCard extends LitElement {
     const cardUser = ucCloudAuthService.getCurrentUser();
     if (cardUser) {
       this._cloudUser = cardUser;
-      console.log('✅ Loaded user from card auth:', cardUser);
-    } else {
-      console.log('ℹ️ No cloud user found (integration or card auth)');
     }
   }
 
   /**
    * Check if the current user has pro access
-   * Must be authenticated AND have active pro subscription
+   * ONLY checks integration auth (no card-based auth)
    */
   private _hasProAccess(): boolean {
-    // Priority 1: Check for integration auth (cross-device, server-side)
+    // Check for integration auth only (cross-device, server-side)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    if (
+    return (
       integrationUser?.subscription?.tier === 'pro' &&
       integrationUser?.subscription?.status === 'active'
-    ) {
-      return true;
-    }
-
-    // Priority 2: Check card-based auth (single device, localStorage)
-    if (!ucCloudAuthService.isAuthenticated() || !this._cloudUser) {
-      return false;
-    }
-
-    // Must have active pro subscription
-    const hasPro =
-      this._cloudUser.subscription?.tier === 'pro' &&
-      this._cloudUser.subscription?.status === 'active';
-
-    return hasPro;
+    );
   }
 
   /**

@@ -242,7 +242,6 @@ class UcFavoriteColorsService {
     try {
       // Check if localStorage is available
       if (!this._isLocalStorageAvailable()) {
-        console.warn('localStorage is not available, favorite colors will not persist');
         this._favorites = [];
         return;
       }
@@ -254,13 +253,10 @@ class UcFavoriteColorsService {
 
         if (Array.isArray(parsed)) {
           this._favorites = parsed.filter(this._isValidFavorite.bind(this));
-          console.log(`Loaded ${this._favorites.length} favorite colors from storage`);
         } else {
-          console.warn('Invalid favorite colors data format in storage, resetting');
           this._favorites = [];
         }
       } else {
-        console.log('No favorite colors found in storage');
         this._favorites = [];
       }
     } catch (error) {
@@ -276,13 +272,11 @@ class UcFavoriteColorsService {
     try {
       // Check if localStorage is available
       if (!this._isLocalStorageAvailable()) {
-        console.warn('localStorage is not available, favorite colors will not be saved');
         return;
       }
 
       const dataToSave = JSON.stringify(this._favorites);
       localStorage.setItem(UcFavoriteColorsService.STORAGE_KEY, dataToSave);
-      console.log(`Saved ${this._favorites.length} favorite colors to storage`);
     } catch (error) {
       console.error('Failed to save favorite colors to storage:', error);
 

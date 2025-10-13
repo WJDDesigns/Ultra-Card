@@ -9712,11 +9712,12 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
-    // Check integration auth first, then fall back to card auth
+    // Check integration auth only (no card auth fallback)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const effectiveUser = integrationUser || this.cloudUser;
-    const isPro = effectiveUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!effectiveUser;
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
+    const isLoggedIn = !!integrationUser;
 
     // Filter modules by PRO status
     const standardModules = allModules.filter(m => !m.metadata.tags?.includes('pro'));
@@ -10429,18 +10430,18 @@ export class LayoutTab extends LitElement {
   }
 
   private _render3rdPartyTab(): TemplateResult {
-    // Check Pro access
+    // Check Pro access (integration only)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const effectiveUser = integrationUser || this.cloudUser;
-    const isPro = effectiveUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!effectiveUser;
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
 
     const availableCards = ucExternalCardsService.getAvailableCards();
     const popularCards = ucExternalCardsService.getPopularCards();
     const lang = this.hass?.locale?.language || 'en';
 
     return html`
-      <div class="thirdparty-container ${!isPro ? 'pro-locked' : ''}">
+      <div class="thirdparty-container">
         <div class="thirdparty-header">
           <h4>3rd Party Cards</h4>
           <button class="refresh-btn" @click=${() => this.requestUpdate()}>
@@ -10551,40 +10552,6 @@ export class LayoutTab extends LitElement {
             </p>
           </div>
         </div>
-
-        <!-- Pro Access Overlay -->
-        ${!isPro
-          ? html`
-              <div class="pro-overlay">
-                <div class="pro-overlay-content">
-                  <ha-icon icon="mdi:lock"></ha-icon>
-                  <h3>Ultra Card Pro Feature</h3>
-                  <p>
-                    ${isLoggedIn
-                      ? 'Upgrade to Pro to integrate 3rd party cards seamlessly with Ultra Card'
-                      : 'Sign in and upgrade to Pro to unlock 3rd party card integration'}
-                  </p>
-                  ${isLoggedIn
-                    ? html`
-                        <a
-                          href="https://ultracardpro.com/upgrade"
-                          target="_blank"
-                          class="upgrade-button"
-                        >
-                          <ha-icon icon="mdi:crown"></ha-icon>
-                          Upgrade to Pro
-                        </a>
-                      `
-                    : html`
-                        <button class="signin-button" @click=${() => this._navigateToPro()}>
-                          <ha-icon icon="mdi:login"></ha-icon>
-                          Sign In
-                        </button>
-                      `}
-                </div>
-              </div>
-            `
-          : ''}
       </div>
 
       <style>
@@ -11023,10 +10990,11 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Check Pro access and module limit
+    // Check Pro access and module limit (integration only)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
-    const effectiveUser = integrationUser || this.cloudUser;
-    const isPro = effectiveUser?.subscription?.tier === 'pro';
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
 
     const currentCount = this._countExternalCardModules();
     const limit = 5;

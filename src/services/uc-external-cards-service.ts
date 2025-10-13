@@ -130,11 +130,9 @@ class UcExternalCardsService {
       }
 
       if (!this.isCardAvailable(elementName)) {
-        console.warn(`[External Card] Card not available: ${elementName}`);
         return null;
       }
 
-      console.log(`[External Card] Creating card element: ${elementName}`, config);
       const element = document.createElement(elementName) as any;
 
       // IMPORTANT: Set config FIRST, then hass
@@ -145,7 +143,6 @@ class UcExternalCardsService {
         if (typeof element.setConfig === 'function') {
           try {
             element.setConfig(config);
-            console.log(`[External Card] Config set successfully for ${elementName}`);
           } catch (configError) {
             console.error(`[External Card] Failed to set config for ${elementName}:`, configError);
             throw configError;
@@ -160,7 +157,6 @@ class UcExternalCardsService {
         element.hass = hass;
       }
 
-      console.log(`[External Card] Successfully created ${elementName}`, element);
       return element as HTMLElement;
     } catch (error) {
       console.error(`[External Card] Failed to create ${cardType}:`, error);

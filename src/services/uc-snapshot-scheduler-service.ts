@@ -34,11 +34,9 @@ class UcSnapshotSchedulerService {
    */
   start(): void {
     if (this._checkInterval) {
-      // Scheduler already running log removed for cleaner console
+      // Scheduler already running
       return;
     }
-
-    console.log('🚀 Starting auto-snapshot scheduler');
 
     // Check immediately
     this._checkAndTriggerSnapshot();
@@ -58,7 +56,6 @@ class UcSnapshotSchedulerService {
     if (this._checkInterval) {
       clearInterval(this._checkInterval);
       this._checkInterval = null;
-      console.log('⏸️ Auto-snapshot scheduler stopped');
       this._notifyListeners();
     }
   }
@@ -88,14 +85,12 @@ class UcSnapshotSchedulerService {
 
       // Check if we need to run a snapshot
       if (this._shouldRunSnapshot(settings.time, settings.timezone)) {
-        console.log('⏰ Time to create auto-snapshot!');
         this._isRunning = true;
         this._notifyListeners();
 
         try {
           await ucSnapshotService.createAutoSnapshot();
           this._saveLastSnapshotTime();
-          console.log('✅ Auto-snapshot completed successfully');
         } catch (error) {
           console.error('❌ Auto-snapshot failed:', error);
         } finally {
@@ -162,7 +157,6 @@ class UcSnapshotSchedulerService {
     try {
       const now = new Date().toISOString();
       localStorage.setItem(STORAGE_KEY_LAST_SNAPSHOT, now);
-      console.log(`💾 Saved last snapshot time: ${now}`);
     } catch (error) {
       console.error('Failed to save last snapshot time:', error);
     }
@@ -180,19 +174,14 @@ class UcSnapshotSchedulerService {
    * Load last snapshot time on init
    */
   private _loadLastSnapshotTime(): void {
-    const lastTime = this._getLastSnapshotTime();
-    if (lastTime) {
-      console.log(`📅 Last auto-snapshot: ${new Date(lastTime).toLocaleString()}`);
-    } else {
-      console.log('📅 No previous auto-snapshot found');
-    }
+    // Silently load last snapshot time
+    this._getLastSnapshotTime();
   }
 
   /**
    * Manually trigger a snapshot now (ignores schedule)
    */
   async triggerManualSnapshot(): Promise<void> {
-    console.log('🔄 Manually triggering snapshot...');
     try {
       await ucSnapshotService.createSnapshot();
       this._saveLastSnapshotTime();

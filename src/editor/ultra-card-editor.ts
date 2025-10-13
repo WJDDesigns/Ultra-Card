@@ -2796,78 +2796,60 @@ export class UltraCardEditor extends LitElement {
         backdrop-filter: blur(10px);
       }
 
-      /* Auth Section */
-      .ultra-pro-auth-section {
+      /* Auth Info Section (Integration-based authentication) */
+      .auth-info-section {
+        padding: 20px;
+        background: var(--card-background-color);
+        border: 2px solid var(--primary-color);
+        border-radius: 12px;
         margin-bottom: 24px;
       }
 
-      .feature-showcase {
-        background: var(--card-background-color);
-        border: 2px solid var(--divider-color);
-        border-radius: 12px;
-        padding: 24px;
-        text-align: center;
+      .auth-info-section ha-icon {
+        font-size: 24px;
+        color: var(--primary-color);
+        margin-bottom: 12px;
+        display: block;
       }
 
-      .feature-showcase h4 {
-        margin: 0 0 20px 0;
-        font-size: 18px;
+      .auth-info-section .info-content h4 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+        font-weight: 600;
         color: var(--primary-text-color);
       }
 
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
+      .auth-info-section .info-content p {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--secondary-text-color);
       }
 
-      .feature-item {
-        display: flex;
-        flex-direction: column;
+      .install-integration-link {
+        display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 16px;
-        background: var(--secondary-background-color);
-        border-radius: 12px;
-        transition: all 0.3s;
-      }
-
-      .feature-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      .feature-item ha-icon {
-        --mdc-icon-size: 32px;
-        color: var(--primary-color);
-      }
-
-      .feature-item span {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-      }
-
-      .auth-note {
-        margin-top: 16px;
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
-
-      .auth-note a {
-        color: var(--primary-color);
+        margin-top: 12px;
+        padding: 10px 20px;
+        background: var(--primary-color);
+        color: white;
         text-decoration: none;
-        font-weight: 600;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        transition: background 0.2s;
       }
 
-      .auth-note a:hover {
-        text-decoration: underline;
+      .install-integration-link:hover {
+        background: var(--primary-color-hover, var(--primary-color));
+        filter: brightness(1.1);
       }
 
-      /* User Section */
-      .ultra-pro-user-section {
-        margin-bottom: 24px;
+      .install-integration-link ha-icon {
+        font-size: 18px;
+        margin: 0;
+        color: white;
       }
 
       .user-card {
@@ -3647,16 +3629,13 @@ export class UltraCardEditor extends LitElement {
   private _renderProTab(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
 
-    // Priority 1: Check for Ultra Card Pro Cloud integration
+    // Check for Ultra Card Pro Cloud integration (only auth method)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     const isIntegrationInstalled = ucCloudAuthService.isIntegrationInstalled(this.hass);
 
-    // Priority 2: Fall back to card-based auth
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' ||
-      this._cloudUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!integrationUser || !!this._cloudUser;
-    const currentUser = integrationUser || this._cloudUser;
+    // Pro access via integration only
+    const isPro = integrationUser?.subscription?.tier === 'pro';
+    const isLoggedIn = !!integrationUser;
 
     return html`
       <div class="pro-tab-content">
@@ -3666,10 +3645,10 @@ export class UltraCardEditor extends LitElement {
         <!-- ULTRA CARD PRO BRANDED BANNER -->
         ${this._renderProBanner(lang, isPro, isLoggedIn)}
 
-        <!-- LOGIN/LOGOUT SECTION (only show if integration not authenticated) -->
-        ${!integrationUser ? this._renderAuthSection(lang, isLoggedIn, isPro) : ''}
+        <!-- AUTHENTICATION INFO (show if not authenticated via integration) -->
+        ${!integrationUser ? this._renderAuthInfo(isIntegrationInstalled) : ''}
 
-        <!-- PRO TOOLS SECTIONS -->
+        <!-- PRO TOOLS SECTIONS (integration auth only) -->
         ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
         ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
 
@@ -3713,38 +3692,43 @@ export class UltraCardEditor extends LitElement {
    * Render Ultra Card Pro section (DEPRECATED - kept for backward compatibility)
    */
   private _renderCloudSyncSection(lang: string): TemplateResult {
-    const isPro = this._cloudUser?.subscription?.tier === 'pro';
-    const isLoggedIn = !!this._cloudUser;
+    // Use integration auth only
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const isIntegrationInstalled = ucCloudAuthService.isIntegrationInstalled(this.hass);
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
+    const isLoggedIn = !!integrationUser;
 
     return html`
       <div class="settings-section ultra-card-pro-section">
         <!-- ULTRA CARD PRO BRANDED BANNER -->
         ${this._renderProBanner(lang, isPro, isLoggedIn)}
 
-        <!-- LOGIN/LOGOUT SECTION -->
-        ${this._renderAuthSection(lang, isLoggedIn, isPro)}
+        <!-- AUTHENTICATION INFO (integration only) -->
+        ${!integrationUser ? this._renderAuthInfo(isIntegrationInstalled) : ''}
 
         <!-- CARD NAME SETTING (Always visible when logged in) -->
         ${isLoggedIn ? this._renderCardNameSetting(lang) : ''}
 
-        <!-- PRO TOOLS SECTIONS -->
+        <!-- PRO TOOLS SECTIONS (integration auth only) -->
         ${isLoggedIn ? this._renderCardProTools(lang, isPro) : ''}
         ${isLoggedIn && isPro ? this._renderDashboardProTools(lang) : ''}
 
-        <!-- MODALS -->
-        ${this._showBackupHistory && this._cloudUser
+        <!-- MODALS (integration auth only) -->
+        ${this._showBackupHistory && integrationUser
           ? html`
               <uc-snapshot-history-modal
                 .open="${this._showBackupHistory}"
                 .hass="${this.hass}"
-                .subscription="${this._cloudUser.subscription!}"
+                .subscription="${integrationUser.subscription!}"
                 @close-modal="${() => (this._showBackupHistory = false)}"
                 @snapshot-restored="${this._handleSnapshotRestored}"
                 @card-backup-restored="${this._handleCardBackupRestored}"
               ></uc-snapshot-history-modal>
             `
           : ''}
-        ${this._showManualBackup && this._cloudUser
+        ${this._showManualBackup && integrationUser
           ? html`
               <uc-manual-backup-dialog
                 .open="${this._showManualBackup}"
@@ -3975,71 +3959,32 @@ export class UltraCardEditor extends LitElement {
   }
 
   /**
-   * Render Auth Section (Login or Logout)
+   * Render Auth Info (Integration-based authentication only)
    */
-  private _renderAuthSection(lang: string, isLoggedIn: boolean, isPro: boolean): TemplateResult {
-    if (!isLoggedIn) {
-      return html`
-        <div class="ultra-pro-auth-section">
-          ${!this._showLoginForm
-            ? html`
-                <div class="feature-showcase">
-                  <h4>${localize('editor.ultra_card_pro.features_title', lang, 'What You Get')}</h4>
-                  <div class="features-grid">
-                    <div class="feature-item">
-                      <ha-icon icon="mdi:cloud-upload"></ha-icon>
-                      <span>Auto cloud backups</span>
-                    </div>
-                    <div class="feature-item">
-                      <ha-icon icon="mdi:bookmark-multiple"></ha-icon>
-                      <span>Manual backups (Pro)</span>
-                    </div>
-                    <div class="feature-item">
-                      <ha-icon icon="mdi:export"></ha-icon>
-                      <span>Export configs (Pro)</span>
-                    </div>
-                    <div class="feature-item">
-                      <ha-icon icon="mdi:import"></ha-icon>
-                      <span>Import configs (Pro)</span>
-                    </div>
-                  </div>
-                  <button
-                    class="ultra-btn ultra-btn-primary"
-                    @click="${() => (this._showLoginForm = true)}"
-                  >
-                    <ha-icon icon="mdi:login"></ha-icon>
-                    Sign In to Get Started
-                  </button>
-                  <p class="auth-note">
-                    Don't have an account?
-                    <a href="https://ultracard.io/register" target="_blank" rel="noopener"
-                      >Create one free</a
-                    >
-                  </p>
-                </div>
-              `
-            : this._renderLoginForm(lang)}
-        </div>
-      `;
-    }
-
-    // Logged in - show user info with logout
+  private _renderAuthInfo(isIntegrationInstalled: boolean): TemplateResult {
     return html`
-      <div class="ultra-pro-user-section">
-        <div class="user-card">
-          <div class="user-info">
-            ${this._cloudUser?.avatar
-              ? html`<img src="${this._cloudUser.avatar}" alt="Avatar" class="user-avatar" />`
-              : html`<ha-icon icon="mdi:account-circle" class="user-avatar-icon"></ha-icon>`}
-            <div class="user-details">
-              <div class="user-name">${this._cloudUser?.displayName}</div>
-              <div class="user-email">${this._cloudUser?.email}</div>
-            </div>
-          </div>
-          <button class="ultra-btn ultra-btn-secondary" @click="${this._handleLogout}">
-            <ha-icon icon="mdi:logout"></ha-icon>
-            Logout
-          </button>
+      <div class="auth-info-section">
+        <ha-icon icon="mdi:information-outline"></ha-icon>
+        <div class="info-content">
+          <h4>Ultra Card Pro Authentication</h4>
+          <p>
+            To unlock Pro features, install the <strong>Ultra Card Pro Cloud</strong> integration
+            from HACS and sign in there. Authentication is managed through the integration for
+            seamless cross-device sync.
+          </p>
+          ${!isIntegrationInstalled
+            ? html`
+                <a
+                  href="https://github.com/WJDDesigns/ultra-card-pro-cloud"
+                  target="_blank"
+                  rel="noopener"
+                  class="install-integration-link"
+                >
+                  <ha-icon icon="mdi:download"></ha-icon>
+                  Install Integration
+                </a>
+              `
+            : ''}
         </div>
       </div>
     `;

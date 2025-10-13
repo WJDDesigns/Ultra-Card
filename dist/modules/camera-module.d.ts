@@ -12,6 +12,7 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private _lastAppliedEntity?;
     private _lastAppliedLive?;
     private _huiImageRef;
+    private _cameraStableKeys;
     metadata: ModuleMetadata;
     private clickTimeout;
     private holdTimeout;

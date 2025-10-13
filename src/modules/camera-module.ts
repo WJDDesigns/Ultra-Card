@@ -22,6 +22,7 @@ export class UltraCameraModule extends BaseUltraModule {
   private _lastAppliedEntity?: string;
   private _lastAppliedLive?: boolean;
   private _huiImageRef: Ref<any> = createRef();
+  private _cameraStableKeys: Map<string, string> = new Map(); // Store stable keys by module ID
 
   metadata: ModuleMetadata = {
     type: 'camera',
@@ -1440,20 +1441,21 @@ export class UltraCameraModule extends BaseUltraModule {
     const entity = cameraEntity ? hass.states[cameraEntity] : null;
     const isUnavailable = !entity || entity.state === 'unavailable';
 
-    // Debug logging removed in production builds
-
     // CRITICAL FIX: Prevent WebRTC re-initialization when template is being edited
     // Only re-render camera if the evaluated entity actually changed
+    // Store stable keys in instance Map to avoid "object is not extensible" errors
+    let stableKey: string;
     if (cameraModule.template_mode && cameraEntity === this._lastRenderedEntity && cameraEntity) {
-      // Same entity - add stable key to prevent Lit from recreating hui-image
+      // Same entity - use stable key to prevent Lit from recreating hui-image
       // This prevents WebRTC SDP errors during template editing
-      (cameraModule as any)._cameraStableKey = `camera_${cameraModule.id}_${cameraEntity}`;
+      stableKey = `camera_${cameraModule.id}_${cameraEntity}`;
     } else {
       // Entity changed - allow re-render and update cache
       this._lastRenderedEntity = cameraEntity;
-      (cameraModule as any)._cameraStableKey =
-        `camera_${cameraModule.id}_${cameraEntity || 'none'}_${Date.now()}`;
+      stableKey = `camera_${cameraModule.id}_${cameraEntity || 'none'}_${Date.now()}`;
     }
+    // Store the stable key for this module
+    this._cameraStableKeys.set(cameraModule.id, stableKey);
 
     // Get camera name
     const cameraName =
@@ -1630,7 +1632,7 @@ export class UltraCameraModule extends BaseUltraModule {
                   <!-- Cache directive prevents WebRTC re-initialization during template editing -->
                   <hui-image
                     ${ref(this._huiImageRef)}
-                    data-camera-key=${(cameraModule as any)._cameraStableKey || cameraEntity}
+                    data-camera-key=${this._cameraStableKeys.get(cameraModule.id) || cameraEntity}
                     .hass=${hass}
                     .cameraImage=${cameraEntity}
                     .cameraView=${this._lastAppliedLive ? 'live' : 'auto'}

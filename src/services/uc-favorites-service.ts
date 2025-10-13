@@ -189,7 +189,6 @@ class UcFavoritesService {
     try {
       // Check if localStorage is available
       if (!this._isLocalStorageAvailable()) {
-        console.warn('localStorage is not available, favorites will not persist');
         this._favorites = [];
         return;
       }
@@ -199,13 +198,10 @@ class UcFavoritesService {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           this._favorites = parsed.filter(this._isValidFavorite.bind(this));
-          console.log(`Loaded ${this._favorites.length} favorites from storage`);
         } else {
-          console.warn('Invalid favorites data format in storage, resetting');
           this._favorites = [];
         }
       } else {
-        console.log('No favorites found in storage');
         this._favorites = [];
       }
     } catch (error) {
@@ -218,13 +214,11 @@ class UcFavoritesService {
     try {
       // Check if localStorage is available
       if (!this._isLocalStorageAvailable()) {
-        console.warn('localStorage is not available, favorites will not be saved');
         return;
       }
 
       const dataToSave = JSON.stringify(this._favorites);
       localStorage.setItem(UcFavoritesService.STORAGE_KEY, dataToSave);
-      console.log(`Saved ${this._favorites.length} favorites to storage`);
     } catch (error) {
       console.error('Failed to save favorites to storage:', error);
 

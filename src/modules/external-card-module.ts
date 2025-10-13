@@ -3,6 +3,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { ExternalCardModule, UltraCardConfig, CardModule } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
+import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ref } from 'lit/directives/ref.js';
 import '../components/ultra-template-editor';
 
@@ -41,6 +42,64 @@ export class UltraExternalCardModule extends BaseUltraModule {
       display_conditions: [],
       smart_scaling: true,
     };
+  }
+
+  /**
+   * Extract timestamp from module ID for chronological ordering
+   * IDs follow pattern: external-card-${Date.now()}-${random}
+   */
+  private _extractTimestamp(moduleId: string): number {
+    const match = moduleId.match(/external-card-(\d+)-/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  /**
+   * Get all external card modules from config for counting and ordering
+   */
+  private _getAllExternalModules(config?: UltraCardConfig): ExternalCardModule[] {
+    if (!config?.layout?.rows) return [];
+
+    const externalModules: ExternalCardModule[] = [];
+    config.layout.rows.forEach(row => {
+      row.columns.forEach(column => {
+        column.modules?.forEach(mod => {
+          if (mod.type === 'external_card') {
+            externalModules.push(mod as ExternalCardModule);
+          }
+        });
+      });
+    });
+
+    return externalModules;
+  }
+
+  /**
+   * Check if module should be locked (6th+ card for non-Pro users)
+   */
+  private _shouldLockModule(
+    module: ExternalCardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): boolean {
+    // Check Pro access via integration only
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
+
+    if (isPro) return false;
+
+    // Get all external modules and sort by timestamp
+    const allExternalModules = this._getAllExternalModules(config);
+    const sorted = [...allExternalModules].sort((a, b) => {
+      return this._extractTimestamp(a.id) - this._extractTimestamp(b.id);
+    });
+
+    // Find index of current module
+    const index = sorted.findIndex(m => m.id === module.id);
+
+    // Lock if it's the 6th or later (index >= 5)
+    return index >= 5;
   }
 
   renderGeneralTab(
@@ -385,47 +444,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
         // Clear and mount the card element
         container.innerHTML = '';
         container.appendChild(cardElement);
-
-        // Log styles after mounting to debug sizing issues
-        setTimeout(() => {
-          const containerEl = container as HTMLElement;
-          const cardEl = cardElement as HTMLElement;
-          const containerComputed = window.getComputedStyle(containerEl);
-          const cardComputed = window.getComputedStyle(cardEl);
-
-          console.log(`[External Card Styles] ${module.card_type} (${module.id}):`, {
-            container: {
-              display: containerComputed.display,
-              flex: containerComputed.flex,
-              flexGrow: containerComputed.flexGrow,
-              flexShrink: containerComputed.flexShrink,
-              flexBasis: containerComputed.flexBasis,
-              width: containerComputed.width,
-              height: containerComputed.height,
-              minWidth: containerComputed.minWidth,
-              minHeight: containerComputed.minHeight,
-            },
-            card: {
-              display: cardComputed.display,
-              flex: cardComputed.flex,
-              flexGrow: cardComputed.flexGrow,
-              flexShrink: cardComputed.flexShrink,
-              flexBasis: cardComputed.flexBasis,
-              width: cardComputed.width,
-              height: cardComputed.height,
-              minWidth: cardComputed.minWidth,
-              minHeight: cardComputed.minHeight,
-            },
-            parentWrapper: containerEl.parentElement
-              ? {
-                  className: containerEl.parentElement.className,
-                  display: window.getComputedStyle(containerEl.parentElement).display,
-                  flex: window.getComputedStyle(containerEl.parentElement).flex,
-                  width: window.getComputedStyle(containerEl.parentElement).width,
-                }
-              : null,
-          });
-        }, 100);
       } catch (error) {
         console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
         // If card creation fails, show error in container
@@ -439,7 +457,74 @@ export class UltraExternalCardModule extends BaseUltraModule {
       }
     };
 
-    // Return the wrapper container with ref callback
+    // Check if module should be locked (6th+ card for non-Pro users)
+    const shouldLock = this._shouldLockModule(module, hass, config);
+
+    if (shouldLock) {
+      // Render with Pro lock overlay
+      return html`
+        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div
+            class="pro-module-locked"
+            style="position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center;"
+          >
+            <div
+              ${ref(refCallback)}
+              class="external-card-container uc-external-card"
+              style="
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                flex: 1 1 auto;
+                min-width: 0;
+                min-height: 0;
+                filter: blur(8px);
+                opacity: 0.5;
+                pointer-events: none;
+              "
+            >
+              <!-- Card will be mounted here -->
+            </div>
+            <div
+              class="pro-module-overlay"
+              style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 12px;
+                z-index: 10;
+              "
+            >
+              <div
+                class="pro-module-message"
+                style="
+                  text-align: center;
+                  color: white;
+                  padding: 20px;
+                "
+              >
+                <ha-icon icon="mdi:lock" style="font-size: 48px; margin-bottom: 12px;"></ha-icon>
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+                  Pro Feature
+                </div>
+                <div style="font-size: 14px; opacity: 0.8;">
+                  Upgrade to Pro for unlimited 3rd party cards
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Return the wrapper container with ref callback (unlocked card)
     // Wrap the card content container inside the design container
     return html`
       <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>

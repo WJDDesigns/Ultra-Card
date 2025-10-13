@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta16
+
+### 🎁 Pro Features
+
+- **Removed pro lock on 3rd party tab** - The 3rd party cards tab is now fully accessible to all users without Pro subscription requirements
+
 ## Version 2.0-beta15
 
 ### 🎁 Pro Features

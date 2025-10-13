@@ -107,7 +107,7 @@ export declare class UltraCard extends LitElement {
     private _loadCloudUser;
     /**
      * Check if the current user has pro access
-     * Must be authenticated AND have active pro subscription
+     * ONLY checks integration auth (no card-based auth)
      */
     private _hasProAccess;
     /**
