@@ -121,11 +121,10 @@ export function renderAnimatedClockModuleEditor(
               'Scale factor for clock size (0-200)'
             )}
           </div>
-          <div
-            style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
-          >
+          <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
             <input
               type="range"
+              class="gap-slider"
               min="0"
               max="200"
               step="1"
@@ -136,42 +135,43 @@ export function renderAnimatedClockModuleEditor(
                 updateModule({ clock_size: val });
                 setTimeout(() => context.triggerPreviewUpdate(), 50);
               }}"
-              style="
-                width: 100%;
-                height: 4px;
-                background: var(--divider-color);
-                border-radius: 2px;
-                outline: none;
-                -webkit-appearance: none;
-              "
             />
-            <span
-              style="font-size: 13px; color: var(--secondary-text-color); min-width: 40px; text-align: right;"
-              >${clockModule.clock_size || 100}</span
-            >
+            <input
+              type="number"
+              class="gap-input"
+              min="0"
+              max="200"
+              step="1"
+              .value="${clockModule.clock_size || 100}"
+              @input="${(e: Event) => {
+                const target = e.target as HTMLInputElement;
+                const val = parseInt(target.value);
+                if (!isNaN(val) && val >= 0 && val <= 200) {
+                  updateModule({ clock_size: val });
+                  setTimeout(() => context.triggerPreviewUpdate(), 50);
+                }
+              }}"
+              @keydown="${(e: KeyboardEvent) => {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  const target = e.target as HTMLInputElement;
+                  const currentValue = parseInt(target.value) || 100;
+                  const increment = e.key === 'ArrowUp' ? 1 : -1;
+                  const newValue = Math.max(0, Math.min(200, currentValue + increment));
+                  updateModule({ clock_size: newValue });
+                  setTimeout(() => context.triggerPreviewUpdate(), 50);
+                }
+              }}"
+            />
             <button
+              class="reset-btn"
               @click="${() => {
                 updateModule({ clock_size: 100 });
                 setTimeout(() => context.triggerPreviewUpdate(), 50);
               }}"
               title="Reset to default (100)"
-              style="
-                width: 32px;
-                height: 32px;
-                padding: 0;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--secondary-background-color);
-                color: var(--primary-text-color);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-              "
             >
-              <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+              <ha-icon icon="mdi:refresh"></ha-icon>
             </button>
           </div>
         </div>

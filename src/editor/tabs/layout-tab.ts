@@ -167,6 +167,10 @@ export class LayoutTab extends LitElement {
   private _templateUpdateTimer?: number;
   private _lastTemplateUpdate = 0;
 
+  // Scroll position preservation for mobile
+  private _savedScrollPosition: number | null = null;
+  private _shouldRestoreScroll = false;
+
   connectedCallback(): void {
     super.connectedCallback();
     this._templateUpdateListener = () => {
@@ -2083,6 +2087,23 @@ export class LayoutTab extends LitElement {
     }, 3000);
   }
 
+  private _countExternalCardModules(): number {
+    const layout = this._ensureLayout();
+    let count = 0;
+
+    layout.rows.forEach(row => {
+      row.columns.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'external_card') {
+            count++;
+          }
+        });
+      });
+    });
+
+    return count;
+  }
+
   private _duplicateModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
@@ -2178,6 +2199,13 @@ export class LayoutTab extends LitElement {
       return;
     }
 
+    // Capture scroll position before update (for mobile scroll preservation)
+    const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
+    if (popupBody) {
+      this._savedScrollPosition = popupBody.scrollTop;
+      this._shouldRestoreScroll = true;
+    }
+
     const layout = this._ensureLayout();
     const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
 
@@ -2225,6 +2253,13 @@ export class LayoutTab extends LitElement {
   private _updateLayoutChildModule(updates: Partial<CardModule>): void {
     if (!this._selectedLayoutChild) {
       return;
+    }
+
+    // Capture scroll position before update (for mobile scroll preservation)
+    const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
+    if (popupBody) {
+      this._savedScrollPosition = popupBody.scrollTop;
+      this._shouldRestoreScroll = true;
     }
 
     const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
@@ -8954,6 +8989,18 @@ export class LayoutTab extends LitElement {
         }
       }, 0);
     }
+
+    // Restore scroll position after update (for mobile scroll preservation)
+    if (this._shouldRestoreScroll && this._savedScrollPosition !== null) {
+      requestAnimationFrame(() => {
+        const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
+        if (popupBody) {
+          popupBody.scrollTop = this._savedScrollPosition!;
+        }
+        this._shouldRestoreScroll = false;
+        this._savedScrollPosition = null;
+      });
+    }
   }
 
   private _renderBorderDesignTab(module: CardModule): TemplateResult {
@@ -10402,6 +10449,20 @@ export class LayoutTab extends LitElement {
           </button>
         </div>
 
+        ${!isPro
+          ? html`
+              <div class="limit-indicator">
+                <ha-icon icon="mdi:information-outline"></ha-icon>
+                <span>${this._countExternalCardModules()} / ${5} cards used</span>
+                <span class="upgrade-hint">Pro: Unlimited</span>
+              </div>
+            `
+          : html`
+              <div class="pro-indicator">
+                <ha-icon icon="mdi:crown"></ha-icon>
+                <span>Unlimited Cards</span>
+              </div>
+            `}
         ${availableCards.length > 0
           ? html`
               <div class="thirdparty-section">
@@ -10564,6 +10625,41 @@ export class LayoutTab extends LitElement {
 
         .refresh-btn:hover {
           background: var(--primary-color-hover);
+        }
+
+        .limit-indicator {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 16px;
+          background: var(--warning-color, #ff9800);
+          color: white;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-size: 14px;
+        }
+
+        .limit-indicator ha-icon {
+          font-size: 20px;
+        }
+
+        .upgrade-hint {
+          margin-left: auto;
+          opacity: 0.9;
+          font-weight: 500;
+        }
+
+        .pro-indicator {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 16px;
+          background: var(--success-color, #4caf50);
+          color: white;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-size: 14px;
+          font-weight: 500;
         }
 
         .thirdparty-section {
@@ -10923,6 +11019,22 @@ export class LayoutTab extends LitElement {
           lang,
           'Please select a column first by clicking "Add Module" on the column where you want to add this card.'
         )
+      );
+      return;
+    }
+
+    // Check Pro access and module limit
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const effectiveUser = integrationUser || this.cloudUser;
+    const isPro = effectiveUser?.subscription?.tier === 'pro';
+
+    const currentCount = this._countExternalCardModules();
+    const limit = 5;
+
+    if (!isPro && currentCount >= limit) {
+      this._showToast(
+        `Free users are limited to ${limit} 3rd party cards. Upgrade to Pro for unlimited cards!`,
+        'error'
       );
       return;
     }

@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta15
+
+### 🎁 Pro Features
+
+- **3rd Party Module Limits** - Free users can now add up to 5 third-party cards, while Pro users enjoy unlimited third-party card integration
+
 ## Version 2.0-beta14
 
 ### 🐛 Bug Fixes

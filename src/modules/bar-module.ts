@@ -833,10 +833,10 @@ export class UltraBarModule extends BaseUltraModule {
           <div class="field-container" style="margin-bottom: 24px;">
             <div class="field-title">${localize('editor.bar.appearance.border_radius', lang, 'Border Radius')}</div>
             <div class="field-description">${localize('editor.bar.appearance.border_radius_desc', lang, 'Control the rounded corners of the bar.')}</div>
-            <div class="number-range-control">
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
               <input
                 type="range"
-                class="range-slider"
+                class="gap-slider"
                 min="0"
                 max="50"
                 step="1"
@@ -849,7 +849,7 @@ export class UltraBarModule extends BaseUltraModule {
               />
               <input
                 type="number"
-                class="range-input"
+                class="gap-input"
                 min="0"
                 max="50"
                 step="1"
@@ -873,7 +873,7 @@ export class UltraBarModule extends BaseUltraModule {
                 }}
               />
               <button
-                class="range-reset-btn"
+                class="reset-btn"
                 @click=${() => updateModule({ border_radius: 10 })}
                 title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '10')}"
               >
@@ -888,10 +888,10 @@ export class UltraBarModule extends BaseUltraModule {
             <div class="field-description">
               ${localize('editor.bar.appearance.width_desc', lang, 'Set the width of the bar as a percentage of the container.')}
             </div>
-            <div class="number-range-control">
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
               <input
                 type="range"
-                class="range-slider"
+                class="gap-slider"
                 min="10"
                 max="100"
                 step="5"
@@ -904,7 +904,7 @@ export class UltraBarModule extends BaseUltraModule {
               />
               <input
                 type="number"
-                class="range-input"
+                class="gap-input"
                 min="10"
                 max="100"
                 step="5"
@@ -928,7 +928,7 @@ export class UltraBarModule extends BaseUltraModule {
                 }}
               />
               <button
-                class="range-reset-btn"
+                class="reset-btn"
                 @click=${() => updateModule({ bar_width: 100 })}
                 title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '100')}"
               >
@@ -4812,15 +4812,15 @@ export class UltraBarModule extends BaseUltraModule {
         display: none !important;
       }
 
-      /* Custom Slider Controls - Optimized Design */
-      .number-range-control {
+      /* Gap control styles - Standardized Slider Pattern */
+      .gap-control-container {
         display: flex;
-        gap: 8px;
         align-items: center;
+        gap: 12px;
       }
 
-      .range-slider {
-        flex: 0 0 65%;
+      .gap-slider {
+        flex: 1;
         height: 6px;
         background: var(--divider-color);
         border-radius: 3px;
@@ -4829,14 +4829,13 @@ export class UltraBarModule extends BaseUltraModule {
         -webkit-appearance: none;
         cursor: pointer;
         transition: all 0.2s ease;
-        min-width: 0;
       }
 
-      .range-slider::-webkit-slider-thumb {
+      .gap-slider::-webkit-slider-thumb {
         appearance: none;
         -webkit-appearance: none;
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         background: var(--primary-color);
         border-radius: 50%;
         cursor: pointer;
@@ -4844,9 +4843,9 @@ export class UltraBarModule extends BaseUltraModule {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
 
-      .range-slider::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
         background: var(--primary-color);
         border-radius: 50%;
         cursor: pointer;
@@ -4854,22 +4853,24 @@ export class UltraBarModule extends BaseUltraModule {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
 
-      .range-slider:hover {
+      .gap-slider:hover {
         background: var(--primary-color);
         opacity: 0.7;
       }
 
-      .range-slider:hover::-webkit-slider-thumb {
+      .gap-slider:hover::-webkit-slider-thumb {
         transform: scale(1.1);
       }
 
-      .range-slider:hover::-moz-range-thumb {
+      .gap-slider:hover::-moz-range-thumb {
         transform: scale(1.1);
       }
 
-      .range-input {
-        flex: 0 0 20%;
-        padding: 6px 8px !important;
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
         background: var(--secondary-background-color);
@@ -4877,18 +4878,19 @@ export class UltraBarModule extends BaseUltraModule {
         font-size: 13px;
         text-align: center;
         transition: all 0.2s ease;
+        flex-shrink: 0;
         box-sizing: border-box;
       }
 
-      .range-input:focus {
+      .gap-input:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
       }
 
-      .range-reset-btn {
-        width: 32px;
-        height: 32px;
+      .reset-btn {
+        width: 36px;
+        height: 36px;
         padding: 0;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
@@ -4902,14 +4904,14 @@ export class UltraBarModule extends BaseUltraModule {
         flex-shrink: 0;
       }
 
-      .range-reset-btn:hover {
+      .reset-btn:hover {
         background: var(--primary-color);
         color: var(--text-primary-color);
         border-color: var(--primary-color);
       }
 
-      .range-reset-btn ha-icon {
-        font-size: 14px;
+      .reset-btn ha-icon {
+        font-size: 16px;
       }
 
       /* Conditional Fields Grouping - Reusable Pattern */

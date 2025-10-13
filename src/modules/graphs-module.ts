@@ -3852,110 +3852,10 @@ export class UltraGraphsModule extends BaseUltraModule {
         >
           ${description}
         </div>
-        <style>
-          .number-range-control {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-          }
-
-          .range-slider {
-            flex: 0 0 65%;
-            height: 6px;
-            background: var(--divider-color);
-            border-radius: 3px;
-            outline: none;
-            appearance: none;
-            -webkit-appearance: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            min-width: 0;
-          }
-
-          .range-slider::-webkit-slider-thumb {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          }
-
-          .range-slider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          }
-
-          .range-slider:hover {
-            background: var(--primary-color);
-            opacity: 0.7;
-          }
-
-          .range-slider:hover::-webkit-slider-thumb {
-            transform: scale(1.1);
-          }
-
-          .range-slider:hover::-moz-range-thumb {
-            transform: scale(1.1);
-          }
-
-          .range-input {
-            flex: 0 0 20%;
-            padding: 6px 8px !important;
-            border: 1px solid var(--divider-color);
-            border-radius: 4px;
-            background: var(--secondary-background-color);
-            color: var(--primary-text-color);
-            font-size: 13px;
-            text-align: center;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-          }
-
-          .range-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
-          }
-
-          .range-reset-btn {
-            width: 32px;
-            height: 32px;
-            padding: 0;
-            border: 1px solid var(--divider-color);
-            border-radius: 4px;
-            background: var(--secondary-background-color);
-            color: var(--primary-text-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-          }
-
-          .range-reset-btn:hover {
-            background: var(--primary-color);
-            color: var(--text-primary-color);
-            border-color: var(--primary-color);
-          }
-
-          .range-reset-btn ha-icon {
-            font-size: 14px;
-          }
-        </style>
-        <div class="number-range-control">
+        <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
           <input
             type="range"
-            class="range-slider"
+            class="gap-slider"
             min="${min}"
             max="${max}"
             step="1"
@@ -3972,7 +3872,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           />
           <input
             type="number"
-            class="range-input"
+            class="gap-input"
             min="${min}"
             max="${max}"
             step="1"
@@ -4004,7 +3904,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             }}
           />
           <button
-            class="range-reset-btn"
+            class="reset-btn"
             @click=${() => {
               if (index >= 0) {
                 this._updateEntity(graphsModule, index, { [property]: defaultValue }, updateModule);
@@ -4724,6 +4624,108 @@ export class UltraGraphsModule extends BaseUltraModule {
         word-wrap: break-word;
         box-sizing: border-box;
         pointer-events: none !important;
+      }
+
+      /* Gap control styles - Standardized Slider Pattern */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
       }
     `;
   }

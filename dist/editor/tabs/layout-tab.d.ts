@@ -46,6 +46,8 @@ export declare class LayoutTab extends LitElement {
     private _keydownListener?;
     private _templateUpdateTimer?;
     private _lastTemplateUpdate;
+    private _savedScrollPosition;
+    private _shouldRestoreScroll;
     connectedCallback(): void;
     /** Determine if current device/viewport should be treated as mobile */
     private _isMobileDevice;
@@ -121,6 +123,7 @@ export declare class LayoutTab extends LitElement {
     private _cloneRowWithNewIds;
     private _toggleMoreMenu;
     private _showToast;
+    private _countExternalCardModules;
     private _duplicateModule;
     private _deleteModule;
     private _openModuleSettings;
