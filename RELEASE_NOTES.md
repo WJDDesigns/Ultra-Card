@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 2.0-beta19
+
+### 🐛 Bug Fixes
+
+- **Fix for 3rd party editor yaml issue** - Resolved YAML editing issues in the 3rd party editor
+- **Improved 3rd party non pro mechanism** - Enhanced the mechanism for non-Pro users interacting with 3rd party cards
+
 ## Version 2.0-beta18
 
 ### 🐛 Bug Fixes

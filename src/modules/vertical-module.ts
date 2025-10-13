@@ -505,12 +505,23 @@ export class UltraVerticalModule extends BaseUltraModule {
                 style="
                 text-align: center;
                 color: white;
-                padding: 20px;
+                padding: 6px;
+                max-width: 95%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
               "
               >
-                <ha-icon icon="mdi:lock" style="font-size: 48px; margin-bottom: 12px;"></ha-icon>
-                <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Pro Module</div>
-                <div style="font-size: 14px; opacity: 0.8;">Please login to view this module</div>
+                <ha-icon icon="mdi:lock" style="font-size: 20px; flex-shrink: 0;"></ha-icon>
+                <div
+                  style="font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap;"
+                >
+                  Pro Module
+                </div>
+                <div style="font-size: 9px; opacity: 0.8; line-height: 1.2; display: none;">
+                  Login to view
+                </div>
               </div>
             </div>
           </div>

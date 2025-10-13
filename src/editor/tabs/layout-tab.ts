@@ -28,6 +28,7 @@ import { Z_INDEX } from '../../utils/uc-z-index';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ucExportImportService } from '../../services/uc-export-import-service';
+import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
 import { ucExternalCardsService } from '../../services/uc-external-cards-service';
@@ -141,6 +142,9 @@ export class LayoutTab extends LitElement {
     | { scope: 'row'; fromIndex: number }
     | { scope: 'column'; fromIndex: number }
     | null = null;
+
+  // Global external card count across all Ultra Card instances
+  @state() private _globalExternalCardCount = 0;
 
   // New state properties for presets, favorites, and export/import
   @state() private _activeModuleSelectorTab: 'modules' | '3rdparty' | 'presets' | 'favorites' =
@@ -2105,6 +2109,124 @@ export class LayoutTab extends LitElement {
     return count;
   }
 
+  /**
+   * Count all external card modules across ALL Ultra Card instances in the dashboard
+   * This provides a global count for Pro feature limiting
+   */
+  private async _countAllExternalCardModulesGlobally(): Promise<number> {
+    try {
+      // Scan the entire dashboard for all Ultra Card instances
+      const snapshot = await ucDashboardScannerService.scanDashboard();
+
+      let totalExternalCards = 0;
+
+      // Count external_card modules in each Ultra Card instance
+      snapshot.cards.forEach(dashboardCard => {
+        const config = dashboardCard.config;
+
+        if (config.layout && config.layout.rows) {
+          config.layout.rows.forEach(row => {
+            row.columns?.forEach(column => {
+              column.modules?.forEach(module => {
+                if (module.type === 'external_card') {
+                  totalExternalCards++;
+                }
+              });
+            });
+          });
+        }
+      });
+
+      console.log(`[UC] Global external card count across dashboard: ${totalExternalCards}`);
+      return totalExternalCards;
+    } catch (error) {
+      console.error('[UC] Failed to count global external cards:', error);
+      // Fallback to local count if global scan fails
+      return this._countExternalCardModules();
+    }
+  }
+
+  /**
+   * Get list of external card IDs that are allowed (first 5 by timestamp)
+   * Returns a Set of allowed external card IDs for non-Pro users
+   */
+  private async _getAllowedExternalCardIds(): Promise<Set<string>> {
+    try {
+      // Scan the entire dashboard for all Ultra Card instances
+      const snapshot = await ucDashboardScannerService.scanDashboard();
+
+      // Collect all external card modules with their timestamps
+      const allExternalCards: Array<{ id: string; timestamp: number }> = [];
+
+      snapshot.cards.forEach(dashboardCard => {
+        const config = dashboardCard.config;
+
+        if (config.layout && config.layout.rows) {
+          config.layout.rows.forEach(row => {
+            row.columns?.forEach(column => {
+              column.modules?.forEach(module => {
+                if (module.type === 'external_card' && module.id) {
+                  // Extract timestamp from ID format: external-card-{timestamp}-{random}
+                  const match = module.id.match(/external-card-(\d+)-/);
+                  if (match) {
+                    const timestamp = parseInt(match[1], 10);
+                    allExternalCards.push({ id: module.id, timestamp });
+                  }
+                }
+              });
+            });
+          });
+        }
+      });
+
+      // Sort by timestamp (oldest first)
+      allExternalCards.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Take first 5
+      const allowedIds = new Set(allExternalCards.slice(0, 5).map(card => card.id));
+
+      console.log(`[UC] Allowed external card IDs (first 5):`, Array.from(allowedIds));
+      return allowedIds;
+    } catch (error) {
+      console.error('[UC] Failed to get allowed external card IDs:', error);
+      return new Set();
+    }
+  }
+
+  /**
+   * Refresh the global external card count
+   * This is called when the 3rd party tab is rendered
+   */
+  private async _refreshGlobalExternalCardCount(): Promise<void> {
+    // Only refresh if the count is not already being calculated
+    if (!this._isRefreshingGlobalCount) {
+      this._isRefreshingGlobalCount = true;
+      try {
+        const count = await this._countAllExternalCardModulesGlobally();
+        this._globalExternalCardCount = count;
+      } finally {
+        this._isRefreshingGlobalCount = false;
+      }
+    }
+  }
+
+  /**
+   * Handle refresh button click in 3rd party tab
+   */
+  private async _handleRefresh3rdPartyTab(): Promise<void> {
+    await this._refreshGlobalExternalCardCount();
+    this.requestUpdate();
+  }
+
+  /**
+   * Open Ultra Card Pro purchase page
+   */
+  private _openProPage(): void {
+    window.open('https://ultracard.io/product/ultra-card-pro/', '_blank');
+  }
+
+  private _isRefreshingGlobalCount = false;
+
   private _duplicateModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
     const layout = this._ensureLayout();
     const row = layout.rows[rowIndex];
@@ -2157,7 +2279,9 @@ export class LayoutTab extends LitElement {
 
     // Cleanup external card cache if this is an external card
     const moduleToDelete = column.modules[moduleIndex];
-    if (moduleToDelete && moduleToDelete.type === 'external_card') {
+    const isExternalCard = moduleToDelete && moduleToDelete.type === 'external_card';
+
+    if (isExternalCard) {
       import('../../modules/external-card-module').then(({ cleanupExternalCardCache }) => {
         cleanupExternalCardCache(moduleToDelete.id);
       });
@@ -2185,6 +2309,11 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
+
+    // Refresh global count if an external card was deleted
+    if (isExternalCard) {
+      this._refreshGlobalExternalCardCount();
+    }
   }
 
   private _openModuleSettings(rowIndex: number, columnIndex: number, moduleIndex: number): void {
@@ -8963,6 +9092,11 @@ export class LayoutTab extends LitElement {
   protected updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
 
+    // Initialize dashboard scanner service when hass is available
+    if (changedProperties.has('hass') && this.hass) {
+      ucDashboardScannerService.initialize(this.hass);
+    }
+
     // Initialize popup positioning when popups are shown
     if (changedProperties.has('_showModuleSelector') && this._showModuleSelector) {
       setTimeout(() => {
@@ -10474,11 +10608,14 @@ export class LayoutTab extends LitElement {
     const popularCards = ucExternalCardsService.getPopularCards();
     const lang = this.hass?.locale?.language || 'en';
 
+    // Refresh global count when tab is rendered
+    this._refreshGlobalExternalCardCount();
+
     return html`
       <div class="thirdparty-container">
         <div class="thirdparty-header">
           <h4>3rd Party Cards</h4>
-          <button class="refresh-btn" @click=${() => this.requestUpdate()}>
+          <button class="refresh-btn" @click=${() => this._handleRefresh3rdPartyTab()}>
             <ha-icon icon="mdi:refresh"></ha-icon>
             <span>Refresh</span>
           </button>
@@ -10488,8 +10625,14 @@ export class LayoutTab extends LitElement {
           ? html`
               <div class="limit-indicator">
                 <ha-icon icon="mdi:information-outline"></ha-icon>
-                <span>${this._countExternalCardModules()} / ${5} cards used</span>
-                <span class="upgrade-hint">Pro: Unlimited</span>
+                <span
+                  >${Math.min(this._globalExternalCardCount, 5)} / ${5} cards used across
+                  dashboard</span
+                >
+                <div class="upgrade-section">
+                  <span class="upgrade-text">Want Unlimited?</span>
+                  <button class="get-pro-btn" @click=${this._openProPage}>Get Pro</button>
+                </div>
               </div>
             `
           : html`
@@ -10630,7 +10773,7 @@ export class LayoutTab extends LitElement {
         .limit-indicator {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
           padding: 12px 16px;
           background: var(--warning-color, #ff9800);
           color: white;
@@ -10641,6 +10784,47 @@ export class LayoutTab extends LitElement {
 
         .limit-indicator ha-icon {
           font-size: 20px;
+          flex-shrink: 0;
+        }
+
+        .limit-indicator > span {
+          flex: 1;
+        }
+
+        .upgrade-section {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-left: auto;
+        }
+
+        .upgrade-text {
+          opacity: 0.9;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .get-pro-btn {
+          background: rgba(255, 255, 255, 0.25);
+          color: white;
+          border: 2px solid rgba(255, 255, 255, 0.5);
+          padding: 6px 16px;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+
+        .get-pro-btn:hover {
+          background: rgba(255, 255, 255, 0.35);
+          border-color: rgba(255, 255, 255, 0.8);
+          transform: translateY(-1px);
+        }
+
+        .get-pro-btn:active {
+          transform: translateY(0);
         }
 
         .upgrade-hint {
@@ -11142,10 +11326,30 @@ export class LayoutTab extends LitElement {
     return config;
   }
 
-  private _add3rdPartyCard(cardType: string): void {
+  private async _add3rdPartyCard(cardType: string): Promise<void> {
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
       console.error('No row or column selected');
       return;
+    }
+
+    // Check Pro access (integration only)
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
+
+    // For non-Pro users, check the global limit
+    if (!isPro) {
+      const currentGlobalCount = await this._countAllExternalCardModulesGlobally();
+
+      if (currentGlobalCount >= 5) {
+        // Show error toast
+        this._showToast(
+          'You have reached the maximum of 5 external cards across your dashboard. Upgrade to Ultra Card Pro for unlimited external cards.',
+          'error'
+        );
+        return;
+      }
     }
 
     const layout = this._ensureLayout();
@@ -11194,6 +11398,9 @@ export class LayoutTab extends LitElement {
 
     this._updateLayout(newLayout);
     this._showModuleSelector = false;
+
+    // Refresh the global count after adding
+    await this._refreshGlobalExternalCardCount();
 
     // Open standard module settings popup immediately for configuration
     const moduleIndex = (column.modules || []).length;

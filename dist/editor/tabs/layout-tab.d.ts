@@ -29,6 +29,7 @@ export declare class LayoutTab extends LitElement {
     private _collapsedConditionIds;
     private _isPreviewPinned;
     private _draggingCondition;
+    private _globalExternalCardCount;
     private _activeModuleSelectorTab;
     private _activeModuleCategoryTab;
     private _selectedPresetCategory;
@@ -124,6 +125,30 @@ export declare class LayoutTab extends LitElement {
     private _toggleMoreMenu;
     private _showToast;
     private _countExternalCardModules;
+    /**
+     * Count all external card modules across ALL Ultra Card instances in the dashboard
+     * This provides a global count for Pro feature limiting
+     */
+    private _countAllExternalCardModulesGlobally;
+    /**
+     * Get list of external card IDs that are allowed (first 5 by timestamp)
+     * Returns a Set of allowed external card IDs for non-Pro users
+     */
+    private _getAllowedExternalCardIds;
+    /**
+     * Refresh the global external card count
+     * This is called when the 3rd party tab is rendered
+     */
+    private _refreshGlobalExternalCardCount;
+    /**
+     * Handle refresh button click in 3rd party tab
+     */
+    private _handleRefresh3rdPartyTab;
+    /**
+     * Open Ultra Card Pro purchase page
+     */
+    private _openProPage;
+    private _isRefreshingGlobalCount;
     private _duplicateModule;
     private _deleteModule;
     private _openModuleSettings;

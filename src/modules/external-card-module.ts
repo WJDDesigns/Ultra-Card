@@ -13,6 +13,12 @@ const updateDebounceTimers = new Map<string, number>();
 // Editor element cache to prevent unnecessary recreation and preserve UI state (scroll, focus, dropdowns)
 const editorElementCache = new Map<string, any>();
 
+// Global cache for allowed external card IDs (first 5 by timestamp)
+// This is refreshed periodically to avoid expensive dashboard scans on every render
+let allowedExternalCardIdsCache: Set<string> | null = null;
+let allowedExternalCardIdsCacheTime = 0;
+const ALLOWED_IDS_CACHE_TTL = 5000; // 5 seconds
+
 // Export cleanup function for when modules are deleted
 export function cleanupExternalCardCache(moduleId: string): void {
   // Clear any pending debounce timers
@@ -22,8 +28,19 @@ export function cleanupExternalCardCache(moduleId: string): void {
     updateDebounceTimers.delete(moduleId);
   }
 
-  // Clear cached editor element
-  editorElementCache.delete(moduleId);
+  // Clear all cached editor elements for this module ID (across all card types)
+  // Cache keys follow pattern: ${moduleId}-${cardType}
+  const keysToDelete: string[] = [];
+  editorElementCache.forEach((_, key) => {
+    if (key.startsWith(`${moduleId}-`)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach(key => editorElementCache.delete(key));
+
+  // Clear allowed IDs cache so it refreshes
+  allowedExternalCardIdsCache = null;
+  allowedExternalCardIdsCacheTime = 0;
 }
 
 export class UltraExternalCardModule extends BaseUltraModule {
@@ -80,7 +97,60 @@ export class UltraExternalCardModule extends BaseUltraModule {
   }
 
   /**
+   * Refresh the global allowed external card IDs cache
+   * This runs async in the background
+   */
+  private async _refreshAllowedIdsCache(hass: HomeAssistant): Promise<void> {
+    try {
+      // Import the dashboard scanner service dynamically
+      const { ucDashboardScannerService } = await import(
+        '../services/uc-dashboard-scanner-service'
+      );
+
+      // Initialize with hass
+      ucDashboardScannerService.initialize(hass);
+
+      // Scan all Ultra Cards across the dashboard
+      const snapshot = await ucDashboardScannerService.scanDashboard();
+
+      // Collect ALL external card modules across ALL Ultra Card instances
+      const allExternalModules: Array<{ id: string; timestamp: number }> = [];
+
+      snapshot.cards.forEach(dashboardCard => {
+        const cardConfig = dashboardCard.config;
+        if (cardConfig.layout && cardConfig.layout.rows) {
+          cardConfig.layout.rows.forEach(row => {
+            row.columns?.forEach(column => {
+              column.modules?.forEach(mod => {
+                if (mod.type === 'external_card' && mod.id) {
+                  const timestamp = this._extractTimestamp(mod.id);
+                  allExternalModules.push({ id: mod.id, timestamp });
+                }
+              });
+            });
+          });
+        }
+      });
+
+      // Sort by timestamp (oldest first)
+      allExternalModules.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Take first 5 IDs
+      const allowedIds = new Set(allExternalModules.slice(0, 5).map(card => card.id));
+
+      // Update cache
+      allowedExternalCardIdsCache = allowedIds;
+      allowedExternalCardIdsCacheTime = Date.now();
+
+      console.log(`[UC External Card] Allowed IDs (first 5):`, Array.from(allowedIds));
+    } catch (error) {
+      console.error('[UC External Card] Failed to refresh allowed IDs cache:', error);
+    }
+  }
+
+  /**
    * Check if module should be locked (6th+ card for non-Pro users)
+   * This now checks GLOBALLY across all Ultra Card instances using a cache
    */
   private _shouldLockModule(
     module: ExternalCardModule,
@@ -95,17 +165,37 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
     if (isPro) return false;
 
-    // Get all external modules and sort by timestamp
-    const allExternalModules = this._getAllExternalModules(config);
-    const sorted = [...allExternalModules].sort((a, b) => {
-      return this._extractTimestamp(a.id) - this._extractTimestamp(b.id);
-    });
+    // Check if cache needs refresh (TTL expired or doesn't exist)
+    const now = Date.now();
+    if (
+      !allowedExternalCardIdsCache ||
+      now - allowedExternalCardIdsCacheTime > ALLOWED_IDS_CACHE_TTL
+    ) {
+      // Trigger async refresh in background
+      this._refreshAllowedIdsCache(hass);
 
-    // Find index of current module
-    const index = sorted.findIndex(m => m.id === module.id);
+      // If cache doesn't exist yet, use fallback local check
+      if (!allowedExternalCardIdsCache) {
+        const allExternalModules = this._getAllExternalModules(config);
+        const sorted = [...allExternalModules].sort((a, b) => {
+          return this._extractTimestamp(a.id) - this._extractTimestamp(b.id);
+        });
+        const index = sorted.findIndex(m => m.id === module.id);
+        return index >= 5;
+      }
+    }
 
-    // Lock if it's the 6th or later (index >= 5)
-    return index >= 5;
+    // Use cached allowed IDs
+    const isAllowed = allowedExternalCardIdsCache.has(module.id);
+    const shouldLock = !isAllowed;
+
+    if (shouldLock && allowedExternalCardIdsCache.size > 0) {
+      console.log(
+        `[UC External Card] Locking module ${module.id} - not in first 5 globally (limit: 5 for non-Pro)`
+      );
+    }
+
+    return shouldLock;
   }
 
   renderGeneralTab(
@@ -114,7 +204,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult {
-    const cardInfo = ucExternalCardsService.getCardInfo(module.card_type);
+    // Get card info and name - use fallback if card_type is not set
+    const cardInfo = module.card_type ? ucExternalCardsService.getCardInfo(module.card_type) : null;
     const cardName = cardInfo?.name || module.card_type || 'External Card';
 
     // Ref callback to set up the native editor with caching to preserve UI state
@@ -122,19 +213,34 @@ export class UltraExternalCardModule extends BaseUltraModule {
       if (!container || !module.card_type) return;
 
       const editorType = `${module.card_type}-editor`;
+      // Use a cache key that includes both module ID and card type to prevent cross-contamination
+      const cacheKey = `${module.id}-${module.card_type}`;
 
-      // Check for cached editor
-      let editor = editorElementCache.get(module.id);
+      // Check for cached editor using the composite key
+      let editor = editorElementCache.get(cacheKey);
 
-      // Create new editor only if no cache or card type changed
-      if (!editor || editor.tagName.toLowerCase() !== editorType) {
+      // Check if editor needs to be created or re-created
+      const needsNewEditor = !editor || editor.tagName.toLowerCase() !== editorType;
+
+      // Check if editor exists but is not in the container (was detached by tab switch)
+      const editorNotMounted = editor && !container.contains(editor);
+
+      if (needsNewEditor) {
+        // Clear any old cache entries for this module ID (with different card types)
+        const keysToDelete: string[] = [];
+        editorElementCache.forEach((_, key) => {
+          if (key.startsWith(`${module.id}-`) && key !== cacheKey) {
+            keysToDelete.push(key);
+          }
+        });
+        keysToDelete.forEach(key => editorElementCache.delete(key));
         try {
           editor = document.createElement(editorType) as any;
 
           // Check if editor is actually a custom element
           if (editor instanceof HTMLUnknownElement) {
             // Clear cache since this card type doesn't have an editor
-            editorElementCache.delete(module.id);
+            editorElementCache.delete(cacheKey);
             container.innerHTML = `
               <div style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
                 <ha-icon icon="mdi:information-outline" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
@@ -174,12 +280,12 @@ export class UltraExternalCardModule extends BaseUltraModule {
           });
 
           // Cache the editor and mount it
-          editorElementCache.set(module.id, editor);
+          editorElementCache.set(cacheKey, editor);
           container.innerHTML = '';
           container.appendChild(editor);
         } catch (error) {
           console.error('Failed to create native editor:', error);
-          editorElementCache.delete(module.id);
+          editorElementCache.delete(cacheKey);
           container.innerHTML = `
             <div style="padding: 40px; text-align: center; color: var(--error-color);">
               <ha-icon icon="mdi:alert-circle" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
@@ -189,6 +295,10 @@ export class UltraExternalCardModule extends BaseUltraModule {
           `;
           return;
         }
+      } else if (editorNotMounted) {
+        // Editor exists in cache but was detached from DOM (tab switch) - re-mount it
+        container.innerHTML = '';
+        container.appendChild(editor);
       }
 
       // Update properties on cached editor ONLY if they've actually changed
@@ -536,15 +646,22 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 style="
                   text-align: center;
                   color: white;
-                  padding: 20px;
+                  padding: 6px;
+                  max-width: 95%;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 4px;
                 "
               >
-                <ha-icon icon="mdi:lock" style="font-size: 48px; margin-bottom: 12px;"></ha-icon>
-                <div style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+                <ha-icon icon="mdi:lock" style="font-size: 20px; flex-shrink: 0;"></ha-icon>
+                <div
+                  style="font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap;"
+                >
                   Pro Feature
                 </div>
-                <div style="font-size: 14px; opacity: 0.8;">
-                  Upgrade to Pro for unlimited 3rd party cards
+                <div style="font-size: 9px; opacity: 0.8; line-height: 1.2; display: none;">
+                  Upgrade to Pro
                 </div>
               </div>
             </div>

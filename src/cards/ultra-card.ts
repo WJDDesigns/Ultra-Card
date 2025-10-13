@@ -2617,24 +2617,25 @@ export class UltraCard extends LitElement {
       .pro-module-message {
         display: flex !important;
         align-items: center;
-        gap: 12px;
-        padding: 20px 28px;
+        gap: 8px;
+        padding: 12px 16px;
         background: linear-gradient(
           135deg,
           rgba(var(--rgb-primary-color, 33, 150, 243), 0.95),
           rgba(var(--rgb-accent-color, 255, 152, 0), 0.85)
         );
-        border-radius: 16px;
+        border-radius: 12px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         color: white !important;
         position: relative;
         z-index: 10000;
         pointer-events: none;
         user-select: none;
+        max-width: 95%;
       }
 
       .pro-module-message ha-icon {
-        --mdc-icon-size: 36px;
+        --mdc-icon-size: 24px;
         color: white !important;
         flex-shrink: 0;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
@@ -2643,23 +2644,79 @@ export class UltraCard extends LitElement {
       .pro-module-text {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
         user-select: none;
+        min-width: 0;
+        flex: 1;
       }
 
       .pro-module-text strong {
-        font-size: 18px;
+        font-size: 13px;
         font-weight: 700;
         line-height: 1.2;
         color: white !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .pro-module-text span {
-        font-size: 14px;
+        font-size: 11px;
         opacity: 0.95;
         line-height: 1.3;
         color: white !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compact view for smaller containers */
+      @container (max-width: 250px) {
+        .pro-module-message {
+          padding: 8px 10px;
+          gap: 6px;
+          border-radius: 8px;
+        }
+
+        .pro-module-message ha-icon {
+          --mdc-icon-size: 18px;
+        }
+
+        .pro-module-text strong {
+          font-size: 11px;
+        }
+
+        .pro-module-text span {
+          font-size: 9px;
+        }
+      }
+
+      /* Extra compact for very small containers */
+      @container (max-width: 180px) {
+        .pro-module-message {
+          flex-direction: column;
+          padding: 6px;
+          gap: 4px;
+        }
+
+        .pro-module-message ha-icon {
+          --mdc-icon-size: 16px;
+        }
+
+        .pro-module-text {
+          align-items: center;
+          text-align: center;
+          gap: 2px;
+        }
+
+        .pro-module-text strong {
+          font-size: 10px;
+        }
+
+        .pro-module-text span {
+          display: none;
+        }
       }
     `;
   }
