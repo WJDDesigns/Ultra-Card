@@ -10,6 +10,9 @@ import '../components/ultra-template-editor';
 // Debounce timers for config updates to prevent rapid re-render loops from spurious events
 const updateDebounceTimers = new Map<string, number>();
 
+// Editor element cache to prevent unnecessary recreation and preserve UI state (scroll, focus, dropdowns)
+const editorElementCache = new Map<string, any>();
+
 // Export cleanup function for when modules are deleted
 export function cleanupExternalCardCache(moduleId: string): void {
   // Clear any pending debounce timers
@@ -18,6 +21,9 @@ export function cleanupExternalCardCache(moduleId: string): void {
     clearTimeout(timer);
     updateDebounceTimers.delete(moduleId);
   }
+
+  // Clear cached editor element
+  editorElementCache.delete(moduleId);
 }
 
 export class UltraExternalCardModule extends BaseUltraModule {
@@ -111,75 +117,98 @@ export class UltraExternalCardModule extends BaseUltraModule {
     const cardInfo = ucExternalCardsService.getCardInfo(module.card_type);
     const cardName = cardInfo?.name || module.card_type || 'External Card';
 
-    // Ref callback to set up the native editor (NO CACHING - fresh on each render)
+    // Ref callback to set up the native editor with caching to preserve UI state
     const setupEditor = (container: Element | undefined) => {
       if (!container || !module.card_type) return;
 
-      // Create a fresh editor element each time (no caching)
-      try {
-        const editorType = `${module.card_type}-editor`;
-        const editor = document.createElement(editorType) as any;
+      const editorType = `${module.card_type}-editor`;
 
-        // Check if editor is actually a custom element
-        if (editor instanceof HTMLUnknownElement) {
+      // Check for cached editor
+      let editor = editorElementCache.get(module.id);
+
+      // Create new editor only if no cache or card type changed
+      if (!editor || editor.tagName.toLowerCase() !== editorType) {
+        try {
+          editor = document.createElement(editorType) as any;
+
+          // Check if editor is actually a custom element
+          if (editor instanceof HTMLUnknownElement) {
+            // Clear cache since this card type doesn't have an editor
+            editorElementCache.delete(module.id);
+            container.innerHTML = `
+              <div style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
+                <ha-icon icon="mdi:information-outline" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
+                <p style="font-size: 14px; margin-bottom: 8px;">This card does not have a visual editor.</p>
+                <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
+              </div>
+            `;
+            return;
+          }
+
+          // Set up config-changed listener (only once when editor is created)
+          editor.addEventListener('config-changed', (e: CustomEvent) => {
+            e.stopPropagation();
+            if (e.detail && e.detail.config) {
+              // Check if config actually changed by comparing with current module config
+              const newConfigKey = JSON.stringify(e.detail.config);
+              const currentConfigKey = JSON.stringify(module.card_config || {});
+
+              if (newConfigKey === currentConfigKey) {
+                return; // Ignore spurious config-changed events
+              }
+
+              // Clear any existing debounce timer
+              const existingTimer = updateDebounceTimers.get(module.id);
+              if (existingTimer) {
+                clearTimeout(existingTimer);
+              }
+
+              // Debounce the update to prevent rapid re-render loops
+              const timer = window.setTimeout(() => {
+                updateModule({ card_config: { ...e.detail.config } });
+                updateDebounceTimers.delete(module.id);
+              }, 150); // 150ms debounce
+
+              updateDebounceTimers.set(module.id, timer);
+            }
+          });
+
+          // Cache the editor and mount it
+          editorElementCache.set(module.id, editor);
+          container.innerHTML = '';
+          container.appendChild(editor);
+        } catch (error) {
+          console.error('Failed to create native editor:', error);
+          editorElementCache.delete(module.id);
           container.innerHTML = `
-            <div style="padding: 40px; text-align: center; color: var(--secondary-text-color);">
-              <ha-icon icon="mdi:information-outline" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
-              <p style="font-size: 14px; margin-bottom: 8px;">This card does not have a visual editor.</p>
+            <div style="padding: 40px; text-align: center; color: var(--error-color);">
+              <ha-icon icon="mdi:alert-circle" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
+              <p style="font-size: 14px; margin-bottom: 8px;">Failed to load editor</p>
               <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
             </div>
           `;
           return;
         }
+      }
 
-        // Set config and hass
-        if (typeof editor.setConfig === 'function') {
-          editor.setConfig(module.card_config || {});
-        } else {
-          editor.config = module.card_config || {};
-        }
-        editor.hass = hass;
+      // Update properties on cached editor ONLY if they've actually changed
+      // This prevents unnecessary re-renders that cause scroll/focus issues
+      try {
+        const configChanged =
+          JSON.stringify(editor.config || {}) !== JSON.stringify(module.card_config || {});
 
-        // Listen for config changes with spurious event guard and debouncing
-        editor.addEventListener('config-changed', (e: CustomEvent) => {
-          e.stopPropagation();
-          if (e.detail && e.detail.config) {
-            // Check if config actually changed by comparing with current module config
-            const newConfigKey = JSON.stringify(e.detail.config);
-            const currentConfigKey = JSON.stringify(module.card_config || {});
-
-            if (newConfigKey === currentConfigKey) {
-              return; // Ignore spurious config-changed events
-            }
-
-            // Clear any existing debounce timer
-            const existingTimer = updateDebounceTimers.get(module.id);
-            if (existingTimer) {
-              clearTimeout(existingTimer);
-            }
-
-            // Debounce the update to prevent rapid re-render loops
-            const timer = window.setTimeout(() => {
-              updateModule({ card_config: { ...e.detail.config } });
-              updateDebounceTimers.delete(module.id);
-            }, 150); // 150ms debounce
-
-            updateDebounceTimers.set(module.id, timer);
+        if (configChanged) {
+          if (typeof editor.setConfig === 'function') {
+            editor.setConfig(module.card_config || {});
+          } else {
+            editor.config = module.card_config || {};
           }
-        });
+        }
 
-        // Clear and mount
-        container.innerHTML = '';
-        container.appendChild(editor);
+        // Always update hass as it contains entity states that may have changed
+        editor.hass = hass;
       } catch (error) {
-        console.error('Failed to create native editor:', error);
-        container.innerHTML = `
-          <div style="padding: 40px; text-align: center; color: var(--error-color);">
-            <ha-icon icon="mdi:alert-circle" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-icon>
-            <p style="font-size: 14px; margin-bottom: 8px;">Failed to load editor</p>
-            <p style="font-size: 13px; opacity: 0.8;">Use the YAML tab to configure this card.</p>
-          </div>
-        `;
+        console.error('Failed to update cached editor:', error);
       }
     };
 

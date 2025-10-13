@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta17
+
+### 🐛 Bug Fixes
+
+- **Possible fix for mobile issues with 3rd party editing** - Addressed scrolling behavior where the editor would unexpectedly scroll to the top when editing 3rd party cards on mobile devices
+
 ## Version 2.0-beta16
 
 ### 🎁 Pro Features

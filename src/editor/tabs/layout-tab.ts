@@ -8992,14 +8992,40 @@ export class LayoutTab extends LitElement {
 
     // Restore scroll position after update (for mobile scroll preservation)
     if (this._shouldRestoreScroll && this._savedScrollPosition !== null) {
-      requestAnimationFrame(() => {
+      const scrollPos = this._savedScrollPosition;
+
+      // Multiple restoration attempts to handle async rendering
+      const restoreScroll = () => {
         const popupBody = this.shadowRoot?.querySelector('.popup-body') as HTMLElement;
-        if (popupBody) {
-          popupBody.scrollTop = this._savedScrollPosition!;
+        if (popupBody && scrollPos !== null) {
+          // Force instant scroll (no smooth scrolling)
+          popupBody.style.scrollBehavior = 'auto';
+          popupBody.scrollTop = scrollPos;
+
+          // Restore smooth scrolling after a moment
+          setTimeout(() => {
+            if (popupBody) {
+              popupBody.style.scrollBehavior = '';
+            }
+          }, 100);
         }
-        this._shouldRestoreScroll = false;
-        this._savedScrollPosition = null;
+      };
+
+      // First attempt immediately
+      restoreScroll();
+
+      // Second attempt in requestAnimationFrame
+      requestAnimationFrame(() => {
+        restoreScroll();
+
+        // Third attempt after a short delay (for mobile)
+        setTimeout(() => {
+          restoreScroll();
+        }, 50);
       });
+
+      this._shouldRestoreScroll = false;
+      this._savedScrollPosition = null;
     }
   }
 
@@ -12865,7 +12891,7 @@ export class LayoutTab extends LitElement {
       .module-preview.pinned {
         position: sticky;
         top: 16px;
-        z-index: 5;
+        z-index: 10;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         border-color: var(--primary-color);
         background: var(--card-background-color);
@@ -12945,7 +12971,7 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         position: sticky;
         top: 0;
-        z-index: 9999;
+        z-index: 100;
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
