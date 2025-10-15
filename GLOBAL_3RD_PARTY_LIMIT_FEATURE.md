@@ -4,6 +4,21 @@
 
 Implemented a global dashboard-wide limit for 3rd party external card modules in Ultra Card. Non-Pro users are now limited to **5 external card modules across all Ultra Card instances** on their entire dashboard, while Pro users enjoy unlimited external cards.
 
+## Critical Bug Fix (January 2025)
+
+**Issue**: The dashboard scanner was only scanning the "current" dashboard path determined from the URL. When opening the editor, the URL doesn't follow the standard `/lovelace/dashboard-name` pattern, causing the regex to fail and default to scanning only the "default" dashboard. This resulted in:
+
+- External cards on non-default dashboards being incorrectly locked
+- The global counter showing 0 cards even when cards existed
+- Users with only 1 external card seeing it locked with Pro overlay
+
+**Fix**: Added new `scanAllDashboards()` method that:
+
+- Scans **ALL dashboards** in Home Assistant via WebSocket API
+- Includes both the default dashboard and all custom dashboards
+- Works correctly regardless of which dashboard or URL the editor is opened from
+- Provides accurate global count across the entire Home Assistant instance
+
 ## Changes Made
 
 ### 1. Global Counter System
@@ -24,9 +39,11 @@ Implemented a global dashboard-wide limit for 3rd party external card modules in
 
 **Imported Service**: `ucDashboardScannerService`
 
-- Scans the entire Lovelace configuration
-- Finds all Ultra Card instances (including nested ones)
-- Counts external card modules in each instance
+- Scans **ALL dashboards** in Home Assistant (not just the current one)
+- Finds all Ultra Card instances across all dashboards (including nested ones)
+- Counts external card modules in each instance globally
+
+**New Method**: `scanAllDashboards()` - Added to scan across all dashboards instead of just the current dashboard. This fixes a critical bug where cards on non-default dashboards would be incorrectly locked.
 
 **Initialization**: Added initialization in the `updated()` lifecycle method to ensure the scanner service has access to the Home Assistant instance.
 
@@ -64,7 +81,7 @@ Implemented a global dashboard-wide limit for 3rd party external card modules in
 
 **Global External Card Enforcement** (`src/modules/external-card-module.ts`):
 
-- Non-Pro users can only **use** the first 5 external cards added (by timestamp)
+- Non-Pro users can only **use** the first 5 external cards added (by timestamp) **across ALL dashboards**
 - Cards 6, 7, 8, etc. are **locked** with a Pro overlay
 - Locked cards show:
   - Blurred preview of the card (opacity 50%)
@@ -72,6 +89,7 @@ Implemented a global dashboard-wide limit for 3rd party external card modules in
   - Message: "Pro Feature - Upgrade to Pro for unlimited 3rd party cards"
   - Pointer events disabled (can't interact)
 - Uses a **caching system** (5-second TTL) to avoid expensive dashboard scans on every render
+- Uses `scanAllDashboards()` method to scan **all dashboards** in Home Assistant, not just the current one
 - Cache automatically invalidates when external cards are deleted
 - Fallback to local check if global scan fails
 - Pro users see all cards unlocked (no limit)
@@ -83,7 +101,7 @@ Implemented a global dashboard-wide limit for 3rd party external card modules in
 1. **User opens 3rd Party tab**
 
    - `_render3rdPartyTab()` is called
-   - `_refreshGlobalExternalCardCount()` scans all Ultra Cards on the dashboard
+   - `_refreshGlobalExternalCardCount()` scans all Ultra Cards across **ALL dashboards**
    - Counter displays: "5 / 5 cards used across dashboard" (capped at 5, not "7 / 5")
    - Shows "Want Unlimited?" with "Get Pro" button
 
@@ -110,10 +128,11 @@ Implemented a global dashboard-wide limit for 3rd party external card modules in
 
 The global counter works by:
 
-1. Using `ucDashboardScannerService.scanDashboard()` to get all Ultra Card instances
-2. Iterating through each card's `layout.rows[].columns[].modules[]`
-3. Counting modules where `type === 'external_card'`
-4. Caching the result in a reactive state variable for performance
+1. Using `ucDashboardScannerService.scanAllDashboards()` to get all Ultra Card instances **across all dashboards**
+2. Scans the default dashboard plus all custom dashboards via WebSocket API
+3. Iterating through each card's `layout.rows[].columns[].modules[]`
+4. Counting modules where `type === 'external_card'`
+5. Caching the result in a reactive state variable for performance
 
 ## Pro vs Free Users
 
@@ -158,11 +177,14 @@ The global counter works by:
 4. Add more than 5 external cards
 5. Verify no limits are enforced
 
-### Test Case 4: Dashboard Scan
+### Test Case 4: Multi-Dashboard Scan
 
-1. Create external cards in different views
-2. Create external cards in nested Ultra Cards (within sections)
-3. Verify the global counter accurately counts all of them
+1. Create external cards in different dashboards (not just the default)
+2. Create external cards in different views within each dashboard
+3. Create external cards in nested Ultra Cards (within sections)
+4. Open editor from a non-default dashboard
+5. Verify the global counter accurately counts all cards across ALL dashboards
+6. Verify cards are locked/unlocked correctly regardless of which dashboard you're viewing
 
 ## Benefits
 

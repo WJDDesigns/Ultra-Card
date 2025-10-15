@@ -134,6 +134,9 @@ export class LayoutTab extends LitElement {
   @state() private _isRowColumnPreviewCollapsed = false;
   // Track collapsed condition items by id (not in set => expanded)
   @state() private _collapsedConditionIds: Set<string> = new Set();
+  // Track collapsed rows and columns
+  @state() private _collapsedRows: Set<number> = new Set();
+  @state() private _collapsedColumns: Set<string> = new Set();
   // Pin state for preview window (unpinned by default)
   @state() private _isPreviewPinned = false;
   // Drag state for condition reordering
@@ -397,6 +400,39 @@ export class LayoutTab extends LitElement {
     this._collapsedConditionIds = next;
   }
 
+  // Toggle row collapsed state
+  private _toggleRowCollapsed(rowIndex: number, e?: Event): void {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const next = new Set(this._collapsedRows);
+    if (next.has(rowIndex)) {
+      next.delete(rowIndex);
+    } else {
+      next.add(rowIndex);
+    }
+    this._collapsedRows = next;
+    this.requestUpdate();
+  }
+
+  // Toggle column collapsed state
+  private _toggleColumnCollapsed(rowIndex: number, columnIndex: number, e?: Event): void {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const key = `${rowIndex}-${columnIndex}`;
+    const next = new Set(this._collapsedColumns);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this._collapsedColumns = next;
+    this.requestUpdate();
+  }
+
   // Generic array reorder helper
   private _reorderArray<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
     if (fromIndex === toIndex) return arr;
@@ -607,6 +643,22 @@ export class LayoutTab extends LitElement {
     // Note: We intentionally do NOT dispatch config-changed with _forceUpdate timestamp here
     // That would cause animations to restart on every template update, creating loops
     // The _forceUpdate timestamp is only used for explicit user actions (add/delete/reorder)
+  }
+
+  /**
+   * Add fixedmenuposition attribute to all ha-select elements
+   * This makes dropdowns use fixed positioning like HA's tile-card
+   * Fixed positioning allows dropdowns to escape stacking contexts and appear above tabs
+   */
+  private _addFixedMenuPositionToSelects(): void {
+    requestAnimationFrame(() => {
+      const selects = this.shadowRoot?.querySelectorAll('ha-select');
+      selects?.forEach(select => {
+        if (!select.hasAttribute('fixedmenuposition')) {
+          select.setAttribute('fixedmenuposition', '');
+        }
+      });
+    });
   }
 
   // Popup drag and resize functionality
@@ -1342,6 +1394,19 @@ export class LayoutTab extends LitElement {
     // Close the selector
     this._showColumnLayoutSelector = false;
     this._selectedRowForLayout = -1;
+  }
+
+  private _getCurrentLayoutText(row: CardRow): string {
+    const layoutId = row.column_layout;
+
+    // Find matching predefined layout and return its name
+    const predefinedLayout = this.COLUMN_LAYOUTS.find(l => l.id === layoutId);
+    if (predefinedLayout) {
+      return predefinedLayout.name;
+    }
+
+    // Fallback to column count
+    return `${row.columns.length} Column${row.columns.length !== 1 ? 's' : ''}`;
   }
 
   private _getCurrentLayoutDisplay(row: CardRow): string {
@@ -2110,13 +2175,13 @@ export class LayoutTab extends LitElement {
   }
 
   /**
-   * Count all external card modules across ALL Ultra Card instances in the dashboard
+   * Count all external card modules across ALL Ultra Card instances in ALL dashboards
    * This provides a global count for Pro feature limiting
    */
   private async _countAllExternalCardModulesGlobally(): Promise<number> {
     try {
-      // Scan the entire dashboard for all Ultra Card instances
-      const snapshot = await ucDashboardScannerService.scanDashboard();
+      // Scan ALL dashboards for all Ultra Card instances
+      const snapshot = await ucDashboardScannerService.scanAllDashboards();
 
       let totalExternalCards = 0;
 
@@ -2137,7 +2202,7 @@ export class LayoutTab extends LitElement {
         }
       });
 
-      console.log(`[UC] Global external card count across dashboard: ${totalExternalCards}`);
+      console.log(`[UC] Global external card count across ALL dashboards: ${totalExternalCards}`);
       return totalExternalCards;
     } catch (error) {
       console.error('[UC] Failed to count global external cards:', error);
@@ -6985,6 +7050,27 @@ export class LayoutTab extends LitElement {
   private _renderRowGeneralTab(row: CardRow): TemplateResult {
     return html`
       <div class="settings-section">
+        <label
+          >${localize(
+            'editor.layout.row_name',
+            this.hass?.locale?.language || 'en',
+            'Row Name'
+          )}:</label
+        >
+        <input
+          type="text"
+          .value=${(row as any).row_name || ''}
+          placeholder="Give this row a custom name to make it easier to identify in the editor"
+          @input=${(e: Event) => {
+            const value = (e.target as HTMLInputElement).value;
+            this._updateRow({ row_name: value } as any);
+          }}
+        />
+        <div class="hint-text">
+          Give this row a custom name to make it easier to identify in the editor.
+        </div>
+      </div>
+      <div class="settings-section">
         <ultra-color-picker
           .label=${localize(
             'editor.layout.row_background_color',
@@ -9092,6 +9178,9 @@ export class LayoutTab extends LitElement {
   protected updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
 
+    // Add fixedmenuposition to all ha-select elements (like HA tile-card does)
+    this._addFixedMenuPositionToSelects();
+
     // Initialize dashboard scanner service when hass is available
     if (changedProperties.has('hass') && this.hass) {
       ucDashboardScannerService.initialize(this.hass);
@@ -9266,165 +9355,200 @@ export class LayoutTab extends LitElement {
               >
                 <div class="row-header">
                   <div class="row-title">
-                    <div class="row-drag-handle" title="Drag to move row">
-                      <ha-icon icon="mdi:drag"></ha-icon>
-                    </div>
-                    <span>Row ${rowIndex + 1}</span>
-                    <button
-                      class="column-layout-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openColumnLayoutSelector(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Change Column Layout"
-                    >
-                      <span class="layout-icon">${this._getCurrentLayoutDisplay(row)}</span>
-                    </button>
-                  </div>
-                  <div class="row-actions">
-                    <button
-                      class="row-add-column-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._addColumn(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Add Column to Row"
-                    >
-                      <ha-icon icon="mdi:plus"></ha-icon>
-                    </button>
-                    <button
-                      class="row-duplicate-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._duplicateRow(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Duplicate Row"
-                    >
-                      <ha-icon icon="mdi:content-copy"></ha-icon>
-                    </button>
-                    <button
-                      class="row-settings-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._openRowSettings(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="${localize(
-                        'editor.layout.row_settings',
-                        this.hass?.locale?.language || 'en',
-                        'Row Settings'
-                      )}"
-                    >
-                      <ha-icon icon="mdi:cog"></ha-icon>
-                    </button>
-                    <button
-                      class="row-paste-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._pasteRowFromClipboard(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Paste from clipboard (or paste manually if prompted)"
-                    >
-                      <ha-icon icon="mdi:clipboard-text"></ha-icon>
-                    </button>
-                    <button
-                      class="row-favorite-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._saveRowAsFavorite(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Save as favorite"
-                    >
-                      <ha-icon icon="mdi:heart"></ha-icon>
-                    </button>
-                    <button
-                      class="row-export-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._exportRow(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Export row"
-                    >
-                      <ha-icon icon="mdi:export"></ha-icon>
-                    </button>
-                    <div class="row-more-container">
+                    <div class="row-title-left">
+                      <div class="row-drag-handle" title="Drag to move row">
+                        <ha-icon icon="mdi:drag"></ha-icon>
+                      </div>
+                      <span class="row-name-top"
+                        >${(row as any).row_name || `Row ${rowIndex + 1}`}</span
+                      >
                       <button
-                        class="row-more-btn"
+                        class="column-layout-btn"
                         @click=${(e: Event) => {
                           e.stopPropagation();
-                          this._toggleMoreMenu(rowIndex);
+                          this._openColumnLayoutSelector(rowIndex);
                         }}
                         @mousedown=${(e: Event) => e.stopPropagation()}
                         @dragstart=${(e: Event) => e.preventDefault()}
-                        title="More actions"
+                        title="Change Column Layout"
                       >
-                        <ha-icon icon="mdi:dots-vertical"></ha-icon>
+                        <span class="layout-icon">${this._getCurrentLayoutDisplay(row)}</span>
                       </button>
-                      ${this._openMoreMenuRowIndex === rowIndex
-                        ? html`
-                            <div class="row-more-menu" @click=${(e: Event) => e.stopPropagation()}>
-                              <button
-                                class="more-menu-item paste"
-                                @click=${() => {
-                                  this._pasteRowFromClipboard(rowIndex);
-                                  this._openMoreMenuRowIndex = -1;
-                                }}
-                              >
-                                <ha-icon icon="mdi:clipboard-text"></ha-icon>
-                                <span>Paste from Clipboard</span>
-                              </button>
-                              <button
-                                class="more-menu-item favorite"
-                                @click=${() => {
-                                  this._saveRowAsFavorite(rowIndex);
-                                  this._openMoreMenuRowIndex = -1;
-                                }}
-                              >
-                                <ha-icon icon="mdi:heart"></ha-icon>
-                                <span>Save as Favorite</span>
-                              </button>
-                              <button
-                                class="more-menu-item export"
-                                @click=${() => {
-                                  this._exportRow(rowIndex);
-                                  this._openMoreMenuRowIndex = -1;
-                                }}
-                              >
-                                <ha-icon icon="mdi:export"></ha-icon>
-                                <span>Export Row</span>
-                              </button>
-                            </div>
-                          `
-                        : ''}
+                      <span class="column-layout-text">${this._getCurrentLayoutText(row)}</span>
                     </div>
-                    <button
-                      class="delete-row-btn"
-                      @click=${(e: Event) => {
-                        e.stopPropagation();
-                        this._deleteRow(rowIndex);
-                      }}
-                      @mousedown=${(e: Event) => e.stopPropagation()}
-                      @dragstart=${(e: Event) => e.preventDefault()}
-                      title="Delete Row"
-                    >
-                      <ha-icon icon="mdi:delete"></ha-icon>
-                    </button>
+                    <div class="row-title-right">
+                      <button
+                        class="row-settings-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._openRowSettings(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="${localize(
+                          'editor.layout.row_settings',
+                          this.hass?.locale?.language || 'en',
+                          'Row Settings'
+                        )}"
+                      >
+                        <ha-icon icon="mdi:cog"></ha-icon>
+                      </button>
+                      <button
+                        class="row-collapse-btn"
+                        @click=${(e: Event) => this._toggleRowCollapsed(rowIndex, e)}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="${this._collapsedRows.has(rowIndex) ? 'Expand row' : 'Collapse row'}"
+                      >
+                        <ha-icon
+                          icon="mdi:chevron-down"
+                          style="transform: rotate(${this._collapsedRows.has(rowIndex)
+                            ? '-90deg'
+                            : '0deg'}); transition: transform 0.2s ease;"
+                        ></ha-icon>
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    class="row-bottom"
+                    style="display: ${this._collapsedRows.has(rowIndex) ? 'none' : 'flex'};"
+                  >
+                    <div class="row-actions-left">
+                      <button
+                        class="row-add-column-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._addColumn(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Add Column to Row"
+                      >
+                        <ha-icon icon="mdi:plus"></ha-icon>
+                      </button>
+                      <button
+                        class="row-export-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._exportRow(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Export row"
+                      >
+                        <ha-icon icon="mdi:export"></ha-icon>
+                      </button>
+                      <button
+                        class="row-paste-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._pasteRowFromClipboard(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Import from clipboard"
+                      >
+                        <ha-icon icon="mdi:clipboard-text"></ha-icon>
+                      </button>
+                    </div>
+                    <div class="row-actions-right">
+                      <button
+                        class="row-favorite-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._saveRowAsFavorite(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Save as favorite"
+                      >
+                        <ha-icon icon="mdi:heart"></ha-icon>
+                      </button>
+                      <button
+                        class="row-duplicate-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._duplicateRow(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Duplicate Row"
+                      >
+                        <ha-icon icon="mdi:content-copy"></ha-icon>
+                      </button>
+                      <button
+                        class="delete-row-btn"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._deleteRow(rowIndex);
+                        }}
+                        @mousedown=${(e: Event) => e.stopPropagation()}
+                        @dragstart=${(e: Event) => e.preventDefault()}
+                        title="Delete Row"
+                      >
+                        <ha-icon icon="mdi:delete"></ha-icon>
+                      </button>
+                      <div class="row-more-container">
+                        <button
+                          class="row-more-btn"
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            this._toggleMoreMenu(rowIndex);
+                          }}
+                          @mousedown=${(e: Event) => e.stopPropagation()}
+                          @dragstart=${(e: Event) => e.preventDefault()}
+                          title="More actions"
+                        >
+                          <ha-icon icon="mdi:dots-vertical"></ha-icon>
+                        </button>
+                        ${this._openMoreMenuRowIndex === rowIndex
+                          ? html`
+                              <div
+                                class="row-more-menu"
+                                @click=${(e: Event) => e.stopPropagation()}
+                              >
+                                <button
+                                  class="more-menu-item paste"
+                                  @click=${() => {
+                                    this._pasteRowFromClipboard(rowIndex);
+                                    this._openMoreMenuRowIndex = -1;
+                                  }}
+                                >
+                                  <ha-icon icon="mdi:clipboard-text"></ha-icon>
+                                  <span>Paste from Clipboard</span>
+                                </button>
+                                <button
+                                  class="more-menu-item favorite"
+                                  @click=${() => {
+                                    this._saveRowAsFavorite(rowIndex);
+                                    this._openMoreMenuRowIndex = -1;
+                                  }}
+                                >
+                                  <ha-icon icon="mdi:heart"></ha-icon>
+                                  <span>Save as Favorite</span>
+                                </button>
+                                <button
+                                  class="more-menu-item export"
+                                  @click=${() => {
+                                    this._exportRow(rowIndex);
+                                    this._openMoreMenuRowIndex = -1;
+                                  }}
+                                >
+                                  <ha-icon icon="mdi:export"></ha-icon>
+                                  <span>Export Row</span>
+                                </button>
+                              </div>
+                            `
+                          : ''}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="columns-container" data-layout="${row.column_layout || '1-2-1-2'}">
+                <div
+                  class="columns-container"
+                  data-layout="${row.column_layout || '1-2-1-2'}"
+                  style="display: ${this._collapsedRows.has(rowIndex) ? 'none' : 'flex'};"
+                >
                   ${row.columns && row.columns.length > 0
                     ? row.columns.map(
                         (column, columnIndex) => html`
@@ -9451,6 +9575,25 @@ export class LayoutTab extends LitElement {
                                 <div class="column-drag-handle" title="Drag to move column">
                                   <ha-icon icon="mdi:drag"></ha-icon>
                                 </div>
+                                <button
+                                  class="column-collapse-btn"
+                                  @click=${(e: Event) =>
+                                    this._toggleColumnCollapsed(rowIndex, columnIndex, e)}
+                                  @mousedown=${(e: Event) => e.stopPropagation()}
+                                  @dragstart=${(e: Event) => e.preventDefault()}
+                                  title="${this._collapsedColumns.has(`${rowIndex}-${columnIndex}`)
+                                    ? 'Expand column'
+                                    : 'Collapse column'}"
+                                >
+                                  <ha-icon
+                                    icon="mdi:chevron-down"
+                                    style="transform: rotate(${this._collapsedColumns.has(
+                                      `${rowIndex}-${columnIndex}`
+                                    )
+                                      ? '-90deg'
+                                      : '0deg'}); transition: transform 0.2s ease;"
+                                  ></ha-icon>
+                                </button>
                                 <span>Column ${columnIndex + 1}</span>
                               </div>
                               <div class="column-actions">
@@ -9520,6 +9663,11 @@ export class LayoutTab extends LitElement {
                               @dragleave=${this._onDragLeave}
                               @drop=${(e: DragEvent) =>
                                 this._onDrop(e, 'column', rowIndex, columnIndex)}
+                              style="display: ${this._collapsedColumns.has(
+                                `${rowIndex}-${columnIndex}`
+                              )
+                                ? 'none'
+                                : 'block'};"
                             >
                               ${column.modules.map(
                                 (module, moduleIndex) => html`
@@ -11657,9 +11805,9 @@ export class LayoutTab extends LitElement {
 
       .row-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 12px;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px 12px;
         background: var(--primary-color);
         color: white;
         font-weight: 500;
@@ -11671,8 +11819,67 @@ export class LayoutTab extends LitElement {
 
       .row-title {
         display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+
+      .row-title-left {
+        display: flex;
         align-items: center;
         gap: 8px;
+      }
+
+      .row-title-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .column-layout-text {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .row-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+
+      .row-actions-left {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .row-actions-right {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      /* Icon sizes for both action groups */
+      .row-actions-left button ha-icon,
+      .row-actions-right button ha-icon {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .row-name-top {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 20ch;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .row-drag-handle {
@@ -11727,6 +11934,42 @@ export class LayoutTab extends LitElement {
         display: flex;
         gap: 8px;
         align-items: center;
+        justify-content: flex-end;
+      }
+
+      /* Reduce icon sizes in row actions for better spacing */
+      .row-actions button ha-icon {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* Collapse button styles for rows */
+      .row-collapse-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        padding: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        border-radius: 4px;
+        width: 24px;
+        height: 24px;
+      }
+
+      .row-collapse-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .row-collapse-btn ha-icon {
+        transition: transform 0.2s ease;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .row-duplicate-btn {
@@ -11734,9 +11977,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .row-duplicate-btn:hover {
@@ -11749,9 +11997,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .row-add-column-btn:hover {
@@ -11764,9 +12017,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: background-color 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .row-settings-btn:hover {
@@ -11779,9 +12037,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .delete-row-btn:hover {
@@ -11872,6 +12135,35 @@ export class LayoutTab extends LitElement {
         display: flex;
         gap: 4px;
         align-items: center;
+      }
+
+      /* Reduce icon sizes in column actions for better spacing */
+      .column-actions button ha-icon {
+        width: 20px;
+        height: 20px;
+      }
+
+      /* Collapse button styles for columns */
+      .column-collapse-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+        border-radius: 4px;
+      }
+
+      .column-collapse-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .column-collapse-btn ha-icon {
+        transition: transform 0.2s ease;
+        width: 20px;
+        height: 20px;
       }
 
       .column-add-module-btn,
@@ -12763,9 +13055,10 @@ export class LayoutTab extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         position: sticky;
         top: 0;
-        z-index: ${Z_INDEX.EDITOR_TABS};
+        z-index: ${Z_INDEX.POPUP_TABS};
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        /* Don't use isolation: isolate - it prevents fixed dropdowns from escaping */
       }
 
       .settings-tab {
@@ -12794,6 +13087,10 @@ export class LayoutTab extends LitElement {
         flex: 1 1 auto;
         min-height: 0; /* allow parent to control height */
         overflow-y: auto;
+        overflow-x: visible; /* allow dropdowns to render outside */
+        /* Keep content BELOW sticky tabs */
+        position: relative;
+        z-index: 1;
       }
 
       /* Module Settings Popup */
@@ -12827,7 +13124,7 @@ export class LayoutTab extends LitElement {
 
       .popup-body {
         overflow-y: auto; /* scrolling handled by popup body, not the main container */
-        overflow-x: hidden;
+        overflow-x: visible; /* allow dropdowns to render outside horizontally */
         flex: 1;
         padding-bottom: 28px; /* leave room so content doesn't sit under the resize handle */
       }
@@ -12861,12 +13158,55 @@ export class LayoutTab extends LitElement {
         max-width: min(360px, 95vw) !important;
       }
 
-      /* Ensure native editor dropdowns appear above module tabs (which have z-index: 4) */
+      /* Ensure native editor dropdowns appear above module popup tabs */
+      /* CRITICAL: Use fixed menu positioning like HA does in tile-card */
       .module-tab-content ha-select,
+      .settings-tab-content ha-select,
       .module-tab-content mwc-select,
       .module-tab-content ha-combo-box,
       .module-tab-content mwc-menu-surface {
+        position: relative !important;
         z-index: ${Z_INDEX.DROPDOWN_SELECT} !important;
+      }
+
+      /* Add fixed menu positioning attribute behavior */
+      .module-tab-content ha-select[fixedmenuposition],
+      .settings-tab-content ha-select[fixedmenuposition] {
+        --mdc-menu-max-height: 400px;
+      }
+
+      /* Force ALL dropdown menus to appear above everything - ultra aggressive targeting */
+      .module-tab-content ha-select::part(menu),
+      .module-tab-content mwc-select::part(menu),
+      .module-tab-content ha-select .mdc-menu-surface,
+      .module-tab-content mwc-menu-surface,
+      .module-tab-content ha-select mwc-menu,
+      .module-tab-content ha-select ha-menu,
+      .module-tab-content ha-list-item,
+      .settings-tab-content ha-select::part(menu),
+      .settings-tab-content mwc-select::part(menu),
+      .settings-tab-content ha-select .mdc-menu-surface,
+      .settings-tab-content mwc-menu-surface,
+      .settings-tab-content ha-select mwc-menu,
+      .settings-tab-content ha-select ha-menu,
+      .settings-tab-content ha-list-item {
+        z-index: 99999 !important;
+        position: fixed !important;
+      }
+
+      /* Target the actual menu that renders in shadow DOM */
+      .module-tab-content ha-select,
+      .settings-tab-content ha-select {
+        --mdc-menu-z-index: 99999 !important;
+        --ha-select-menu-z-index: 99999 !important;
+      }
+
+      /* Global dropdown override - ensures any HA dropdown appears above popup tabs */
+      ha-menu,
+      mwc-menu,
+      mwc-menu-surface,
+      .mdc-menu-surface {
+        z-index: 99999 !important;
       }
 
       /* Allow dropdown overflow; keep inner content scrollable */
@@ -13077,10 +13417,10 @@ export class LayoutTab extends LitElement {
         pointer-events: none;
       }
 
-      /* Selector popup drag behavior */
+      /* Selector popup drag behavior - above popup tabs when dragging */
       .selector-content.popup-dragging {
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-        z-index: 1010 !important;
+        z-index: ${Z_INDEX.POPUP_TABS + 10} !important;
       }
 
       .selector-content.popup-dragging .selector-header {
@@ -13179,15 +13519,14 @@ export class LayoutTab extends LitElement {
         );
       }
 
-      /* Module Tabs */
+      /* Module Tabs - sticky at top, above scrolling content */
       .module-tabs {
         display: flex;
         border-bottom: 1px solid var(--divider-color);
-        position: sticky;
-        top: 0;
-        z-index: ${Z_INDEX.EDITOR_TABS};
+        z-index: ${Z_INDEX.BASE_CONTENT};
         background: var(--card-background-color);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        /* Don't use isolation: isolate - it prevents fixed dropdowns from escaping */
       }
 
       .module-tab {
@@ -13219,6 +13558,9 @@ export class LayoutTab extends LitElement {
         width: 100%;
         box-sizing: border-box;
         min-height: 0; /* Allow flex child to shrink below content size */
+        /* Keep content BELOW sticky tabs */
+        position: relative;
+        z-index: 0;
       }
 
       /* Design Subtabs */
@@ -15777,9 +16119,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .row-paste-btn:hover {
@@ -15792,9 +16139,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .row-favorite-btn:hover {
@@ -15807,9 +16159,14 @@ export class LayoutTab extends LitElement {
         border: none;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        padding: 4px;
+        padding: 0;
         border-radius: 4px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
       }
 
       .row-export-btn:hover {
@@ -15910,7 +16267,7 @@ export class LayoutTab extends LitElement {
         .module-selector-tabs {
           position: sticky;
           top: 0;
-          z-index: ${Z_INDEX.EDITOR_TABS};
+          z-index: ${Z_INDEX.POPUP_TABS};
           background: var(--secondary-background-color);
           border-bottom: 2px solid var(--divider-color);
           gap: 0; /* Remove gap on mobile for better fit */
@@ -16024,15 +16381,43 @@ export class LayoutTab extends LitElement {
           padding: 12px;
         }
 
-        /* Hide secondary actions on mobile and show more menu */
-        .row-paste-btn,
-        .row-favorite-btn,
-        .row-export-btn {
+        /* Hide column layout text on mobile to save space */
+        .column-layout-text {
           display: none;
         }
 
+        /* Show all action icons on mobile (no more overflow menu needed) */
+        .row-paste-btn,
+        .row-favorite-btn,
+        .row-export-btn {
+          display: flex;
+        }
+
+        /* Keep overflow menu hidden on mobile */
         .row-more-container {
-          display: inline-flex;
+          display: none;
+        }
+
+        /* Increase gap between action icons on mobile for better spacing */
+        .row-actions-left,
+        .row-actions-right {
+          gap: 10px;
+        }
+
+        /* Adjust button and icon sizes on mobile */
+        .row-actions-left button,
+        .row-actions-right button {
+          width: 36px;
+          height: 36px;
+        }
+
+        .row-actions-left button ha-icon,
+        .row-actions-right button ha-icon {
+          width: 22px;
+          height: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
       }
     `;

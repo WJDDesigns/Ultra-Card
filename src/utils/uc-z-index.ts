@@ -29,29 +29,32 @@
  *   - Interactive card controls and overlays within the card view
  *   - Use for card-level UI that should appear above content but below editor
  *
- * Layer 100-999: Editor UI
- *   - Editor interface elements, tabs, and navigation
- *   - Use for main editor components that should be visible during editing
+ * Layer 100-999: Editor UI & Navigation
+ *   - Editor interface elements, main tabs, and navigation
+ *   - Use for main editor components (General, Layout, Global Design tabs)
+ *   - These sit below popups so popups can overlay the main editor
  *
- * Layer 1000-4999: Popups & Panels
+ * Layer 1000-1999: Popups & Panels Base
  *   - Module settings popups, layout child popups, selector panels
+ *   - Base popup content and overlays
  *   - Use for editor popups that overlay the main editor interface
  *
- * Layer 5000-5999: Dropdowns & Menus
+ * Layer 2000-2999: Popup Internal UI
+ *   - Tabs, headers, and sticky elements INSIDE popups
+ *   - Navigation elements within popup contexts
+ *   - Must be above popup content but below dropdowns/menus
+ *
+ * Layer 3000-6999: Interactive Overlays (Dropdowns, Menus, Pickers)
  *   - Dropdown menus, color pickers, autocomplete suggestions
- *   - Use for interactive menus that should appear above popups
- *   - CRITICAL: These appear BELOW editor tabs (z-index 6000)
+ *   - These appear ABOVE popup tabs and all other UI
+ *   - Must be highest interactive layer to prevent clipping
  *
- * Layer 6000-7999: Editor Navigation & High Priority UI
- *   - Editor tabs and main navigation elements
- *   - Use for UI that should be visible above all popups and dropdowns
- *   - Appears below full-screen modals/dialogs
- *
- * Layer 8000-9999: Modals & Dialogs
+ * Layer 7000-9999: Full-Screen Modals & Dialogs
  *   - Full-screen modal dialogs, alerts, confirmations
  *   - Use for dialogs that should overlay everything in the editor
+ *   - Toast notifications
  *
- * Layer 10000+: Critical Overlays
+ * Layer 10000+: Critical System Overlays
  *   - Camera fullscreen, fullscreen editor mode
  *   - Use sparingly for truly fullscreen experiences that need maximum z-index
  */
@@ -93,7 +96,7 @@ export const Z_INDEX = {
   CARD_TOOLTIP: 30,
 
   // ============================================================================
-  // Layer 100-999: Editor UI
+  // Layer 100-999: Editor UI & Navigation
   // ============================================================================
 
   /** Base editor content (z-index: 100) */
@@ -102,11 +105,14 @@ export const Z_INDEX = {
   /** Sticky headers within editor content (z-index: 400) */
   STICKY_HEADERS: 400,
 
+  /** Main editor tabs (General, Layout, Global Design, etc.) (z-index: 500) */
+  EDITOR_TABS: 500,
+
   /** Editor notifications/banners (z-index: 600) */
   EDITOR_NOTIFICATIONS: 600,
 
   // ============================================================================
-  // Layer 1000-4999: Popups & Panels
+  // Layer 1000-1999: Popups & Panels Base
   // ============================================================================
 
   /** Module popup overlay background (z-index: 1000) */
@@ -127,40 +133,37 @@ export const Z_INDEX = {
   /** Popup sticky elements (headers, footers) (z-index: 1005) */
   POPUP_STICKY_ELEMENTS: 1005,
 
-  /** Popup tabs and navigation (z-index: 1010) */
-  POPUP_TABS: 1010,
-
   // ============================================================================
-  // Layer 5000-7999: Dropdowns & Menus
+  // Layer 2000-2999: Popup Internal UI
   // ============================================================================
 
-  /** Dropdown select field (z-index: 5000) */
+  /** Popup tabs and navigation - INSIDE popups, below dropdowns (z-index: 2000) */
+  POPUP_TABS: 2000,
+
+  // ============================================================================
+  // Layer 3000-6999: Interactive Overlays (Dropdowns, Menus, Pickers)
+  // ============================================================================
+
+  /** Dropdown select field - ABOVE all tabs and popups (z-index: 5000) */
   DROPDOWN_SELECT: 5000,
 
-  /** Dropdown menu overlay (z-index: 5001) */
+  /** Dropdown menu overlay - ABOVE all tabs and popups (z-index: 5001) */
   DROPDOWN_MENU: 5001,
 
-  /** Color picker container (z-index: 5002) */
+  /** Color picker container - ABOVE all tabs and popups (z-index: 5002) */
   COLOR_PICKER_CONTAINER: 5002,
 
-  /** Color picker palette dropdown - BELOW editor tabs (z-index: 5003) */
+  /** Color picker palette dropdown - ABOVE all tabs and popups (z-index: 5003) */
   COLOR_PICKER_PALETTE: 5003,
 
-  /** Autocomplete suggestions (z-index: 5004) */
+  /** Autocomplete suggestions - ABOVE all tabs and popups (z-index: 5004) */
   AUTOCOMPLETE: 5004,
 
-  /** Context menus (z-index: 5005) */
+  /** Context menus - ABOVE all tabs and popups (z-index: 5005) */
   CONTEXT_MENU: 5005,
 
   // ============================================================================
-  // Layer 6000-7999: Editor Navigation & High Priority UI
-  // ============================================================================
-
-  /** Editor tabs - MUST be above dropdowns and color pickers (z-index: 6000) */
-  EDITOR_TABS: 6000,
-
-  // ============================================================================
-  // Layer 8000-9999: Modals & Dialogs
+  // Layer 7000-9999: Full-Screen Modals & Dialogs
   // ============================================================================
 
   /** Modal/dialog overlay background (z-index: 8000) */
@@ -172,8 +175,11 @@ export const Z_INDEX = {
   /** Toast notifications (z-index: 8500) */
   TOAST_NOTIFICATION: 8500,
 
+  /** Graph tooltips and data overlays (z-index: 9000) */
+  GRAPH_TOOLTIP: 9000,
+
   // ============================================================================
-  // Layer 10000+: Critical Overlays
+  // Layer 10000+: Critical System Overlays
   // ============================================================================
 
   /** Camera fullscreen overlay background (z-index: 10000) */

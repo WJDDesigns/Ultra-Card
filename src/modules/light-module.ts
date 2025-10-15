@@ -6,6 +6,7 @@ import { CardModule, LightModule, UltraCardConfig } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-light-color-picker';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
@@ -2612,7 +2613,7 @@ export class UltraLightModule extends BaseUltraModule {
         opacity: 0.7;
         transform: rotate(2deg) scale(0.95);
         box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        z-index: 1000;
+        z-index: ${Z_INDEX.POPUP_TABS + 10};
         position: relative;
       }
 

@@ -7,6 +7,7 @@ import { defaultKeymap, indentWithTab } from '@codemirror/commands';
 import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
 import { haTemplateAutocomplete } from '../utils/ha-autocomplete';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 /**
  * Ultra Template Editor Component
@@ -68,7 +69,7 @@ export class UltraTemplateEditor extends LitElement {
         border: 1px solid var(--divider-color) !important;
         border-radius: 4px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
-        z-index: 1000 !important;
+        z-index: ${Z_INDEX.AUTOCOMPLETE} !important;
       }
 
       .cm-tooltip.cm-tooltip-autocomplete > ul {

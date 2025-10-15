@@ -18,6 +18,7 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
@@ -535,9 +536,9 @@ export class UltraCard extends LitElement {
 
     const styles = [];
 
-    // Apply background color
+    // Apply background color (supports gradients and solid colors)
     if (this.config.card_background) {
-      styles.push(`background-color: ${this.config.card_background}`);
+      styles.push(`background: ${this.config.card_background}`);
     }
 
     // Apply background image
@@ -2607,7 +2608,7 @@ export class UltraCard extends LitElement {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        z-index: 9999 !important;
+        z-index: ${Z_INDEX.DIALOG_OVERLAY} !important;
         border-radius: 8px;
         cursor: not-allowed !important;
         pointer-events: all !important;
@@ -2628,7 +2629,7 @@ export class UltraCard extends LitElement {
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         color: white !important;
         position: relative;
-        z-index: 10000;
+        z-index: ${Z_INDEX.DIALOG_CONTENT};
         pointer-events: none;
         user-select: none;
         max-width: 95%;

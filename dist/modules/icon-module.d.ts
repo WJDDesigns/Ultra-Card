@@ -52,6 +52,7 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _debouncedUpdateIcon;
     private _triggerPreviewUpdate;
     private _updateIconWithLockSync;
+    private _debouncedUpdateIconWithLockSync;
     private getBackgroundImageCSS;
     private styleObjectToCss;
     private addPixelUnit;

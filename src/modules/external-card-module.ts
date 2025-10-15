@@ -110,8 +110,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
       // Initialize with hass
       ucDashboardScannerService.initialize(hass);
 
-      // Scan all Ultra Cards across the dashboard
-      const snapshot = await ucDashboardScannerService.scanDashboard();
+      // Scan ALL Ultra Cards across ALL dashboards (not just current one)
+      const snapshot = await ucDashboardScannerService.scanAllDashboards();
 
       // Collect ALL external card modules across ALL Ultra Card instances
       const allExternalModules: Array<{ id: string; timestamp: number }> = [];
@@ -141,8 +141,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
       // Update cache
       allowedExternalCardIdsCache = allowedIds;
       allowedExternalCardIdsCacheTime = Date.now();
-
-      console.log(`[UC External Card] Allowed IDs (first 5):`, Array.from(allowedIds));
     } catch (error) {
       console.error('[UC External Card] Failed to refresh allowed IDs cache:', error);
     }
@@ -188,12 +186,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
     // Use cached allowed IDs
     const isAllowed = allowedExternalCardIdsCache.has(module.id);
     const shouldLock = !isAllowed;
-
-    if (shouldLock && allowedExternalCardIdsCache.size > 0) {
-      console.log(
-        `[UC External Card] Locking module ${module.id} - not in first 5 globally (limit: 5 for non-Pro)`
-      );
-    }
 
     return shouldLock;
   }

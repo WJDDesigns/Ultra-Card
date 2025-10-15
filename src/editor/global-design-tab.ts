@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ultra-color-picker';
 import { uploadImage } from '../utils/image-upload';
 import { localize } from '../localize/localize';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 export interface DesignProperties {
   color?: string;
@@ -4054,10 +4055,10 @@ export class GlobalDesignTab extends LitElement {
         }
       }
 
-      /* Color picker z-index fix */
+      /* Color picker z-index fix - ensure above editor UI */
       ultra-color-picker {
         position: relative;
-        z-index: 1000;
+        z-index: ${Z_INDEX.COLOR_PICKER_CONTAINER};
       }
 
       /* Upload button styling */

@@ -132,7 +132,14 @@
       "double_tap_behavior": "Dobbelttryk-adfærd",
       "double_tap_behavior_desc": "Handling der udføres når elementet dobbelttrykkes/klikkes.",
       "haptic_feedback": "Haptic Feedback",
-      "haptic_feedback_desc": "Provide tactile feedback when buttons are pressed on supported devices"
+      "haptic_feedback_desc": "Provide tactile feedback when buttons are pressed on supported devices",
+      "more_info_entity": "More Info Entity:",
+      "toggle_entity": "Toggle Entity:",
+      "more_info_config": "More Info Configuration",
+      "toggle_config": "Toggle Configuration",
+      "entity": "Entity",
+      "entity_more_info_desc": "Select which entity to show more information for",
+      "entity_toggle_desc": "Select which entity to toggle on/off"
     },
     "icon": {
       "entity_config": {

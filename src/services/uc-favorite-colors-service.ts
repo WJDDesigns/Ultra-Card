@@ -366,6 +366,14 @@ class UcFavoriteColorsService {
   private _isValidColor(color: string): boolean {
     if (!color || typeof color !== 'string') return false;
 
+    // Check for CSS gradient functions (linear-gradient, radial-gradient, etc.)
+    if (color.toLowerCase().includes('gradient')) {
+      // Basic validation for gradient syntax - must start with gradient type and have parentheses
+      const gradientPattern =
+        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\(.*\)$/i;
+      return gradientPattern.test(color.trim());
+    }
+
     // Check for common CSS color formats
     const colorFormats = [
       /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, // Hex

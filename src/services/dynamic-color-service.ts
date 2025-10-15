@@ -169,6 +169,14 @@ export class DynamicColorService {
    * @returns True if it looks like a valid color
    */
   private isValidColor(color: string): boolean {
+    // Check for CSS gradient functions (linear-gradient, radial-gradient, etc.)
+    if (color.toLowerCase().includes('gradient')) {
+      // Basic validation for gradient syntax - must start with gradient type and have parentheses
+      const gradientPattern =
+        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\(.*\)$/i;
+      return gradientPattern.test(color.trim());
+    }
+
     // Check for common color formats
     const colorPatterns = [
       /^#[0-9A-Fa-f]{3,8}$/, // Hex colors (#fff, #ffffff, #ffffff00)

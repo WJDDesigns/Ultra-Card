@@ -172,9 +172,19 @@ export class UltraColorPicker extends LitElement {
     // Apply current transparency to the newly selected color
     const colorWithTransparency = this._applyTransparency(color, this._transparency);
 
-    // Update preview but keep palette open so user can adjust transparency
+    // Update preview and dispatch event immediately for live preview
     this._currentValue = colorWithTransparency;
     this._textInputValue = colorWithTransparency;
+    this.value = colorWithTransparency;
+
+    // Dispatch value-changed event for live preview
+    const changeEvent = new CustomEvent('value-changed', {
+      detail: { value: colorWithTransparency },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(changeEvent);
+
     this.requestUpdate(); // Force re-render to show the updated color
   }
 
@@ -200,6 +210,16 @@ export class UltraColorPicker extends LitElement {
     const colorWithTransparency = this._applyTransparency(color, this._transparency);
     this._currentValue = colorWithTransparency;
     this._textInputValue = colorWithTransparency;
+    this.value = colorWithTransparency;
+
+    // Dispatch value-changed event for live preview
+    const changeEvent = new CustomEvent('value-changed', {
+      detail: { value: colorWithTransparency },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(changeEvent);
+
     this.requestUpdate();
   }
 
@@ -223,14 +243,36 @@ export class UltraColorPicker extends LitElement {
     if (this._textInputValue !== undefined && this._isValidColor(this._textInputValue)) {
       // Update the current value
       this._currentValue = this._textInputValue;
+      this.value = this._textInputValue;
       // Extract transparency from the input
       this._transparency = this._extractTransparency(this._textInputValue);
+
+      // Dispatch value-changed event
+      const changeEvent = new CustomEvent('value-changed', {
+        detail: { value: this._textInputValue },
+        bubbles: true,
+        composed: true,
+      });
+      this.dispatchEvent(changeEvent);
+
+      // Close the palette
+      this._showPalette = false;
+
       this.requestUpdate();
     }
   }
 
   private _isValidColor(color: string): boolean {
     if (!color) return false;
+
+    // Check for CSS gradient functions (linear-gradient, radial-gradient, etc.)
+    if (color.toLowerCase().includes('gradient')) {
+      // Basic validation for gradient syntax - must start with gradient type and have parentheses
+      const gradientPattern =
+        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\(.*\)$/i;
+      return gradientPattern.test(color.trim());
+    }
+
     // Check for common CSS color formats
     const colorFormats = [
       /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, // Hex
@@ -356,6 +398,11 @@ export class UltraColorPicker extends LitElement {
       return '#ffffff';
     }
 
+    // Gradients can't be displayed in native color input - use a default color
+    if (displayValue.toLowerCase().includes('gradient')) {
+      return '#000000';
+    }
+
     // Convert CSS variables and other formats to hex for native input
     if (displayValue.startsWith('var(--')) {
       // Try to resolve CSS variable to actual color
@@ -428,6 +475,11 @@ export class UltraColorPicker extends LitElement {
   private _extractTransparency(color?: string): number {
     if (!color) return 100;
 
+    // Gradients don't have a single transparency value - default to 100%
+    if (color.toLowerCase().includes('gradient')) {
+      return 100;
+    }
+
     // Check for RGBA format
     const rgbaMatch = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)/);
     if (rgbaMatch) {
@@ -478,6 +530,11 @@ export class UltraColorPicker extends LitElement {
   private _getBaseColor(color?: string): string {
     if (!color) return '#000000';
 
+    // Gradients don't have a single base color - return as-is
+    if (color.toLowerCase().includes('gradient')) {
+      return color;
+    }
+
     // Extract RGB from RGBA
     const rgbaMatch = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+)?\s*\)/);
     if (rgbaMatch) {
@@ -513,6 +570,11 @@ export class UltraColorPicker extends LitElement {
    * Apply transparency to a base color
    */
   private _applyTransparency(baseColor: string, transparency: number): string {
+    // Gradients can't have transparency applied easily - return as-is
+    if (baseColor.toLowerCase().includes('gradient')) {
+      return baseColor;
+    }
+
     // At 100% transparency, use hex format
     if (transparency === 100) {
       return baseColor;
@@ -570,9 +632,18 @@ export class UltraColorPicker extends LitElement {
     // Apply the new transparency
     const newColor = this._applyTransparency(baseColor, transparency);
 
-    // Update preview but keep palette open
+    // Update preview and dispatch event for live preview
     this._currentValue = newColor;
     this._textInputValue = newColor;
+    this.value = newColor;
+
+    // Dispatch value-changed event for live preview
+    const changeEvent = new CustomEvent('value-changed', {
+      detail: { value: newColor },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(changeEvent);
 
     this.requestUpdate();
   }
@@ -662,7 +733,7 @@ export class UltraColorPicker extends LitElement {
                       @keydown=${this._handleTextInputKeyDown}
                       @click=${(e: Event) => e.stopPropagation()}
                       @focus=${(e: Event) => e.stopPropagation()}
-                      placeholder="e.g. #ff0000, rgb(255,0,0), var(--primary-color)"
+                      placeholder="e.g. #ff0000, rgb(255,0,0), linear-gradient(...), var(--primary-color)"
                       spellcheck="false"
                     />
                     <button
@@ -775,22 +846,6 @@ export class UltraColorPicker extends LitElement {
                       </div>
                     `
                   : ''}
-
-                <!-- Done Button -->
-                <div class="done-button-container">
-                  <button
-                    class="done-button"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._applyColorSelection();
-                    }}
-                    type="button"
-                    title="Apply color and close"
-                  >
-                    <ha-icon icon="mdi:check"></ha-icon>
-                    <span>Done</span>
-                  </button>
-                </div>
               </div>
             `
           : ''}
@@ -1406,48 +1461,6 @@ export class UltraColorPicker extends LitElement {
       .no-favorites small {
         font-size: 12px;
         opacity: 0.7;
-      }
-
-      /* Done Button */
-      .done-button-container {
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid var(--divider-color);
-        display: flex;
-        justify-content: center;
-      }
-
-      .done-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 32px;
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        min-width: 120px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .done-button:hover {
-        background: var(--primary-color-dark, var(--primary-color));
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .done-button:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .done-button ha-icon {
-        --mdc-icon-size: 20px;
       }
 
       @media (max-width: 768px) {

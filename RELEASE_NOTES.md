@@ -1,5 +1,28 @@
 # Release Notes
 
+## Version 2.0-beta20
+
+### 🐛 Bug Fixes
+
+- **Fixed Separator line color issue** - Resolved color rendering problems with separator module lines
+- **Fixed bug in automation toggle** - Corrected toggle functionality issues in automation actions
+- **Fixed Z Index across card** - Improved layering and stacking order throughout the card interface
+
+### 🚀 New Features
+
+- **Collapsable Row support** - Rows can now be collapsed and expanded for better editor organization
+- **New Row naming and header layout** - Enhanced row headers with improved naming and layout options
+- **Added Toggle Entity field in Actions** - New entity field for toggle actions providing better control
+
+### 🎨 UI/UX Improvements
+
+- **Improved Color Picker UI/Function** - Enhanced color picker interface with better usability and functionality
+- **Better 3rd party module scanning** - Improved detection and integration of third-party card modules
+
+### 🧹 Code Quality
+
+- **Remove logging** - Cleaned up debug console logging for cleaner console output and better performance
+
 ## Version 2.0-beta19
 
 ### 🐛 Bug Fixes

@@ -27,6 +27,8 @@ export declare class LayoutTab extends LitElement {
     private _collapsedPreviewModules;
     private _isRowColumnPreviewCollapsed;
     private _collapsedConditionIds;
+    private _collapsedRows;
+    private _collapsedColumns;
     private _isPreviewPinned;
     private _draggingCondition;
     private _globalExternalCardCount;
@@ -60,6 +62,8 @@ export declare class LayoutTab extends LitElement {
     private _isCurrentModulePreviewCollapsed;
     private _toggleRowColumnPreviewCollapsed;
     private _toggleConditionExpanded;
+    private _toggleRowCollapsed;
+    private _toggleColumnCollapsed;
     private _reorderArray;
     private _onConditionDragStart;
     private _onConditionDragOver;
@@ -81,6 +85,12 @@ export declare class LayoutTab extends LitElement {
      * This prevents animation loops caused by redundant re-renders
      */
     private _performTemplateUpdate;
+    /**
+     * Add fixedmenuposition attribute to all ha-select elements
+     * This makes dropdowns use fixed positioning like HA's tile-card
+     * Fixed positioning allows dropdowns to escape stacking contexts and appear above tabs
+     */
+    private _addFixedMenuPositionToSelects;
     private _startPopupDrag;
     private _handlePopupDrag;
     private _endPopupDrag;
@@ -109,6 +119,7 @@ export declare class LayoutTab extends LitElement {
     private _deleteColumn;
     private _openColumnLayoutSelector;
     private _changeColumnLayout;
+    private _getCurrentLayoutText;
     private _getCurrentLayoutDisplay;
     private _openModuleSelector;
     private _addModule;
@@ -126,7 +137,7 @@ export declare class LayoutTab extends LitElement {
     private _showToast;
     private _countExternalCardModules;
     /**
-     * Count all external card modules across ALL Ultra Card instances in the dashboard
+     * Count all external card modules across ALL Ultra Card instances in ALL dashboards
      * This provides a global count for Pro feature limiting
      */
     private _countAllExternalCardModulesGlobally;

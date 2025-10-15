@@ -663,12 +663,13 @@ export class UltraIconModule extends BaseUltraModule {
                               <ultra-color-picker
                                 .value=${icon.inactive_icon_color || 'var(--secondary-text-color)'}
                                 @value-changed=${(e: CustomEvent) =>
-                                  this._updateIconWithLockSync(
+                                  this._debouncedUpdateIconWithLockSync(
                                     iconModule,
                                     index,
                                     'inactive_icon_color',
                                     e.detail.value,
-                                    updateModule
+                                    updateModule,
+                                    50
                                   )}
                               ></ultra-color-picker>
                             </div>
@@ -774,12 +775,13 @@ export class UltraIconModule extends BaseUltraModule {
                               <ultra-color-picker
                                 .value=${icon.inactive_icon_background_color || 'transparent'}
                                 @value-changed=${(e: CustomEvent) =>
-                                  this._updateIconWithLockSync(
+                                  this._debouncedUpdateIconWithLockSync(
                                     iconModule,
                                     index,
                                     'inactive_icon_background_color',
                                     e.detail.value,
-                                    updateModule
+                                    updateModule,
+                                    50
                                   )}
                               ></ultra-color-picker>
                             </div>
@@ -1126,12 +1128,13 @@ export class UltraIconModule extends BaseUltraModule {
                               <ultra-color-picker
                                 .value=${icon.inactive_name_color || 'var(--primary-text-color)'}
                                 @value-changed=${(e: CustomEvent) =>
-                                  this._updateIconWithLockSync(
+                                  this._debouncedUpdateIconWithLockSync(
                                     iconModule,
                                     index,
                                     'inactive_name_color',
                                     e.detail.value,
-                                    updateModule
+                                    updateModule,
+                                    50
                                   )}
                               ></ultra-color-picker>
                             </div>
@@ -1393,12 +1396,13 @@ export class UltraIconModule extends BaseUltraModule {
                               <ultra-color-picker
                                 .value=${icon.inactive_state_color || 'var(--secondary-text-color)'}
                                 @value-changed=${(e: CustomEvent) =>
-                                  this._updateIconWithLockSync(
+                                  this._debouncedUpdateIconWithLockSync(
                                     iconModule,
                                     index,
                                     'inactive_state_color',
                                     e.detail.value,
-                                    updateModule
+                                    updateModule,
+                                    50
                                   )}
                               ></ultra-color-picker>
                             </div>
@@ -2477,10 +2481,13 @@ export class UltraIconModule extends BaseUltraModule {
                               action: 'toggle' as const,
                               entity: icon.entity,
                             }
-                          : {
-                              ...iconModule.hold_action!,
-                              entity: iconModule.hold_action!.entity || icon.entity,
-                            };
+                          : iconModule.hold_action!.action === 'toggle' ||
+                              iconModule.hold_action!.action === 'more-info'
+                            ? {
+                                ...iconModule.hold_action!,
+                                entity: iconModule.hold_action!.entity || icon.entity,
+                              }
+                            : iconModule.hold_action!; // Pass unchanged for perform-action, navigate, url, etc.
                       UltraLinkComponent.handleAction(
                         action as any,
                         hass,
@@ -2525,10 +2532,13 @@ export class UltraIconModule extends BaseUltraModule {
                               action: 'toggle' as const,
                               entity: icon.entity,
                             }
-                          : {
-                              ...iconModule.double_tap_action,
-                              entity: iconModule.double_tap_action.entity || icon.entity,
-                            };
+                          : iconModule.double_tap_action.action === 'toggle' ||
+                              iconModule.double_tap_action.action === 'more-info'
+                            ? {
+                                ...iconModule.double_tap_action,
+                                entity: iconModule.double_tap_action.entity || icon.entity,
+                              }
+                            : iconModule.double_tap_action; // Pass unchanged for perform-action, navigate, url, etc.
                       UltraLinkComponent.handleAction(
                         action as any,
                         hass,
@@ -2565,10 +2575,13 @@ export class UltraIconModule extends BaseUltraModule {
                               action: 'toggle' as const,
                               entity: icon.entity,
                             }
-                          : {
-                              ...iconModule.tap_action,
-                              entity: iconModule.tap_action.entity || icon.entity,
-                            };
+                          : iconModule.tap_action.action === 'toggle' ||
+                              iconModule.tap_action.action === 'more-info'
+                            ? {
+                                ...iconModule.tap_action,
+                                entity: iconModule.tap_action.entity || icon.entity,
+                              }
+                            : iconModule.tap_action; // Pass unchanged for perform-action, navigate, url, etc.
                       UltraLinkComponent.handleAction(
                         action as any,
                         hass,
@@ -2593,10 +2606,13 @@ export class UltraIconModule extends BaseUltraModule {
                                   action: 'toggle' as const,
                                   entity: icon.entity,
                                 }
-                              : {
-                                  ...iconModule.tap_action!,
-                                  entity: iconModule.tap_action!.entity || icon.entity,
-                                };
+                              : iconModule.tap_action!.action === 'toggle' ||
+                                  iconModule.tap_action!.action === 'more-info'
+                                ? {
+                                    ...iconModule.tap_action!,
+                                    entity: iconModule.tap_action!.entity || icon.entity,
+                                  }
+                                : iconModule.tap_action!; // Pass unchanged for perform-action, navigate, url, etc.
                           UltraLinkComponent.handleAction(
                             action as any,
                             hass,
@@ -5719,6 +5735,23 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     this._updateIcon(iconModule, index, updates, updateModule);
+  }
+
+  private _debouncedUpdateIconWithLockSync(
+    iconModule: IconModule,
+    index: number,
+    property: string,
+    value: any,
+    updateModule: (updates: Partial<CardModule>) => void,
+    delay = 50
+  ): void {
+    if (this._updateTimeout) {
+      clearTimeout(this._updateTimeout);
+    }
+
+    this._updateTimeout = setTimeout(() => {
+      this._updateIconWithLockSync(iconModule, index, property, value, updateModule);
+    }, delay);
   }
 
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {

@@ -61,6 +61,15 @@ export class UltraSeparatorModule extends BaseUltraModule {
     const separatorModule = module as SeparatorModule;
     const lang = hass.locale?.language || 'en';
 
+    // Migration: Fix old separators that have CSS variable strings stored as color values
+    if (
+      separatorModule.color === 'var(--divider-color)' ||
+      separatorModule.color === 'var(--divider-color, #cccccc)'
+    ) {
+      console.log('⚠️ Migrating old separator color from CSS variable to actual color');
+      updateModule({ color: '#cccccc' });
+    }
+
     return html`
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
@@ -419,10 +428,10 @@ export class UltraSeparatorModule extends BaseUltraModule {
                   </div>
                   <ultra-color-picker
                     .label=${''}
-                    .value=${separatorModule.color || ''}
-                    .defaultValue=${'var(--divider-color, #cccccc)'}
+                    .value=${separatorModule.color || '#cccccc'}
+                    .defaultValue=${'#cccccc'}
                     .hass=${hass}
-                    @value-changed=${(e: CustomEvent) => updateModule(e.detail.value)}
+                    @value-changed=${(e: CustomEvent) => updateModule({ color: e.detail.value })}
                   ></ultra-color-picker>
                 </div>
               </div>
@@ -591,7 +600,8 @@ export class UltraSeparatorModule extends BaseUltraModule {
                           .value=${separatorModule.title_color || ''}
                           .defaultValue=${'var(--secondary-text-color)'}
                           .hass=${hass}
-                          @value-changed=${(e: CustomEvent) => updateModule(e.detail.value)}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ title_color: e.detail.value })}
                         ></ultra-color-picker>
                       </div>
 
@@ -884,7 +894,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
     if (separatorModule.separator_style === 'blank') {
       const isVertical = separatorModule.orientation === 'vertical';
       return html`
-        <div class="separator-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        <div class="separator-module-container" style="${this.styleObjectToCss(containerStyles)}">
           <div
             class="separator-preview blank-separator"
             style="${isVertical
@@ -1009,33 +1019,33 @@ export class UltraSeparatorModule extends BaseUltraModule {
                   class="separator-with-title ${separatorModule.orientation === 'vertical'
                     ? 'vertical'
                     : ''}"
-                  style=${this.getTitleContainerStyles(
+                  style="${this.getTitleContainerStyles(
                     (separatorModule as any).design || {},
                     separatorModule.orientation === 'vertical'
-                  )}
+                  )}"
                 >
                   <div
                     class="separator-line-left"
-                    style=${this.getSeparatorLineStyles(separatorModule, 'left')}
+                    style="${this.getSeparatorLineStyles(separatorModule, 'left')}"
                   ></div>
                   <div
                     class="separator-title ${separatorModule.orientation === 'vertical'
                       ? 'vertical'
                       : ''}"
-                    style=${this.getTitleStyles(
+                    style="${this.getTitleStyles(
                       separatorModule,
                       (separatorModule as any).design || {}
-                    )}
+                    )}"
                   >
                     ${separatorModule.title}
                   </div>
                   <div
                     class="separator-line-right"
-                    style=${this.getSeparatorLineStyles(separatorModule, 'right')}
+                    style="${this.getSeparatorLineStyles(separatorModule, 'right')}"
                   ></div>
                 </div>
               `
-            : html` <div class="separator-line" style=${separatorStyles}></div> `}
+            : html` <div class="separator-line" style="${separatorStyles}"></div> `}
         </div>
       </div>
     `;
@@ -1116,7 +1126,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .separator-preview {
-        min-height: 1px;
+        min-height: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1175,7 +1185,6 @@ export class UltraSeparatorModule extends BaseUltraModule {
       .separator-line-left,
       .separator-line-right {
         display: block;
-        background-color: var(--divider-color, #cccccc); /* Fallback color */
       }
       
       .separator-line-left,
@@ -1362,6 +1371,14 @@ export class UltraSeparatorModule extends BaseUltraModule {
     const isVertical = separatorModule.orientation === 'vertical';
     const styles: Record<string, string> = {};
 
+    // Normalize color value - if it's the CSS variable string, use the default color
+    const normalizeColor = (color: string | undefined): string => {
+      if (!color || color === 'var(--divider-color)' || color === 'var(--divider-color, #cccccc)') {
+        return '#cccccc';
+      }
+      return color;
+    };
+
     if (isVertical) {
       styles.width = `${separatorModule.thickness || 1}px`;
       styles.height = `${separatorModule.height_px || 300}px`;
@@ -1378,42 +1395,45 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
     switch (separatorStyleType) {
       case 'line':
-        styles.backgroundColor = separatorModule.color || 'var(--divider-color, #cccccc)';
+        styles.backgroundColor = normalizeColor(separatorModule.color);
         break;
       case 'double_line':
         if (isVertical) {
-          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderRight = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
           styles.width = `${(separatorModule.thickness || 1) * 3}px`;
         } else {
-          styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderTop = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
           styles.height = `${(separatorModule.thickness || 1) * 3}px`;
         }
         break;
       case 'dotted':
         if (isVertical) {
-          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.width = '0';
         } else {
-          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.height = '0';
         }
         break;
       case 'double_dotted':
         if (isVertical) {
-          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.width = `${(separatorModule.thickness || 1) * 3}px`;
         } else {
-          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.height = `${(separatorModule.thickness || 1) * 3}px`;
         }
         break;
       case 'shadow': {
         const t = separatorModule.thickness || 1;
-        const cFull = this._colorWithAlpha(separatorModule.color || '#000000', 0.35);
+        const cFull = this._colorWithAlpha(
+          normalizeColor(separatorModule.color) || '#000000',
+          0.35
+        );
         if (isVertical) {
           const w = Math.max(t * 8, 14);
           styles.height = 'calc(100% + (var(--ha-card-padding, 16px) * 2))';
@@ -1442,6 +1462,14 @@ export class UltraSeparatorModule extends BaseUltraModule {
   ): string {
     const isVertical = separatorModule.orientation === 'vertical';
     const styles: Record<string, string> = {};
+
+    // Normalize color value - if it's the CSS variable string, use the default color
+    const normalizeColor = (color: string | undefined): string => {
+      if (!color || color === 'var(--divider-color)' || color === 'var(--divider-color, #cccccc)') {
+        return '#cccccc';
+      }
+      return color;
+    };
 
     if (isVertical) {
       styles.flex = '1';
@@ -1482,44 +1510,44 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
     switch (separatorStyleType) {
       case 'line':
-        styles.backgroundColor = separatorModule.color || 'var(--divider-color, #cccccc)';
+        styles.backgroundColor = normalizeColor(separatorModule.color);
         break;
       case 'double_line':
         if (isVertical) {
-          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderRight = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderLeft = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
           styles.width = `${(separatorModule.thickness || 1) * 3}px`;
         } else {
-          styles.borderTop = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderTop = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px solid ${normalizeColor(separatorModule.color)}`;
           styles.height = `${(separatorModule.thickness || 1) * 3}px`;
         }
         break;
       case 'dotted':
         if (isVertical) {
-          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.width = '0';
         } else {
-          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.height = '0';
         }
         break;
       case 'double_dotted':
         if (isVertical) {
-          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderLeft = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
+          styles.borderRight = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.width = `${(separatorModule.thickness || 1) * 3}px`;
         } else {
-          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
-          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${separatorModule.color || 'var(--divider-color, #cccccc)'}`;
+          styles.borderTop = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
+          styles.borderBottom = `${separatorModule.thickness || 1}px dotted ${normalizeColor(separatorModule.color)}`;
           styles.height = `${(separatorModule.thickness || 1) * 3}px`;
         }
         break;
       case 'shadow': {
         const t = separatorModule.thickness || 1;
-        const c1 = this._colorWithAlpha(separatorModule.color || '#000000', 0.35);
-        const c2 = this._colorWithAlpha(separatorModule.color || '#000000', 0.22);
-        const cTop = this._colorWithAlpha(separatorModule.color || '#000000', 0.25);
+        const c1 = this._colorWithAlpha(normalizeColor(separatorModule.color) || '#000000', 0.35);
+        const c2 = this._colorWithAlpha(normalizeColor(separatorModule.color) || '#000000', 0.22);
+        const cTop = this._colorWithAlpha(normalizeColor(separatorModule.color) || '#000000', 0.25);
         if (isVertical) {
           const w = Math.max(t * 8, 14);
           styles.width = `${w}px`;

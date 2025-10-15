@@ -13,6 +13,7 @@ import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
 import { formatEntityState } from '../utils/number-format';
 import { localize } from '../localize/localize';
+import { Z_INDEX } from '../utils/uc-z-index';
 
 export class UltraGraphsModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -2930,7 +2931,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         color: var(--primary-text-color);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         pointer-events: none;
-        z-index: 10000;
+        z-index: ${Z_INDEX.GRAPH_TOOLTIP};
         white-space: nowrap;
       `;
       document.body.appendChild(tooltip);
@@ -4619,7 +4620,7 @@ export class UltraGraphsModule extends BaseUltraModule {
       /* Ensure tooltips stay within bounds and appear above everything */
       [id^="graph-tooltip-"] {
         position: fixed !important;
-        z-index: 10000 !important;
+        z-index: ${Z_INDEX.GRAPH_TOOLTIP} !important;
         max-width: calc(100vw - 32px);
         word-wrap: break-word;
         box-sizing: border-box;
