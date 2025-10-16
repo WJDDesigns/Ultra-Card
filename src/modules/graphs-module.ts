@@ -179,10 +179,10 @@ export class UltraGraphsModule extends BaseUltraModule {
       // New: pie/donut slice labels
       show_slice_labels: true,
 
-      // Global link configuration
-      tap_action: { action: 'default' },
-      hold_action: { action: 'default' },
-      double_tap_action: { action: 'default' },
+      // Global link configuration (store undefined to show Default)
+      tap_action: undefined,
+      hold_action: undefined,
+      double_tap_action: undefined,
 
       // Templates
       template_mode: false,
@@ -1632,7 +1632,12 @@ export class UltraGraphsModule extends BaseUltraModule {
     );
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const graphsModule = module as GraphsModule;
     const moduleWithDesign = graphsModule as any;
     const designProperties = (graphsModule as any).design || {};
@@ -4002,18 +4007,13 @@ export class UltraGraphsModule extends BaseUltraModule {
   ): void {
     if (this.isHolding) return;
 
-    if (
-      module.tap_action &&
-      module.tap_action.action !== 'default' &&
-      module.tap_action.action !== 'nothing'
-    ) {
-      // Only pass valid actions to UltraLinkComponent
-      const validAction = { ...module.tap_action };
+    if (!module.tap_action || module.tap_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
-        validAction as any,
+        (module.tap_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (module as any).entity
       );
     }
   }
@@ -4024,18 +4024,13 @@ export class UltraGraphsModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    if (
-      module.hold_action &&
-      module.hold_action.action !== 'default' &&
-      module.hold_action.action !== 'nothing'
-    ) {
-      // Only pass valid actions to UltraLinkComponent
-      const validAction = { ...module.hold_action };
+    if (!module.hold_action || module.hold_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
-        validAction as any,
+        (module.hold_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (module as any).entity
       );
     }
   }
@@ -4046,18 +4041,13 @@ export class UltraGraphsModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    if (
-      module.double_tap_action &&
-      module.double_tap_action.action !== 'default' &&
-      module.double_tap_action.action !== 'nothing'
-    ) {
-      // Only pass valid actions to UltraLinkComponent
-      const validAction = { ...module.double_tap_action };
+    if (!module.double_tap_action || module.double_tap_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
-        validAction as any,
+        (module.double_tap_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (module as any).entity
       );
     }
   }

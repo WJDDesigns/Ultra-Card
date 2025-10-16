@@ -762,7 +762,12 @@ export class UltraSliderModule extends BaseUltraModule {
     return this.renderPreview(module, hass, config);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const sliderModule = module as SliderModule;
     const registry = getModuleRegistry();
 

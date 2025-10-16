@@ -259,7 +259,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const horizontalModule = module as HorizontalModule;
     const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = horizontalModule as any;
@@ -393,12 +398,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
           clickCount = 0;
 
           // Execute tap action
-          if (horizontalModule.tap_action && horizontalModule.tap_action.action !== 'nothing') {
+          if (!horizontalModule.tap_action || horizontalModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
-              horizontalModule.tap_action as any,
+              (horizontalModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (horizontalModule as any).entity
             );
           }
         }, 300); // Wait 300ms to see if double click follows

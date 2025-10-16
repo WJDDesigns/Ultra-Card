@@ -86,7 +86,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       module_border: 'transparent',
 
       // Standard Ultra Card properties
-      tap_action: { action: 'more-info' },
+      tap_action: undefined,
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
@@ -116,7 +116,12 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     return renderAnimatedWeatherModuleEditor(this, module, hass, config, updateModule);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const weatherModule = module as AnimatedWeatherModule;
     const weatherData = this._getWeatherData(hass, weatherModule);
     const now = new Date();

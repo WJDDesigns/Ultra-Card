@@ -1090,7 +1090,12 @@ export class UltraDropdownModule extends BaseUltraModule {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const dropdownModule = module as DropdownModule;
 
     // Apply design properties with priority - global design properties are stored directly on the module

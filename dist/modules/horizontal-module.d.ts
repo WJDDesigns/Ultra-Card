@@ -7,7 +7,7 @@ export declare class UltraHorizontalModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     createDefault(id?: string, hass?: HomeAssistant): HorizontalModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
     private _renderChildModulePreview;
     /**
      * Apply layout module design properties to child modules

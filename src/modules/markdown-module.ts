@@ -340,7 +340,12 @@ All standard markdown features are automatically enabled!`,
     return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const markdownModule = module as MarkdownModule;
 
     // Apply design properties with priority - design properties override module properties
@@ -749,14 +754,15 @@ All standard markdown features are automatically enabled!`,
         clickCount = 0;
 
         if (
-          markdownModule.double_tap_action &&
+          !markdownModule.double_tap_action ||
           markdownModule.double_tap_action.action !== 'nothing'
         ) {
           UltraLinkComponent.handleAction(
-            markdownModule.double_tap_action as any,
+            (markdownModule.double_tap_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (markdownModule as any).entity
           );
         }
       } else {
@@ -769,12 +775,13 @@ All standard markdown features are automatically enabled!`,
           clickCount = 0;
 
           // Execute tap action
-          if (markdownModule.tap_action && markdownModule.tap_action.action !== 'nothing') {
+          if (!markdownModule.tap_action || markdownModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
-              markdownModule.tap_action as any,
+              (markdownModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (markdownModule as any).entity
             );
           }
         }, 300); // Wait 300ms to see if double click follows

@@ -109,10 +109,10 @@ export class UltraGaugeModule extends BaseUltraModule {
         { id: this.generateId('segment'), from: 70, to: 100, color: '#F44336', label: 'High' },
       ],
 
-      // Global actions
-      tap_action: { action: 'default' },
-      hold_action: { action: 'default' },
-      double_tap_action: { action: 'default' },
+      // Global actions (use Default like Mushroom by storing undefined)
+      tap_action: undefined,
+      hold_action: undefined,
+      double_tap_action: undefined,
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
@@ -1577,7 +1577,12 @@ export class UltraGaugeModule extends BaseUltraModule {
     return this.renderPreview(module, hass);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const gaugeModule = module as GaugeModule;
     const value = this.calculateGaugeValue(gaugeModule, hass);
     const displayName = this.getDisplayName(gaugeModule, hass);

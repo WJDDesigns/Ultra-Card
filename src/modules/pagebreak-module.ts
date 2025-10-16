@@ -58,7 +58,12 @@ export class UltraPageBreakModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     // Page breaks are only for editor organization - don't render anything in the card preview
     return html``;
   }

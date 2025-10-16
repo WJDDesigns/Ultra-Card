@@ -804,7 +804,12 @@ export class UltraSeparatorModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const separatorModule = module as SeparatorModule;
 
     // Apply design properties with priority
@@ -984,12 +989,13 @@ export class UltraSeparatorModule extends BaseUltraModule {
           clickCount = 0;
 
           // Execute tap action
-          if (separatorModule.tap_action && separatorModule.tap_action.action !== 'nothing') {
+          if (!separatorModule.tap_action || separatorModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
-              separatorModule.tap_action as any,
+              (separatorModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (separatorModule as any).entity
             );
           }
         }, 300); // Wait 300ms to see if double click follows

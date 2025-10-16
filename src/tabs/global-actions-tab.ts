@@ -1,15 +1,98 @@
-import { html, TemplateResult } from 'lit';
+import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { fireEvent } from 'custom-card-helpers';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { CardModule, HoverEffectConfig, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import '../components/ultra-color-picker';
 
-export class GlobalActionsTab {
-  // Trigger preview update for reactive UI
-  private static triggerPreviewUpdate(): void {
+@customElement('ultra-global-actions-tab')
+export class GlobalActionsTab extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public module!: CardModule;
+  @property({ attribute: false }) public tabTitle?: string;
+
+  @state() private _config: any = {};
+
+  protected willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('module')) {
+      // Sync internal state when module changes
+      this._config = {
+        tap_action: (this.module as any).tap_action,
+        hold_action: (this.module as any).hold_action,
+        double_tap_action: (this.module as any).double_tap_action,
+      };
+    }
+  }
+
+  private _valueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+
+    // Direct passthrough like Mushroom - update internal state
+    this._config = { ...ev.detail.value };
+
+    // Process actions to add module entity if needed
+    const processAction = (action: any) => {
+      if (!action) return action;
+
+      // Get the appropriate entity for this module
+      let moduleEntity: string | undefined = (this.module as any).entity;
+
+      // Special handling for icon modules - use first icon's entity
+      if (!moduleEntity && this.module.type === 'icon') {
+        const iconModule = this.module as any;
+        if (iconModule.icons && iconModule.icons.length > 0 && iconModule.icons[0].entity) {
+          moduleEntity = iconModule.icons[0].entity;
+        }
+      }
+
+      // Special handling for info modules - use first info entity's entity
+      if (!moduleEntity && this.module.type === 'info') {
+        const infoModule = this.module as any;
+        if (
+          infoModule.info_entities &&
+          infoModule.info_entities.length > 0 &&
+          infoModule.info_entities[0].entity
+        ) {
+          moduleEntity = infoModule.info_entities[0].entity;
+        }
+      }
+
+      // If it's more-info without an entity, add the module's entity
+      if (action.action === 'more-info' && !action.entity && moduleEntity) {
+        return { ...action, entity: moduleEntity };
+      }
+
+      // If it's toggle without an entity, add the module's entity
+      if (action.action === 'toggle' && !action.entity && !action.target && moduleEntity) {
+        return { ...action, entity: moduleEntity };
+      }
+
+      return action;
+    };
+
+    // Fire event for parent to handle
+    this.dispatchEvent(
+      new CustomEvent('module-changed', {
+        detail: {
+          updates: {
+            tap_action: processAction(ev.detail.value.tap_action),
+            hold_action: processAction(ev.detail.value.hold_action),
+            double_tap_action: processAction(ev.detail.value.double_tap_action),
+          },
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+
+    // Trigger preview update
+    this._triggerPreviewUpdate();
+  }
+
+  private _triggerPreviewUpdate(): void {
     // Dispatch custom event to update any live previews
-    // Use global debounced update
     if (!window._ultraCardUpdateTimer) {
       window._ultraCardUpdateTimer = setTimeout(() => {
         const event = new CustomEvent('ultra-card-template-update', {
@@ -22,428 +105,65 @@ export class GlobalActionsTab {
     }
   }
 
-  static render<M extends CardModule>(
-    module: M,
-    hass: HomeAssistant,
-    updateModule: (updates: Partial<M>) => void,
-    title?: string
-  ): TemplateResult {
-    // Smart defaults: use 'default' for tap_action (runtime will handle smart behavior)
-    // Hold and double-tap default to 'none'
-
-    // Ensure module has action properties; if missing, add smart defaults
-    if (
-      !('tap_action' in (module as any)) ||
-      !('hold_action' in (module as any)) ||
-      !('double_tap_action' in (module as any))
-    ) {
-      const initUpdates: any = {};
-      if (!('tap_action' in (module as any))) initUpdates.tap_action = { action: 'default' };
-      if (!('hold_action' in (module as any))) initUpdates.hold_action = { action: 'none' };
-      if (!('double_tap_action' in (module as any)))
-        initUpdates.double_tap_action = { action: 'none' };
-      if (Object.keys(initUpdates).length) updateModule(initUpdates);
+  protected render() {
+    if (!this.hass || !this.module) {
+      return html``;
     }
 
-    const current = {
-      tap_action: (module as any).tap_action || { action: 'default' },
-      hold_action: (module as any).hold_action || { action: 'none' }, // Hold/double-tap default to none
-      double_tap_action: (module as any).double_tap_action || { action: 'none' },
-    } as any;
+    const lang = this.hass.locale?.language || 'en';
+    const localizedTitle =
+      this.tabTitle || localize('editor.actions.title', lang, 'Actions Configuration');
 
-    // Create a unique key based on the actual action data to force form refresh when data changes
-    const formKey = `actions_${(module as any).id}_${JSON.stringify(current).replace(/[^a-zA-Z0-9]/g, '')}`;
-
-    const lang = hass?.locale?.language || 'en';
-    const localizedTitle = title || localize('editor.actions.title', lang, 'Actions Configuration');
+    // Create schema for all three actions (Mushroom pattern)
+    const schema = [
+      {
+        name: 'tap_action',
+        selector: { ui_action: {} },
+      },
+      {
+        name: 'hold_action',
+        selector: { ui_action: {} },
+      },
+      {
+        name: 'double_tap_action',
+        selector: { ui_action: {} },
+      },
+    ];
 
     return html`
-      <div class="global-actions-tab">
-        <style>
-          .global-actions-tab {
-            padding: 0px;
-          }
-
-          .actions-section {
-            background: var(--secondary-background-color);
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-          }
-
-          .section-header {
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
-          }
-
-          .section-header h4 {
-            margin: 0;
-            color: var(--primary-text-color);
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-
-          .section-header p {
-            margin: 6px 0 0 0;
-            color: var(--secondary-text-color);
-            font-size: 13px;
-            line-height: 1.4;
-          }
-
-          .action-form {
-            margin-bottom: 20px;
-          }
-
-          .action-description {
-            color: var(--secondary-text-color);
-            font-size: 13px;
-            margin-bottom: 16px;
-            line-height: 1.4;
-            font-style: italic;
-          }
-
-          /* Allow native HA form styling to show through */
-          .global-actions-tab ha-form {
-            display: block;
-            margin: 0;
-            padding: 0;
-          }
-
-          /* Style native expansion panels if they appear */
-          .global-actions-tab ha-expansion-panel {
-            margin-bottom: 8px;
-          }
-
-          /* Style the action selectors */
-          ha-form .mdc-text-field,
-          ha-form .mdc-select,
-          ha-form ha-selector {
-            margin-top: 0 !important;
-          }
-
-          ha-form .mdc-text-field--outlined .mdc-notched-outline {
-            border-radius: 6px;
-          }
-
-          /* Hide any blank list items generated by selector internals */
-          .global-actions-tab ha-select ha-list-item:not([value]),
-          .global-actions-tab ha-select ha-list-item[value=''],
-          .global-actions-tab ha-select ha-list-item[aria-label=''],
-          .global-actions-tab ha-select .mdc-deprecated-list-item:not([data-value]),
-          .global-actions-tab ha-select .mdc-deprecated-list-item[data-value=''],
-          .global-actions-tab ha-select .mdc-list-item:not([data-value]),
-          .global-actions-tab ha-select .mdc-list-item[data-value=''] {
-            display: none !important;
-          }
-
-          /* Hide unwanted action options */
-          .global-actions-tab ha-form mwc-list-item[value='toggle'],
-          .global-actions-tab
-            ha-form
-            mwc-list-item[graphic='icon']:has(ha-icon[icon='mdi:gesture-tap']),
-          .global-actions-tab ha-form .mdc-deprecated-list-item[data-value='toggle'],
-          .global-actions-tab ha-form .mdc-list-item[data-value='toggle'],
-          .global-actions-tab ha-form option[value='toggle'] {
-            display: none !important;
-          }
-
-          /* Hide "Default" option from ui_action selector */
-          .global-actions-tab ha-form mwc-list-item[value=''],
-          .global-actions-tab ha-form mwc-list-item[value='default'],
-          .global-actions-tab ha-form .mdc-list-item[data-value=''],
-          .global-actions-tab ha-form .mdc-list-item[data-value='default'],
-          .global-actions-tab ha-form option[value=''],
-          .global-actions-tab ha-form option[value='default'] {
-            display: none !important;
-          }
-
-          /* Also hide by text content for "Default" with or without parentheses */
-          .global-actions-tab ha-form mwc-list-item:has-text('Default'),
-          .global-actions-tab ha-form .mdc-deprecated-list-item:has-text('Default'),
-          .global-actions-tab ha-form .mdc-list-item:has-text('Default') {
-            display: none !important;
-          }
-
-          /* Style the ha-select dropdown */
-          ha-select {
-            width: 100%;
-            display: block;
-            --mdc-theme-surface: var(--card-background-color);
-            --mdc-theme-primary: var(--primary-color);
-            --mdc-select-fill-color: var(--input-fill-color, transparent);
-            --mdc-select-outlined-idle-border-color: var(--input-idle-line-color);
-            --mdc-select-outlined-hover-border-color: var(--input-hover-line-color);
-            --mdc-select-dropdown-icon-color: var(--secondary-text-color);
-            --mdc-select-label-ink-color: var(--secondary-text-color);
-            --mdc-select-ink-color: var(--primary-text-color);
-          }
-        </style>
-
-        <div class="actions-section">
-          <div class="section-header">
-            <h4>
-              <ha-icon icon="mdi:gesture-tap"></ha-icon>
-              ${localizedTitle}
-            </h4>
-            <p>
-              ${localize(
-                'editor.actions.description',
-                lang,
-                "Configure how this module responds to user interactions. Uses Home Assistant's native action system for consistent behavior across your dashboard."
-              )}
-            </p>
-          </div>
-
-          ${this.renderActionConfig(
-            localize('editor.actions.tap_action', lang, 'Tap Action'),
-            localize(
-              'editor.actions.tap_action_desc',
+      <div class="actions-section">
+        <div class="section-header">
+          <h4>
+            <ha-icon icon="mdi:gesture-tap"></ha-icon>
+            ${localizedTitle}
+          </h4>
+          <p>
+            ${localize(
+              'editor.actions.description',
               lang,
-              'Action performed when tapping/clicking the module'
-            ),
-            current.tap_action,
-            hass,
-            action => updateModule({ tap_action: action } as any),
-            (module as any).entity
-          )}
-          ${this.renderActionConfig(
-            localize('editor.actions.hold_action', lang, 'Hold Action'),
-            localize(
-              'editor.actions.hold_action_desc',
-              lang,
-              'Action performed when holding down on the module'
-            ),
-            current.hold_action,
-            hass,
-            action => updateModule({ hold_action: action } as any),
-            (module as any).entity
-          )}
-          ${this.renderActionConfig(
-            localize('editor.actions.double_tap_action', lang, 'Double Tap Action'),
-            localize(
-              'editor.actions.double_tap_action_desc',
-              lang,
-              'Action performed when double-tapping the module'
-            ),
-            current.double_tap_action,
-            hass,
-            action => updateModule({ double_tap_action: action } as any),
-            (module as any).entity
-          )}
+              "Configure how this module responds to user interactions. Uses Home Assistant's native action system for consistent behavior across your dashboard."
+            )}
+          </p>
         </div>
 
-        <!-- Hover Effects Section -->
-        ${this.renderHoverEffectsSection(module, hass, updateModule)}
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${schema}
+          .computeLabel=${(schema: any) =>
+            this.hass!.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`)}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
       </div>
+
+      <!-- Hover Effects Section -->
+      ${this._renderHoverEffectsSection()}
     `;
   }
 
-  // Backwards-compatible helpers for clickable wrappers used in modules
-  static getClickableClass(module: any): string {
-    const hasAction =
-      (module?.tap_action && module.tap_action.action !== 'none') ||
-      (module?.hold_action && module.hold_action.action !== 'none') ||
-      (module?.double_tap_action && module.double_tap_action.action !== 'none');
-    return hasAction ? 'graphs-module-clickable' : '';
-  }
-
-  static getClickableStyle(module: any): string {
-    // Legacy hover effects removed - now handled by new hover effects system
-    return '';
-  }
-
-  /**
-   * Resolves 'default' actions to their actual behavior at runtime
-   * 'default' becomes 'more-info' for the module's entity if available, otherwise 'none'
-   */
-  static resolveAction(action: any, moduleEntity?: string): any {
-    if (!action || action.action !== 'default') {
-      return action;
-    }
-
-    // Convert 'default' to smart behavior
-    if (moduleEntity) {
-      return { action: 'more-info', entity: moduleEntity };
-    } else {
-      return { action: 'none' };
-    }
-  }
-
-  static getHoverStyles(): string {
-    // Legacy hover effects removed - now handled by new hover effects system
-    return '';
-  }
-
-  private static renderActionConfig(
-    label: string,
-    description: string,
-    action: any,
-    hass: HomeAssistant,
-    updateAction: (action: any) => void,
-    moduleEntity?: string
-  ): TemplateResult {
-    // Ensure we always have a valid action object with the 'action' property set
-    const actualAction = action && action.action ? action : { action: 'default' };
-
-    // For display purposes, convert 'default' to 'none' so ui_action selector can handle it
-    const displayAction = actualAction.action === 'default' ? { action: 'none' } : actualAction;
-
-    // Determine the effective entity being used for more-info/toggle
-    const effectiveEntity =
-      actualAction.action === 'more-info' || actualAction.action === 'toggle'
-        ? actualAction.entity || moduleEntity || ''
-        : '';
-
-    const lang = hass?.locale?.language || 'en';
-
-    return html`
-      <div class="action-form" style="margin-bottom: 16px;">
-        <div
-          class="action-description"
-          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
-        >
-          ${description}
-        </div>
-        <div
-          class="action-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--primary-text-color);"
-        >
-          ${label}
-        </div>
-        ${UcFormUtils.renderForm(
-          hass,
-          { tap_action: displayAction },
-          [
-            {
-              name: 'tap_action',
-              label: '',
-              selector: {
-                ui_action: {
-                  actions: [
-                    'more-info',
-                    'toggle',
-                    'navigate',
-                    'url',
-                    'perform-action',
-                    'assist',
-                    'none',
-                  ],
-                  default_action: moduleEntity ? 'more-info' : 'none',
-                },
-              },
-            },
-          ],
-          (e: CustomEvent) => {
-            const newAction = (e.detail as any)?.value?.tap_action;
-            if (!newAction) return;
-
-            // Handle the conversion from display to actual action
-            if (!newAction.action || newAction.action === '' || newAction.action === 'default') {
-              // User selected the "Default" option (which we display as 'none')
-              updateAction({ action: 'default' });
-            } else if (newAction.action === 'none' && actualAction.action === 'default') {
-              // User selected "None" but we were showing 'default' as 'none'
-              // This means they explicitly chose "None", so save as 'none'
-              updateAction({ action: 'none' });
-            } else {
-              // User selected a specific action - preserve the entity from the action config
-              let cleanAction = { ...newAction };
-
-              // For more-info and toggle, ensure entity is set
-              // Use the entity from newAction if present, otherwise fall back to moduleEntity
-              if (newAction.action === 'more-info' || newAction.action === 'toggle') {
-                if (!cleanAction.entity && moduleEntity) {
-                  cleanAction.entity = moduleEntity;
-                }
-              }
-
-              updateAction(cleanAction);
-            }
-
-            setTimeout(() => {
-              GlobalActionsTab.triggerPreviewUpdate();
-            }, 50);
-          },
-          false
-        )}
-        ${actualAction.action === 'more-info' || actualAction.action === 'toggle'
-          ? html`
-              <div
-                class="conditional-fields-group"
-                style="margin-top: 12px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
-              >
-                <div
-                  class="conditional-fields-header"
-                  style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
-                >
-                  ${actualAction.action === 'more-info'
-                    ? localize('editor.actions.more_info_config', lang, 'More Info Configuration')
-                    : localize('editor.actions.toggle_config', lang, 'Toggle Configuration')}
-                </div>
-                <div class="conditional-fields-content" style="padding: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                  >
-                    ${localize('editor.actions.entity', lang, 'Entity')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-                  >
-                    ${actualAction.action === 'more-info'
-                      ? localize(
-                          'editor.actions.entity_more_info_desc',
-                          lang,
-                          'Select which entity to show more information for'
-                        )
-                      : localize(
-                          'editor.actions.entity_toggle_desc',
-                          lang,
-                          'Select which entity to toggle on/off'
-                        )}
-                  </div>
-                  <ha-form
-                    .hass=${hass}
-                    .data=${{ entity: actualAction.entity || moduleEntity || '' }}
-                    .schema=${[
-                      {
-                        name: 'entity',
-                        label: localize('editor.actions.entity', lang, 'Entity'),
-                        selector: { entity: {} },
-                      },
-                    ]}
-                    .computeLabel=${(schema: any) => schema.label || ''}
-                    @value-changed=${(e: CustomEvent) => {
-                      const entity = e.detail.value?.entity;
-                      if (entity !== undefined) {
-                        updateAction({ ...actualAction, entity });
-                        setTimeout(() => {
-                          GlobalActionsTab.triggerPreviewUpdate();
-                        }, 50);
-                      }
-                    }}
-                  ></ha-form>
-                </div>
-              </div>
-            `
-          : ''}
-      </div>
-    `;
-  }
-
-  private static renderHoverEffectsSection<M extends CardModule>(
-    module: M,
-    hass: HomeAssistant,
-    updateModule: (updates: Partial<M>) => void
-  ): TemplateResult {
+  private _renderHoverEffectsSection() {
     // Get the current design properties
-    const design = (module as any).design || {};
+    const design = (this.module as any).design || {};
     const hoverEffect = design.hover_effect || { effect: 'none' };
 
     const updateHoverEffect = (updates: Partial<HoverEffectConfig>) => {
@@ -458,17 +178,27 @@ export class GlobalActionsTab {
       });
 
       // If effect is 'none', clear all hover effect properties
+      let updatedDesign;
       if (newHoverEffect.effect === 'none') {
-        const updatedDesign = { ...design };
+        updatedDesign = { ...design };
         delete updatedDesign.hover_effect;
-        updateModule({ design: updatedDesign } as any);
       } else {
-        const updatedDesign = { ...design, hover_effect: newHoverEffect };
-        updateModule({ design: updatedDesign } as any);
+        updatedDesign = { ...design, hover_effect: newHoverEffect };
       }
+
+      // Fire event for parent to handle
+      this.dispatchEvent(
+        new CustomEvent('module-changed', {
+          detail: {
+            updates: { design: updatedDesign },
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
     };
 
-    const lang = hass?.locale?.language || 'en';
+    const lang = this.hass?.locale?.language || 'en';
 
     // Effect options based on Hover.css and custom effects
     const effectOptions = [
@@ -541,7 +271,7 @@ export class GlobalActionsTab {
             )}
           </div>
           ${UcFormUtils.renderForm(
-            hass,
+            this.hass,
             { effect: hoverEffect.effect || 'none' },
             [UcFormUtils.select('effect', effectOptions)],
             (e: CustomEvent) => {
@@ -550,7 +280,7 @@ export class GlobalActionsTab {
               if (next === current) return;
               updateHoverEffect({ effect: next });
               setTimeout(() => {
-                this.triggerPreviewUpdate();
+                this._triggerPreviewUpdate();
               }, 50);
             },
             false
@@ -580,7 +310,7 @@ export class GlobalActionsTab {
                       ${localize('editor.hover_effects.duration', lang, 'Duration (ms)')}
                     </div>
                     ${UcFormUtils.renderForm(
-                      hass,
+                      this.hass,
                       { duration: hoverEffect.duration || 300 },
                       [UcFormUtils.number('duration', 100, 2000, 50)],
                       (e: CustomEvent) => {
@@ -589,7 +319,7 @@ export class GlobalActionsTab {
                         if (next === current) return;
                         updateHoverEffect({ duration: next });
                         setTimeout(() => {
-                          this.triggerPreviewUpdate();
+                          this._triggerPreviewUpdate();
                         }, 50);
                       },
                       false
@@ -605,7 +335,7 @@ export class GlobalActionsTab {
                       ${localize('editor.hover_effects.timing', lang, 'Timing Function')}
                     </div>
                     ${UcFormUtils.renderForm(
-                      hass,
+                      this.hass,
                       { timing: hoverEffect.timing || 'ease' },
                       [UcFormUtils.select('timing', timingOptions)],
                       (e: CustomEvent) => {
@@ -614,7 +344,7 @@ export class GlobalActionsTab {
                         if (next === current) return;
                         updateHoverEffect({ timing: next });
                         setTimeout(() => {
-                          this.triggerPreviewUpdate();
+                          this._triggerPreviewUpdate();
                         }, 50);
                       },
                       false
@@ -630,7 +360,7 @@ export class GlobalActionsTab {
                       ${localize('editor.hover_effects.intensity', lang, 'Intensity')}
                     </div>
                     ${UcFormUtils.renderForm(
-                      hass,
+                      this.hass,
                       { intensity: hoverEffect.intensity || 'normal' },
                       [UcFormUtils.select('intensity', intensityOptions)],
                       (e: CustomEvent) => {
@@ -639,7 +369,7 @@ export class GlobalActionsTab {
                         if (next === current) return;
                         updateHoverEffect({ intensity: next });
                         setTimeout(() => {
-                          this.triggerPreviewUpdate();
+                          this._triggerPreviewUpdate();
                         }, 50);
                       },
                       false
@@ -647,218 +377,155 @@ export class GlobalActionsTab {
                   </div>
                 </div>
               </div>
-
-              <!-- Color Settings for Specific Effects -->
-              ${hoverEffect.effect === 'highlight'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
-                    >
-                      <div
-                        class="conditional-fields-header"
-                        style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
-                      >
-                        ${localize(
-                          'editor.hover_effects.highlight_settings',
-                          lang,
-                          'Highlight Settings'
-                        )}
-                      </div>
-                      <div class="conditional-fields-content" style="padding: 16px;">
-                        <div class="field-container" style="margin-bottom: 16px;">
-                          <div
-                            class="field-title"
-                            style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                          >
-                            ${localize(
-                              'editor.hover_effects.highlight_color',
-                              lang,
-                              'Highlight Color'
-                            )}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-                          >
-                            ${localize(
-                              'editor.hover_effects.highlight_color_desc',
-                              lang,
-                              'Background color to show when hovering'
-                            )}
-                          </div>
-                          <ultra-color-picker
-                            .value=${hoverEffect.highlight_color || ''}
-                            .defaultValue=${'rgba(var(--rgb-primary-color), 0.2)'}
-                            .hass=${hass}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateHoverEffect({ highlight_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${hoverEffect.effect === 'outline'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
-                    >
-                      <div
-                        class="conditional-fields-header"
-                        style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
-                      >
-                        ${localize(
-                          'editor.hover_effects.outline_settings',
-                          lang,
-                          'Outline Settings'
-                        )}
-                      </div>
-                      <div class="conditional-fields-content" style="padding: 16px;">
-                        <div class="field-container" style="margin-bottom: 16px;">
-                          <div
-                            class="field-title"
-                            style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                          >
-                            ${localize('editor.hover_effects.outline_color', lang, 'Outline Color')}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-                          >
-                            ${localize(
-                              'editor.hover_effects.outline_color_desc',
-                              lang,
-                              'Color of the outline border'
-                            )}
-                          </div>
-                          <ultra-color-picker
-                            .value=${hoverEffect.outline_color || ''}
-                            .defaultValue=${'var(--primary-color)'}
-                            .hass=${hass}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateHoverEffect({ outline_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                        <ha-form
-                          .hass=${hass}
-                          .data=${{ outline_width: hoverEffect.outline_width || 2 }}
-                          .schema=${[
-                            {
-                              name: 'outline_width',
-                              label: localize(
-                                'editor.hover_effects.outline_width',
-                                lang,
-                                'Outline Width (px)'
-                              ),
-                              selector: { number: { min: 1, max: 10, step: 1 } },
-                            },
-                          ]}
-                          .computeLabel=${this.computeLabel}
-                          @value-changed=${(e: CustomEvent) => {
-                            const width = (e.detail as any)?.value?.outline_width;
-                            if (width) updateHoverEffect({ outline_width: width });
-                          }}
-                        ></ha-form>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${hoverEffect.effect === 'glow'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
-                    >
-                      <div
-                        class="conditional-fields-header"
-                        style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
-                      >
-                        ${localize('editor.hover_effects.glow_settings', lang, 'Glow Settings')}
-                      </div>
-                      <div class="conditional-fields-content" style="padding: 16px;">
-                        <div class="field-container" style="margin-bottom: 16px;">
-                          <div
-                            class="field-title"
-                            style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                          >
-                            ${localize('editor.hover_effects.glow_color', lang, 'Glow Color')}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-                          >
-                            ${localize(
-                              'editor.hover_effects.glow_color_desc',
-                              lang,
-                              'Color of the glow effect'
-                            )}
-                          </div>
-                          <ultra-color-picker
-                            .value=${hoverEffect.glow_color || ''}
-                            .defaultValue=${'var(--primary-color)'}
-                            .hass=${hass}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateHoverEffect({ glow_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
-              ${hoverEffect.effect === 'shadow'
-                ? html`
-                    <div
-                      class="conditional-fields-group"
-                      style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
-                    >
-                      <div
-                        class="conditional-fields-header"
-                        style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
-                      >
-                        ${localize('editor.hover_effects.shadow_settings', lang, 'Shadow Settings')}
-                      </div>
-                      <div class="conditional-fields-content" style="padding: 16px;">
-                        <div class="field-container" style="margin-bottom: 16px;">
-                          <div
-                            class="field-title"
-                            style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-                          >
-                            ${localize('editor.hover_effects.shadow_color', lang, 'Shadow Color')}
-                          </div>
-                          <div
-                            class="field-description"
-                            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px;"
-                          >
-                            ${localize(
-                              'editor.hover_effects.shadow_color_desc',
-                              lang,
-                              'Color of the shadow effect'
-                            )}
-                          </div>
-                          <ultra-color-picker
-                            .value=${hoverEffect.shadow_color || ''}
-                            .defaultValue=${'rgba(0, 0, 0, 0.3)'}
-                            .hass=${hass}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateHoverEffect({ shadow_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      </div>
-                    </div>
-                  `
-                : ''}
             `
           : ''}
       </div>
     `;
   }
 
-  private static computeLabel = (schema: any): string => {
-    if (Object.prototype.hasOwnProperty.call(schema, 'label')) {
-      return schema.label ?? '';
-    }
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        padding: 0;
+      }
+
+      .actions-section {
+        background: var(--secondary-background-color);
+        border: 2px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .section-header {
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .section-header h4 {
+        margin: 0;
+        color: var(--primary-text-color);
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .section-header p {
+        margin: 6px 0 0 0;
+        color: var(--secondary-text-color);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      /* Allow native HA form styling to show through */
+      ha-form {
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+
+      .action-form {
+        margin-bottom: 20px;
+      }
+
+      .field-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--primary-text-color);
+      }
+
+      .field-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        margin-bottom: 12px;
+        opacity: 0.8;
+        line-height: 1.4;
+      }
+
+      .conditional-fields-group {
+        margin-top: 16px;
+        border-left: 4px solid var(--primary-color);
+        background: rgba(var(--rgb-primary-color), 0.08);
+        border-radius: 0 8px 8px 0;
+        overflow: hidden;
+      }
+
+      .conditional-fields-header {
+        background: rgba(var(--rgb-primary-color), 0.15);
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-color);
+        border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .conditional-fields-content {
+        padding: 16px;
+      }
+
+      .field-container {
+        margin-bottom: 16px;
+      }
+    `;
+  }
+
+  // Legacy static render method for backwards compatibility
+  static render<M extends CardModule>(
+    module: M,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<M>) => void,
+    title?: string
+  ): TemplateResult {
+    return html`
+      <ultra-global-actions-tab
+        .hass=${hass}
+        .module=${module}
+        .tabTitle=${title}
+        @module-changed=${(e: CustomEvent) => updateModule(e.detail.updates)}
+      ></ultra-global-actions-tab>
+    `;
+  }
+
+  // Backwards-compatible helpers for clickable wrappers used in modules
+  static getClickableClass(module: any): string {
+    const hasAction =
+      (module?.tap_action && module.tap_action.action !== 'none') ||
+      (module?.hold_action && module.hold_action.action !== 'none') ||
+      (module?.double_tap_action && module.double_tap_action.action !== 'none');
+    return hasAction ? 'graphs-module-clickable' : '';
+  }
+
+  static getClickableStyle(module: any): string {
+    // Legacy hover effects removed - now handled by new hover effects system
     return '';
-  };
+  }
+
+  /**
+   * Resolves 'default' actions to their actual behavior at runtime
+   * 'default' becomes 'more-info' for the module's entity if available, otherwise 'none'
+   */
+  static resolveAction(action: any, moduleEntity?: string): any {
+    if (!action || action.action !== 'default') {
+      return action;
+    }
+
+    // Convert 'default' to smart behavior
+    if (moduleEntity) {
+      return { action: 'more-info', entity: moduleEntity };
+    } else {
+      return { action: 'none' };
+    }
+  }
+
+  static getHoverStyles(): string {
+    // Legacy hover effects removed - now handled by new hover effects system
+    return '';
+  }
 }

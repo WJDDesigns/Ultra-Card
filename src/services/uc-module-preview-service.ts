@@ -59,7 +59,8 @@ class UcModulePreviewService {
     const isLogicHidden = !shouldShow || !globalLogicVisible;
 
     // Get module content from module handler
-    const moduleContent = this._getModuleContent(module, hass, config);
+    // Pass isEditorPreview=true to prevent lock overlays in Live Preview
+    const moduleContent = this._getModuleContent(module, hass, config, true);
 
     // Get animation data for preview
     const animationData = this._getPreviewAnimationData(moduleWithDesign);
@@ -134,7 +135,8 @@ class UcModulePreviewService {
     const moduleWithDesign = module as any;
 
     // Get module content from module handler
-    const moduleContent = this._getModuleContent(module, hass, config);
+    // Pass isEditorPreview=false for dashboard rendering (show locks if needed)
+    const moduleContent = this._getModuleContent(module, hass, config, false);
 
     // Get hover effect configuration
     const hoverEffect = moduleWithDesign.design?.hover_effect;
@@ -184,13 +186,14 @@ class UcModulePreviewService {
   private _getModuleContent(
     module: CardModule,
     hass: HomeAssistant,
-    config?: UltraCardConfig
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
   ): TemplateResult {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler) {
-      return moduleHandler.renderPreview(module, hass, config);
+      return moduleHandler.renderPreview(module, hass, config, isEditorPreview);
     }
 
     // Fallback for unknown module types

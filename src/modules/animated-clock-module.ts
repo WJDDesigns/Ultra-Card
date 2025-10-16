@@ -174,7 +174,12 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     return renderAnimatedClockModuleEditor(this, module, hass, config, updateModule);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const clockModule = module as AnimatedClockModule;
     const moduleWithDesign = clockModule as any;
     const designProperties = moduleWithDesign.design || {};

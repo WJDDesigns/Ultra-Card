@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta21
+
+### 🐛 Bug Fixes
+
+- **Refactored and fixed the actions tab** - Refactored the actions tab to use the native ui-actions of Home Assistant for improved compatibility and functionality
+
 ## Version 2.0-beta20
 
 ### 🐛 Bug Fixes

@@ -5,7 +5,7 @@ declare global {
         _ultraCardUpdateTimer?: ReturnType<typeof setTimeout> | null;
     }
 }
-export type ActionType = 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+export type ActionType = 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
 export interface ModuleActionConfig {
     action: ActionType;
     entity?: string;

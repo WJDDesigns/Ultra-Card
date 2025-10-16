@@ -2617,7 +2617,12 @@ export class UltraBarModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as BarModule, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const barModule = module as BarModule;
 
     // Resolve bar percentage based on selected percentage calculation mode
@@ -3654,12 +3659,13 @@ export class UltraBarModule extends BaseUltraModule {
         }
         clickCount = 0;
 
-        if (barModule.double_tap_action && barModule.double_tap_action.action !== 'nothing') {
+        if (!barModule.double_tap_action || barModule.double_tap_action.action !== 'nothing') {
           UltraLinkComponent.handleAction(
-            barModule.double_tap_action as any,
+            (barModule.double_tap_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (barModule as any).entity
           );
         }
       } else {
@@ -3672,12 +3678,13 @@ export class UltraBarModule extends BaseUltraModule {
           clickCount = 0;
 
           // Execute tap action
-          if (barModule.tap_action && barModule.tap_action.action !== 'nothing') {
+          if (!barModule.tap_action || barModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
-              barModule.tap_action as any,
+              (barModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (barModule as any).entity
             );
           }
         }, 300); // Wait 300ms to see if double click follows

@@ -84,8 +84,8 @@ export class UltraInfoModule extends BaseUltraModule {
       columns: 1,
       gap: 12,
       allow_wrap: true,
-      // Global action configuration - auto-set tap action to more-info with default entity
-      tap_action: { action: 'more-info', entity: 'weather.forecast_home' },
+      // Global action configuration - smart default based on entity type
+      tap_action: undefined,
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
       // Logic (visibility) defaults
@@ -1371,7 +1371,12 @@ export class UltraInfoModule extends BaseUltraModule {
     return this.renderPreview(module, hass);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const infoModule = module as InfoModule;
 
     // Apply design properties with priority - design properties override module properties
@@ -2385,16 +2390,14 @@ export class UltraInfoModule extends BaseUltraModule {
     // Don't trigger tap action if we're in the middle of a hold
     if (this.isHolding) return;
 
-    if (
-      infoModule.tap_action &&
-      infoModule.tap_action.action !== 'default' &&
-      infoModule.tap_action.action !== 'nothing'
-    ) {
+    // Execute on Default (undefined) or any action except 'nothing'
+    if (!infoModule.tap_action || infoModule.tap_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
-        infoModule.tap_action as any,
+        (infoModule.tap_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (infoModule as any).entity
       );
     }
   }
@@ -2405,16 +2408,13 @@ export class UltraInfoModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    if (
-      infoModule.double_tap_action &&
-      infoModule.double_tap_action.action !== 'default' &&
-      infoModule.double_tap_action.action !== 'nothing'
-    ) {
+    if (!infoModule.double_tap_action || infoModule.double_tap_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
-        infoModule.double_tap_action as any,
+        (infoModule.double_tap_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (infoModule as any).entity
       );
     }
   }
@@ -2425,16 +2425,13 @@ export class UltraInfoModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): void {
-    if (
-      infoModule.hold_action &&
-      infoModule.hold_action.action !== 'default' &&
-      infoModule.hold_action.action !== 'nothing'
-    ) {
+    if (!infoModule.hold_action || infoModule.hold_action.action !== 'nothing') {
       UltraLinkComponent.handleAction(
-        infoModule.hold_action as any,
+        (infoModule.hold_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (infoModule as any).entity
       );
     }
   }
@@ -2550,7 +2547,7 @@ export class UltraInfoModule extends BaseUltraModule {
     );
     const moduleUpdates: any = { info_entities: updatedEntities };
 
-    // Auto-set module-level tap action to more-info with the selected entity
+    // Auto-set module-level tap action to default (smart resolution based on entity type)
     if (entityId && hass?.states[entityId]) {
       const shouldUpdateTap =
         !infoModule.tap_action ||
@@ -2560,7 +2557,7 @@ export class UltraInfoModule extends BaseUltraModule {
 
       if (shouldUpdateTap) {
         moduleUpdates.tap_action = {
-          action: 'more-info',
+          action: 'default',
           entity: entityId,
         };
       }

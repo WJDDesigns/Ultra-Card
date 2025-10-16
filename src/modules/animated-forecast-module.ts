@@ -51,7 +51,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       forecast_background: 'rgba(var(--rgb-primary-text-color), 0.05)',
 
       // Standard Ultra Card properties
-      tap_action: { action: 'more-info' },
+      tap_action: undefined,
       hold_action: { action: 'nothing' },
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
@@ -81,7 +81,12 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     return renderAnimatedForecastModuleEditor(this, module, hass, config, updateModule);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const forecastModule = module as AnimatedForecastModule;
     const weatherData = this._getWeatherData(hass, forecastModule);
     const iconStyle = forecastModule.icon_style || 'fill';

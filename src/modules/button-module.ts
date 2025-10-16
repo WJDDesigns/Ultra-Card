@@ -469,7 +469,12 @@ export class UltraButtonModule extends BaseUltraModule {
     `;
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const buttonModule = module as ButtonModule;
 
     // Apply design properties with priority - global design overrides module-specific props
@@ -624,12 +629,16 @@ export class UltraButtonModule extends BaseUltraModule {
         }
         clickCount = 0;
 
-        if (buttonModule.double_tap_action && buttonModule.double_tap_action.action !== 'nothing') {
+        if (
+          !buttonModule.double_tap_action ||
+          buttonModule.double_tap_action.action !== 'nothing'
+        ) {
           UltraLinkComponent.handleAction(
-            buttonModule.double_tap_action as any,
+            (buttonModule.double_tap_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (buttonModule as any).entity
           );
         }
       } else {
@@ -642,12 +651,13 @@ export class UltraButtonModule extends BaseUltraModule {
           clickCount = 0;
 
           // Execute tap action or fall back to legacy action
-          if (buttonModule.tap_action && buttonModule.tap_action.action !== 'nothing') {
+          if (!buttonModule.tap_action || buttonModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
-              buttonModule.tap_action as any,
+              (buttonModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (buttonModule as any).entity
             );
           } else if (buttonModule.action) {
             // Legacy support

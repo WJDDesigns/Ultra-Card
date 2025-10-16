@@ -32,5 +32,12 @@ export declare class UltraLinkComponent {
     private static renderActionFields;
     private static renderNavigationPicker;
     static getDefaultConfig(): UltraLinkConfig;
-    static handleAction(action: TapActionConfig, hass: HomeAssistant, element?: HTMLElement, config?: UltraCardConfig): void;
+    /**
+     * Resolves a 'default' action to the appropriate native action based on entity domain
+     * @param action The action config with 'default' action type
+     * @param hass Home Assistant instance
+     * @returns Resolved action config with native action for the entity type
+     */
+    private static resolveDefaultAction;
+    static handleAction(action: TapActionConfig | undefined, hass: HomeAssistant, element?: HTMLElement, config?: UltraCardConfig, moduleEntity?: string): void;
 }

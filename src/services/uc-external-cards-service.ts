@@ -198,6 +198,20 @@ class UcExternalCardsService {
   }
 
   /**
+   * Check if a card type has a native editor
+   */
+  hasCardEditor(cardType: string): boolean {
+    if (!cardType) return false;
+
+    try {
+      const editorType = `${cardType}-editor`;
+      return customElements.get(editorType) !== undefined;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
    * Get suggested HACS repository URL for a card type
    */
   getHACSUrl(cardType: string): string | null {

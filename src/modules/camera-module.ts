@@ -1351,7 +1351,12 @@ export class UltraCameraModule extends BaseUltraModule {
     return GlobalActionsTab.render(module as any, hass, updates => updateModule(updates));
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const cameraModule = module as CameraModule;
     const moduleWithDesign = cameraModule as any;
 

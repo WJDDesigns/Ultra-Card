@@ -617,17 +617,108 @@ export class UltraLinkComponent {
     };
   }
 
-  static handleAction(
+  /**
+   * Resolves a 'default' action to the appropriate native action based on entity domain
+   * @param action The action config with 'default' action type
+   * @param hass Home Assistant instance
+   * @returns Resolved action config with native action for the entity type
+   */
+  private static resolveDefaultAction(
     action: TapActionConfig,
+    hass: HomeAssistant
+  ): TapActionConfig {
+    // If no entity is specified or action is not 'default', return as-is
+    if (!action.entity || action.action !== 'default') {
+      return action;
+    }
+
+    const entityId = action.entity;
+    const domain = entityId.split('.')[0];
+
+    // Map entity domains to their native actions
+    switch (domain) {
+      case 'button':
+        // Buttons should call button.press service
+        return {
+          ...action,
+          action: 'perform-action',
+          service: 'button.press',
+          entity: entityId,
+        };
+
+      case 'script':
+        // Scripts should call script.turn_on or script.<name>
+        // Home Assistant allows both script.turn_on with entity_id or script.<name>
+        return {
+          ...action,
+          action: 'perform-action',
+          service: 'script.turn_on',
+          entity: entityId,
+        };
+
+      case 'scene':
+        // Scenes should call scene.turn_on
+        return {
+          ...action,
+          action: 'perform-action',
+          service: 'scene.turn_on',
+          entity: entityId,
+        };
+
+      case 'automation':
+      case 'switch':
+      case 'light':
+      case 'fan':
+      case 'input_boolean':
+      case 'lock':
+      case 'cover':
+        // These entities support native toggle
+        return {
+          ...action,
+          action: 'toggle',
+          entity: entityId,
+        };
+
+      default:
+        // For all other entities (sensor, binary_sensor, etc.), default to more-info
+        return {
+          ...action,
+          action: 'more-info',
+          entity: entityId,
+        };
+    }
+  }
+
+  static handleAction(
+    action: TapActionConfig | undefined,
     hass: HomeAssistant,
     element?: HTMLElement,
-    config?: UltraCardConfig
+    config?: UltraCardConfig,
+    moduleEntity?: string
   ): void {
+    // If action is undefined or missing, or explicitly set to 'default', use smart resolution
+    let resolvedAction: TapActionConfig;
+
+    if (!action || !action.action || action.action === 'default') {
+      // For undefined actions, create a default action with the module's entity
+      const defaultAction = action || { action: 'default' };
+      if (!defaultAction.entity && moduleEntity) {
+        defaultAction.entity = moduleEntity;
+      }
+      resolvedAction = this.resolveDefaultAction(defaultAction, hass);
+    } else {
+      resolvedAction = action;
+    }
+
     // Trigger haptic feedback if enabled (default: true)
     const hapticEnabled = config?.haptic_feedback !== false;
-    if (hapticEnabled && action.action !== 'nothing' && action.action !== 'default') {
+    if (
+      hapticEnabled &&
+      resolvedAction.action !== 'nothing' &&
+      resolvedAction.action !== 'default'
+    ) {
       // Use appropriate haptic type based on action following HA guidelines
-      switch (action.action) {
+      switch (resolvedAction.action) {
         case 'toggle':
           forwardHaptic('light'); // Physical metaphor for toggling
           break;
@@ -647,43 +738,43 @@ export class UltraLinkComponent {
     }
 
     // Home Assistant stores perform-action services under 'perform_action' key
-    const serviceToCall = action.service || action.perform_action;
+    const serviceToCall = resolvedAction.service || resolvedAction.perform_action;
 
-    switch (action.action) {
+    switch (resolvedAction.action) {
       case 'more-info':
-        if (action.entity) {
+        if (resolvedAction.entity) {
           const event = new CustomEvent('hass-more-info', {
             bubbles: true,
             composed: true,
-            detail: { entityId: action.entity },
+            detail: { entityId: resolvedAction.entity },
           });
           element?.dispatchEvent(event);
         }
         break;
 
       case 'toggle':
-        if (action.entity) {
+        if (resolvedAction.entity) {
           // Legacy entity-based toggle
-          hass.callService('homeassistant', 'toggle', { entity_id: action.entity });
-        } else if (action.target) {
+          hass.callService('homeassistant', 'toggle', { entity_id: resolvedAction.entity });
+        } else if (resolvedAction.target) {
           // Modern target-based toggle (supports device_id, area_id, etc.)
           const serviceData: any = {};
 
           // Handle different target types
-          if (action.target.entity_id) {
-            serviceData.entity_id = action.target.entity_id;
+          if (resolvedAction.target.entity_id) {
+            serviceData.entity_id = resolvedAction.target.entity_id;
           }
-          if (action.target.device_id) {
-            serviceData.device_id = action.target.device_id;
+          if (resolvedAction.target.device_id) {
+            serviceData.device_id = resolvedAction.target.device_id;
           }
-          if (action.target.area_id) {
-            serviceData.area_id = action.target.area_id;
+          if (resolvedAction.target.area_id) {
+            serviceData.area_id = resolvedAction.target.area_id;
           }
-          if (action.target.floor_id) {
-            serviceData.floor_id = action.target.floor_id;
+          if (resolvedAction.target.floor_id) {
+            serviceData.floor_id = resolvedAction.target.floor_id;
           }
-          if (action.target.label_id) {
-            serviceData.label_id = action.target.label_id;
+          if (resolvedAction.target.label_id) {
+            serviceData.label_id = resolvedAction.target.label_id;
           }
 
           hass.callService('homeassistant', 'toggle', serviceData);
@@ -691,8 +782,8 @@ export class UltraLinkComponent {
         break;
 
       case 'navigate':
-        if (action.navigation_path) {
-          window.history.pushState(null, '', action.navigation_path);
+        if (resolvedAction.navigation_path) {
+          window.history.pushState(null, '', resolvedAction.navigation_path);
           const event = new CustomEvent('location-changed', {
             bubbles: true,
             composed: true,
@@ -703,8 +794,8 @@ export class UltraLinkComponent {
         break;
 
       case 'url':
-        if (action.url_path) {
-          window.open(action.url_path, '_blank');
+        if (resolvedAction.url_path) {
+          window.open(resolvedAction.url_path, '_blank');
         }
         break;
 
@@ -714,29 +805,29 @@ export class UltraLinkComponent {
           if (domain && service) {
             // Enhanced service data handling for better target support
             // Support both modern 'data' and legacy 'service_data' properties
-            const serviceData = { ...(action.data || action.service_data) };
+            const serviceData = { ...(resolvedAction.data || resolvedAction.service_data) };
 
             // If entity is specified but not in service_data, add it
-            if (action.entity && !serviceData.entity_id) {
-              serviceData.entity_id = action.entity;
+            if (resolvedAction.entity && !serviceData.entity_id) {
+              serviceData.entity_id = resolvedAction.entity;
             }
 
             // Handle all target types from HA action system
-            if (action.target) {
-              if (action.target.entity_id && !serviceData.entity_id) {
-                serviceData.entity_id = action.target.entity_id;
+            if (resolvedAction.target) {
+              if (resolvedAction.target.entity_id && !serviceData.entity_id) {
+                serviceData.entity_id = resolvedAction.target.entity_id;
               }
-              if (action.target.device_id && !serviceData.device_id) {
-                serviceData.device_id = action.target.device_id;
+              if (resolvedAction.target.device_id && !serviceData.device_id) {
+                serviceData.device_id = resolvedAction.target.device_id;
               }
-              if (action.target.area_id && !serviceData.area_id) {
-                serviceData.area_id = action.target.area_id;
+              if (resolvedAction.target.area_id && !serviceData.area_id) {
+                serviceData.area_id = resolvedAction.target.area_id;
               }
-              if (action.target.floor_id && !serviceData.floor_id) {
-                serviceData.floor_id = action.target.floor_id;
+              if (resolvedAction.target.floor_id && !serviceData.floor_id) {
+                serviceData.floor_id = resolvedAction.target.floor_id;
               }
-              if (action.target.label_id && !serviceData.label_id) {
-                serviceData.label_id = action.target.label_id;
+              if (resolvedAction.target.label_id && !serviceData.label_id) {
+                serviceData.label_id = resolvedAction.target.label_id;
               }
             }
 
@@ -752,9 +843,9 @@ export class UltraLinkComponent {
           }
         } else {
           console.warn(`⚠️ Ultra Card: No service specified for perform-action`, {
-            action: action,
-            serviceProperty: action.service,
-            performActionProperty: action.perform_action,
+            action: resolvedAction,
+            serviceProperty: resolvedAction.service,
+            performActionProperty: resolvedAction.perform_action,
           });
         }
         break;

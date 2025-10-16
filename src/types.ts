@@ -8,8 +8,9 @@ declare global {
   }
 }
 
-// Action type definition (without 'default')
+// Action type definition (includes 'default' for smart resolution)
 export type ActionType =
+  | 'default'
   | 'more-info'
   | 'toggle'
   | 'navigate'

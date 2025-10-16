@@ -19,6 +19,13 @@ let allowedExternalCardIdsCache: Set<string> | null = null;
 let allowedExternalCardIdsCacheTime = 0;
 const ALLOWED_IDS_CACHE_TTL = 5000; // 5 seconds
 
+// Export function to invalidate the allowed IDs cache
+// Call this when external cards are added, duplicated, or deleted
+export function invalidateExternalCardCache(): void {
+  allowedExternalCardIdsCache = null;
+  allowedExternalCardIdsCacheTime = 0;
+}
+
 // Export cleanup function for when modules are deleted
 export function cleanupExternalCardCache(moduleId: string): void {
   // Clear any pending debounce timers
@@ -39,8 +46,7 @@ export function cleanupExternalCardCache(moduleId: string): void {
   keysToDelete.forEach(key => editorElementCache.delete(key));
 
   // Clear allowed IDs cache so it refreshes
-  allowedExternalCardIdsCache = null;
-  allowedExternalCardIdsCacheTime = 0;
+  invalidateExternalCardCache();
 }
 
 export class UltraExternalCardModule extends BaseUltraModule {
@@ -132,10 +138,13 @@ export class UltraExternalCardModule extends BaseUltraModule {
         }
       });
 
-      // Sort by timestamp (oldest first)
+      // Sort by timestamp (oldest first - ascending order)
+      // Example: If modules were added at times [1005, 1001, 1003, 1002, 1004, 1000]
+      // After sort: [1000, 1001, 1002, 1003, 1004, 1005]
+      // This ensures the first 5 modules EVER added are always unlocked
       allExternalModules.sort((a, b) => a.timestamp - b.timestamp);
 
-      // Take first 5 IDs
+      // Take first 5 IDs (indices 0-4) - these are the oldest modules
       const allowedIds = new Set(allExternalModules.slice(0, 5).map(card => card.id));
 
       // Update cache
@@ -386,7 +395,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
   renderPreview(
     module: ExternalCardModule,
     hass: HomeAssistant,
-    config?: UltraCardConfig
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
   ): TemplateResult {
     const moduleWithDesign = module as any;
 
@@ -589,7 +599,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
     };
 
     // Check if module should be locked (6th+ card for non-Pro users)
-    const shouldLock = this._shouldLockModule(module, hass, config);
+    // Skip lock check in editor preview (Live Preview in settings popup)
+    const shouldLock = !isEditorPreview && this._shouldLockModule(module, hass, config);
 
     if (shouldLock) {
       // Render with Pro lock overlay

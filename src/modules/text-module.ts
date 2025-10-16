@@ -415,7 +415,12 @@ export class UltraTextModule extends BaseUltraModule {
   }
   // Removed bespoke action editor helpers to rely on GlobalActionsTab
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const textModule = module as TextModule;
     const lang = hass?.locale?.language || 'en';
 

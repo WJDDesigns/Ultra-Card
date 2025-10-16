@@ -1957,7 +1957,12 @@ export class UltraLightModule extends BaseUltraModule {
     updateModule({ presets });
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const lightModule = module as LightModule;
     const presets = lightModule.presets || [];
 

@@ -68,7 +68,12 @@ export interface UltraModule {
   ): TemplateResult;
 
   // Render the module preview/content
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult;
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult;
 
   // Validate module configuration
   validate(module: CardModule): { valid: boolean; errors: string[] };
@@ -94,7 +99,8 @@ export abstract class BaseUltraModule implements UltraModule {
   abstract renderPreview(
     module: CardModule,
     hass: HomeAssistant,
-    config?: UltraCardConfig
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
   ): TemplateResult;
 
   // Default Actions tab implementation - can be overridden

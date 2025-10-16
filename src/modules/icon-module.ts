@@ -63,7 +63,8 @@ export class UltraIconModule extends BaseUltraModule {
       if (!document.getElementById(styleId)) {
         const styleEl = document.createElement('style');
         styleEl.id = styleId;
-        styleEl.textContent = this.getStyles() + '\n' + UltraIconModule._ANIMATION_KEYFRAMES;
+        // Only inject shared keyframes globally to avoid leaking component-specific CSS
+        styleEl.textContent = UltraIconModule._ANIMATION_KEYFRAMES;
         document.head.appendChild(styleEl);
       }
       UltraIconModule._globalStylesInjected = true;
@@ -265,10 +266,10 @@ export class UltraIconModule extends BaseUltraModule {
           container_background_shape: 'none',
           container_background_color: '#808080',
 
-          // Ultra Link Actions
-          tap_action: { action: 'nothing' },
-          hold_action: { action: 'nothing' },
-          double_tap_action: { action: 'nothing' },
+          // Ultra Link Actions (Default = undefined for smart defaults)
+          tap_action: undefined,
+          hold_action: undefined,
+          double_tap_action: undefined,
 
           // Legacy actions (backward compatibility)
           click_action: 'toggle',
@@ -294,10 +295,10 @@ export class UltraIconModule extends BaseUltraModule {
       // vertical_alignment: undefined, // No default alignment to allow Global Design tab control
       columns: 3,
       gap: 16,
-      // Global action configuration (for the module container) - auto-set tap action to more-info with default entity
-      tap_action: { action: 'more-info', entity: 'weather.forecast_home' },
-      hold_action: { action: 'nothing' },
-      double_tap_action: { action: 'nothing' },
+      // Global action configuration (for the module container) - smart default based on entity type
+      tap_action: undefined,
+      hold_action: undefined,
+      double_tap_action: undefined,
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
@@ -386,21 +387,7 @@ export class UltraIconModule extends BaseUltraModule {
                       );
                       const moduleUpdates: any = { icons: updatedIcons };
 
-                      // Add tap action update if needed
-                      if (entityId && hass?.states[entityId]) {
-                        const shouldUpdateTap =
-                          !iconModule.tap_action ||
-                          iconModule.tap_action.action === 'nothing' ||
-                          iconModule.tap_action.action === 'default' ||
-                          iconModule.tap_action.action === 'more-info';
-
-                        if (shouldUpdateTap) {
-                          moduleUpdates.tap_action = {
-                            action: 'more-info',
-                            entity: entityId,
-                          };
-                        }
-                      }
+                      // Do not auto-write tap_action here. Let the editor control Default/More-info.
 
                       // Apply all updates in one call to avoid race conditions
                       updateModule(moduleUpdates);
@@ -1936,7 +1923,12 @@ export class UltraIconModule extends BaseUltraModule {
     return this.renderLogicTab(module, hass, config, updateModule);
   }
 
-  renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig): TemplateResult {
+  renderPreview(
+    module: CardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig,
+    isEditorPreview?: boolean
+  ): TemplateResult {
     const iconModule = module as IconModule;
 
     // Initialize template service if needed
@@ -2470,32 +2462,27 @@ export class UltraIconModule extends BaseUltraModule {
                   e.preventDefault();
                   isHolding = false;
 
-                  // Start hold timer if hold action is configured
-                  if (iconModule.hold_action) {
-                    holdTimeout = setTimeout(() => {
-                      isHolding = true;
-                      const action =
-                        iconModule.hold_action!.action === 'default'
-                          ? {
-                              ...iconModule.hold_action!,
-                              action: 'toggle' as const,
-                              entity: icon.entity,
-                            }
-                          : iconModule.hold_action!.action === 'toggle' ||
-                              iconModule.hold_action!.action === 'more-info'
-                            ? {
-                                ...iconModule.hold_action!,
-                                entity: iconModule.hold_action!.entity || icon.entity,
-                              }
-                            : iconModule.hold_action!; // Pass unchanged for perform-action, navigate, url, etc.
-                      UltraLinkComponent.handleAction(
-                        action as any,
-                        hass,
-                        e.target as HTMLElement,
-                        config
-                      );
-                    }, 500); // 500ms hold threshold
+                  // Start hold timer if hold action is configured or undefined (Default)
+                  if (
+                    iconModule.hold_action !== undefined &&
+                    iconModule.hold_action?.action === 'nothing'
+                  ) {
+                    // Explicitly set to "nothing", don't start timer
+                    return;
                   }
+
+                  // Start hold timer for configured actions or Default (undefined)
+                  holdTimeout = setTimeout(() => {
+                    isHolding = true;
+                    UltraLinkComponent.handleAction(
+                      (iconModule.hold_action as any) ||
+                        ({ action: 'default', entity: icon.entity } as any),
+                      hass,
+                      e.target as HTMLElement,
+                      config,
+                      icon.entity
+                    );
+                  }, 500); // 500ms hold threshold
                 },
 
                 onPointerUp: (e: PointerEvent) => {
@@ -2524,26 +2511,18 @@ export class UltraIconModule extends BaseUltraModule {
                     }
                     clickCount = 0;
 
-                    if (iconModule.double_tap_action) {
-                      const action =
-                        iconModule.double_tap_action.action === 'default'
-                          ? {
-                              ...iconModule.double_tap_action,
-                              action: 'toggle' as const,
-                              entity: icon.entity,
-                            }
-                          : iconModule.double_tap_action.action === 'toggle' ||
-                              iconModule.double_tap_action.action === 'more-info'
-                            ? {
-                                ...iconModule.double_tap_action,
-                                entity: iconModule.double_tap_action.entity || icon.entity,
-                              }
-                            : iconModule.double_tap_action; // Pass unchanged for perform-action, navigate, url, etc.
+                    // Execute double-tap if configured or Default (undefined), but not if explicitly "nothing"
+                    if (
+                      iconModule.double_tap_action === undefined ||
+                      iconModule.double_tap_action?.action !== 'nothing'
+                    ) {
                       UltraLinkComponent.handleAction(
-                        action as any,
+                        (iconModule.double_tap_action as any) ||
+                          ({ action: 'default', entity: icon.entity } as any),
                         hass,
                         e.target as HTMLElement,
-                        config
+                        config,
+                        icon.entity
                       );
                     }
                   } else {
@@ -2560,64 +2539,33 @@ export class UltraIconModule extends BaseUltraModule {
                     if (
                       (!iconModule.double_tap_action ||
                         iconModule.double_tap_action.action === 'nothing') &&
-                      iconModule.tap_action &&
-                      iconModule.tap_action.action !== 'nothing'
+                      (iconModule.tap_action === undefined ||
+                        iconModule.tap_action.action !== 'nothing')
                     ) {
                       // No double-tap configured, execute immediately
-                      console.log(
-                        '🔧 Icon preview: Executing tap action immediately:',
-                        iconModule.tap_action
-                      );
-                      const action =
-                        iconModule.tap_action.action === 'default'
-                          ? {
-                              ...iconModule.tap_action,
-                              action: 'toggle' as const,
-                              entity: icon.entity,
-                            }
-                          : iconModule.tap_action.action === 'toggle' ||
-                              iconModule.tap_action.action === 'more-info'
-                            ? {
-                                ...iconModule.tap_action,
-                                entity: iconModule.tap_action.entity || icon.entity,
-                              }
-                            : iconModule.tap_action; // Pass unchanged for perform-action, navigate, url, etc.
                       UltraLinkComponent.handleAction(
-                        action as any,
+                        (iconModule.tap_action as any) ||
+                          ({ action: 'default', entity: icon.entity } as any),
                         hass,
                         e.target as HTMLElement,
-                        config
+                        config,
+                        icon.entity
                       );
                     } else if (
-                      iconModule.tap_action &&
-                      iconModule.tap_action.action !== 'nothing'
+                      iconModule.double_tap_action &&
+                      (iconModule.tap_action === undefined ||
+                        iconModule.tap_action.action !== 'nothing')
                     ) {
                       // Double-tap is configured, wait before executing single tap
                       clickTimeout = setTimeout(() => {
                         if (clickCount === 1) {
-                          console.log(
-                            '🔧 Icon preview: Executing delayed tap action:',
-                            iconModule.tap_action
-                          );
-                          const action =
-                            iconModule.tap_action!.action === 'default'
-                              ? {
-                                  ...iconModule.tap_action!,
-                                  action: 'toggle' as const,
-                                  entity: icon.entity,
-                                }
-                              : iconModule.tap_action!.action === 'toggle' ||
-                                  iconModule.tap_action!.action === 'more-info'
-                                ? {
-                                    ...iconModule.tap_action!,
-                                    entity: iconModule.tap_action!.entity || icon.entity,
-                                  }
-                                : iconModule.tap_action!; // Pass unchanged for perform-action, navigate, url, etc.
                           UltraLinkComponent.handleAction(
-                            action as any,
+                            (iconModule.tap_action as any) ||
+                              ({ action: 'default', entity: icon.entity } as any),
                             hass,
                             e.target as HTMLElement,
-                            config
+                            config,
+                            icon.entity
                           );
                         }
                         clickCount = 0;
@@ -3380,16 +3328,15 @@ export class UltraIconModule extends BaseUltraModule {
         })}
         @click=${(e: Event) => {
           e.preventDefault();
-          if (iconModule.tap_action && iconModule.tap_action.action !== 'nothing') {
-            const action =
-              iconModule.tap_action.action === 'default'
-                ? { ...iconModule.tap_action, action: 'toggle', entity: icon.entity }
-                : { ...iconModule.tap_action, entity: iconModule.tap_action.entity || icon.entity };
+          // Handle undefined actions with smart defaults
+          if (!iconModule.tap_action || iconModule.tap_action.action !== 'nothing') {
+            const action = iconModule.tap_action || { action: 'default', entity: icon.entity };
             UltraLinkComponent.handleAction(
               action as any,
               hass,
               e.target as HTMLElement,
-              undefined
+              undefined,
+              icon.entity
             );
           }
         }}
@@ -5314,29 +5261,7 @@ export class UltraIconModule extends BaseUltraModule {
         border: 1px solid rgba(var(--rgb-primary-color), 0.2);
       }
 
-      /* Hide unwanted action options */
-      ha-form mwc-list-item[value="toggle"],
-      ha-form mwc-list-item[graphic="icon"]:has(ha-icon[icon="mdi:gesture-tap"]),
-      ha-form .mdc-deprecated-list-item[data-value="toggle"],
-      ha-form .mdc-list-item[data-value="toggle"],
-      ha-form option[value="toggle"] {
-        display: none !important;
-      }
-
-      /* Hide "Default ()" option - target by text content */
-      ha-form mwc-list-item:has-text("Default ()"),
-      ha-form .mdc-deprecated-list-item:has-text("Default ()"),
-      ha-form .mdc-list-item:has-text("Default ()"),
-      ha-form option:has-text("Default ()") {
-        display: none !important;
-      }
-
-      /* Alternative approach using CSS attribute selectors for text content */
-      ha-form mwc-list-item[textContent*="Default ()"],
-      ha-form .mdc-deprecated-list-item[textContent*="Default ()"],
-      ha-form .mdc-list-item[textContent*="Default ()"] {
-        display: none !important;
-      }
+      /* Removed overrides that modified ui_action options to avoid conflicts with HA selector */
 
       /* Template Section Styles */
       .template-section {
@@ -5621,17 +5546,7 @@ export class UltraIconModule extends BaseUltraModule {
 
     // If this is the first icon and no module-level tap action is set, auto-set it
     const moduleUpdates: Partial<IconModule> = { icons: updatedIcons };
-    if (
-      updatedIcons.length === 1 &&
-      (!iconModule.tap_action ||
-        iconModule.tap_action.action === 'nothing' ||
-        iconModule.tap_action.action === 'default')
-    ) {
-      moduleUpdates.tap_action = {
-        action: 'more-info',
-        entity: newIcon.entity,
-      };
-    }
+    // Do not auto-set module-level tap_action; leave as undefined (Default) unless user specifies.
 
     updateModule(moduleUpdates);
   }

@@ -2308,6 +2308,14 @@ export class LayoutTab extends LitElement {
       id: `${moduleToCopy.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
 
+    // Invalidate external card cache if duplicating an external card
+    const isExternalCard = moduleToCopy && moduleToCopy.type === 'external_card';
+    if (isExternalCard) {
+      import('../../modules/external-card-module').then(({ invalidateExternalCardCache }) => {
+        invalidateExternalCardCache();
+      });
+    }
+
     // Create new layout with duplicated module
     const newLayout = {
       rows: layout.rows.map((r, rIndex) => {
@@ -6148,9 +6156,20 @@ export class LayoutTab extends LitElement {
       this._activeModuleTab = 'general';
     }
 
-    // For external cards, ensure we default to yaml tab if not on a valid tab
-    if (module.type === 'external_card' && this._activeModuleTab === 'actions') {
-      this._activeModuleTab = 'yaml';
+    // For external cards, check if card has editor and default tab accordingly
+    if (module.type === 'external_card') {
+      const externalModule = module as any;
+      const hasEditor = ucExternalCardsService.hasCardEditor(externalModule.card_type);
+
+      // If no editor, hide General tab and default to YAML
+      if (!hasEditor && this._activeModuleTab === 'general') {
+        this._activeModuleTab = 'yaml';
+      }
+
+      // Ensure we don't show actions tab
+      if (this._activeModuleTab === 'actions') {
+        this._activeModuleTab = hasEditor ? 'general' : 'yaml';
+      }
     }
 
     const lang = this.hass?.locale?.language || 'en';
@@ -6211,12 +6230,25 @@ export class LayoutTab extends LitElement {
             ${this._renderModulePreview()}
 
             <div class="module-tabs">
-              <button
-                class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
-                @click=${() => (this._activeModuleTab = 'general')}
-              >
-                ${localize('editor.layout.general_tab', lang, 'General')}
-              </button>
+              ${module.type === 'external_card'
+                ? ucExternalCardsService.hasCardEditor((module as any).card_type)
+                  ? html`
+                      <button
+                        class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                        @click=${() => (this._activeModuleTab = 'general')}
+                      >
+                        ${localize('editor.layout.general_tab', lang, 'General')}
+                      </button>
+                    `
+                  : ''
+                : html`
+                    <button
+                      class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
+                      @click=${() => (this._activeModuleTab = 'general')}
+                    >
+                      ${localize('editor.layout.general_tab', lang, 'General')}
+                    </button>
+                  `}
               ${module.type === 'external_card'
                 ? html`
                     <button
@@ -6261,7 +6293,12 @@ export class LayoutTab extends LitElement {
             </div>
 
             <div class="module-tab-content">
-              ${this._activeModuleTab === 'general' ? this._renderGeneralTab(module) : ''}
+              ${this._activeModuleTab === 'general'
+                ? module.type === 'external_card' &&
+                  !ucExternalCardsService.hasCardEditor((module as any).card_type)
+                  ? ''
+                  : this._renderGeneralTab(module)
+                : ''}
               ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
                 ? this._renderYamlTab(module)
                 : ''}
@@ -11546,6 +11583,11 @@ export class LayoutTab extends LitElement {
 
     this._updateLayout(newLayout);
     this._showModuleSelector = false;
+
+    // Invalidate cache immediately for instant lock status update
+    import('../../modules/external-card-module').then(({ invalidateExternalCardCache }) => {
+      invalidateExternalCardCache();
+    });
 
     // Refresh the global count after adding
     await this._refreshGlobalExternalCardCount();
