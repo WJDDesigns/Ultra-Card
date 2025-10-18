@@ -82,7 +82,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
    * This allows immediate updates without waiting for render cycles
    */
   public static updateAllCardHass(hass: any): void {
-    cardElementCache.forEach((cardElement) => {
+    cardElementCache.forEach(cardElement => {
       const handler = cardHassUpdateHandlers.get(cardElement);
       if (handler) {
         handler(hass);
@@ -774,7 +774,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
           // Cache the card element for future updates
           cardElementCache.set(cacheKey, cardElement);
-          
+
           // Set up direct hass update handler for immediate updates without re-render
           // This allows 3rd party cards to update exactly like native HA cards
           const updateHandler = (newHass: any) => {

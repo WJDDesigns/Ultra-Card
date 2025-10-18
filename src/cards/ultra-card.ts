@@ -274,43 +274,41 @@ export class UltraCard extends LitElement {
       }
     }
 
-  // Handle Home Assistant state changes for logic condition evaluation
-  if (changedProps.has('hass')) {
-    const currentTime = Date.now();
-    
-    // Check if we have any 3rd party cards that need immediate updates
-    const has3rdPartyCards = this.config?.layout?.rows?.some(row => 
-      row.columns?.some(col => 
-        col.modules?.some(mod => mod.type === 'external_card')
-      )
-    );
+    // Handle Home Assistant state changes for logic condition evaluation
+    if (changedProps.has('hass')) {
+      const currentTime = Date.now();
 
-    // For 3rd party cards, update them immediately and directly
-    if (has3rdPartyCards && this.hass) {
-      // Import and call the static method to update all 3rd party cards directly
-      // This bypasses the render cycle for smoother, native-like updates
-      import('../modules/external-card-module').then(({ UltraExternalCardModule }) => {
-        UltraExternalCardModule.updateAllCardHass(this.hass);
-      });
-    }
+      // Check if we have any 3rd party cards that need immediate updates
+      const has3rdPartyCards = this.config?.layout?.rows?.some(row =>
+        row.columns?.some(col => col.modules?.some(mod => mod.type === 'external_card'))
+      );
 
-    // For 3rd party cards, update immediately without throttling to match native HA behavior
-    // For other cases, throttle to avoid excessive re-renders (max once every 100ms)
-    const shouldThrottle = !has3rdPartyCards;
-    const throttleDelay = 100;
-
-    if (!shouldThrottle || currentTime - this._lastHassChangeTime > throttleDelay) {
-      this._lastHassChangeTime = currentTime;
-
-      // Update logic service with new hass instance
-      if (this.hass) {
-        logicService.setHass(this.hass);
+      // For 3rd party cards, update them immediately and directly
+      if (has3rdPartyCards && this.hass) {
+        // Import and call the static method to update all 3rd party cards directly
+        // This bypasses the render cycle for smoother, native-like updates
+        import('../modules/external-card-module').then(({ UltraExternalCardModule }) => {
+          UltraExternalCardModule.updateAllCardHass(this.hass);
+        });
       }
 
-      // Request update to re-evaluate logic conditions
-      this.requestUpdate();
+      // For 3rd party cards, update immediately without throttling to match native HA behavior
+      // For other cases, throttle to avoid excessive re-renders (max once every 100ms)
+      const shouldThrottle = !has3rdPartyCards;
+      const throttleDelay = 100;
+
+      if (!shouldThrottle || currentTime - this._lastHassChangeTime > throttleDelay) {
+        this._lastHassChangeTime = currentTime;
+
+        // Update logic service with new hass instance
+        if (this.hass) {
+          logicService.setHass(this.hass);
+        }
+
+        // Request update to re-evaluate logic conditions
+        this.requestUpdate();
+      }
     }
-  }
   }
 
   public setConfig(config: UltraCardConfig): void {
