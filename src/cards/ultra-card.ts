@@ -19,6 +19,12 @@ import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { dbg3p } from '../utils/uc-debug';
+import {
+  ThirdPartyLimitService,
+  computeCardInstanceId,
+  getCurrentDashboardId,
+} from '../pro/third-party-limit-service';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
@@ -42,9 +48,44 @@ export class UltraCard extends LitElement {
    * Flag to ensure module CSS is injected only once per card instance.
    */
   private _moduleStylesInjected = false;
+  private _instanceId: string = '';
+  private _limitUnsub?: () => void;
+  private _isEditorPreviewCard = false;
+  @state() private _renderFlip: boolean = false;
 
   connectedCallback(): void {
     super.connectedCallback();
+    // Ensure a stable per-card instance id across remounts, unique per dashboard + slot index
+    if (!this._instanceId) {
+      const dashboardId = getCurrentDashboardId();
+      const cards = Array.from(document.querySelectorAll('ultra-card')) as Element[];
+      const index = Math.max(0, cards.indexOf(this));
+      const persistKey = `uc_card_id_${dashboardId}:${index}`;
+      let id = '';
+      try {
+        id = localStorage.getItem(persistKey) || '';
+      } catch {}
+      if (!id) {
+        id = `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        try {
+          localStorage.setItem(persistKey, id);
+        } catch {}
+      }
+      this._instanceId = id;
+      try {
+        (this as any).dataset = (this as any).dataset || {};
+        (this as any).dataset.ucInstanceId = this._instanceId;
+      } catch {}
+    }
+
+    // Subscribe to third-party limit service changes to re-render immediately
+    try {
+      this._limitUnsub = ThirdPartyLimitService.onChange(() => {
+        // Flip to force hard DOM replacement of module wrappers, removing stale overlays
+        this._renderFlip = !this._renderFlip;
+        this.requestUpdate();
+      });
+    } catch {}
 
     // Inject combined CSS from all registered modules so that any module-specific
     // styles (e.g. icon animations) are available inside this card's shadow-root.
@@ -71,6 +112,17 @@ export class UltraCard extends LitElement {
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
 
+    // React to preview flag toggles so open editor Save/Done updates unlocks immediately
+    const previewListener = (e?: any) => {
+      // Do not change registration on preview open/close, just re-render.
+      // Registration is idempotent and deduped; keys are card-agnostic now.
+      dbg3p('card:preview-flag', e?.detail);
+      this.requestUpdate();
+    };
+    window.addEventListener('uc-preview-suppress-locks-changed', previewListener);
+    // Store to remove later
+    (this as any)._ucPreviewFlagListener = previewListener;
+
     // Listen for slider state changes (both on element and window for reliability)
     const sliderStateHandler = (e: Event) => {
       e.stopPropagation?.();
@@ -83,6 +135,7 @@ export class UltraCard extends LitElement {
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
       this._cloudUser = user;
+      dbg3p('card:auth-changed');
       this.requestUpdate(); // Re-render when auth status changes
     };
     ucCloudAuthService.addListener(this._authListener);
@@ -115,6 +168,10 @@ export class UltraCard extends LitElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    if (this._limitUnsub) {
+      this._limitUnsub();
+      this._limitUnsub = undefined;
+    }
 
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
@@ -130,6 +187,13 @@ export class UltraCard extends LitElement {
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
     }
+
+    // Remove preview flag listener
+    try {
+      const l = (this as any)._ucPreviewFlagListener;
+      if (l) window.removeEventListener('uc-preview-suppress-locks-changed', l);
+      (this as any)._ucPreviewFlagListener = undefined;
+    } catch {}
 
     // Clean up auth listener
     if (this._authListener) {
@@ -153,6 +217,13 @@ export class UltraCard extends LitElement {
     if (this._scaleDebounceTimer) {
       clearTimeout(this._scaleDebounceTimer);
     }
+
+    // Unregister from 3rd party limit service immediately when card is removed
+    try {
+      if (this._instanceId) {
+        ThirdPartyLimitService.unregister(this._instanceId);
+      }
+    } catch {}
   }
 
   /**
@@ -249,8 +320,62 @@ export class UltraCard extends LitElement {
     // Suppress console info; warnings are surfaced in-editor only
 
     this.config = { ...finalConfig };
+
+    // Register modules with ThirdPartyLimitService for global evaluation (non-breaking)
+    try {
+      const dashboardId = getCurrentDashboardId();
+      const cardInstanceId =
+        this._instanceId || `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // Detect if this Ultra Card is being rendered inside the HA element preview
+      this._isEditorPreviewCard = this._detectEditorPreviewContext();
+      // Attach a non-enumerable flags for downstream resolution
+      try {
+        Object.defineProperty(this.config, '__ucInstanceId', {
+          value: cardInstanceId,
+          enumerable: false,
+        });
+        Object.defineProperty(this.config, '__ucIsEditorPreview', {
+          value: this._isEditorPreviewCard,
+          enumerable: false,
+        });
+      } catch {}
+
+      // Skip registration entirely for editor preview cards so they never affect limits
+      if (!this._isEditorPreviewCard && !(window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
+        ThirdPartyLimitService.register(cardInstanceId, dashboardId, this.config);
+      }
+    } catch {}
+
     // Request update to ensure re-render with new config
     this.requestUpdate();
+  }
+
+  /** True if this Ultra Card is hosted inside HA's element preview (dialog). */
+  private _detectEditorPreviewContext(): boolean {
+    try {
+      // Quick signal from hass when editing dashboard
+      if ((this as any)?.hass?.editMode) return true;
+
+      const isTarget = (el: Element | null | undefined): boolean => {
+        if (!el) return false;
+        const tag = el.tagName?.toLowerCase?.();
+        return tag === 'hui-card-preview' || tag === 'hui-dialog-edit-card';
+      };
+
+      let node: any = this as any;
+      let depth = 0;
+      while (node && depth < 20) {
+        if (isTarget(node)) return true;
+        const root = node.getRootNode?.();
+        if (root && root.host) {
+          node = root.host;
+        } else {
+          node = node.parentElement;
+        }
+        depth++;
+      }
+    } catch {}
+    return false;
   }
 
   // Tell Home Assistant this card has a visual editor
@@ -1114,7 +1239,10 @@ export class UltraCard extends LitElement {
       `;
     }
 
-    return moduleContent;
+    // Force DOM replacement across 3P state changes by alternating wrapper element
+    return this._renderFlip
+      ? html`<section class="uc-module-wrap">${moduleContent}</section>`
+      : html`<div class="uc-module-wrap">${moduleContent}</div>`;
   }
 
   private _parseAnimationDuration(duration: string): number {

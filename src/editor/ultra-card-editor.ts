@@ -84,6 +84,12 @@ export class UltraCardEditor extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    try {
+      (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = true;
+      window.dispatchEvent(
+        new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: true } })
+      );
+    } catch {}
     this.addEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.addEventListener('keydown', this._handleKeyDown as EventListener);
 
@@ -112,6 +118,12 @@ export class UltraCardEditor extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    try {
+      (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = false;
+      window.dispatchEvent(
+        new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: false } })
+      );
+    } catch {}
     this.removeEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.removeEventListener('keydown', this._handleKeyDown as EventListener);
 

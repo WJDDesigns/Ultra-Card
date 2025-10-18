@@ -135,8 +135,9 @@ class UcModulePreviewService {
     const moduleWithDesign = module as any;
 
     // Get module content from module handler
-    // Pass isEditorPreview=false for dashboard rendering (show locks if needed)
-    const moduleContent = this._getModuleContent(module, hass, config, false);
+    // Detect edit context to avoid locking in previews and while editing dashboards
+    const isEditorContext = this._isEditorContext(hass);
+    const moduleContent = this._getModuleContent(module, hass, config, isEditorContext);
 
     // Get hover effect configuration
     const hoverEffect = moduleWithDesign.design?.hover_effect;
@@ -290,6 +291,32 @@ class UcModulePreviewService {
     // If entity is configured, don't show state-based animation in static preview
     // (it will animate in the live card when conditions are met)
     return { class: '', duration: animationDuration };
+  }
+
+  /** Determine if we are rendering inside an editor context (HA edit dialog or dashboard edit) */
+  private _isEditorContext(hass?: HomeAssistant): boolean {
+    try {
+      if ((hass as any)?.editMode) return true;
+
+      // Consider editor context only if an edit-card dialog is VISIBLE
+      const isVisible = (el: Element): boolean => {
+        const rect = el.getClientRects?.();
+        return !!rect && rect.length > 0 && rect[0].width > 0 && rect[0].height > 0;
+      };
+
+      // Consider typical editor preview containers
+      const candidates = [
+        ...Array.from(document.querySelectorAll('hui-dialog-edit-card')),
+        ...Array.from(document.querySelectorAll('hui-card-preview')),
+      ] as Element[];
+
+      for (const el of candidates) {
+        if (isVisible(el)) return true;
+        const host = el.closest('ha-dialog, mwc-dialog') as Element | null;
+        if (host && isVisible(host)) return true;
+      }
+    } catch {}
+    return false;
   }
 }
 

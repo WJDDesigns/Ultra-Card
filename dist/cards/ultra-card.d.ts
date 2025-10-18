@@ -19,6 +19,10 @@ export declare class UltraCard extends LitElement {
      * Flag to ensure module CSS is injected only once per card instance.
      */
     private _moduleStylesInjected;
+    private _instanceId;
+    private _limitUnsub?;
+    private _isEditorPreviewCard;
+    private _renderFlip;
     connectedCallback(): void;
     disconnectedCallback(): void;
     /**
@@ -31,6 +35,8 @@ export declare class UltraCard extends LitElement {
     };
     protected willUpdate(changedProps: PropertyValues): void;
     setConfig(config: UltraCardConfig): void;
+    /** True if this Ultra Card is hosted inside HA's element preview (dialog). */
+    private _detectEditorPreviewContext;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): UltraCardConfig;
     protected render(): TemplateResult;

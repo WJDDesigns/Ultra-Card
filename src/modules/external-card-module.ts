@@ -3,15 +3,24 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { ExternalCardModule, UltraCardConfig, CardModule } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
+import {
+  ThirdPartyLimitService,
+  computeCardInstanceId,
+  getCurrentDashboardId,
+} from '../pro/third-party-limit-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ref } from 'lit/directives/ref.js';
 import '../components/ultra-template-editor';
+import yaml from 'js-yaml';
 
 // Debounce timers for config updates to prevent rapid re-render loops from spurious events
 const updateDebounceTimers = new Map<string, number>();
 
 // Editor element cache to prevent unnecessary recreation and preserve UI state (scroll, focus, dropdowns)
 const editorElementCache = new Map<string, any>();
+
+// Cache for card elements (per module instance) to enable continuous hass updates
+const cardElementCache = new Map<string, HTMLElement>();
 
 // Global cache for allowed external card IDs (first 5 by timestamp)
 // This is refreshed periodically to avoid expensive dashboard scans on every render
@@ -45,6 +54,10 @@ export function cleanupExternalCardCache(moduleId: string): void {
   });
   keysToDelete.forEach(key => editorElementCache.delete(key));
 
+  // Clear card element cache (both main and editor preview versions)
+  cardElementCache.delete(moduleId);
+  cardElementCache.delete(`${moduleId}-editor`);
+
   // Clear allowed IDs cache so it refreshes
   invalidateExternalCardCache();
 }
@@ -71,6 +84,58 @@ export class UltraExternalCardModule extends BaseUltraModule {
       display_conditions: [],
       smart_scaling: true,
     };
+  }
+
+  hasNativeEditor(cardType: string): boolean {
+    if (!cardType) return false;
+
+    const editorType = `${cardType}-editor`;
+    const editorElement = customElements.get(editorType);
+
+    // Check if editor exists and is not HTMLUnknownElement
+    return editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
+  }
+
+  private _handleRefreshLock(
+    e: Event,
+    module: ExternalCardModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
+    e.stopPropagation();
+    try {
+      // Force a fresh registration pass over all Ultra Cards on the dashboard
+      const cards = Array.from(document.querySelectorAll('ultra-card')) as any[];
+      const dashboardId = getCurrentDashboardId();
+      for (const card of cards) {
+        const cfg = card?.config as UltraCardConfig | undefined;
+        if (!cfg) continue;
+        const cid = (card?.dataset?.ucInstanceId as string) || computeCardInstanceId(cfg);
+        try {
+          ThirdPartyLimitService.register(cid, dashboardId, cfg);
+          card.requestUpdate?.();
+        } catch {}
+      }
+
+      const result = ThirdPartyLimitService.evaluate(hass);
+      // If under or equal to limit, force re-render (fast-path unlock)
+      if (!result.isPro && result.totalThirdParty <= 5) {
+        (this as any).requestUpdate?.();
+        return;
+      }
+      // Otherwise, if this module is now in allowed set, re-render to clear overlay
+      const host = (this as any)?.host || undefined;
+      const attachedId = (host as any)?.dataset?.ucInstanceId;
+      let cardId = attachedId || (config as any)?.__ucInstanceId || computeCardInstanceId(config!);
+      const resolved = (ThirdPartyLimitService as any).getCardIdForConfig?.(config);
+      if (resolved) cardId = resolved;
+      const key = `${dashboardId}:${cardId}:${module.id}`;
+      if (result.allowedKeys?.has?.(key)) {
+        (this as any).requestUpdate?.();
+      }
+    } catch {
+      // silent
+    }
   }
 
   /**
@@ -164,39 +229,77 @@ export class UltraExternalCardModule extends BaseUltraModule {
     hass: HomeAssistant,
     config?: UltraCardConfig
   ): boolean {
-    // Check Pro access via integration only
-    const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
-    const isPro =
-      integrationUser?.subscription?.tier === 'pro' &&
-      integrationUser?.subscription?.status === 'active';
-
-    if (isPro) return false;
-
-    // Check if cache needs refresh (TTL expired or doesn't exist)
-    const now = Date.now();
-    if (
-      !allowedExternalCardIdsCache ||
-      now - allowedExternalCardIdsCacheTime > ALLOWED_IDS_CACHE_TTL
-    ) {
-      // Trigger async refresh in background
-      this._refreshAllowedIdsCache(hass);
-
-      // If cache doesn't exist yet, use fallback local check
-      if (!allowedExternalCardIdsCache) {
-        const allExternalModules = this._getAllExternalModules(config);
-        const sorted = [...allExternalModules].sort((a, b) => {
-          return this._extractTimestamp(a.id) - this._extractTimestamp(b.id);
-        });
-        const index = sorted.findIndex(m => m.id === module.id);
-        return index >= 5;
-      }
+    // Never lock in editor contexts (HA edit mode or Live Preview)
+    if ((hass as any)?.editMode) {
+      return false;
     }
+    // Use centralized ThirdPartyLimitService for consistent global enforcement
+    try {
+      // Never lock if the HA edit dialog is actually visible (preview context)
+      try {
+        const candidates = [
+          ...Array.from(document.querySelectorAll('hui-dialog-edit-card')),
+          ...Array.from(document.querySelectorAll('hui-card-preview')),
+        ] as Element[];
+        const isVisible = (el: Element): boolean => {
+          const rect = el.getClientRects?.();
+          return !!rect && rect.length > 0 && rect[0].width > 0 && rect[0].height > 0;
+        };
+        for (const el of candidates) {
+          if (isVisible(el)) return false;
+          const host = el.closest('ha-dialog, mwc-dialog') as Element | null;
+          if (host && isVisible(host)) return false;
+        }
+      } catch {}
 
-    // Use cached allowed IDs
-    const isAllowed = allowedExternalCardIdsCache.has(module.id);
-    const shouldLock = !isAllowed;
+      const dashboardId = getCurrentDashboardId();
+      // Prefer instance id attached by UltraCard; fallback to computed id
+      const host = (this as any)?.host || undefined;
+      const attachedId = (host as any)?.dataset?.ucInstanceId;
+      // If the hosting Ultra Card flagged this as editor preview, or global flag set, never lock
+      if ((config as any)?.__ucIsEditorPreview || (window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
+        return false;
+      }
 
-    return shouldLock;
+      let cardId = attachedId || (config as any)?.__ucInstanceId || computeCardInstanceId(config!);
+      // If config was registered, prefer the service-resolved id
+      const resolved = (ThirdPartyLimitService as any).getCardIdForConfig?.(config);
+      if (resolved) cardId = resolved;
+      // Do NOT register here to avoid re-registering on every render; rely on UltraCard
+      const { allowedKeys, isPro, totalThirdParty } = ThirdPartyLimitService.evaluate(hass);
+      // Fast-path: if total 3rd-party modules <= limit, never lock
+      if (!isPro && totalThirdParty <= 5) {
+        return false;
+      }
+      // Match service key format (dashboardId:cardId:moduleId)
+      // cardId already computed above; reuse here
+      const key = `${dashboardId}:${cardId}:${module.id}`;
+      return !allowedKeys.has(key);
+    } catch (e) {
+      // Fallback to existing cache-based logic if service fails
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
+      if (isPro) return false;
+      const now = Date.now();
+      if (
+        !allowedExternalCardIdsCache ||
+        now - allowedExternalCardIdsCacheTime > ALLOWED_IDS_CACHE_TTL
+      ) {
+        this._refreshAllowedIdsCache(hass);
+        if (!allowedExternalCardIdsCache) {
+          const allExternalModules = this._getAllExternalModules(config);
+          const sorted = [...allExternalModules].sort(
+            (a, b) => this._extractTimestamp(a.id) - this._extractTimestamp(b.id)
+          );
+          const index = sorted.findIndex(m => m.id === module.id);
+          return index >= 5;
+        }
+      }
+      const isAllowed = allowedExternalCardIdsCache.has(module.id);
+      return !isAllowed;
+    }
   }
 
   renderGeneralTab(
@@ -204,7 +307,13 @@ export class UltraExternalCardModule extends BaseUltraModule {
     hass: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
-  ): TemplateResult {
+  ): TemplateResult | null {
+    // Check if this card has a native editor
+    if (!this.hasNativeEditor(module.card_type)) {
+      // No native editor - user should use YAML tab
+      return null;
+    }
+
     // Get card info and name - use fallback if card_type is not set
     const cardInfo = module.card_type ? ucExternalCardsService.getCardInfo(module.card_type) : null;
     const cardName = cardInfo?.name || module.card_type || 'External Card';
@@ -351,14 +460,30 @@ export class UltraExternalCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult {
-    const yamlString = JSON.stringify(module.card_config || {}, null, 2);
+    // Convert config to YAML format with proper indentation
+    let yamlString: string;
+    try {
+      // Use card_config or empty object if undefined
+      const configToConvert = module.card_config || {};
+
+      // Convert to YAML with proper formatting (standard HA card config format)
+      yamlString = yaml.dump(configToConvert, {
+        indent: 2,
+        lineWidth: -1, // Don't wrap lines
+        noRefs: true, // Don't use references
+        sortKeys: false, // Preserve key order
+      });
+    } catch (error) {
+      console.error('Failed to convert config to YAML:', error);
+      yamlString = '# Error converting config to YAML\n';
+    }
 
     const handleYamlChange = (e: CustomEvent) => {
       try {
-        const newConfig = JSON.parse(e.detail.value);
+        const newConfig = yaml.load(e.detail.value) as any;
         updateModule({ card_config: newConfig });
       } catch (error) {
-        console.error('Invalid JSON in YAML editor:', error);
+        console.error('Invalid YAML in editor:', error);
       }
     };
 
@@ -370,19 +495,19 @@ export class UltraExternalCardModule extends BaseUltraModule {
             class="section-title"
             style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
           >
-            CARD CONFIGURATION (YAML/JSON)
+            CARD CONFIGURATION (YAML)
           </div>
           <div
             class="section-description"
             style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px;"
           >
-            Edit the card's configuration directly in JSON format. Changes are applied
+            Edit the card's configuration directly in YAML format. Changes are applied
             automatically.
           </div>
           <ultra-template-editor
             .hass=${hass}
             .value=${yamlString}
-            .placeholder=${'{\n  "entity": "sensor.example"\n}'}
+            .placeholder=${'type: custom:button-card\nentity: sensor.example\nname: Example Card'}
             .minHeight=${200}
             .maxHeight=${600}
             @value-changed=${handleYamlChange}
@@ -518,9 +643,15 @@ export class UltraExternalCardModule extends BaseUltraModule {
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
           <div class="external-card-placeholder">
-            <ha-icon icon="mdi:card-off"></ha-icon>
-            <p>No card selected</p>
-            <p class="subtitle">Click edit to configure this card</p>
+            <div class="ultra-card-logo">
+              <ha-icon
+                icon="mdi:card-multiple"
+                style="--mdc-icon-size: 48px; color: var(--primary-color);"
+              ></ha-icon>
+            </div>
+            <p class="card-title">Ultra Card</p>
+            <p class="subtitle">No 3rd party card selected</p>
+            <p class="instruction">Click edit to choose and configure a custom card</p>
           </div>
         </div>
       `;
@@ -528,12 +659,30 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
     // Check if card config has sufficient data (more than just 'type')
     if (!module.card_config || Object.keys(module.card_config).length <= 1) {
+      const hasEditor = ucExternalCardsService.hasCardEditor(module.card_type);
+      const cardName =
+        module.name ||
+        module.card_type
+          .replace('custom:', '')
+          .replace('-', ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
           <div class="external-card-placeholder">
-            <ha-icon icon="mdi:cog"></ha-icon>
-            <p>${module.name || module.card_type}</p>
-            <p class="subtitle">Click edit to configure this card</p>
+            <div class="ultra-card-logo">
+              <ha-icon
+                icon="mdi:card-multiple"
+                style="--mdc-icon-size: 48px; color: var(--primary-color);"
+              ></ha-icon>
+            </div>
+            <p class="card-title">${cardName}</p>
+            <p class="subtitle">3rd Party Card Ready</p>
+            ${hasEditor
+              ? html`<p class="instruction">Use the settings below to set up this card</p>`
+              : html`<p class="instruction">
+                  Please use the YAML editor below to configure this card
+                </p>`}
           </div>
         </div>
       `;
@@ -546,55 +695,107 @@ export class UltraExternalCardModule extends BaseUltraModule {
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
           <div class="external-card-error">
-            <ha-icon icon="mdi:alert-circle"></ha-icon>
-            <p><strong>Card Not Found</strong></p>
-            <p class="card-type">${module.card_type}</p>
-            <p class="subtitle">This card is not installed on your system</p>
+            <div class="ultra-card-logo">
+              <ha-icon
+                icon="mdi:alert-circle"
+                style="--mdc-icon-size: 48px; color: var(--error-color);"
+              ></ha-icon>
+            </div>
+            <p class="card-title">Card Not Found</p>
+            <p class="subtitle">${module.card_type}</p>
+            <p class="instruction">This card is not installed on your system</p>
           </div>
         </div>
       `;
     }
 
     // Use ref callback to create and mount the card element after Lit renders the container
-    // NOTE: We don't cache preview elements because a DOM element can only exist in one place.
-    // If we cache, the element gets "stolen" from the main card view when Live Preview opens.
-    // Creating fresh elements on each render is lightweight and prevents display issues.
+    // CRITICAL: Cache card elements and update their hass property on every render to enable
+    // real-time updates (like native HA behavior). This fixes sporadic updates in 3rd party cards.
     const refCallback = (container: Element | undefined) => {
       if (!container) {
         return;
       }
 
-      // Create a fresh card element each time (no caching for preview)
-      try {
-        const cardElement = ucExternalCardsService.createCardElement(
-          module.card_type,
-          module.card_config,
-          hass
-        ) as HTMLElement;
+      // Use different cache keys for editor preview vs main preview to prevent DOM element stealing
+      const cacheKey = isEditorPreview ? `${module.id}-editor` : module.id;
+      let cardElement = cardElementCache.get(cacheKey) as any;
 
-        if (!cardElement) {
-          throw new Error('Failed to create card element');
+      // Check if we need to create a new card element
+      const needsRecreate =
+        !cardElement ||
+        cardElement.tagName.toLowerCase() !== module.card_type.replace('custom:', '');
+
+      if (needsRecreate) {
+        // Create fresh card element
+        try {
+          cardElement = ucExternalCardsService.createCardElement(
+            module.card_type,
+            module.card_config,
+            hass
+          ) as HTMLElement;
+
+          if (!cardElement) {
+            throw new Error('Failed to create card element');
+          }
+
+          // Apply inline styles to card element to fill container
+          cardElement.style.width = '100%';
+          cardElement.style.minWidth = '0';
+          cardElement.style.flex = '1 1 auto';
+          cardElement.style.display = 'block';
+
+          // Clear and mount the card element
+          container.innerHTML = '';
+          container.appendChild(cardElement);
+
+          // Cache the card element for future updates
+          cardElementCache.set(cacheKey, cardElement);
+        } catch (error) {
+          console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
+          // If card creation fails, show error in container
+          container.innerHTML = `
+            <div class="external-card-placeholder">
+              <div class="ultra-card-logo">
+                <ha-icon icon="mdi:cog" style="--mdc-icon-size: 48px; color: var(--primary-color);"></ha-icon>
+              </div>
+              <p class="card-title">${module.name || module.card_type}</p>
+              <p class="subtitle">3rd Party Card</p>
+              <p class="instruction">Configuring card...</p>
+            </div>
+          `;
+          return;
         }
+      } else {
+        // Card element exists - update its properties for real-time updates
+        try {
+          // Update config if it actually changed
+          const configChanged =
+            JSON.stringify(cardElement.config || {}) !== JSON.stringify(module.card_config || {});
 
-        // Apply inline styles to card element to fill container
-        cardElement.style.width = '100%';
-        cardElement.style.minWidth = '0';
-        cardElement.style.flex = '1 1 auto';
-        cardElement.style.display = 'block';
+          if (configChanged) {
+            if (typeof cardElement.setConfig === 'function') {
+              cardElement.setConfig(module.card_config || {});
+            } else {
+              cardElement.config = module.card_config || {};
+            }
+          }
 
-        // Clear and mount the card element
-        container.innerHTML = '';
-        container.appendChild(cardElement);
-      } catch (error) {
-        console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
-        // If card creation fails, show error in container
-        container.innerHTML = `
-          <div class="external-card-placeholder">
-            <ha-icon icon="mdi:cog"></ha-icon>
-            <p>${module.name || module.card_type}</p>
-            <p class="subtitle">Configuring card...</p>
-          </div>
-        `;
+          // CRITICAL: Always update hass on every render to enable real-time updates
+          // This replicates native HA behavior where cards receive continuous hass updates
+          // and allows cards like Apex Chart to show loading indicators and update smoothly
+          cardElement.hass = hass;
+
+          // Ensure element is still mounted (might have been detached by Lit)
+          if (!container.contains(cardElement)) {
+            container.innerHTML = '';
+            container.appendChild(cardElement);
+          }
+        } catch (error) {
+          console.error(`[External Card] Failed to update ${module.card_type}:`, error);
+          // If update fails, try to recreate on next render
+          cardElementCache.delete(cacheKey);
+        }
       }
     };
 
@@ -603,6 +804,9 @@ export class UltraExternalCardModule extends BaseUltraModule {
     const shouldLock = !isEditorPreview && this._shouldLockModule(module, hass, config);
 
     if (shouldLock) {
+      // Read current totals for display
+      const evalResult = ThirdPartyLimitService.evaluate(hass);
+      const total3p = evalResult.totalThirdParty ?? 0;
       // Render with Pro lock overlay
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
@@ -641,7 +845,10 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 align-items: center;
                 justify-content: center;
                 border-radius: 12px;
-                z-index: 10;
+                z-index: 10001;
+                pointer-events: all;
+                cursor: default;
+                touch-action: manipulation;
               "
             >
               <div
@@ -655,16 +862,22 @@ export class UltraExternalCardModule extends BaseUltraModule {
                   flex-direction: column;
                   align-items: center;
                   gap: 4px;
+                  pointer-events: all;
                 "
               >
                 <ha-icon icon="mdi:lock" style="font-size: 20px; flex-shrink: 0;"></ha-icon>
-                <div
-                  style="font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap;"
-                >
-                  Pro Feature
+                <div style="font-size: 10px; opacity: 0.9; line-height: 1.2; white-space: nowrap;">
+                  ${total3p}/5 3rd Party Cards
                 </div>
-                <div style="font-size: 9px; opacity: 0.8; line-height: 1.2; display: none;">
-                  Upgrade to Pro
+                <div
+                  style="
+                    margin-top: 6px;
+                    font-size: 10px;
+                    opacity: 0.7;
+                    white-space: nowrap;
+                  "
+                >
+                  Refresh For Check
                 </div>
               </div>
             </div>
@@ -815,12 +1028,14 @@ export class UltraExternalCardModule extends BaseUltraModule {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 40px 20px;
+        padding: 32px 24px;
         text-align: center;
         color: var(--secondary-text-color);
         background: var(--card-background-color, var(--ha-card-background));
         border-radius: var(--ha-card-border-radius, 12px);
         border: 1px dashed var(--divider-color);
+        min-height: 180px;
+        gap: 12px;
       }
 
       .external-card-error {
@@ -828,23 +1043,43 @@ export class UltraExternalCardModule extends BaseUltraModule {
         color: var(--error-color);
       }
 
-      .external-card-placeholder ha-icon,
-      .external-card-error ha-icon {
-        font-size: 48px;
-        opacity: 0.5;
-        margin-bottom: 16px;
+      .ultra-card-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        background: rgba(var(--rgb-primary-color), 0.1);
+        border-radius: 16px;
+        margin-bottom: 8px;
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin: 0 0 4px 0;
       }
 
       .external-card-placeholder p,
       .external-card-error p {
-        margin: 4px 0;
+        margin: 0;
         font-size: 14px;
       }
 
       .external-card-placeholder .subtitle,
       .external-card-error .subtitle {
-        font-size: 12px;
+        font-size: 13px;
         opacity: 0.8;
+        margin: 0 0 8px 0;
+      }
+
+      .external-card-placeholder .instruction,
+      .external-card-error .instruction {
+        font-size: 12px;
+        opacity: 0.7;
+        margin: 0;
+        font-style: italic;
       }
 
       .external-card-error .card-type {

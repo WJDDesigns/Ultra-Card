@@ -205,7 +205,12 @@ class UcExternalCardsService {
 
     try {
       const editorType = `${cardType}-editor`;
-      return customElements.get(editorType) !== undefined;
+      const editorElement = customElements.get(editorType);
+
+      // Check if editor exists and is not HTMLUnknownElement
+      return (
+        editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement)
+      );
     } catch (e) {
       return false;
     }

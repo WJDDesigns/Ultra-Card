@@ -64,6 +64,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraAnimatedClockModule());
     this.registerModule(new UltraAnimatedWeatherModule());
     this.registerModule(new UltraAnimatedForecastModule());
+    // Register external card module for handling existing cards, but hide from selector
     this.registerModule(new UltraExternalCardModule());
   }
 

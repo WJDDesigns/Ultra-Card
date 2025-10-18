@@ -27,6 +27,8 @@ import { localize } from '../../localize/localize';
 import { Z_INDEX } from '../../utils/uc-z-index';
 import { ucPresetsService } from '../../services/uc-presets-service';
 import { ucFavoritesService } from '../../services/uc-favorites-service';
+import { ThirdPartyLimitService, getCurrentDashboardId } from '../../pro/third-party-limit-service';
+import { isThirdParty } from '../../pro/is-third-party';
 import { ucExportImportService } from '../../services/uc-export-import-service';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
@@ -1091,6 +1093,10 @@ export class LayoutTab extends LitElement {
     };
 
     this._updateLayout(newLayout);
+    // Notify the limit service to re-evaluate immediately (avoid stale lock state)
+    try {
+      ThirdPartyLimitService.trigger();
+    } catch {}
   }
 
   private _deleteRow(rowIndex: number): void {
@@ -1133,6 +1139,10 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
     newLayout.rows.splice(rowIndex + 1, 0, duplicatedRow);
     this._updateLayout(newLayout);
+    // Trigger service update to ensure previews reflect unlock state while editing
+    try {
+      ThirdPartyLimitService.trigger();
+    } catch {}
   }
 
   private _addColumn(rowIndex: number): void {
@@ -1453,6 +1463,23 @@ export class LayoutTab extends LitElement {
   }
 
   private _addModule(type: string): void {
+    // Enforce non-pro third-party limit (pre-check)
+    try {
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
+      if (!isPro) {
+        const additionalThirdParty = isThirdParty(type) ? 1 : 0;
+        if (ThirdPartyLimitService.wouldExceedLimit(this.hass!, additionalThirdParty)) {
+          this._showToast(
+            'Limit reached: 5 third-party modules per dashboard. Upgrade to Pro to add more.',
+            'error'
+          );
+          return;
+        }
+      }
+    } catch {}
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
       console.error('No row or column selected');
       return;
@@ -2012,6 +2039,29 @@ export class LayoutTab extends LitElement {
       // Clone the row with new IDs to avoid conflicts
       const clonedRow = this._cloneRowWithNewIds(rowData);
 
+      // Enforce non-pro third-party limit for pasted rows
+      try {
+        const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+        const isPro =
+          integrationUser?.subscription?.tier === 'pro' &&
+          integrationUser?.subscription?.status === 'active';
+        if (!isPro) {
+          const additionalThirdParty = (clonedRow.columns || []).reduce((acc, col) => {
+            return (
+              acc +
+              (col.modules || []).reduce(
+                (mAcc, m) => mAcc + (isThirdParty((m as any).type) ? 1 : 0),
+                0
+              )
+            );
+          }, 0);
+          if (ThirdPartyLimitService.wouldExceedLimit(this.hass!, additionalThirdParty)) {
+            this._showToast('Paste blocked: 5 third-party modules limit reached.', 'error');
+            return;
+          }
+        }
+      } catch {}
+
       // Create a new layout object to ensure Lit detects the change
       const currentLayout = this._ensureLayout();
       const newLayout = {
@@ -2202,7 +2252,8 @@ export class LayoutTab extends LitElement {
         }
       });
 
-      console.log(`[UC] Global external card count across ALL dashboards: ${totalExternalCards}`);
+      // Debug logging - uncomment to see global external card count
+      // console.log(`[UC] Global external card count across ALL dashboards: ${totalExternalCards}`);
       return totalExternalCards;
     } catch (error) {
       console.error('[UC] Failed to count global external cards:', error);
@@ -2300,6 +2351,22 @@ export class LayoutTab extends LitElement {
     const column = row.columns[columnIndex];
     if (!column.modules || !column.modules[moduleIndex]) return;
 
+    // Prevent duplication if it would exceed non-pro third-party limit
+    try {
+      const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+      const isPro =
+        integrationUser?.subscription?.tier === 'pro' &&
+        integrationUser?.subscription?.status === 'active';
+      if (!isPro) {
+        const mod = column.modules[moduleIndex] as any;
+        const additionalThirdParty = isThirdParty(mod?.type) ? 1 : 0;
+        if (ThirdPartyLimitService.wouldExceedLimit(this.hass!, additionalThirdParty)) {
+          this._showToast('Cannot duplicate: 5 third-party modules limit reached.', 'error');
+          return;
+        }
+      }
+    } catch {}
+
     const moduleToCopy = column.modules[moduleIndex];
 
     // Deep clone the module with new ID
@@ -2395,6 +2462,27 @@ export class LayoutTab extends LitElement {
     // All modules (including external cards) now use Ultra Card settings popup
     this._selectedModule = { rowIndex, columnIndex, moduleIndex };
     this._showModuleSettings = true;
+
+    // For external cards, check if they have a native editor
+    if (module?.type === 'external_card') {
+      const externalModule = module as any;
+      if (externalModule.card_type) {
+        // Check if card has native editor
+        const editorType = `${externalModule.card_type}-editor`;
+        const editorElement = customElements.get(editorType);
+        const hasEditor =
+          editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
+
+        // If no native editor, switch to YAML tab
+        this._activeModuleTab = hasEditor ? 'general' : 'yaml';
+      } else {
+        // No card type set yet, use general tab
+        this._activeModuleTab = 'general';
+      }
+    } else {
+      // Regular modules start with general tab
+      this._activeModuleTab = 'general';
+    }
   }
 
   private _updateModule(updates: Partial<CardModule>): void {
@@ -6161,6 +6249,11 @@ export class LayoutTab extends LitElement {
       const externalModule = module as any;
       const hasEditor = ucExternalCardsService.hasCardEditor(externalModule.card_type);
 
+      // If card has editor, default to General tab (shows native editor)
+      if (hasEditor && this._activeModuleTab === 'yaml') {
+        this._activeModuleTab = 'general';
+      }
+
       // If no editor, hide General tab and default to YAML
       if (!hasEditor && this._activeModuleTab === 'general') {
         this._activeModuleTab = 'yaml';
@@ -6387,9 +6480,19 @@ export class LayoutTab extends LitElement {
       this._activeModuleTab = 'general';
     }
 
-    // For external cards, ensure we default to yaml tab if not on a valid tab
-    if (childModule.type === 'external_card' && this._activeModuleTab === 'actions') {
-      this._activeModuleTab = 'yaml';
+    // For external cards, check if card has editor and default tab accordingly
+    if (childModule.type === 'external_card') {
+      const hasEditor = ucExternalCardsService.hasCardEditor((childModule as any).card_type);
+
+      // If card has editor, default to General tab (shows native editor)
+      if (hasEditor && this._activeModuleTab === 'yaml') {
+        this._activeModuleTab = 'general';
+      }
+
+      // If no editor, default to YAML
+      if (!hasEditor && this._activeModuleTab === 'actions') {
+        this._activeModuleTab = 'yaml';
+      }
     }
 
     const lang = this.hass?.locale?.language || 'en';
@@ -9820,7 +9923,8 @@ export class LayoutTab extends LitElement {
 
   private _renderModuleSelector(): TemplateResult {
     const registry = getModuleRegistry();
-    const allModules = registry.getAllModules();
+    // Get all modules but exclude external_card from the selector (it's only for 3rd party tab)
+    const allModules = registry.getAllModules().filter(m => m.metadata.type !== 'external_card');
     const isAddingToLayoutModule = this._selectedLayoutModuleIndex >= 0;
 
     return html`
@@ -10833,7 +10937,10 @@ export class LayoutTab extends LitElement {
                 <div class="cards-grid">
                   ${availableCards.map(
                     card => html`
-                      <div class="card-item" @click=${() => this._addCardFromTab(card.type)}>
+                      <div
+                        class="card-item"
+                        @click=${async () => await this._addCardFromTab(card.type)}
+                      >
                         <div class="card-icon">
                           <ha-icon icon="mdi:card-bulleted"></ha-icon>
                         </div>
@@ -11377,7 +11484,7 @@ export class LayoutTab extends LitElement {
     `;
   }
 
-  private _addCardFromTab(cardType: string): void {
+  private async _addCardFromTab(cardType: string): Promise<void> {
     // Check if a column is selected
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
       // Show error message to user
@@ -11409,8 +11516,13 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Add the card
-    this._add3rdPartyCard(cardType);
+    // Add the card with proper error handling
+    try {
+      await this._add3rdPartyCard(cardType);
+    } catch (error) {
+      console.error('[UC] Failed to add 3rd party card:', error);
+      this._showToast(`Failed to add card: ${error?.message || 'Unknown error'}`, 'error');
+    }
   }
 
   private _renderFavoriteDialog(): TemplateResult {
@@ -11485,30 +11597,113 @@ export class LayoutTab extends LitElement {
   }
 
   // Layout Module Rules - centralized logic for layout module behavior
-  private _getDefaultCardConfig(cardType: string, fullCardType: string): any {
-    // Provide better default configs for popular cards that require specific properties
+  private async _getDefaultCardConfig(cardType: string, fullCardType: string): Promise<any> {
+    console.log(`[UC] Getting default config for card: ${cardType} (full: ${fullCardType})`);
+
+    // Validate card type
+    if (!cardType || cardType.trim() === '') {
+      throw new Error('Card type is required');
+    }
+
+    // Try to get stub config safely
+    try {
+      const stubConfig = await this._tryGetStubConfig(cardType);
+      if (stubConfig) {
+        console.log(`[UC] Successfully got stub config for ${cardType}:`, stubConfig);
+        return stubConfig;
+      }
+    } catch (error) {
+      console.log(`[UC] Could not get stub config for ${cardType}, using fallback:`, error);
+    }
+
+    // If no stub config is available, provide a minimal universal fallback
     const config: any = {
       type: fullCardType,
     };
 
-    // Mushroom Chips Card requires chips array
-    if (cardType.includes('mushroom-chips')) {
-      config.chips = [];
-    }
+    // Card-specific fallback configs for cards with special requirements
+    const cardTypeLower = cardType.toLowerCase();
 
-    // Bubble Card requires card_type
-    if (cardType.includes('bubble-card')) {
-      config.card_type = 'button';
-    }
-
-    // Mini Graph Card could use some defaults
-    if (cardType.includes('mini-graph-card')) {
-      config.entities = [];
-      config.hours_to_show = 24;
-      config.points_per_hour = 4;
+    if (cardTypeLower.includes('apexcharts') || cardTypeLower.includes('apex-charts')) {
+      console.log(`[UC] Using ApexCharts minimal fallback config`);
+      // Minimal ApexCharts config that doesn't cause errors
+      config.series = [];
+      config.graph_span = '24h';
+    } else if (cardTypeLower.includes('mushroom')) {
+      console.log(`[UC] Using Mushroom card minimal fallback config`);
+      // Most mushroom cards need an entity
+      config.entity = '';
+    } else if (cardTypeLower.includes('button-card')) {
+      console.log(`[UC] Using Button Card minimal fallback config`);
+      config.entity = '';
+      config.show_name = true;
+      config.show_icon = true;
+    } else {
+      console.log(`[UC] Using universal minimal config for ${cardType}`);
+      // Universal minimal config - just the type
     }
 
     return config;
+  }
+
+  private async _tryGetStubConfig(cardType: string): Promise<any | null> {
+    // Safely attempt to get stub config with timeout
+    const elementName = cardType.startsWith('custom:') ? cardType.substring(7) : cardType;
+
+    const cardElement = customElements.get(elementName);
+    if (!cardElement || typeof (cardElement as any).getStubConfig !== 'function') {
+      console.log(`[UC] No getStubConfig method found for ${cardType}`);
+      return null;
+    }
+
+    // Wrap in Promise with timeout to handle all edge cases
+    return Promise.race([
+      this._callGetStubConfig(cardElement, cardType),
+      new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error('getStubConfig timeout')), 1000)
+      ),
+    ]).catch(error => {
+      console.warn(`[UC] getStubConfig failed for ${cardType}:`, error);
+      return null;
+    });
+  }
+
+  private async _callGetStubConfig(cardElement: any, cardType: string): Promise<any> {
+    try {
+      const stubConfig = cardElement.getStubConfig();
+
+      // Check if it returns a Promise
+      if (stubConfig && typeof stubConfig.then === 'function') {
+        console.log(`[UC] getStubConfig returned a Promise for ${cardType}`);
+        return await stubConfig;
+      }
+
+      return stubConfig;
+    } catch (error) {
+      // Try with a temporary hass object to prevent "Cannot read properties of undefined" errors
+      try {
+        const tempHass = {
+          states: {},
+          services: {},
+          config: {},
+          user: {},
+          language: 'en',
+        };
+
+        // Some cards might check for hass in static context
+        (window as any).hass = tempHass;
+        const stubConfig = cardElement.getStubConfig();
+        delete (window as any).hass;
+
+        if (stubConfig && typeof stubConfig.then === 'function') {
+          return await stubConfig;
+        }
+
+        return stubConfig;
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
   }
 
   private async _add3rdPartyCard(cardType: string): Promise<void> {
@@ -11552,12 +11747,13 @@ export class LayoutTab extends LitElement {
     const cardName = cardInfo ? cardInfo.name : cardType;
 
     // Create external card module with better default config
+    const defaultConfig = await this._getDefaultCardConfig(cardType, fullCardType);
     const newModule = {
       id: `external-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'external_card' as const,
       name: cardName, // Use the card's friendly name
       card_type: cardType, // Store the original type (without custom: prefix)
-      card_config: this._getDefaultCardConfig(cardType, fullCardType),
+      card_config: defaultConfig,
     };
 
     // Add to column
@@ -11600,6 +11796,15 @@ export class LayoutTab extends LitElement {
       moduleIndex: moduleIndex,
     };
     this._showModuleSettings = true;
+
+    // Check if the card has a native editor
+    const editorType = `${cardType}-editor`;
+    const editorElement = customElements.get(editorType);
+    const hasEditor =
+      editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
+
+    // If no native editor, switch to YAML tab
+    this._activeModuleTab = hasEditor ? 'general' : 'yaml';
   }
 
   private _isLayoutModule(moduleType: string): boolean {
