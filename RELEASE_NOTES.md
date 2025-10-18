@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 2.0-beta22
+
+### 🚀 New Features
+
+- **Improved 3rd party scanning and lockout system** - Enhanced detection and management of third-party card modules with better lockout controls
+- **Improve live view of 3rd party modules** - Better real-time preview and updating of third-party modules in the card editor
+
 ## Version 2.0-beta21
 
 ### 🐛 Bug Fixes
