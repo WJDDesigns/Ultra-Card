@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta24
+
+### 🚀 Performance Improvements
+
+- **Improved 3rd party card update performance** - Significantly enhanced update mechanism for 3rd party cards to match native Home Assistant behavior. Cards like Apex Charts now update smoothly with only the data changing, not the entire card structure including axis labels. Removed throttling delays and optimized the update path for real-time responsiveness.
+
 ## Version 2.0-beta23
 
 ### 🐛 Bug Fixes
