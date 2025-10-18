@@ -22,6 +22,9 @@ const editorElementCache = new Map<string, any>();
 // Cache for card elements (per module instance) to enable continuous hass updates
 const cardElementCache = new Map<string, HTMLElement>();
 
+// WeakMap to track direct hass update handlers for immediate updates
+const cardHassUpdateHandlers = new WeakMap<HTMLElement, (hass: any) => void>();
+
 // Global cache for allowed external card IDs (first 5 by timestamp)
 // This is refreshed periodically to avoid expensive dashboard scans on every render
 let allowedExternalCardIdsCache: Set<string> | null = null;
@@ -73,6 +76,22 @@ export class UltraExternalCardModule extends BaseUltraModule {
     version: '1.0.0',
     tags: ['external', 'integration', '3rd-party'],
   };
+
+  /**
+   * Update hass for all cached card elements directly
+   * This allows immediate updates without waiting for render cycles
+   */
+  public static updateAllCardHass(hass: any): void {
+    cardElementCache.forEach((cardElement) => {
+      const handler = cardHassUpdateHandlers.get(cardElement);
+      if (handler) {
+        handler(hass);
+      } else if (cardElement && typeof (cardElement as any).hass !== 'undefined') {
+        // Fallback: directly update hass if no handler registered
+        (cardElement as any).hass = hass;
+      }
+    });
+  }
 
   createDefault(): ExternalCardModule {
     return {
@@ -755,6 +774,17 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
           // Cache the card element for future updates
           cardElementCache.set(cacheKey, cardElement);
+          
+          // Set up direct hass update handler for immediate updates without re-render
+          // This allows 3rd party cards to update exactly like native HA cards
+          const updateHandler = (newHass: any) => {
+            if (cardElement && typeof cardElement.hass !== 'undefined') {
+              // Update hass directly on the card element
+              // This bypasses Ultra Card's render cycle for smoother updates
+              cardElement.hass = newHass;
+            }
+          };
+          cardHassUpdateHandlers.set(cardElement, updateHandler);
         } catch (error) {
           console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
           // If card creation fails, show error in container
