@@ -380,6 +380,13 @@ export interface BarModule extends BaseModule {
     bar_border_color?: string;
     percentage_text_color?: string;
     dot_color?: string;
+    minimal_icon_enabled?: boolean;
+    minimal_icon?: string;
+    minimal_icon_mode?: 'dot-only' | 'icon-only' | 'icon-in-dot';
+    minimal_icon_size?: number;
+    minimal_icon_size_auto?: boolean;
+    minimal_icon_color?: string;
+    minimal_icon_use_dot_color?: boolean;
     use_gradient?: boolean;
     gradient_display_mode?: 'full' | 'cropped' | 'value-based';
     gradient_stops?: Array<{

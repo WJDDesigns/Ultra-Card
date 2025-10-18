@@ -637,6 +637,15 @@ export interface BarModule extends BaseModule {
   percentage_text_color?: string;
   dot_color?: string; // Color for minimal style dot indicator
 
+  // Minimal style icon configuration
+  minimal_icon_enabled?: boolean; // Enable icon display
+  minimal_icon?: string; // Icon to display (e.g., mdi:battery)
+  minimal_icon_mode?: 'dot-only' | 'icon-only' | 'icon-in-dot'; // Display mode
+  minimal_icon_size?: number; // Icon size in pixels
+  minimal_icon_size_auto?: boolean; // Auto-scale with bar height (default: true)
+  minimal_icon_color?: string; // Icon color (if empty, uses dot color)
+  minimal_icon_use_dot_color?: boolean; // Use dot color for icon (default: true)
+
   // Gradient Configuration
   use_gradient?: boolean;
   gradient_display_mode?: 'full' | 'cropped' | 'value-based';

@@ -401,7 +401,29 @@
         "title_color": "Barva nadpisu",
         "value_color": "Barva hodnoty",
         "text_color": "Barva textu",
-        "text_color_desc": "Vyberte barvu pro text zobrazovaný na pruhu."
+        "text_color_desc": "Vyberte barvu pro text zobrazovaný na pruhu.",
+        "dot_color": "Barva tečky"
+      },
+      "minimal": {
+        "icon_enabled": "Povolit ikonu",
+        "icon_enabled_desc": "Zobrazit ikonu na indikátoru minimální lišty",
+        "icon": "Ikona",
+        "icon_desc": "Vyberte ikonu k zobrazení (např. mdi:battery)",
+        "icon_mode": "Režim zobrazení",
+        "icon_mode_desc": "Jak zobrazit ikonu",
+        "mode_dot_only": "Pouze tečka",
+        "mode_icon_only": "Pouze ikona",
+        "mode_icon_in_dot": "Ikona v tečce",
+        "icon_size_auto": "Automatické škálování ikony",
+        "icon_size_auto_desc": "Automaticky škálovat ikonu s výškou lišty",
+        "icon_size": "Velikost ikony",
+        "icon_size_desc": "Vlastní velikost ikony v pixelech",
+        "use_dot_color": "Použít barvu tečky",
+        "use_dot_color_desc": "Použít barvu tečky pro ikonu (odpovídá přechodu)",
+        "icon_color": "Barva ikony",
+        "icon_color_desc": "Vlastní barva pro ikonu",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "diff_config": {
         "current_entity": "Entita aktuální hodnoty",

@@ -545,7 +545,29 @@
         "title_color": "Colore titolo",
         "value_color": "Colore valore",
         "text_color": "Colore testo",
-        "text_color_desc": "Scegli il colore per il testo mostrato sulla barra."
+        "text_color_desc": "Scegli il colore per il testo mostrato sulla barra.",
+        "dot_color": "Colore punto"
+      },
+      "minimal": {
+        "icon_enabled": "Abilita icona",
+        "icon_enabled_desc": "Mostra un'icona sull'indicatore della barra minimal",
+        "icon": "Icona",
+        "icon_desc": "Scegli un'icona da visualizzare (es., mdi:battery)",
+        "icon_mode": "Modalità di visualizzazione",
+        "icon_mode_desc": "Come visualizzare l'icona",
+        "mode_dot_only": "Solo punto",
+        "mode_icon_only": "Solo icona",
+        "mode_icon_in_dot": "Icona nel punto",
+        "icon_size_auto": "Ridimensiona automaticamente l'icona",
+        "icon_size_auto_desc": "Ridimensiona automaticamente l'icona con l'altezza della barra",
+        "icon_size": "Dimensione icona",
+        "icon_size_desc": "Dimensione personalizzata dell'icona in pixel",
+        "use_dot_color": "Usa colore del punto",
+        "use_dot_color_desc": "Usa il colore del punto per l'icona (corrisponde al gradiente)",
+        "icon_color": "Colore icona",
+        "icon_color_desc": "Colore personalizzato per l'icona",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "gradient": {
         "title": "Modalità gradiente",

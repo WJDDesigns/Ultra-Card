@@ -401,7 +401,29 @@
         "title_color": "Titelfärg",
         "value_color": "Värdefärg",
         "text_color": "Textfärg",
-        "text_color_desc": "Välj färgen för texten som visas på stapeln."
+        "text_color_desc": "Välj färgen för texten som visas på stapeln.",
+        "dot_color": "Punktfärg"
+      },
+      "minimal": {
+        "icon_enabled": "Aktivera ikon",
+        "icon_enabled_desc": "Visa en ikon på den minimala stapelindikatorn",
+        "icon": "Ikon",
+        "icon_desc": "Välj en ikon att visa (t.ex. mdi:battery)",
+        "icon_mode": "Visningsläge",
+        "icon_mode_desc": "Hur ikonen ska visas",
+        "mode_dot_only": "Endast punkt",
+        "mode_icon_only": "Endast ikon",
+        "mode_icon_in_dot": "Ikon i punkt",
+        "icon_size_auto": "Skala ikon automatiskt",
+        "icon_size_auto_desc": "Skala ikon automatiskt med stappelhöjd",
+        "icon_size": "Ikonstorlek",
+        "icon_size_desc": "Anpassad ikonstorlek i pixlar",
+        "use_dot_color": "Använd punktfärg",
+        "use_dot_color_desc": "Använd punktfärgen för ikonen (matchar gradient)",
+        "icon_color": "Ikonfärg",
+        "icon_color_desc": "Anpassad färg för ikonen",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "diff_config": {
         "current_entity": "Nuvarande värdeentitet",

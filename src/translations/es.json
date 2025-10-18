@@ -550,7 +550,29 @@
         "title_color": "Color del título",
         "value_color": "Color del valor",
         "text_color": "Color del texto",
-        "text_color_desc": "Elige el color para el texto mostrado en la barra."
+        "text_color_desc": "Elige el color para el texto mostrado en la barra.",
+        "dot_color": "Color del punto"
+      },
+      "minimal": {
+        "icon_enabled": "Activar icono",
+        "icon_enabled_desc": "Mostrar un icono en el indicador de barra minimal",
+        "icon": "Icono",
+        "icon_desc": "Elige un icono para mostrar (ej., mdi:battery)",
+        "icon_mode": "Modo de visualización",
+        "icon_mode_desc": "Cómo mostrar el icono",
+        "mode_dot_only": "Solo punto",
+        "mode_icon_only": "Solo icono",
+        "mode_icon_in_dot": "Icono en el punto",
+        "icon_size_auto": "Escalar icono automáticamente",
+        "icon_size_auto_desc": "Escalar automáticamente el icono con la altura de la barra",
+        "icon_size": "Tamaño del icono",
+        "icon_size_desc": "Tamaño personalizado del icono en píxeles",
+        "use_dot_color": "Usar color del punto",
+        "use_dot_color_desc": "Usar el color del punto para el icono (coincide con el gradiente)",
+        "icon_color": "Color del icono",
+        "icon_color_desc": "Color personalizado para el icono",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "gradient": {
         "title": "Modo gradiente",

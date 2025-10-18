@@ -401,7 +401,29 @@
         "title_color": "Titelfarve",
         "value_color": "Værdifarve",
         "text_color": "Tekstfarve",
-        "text_color_desc": "Vælg farven for teksten vist på bjælken."
+        "text_color_desc": "Vælg farven for teksten vist på bjælken.",
+        "dot_color": "Punktfarve"
+      },
+      "minimal": {
+        "icon_enabled": "Aktivér ikon",
+        "icon_enabled_desc": "Vis et ikon på den minimale barindikator",
+        "icon": "Ikon",
+        "icon_desc": "Vælg et ikon at vise (f.eks. mdi:battery)",
+        "icon_mode": "Visningstilstand",
+        "icon_mode_desc": "Hvordan ikonet skal vises",
+        "mode_dot_only": "Kun punkt",
+        "mode_icon_only": "Kun ikon",
+        "mode_icon_in_dot": "Ikon i punkt",
+        "icon_size_auto": "Skaler ikon automatisk",
+        "icon_size_auto_desc": "Skaler ikon automatisk med barhøjde",
+        "icon_size": "Ikonstørrelse",
+        "icon_size_desc": "Brugerdefineret ikonstørrelse i pixels",
+        "use_dot_color": "Brug punktfarve",
+        "use_dot_color_desc": "Brug punktfarven til ikonet (matcher gradient)",
+        "icon_color": "Ikonfarve",
+        "icon_color_desc": "Brugerdefineret farve til ikonet",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "diff_config": {
         "current_entity": "Nuværende værdi-entitet",

@@ -545,7 +545,29 @@
         "title_color": "Title Colour",
         "value_color": "Value Colour",
         "text_color": "Text Colour",
-        "text_color_desc": "Choose the colour for the text displayed on the bar."
+        "text_color_desc": "Choose the colour for the text displayed on the bar.",
+        "dot_color": "Dot Colour"
+      },
+      "minimal": {
+        "icon_enabled": "Enable Icon",
+        "icon_enabled_desc": "Show an icon on the minimal bar indicator",
+        "icon": "Icon",
+        "icon_desc": "Choose an icon to display (e.g., mdi:battery)",
+        "icon_mode": "Display Mode",
+        "icon_mode_desc": "How to display the icon",
+        "mode_dot_only": "Dot Only",
+        "mode_icon_only": "Icon Only",
+        "mode_icon_in_dot": "Icon in Dot",
+        "icon_size_auto": "Auto-Scale Icon",
+        "icon_size_auto_desc": "Automatically scale icon with bar height",
+        "icon_size": "Icon Size",
+        "icon_size_desc": "Custom icon size in pixels",
+        "use_dot_color": "Use Dot Colour",
+        "use_dot_color_desc": "Use the dot colour for the icon (matches gradient)",
+        "icon_color": "Icon Colour",
+        "icon_color_desc": "Custom colour for the icon",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "gradient": {
         "title": "Gradient Mode",

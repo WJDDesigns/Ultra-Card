@@ -114,6 +114,15 @@ export class UltraBarModule extends BaseUltraModule {
       // Minimal style dot color
       dot_color: '',
 
+      // Minimal style icon configuration
+      minimal_icon_enabled: false,
+      minimal_icon: '',
+      minimal_icon_mode: 'icon-in-dot',
+      minimal_icon_size: 24,
+      minimal_icon_size_auto: true,
+      minimal_icon_color: '',
+      minimal_icon_use_dot_color: true,
+
       // Gradient Configuration
       use_gradient: false,
       gradient_display_mode: 'full',
@@ -1098,6 +1107,325 @@ export class UltraBarModule extends BaseUltraModule {
           }
         </div>
 
+        <!-- Minimal Style Icon Configuration Section -->
+        ${
+          barModule.bar_style === 'minimal'
+            ? html`
+                <div
+                  class="settings-section"
+                  style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+                >
+                  <div
+                    class="section-title"
+                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                  >
+                    ${localize('editor.bar.minimal.icon_config', lang, 'Minimal Style Icon')}
+                  </div>
+
+                  <!-- Enable Icon Toggle -->
+                  <div
+                    class="field-group"
+                    style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                  >
+                    <div>
+                      <div
+                        class="field-title"
+                        style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                      >
+                        ${localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon')}
+                      </div>
+                    </div>
+                    <ha-switch
+                      .checked=${barModule.minimal_icon_enabled || false}
+                      @change=${(e: Event) => {
+                        const target = e.target as any;
+                        updateModule({ minimal_icon_enabled: target.checked });
+                      }}
+                    ></ha-switch>
+                  </div>
+
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                  >
+                    ${localize(
+                      'editor.bar.minimal.icon_enabled_desc',
+                      lang,
+                      'Enable icon display to replace or enhance the dot indicator in minimal bar style.'
+                    )}
+                  </div>
+
+                  ${barModule.minimal_icon_enabled
+                    ? html`
+                        <!-- Icon Picker -->
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                          >
+                            ${localize('editor.bar.minimal.icon', lang, 'Icon')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.bar.minimal.icon_desc',
+                              lang,
+                              'Select the icon to display (e.g., mdi:battery).'
+                            )}
+                          </div>
+                          <ha-icon-picker
+                            .hass=${hass}
+                            .value=${barModule.minimal_icon || ''}
+                            .placeholder=${'mdi:circle'}
+                            @value-changed=${(e: CustomEvent) =>
+                              updateModule({ minimal_icon: e.detail.value })}
+                          ></ha-icon-picker>
+                        </div>
+
+                        <!-- Icon Display Mode -->
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                          >
+                            ${localize('editor.bar.minimal.icon_mode', lang, 'Display Mode')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.bar.minimal.icon_mode_desc',
+                              lang,
+                              'Choose how the icon is displayed with the dot.'
+                            )}
+                          </div>
+                          ${this.renderUcForm(
+                            hass,
+                            { minimal_icon_mode: barModule.minimal_icon_mode || 'icon-in-dot' },
+                            [
+                              this.selectField('minimal_icon_mode', [
+                                {
+                                  value: 'dot-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_dot_only',
+                                    lang,
+                                    'Dot Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_only',
+                                    lang,
+                                    'Icon Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-in-dot',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_in_dot',
+                                    lang,
+                                    'Icon in Dot'
+                                  ),
+                                },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const next = e.detail.value.minimal_icon_mode;
+                              const prev = barModule.minimal_icon_mode || 'icon-in-dot';
+                              if (next === prev) return;
+                              updateModule({ minimal_icon_mode: next });
+                              setTimeout(() => {
+                                this.triggerPreviewUpdate();
+                              }, 50);
+                            },
+                            false
+                          )}
+                        </div>
+
+                        <!-- Icon Size Auto Toggle -->
+                        <div
+                          class="field-group"
+                          style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                        >
+                          <div>
+                            <div
+                              class="field-title"
+                              style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                            >
+                              ${localize('editor.bar.minimal.icon_size_auto', lang, 'Auto Size')}
+                            </div>
+                          </div>
+                          <ha-switch
+                            .checked=${barModule.minimal_icon_size_auto !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              updateModule({ minimal_icon_size_auto: target.checked });
+                            }}
+                          ></ha-switch>
+                        </div>
+
+                        <div
+                          class="field-description"
+                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                        >
+                          ${localize(
+                            'editor.bar.minimal.icon_size_auto_desc',
+                            lang,
+                            'Automatically scale icon size based on bar height.'
+                          )}
+                        </div>
+
+                        <!-- Manual Icon Size (only if auto is disabled) -->
+                        ${barModule.minimal_icon_size_auto === false
+                          ? html`
+                              <div class="field-container" style="margin-bottom: 24px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_size', lang, 'Icon Size')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_size_desc',
+                                    lang,
+                                    'Manually set the icon size in pixels.'
+                                  )}
+                                </div>
+                                <div class="number-range-control">
+                                  <input
+                                    type="range"
+                                    class="range-slider"
+                                    min="8"
+                                    max="48"
+                                    step="1"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const value = parseInt(target.value);
+                                      updateModule({ minimal_icon_size: value });
+                                    }}
+                                  />
+                                  <input
+                                    type="number"
+                                    class="range-input"
+                                    min="8"
+                                    max="48"
+                                    step="1"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const value = parseInt(target.value);
+                                      if (!isNaN(value)) {
+                                        updateModule({ minimal_icon_size: value });
+                                      }
+                                    }}
+                                    @keydown=${(e: KeyboardEvent) => {
+                                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        const target = e.target as HTMLInputElement;
+                                        const currentValue = parseInt(target.value) || 16;
+                                        const increment = e.key === 'ArrowUp' ? 1 : -1;
+                                        const newValue = Math.max(
+                                          8,
+                                          Math.min(48, currentValue + increment)
+                                        );
+                                        updateModule({ minimal_icon_size: newValue });
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    class="range-reset-btn"
+                                    @click=${() => updateModule({ minimal_icon_size: 24 })}
+                                    title="${localize(
+                                      'editor.fields.reset_default_value',
+                                      lang,
+                                      'Reset to default ({value})'
+                                    ).replace('{value}', '24')}"
+                                  >
+                                    <ha-icon icon="mdi:refresh"></ha-icon>
+                                  </button>
+                                </div>
+                              </div>
+                            `
+                          : ''}
+
+                        <!-- Use Dot Color Toggle -->
+                        <div
+                          class="field-group"
+                          style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                        >
+                          <div>
+                            <div
+                              class="field-title"
+                              style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                            >
+                              ${localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color')}
+                            </div>
+                          </div>
+                          <ha-switch
+                            .checked=${barModule.minimal_icon_use_dot_color !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              updateModule({ minimal_icon_use_dot_color: target.checked });
+                            }}
+                          ></ha-switch>
+                        </div>
+
+                        <div
+                          class="field-description"
+                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                        >
+                          ${localize(
+                            'editor.bar.minimal.use_dot_color_desc',
+                            lang,
+                            'Use the dot color (including gradient colors) for the icon.'
+                          )}
+                        </div>
+
+                        <!-- Custom Icon Color (only if use_dot_color is false) -->
+                        ${barModule.minimal_icon_use_dot_color === false
+                          ? html`
+                              <div class="field-container" style="margin-bottom: 16px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_color', lang, 'Icon Color')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_color_desc',
+                                    lang,
+                                    'Set a custom color for the icon.'
+                                  )}
+                                </div>
+                                <ultra-color-picker
+                                  style="width: 100%;"
+                                  .value=${barModule.minimal_icon_color || ''}
+                                  .defaultValue=${'var(--primary-color)'}
+                                  .hass=${hass}
+                                  @value-changed=${(e: CustomEvent) =>
+                                    updateModule({ minimal_icon_color: e.detail.value })}
+                                ></ultra-color-picker>
+                              </div>
+                            `
+                          : ''}
+                      `
+                    : html`
+                        <div
+                          style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
+                        >
+                          ${localize(
+                            'editor.bar.minimal.enable_toggle',
+                            lang,
+                            'Enable the toggle above to configure icon settings'
+                          )}
+                        </div>
+                      `}
+                </div>
+              `
+            : ''
+        }
+
         <!-- Percentage Text Display Section -->
         <div
           class="settings-section"
@@ -1926,6 +2254,234 @@ export class UltraBarModule extends BaseUltraModule {
               }
             </div>
           </div>
+
+          <!-- Minimal Style Icon Configuration -->
+          ${
+            barModule.bar_style === 'minimal'
+              ? html`
+                  <div class="field-group" style="margin-top: 24px;">
+                    <div
+                      style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
+                    >
+                      <div class="field-title">
+                        ${localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon')}
+                      </div>
+                      <ha-switch
+                        .checked=${barModule.minimal_icon_enabled || false}
+                        @change=${(e: Event) =>
+                          updateModule({
+                            minimal_icon_enabled: (e.target as HTMLInputElement).checked,
+                          })}
+                      ></ha-switch>
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.minimal.icon_enabled_desc',
+                        lang,
+                        'Show an icon on the minimal bar indicator'
+                      )}
+                    </div>
+                  </div>
+
+                  ${barModule.minimal_icon_enabled
+                    ? html`
+                        <!-- Icon Selection -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          ${this.renderFieldSection(
+                            localize('editor.bar.minimal.icon', lang, 'Icon'),
+                            localize(
+                              'editor.bar.minimal.icon_desc',
+                              lang,
+                              'Choose an icon to display (e.g., mdi:battery)'
+                            ),
+                            hass,
+                            { minimal_icon: barModule.minimal_icon || '' },
+                            [this.iconField('minimal_icon')],
+                            (e: CustomEvent) => updateModule(e.detail.value)
+                          )}
+                        </div>
+
+                        <!-- Icon Display Mode -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          ${this.renderFieldSection(
+                            localize('editor.bar.minimal.icon_mode', lang, 'Display Mode'),
+                            localize(
+                              'editor.bar.minimal.icon_mode_desc',
+                              lang,
+                              'How to display the icon'
+                            ),
+                            hass,
+                            { minimal_icon_mode: barModule.minimal_icon_mode || 'icon-in-dot' },
+                            [
+                              this.selectField('minimal_icon_mode', [
+                                {
+                                  value: 'dot-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_dot_only',
+                                    lang,
+                                    'Dot Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_only',
+                                    lang,
+                                    'Icon Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-in-dot',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_in_dot',
+                                    lang,
+                                    'Icon in Dot'
+                                  ),
+                                },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              updateModule(e.detail.value);
+                              setTimeout(() => this.triggerPreviewUpdate(), 50);
+                            }
+                          )}
+                        </div>
+
+                        <!-- Icon Size Controls -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          <div
+                            style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
+                          >
+                            <div class="field-title">
+                              ${localize(
+                                'editor.bar.minimal.icon_size_auto',
+                                lang,
+                                'Auto-Scale Icon'
+                              )}
+                            </div>
+                            <ha-switch
+                              .checked=${barModule.minimal_icon_size_auto !== false}
+                              @change=${(e: Event) =>
+                                updateModule({
+                                  minimal_icon_size_auto: (e.target as HTMLInputElement).checked,
+                                })}
+                            ></ha-switch>
+                          </div>
+                          <div class="field-description">
+                            ${localize(
+                              'editor.bar.minimal.icon_size_auto_desc',
+                              lang,
+                              'Automatically scale icon with bar height'
+                            )}
+                          </div>
+                        </div>
+
+                        ${barModule.minimal_icon_size_auto === false
+                          ? html`
+                              <div class="field-container" style="margin-top: 16px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_size', lang, 'Icon Size')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_size_desc',
+                                    lang,
+                                    'Custom icon size in pixels'
+                                  )}
+                                </div>
+                                <div class="number-range-control">
+                                  <input
+                                    type="range"
+                                    class="range-slider"
+                                    min="8"
+                                    max="48"
+                                    step="2"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) =>
+                                      updateModule({
+                                        minimal_icon_size: parseInt(
+                                          (e.target as HTMLInputElement).value
+                                        ),
+                                      })}
+                                  />
+                                  <input
+                                    type="number"
+                                    class="range-input"
+                                    min="8"
+                                    max="48"
+                                    step="2"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const value = parseInt((e.target as HTMLInputElement).value);
+                                      if (!isNaN(value)) updateModule({ minimal_icon_size: value });
+                                    }}
+                                  />
+                                  <button
+                                    class="range-reset-btn"
+                                    @click=${() => updateModule({ minimal_icon_size: 24 })}
+                                  >
+                                    <ha-icon icon="mdi:refresh"></ha-icon>
+                                  </button>
+                                </div>
+                              </div>
+                            `
+                          : ''}
+
+                        <!-- Icon Color Controls -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          <div
+                            style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
+                          >
+                            <div class="field-title">
+                              ${localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color')}
+                            </div>
+                            <ha-switch
+                              .checked=${barModule.minimal_icon_use_dot_color !== false}
+                              @change=${(e: Event) =>
+                                updateModule({
+                                  minimal_icon_use_dot_color: (e.target as HTMLInputElement)
+                                    .checked,
+                                })}
+                            ></ha-switch>
+                          </div>
+                          <div class="field-description">
+                            ${localize(
+                              'editor.bar.minimal.use_dot_color_desc',
+                              lang,
+                              'Use the dot color for the icon (matches gradient)'
+                            )}
+                          </div>
+                        </div>
+
+                        ${barModule.minimal_icon_use_dot_color === false
+                          ? html`
+                              <div class="field-container" style="margin-top: 16px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_color', lang, 'Icon Color')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_color_desc',
+                                    lang,
+                                    'Custom color for the icon'
+                                  )}
+                                </div>
+                                <ultra-color-picker
+                                  style="width: 100%;"
+                                  .value=${barModule.minimal_icon_color || ''}
+                                  .defaultValue=${'var(--primary-color)'}
+                                  .hass=${hass}
+                                  @value-changed=${(e: CustomEvent) =>
+                                    updateModule({ minimal_icon_color: e.detail.value })}
+                                ></ultra-color-picker>
+                              </div>
+                            `
+                          : ''}
+                      `
+                    : ''}
+                `
+              : ''
+          }
 
           <!-- Left Side Colors -->
           ${
@@ -3894,27 +4450,126 @@ export class UltraBarModule extends BaseUltraModule {
                             ></div>
                           `}
 
-                      <!-- Dot indicator -->
-                      <div
-                        class="minimal-dot ${animationClass}"
-                        style="
-                          position: absolute;
-                          top: 50%;
-                          left: ${dotPosition}%;
-                          width: ${dotSize}px;
-                          height: ${dotSize}px;
-                          background: ${dotColor};
-                          border: 2px solid var(--card-background-color);
-                          border-radius: 50%;
-                          transform: translate(-50%, -50%);
-                          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                          transition: ${barModule.animation !== false
-                          ? 'left 0.3s ease, background 0.3s ease'
-                          : 'none'};
-                          z-index: 3;
-                          will-change: left, background;
-                        "
-                      ></div>
+                      <!-- Dot/Icon indicator -->
+                      ${(() => {
+                        // Calculate icon size based on auto-scale setting
+                        const iconSize =
+                          barModule.minimal_icon_size_auto !== false
+                            ? Math.max(16, Math.min(32, Math.max(24, barHeightValue * 1.2)))
+                            : barModule.minimal_icon_size || 24;
+
+                        // Determine icon color (dot color or custom color)
+                        const iconColor =
+                          barModule.minimal_icon_use_dot_color !== false
+                            ? dotColor
+                            : barModule.minimal_icon_color || dotColor;
+
+                        // Render based on mode
+                        const mode = barModule.minimal_icon_mode || 'icon-in-dot';
+                        const hasIcon = barModule.minimal_icon_enabled && barModule.minimal_icon;
+
+                        if (mode === 'icon-only' && hasIcon) {
+                          // Icon only mode - replace dot with icon
+                          return html`
+                            <div
+                              class="minimal-icon ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${dotPosition}%;
+                                width: ${iconSize}px;
+                                height: ${iconSize}px;
+                                transform: translate(-50%, -50%);
+                                transition: ${barModule.animation !== false
+                                ? 'left 0.3s ease, color 0.3s ease'
+                                : 'none'};
+                                z-index: 3;
+                                will-change: left, color;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                              "
+                            >
+                              <ha-icon
+                                icon="${barModule.minimal_icon}"
+                                style="
+                                  color: ${iconColor};
+                                  width: ${iconSize}px;
+                                  height: ${iconSize}px;
+                                  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                "
+                              ></ha-icon>
+                            </div>
+                          `;
+                        } else if (mode === 'icon-in-dot' && hasIcon) {
+                          // Icon in dot mode - show dot with icon inside
+                          return html`
+                            <div
+                              class="minimal-dot ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${dotPosition}%;
+                                width: ${dotSize}px;
+                                height: ${dotSize}px;
+                                background: ${dotColor};
+                                border: 2px solid var(--card-background-color);
+                                border-radius: 50%;
+                                transform: translate(-50%, -50%);
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                transition: ${barModule.animation !== false
+                                ? 'left 0.3s ease, background 0.3s ease'
+                                : 'none'};
+                                z-index: 3;
+                                will-change: left, background;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                              "
+                            >
+                              <ha-icon
+                                icon="${barModule.minimal_icon}"
+                                style="
+                                  color: ${iconColor};
+                                  width: ${Math.max(8, iconSize - 4)}px;
+                                  height: ${Math.max(8, iconSize - 4)}px;
+                                  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                "
+                              ></ha-icon>
+                            </div>
+                          `;
+                        } else {
+                          // Dot only mode (default) - show just the dot
+                          return html`
+                            <div
+                              class="minimal-dot ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${dotPosition}%;
+                                width: ${dotSize}px;
+                                height: ${dotSize}px;
+                                background: ${dotColor};
+                                border: 2px solid var(--card-background-color);
+                                border-radius: 50%;
+                                transform: translate(-50%, -50%);
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                transition: ${barModule.animation !== false
+                                ? 'left 0.3s ease, background 0.3s ease'
+                                : 'none'};
+                                z-index: 3;
+                                will-change: left, background;
+                              "
+                            ></div>
+                          `;
+                        }
+                      })()}
                     `;
                   })()
                 : barModule.bar_style === 'dots'

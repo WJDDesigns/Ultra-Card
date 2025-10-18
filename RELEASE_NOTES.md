@@ -2,6 +2,14 @@
 
 ## Version 2.0-beta24
 
+### 🚀 New Features
+
+- **Added icon support to bar module minimal style** - Bar module's minimal style now supports icon display for enhanced visual customization
+
+### 🐛 Bug Fixes
+
+- **Fixed issues with Mushroom Chips Card** - Resolved compatibility and rendering issues with Mushroom Chips Card integration
+
 ### 🚀 Performance Improvements
 
 - **Improved 3rd party card update performance** - Significantly enhanced update mechanism for 3rd party cards to match native Home Assistant behavior. Cards like Apex Charts now update smoothly with only the data changing, not the entire card structure including axis labels. Removed throttling delays and optimized the update path for real-time responsiveness.

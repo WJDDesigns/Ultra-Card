@@ -401,7 +401,29 @@
         "title_color": "Kolor tytułu",
         "value_color": "Kolor wartości",
         "text_color": "Kolor tekstu",
-        "text_color_desc": "Wybierz kolor tekstu wyświetlanego na pasku."
+        "text_color_desc": "Wybierz kolor tekstu wyświetlanego na pasku.",
+        "dot_color": "Kolor kropki"
+      },
+      "minimal": {
+        "icon_enabled": "Włącz ikonę",
+        "icon_enabled_desc": "Pokaż ikonę na wskaźniku minimalnego paska",
+        "icon": "Ikona",
+        "icon_desc": "Wybierz ikonę do wyświetlenia (np. mdi:battery)",
+        "icon_mode": "Tryb wyświetlania",
+        "icon_mode_desc": "Jak wyświetlać ikonę",
+        "mode_dot_only": "Tylko kropka",
+        "mode_icon_only": "Tylko ikona",
+        "mode_icon_in_dot": "Ikona w kropce",
+        "icon_size_auto": "Automatyczne skalowanie ikony",
+        "icon_size_auto_desc": "Automatycznie skaluj ikonę z wysokością paska",
+        "icon_size": "Rozmiar ikony",
+        "icon_size_desc": "Niestandardowy rozmiar ikony w pikselach",
+        "use_dot_color": "Użyj koloru kropki",
+        "use_dot_color_desc": "Użyj koloru kropki dla ikony (pasuje do gradientu)",
+        "icon_color": "Kolor ikony",
+        "icon_color_desc": "Niestandardowy kolor dla ikony",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "diff_config": {
         "current_entity": "Encja bieżącej wartości",

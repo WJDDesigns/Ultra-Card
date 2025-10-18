@@ -401,7 +401,29 @@
         "title_color": "Tittelfarge",
         "value_color": "Verdifarge",
         "text_color": "Tekstfarge",
-        "text_color_desc": "Velg fargen for teksten vist på stolpen."
+        "text_color_desc": "Velg fargen for teksten vist på stolpen.",
+        "dot_color": "Punktfarge"
+      },
+      "minimal": {
+        "icon_enabled": "Aktiver ikon",
+        "icon_enabled_desc": "Vis eit ikon på den minimale linjeindikatoren",
+        "icon": "Ikon",
+        "icon_desc": "Vel eit ikon å vise (t.d. mdi:battery)",
+        "icon_mode": "Visingsmodus",
+        "icon_mode_desc": "Korleis ikonet skal visast",
+        "mode_dot_only": "Berre punkt",
+        "mode_icon_only": "Berre ikon",
+        "mode_icon_in_dot": "Ikon i punkt",
+        "icon_size_auto": "Skaler ikon automatisk",
+        "icon_size_auto_desc": "Skaler ikon automatisk med linjehøgde",
+        "icon_size": "Ikonstorleik",
+        "icon_size_desc": "Tilpassa ikonstorleik i pikslar",
+        "use_dot_color": "Bruk punktfarge",
+        "use_dot_color_desc": "Bruk punktfargen for ikonet (matcher gradient)",
+        "icon_color": "Ikonfarge",
+        "icon_color_desc": "Tilpassa farge for ikonet",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "diff_config": {
         "current_entity": "Entitet for noverdi",

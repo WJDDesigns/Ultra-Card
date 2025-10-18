@@ -11631,8 +11631,13 @@ export class LayoutTab extends LitElement {
       config.graph_span = '24h';
     } else if (cardTypeLower.includes('mushroom')) {
       console.log(`[UC] Using Mushroom card minimal fallback config`);
-      // Most mushroom cards need an entity
-      config.entity = '';
+      // Mushroom Chips card needs a chips array
+      if (cardTypeLower.includes('chips')) {
+        config.chips = [];
+      } else {
+        // Most other mushroom cards need an entity
+        config.entity = '';
+      }
     } else if (cardTypeLower.includes('button-card')) {
       console.log(`[UC] Using Button Card minimal fallback config`);
       config.entity = '';

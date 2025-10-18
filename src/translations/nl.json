@@ -401,7 +401,29 @@
         "title_color": "Titelkleur",
         "value_color": "Waardekleur",
         "text_color": "Tekstkleur",
-        "text_color_desc": "Kies de kleur voor de tekst die op de balk wordt weergegeven."
+        "text_color_desc": "Kies de kleur voor de tekst die op de balk wordt weergegeven.",
+        "dot_color": "Puntkleur"
+      },
+      "minimal": {
+        "icon_enabled": "Pictogram inschakelen",
+        "icon_enabled_desc": "Toon een pictogram op de minimale balkindicator",
+        "icon": "Pictogram",
+        "icon_desc": "Kies een pictogram om weer te geven (bijv. mdi:battery)",
+        "icon_mode": "Weergavemodus",
+        "icon_mode_desc": "Hoe het pictogram weer te geven",
+        "mode_dot_only": "Alleen punt",
+        "mode_icon_only": "Alleen pictogram",
+        "mode_icon_in_dot": "Pictogram in punt",
+        "icon_size_auto": "Pictogram automatisch schalen",
+        "icon_size_auto_desc": "Pictogram automatisch schalen met balkhoogte",
+        "icon_size": "Pictogramgrootte",
+        "icon_size_desc": "Aangepaste pictogramgrootte in pixels",
+        "use_dot_color": "Puntkleur gebruiken",
+        "use_dot_color_desc": "De puntkleur gebruiken voor het pictogram (komt overeen met verloop)",
+        "icon_color": "Pictogramkleur",
+        "icon_color_desc": "Aangepaste kleur voor het pictogram",
+        "icon_config": "Minimal Style Icon",
+        "enable_toggle": "Enable the toggle above to configure icon settings"
       },
       "diff_config": {
         "current_entity": "Huidige waarde entiteit",
