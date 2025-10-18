@@ -267,8 +267,12 @@ export class UltraExternalCardModule extends BaseUltraModule {
       if (resolved) cardId = resolved;
       // Do NOT register here to avoid re-registering on every render; rely on UltraCard
       const { allowedKeys, isPro, totalThirdParty } = ThirdPartyLimitService.evaluate(hass);
+      // Pro users never see locks
+      if (isPro) {
+        return false;
+      }
       // Fast-path: if total 3rd-party modules <= limit, never lock
-      if (!isPro && totalThirdParty <= 5) {
+      if (totalThirdParty <= 5) {
         return false;
       }
       // Match service key format (dashboardId:cardId:moduleId)

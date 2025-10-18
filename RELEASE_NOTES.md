@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta23
+
+### 🐛 Bug Fixes
+
+- **Fixed Pro members seeing locks for 3rd party cards** - Whoops! Pro users will now correctly see unlimited 3rd party cards without any locks
+
 ## Version 2.0-beta22
 
 ### 🚀 New Features
