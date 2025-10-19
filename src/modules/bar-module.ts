@@ -3472,6 +3472,9 @@ export class UltraBarModule extends BaseUltraModule {
       return resolveCSSColor(factor < 0.5 ? beforeStop.color : afterStop.color);
     };
 
+    // Determine bar direction for all styles
+    const fillDirection = (barModule as any).bar_direction || 'left-to-right';
+
     if (barModule.use_gradient) {
       // Ensure gradient stops exist, create defaults if needed
       const gradientStops =
@@ -3480,7 +3483,6 @@ export class UltraBarModule extends BaseUltraModule {
           : createDefaultGradientStops();
 
       // Determine gradient direction based on bar direction
-      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
       const gradientDirection = fillDirection === 'right-to-left' ? 'to left' : 'to right';
 
       // Build gradient string with resolved colors so CSS variables work reliably in all modes
@@ -3635,10 +3637,33 @@ export class UltraBarModule extends BaseUltraModule {
         break;
       case 'neon-glow':
         const glowColor = getGlowColorFromGradient(barFillBackground);
+        const isRightToLeftGlow = fillDirection === 'right-to-left';
+
+        // Only show glow when bar is not at 100% (has empty area)
+        const showGlow = percentage < 99.5;
+
         fillStyleCSS = `
-          box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor};
+          position: relative;
+          overflow: visible;
           filter: brightness(1.2);
         `;
+
+        // Create edge glow overlay
+        fillOverlayCSS = showGlow
+          ? `
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          ${isRightToLeftGlow ? 'left: 0;' : 'right: 0;'}
+          width: 2px;
+          background: transparent;
+          box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor};
+          pointer-events: none;
+          z-index: 1;
+        `
+          : '';
+
         barStyleCSS = `
           box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         `;
@@ -3763,7 +3788,6 @@ export class UltraBarModule extends BaseUltraModule {
         const segmentWidth = 12;
         const gapWidth = 4;
         const totalWidth = segmentWidth + gapWidth;
-        const fillDirection = (barModule as any).bar_direction || 'left-to-right';
         const isRightToLeft = fillDirection === 'right-to-left';
 
         if (percentage >= 99.5) {
@@ -4247,7 +4271,6 @@ export class UltraBarModule extends BaseUltraModule {
             ${
               barModule.bar_style === 'minimal'
                 ? (() => {
-                    const fillDirection = (barModule as any).bar_direction || 'left-to-right';
                     const isRightToLeft = fillDirection === 'right-to-left';
                     const dotPosition = isRightToLeft ? 100 - percentage : percentage;
 
@@ -4532,7 +4555,6 @@ export class UltraBarModule extends BaseUltraModule {
                       const barH = ((barModule as any).height ?? 20) as number;
                       const dotSize = Math.max(6, Math.floor(barH - 8));
                       const trackBg = trackBackground;
-                      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
                       const stops =
                         barModule.use_gradient &&
                         (barModule as any).gradient_stops &&
@@ -4622,7 +4644,6 @@ export class UltraBarModule extends BaseUltraModule {
                       </div>`;
                     })()
                   : (() => {
-                      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
                       const isRightToLeft = fillDirection === 'right-to-left';
 
                       // Calculate border radius based on direction and percentage
