@@ -3641,7 +3641,7 @@ export class UltraBarModule extends BaseUltraModule {
         fillStyleCSS = `
           filter: brightness(1.2);
         `;
-        
+
         barStyleCSS = `
           box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
           overflow: visible;
@@ -4681,103 +4681,184 @@ export class UltraBarModule extends BaseUltraModule {
                     top: 0; 
                     bottom: 0; 
                     left: ${fillDirection === 'right-to-left' ? 100 - percentage : percentage}%; 
-                    width: 2px; 
-                    background: transparent;
-                    box-shadow: 0 0 10px ${(() => {
-                      // Get the glow color
-                      if (barModule.use_gradient && barModule.gradient_stops) {
-                        const gradientMode = barModule.gradient_display_mode || 'full';
-                        if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                          // For value-based and cropped modes, use the color at the current percentage
-                          const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
-                          let beforeStop = sortedStops[0];
-                          let afterStop = sortedStops[sortedStops.length - 1];
-                          
-                          for (let i = 0; i < sortedStops.length - 1; i++) {
-                            if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
-                              beforeStop = sortedStops[i];
-                              afterStop = sortedStops[i + 1];
-                              break;
+                    width: 3px; 
+                    background: ${(() => {
+                        // Get the glow color for the line itself with reduced opacity
+                        if (barModule.use_gradient && barModule.gradient_stops) {
+                          const gradientMode = barModule.gradient_display_mode || 'full';
+                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
+                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
+                            let beforeStop = sortedStops[0];
+                            let afterStop = sortedStops[sortedStops.length - 1];
+                            
+                            for (let i = 0; i < sortedStops.length - 1; i++) {
+                              if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
+                                beforeStop = sortedStops[i];
+                                afterStop = sortedStops[i + 1];
+                                break;
+                              }
+                            }
+                            
+                            if (beforeStop.position === percentage) return beforeStop.color;
+                            if (afterStop.position === percentage) return afterStop.color;
+                            
+                            return beforeStop.color;
+                          } else {
+                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
+                            if (sortedStops.length > 0) {
+                              return sortedStops[0].color;
                             }
                           }
-                          
-                          if (beforeStop.position === percentage) return beforeStop.color;
-                          if (afterStop.position === percentage) return afterStop.color;
-                          
-                          const range = afterStop.position - beforeStop.position;
-                          const factor = range === 0 ? 0 : (percentage - beforeStop.position) / range;
-                          
-                          // Simple color interpolation for the glow
-                          return beforeStop.color;
-                        } else {
-                          // For full mode, use the last color (rightmost/last color)
-                          const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
-                          if (sortedStops.length > 0) {
-                            return sortedStops[0].color;
-                          }
                         }
-                      }
-                      return barModule.bar_color || 'var(--primary-color)';
-                    })()}, 0 0 20px ${(() => {
-                      // Same color logic for second shadow
-                      if (barModule.use_gradient && barModule.gradient_stops) {
-                        const gradientMode = barModule.gradient_display_mode || 'full';
-                        if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                          const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
-                          let beforeStop = sortedStops[0];
-                          let afterStop = sortedStops[sortedStops.length - 1];
-                          
-                          for (let i = 0; i < sortedStops.length - 1; i++) {
-                            if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
-                              beforeStop = sortedStops[i];
-                              afterStop = sortedStops[i + 1];
-                              break;
+                        return barModule.bar_color || 'var(--primary-color)';
+                      })()};
+                    opacity: 0.8;
+                    box-shadow: 0 0 15px ${(() => {
+                        // Get the glow color
+                        if (barModule.use_gradient && barModule.gradient_stops) {
+                          const gradientMode = barModule.gradient_display_mode || 'full';
+                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
+                            // For value-based and cropped modes, use the color at the current percentage
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
+                            let beforeStop = sortedStops[0];
+                            let afterStop = sortedStops[sortedStops.length - 1];
+
+                            for (let i = 0; i < sortedStops.length - 1; i++) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
+                                beforeStop = sortedStops[i];
+                                afterStop = sortedStops[i + 1];
+                                break;
+                              }
+                            }
+
+                            if (beforeStop.position === percentage) return beforeStop.color;
+                            if (afterStop.position === percentage) return afterStop.color;
+
+                            const range = afterStop.position - beforeStop.position;
+                            const factor =
+                              range === 0 ? 0 : (percentage - beforeStop.position) / range;
+
+                            // Simple color interpolation for the glow
+                            return beforeStop.color;
+                          } else {
+                            // For full mode, use the last color (rightmost/last color)
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
+                            if (sortedStops.length > 0) {
+                              return sortedStops[0].color;
                             }
                           }
-                          
-                          if (beforeStop.position === percentage) return beforeStop.color;
-                          if (afterStop.position === percentage) return afterStop.color;
-                          
-                          return beforeStop.color;
-                        } else {
-                          const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
-                          if (sortedStops.length > 0) {
-                            return sortedStops[0].color;
-                          }
                         }
-                      }
                       return barModule.bar_color || 'var(--primary-color)';
-                    })()}, 0 0 30px ${(() => {
-                      // Same color logic for third shadow
-                      if (barModule.use_gradient && barModule.gradient_stops) {
-                        const gradientMode = barModule.gradient_display_mode || 'full';
-                        if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                          const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
-                          let beforeStop = sortedStops[0];
-                          let afterStop = sortedStops[sortedStops.length - 1];
-                          
-                          for (let i = 0; i < sortedStops.length - 1; i++) {
-                            if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
-                              beforeStop = sortedStops[i];
-                              afterStop = sortedStops[i + 1];
-                              break;
+                    })()}, 0 0 40px ${(() => {
+                        // Same color logic for second shadow
+                        if (barModule.use_gradient && barModule.gradient_stops) {
+                          const gradientMode = barModule.gradient_display_mode || 'full';
+                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
+                            let beforeStop = sortedStops[0];
+                            let afterStop = sortedStops[sortedStops.length - 1];
+
+                            for (let i = 0; i < sortedStops.length - 1; i++) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
+                                beforeStop = sortedStops[i];
+                                afterStop = sortedStops[i + 1];
+                                break;
+                              }
+                            }
+
+                            if (beforeStop.position === percentage) return beforeStop.color;
+                            if (afterStop.position === percentage) return afterStop.color;
+
+                            return beforeStop.color;
+                          } else {
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
+                            if (sortedStops.length > 0) {
+                              return sortedStops[0].color;
                             }
                           }
-                          
-                          if (beforeStop.position === percentage) return beforeStop.color;
-                          if (afterStop.position === percentage) return afterStop.color;
-                          
-                          return beforeStop.color;
-                        } else {
-                          const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
-                          if (sortedStops.length > 0) {
-                            return sortedStops[0].color;
+                        }
+                      return barModule.bar_color || 'var(--primary-color)';
+                    })()}, 0 0 60px ${(() => {
+                        // Same color logic for third shadow
+                        if (barModule.use_gradient && barModule.gradient_stops) {
+                          const gradientMode = barModule.gradient_display_mode || 'full';
+                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
+                            let beforeStop = sortedStops[0];
+                            let afterStop = sortedStops[sortedStops.length - 1];
+
+                            for (let i = 0; i < sortedStops.length - 1; i++) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
+                                beforeStop = sortedStops[i];
+                                afterStop = sortedStops[i + 1];
+                                break;
+                              }
+                            }
+
+                            if (beforeStop.position === percentage) return beforeStop.color;
+                            if (afterStop.position === percentage) return afterStop.color;
+
+                            return beforeStop.color;
+                          } else {
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
+                            if (sortedStops.length > 0) {
+                              return sortedStops[0].color;
+                            }
                           }
                         }
-                      }
                       return barModule.bar_color || 'var(--primary-color)';
-                    })()}; 
-                    z-index: 4; 
+                    })()}, 0 0 80px ${(() => {
+                        // Fourth shadow layer for extra intensity
+                        if (barModule.use_gradient && barModule.gradient_stops) {
+                          const gradientMode = barModule.gradient_display_mode || 'full';
+                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
+                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
+                            let beforeStop = sortedStops[0];
+                            let afterStop = sortedStops[sortedStops.length - 1];
+                            
+                            for (let i = 0; i < sortedStops.length - 1; i++) {
+                              if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
+                                beforeStop = sortedStops[i];
+                                afterStop = sortedStops[i + 1];
+                                break;
+                              }
+                            }
+                            
+                            if (beforeStop.position === percentage) return beforeStop.color;
+                            if (afterStop.position === percentage) return afterStop.color;
+                            
+                            return beforeStop.color;
+                          } else {
+                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
+                            if (sortedStops.length > 0) {
+                              return sortedStops[0].color;
+                            }
+                          }
+                        }
+                        return barModule.bar_color || 'var(--primary-color)';
+                      })()}; 
+                    z-index: 4;
                     transform: translateX(-50%);
                     pointer-events: none;
                   "
