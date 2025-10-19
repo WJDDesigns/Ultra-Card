@@ -1180,6 +1180,7 @@ export interface LightModule extends BaseModule {
     presets: Array<{
         id: string;
         name: string;
+        action?: 'turn_on' | 'turn_off' | 'toggle';
         icon?: string;
         entities: string[];
         brightness?: number;

@@ -24,6 +24,7 @@ export type LightColorMode =
 export interface LightPreset {
   id: string;
   name: string; // Display name/label for the preset
+  action?: 'turn_on' | 'turn_off' | 'toggle'; // Action type for this preset
   icon?: string; // Optional icon for button/icon display
   entities: string[]; // Entities this preset applies to
   brightness?: number; // 0-255
@@ -260,6 +261,7 @@ export class UltraLightModule extends BaseUltraModule {
         {
           id: this.generateId('preset'),
           name: 'My Preset',
+          action: 'turn_on' as const,
           entities: [],
           brightness: 255,
           rgb_color: [255, 255, 255],
@@ -1039,6 +1041,24 @@ export class UltraLightModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): TemplateResult {
     return html`
+      <!-- Action Selection -->
+      <div class="field-group" style="margin-bottom: 16px;">
+        ${this.renderFieldSection(
+          'Preset Action',
+          'Choose what this preset should do',
+          hass,
+          { action: preset.action || 'turn_on' },
+          [
+            this.selectField('action', [
+              { value: 'turn_on', label: 'Turn On (with settings)' },
+              { value: 'turn_off', label: 'Turn Off' },
+              { value: 'toggle', label: 'Toggle' },
+            ]),
+          ],
+          (e: CustomEvent) => updatePreset({ action: e.detail.value.action })
+        )}
+      </div>
+
       <!-- Basic Settings -->
       <div class="field-group" style="margin-bottom: 16px;">
         ${this.renderFieldSection(
@@ -1075,81 +1095,87 @@ export class UltraLightModule extends BaseUltraModule {
           (e: CustomEvent) => updatePreset({ entities: e.detail.value.entities })
         )}
 
-        <!-- Light Controls: Color, White, Effects & Test -->
-        <div class="light-controls-section" style="margin-top: 20px; margin-bottom: 20px;">
-          <div
-            style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
-          >
-            Light Controls
-          </div>
+        ${
+          (preset.action || 'turn_on') !== 'turn_off'
+            ? html`
+                <!-- Light Controls: Color, White, Effects & Test -->
+                <div class="light-controls-section" style="margin-top: 20px; margin-bottom: 20px;">
+                  <div
+                    style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
+                  >
+                    Light Controls
+                  </div>
 
-          <uc-light-color-picker
-            .hass=${hass}
-            .rgb_color=${preset.rgb_color}
-            .hs_color=${preset.hs_color}
-            .xy_color=${preset.xy_color}
-            .color_temp=${preset.color_temp}
-            .effect=${preset.effect}
-            .effect_speed=${preset.effect_speed}
-            .effect_intensity=${preset.effect_intensity}
-            .effect_reverse=${preset.effect_reverse}
-            .effect_list=${this.getCommonSupportedEffects(preset.entities || [], hass)}
-            .mode=${this.getPresetLightMode(preset) === 'effect'
-              ? 'effect'
-              : this.getPresetColorMode(preset)}
-            .min_mireds=${153}
-            .max_mireds=${500}
-            .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
-            @color-changed=${(e: CustomEvent) => {
-              const detail = e.detail;
-              const updates: Partial<LightPreset> = {};
+                  <uc-light-color-picker
+                    .hass=${hass}
+                    .rgb_color=${preset.rgb_color}
+                    .hs_color=${preset.hs_color}
+                    .xy_color=${preset.xy_color}
+                    .color_temp=${preset.color_temp}
+                    .effect=${preset.effect}
+                    .effect_speed=${preset.effect_speed}
+                    .effect_intensity=${preset.effect_intensity}
+                    .effect_reverse=${preset.effect_reverse}
+                    .effect_list=${this.getCommonSupportedEffects(preset.entities || [], hass)}
+                    .mode=${this.getPresetLightMode(preset) === 'effect'
+                      ? 'effect'
+                      : this.getPresetColorMode(preset)}
+                    .min_mireds=${153}
+                    .max_mireds=${500}
+                    .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
+                    @color-changed=${(e: CustomEvent) => {
+                      const detail = e.detail;
+                      const updates: Partial<LightPreset> = {};
 
-              if (detail.mode === 'effect') {
-                updates.effect = detail.effect || '';
-                // Clear ALL color parameters when effect is set
-                updates.color_temp = undefined;
-                updates.rgb_color = undefined;
-                updates.hs_color = undefined;
-                updates.xy_color = undefined;
-                updates.rgbw_color = undefined;
-                updates.rgbww_color = undefined;
-                updates.white = undefined;
-              } else if (detail.mode === 'rgbww') {
-                // RGBWW mode: Keep BOTH color and temperature
-                updates.rgb_color = detail.rgb_color;
-                updates.hs_color = detail.hs_color;
-                updates.xy_color = detail.xy_color;
-                updates.color_temp = detail.color_temp;
-                updates.effect = ''; // Clear effect when setting color
-              } else if (detail.mode === 'color_temp') {
-                updates.color_temp = detail.color_temp;
-                updates.rgb_color = undefined;
-                updates.hs_color = undefined;
-                updates.xy_color = undefined;
-                updates.rgbw_color = undefined;
-                updates.rgbww_color = undefined;
-                updates.white = undefined;
-                updates.effect = ''; // Clear effect when setting color
-              } else {
-                updates.rgb_color = detail.rgb_color;
-                updates.hs_color = detail.hs_color;
-                updates.xy_color = detail.xy_color;
-                updates.color_temp = undefined;
-                updates.rgbw_color = undefined;
-                updates.rgbww_color = undefined;
-                updates.white = undefined;
-                updates.effect = ''; // Clear effect when setting color
-              }
+                      if (detail.mode === 'effect') {
+                        updates.effect = detail.effect || '';
+                        // Clear ALL color parameters when effect is set
+                        updates.color_temp = undefined;
+                        updates.rgb_color = undefined;
+                        updates.hs_color = undefined;
+                        updates.xy_color = undefined;
+                        updates.rgbw_color = undefined;
+                        updates.rgbww_color = undefined;
+                        updates.white = undefined;
+                      } else if (detail.mode === 'rgbww') {
+                        // RGBWW mode: Keep BOTH color and temperature
+                        updates.rgb_color = detail.rgb_color;
+                        updates.hs_color = detail.hs_color;
+                        updates.xy_color = detail.xy_color;
+                        updates.color_temp = detail.color_temp;
+                        updates.effect = ''; // Clear effect when setting color
+                      } else if (detail.mode === 'color_temp') {
+                        updates.color_temp = detail.color_temp;
+                        updates.rgb_color = undefined;
+                        updates.hs_color = undefined;
+                        updates.xy_color = undefined;
+                        updates.rgbw_color = undefined;
+                        updates.rgbww_color = undefined;
+                        updates.white = undefined;
+                        updates.effect = ''; // Clear effect when setting color
+                      } else {
+                        updates.rgb_color = detail.rgb_color;
+                        updates.hs_color = detail.hs_color;
+                        updates.xy_color = detail.xy_color;
+                        updates.color_temp = undefined;
+                        updates.rgbw_color = undefined;
+                        updates.rgbww_color = undefined;
+                        updates.white = undefined;
+                        updates.effect = ''; // Clear effect when setting color
+                      }
 
-              updatePreset(updates);
-              // Trigger immediate preview update
-              this.triggerPreviewUpdate();
-            }}
-            @test-preset=${() => {
-              this.applyPreset(preset, lightModule, hass, config);
-            }}
-          ></uc-light-color-picker>
-        </div>
+                      updatePreset(updates);
+                      // Trigger immediate preview update
+                      this.triggerPreviewUpdate();
+                    }}
+                    @test-preset=${() => {
+                      this.applyPreset(preset, lightModule, hass, config);
+                    }}
+                  ></uc-light-color-picker>
+                </div>
+              `
+            : ''
+        }
 
         <!-- Button Style (moved here from global settings) -->
         <div
@@ -1175,21 +1201,23 @@ export class UltraLightModule extends BaseUltraModule {
           )}
 
           <!-- Border Radius (for filled and outlined styles) -->
-          ${(preset.button_style || 'filled') !== 'text'
-            ? html`
-                <div style="margin-top: 12px;">
-                  ${this.renderFieldSection(
-                    'Border Radius',
-                    'Adjust button roundness (0 = square, 50 = circle)',
-                    hass,
-                    { border_radius: preset.border_radius || 8 },
-                    [this.numberField('border_radius', 0, 50, 1)],
-                    (e: CustomEvent) =>
-                      updatePreset({ border_radius: e.detail.value.border_radius })
-                  )}
-                </div>
-              `
-            : ''}
+          ${
+            (preset.button_style || 'filled') !== 'text'
+              ? html`
+                  <div style="margin-top: 12px;">
+                    ${this.renderFieldSection(
+                      'Border Radius',
+                      'Adjust button roundness (0 = square, 50 = circle)',
+                      hass,
+                      { border_radius: preset.border_radius || 8 },
+                      [this.numberField('border_radius', 0, 50, 1)],
+                      (e: CustomEvent) =>
+                        updatePreset({ border_radius: e.detail.value.border_radius })
+                    )}
+                  </div>
+                `
+              : ''
+          }
 
           <div
             style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;"
@@ -1213,48 +1241,71 @@ export class UltraLightModule extends BaseUltraModule {
         </div>
       </div>
 
-      <!-- Light Controls Section -->
-      <div class="light-controls-section" style="margin-top: 20px;">
-        <div
-          style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
-        >
-          Light Controls
-        </div>
+      ${
+        (preset.action || 'turn_on') !== 'turn_off'
+          ? html`
+              <!-- Light Controls Section -->
+              <div class="light-controls-section" style="margin-top: 20px;">
+                <div
+                  style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
+                >
+                  Light Controls
+                </div>
 
-        <!-- Brightness Control -->
-        <div class="brightness-control" style="margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-            <ha-icon icon="mdi:brightness-6" style="color: var(--primary-color);"></ha-icon>
-            <span style="font-weight: 500; color: var(--primary-text-color);">Brightness</span>
-            <span style="margin-left: auto; font-size: 14px; color: var(--secondary-text-color);">
-              ${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}%
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 12px; color: var(--secondary-text-color);">0%</span>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              step="1"
-              .value=${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                const brightness = Math.round((parseInt(target.value) / 100) * 255);
-                updatePreset({ brightness });
-                this.triggerPreviewUpdate();
-              }}
-              class="brightness-slider"
-            />
-            <span style="font-size: 12px; color: var(--secondary-text-color);">100%</span>
-          </div>
-        </div>
+                <!-- Brightness Control -->
+                <div class="brightness-control" style="margin-bottom: 20px;">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <ha-icon icon="mdi:brightness-6" style="color: var(--primary-color);"></ha-icon>
+                    <span style="font-weight: 500; color: var(--primary-text-color);"
+                      >Brightness</span
+                    >
+                    <span
+                      style="margin-left: auto; font-size: 14px; color: var(--secondary-text-color);"
+                    >
+                      ${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}%
+                    </span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 12px; color: var(--secondary-text-color);">0%</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      step="1"
+                      .value=${preset.brightness
+                        ? Math.round((preset.brightness / 255) * 100)
+                        : 100}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const brightness = Math.round((parseInt(target.value) / 100) * 255);
+                        updatePreset({ brightness });
+                        this.triggerPreviewUpdate();
+                      }}
+                      class="brightness-slider"
+                    />
+                    <span style="font-size: 12px; color: var(--secondary-text-color);">100%</span>
+                  </div>
+                </div>
 
-        <!-- Visual Customization -->
-        <div
-          class="visual-customization"
-          style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
-        >
+                <!-- Visual Customization -->
+                <div
+                  class="visual-customization"
+                  style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                ></div>
+              </div>
+            `
+          : html`
+              <div
+                style="padding: 20px; text-align: center; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: 8px; font-style: italic; margin-top: 20px;"
+              >
+                Light controls are not available for "Turn Off" action
+              </div>
+            `
+      }
+
+      ${
+        (preset.action || 'turn_on') !== 'turn_off'
+          ? html`
           <div
             style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
           >
@@ -1293,9 +1344,9 @@ export class UltraLightModule extends BaseUltraModule {
 
             <!-- Use Light Color for Icon (disabled if smart contrast is on) -->
             <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${preset.smart_color
-                ? 'opacity: 0.5;'
-                : ''}"
+              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${
+                preset.smart_color ? 'opacity: 0.5;' : ''
+              }"
             >
               <div>
                 <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
@@ -1317,9 +1368,9 @@ export class UltraLightModule extends BaseUltraModule {
 
             <!-- Use Light Color for Button (disabled if smart contrast is on) -->
             <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${preset.smart_color
-                ? 'opacity: 0.5;'
-                : ''}"
+              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${
+                preset.smart_color ? 'opacity: 0.5;' : ''
+              }"
             >
               <div>
                 <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
@@ -1341,9 +1392,9 @@ export class UltraLightModule extends BaseUltraModule {
 
             <!-- Use Icon Color for Text (disabled if smart contrast is on) -->
             <div
-              style="display: flex; align-items: center; justify-content: space-between; ${preset.smart_color
-                ? 'opacity: 0.5;'
-                : ''}"
+              style="display: flex; align-items: center; justify-content: space-between; ${
+                preset.smart_color ? 'opacity: 0.5;' : ''
+              }"
             >
               <div>
                 <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
@@ -1409,117 +1460,122 @@ export class UltraLightModule extends BaseUltraModule {
           </div>
 
           <!-- Custom Colors (only show when smart contrast is disabled) -->
-          ${!preset.smart_color
-            ? html`
-                <div
-                  class="custom-colors"
-                  style="display: flex; flex-direction: column; gap: 16px;"
-                >
-                  <!-- Text Color -->
-                  ${!preset.use_icon_color_for_text
-                    ? html`
-                        <div class="color-field">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
-                          >
-                            Text Color
+          ${
+            !preset.smart_color
+              ? html`
+                  <div
+                    class="custom-colors"
+                    style="display: flex; flex-direction: column; gap: 16px;"
+                  >
+                    <!-- Text Color -->
+                    ${!preset.use_icon_color_for_text
+                      ? html`
+                          <div class="color-field">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
+                              Text Color
+                            </div>
+                            <ultra-color-picker
+                              .hass=${hass}
+                              .value=${preset.text_color || 'var(--primary-text-color)'}
+                              @value-changed=${(e: CustomEvent) =>
+                                updatePreset({ text_color: e.detail.value })}
+                            ></ultra-color-picker>
                           </div>
-                          <ultra-color-picker
-                            .hass=${hass}
-                            .value=${preset.text_color || 'var(--primary-text-color)'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updatePreset({ text_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      `
-                    : html`
-                        <div class="color-field disabled">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            Text Color
+                        `
+                      : html`
+                          <div class="color-field disabled">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
+                            >
+                              Text Color
+                            </div>
+                            <div
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                            >
+                              Using icon color
+                            </div>
                           </div>
-                          <div
-                            style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
-                          >
-                            Using icon color
-                          </div>
-                        </div>
-                      `}
+                        `}
 
-                  <!-- Icon Color -->
-                  ${!preset.use_light_color_for_icon
-                    ? html`
-                        <div class="color-field">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
-                          >
-                            Icon Color
+                    <!-- Icon Color -->
+                    ${!preset.use_light_color_for_icon
+                      ? html`
+                          <div class="color-field">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
+                              Icon Color
+                            </div>
+                            <ultra-color-picker
+                              .hass=${hass}
+                              .value=${preset.icon_color || 'var(--primary-color)'}
+                              @value-changed=${(e: CustomEvent) =>
+                                updatePreset({ icon_color: e.detail.value })}
+                            ></ultra-color-picker>
                           </div>
-                          <ultra-color-picker
-                            .hass=${hass}
-                            .value=${preset.icon_color || 'var(--primary-color)'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updatePreset({ icon_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      `
-                    : html`
-                        <div class="color-field disabled">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            Icon Color
+                        `
+                      : html`
+                          <div class="color-field disabled">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
+                            >
+                              Icon Color
+                            </div>
+                            <div
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                            >
+                              Using light color
+                            </div>
                           </div>
-                          <div
-                            style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
-                          >
-                            Using light color
-                          </div>
-                        </div>
-                      `}
+                        `}
 
-                  <!-- Button Color -->
-                  ${!preset.use_light_color_for_button
-                    ? html`
-                        <div class="color-field">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
-                          >
-                            Button Color
+                    <!-- Button Color -->
+                    ${!preset.use_light_color_for_button
+                      ? html`
+                          <div class="color-field">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
+                              Button Color
+                            </div>
+                            <ultra-color-picker
+                              .hass=${hass}
+                              .value=${preset.button_color || 'var(--primary-color)'}
+                              @value-changed=${(e: CustomEvent) =>
+                                updatePreset({ button_color: e.detail.value })}
+                            ></ultra-color-picker>
                           </div>
-                          <ultra-color-picker
-                            .hass=${hass}
-                            .value=${preset.button_color || 'var(--primary-color)'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updatePreset({ button_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      `
-                    : html`
-                        <div class="color-field disabled">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            Button Color
+                        `
+                      : html`
+                          <div class="color-field disabled">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
+                            >
+                              Button Color
+                            </div>
+                            <div
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                            >
+                              Using light color
+                            </div>
                           </div>
-                          <div
-                            style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
-                          >
-                            Using light color
-                          </div>
-                        </div>
-                      `}
-                </div>
-              `
-            : html`
-                <div
-                  style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 6px;"
-                >
-                  Smart Contrast Mode is enabled - colors are automatically optimized
-                </div>
-              `}
+                        `}
+                  </div>
+                `
+              : html`
+                  <div
+                    style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 6px;"
+                  >
+                    Smart Contrast Mode is enabled - colors are automatically optimized
+                  </div>
+                `
+          }
         </div>
+            `
+          : ''
+      }
 
         <!-- Advanced Settings -->
         <div
@@ -1688,6 +1744,7 @@ export class UltraLightModule extends BaseUltraModule {
     const newPreset: LightPreset = {
       id: newPresetId,
       name: `Preset ${(lightModule.presets || []).length + 1}`,
+      action: 'turn_on' as const,
       entities: [],
       brightness: 255,
       hs_color: [0, 0], // Default to white in HS mode
@@ -1801,7 +1858,16 @@ export class UltraLightModule extends BaseUltraModule {
       return;
     }
 
+    const action = preset.action || 'turn_on';
+
     for (const entityId of entities) {
+      // Handle turn_off action - simple, no parameters needed
+      if (action === 'turn_off') {
+        await this.callLightService('turn_off', entityId, {}, hass);
+        continue;
+      }
+
+      // For turn_on and toggle, build service data with settings
       const serviceData: any = {};
 
       // Check if this is a WLED device early for special handling
@@ -1933,7 +1999,9 @@ export class UltraLightModule extends BaseUltraModule {
         serviceData.white = preset.white;
       }
 
-      await this.callLightService('turn_on', entityId, serviceData, hass);
+      // Use the appropriate service based on action
+      const serviceName = action === 'toggle' ? 'toggle' : 'turn_on';
+      await this.callLightService(serviceName, entityId, serviceData, hass);
     }
 
     // Show feedback if enabled
@@ -2119,6 +2187,17 @@ export class UltraLightModule extends BaseUltraModule {
     }
   }
 
+  private getDefaultIconForAction(action?: string): string {
+    switch (action) {
+      case 'turn_off':
+        return 'mdi:lightbulb-off';
+      case 'toggle':
+        return 'mdi:lightbulb-auto';
+      default:
+        return 'mdi:lightbulb';
+    }
+  }
+
   private renderPresetButton(
     preset: LightPreset,
     lightModule: LightModule,
@@ -2181,7 +2260,7 @@ export class UltraLightModule extends BaseUltraModule {
           title="${hasEntities ? `Apply preset: ${preset.name}` : 'No entities configured'}"
         >
           <ha-icon
-            icon="${preset.icon || 'mdi:lightbulb'}"
+            icon="${preset.icon || this.getDefaultIconForAction(preset.action)}"
             style="color: ${colors.iconColor};"
           ></ha-icon>
           ${showLabels ? html`<span class="preset-label">${preset.name}</span>` : ''}
@@ -2373,16 +2452,23 @@ export class UltraLightModule extends BaseUltraModule {
       errors.push('At least one entity must be selected for each preset');
     }
 
-    // Allow both color and temp for RGBWW lights - no mutual exclusivity check needed
-    if (
-      !preset.brightness &&
-      !preset.rgb_color &&
-      !preset.hs_color &&
-      !preset.xy_color &&
-      !preset.color_temp &&
-      !preset.effect
-    ) {
-      errors.push('At least one light setting (brightness, color, or effect) must be configured');
+    const action = preset.action || 'turn_on';
+
+    // Only require light settings for turn_on and toggle actions
+    if (action !== 'turn_off') {
+      // Allow both color and temp for RGBWW lights - no mutual exclusivity check needed
+      if (
+        !preset.brightness &&
+        !preset.rgb_color &&
+        !preset.hs_color &&
+        !preset.xy_color &&
+        !preset.color_temp &&
+        !preset.effect
+      ) {
+        errors.push(
+          'At least one light setting (brightness, color, or effect) must be configured for turn_on/toggle actions'
+        );
+      }
     }
 
     return errors;

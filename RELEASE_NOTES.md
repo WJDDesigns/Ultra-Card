@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 2.0-beta25
+
+### 🐛 Bug Fixes
+
+- **Fixed YAML support** - Resolved issues with YAML configuration and editing
+- **Fixed UI issues with range sliders** - Improved range slider rendering and interaction
+- **Fixed z-index issues** - Resolved layering problems across the card interface
+- **Fixed Mushroom chip editor issues** - Addressed compatibility and editing problems with Mushroom Chips
+
+### 🚀 New Features
+
+- **Added on/off toggle for light module** - Light module now includes a convenient toggle control for quick on/off switching
+
 ## Version 2.0-beta24
 
 ### 🚀 New Features

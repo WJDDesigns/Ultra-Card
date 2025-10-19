@@ -779,16 +779,6 @@ export class UltraBarModule extends BaseUltraModule {
           <div class="field-container" style="margin-bottom: 24px;">
             <div class="field-title">${localize('editor.bar.appearance.height', lang, 'Bar Height')}</div>
             <div class="field-description">${localize('editor.bar.appearance.height_desc', lang, 'Adjust the thickness of the progress bar in pixels.')}</div>
-            <style>
-              .number-range-control {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-              }
-              .range-slider {
-                flex: 0 0 65%;
-              }
-            </style>
             <div class="number-range-control">
               <input
                 type="range"
@@ -807,7 +797,6 @@ export class UltraBarModule extends BaseUltraModule {
                 type="number"
                 class="range-input"
                 min="8"
-                max="60"
                 step="2"
                 .value="${(barModule as any).height ?? 20}"
                 @input=${(e: Event) => {
@@ -823,7 +812,7 @@ export class UltraBarModule extends BaseUltraModule {
                     const target = e.target as HTMLInputElement;
                     const currentValue = parseInt(target.value) || 20;
                     const increment = e.key === 'ArrowUp' ? 2 : -2;
-                    const newValue = Math.max(8, Math.min(60, currentValue + increment));
+                    const newValue = Math.max(8, currentValue + increment);
                     updateModule({ height: newValue });
                   }
                 }}
@@ -860,7 +849,6 @@ export class UltraBarModule extends BaseUltraModule {
                 type="number"
                 class="gap-input"
                 min="0"
-                max="50"
                 step="1"
                 .value="${barModule.border_radius ?? 10}"
                 @input=${(e: Event) => {
@@ -915,7 +903,6 @@ export class UltraBarModule extends BaseUltraModule {
                 type="number"
                 class="gap-input"
                 min="10"
-                max="100"
                 step="5"
                 .value="${barModule.bar_width || 100}"
                 @input=${(e: Event) => {
@@ -1311,7 +1298,6 @@ export class UltraBarModule extends BaseUltraModule {
                                     type="number"
                                     class="range-input"
                                     min="8"
-                                    max="48"
                                     step="1"
                                     .value="${barModule.minimal_icon_size || 24}"
                                     @input=${(e: Event) => {
@@ -1524,7 +1510,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.percentage_text_size || 14}"
                         @input=${(e: Event) => {
@@ -1720,7 +1705,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.left_title_size || 14}"
                         @input=${(e: Event) => {
@@ -1777,7 +1761,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.left_value_size || 14}"
                         @input=${(e: Event) => {
@@ -1982,7 +1965,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.right_title_size || 14}"
                         @input=${(e: Event) => {
@@ -2039,7 +2021,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.right_value_size || 14}"
                         @input=${(e: Event) => {
@@ -2408,7 +2389,6 @@ export class UltraBarModule extends BaseUltraModule {
                                     type="number"
                                     class="range-input"
                                     min="8"
-                                    max="48"
                                     step="2"
                                     .value="${barModule.minimal_icon_size || 24}"
                                     @input=${(e: Event) => {
@@ -3388,6 +3368,25 @@ export class UltraBarModule extends BaseUltraModule {
 
     const barHeight = `${barHeightValue}px`;
 
+    // Calculate total container height including text elements
+    let totalContainerHeight = barHeightValue;
+
+    // Note: Percentage text is now positioned absolutely on top of the bar for all styles
+    // No need to add extra height for minimal style percentage text
+
+    // Add space for left/right labels if enabled (below the bar)
+    if (barModule.left_enabled || barModule.right_enabled) {
+      const labelSize = Math.max(
+        (barModule as any).left_title_size || 14,
+        (barModule as any).left_value_size || 14,
+        (barModule as any).right_title_size || 14,
+        (barModule as any).right_value_size || 14
+      );
+      totalContainerHeight += labelSize + 16; // label height + margin
+    }
+
+    const totalContainerHeightPx = `${totalContainerHeight}px`;
+
     // Calculate border radius for the bar track. Prefer module value over global design so the slider takes effect immediately.
     const resolvedBorderRadius = (barModule.border_radius ??
       designProperties.border_radius ??
@@ -4102,12 +4101,13 @@ export class UltraBarModule extends BaseUltraModule {
       right: designProperties.right || moduleWithDesign.right || 'auto',
       zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
       width: containerWidth,
-      height: designProperties.height || moduleWithDesign.height || 'auto',
+      height: designProperties.height || moduleWithDesign.height || totalContainerHeightPx,
       maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
       maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
       minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
       minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
       overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      boxSizing: 'border-box',
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
       backdropFilter:
         designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
@@ -4117,7 +4117,6 @@ export class UltraBarModule extends BaseUltraModule {
           : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
             ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
             : 'none',
-      boxSizing: 'border-box',
       color: designProperties.color || moduleWithDesign.color || 'var(--primary-text-color)',
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
       fontSize: (() => {
@@ -4257,18 +4256,18 @@ export class UltraBarModule extends BaseUltraModule {
       </style>
       <div class="bar-module-preview" style=${this.styleObjectToCss(containerStyles)}>
         <!-- Bar Container -->
-        <div style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0;">
+        <div style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0; overflow: visible;">
           <div
             class="bar-container ${hoverEffectClass}"
             style="
-            width: ${barWidth};
+            ${normalizedWidth < 100 ? `width: ${barWidth};` : ''}
             max-width: 100%;
-            flex: ${normalizedWidth < 100 ? '0 0 auto' : '1 1 auto'};
+            flex: ${normalizedWidth < 100 ? '0 0 auto' : '1 1 0'};
             height: ${barHeight}; 
             background: ${trackBackground};
-            min-width: 80px;
+            ${normalizedWidth < 100 ? 'min-width: 80px;' : 'min-width: 0;'}
             border-radius: ${borderRadius}px;
-            overflow: ${barModule.bar_style === 'minimal' ? 'visible' : 'hidden'};
+            overflow: 'visible';
             position: relative;
             transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
             border: ${
@@ -4760,35 +4759,31 @@ export class UltraBarModule extends BaseUltraModule {
                     <div
                       class="percentage-text"
                       style="
-                    position: ${barModule.bar_style === 'minimal' ? 'relative' : 'absolute'};
-                    top: ${barModule.bar_style === 'minimal' ? 'auto' : '50%'};
-                    left: ${barModule.bar_style === 'minimal'
-                        ? 'auto'
-                        : barModule.percentage_text_alignment === 'left'
-                          ? '8px'
-                          : barModule.percentage_text_alignment === 'right'
-                            ? 'calc(100% - 32px)'
-                            : '50%'};
-                    transform: ${barModule.bar_style === 'minimal'
-                        ? 'none'
-                        : barModule.percentage_text_alignment === 'center'
-                          ? 'translate(-50%, -50%)'
-                          : 'translate(0, -50%)'};
+                    position: absolute;
+                    top: 50%;
+                    left: ${barModule.percentage_text_alignment === 'left'
+                        ? '8px'
+                        : barModule.percentage_text_alignment === 'right'
+                          ? 'calc(100% - 32px)'
+                          : '50%'};
+                    transform: ${barModule.percentage_text_alignment === 'center'
+                        ? 'translate(-50%, -50%)'
+                        : 'translate(0, -50%)'};
                     text-align: ${barModule.percentage_text_alignment || 'center'};
                     font-size: ${designProperties.font_size
-                        ? `${designProperties.font_size}px`
-                        : `${barModule.percentage_text_size || 14}px`};
+                        ? `${Math.min(designProperties.font_size, barHeightValue * 0.8)}px`
+                        : `${Math.min(barModule.percentage_text_size || 14, barHeightValue * 0.8)}px`};
                     color: ${barModule.percentage_text_color ||
                       designProperties.color ||
                       moduleWithDesign.color ||
                       'white'};
                     font-weight: 600;
-                    z-index: ${barModule.bar_style === 'minimal' ? '2' : '10'};
+                    z-index: 10;
                     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
                     white-space: nowrap;
-                    ${barModule.bar_style === 'minimal'
-                        ? 'margin-top: 8px; position: relative; display: block;'
-                        : ''}
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 100%;
                   "
                     >
                       ${(() => {
@@ -4870,20 +4865,23 @@ export class UltraBarModule extends BaseUltraModule {
                 <div
                   class="bar-labels-below"
                   style="display: flex; justify-content: ${barModule.label_alignment ||
-                  'space-between'}; align-items: center; margin-top: 8px; gap: 16px; width: 100%;"
+                  'space-between'}; align-items: center; margin-top: 8px; gap: 16px; width: 100%; overflow: hidden; box-sizing: border-box;"
                 >
                   ${barModule.left_enabled
                     ? html`
-                        <div class="left-side-below" style="text-align: left;">
+                        <div
+                          class="left-side-below"
+                          style="text-align: left; flex: 1; min-width: 0; overflow: hidden;"
+                        >
                           ${barModule.left_title && barModule.left_title.trim()
                             ? html`
                                 <span
                                   style="font-size: ${designProperties.font_size
-                                    ? `${designProperties.font_size}px`
-                                    : `${barModule.left_title_size || 14}px`}; color: ${designProperties.color ||
+                                    ? `${Math.min(designProperties.font_size, 16)}px`
+                                    : `${Math.min(barModule.left_title_size || 14, 16)}px`}; color: ${designProperties.color ||
                                   barModule.left_title_color ||
                                   moduleWithDesign.color ||
-                                  'var(--primary-text-color)'};"
+                                  'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 >
                                   ${barModule.left_title}:
                                 </span>
@@ -4891,14 +4889,14 @@ export class UltraBarModule extends BaseUltraModule {
                             : ''}
                           <span
                             style="font-size: ${designProperties.font_size
-                              ? `${designProperties.font_size}px`
-                              : `${barModule.left_value_size || 14}px`}; font-weight: 600; color: ${designProperties.color ||
+                              ? `${Math.min(designProperties.font_size, 16)}px`
+                              : `${Math.min(barModule.left_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
                             barModule.left_value_color ||
                             moduleWithDesign.color ||
                             'var(--primary-text-color)'}; margin-left: ${barModule.left_title &&
                             barModule.left_title.trim()
                               ? '4px'
-                              : '0'};"
+                              : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                           >
                             ${leftDisplay}
                           </span>
@@ -4907,16 +4905,19 @@ export class UltraBarModule extends BaseUltraModule {
                     : html`<div></div>`}
                   ${barModule.right_enabled
                     ? html`
-                        <div class="right-side-below" style="text-align: right;">
+                        <div
+                          class="right-side-below"
+                          style="text-align: right; flex: 1; min-width: 0; overflow: hidden;"
+                        >
                           ${barModule.right_title && barModule.right_title.trim()
                             ? html`
                                 <span
                                   style="font-size: ${designProperties.font_size
-                                    ? `${designProperties.font_size}px`
-                                    : `${barModule.right_title_size || 14}px`}; color: ${designProperties.color ||
+                                    ? `${Math.min(designProperties.font_size, 16)}px`
+                                    : `${Math.min(barModule.right_title_size || 14, 16)}px`}; color: ${designProperties.color ||
                                   barModule.right_title_color ||
                                   moduleWithDesign.color ||
-                                  'var(--primary-text-color)'};"
+                                  'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 >
                                   ${barModule.right_title}:
                                 </span>
@@ -4924,14 +4925,14 @@ export class UltraBarModule extends BaseUltraModule {
                             : ''}
                           <span
                             style="font-size: ${designProperties.font_size
-                              ? `${designProperties.font_size}px`
-                              : `${barModule.right_value_size || 14}px`}; font-weight: 600; color: ${designProperties.color ||
+                              ? `${Math.min(designProperties.font_size, 16)}px`
+                              : `${Math.min(barModule.right_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
                             barModule.right_value_color ||
                             moduleWithDesign.color ||
                             'var(--primary-text-color)'}; margin-left: ${barModule.right_title &&
                             barModule.right_title.trim()
                               ? '4px'
-                              : '0'};"
+                              : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                           >
                             ${rightDisplay}
                           </span>
@@ -5364,8 +5365,9 @@ export class UltraBarModule extends BaseUltraModule {
 
       /* Fix input field containers */
       .settings-section input[type="number"] {
-        min-width: 60px;
-        max-width: 80px;
+        width: 72px !important;
+        max-width: 72px !important;
+        min-width: 72px !important;
         flex-shrink: 0;
       }
 
@@ -5529,9 +5531,9 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
+        width: 72px !important;
+        max-width: 72px !important;
+        min-width: 72px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
@@ -5545,6 +5547,39 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      /* Range input styling for number-range-control */
+      .number-range-control {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .range-slider {
+        flex: 1;
+      }
+
+      .range-input {
+        width: 72px !important;
+        max-width: 72px !important;
+        min-width: 72px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .range-input:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);

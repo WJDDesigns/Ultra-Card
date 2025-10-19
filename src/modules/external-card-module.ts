@@ -10,8 +10,8 @@ import {
 } from '../pro/third-party-limit-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { ref } from 'lit/directives/ref.js';
-import '../components/ultra-template-editor';
 import yaml from 'js-yaml';
+import '../components/ultra-template-editor';
 
 // Debounce timers for config updates to prevent rapid re-render loops from spurious events
 const updateDebounceTimers = new Map<string, number>();
@@ -434,13 +434,16 @@ export class UltraExternalCardModule extends BaseUltraModule {
         container.appendChild(editor);
       }
 
-      // Update properties on cached editor ONLY if they've actually changed
-      // This prevents unnecessary re-renders that cause scroll/focus issues
+      // Update properties on cached editor
+      // Always set config when editor is remounted (not in DOM) to ensure fresh state
+      // Only skip config update if editor is currently mounted and config hasn't changed
       try {
+        const editorIsMounted = container.contains(editor);
         const configChanged =
           JSON.stringify(editor.config || {}) !== JSON.stringify(module.card_config || {});
 
-        if (configChanged) {
+        // Always update config if editor was just remounted OR if config changed
+        if (!editorIsMounted || configChanged) {
           if (typeof editor.setConfig === 'function') {
             editor.setConfig(module.card_config || {});
           } else {
@@ -483,11 +486,17 @@ export class UltraExternalCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult {
+    console.log('[UC] ExternalCardModule renderYamlTab called');
+    console.log('[UC] Module:', module);
+    console.log('[UC] Module card_type:', module.card_type);
+    console.log('[UC] Module card_config:', module.card_config);
+
     // Convert config to YAML format with proper indentation
     let yamlString: string;
     try {
       // Use card_config or empty object if undefined
       const configToConvert = module.card_config || {};
+      console.log('[UC] Converting config to YAML:', configToConvert);
 
       // Convert to YAML with proper formatting (standard HA card config format)
       yamlString = yaml.dump(configToConvert, {
@@ -495,9 +504,18 @@ export class UltraExternalCardModule extends BaseUltraModule {
         lineWidth: -1, // Don't wrap lines
         noRefs: true, // Don't use references
         sortKeys: false, // Preserve key order
+        flowLevel: -1, // Use block style for all levels
+        styles: {
+          '!!null': 'empty', // Don't output null values
+        },
       });
+
+      // Remove any leading pipe character if present (shouldn't happen, but defensive)
+      yamlString = yamlString.replace(/^\|\s*\n/, '');
+
+      console.log('[UC] Generated YAML string:', yamlString);
     } catch (error) {
-      console.error('Failed to convert config to YAML:', error);
+      console.error('[UC] Failed to convert config to YAML:', error);
       yamlString = '# Error converting config to YAML\n';
     }
 
@@ -510,10 +528,15 @@ export class UltraExternalCardModule extends BaseUltraModule {
       }
     };
 
+    // Use Ultra Card's own CodeMirror-based editor for YAML
+    console.log('[UC] Using ultra-template-editor for YAML');
+    console.log('[UC] YAML string length:', yamlString.length);
+    console.log('[UC] YAML string preview:', yamlString.substring(0, 100));
+
     return html`
       ${this.injectUcFormStyles()}
-      <div class="external-card-yaml-tab">
-        <div class="settings-section">
+      <div class="external-card-yaml-tab" style="width: 100%; height: 100%; display: block;">
+        <div class="settings-section" style="width: 100%; height: 100%; display: block;">
           <div
             class="section-title"
             style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary-color); text-transform: uppercase;"
@@ -527,14 +550,16 @@ export class UltraExternalCardModule extends BaseUltraModule {
             Edit the card's configuration directly in YAML format. Changes are applied
             automatically.
           </div>
-          <ultra-template-editor
-            .hass=${hass}
-            .value=${yamlString}
-            .placeholder=${'type: custom:button-card\nentity: sensor.example\nname: Example Card'}
-            .minHeight=${200}
-            .maxHeight=${600}
-            @value-changed=${handleYamlChange}
-          ></ultra-template-editor>
+          <div class="yaml-editor-container" style="width: 100%; display: block;">
+            <ultra-template-editor
+              .hass=${hass}
+              .value=${yamlString}
+              .placeholder=${'type: custom:button-card\nentity: sensor.example\nname: Example Card'}
+              .minHeight=${300}
+              .maxHeight=${600}
+              @value-changed=${handleYamlChange}
+            ></ultra-template-editor>
+          </div>
         </div>
       </div>
     `;
@@ -1125,6 +1150,50 @@ export class UltraExternalCardModule extends BaseUltraModule {
       /* Native editor container */
       .native-editor-container {
         min-height: 200px;
+      }
+
+      /* YAML tab styling */
+      .external-card-yaml-tab {
+        width: 100%;
+        height: 100%;
+        display: block;
+        overflow: visible;
+      }
+
+      .external-card-yaml-tab .settings-section {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .yaml-editor-container {
+        width: 100%;
+        display: block;
+        position: relative;
+        z-index: 1;
+      }
+
+      .yaml-textarea {
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+        cursor: text !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+      }
+
+      .yaml-textarea:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
+      .yaml-editor-fallback {
+        width: 100%;
+        display: block;
+        position: relative;
+        z-index: 1;
       }
     `;
   }

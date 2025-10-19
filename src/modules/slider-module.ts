@@ -759,7 +759,7 @@ export class UltraSliderModule extends BaseUltraModule {
   renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     // Use the same config object structure
     const config = { layout: { rows: [] } } as UltraCardConfig;
-    return this.renderPreview(module, hass, config);
+    return this.renderPreview(module, hass, config, true);
   }
 
   renderPreview(
@@ -1507,7 +1507,12 @@ export class UltraSliderModule extends BaseUltraModule {
                     const isVisible = logicService.evaluateModuleVisibility(childModule);
                     if (!isVisible) return '';
 
-                    return childModuleHandler.renderPreview(childModule, hass, config);
+                    return childModuleHandler.renderPreview(
+                      childModule,
+                      hass,
+                      config,
+                      isEditorPreview
+                    );
                   })}
                 </div>
               </div>

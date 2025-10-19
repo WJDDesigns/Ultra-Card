@@ -300,8 +300,9 @@ export declare class LayoutTab extends LitElement {
     private _renderImportDialog;
     private _handleImport;
     private _getDefaultCardConfig;
+    private _tryHACardHelper;
+    private _getHardcodedDefault;
     private _tryGetStubConfig;
-    private _callGetStubConfig;
     private _add3rdPartyCard;
     private _isLayoutModule;
     private _shouldAutoOpenSettings;

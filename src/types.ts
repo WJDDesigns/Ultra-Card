@@ -2166,6 +2166,7 @@ export interface LightModule extends BaseModule {
   presets: Array<{
     id: string;
     name: string; // Display name/label for the preset
+    action?: 'turn_on' | 'turn_off' | 'toggle'; // Action type for this preset
     icon?: string; // Optional icon for button/icon display
     entities: string[]; // Entities this preset applies to
     brightness?: number; // 0-255
