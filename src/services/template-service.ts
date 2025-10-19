@@ -86,47 +86,45 @@ export class TemplateService {
 
     try {
       // Create a subscription to the template
-      const subPromise: Promise<() => Promise<void>> = new Promise((resolve, reject) => {
-        const unsubFunc = this.hass!.connection.subscribeMessage(
-          (message: any) => {
-            // Extract the rendered result from the message
-            const renderedResult = message.result;
+      const unsubFunc = this.hass.connection.subscribeMessage(
+        (message: any) => {
+          // Extract the rendered result from the message
+          const renderedResult = message.result;
 
-            // Store the original rendered string for use in state text templates
-            if (!this.hass.__uvc_template_strings) {
-              this.hass.__uvc_template_strings = {};
-            }
-            this.hass.__uvc_template_strings[templateKey] = renderedResult;
-
-            // Update the template result using the extracted string
-            const newValue = this.parseTemplateResult(renderedResult, templateKey);
-            const oldValue = this._templateResults.get(templateKey);
-
-            if (newValue !== oldValue) {
-              // Only request a re-render if the value actually changed
-              if (onResultChanged) {
-                onResultChanged();
-              }
-            }
-
-            this._templateResults.set(templateKey, newValue);
-
-            // Also cache the result
-            this._evaluationCache.set(templateKey, {
-              value: newValue,
-              timestamp: Date.now(),
-              stringValue: renderedResult,
-            });
-          },
-          {
-            type: 'render_template',
-            template: template,
+          // Store the original rendered string for use in state text templates
+          if (!this.hass.__uvc_template_strings) {
+            this.hass.__uvc_template_strings = {};
           }
-        );
-        resolve(unsubFunc);
-      });
+          this.hass.__uvc_template_strings[templateKey] = renderedResult;
 
-      this._templateSubscriptions.set(templateKey, subPromise);
+          // Update the template result using the extracted string
+          const newValue = this.parseTemplateResult(renderedResult, templateKey);
+          const oldValue = this._templateResults.get(templateKey);
+
+          if (newValue !== oldValue) {
+            // Only request a re-render if the value actually changed
+            if (onResultChanged) {
+              onResultChanged();
+            }
+          }
+
+          this._templateResults.set(templateKey, newValue);
+
+          // Also cache the result
+          this._evaluationCache.set(templateKey, {
+            value: newValue,
+            timestamp: Date.now(),
+            stringValue: renderedResult,
+          });
+        },
+        {
+          type: 'render_template',
+          template: template,
+        }
+      );
+
+      // Store the unsubscribe function directly instead of wrapping it in a Promise
+      this._templateSubscriptions.set(templateKey, Promise.resolve(unsubFunc));
     } catch (err) {
       console.error(`[UltraVehicleCard] Failed to subscribe to template: ${template}`, err);
     }

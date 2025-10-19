@@ -15,6 +15,7 @@ export class UltraMarkdownModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
   private _renderedContentCache: Map<string, string> = new Map();
   private _templateInputDebounce: any = null;
+  private _templateUpdateListener: (() => void) | null = null;
 
   // Hash function for template caching
   private _hashString(str: string): string {
@@ -38,6 +39,29 @@ export class UltraMarkdownModule extends BaseUltraModule {
     } else {
       // Clear all cache
       this._renderedContentCache.clear();
+    }
+  }
+
+  // Cleanup method to remove event listeners
+  cleanup(): void {
+    if (this._templateUpdateListener) {
+      window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+      this._templateUpdateListener = null;
+    }
+
+    // Clear template service subscriptions
+    if (this._templateService) {
+      // The template service will handle its own cleanup
+      this._templateService = null;
+    }
+
+    // Clear caches
+    this._renderedContentCache.clear();
+
+    // Clear any pending timers
+    if (this._templateInputDebounce) {
+      clearTimeout(this._templateInputDebounce);
+      this._templateInputDebounce = null;
     }
   }
 
@@ -114,27 +138,29 @@ All standard markdown features are automatically enabled!`,
             ${localize('editor.markdown.content.title', lang, 'Markdown Content')}
           </div>
           <div class="field-group">
-            <ha-form
+            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+              ${localize('editor.markdown.content.label', lang, 'Content')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+            >
+              ${localize(
+                'editor.markdown.content.desc',
+                lang,
+                'Enter your markdown content with full formatting support'
+              )}
+            </div>
+            <ultra-template-editor
               .hass=${hass}
-              .data=${{ markdown_content: markdownModule.markdown_content || '' }}
-              .schema=${[
-                {
-                  name: 'markdown_content',
-                  label: localize('editor.markdown.content.label', lang, 'Content'),
-                  description: localize(
-                    'editor.markdown.content.desc',
-                    lang,
-                    'Enter your markdown content with full formatting support'
-                  ),
-                  selector: { text: { multiline: true } },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
+              .value=${markdownModule.markdown_content || ''}
+              .placeholder=${'# Welcome\n\nEnter your **markdown** content here with full formatting support...\n\n- Lists\n- **Bold** and *italic*\n- Tables, code blocks, and more!'}
+              .minHeight=${200}
+              .maxHeight=${400}
               @value-changed=${(e: CustomEvent) => {
-                updateModule({ markdown_content: e.detail.value.markdown_content });
+                updateModule({ markdown_content: e.detail.value });
               }}
-            ></ha-form>
+            ></ultra-template-editor>
           </div>
         </div>
 
@@ -347,6 +373,17 @@ All standard markdown features are automatically enabled!`,
     isEditorPreview?: boolean
   ): TemplateResult {
     const markdownModule = module as MarkdownModule;
+
+    // Set up template update listener if not already set up
+    if (!this._templateUpdateListener && typeof window !== 'undefined') {
+      this._templateUpdateListener = () => {
+        // Clear cache when template updates occur to force re-render
+        this._renderedContentCache.clear();
+        // Trigger a preview update
+        this.triggerPreviewUpdate();
+      };
+      window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+    }
 
     // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = markdownModule as any;
@@ -583,7 +620,7 @@ All standard markdown features are automatically enabled!`,
       // Process Jinja templates first if they exist in the content
       let processedContent = content;
 
-      // Check if content contains Jinja templates
+      // Check if content contains Jinja templates (both {{ }} and {% %} syntax)
       const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(content);
 
       if (hasTemplates && hass) {
@@ -619,8 +656,10 @@ All standard markdown features are automatically enabled!`,
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined) {
           processedContent = String(rendered);
+        } else {
+          // For initial render, show a placeholder instead of raw template
+          processedContent = 'Template processing...';
         }
-        // If no rendered result yet, the WebSocket subscription will trigger an update when ready
       }
 
       // Configure marked.js options like Home Assistant
@@ -690,7 +729,7 @@ All standard markdown features are automatically enabled!`,
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined) {
           // Re-process with the latest template result
-          const result = renderMarkdown(sourceContent);
+          const result = renderMarkdown(String(rendered));
           this._renderedContentCache.set(contentKey, result);
           renderedContent = result;
         }

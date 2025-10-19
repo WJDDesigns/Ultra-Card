@@ -6,8 +6,10 @@ export declare class UltraMarkdownModule extends BaseUltraModule {
     private _templateService;
     private _renderedContentCache;
     private _templateInputDebounce;
+    private _templateUpdateListener;
     private _hashString;
     private _clearMarkdownCache;
+    cleanup(): void;
     metadata: ModuleMetadata;
     createDefault(id?: string, hass?: HomeAssistant): MarkdownModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;

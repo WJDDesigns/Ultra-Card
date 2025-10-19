@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 2.0-beta26
+
+### 🐛 Bug Fixes
+
+- **Fixed bar module style outline** - Resolved styling issues with bar module outline rendering
+- **Fixed bar module bar style glass to look glassy** - Enhanced glass effect styling for bar module to achieve proper translucent appearance
+
+### 🚀 New Features
+
+- **Updated markdown module to new code editor** - Markdown module now uses the modern CodeMirror-based editor with syntax highlighting and better editing experience
+- **Added some other cool amazing stuff** - Various improvements and enhancements throughout the card
+
 ## Version 2.0-beta25
 
 ### 🐛 Bug Fixes

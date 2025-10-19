@@ -25,6 +25,9 @@ const cardElementCache = new Map<string, HTMLElement>();
 // WeakMap to track direct hass update handlers for immediate updates
 const cardHassUpdateHandlers = new WeakMap<HTMLElement, (hass: any) => void>();
 
+// WeakMap to track the last hass instance set on each card to prevent duplicate updates
+const cardLastHass = new WeakMap<HTMLElement, any>();
+
 // Global cache for allowed external card IDs (first 5 by timestamp)
 // This is refreshed periodically to avoid expensive dashboard scans on every render
 let allowedExternalCardIdsCache: Set<string> | null = null;
@@ -86,9 +89,13 @@ export class UltraExternalCardModule extends BaseUltraModule {
       const handler = cardHassUpdateHandlers.get(cardElement);
       if (handler) {
         handler(hass);
+        // Track that we updated hass to prevent duplicate updates in refCallback
+        cardLastHass.set(cardElement, hass);
       } else if (cardElement && typeof (cardElement as any).hass !== 'undefined') {
         // Fallback: directly update hass if no handler registered
         (cardElement as any).hass = hass;
+        // Track that we updated hass to prevent duplicate updates in refCallback
+        cardLastHass.set(cardElement, hass);
       }
     });
   }
@@ -810,6 +817,9 @@ export class UltraExternalCardModule extends BaseUltraModule {
             }
           };
           cardHassUpdateHandlers.set(cardElement, updateHandler);
+
+          // Track initial hass to prevent duplicate updates
+          cardLastHass.set(cardElement, hass);
         } catch (error) {
           console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
           // If card creation fails, show error in container
@@ -843,7 +853,48 @@ export class UltraExternalCardModule extends BaseUltraModule {
           // CRITICAL: Always update hass on every render to enable real-time updates
           // This replicates native HA behavior where cards receive continuous hass updates
           // and allows cards like Apex Chart to show loading indicators and update smoothly
-          cardElement.hass = hass;
+
+          // Check if this is the same hass instance to prevent duplicate updates
+          // (Ultra Card updates hass directly via updateAllCardHass AND via render cycle)
+          const lastHass = cardLastHass.get(cardElement);
+          const isSameHass = lastHass === hass;
+
+          if (!isSameHass) {
+            // On mobile, preserve scroll position during hass updates to prevent iOS scroll jumping
+            const isMobile = window.innerWidth < 768;
+            let savedScrollY = 0;
+
+            if (isMobile) {
+              savedScrollY = window.scrollY;
+            }
+
+            cardElement.hass = hass;
+            cardLastHass.set(cardElement, hass);
+
+            // Restore scroll position on mobile after DOM update (multiple attempts for reliability)
+            if (isMobile && savedScrollY > 0) {
+              // Attempt 1: Immediate in next animation frame
+              requestAnimationFrame(() => {
+                if (window.scrollY !== savedScrollY) {
+                  window.scrollTo(0, savedScrollY);
+                }
+              });
+
+              // Attempt 2: After a short delay (catches delayed redraws)
+              setTimeout(() => {
+                if (window.scrollY !== savedScrollY) {
+                  window.scrollTo(0, savedScrollY);
+                }
+              }, 16);
+
+              // Attempt 3: After a longer delay (catches ApexCharts animation)
+              setTimeout(() => {
+                if (window.scrollY !== savedScrollY) {
+                  window.scrollTo(0, savedScrollY);
+                }
+              }, 100);
+            }
+          }
 
           // Ensure element is still mounted (might have been detached by Lit)
           if (!container.contains(cardElement)) {
@@ -1056,6 +1107,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
       .external-card-module-container {
         width: 100%;
         box-sizing: border-box;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when cards update */
       }
 
       /* Container works in both flex and grid layouts */
@@ -1066,6 +1118,9 @@ export class UltraExternalCardModule extends BaseUltraModule {
         flex: 1 1 auto; /* For flex parent contexts (horizontal layouts) */
         min-width: 0; /* Allow flex shrinking below content size */
         min-height: 0; /* Allow flex shrinking below content size */
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when cards update */
+        isolation: isolate; /* Create new stacking context to prevent flicker */
+        contain: layout; /* Contain layout changes within this element */
       }
 
       /* Child cards fill the container */
@@ -1073,6 +1128,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
         width: 100%;
         min-width: 0; /* Allow shrinking */
         flex: 1 1 auto; /* Let cards participate in flex */
+        will-change: transform; /* Optimize repaints during updates */
+        backface-visibility: hidden; /* Prevent flicker during redraws */
       }
 
       /* Unique class for targeting 3rd party cards separately */

@@ -3645,133 +3645,88 @@ export class UltraBarModule extends BaseUltraModule {
         break;
       case 'outline':
         {
-          // Build layered backgrounds so border matches gradient and supports radius.
-          const hasGradient =
-            !!barModule.use_gradient &&
-            !!barModule.gradient_stops &&
-            (barModule.gradient_display_mode === 'full' ||
-              barModule.gradient_display_mode === 'cropped' ||
-              barModule.gradient_display_mode === 'value-based');
-
-          const stops =
-            barModule.gradient_stops && barModule.gradient_stops.length > 0
-              ? [...barModule.gradient_stops].sort((a, b) => a.position - b.position)
-              : createDefaultGradientStops();
-          const lastStop = stops[stops.length - 1];
-          const lastColor = lastStop
-            ? resolveCSSColor(lastStop.color)
-            : barModule.bar_color || 'var(--primary-color)';
-
-          // Determine gradient direction based on bar direction
-          const fillDirection = (barModule as any).bar_direction || 'left-to-right';
-          const gradientDirection = fillDirection === 'right-to-left' ? 'to left' : 'to right';
-          const gradStr = stops.map(s => `${resolveCSSColor(s.color)} ${s.position}%`).join(', ');
-
-          const pct = Math.max(0, Math.min(100, percentage));
-
-          // For cropped/value-based modes, determine the color at the current percentage
-          const getColorAtPercentage = (pos: number): string => {
-            // Use the same logic as interpolateColorAtPosition to handle CSS variables
-            return resolveCSSColor(interpolateColorAtPosition(stops, pos));
-          };
-
-          // Determine which color to extend based on gradient mode
-          let extendColor = lastColor;
-          if (
-            barModule.gradient_display_mode === 'cropped' ||
-            barModule.gradient_display_mode === 'value-based'
-          ) {
-            extendColor = getColorAtPercentage(pct);
-          }
-          // Layer order is important: first is topmost
-          // 1) Transparent layer clips the inner area (padding-box)
-          // 2) Gradient layer sized to the filled percent (border-box)
-          // 3) Base layer with the last color for the remaining ring (border-box)
-          // Determine the track background (gap color) so the gap is visible
-          const trackBg = trackBackground;
-
-          // Use the actual barFillBackground for border so it matches exactly
-          const gradientMode = barModule.gradient_display_mode || 'full';
-          const isRightToLeft = fillDirection === 'right-to-left';
-
-          let borderLayers = '';
-          let sizeRule = '';
-
-          if (hasGradient) {
-            if (gradientMode === 'value-based') {
-              // Value-based: solid color border matching fill
-              borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-              sizeRule = `background-size: 100% 100%, 100% 100%;`;
-            } else if (gradientMode === 'cropped') {
-              // Cropped: gradient up to percentage, then extend last color
-              if (isRightToLeft) {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 ${barFillBackground} border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;
-                           background-position: 0 0, ${100 - pct}% 0, 0 0;`;
-              } else {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 ${barFillBackground} border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
-              }
-            } else {
-              // Full: show full gradient for fill portion, extend last color for remaining border
-              if (isRightToLeft) {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 linear-gradient(${gradientDirection}, ${gradStr}) border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;
-                           background-position: 0 0, ${100 - pct}% 0, 0 0;`;
-              } else {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 linear-gradient(${gradientDirection}, ${gradStr}) border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
-              }
-            }
-          } else {
-            // No gradient: solid color border
-            borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(${gradientDirection}, ${barFillBackground}, ${barFillBackground}) border-box`;
-            sizeRule = `background-size: 100% 100%, 100% 100%;`;
-          }
+          // Outline style: Full-width track with bar inside
+          // Track spans 100% width, bar fills only to percentage with gap between
+          const outlineColor = barModule.bar_color || 'var(--primary-color)';
+          const trackColor = trackBackground || 'rgba(255, 255, 255, 0.1)';
+          const gapSize = 4; // Space between track and bar
 
           barStyleCSS = `
-            border: 2px solid transparent;
+            border: 2px solid ${resolveCSSColor(outlineColor)};
             border-radius: ${borderRadius}px;
-            padding: 4px;
-            background: ${borderLayers};
-            ${sizeRule}
-            background-repeat: no-repeat;
+            background: ${trackColor};
+            padding: ${gapSize}px;
           `;
 
           fillStyleCSS = `
             background: ${barFillBackground};
             border: none;
+            border-radius: ${Math.max(0, borderRadius - gapSize)}px;
             position: relative;
             margin: 0;
+            width: ${percentage}%;
+            transition: width 0.3s ease;
           `;
         }
         break;
       case 'glass':
-        barStyleCSS = `
-          backdrop-filter: blur(10px);
-          background-color: rgba(255,255,255,0.1) !important;
-          border: 1px solid rgba(255,255,255,0.2);
-        `;
-        if (barModule.use_gradient) {
-          fillOverlayCSS = `
-            backdrop-filter: blur(5px);
-            background-image: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+        {
+          // Liquid Glass effect inspired by iOS 16
+          // Creates a frosted glass appearance with subtle depth and translucency
+          const glassOpacity = 0.15;
+          const glassBorderOpacity = 0.25;
+          const glassBlur = 20;
+
+          barStyleCSS = `
+            backdrop-filter: blur(${glassBlur}px) saturate(180%);
+            background: linear-gradient(
+              135deg,
+              rgba(255, 255, 255, ${glassOpacity * 0.8}) 0%,
+              rgba(255, 255, 255, ${glassOpacity * 0.4}) 50%,
+              rgba(255, 255, 255, ${glassOpacity}) 100%
+            );
+            border: 1px solid rgba(255, 255, 255, ${glassBorderOpacity});
+            border-radius: ${borderRadius}px;
+            box-shadow: 
+              0 8px 32px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+            position: relative;
           `;
-        } else {
-          fillStyleCSS = `
-            backdrop-filter: blur(5px);
-            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)) !important;
-          `;
+
+          // Enhanced fill with liquid glass effect
+          if (barModule.use_gradient) {
+            fillOverlayCSS = `
+              backdrop-filter: blur(${glassBlur * 0.6}px) saturate(200%);
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.25) 0%,
+                rgba(255, 255, 255, 0.1) 30%,
+                rgba(255, 255, 255, 0.05) 70%,
+                rgba(255, 255, 255, 0.15) 100%
+              );
+              border-radius: ${Math.max(0, borderRadius - 2)}px;
+              box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+            `;
+          } else {
+            fillStyleCSS = `
+              backdrop-filter: blur(${glassBlur * 0.6}px) saturate(200%);
+              background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.25) 0%,
+                rgba(255, 255, 255, 0.1) 30%,
+                rgba(255, 255, 255, 0.05) 70%,
+                rgba(255, 255, 255, 0.15) 100%
+              );
+              border-radius: ${Math.max(0, borderRadius - 2)}px;
+              box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+              position: relative;
+            `;
+          }
         }
         break;
       case 'metallic':
@@ -5715,8 +5670,30 @@ export class UltraBarModule extends BaseUltraModule {
       .bar-fill.bar-anim-glow { box-shadow: 0 0 10px currentColor, 0 0 20px currentColor; animation: bar-glow 1.5s ease-in-out infinite; }
       @keyframes bar-glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.4); } }
 
-      .bar-fill.bar-anim-rainbow::after { content:''; position:absolute; inset:0; pointer-events:none; background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet); background-size: 400% 100%; mix-blend-mode: overlay; opacity: 0.9; animation: rainbow-shift 3s linear infinite; }
-      @keyframes rainbow-shift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+      .bar-fill.bar-anim-rainbow::after { 
+        content:''; 
+        position:absolute; 
+        inset:0; 
+        pointer-events:none; 
+        background: linear-gradient(90deg, 
+          red 0%, 
+          orange 14.28%, 
+          yellow 28.57%, 
+          green 42.85%, 
+          cyan 57.14%, 
+          blue 71.42%, 
+          violet 85.71%, 
+          red 100%
+        ); 
+        background-size: 200% 100%; 
+        mix-blend-mode: overlay; 
+        opacity: 0.9; 
+        animation: rainbow-shift 4s linear infinite; 
+      }
+      @keyframes rainbow-shift { 
+        0% { background-position: 0% 0%; } 
+        100% { background-position: 200% 0%; } 
+      }
 
       /* Bubbles: two extended layers with discrete bubbles, animated bottom -> top */
       .bar-fill.bar-anim-bubbles::before,

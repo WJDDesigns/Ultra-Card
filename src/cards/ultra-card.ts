@@ -1879,6 +1879,7 @@ export class UltraCard extends LitElement {
         container-type: inline-size;
         width: 100%;
         min-width: 0;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       .card-container {
@@ -1890,6 +1891,7 @@ export class UltraCard extends LitElement {
         /* Responsive sizing for sections view */
         width: 100%;
         box-sizing: border-box;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       .welcome-text {
@@ -1911,6 +1913,7 @@ export class UltraCard extends LitElement {
         /* No default margins - spacing controlled by individual modules */
         min-width: 0; /* allow columns to shrink inside row */
         width: 100%;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       /* Background blur support - use pseudo-element to avoid blurring content */
@@ -1952,6 +1955,7 @@ export class UltraCard extends LitElement {
         width: 100%;
         max-width: 100%;
         overflow: hidden; /* keep column from exceeding its card area */
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       /* Ensure media inside columns never exceed the column width */
