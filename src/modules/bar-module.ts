@@ -3648,10 +3648,9 @@ export class UltraBarModule extends BaseUltraModule {
           filter: brightness(1.2);
         `;
 
-        // Create edge glow overlay
+        // Create edge glow overlay positioned at trailing edge
         fillOverlayCSS = showGlow
           ? `
-          content: '';
           position: absolute;
           top: 0;
           bottom: 0;
@@ -4679,7 +4678,7 @@ export class UltraBarModule extends BaseUltraModule {
                                 class="bar-fill-overlay"
                                 style="
                                 position: absolute;
-                                inset: 0;
+                                ${barModule.bar_style === 'neon-glow' ? '' : 'inset: 0;'}
                                 border-radius: inherit;
                                 pointer-events: none;
                                 ${fillOverlayCSS}
