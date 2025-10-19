@@ -3640,20 +3640,26 @@ export class UltraBarModule extends BaseUltraModule {
         // Extract RGB values from the color for the glow effect
         let glowColor = barModule.bar_color || baseColor || 'var(--primary-color)';
         let glowRgbVars = '';
-        
+
         // If using gradient, get the appropriate color based on mode
-        if (barModule.use_gradient && barModule.gradient_stops && barModule.gradient_stops.length > 0) {
+        if (
+          barModule.use_gradient &&
+          barModule.gradient_stops &&
+          barModule.gradient_stops.length > 0
+        ) {
           const gradientMode = barModule.gradient_display_mode || 'full';
           if (gradientMode === 'value-based' || gradientMode === 'cropped') {
             // Use the color at the current percentage
             glowColor = interpolateColorAtPosition(barModule.gradient_stops, percentage);
           } else {
             // For full mode, use the last color in the gradient
-            const sortedStops = [...barModule.gradient_stops].sort((a, b) => b.position - a.position);
+            const sortedStops = [...barModule.gradient_stops].sort(
+              (a, b) => b.position - a.position
+            );
             glowColor = sortedStops[0].color;
           }
         }
-        
+
         // Try to extract RGB values if it's a hex color
         if (glowColor.startsWith('#')) {
           const rgb = this.hexToRgb(glowColor);
@@ -3665,42 +3671,38 @@ export class UltraBarModule extends BaseUltraModule {
             `;
           }
         }
-        
+
         fillStyleCSS = `
           ${glowRgbVars}
           box-shadow:
-            0 0 7px 2px
+            0 0 5px 0px
               rgba(
                 var(--glow-color-r, 52),
                 var(--glow-color-g, 152),
                 var(--glow-color-b, 219),
-                0.7
+                0.8
               ),
-            0 0 14px 6px
+            0 0 10px 0px
               rgba(
                 var(--glow-color-r, 52),
                 var(--glow-color-g, 152),
                 var(--glow-color-b, 219),
-                0.5
+                0.4
               ),
-            0 0 20px 10px
+            inset 0 0 8px rgba(255, 255, 255, 0.2),
+            inset 0 0 20px
               rgba(
                 var(--glow-color-r, 52),
                 var(--glow-color-g, 152),
                 var(--glow-color-b, 219),
-                0.3
-              ),
-            inset 0 0 10px rgba(255, 255, 255, 0.3);
-          border: 1px solid
-            rgba(
-              var(--glow-color-r, 52),
-              var(--glow-color-g, 152),
-              var(--glow-color-b, 219),
-              0.8
-            );
+                0.2
+              );
+          filter: brightness(1.1);
         `;
-        
-        barStyleCSS = ``;
+
+        barStyleCSS = `
+          box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        `;
         break;
       case 'outline':
         {
