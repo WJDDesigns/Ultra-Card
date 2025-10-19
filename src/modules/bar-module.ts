@@ -3638,17 +3638,17 @@ export class UltraBarModule extends BaseUltraModule {
       case 'neon-glow':
         const glowColor = getGlowColorFromGradient(barFillBackground);
         const isRightToLeftGlow = fillDirection === 'right-to-left';
-
+        
         // Only show glow when bar is not at 100% (has empty area)
         const showGlow = percentage < 99.5;
-
+        
         fillStyleCSS = `
           position: relative;
           overflow: visible;
           filter: brightness(1.2);
         `;
-
-        // Create edge glow overlay positioned at trailing edge
+        
+        // Use the overlay to create the glow at the trailing edge
         fillOverlayCSS = showGlow
           ? `
           position: absolute;
@@ -3656,13 +3656,13 @@ export class UltraBarModule extends BaseUltraModule {
           bottom: 0;
           ${isRightToLeftGlow ? 'left: 0;' : 'right: 0;'}
           width: 2px;
-          background: transparent;
+          background: ${glowColor};
           box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor};
           pointer-events: none;
           z-index: 1;
         `
           : '';
-
+        
         barStyleCSS = `
           box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         `;
