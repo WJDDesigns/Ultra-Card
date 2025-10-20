@@ -4681,7 +4681,7 @@ export class UltraBarModule extends BaseUltraModule {
                     top: 0; 
                     bottom: 0; 
                     left: ${fillDirection === 'right-to-left' ? 100 - percentage : percentage}%; 
-                    width: 6px; 
+                    width: 12px; 
                     background: ${(() => {
                         // Get the glow color
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
@@ -4714,7 +4714,7 @@ export class UltraBarModule extends BaseUltraModule {
                         return glowColor;
                       })()};
                     opacity: 1.0;
-                    box-shadow: 0 0 15px ${(() => {
+                    box-shadow: 0 0 30px ${(() => {
                         // Same color logic for glow
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
                         if (barModule.use_gradient && barModule.gradient_stops) {
@@ -4744,7 +4744,7 @@ export class UltraBarModule extends BaseUltraModule {
                           }
                         }
                         return glowColor;
-                      })()}, 0 0 30px ${(() => {
+                      })()}, 0 0 60px ${(() => {
                         // Same color logic for second glow
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
                         if (barModule.use_gradient && barModule.gradient_stops) {
@@ -4774,7 +4774,7 @@ export class UltraBarModule extends BaseUltraModule {
                           }
                         }
                         return glowColor;
-                      })()}, 0 0 45px ${(() => {
+                      })()}, 0 0 90px ${(() => {
                         // Same color logic for third glow
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
                         if (barModule.use_gradient && barModule.gradient_stops) {
