@@ -3675,23 +3675,23 @@ export class UltraBarModule extends BaseUltraModule {
         fillStyleCSS = `
           ${glowRgbVars}
           box-shadow:
-            0 0 3px 0px
+            0 0 1px 0px
               rgba(
                 var(--glow-color-r, 52),
                 var(--glow-color-g, 152),
                 var(--glow-color-b, 219),
-                0.5
+                0.6
               ),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-            inset 0 0 10px
+            inset 0 1px 0 rgba(255, 255, 255, 0.3),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+            inset 0 0 6px
               rgba(
                 var(--glow-color-r, 52),
                 var(--glow-color-g, 152),
                 var(--glow-color-b, 219),
-                0.3
+                0.2
               );
-          filter: brightness(1.15) saturate(1.1);
+          filter: brightness(1.1) saturate(1.05);
         `;
 
         barStyleCSS = `
