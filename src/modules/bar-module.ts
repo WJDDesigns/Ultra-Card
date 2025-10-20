@@ -3641,10 +3641,10 @@ export class UltraBarModule extends BaseUltraModule {
         fillStyleCSS = `
           filter: brightness(1.1);
         `;
-        
+
         barStyleCSS = `
           box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-          overflow: visible;
+          overflow: hidden;
         `;
         break;
       case 'outline':
@@ -4681,24 +4681,31 @@ export class UltraBarModule extends BaseUltraModule {
                     top: 0; 
                     bottom: 0; 
                     left: ${fillDirection === 'right-to-left' ? 100 - percentage : percentage}%; 
-                    width: 3px; 
+                    width: 6px; 
                     background: ${(() => {
                         // Get the glow color
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
                         if (barModule.use_gradient && barModule.gradient_stops) {
                           const gradientMode = barModule.gradient_display_mode || 'full';
                           if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
                             let targetStop = sortedStops[sortedStops.length - 1];
                             for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
                                 targetStop = sortedStops[i];
                                 break;
                               }
                             }
                             glowColor = targetStop.color;
                           } else {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
                             if (sortedStops.length > 0) {
                               glowColor = sortedStops[0].color;
                             }
@@ -4706,47 +4713,31 @@ export class UltraBarModule extends BaseUltraModule {
                         }
                         return glowColor;
                       })()};
-                    opacity: 0.8;
-                    box-shadow: 0 0 10px ${(() => {
+                    opacity: 1.0;
+                    box-shadow: 0 0 15px ${(() => {
                         // Same color logic for glow
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
                         if (barModule.use_gradient && barModule.gradient_stops) {
                           const gradientMode = barModule.gradient_display_mode || 'full';
                           if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
                             let targetStop = sortedStops[sortedStops.length - 1];
                             for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
                                 targetStop = sortedStops[i];
                                 break;
                               }
                             }
                             glowColor = targetStop.color;
                           } else {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
-                            if (sortedStops.length > 0) {
-                              glowColor = sortedStops[0].color;
-                            }
-                          }
-                        }
-                        return glowColor;
-                      })()}, 0 0 20px ${(() => {
-                        // Same color logic for second glow
-                        let glowColor = barModule.bar_color || 'var(--primary-color)';
-                        if (barModule.use_gradient && barModule.gradient_stops) {
-                          const gradientMode = barModule.gradient_display_mode || 'full';
-                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
-                            let targetStop = sortedStops[sortedStops.length - 1];
-                            for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
-                                targetStop = sortedStops[i];
-                                break;
-                              }
-                            }
-                            glowColor = targetStop.color;
-                          } else {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
                             if (sortedStops.length > 0) {
                               glowColor = sortedStops[0].color;
                             }
@@ -4754,22 +4745,59 @@ export class UltraBarModule extends BaseUltraModule {
                         }
                         return glowColor;
                       })()}, 0 0 30px ${(() => {
-                        // Same color logic for third glow
+                        // Same color logic for second glow
                         let glowColor = barModule.bar_color || 'var(--primary-color)';
                         if (barModule.use_gradient && barModule.gradient_stops) {
                           const gradientMode = barModule.gradient_display_mode || 'full';
                           if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => a.position - b.position);
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
                             let targetStop = sortedStops[sortedStops.length - 1];
                             for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (percentage >= sortedStops[i].position && percentage <= sortedStops[i + 1].position) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
                                 targetStop = sortedStops[i];
                                 break;
                               }
                             }
                             glowColor = targetStop.color;
                           } else {
-                            const sortedStops = [...barModule.gradient_stops].sort((a: any, b: any) => b.position - a.position);
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
+                            if (sortedStops.length > 0) {
+                              glowColor = sortedStops[0].color;
+                            }
+                          }
+                        }
+                        return glowColor;
+                      })()}, 0 0 45px ${(() => {
+                        // Same color logic for third glow
+                        let glowColor = barModule.bar_color || 'var(--primary-color)';
+                        if (barModule.use_gradient && barModule.gradient_stops) {
+                          const gradientMode = barModule.gradient_display_mode || 'full';
+                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => a.position - b.position
+                            );
+                            let targetStop = sortedStops[sortedStops.length - 1];
+                            for (let i = 0; i < sortedStops.length - 1; i++) {
+                              if (
+                                percentage >= sortedStops[i].position &&
+                                percentage <= sortedStops[i + 1].position
+                              ) {
+                                targetStop = sortedStops[i];
+                                break;
+                              }
+                            }
+                            glowColor = targetStop.color;
+                          } else {
+                            const sortedStops = [...barModule.gradient_stops].sort(
+                              (a: any, b: any) => b.position - a.position
+                            );
                             if (sortedStops.length > 0) {
                               glowColor = sortedStops[0].color;
                             }
