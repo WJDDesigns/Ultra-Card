@@ -759,14 +759,14 @@ export class UltraSliderModule extends BaseUltraModule {
   renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult {
     // Use the same config object structure
     const config = { layout: { rows: [] } } as UltraCardConfig;
-    return this.renderPreview(module, hass, config, true);
+    return this.renderPreview(module, hass, config, 'live');
   }
 
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const sliderModule = module as SliderModule;
     const registry = getModuleRegistry();
@@ -1511,7 +1511,7 @@ export class UltraSliderModule extends BaseUltraModule {
                       childModule,
                       hass,
                       config,
-                      isEditorPreview
+                      previewContext
                     );
                   })}
                 </div>

@@ -178,7 +178,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const clockModule = module as AnimatedClockModule;
     const moduleWithDesign = clockModule as any;

@@ -435,12 +435,13 @@ export class UltraCard extends LitElement {
     this.requestUpdate();
   }
 
-  /** True if this Ultra Card is hosted inside HA's element preview (dialog). */
+  /**
+   * True if this Ultra Card is hosted inside HA's preview dialog (not the dashboard).
+   * This traverses up the DOM to detect if we're inside hui-card-preview or hui-dialog-edit-card.
+   * NOTE: We do NOT check hass.editMode because that's true for the entire dashboard when editing.
+   */
   private _detectEditorPreviewContext(): boolean {
     try {
-      // Quick signal from hass when editing dashboard
-      if ((this as any)?.hass?.editMode) return true;
-
       const isTarget = (el: Element | null | undefined): boolean => {
         if (!el) return false;
         const tag = el.tagName?.toLowerCase?.();
@@ -449,7 +450,7 @@ export class UltraCard extends LitElement {
 
       let node: any = this as any;
       let depth = 0;
-      while (node && depth < 20) {
+      while (node && depth < 30) {
         if (isTarget(node)) return true;
         const root = node.getRootNode?.();
         if (root && root.host) {
@@ -1271,6 +1272,9 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
+    // Detect if we're inside an HA Preview dialog (not the dashboard)
+    const isHaPreview = this._detectEditorPreviewContext();
+
     const moduleContent = ucModulePreviewService.renderModuleContent(
       module,
       this.hass,
@@ -1283,6 +1287,7 @@ export class UltraCard extends LitElement {
         introAnimation,
         outroAnimation,
         shouldTriggerStateAnimation,
+        isHaPreview, // Pass the detection result
       }
     );
 

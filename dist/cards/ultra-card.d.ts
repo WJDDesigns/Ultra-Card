@@ -36,7 +36,11 @@ export declare class UltraCard extends LitElement {
     };
     protected willUpdate(changedProps: PropertyValues): void;
     setConfig(config: UltraCardConfig): void;
-    /** True if this Ultra Card is hosted inside HA's element preview (dialog). */
+    /**
+     * True if this Ultra Card is hosted inside HA's preview dialog (not the dashboard).
+     * This traverses up the DOM to detect if we're inside hui-card-preview or hui-dialog-edit-card.
+     * NOTE: We do NOT check hass.editMode because that's true for the entire dashboard when editing.
+     */
     private _detectEditorPreviewContext;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): UltraCardConfig;

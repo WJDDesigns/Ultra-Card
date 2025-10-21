@@ -559,7 +559,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
     module: ExternalCardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const moduleWithDesign = module as any;
 
@@ -759,10 +759,16 @@ export class UltraExternalCardModule extends BaseUltraModule {
         return;
       }
 
-      // CRITICAL: Use separate container IDs for Live Preview vs HA Preview
+      // CRITICAL: Use separate container IDs for each context
       // The same card element can only be in ONE place in the DOM at a time
-      // If we share the same element, it will "jump" between previews causing disappearance
-      const containerId = isEditorPreview ? `${module.id}-live` : module.id;
+      // Dashboard, HA Preview, and Live Preview must each have their own card instance
+      let containerId = module.id;
+      if (previewContext === 'live') {
+        containerId = `${module.id}-live`;
+      } else if (previewContext === 'ha-preview') {
+        containerId = `${module.id}-ha-preview`;
+      }
+      // else: dashboard context uses base module.id
 
       // CRITICAL: Check if container already exists in service before creating a new one
       // The Live Preview creates a NEW DOM element on every render, but the card element
@@ -836,8 +842,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
     };
 
     // Check if module should be locked (6th+ card for non-Pro users)
-    // Skip lock check in editor preview (Live Preview in settings popup)
-    const shouldLock = !isEditorPreview && this._shouldLockModule(module, hass, config);
+    // Skip lock check in editor contexts (Live Preview and HA Preview)
+    const shouldLock = !previewContext && this._shouldLockModule(module, hass, config);
 
     if (shouldLock) {
       // Read current totals for display

@@ -370,7 +370,7 @@ All standard markdown features are automatically enabled!`,
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const markdownModule = module as MarkdownModule;
 

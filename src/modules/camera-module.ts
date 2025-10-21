@@ -1355,7 +1355,7 @@ export class UltraCameraModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const cameraModule = module as CameraModule;
     const moduleWithDesign = cameraModule as any;

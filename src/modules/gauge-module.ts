@@ -1581,7 +1581,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const gaugeModule = module as GaugeModule;
     const value = this.calculateGaugeValue(gaugeModule, hass);

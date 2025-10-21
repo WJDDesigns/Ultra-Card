@@ -699,7 +699,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const spinboxModule = module as SpinboxModule;
 

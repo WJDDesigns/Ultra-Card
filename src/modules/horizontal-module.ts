@@ -263,9 +263,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const horizontalModule = module as HorizontalModule;
+    // Store config and previewContext for child rendering
+    (this as any)._currentConfig = config;
+    (this as any)._currentPreviewContext = previewContext;
     const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = horizontalModule as any;
     // Merge global design properties over module props for container rendering
@@ -493,7 +496,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
                       style="${baseStyles} ${negativeGapStyles}"
                     >
-                      ${this._renderChildModulePreview(childModule, hass, moduleWithDesign)}
+                      ${this._renderChildModulePreview(
+                        childModule,
+                        hass,
+                        moduleWithDesign,
+                        (this as any)._currentConfig,
+                        (this as any)._currentPreviewContext
+                      )}
                     </div>
                   `;
                 });
@@ -524,7 +533,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
   private _renderChildModulePreview(
     childModule: CardModule,
     hass: HomeAssistant,
-    layoutDesign?: any
+    layoutDesign?: any,
+    config?: UltraCardConfig,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     // Apply layout design properties to child modules by creating a merged module
     let moduleToRender = childModule;
@@ -590,7 +601,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const shouldShowProOverlay = isProModule && !hasProAccess;
 
     if (moduleHandler) {
-      const moduleContent = moduleHandler.renderPreview(moduleToRender, hass);
+      const moduleContent = moduleHandler.renderPreview(
+        moduleToRender,
+        hass,
+        config,
+        previewContext
+      );
 
       // If this is a pro module and user doesn't have access, show overlay
       if (shouldShowProOverlay) {

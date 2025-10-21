@@ -419,7 +419,7 @@ export class UltraTextModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const textModule = module as TextModule;
     const lang = hass?.locale?.language || 'en';

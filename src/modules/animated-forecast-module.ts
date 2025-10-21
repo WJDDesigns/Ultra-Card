@@ -85,7 +85,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const forecastModule = module as AnimatedForecastModule;
     const weatherData = this._getWeatherData(hass, forecastModule);

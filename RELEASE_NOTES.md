@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 2.0-beta28
+
+### 🐛 Bug Fixes
+
+- **Fixed 3rd party cards being hidden on actual dashboard when using editor** - Resolved issue where third-party cards would disappear from the dashboard view when the card editor was active
+- **Fixed 3rd party module locks in layout module** - Corrected lock mechanism for third-party card modules within layout modules to prevent unwanted restrictions
+
 ## Version 2.0-beta27
 
 ### 🚀 Improvements

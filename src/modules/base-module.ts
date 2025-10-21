@@ -72,7 +72,7 @@ export interface UltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult;
 
   // Validate module configuration
@@ -100,7 +100,7 @@ export abstract class BaseUltraModule implements UltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult;
 
   // Default Actions tab implementation - can be overridden

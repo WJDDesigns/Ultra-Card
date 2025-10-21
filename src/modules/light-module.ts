@@ -2010,7 +2010,7 @@ export class UltraLightModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const lightModule = module as LightModule;
     const presets = lightModule.presets || [];
