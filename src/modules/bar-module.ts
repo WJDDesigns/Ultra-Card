@@ -3651,26 +3651,64 @@ export class UltraBarModule extends BaseUltraModule {
         {
           // Outline style: Full-width track with bar inside
           // Track spans 100% width, bar fills only to percentage with gap between
-          const outlineColor = barModule.bar_color || 'var(--primary-color)';
           const trackColor = trackBackground || 'rgba(255, 255, 255, 0.1)';
           const gapSize = 4; // Space between track and bar
+          const borderWidth = 2;
 
-          barStyleCSS = `
-            border: 2px solid ${resolveCSSColor(outlineColor)};
+          if (barModule.use_gradient) {
+            // Outer outline: always render a full-length gradient ring (matches solid structure)
+            const stops =
+              (barModule as any).gradient_stops && (barModule as any).gradient_stops.length > 0
+                ? [...(barModule as any).gradient_stops]
+                : createDefaultGradientStops();
+            const dir = fillDirection === 'right-to-left' ? 'to left' : 'to right';
+            const borderGradientString = [...stops]
+              .sort((a: any, b: any) => a.position - b.position)
+              .map((s: any) => `${resolveCSSColor(s.color)} ${s.position}%`)
+              .join(', ');
+            const borderBackground = `linear-gradient(${dir}, ${borderGradientString})`;
+
+            // Use padding-box/border-box so gradient only fills the outline area
+            barStyleCSS = `
+            border: ${borderWidth}px solid transparent;
             border-radius: ${borderRadius}px;
-            background: ${trackColor};
             padding: ${gapSize}px;
+            background: linear-gradient(${trackColor}, ${trackColor}) padding-box, ${borderBackground} border-box;
+            background-clip: padding-box, border-box;
+            position: relative;
           `;
 
-          fillStyleCSS = `
+            // Fill: same as solid outline (no extra inner ring), gradient only inside
+            fillStyleCSS = `
             background: ${barFillBackground};
             border: none;
-            border-radius: ${Math.max(0, borderRadius - gapSize)}px;
+            box-sizing: border-box;
             position: relative;
             margin: 0;
             width: ${percentage}%;
             transition: width 0.3s ease;
           `;
+          } else {
+            // For solid colors, use traditional border
+            const outlineColor = resolveCSSColor(barModule.bar_color || 'var(--primary-color)');
+
+            barStyleCSS = `
+              border: ${borderWidth}px solid ${outlineColor};
+              border-radius: ${borderRadius}px;
+              background: ${trackColor};
+              padding: ${gapSize}px;
+            `;
+
+            fillStyleCSS = `
+            background: ${barFillBackground};
+            border: none;
+            box-sizing: border-box;
+            position: relative;
+            margin: 0;
+            width: ${percentage}%;
+            transition: width 0.3s ease;
+          `;
+          }
         }
         break;
       case 'glass':
@@ -4956,6 +4994,8 @@ export class UltraBarModule extends BaseUltraModule {
               : ''
           }
         </div>
+
+        
 
         <!-- Left and Right Side Labels (Below Bar) -->
         ${

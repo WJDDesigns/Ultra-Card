@@ -28,10 +28,30 @@ import {
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
+import { externalCardContainerService } from '../services/external-card-container-service';
 
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  private _hass?: HomeAssistant;
+
+  @property({ attribute: false })
+  public get hass(): HomeAssistant | undefined {
+    return this._hass;
+  }
+
+  public set hass(value: HomeAssistant | undefined) {
+    const oldHass = this._hass;
+    this._hass = value;
+
+    // Only update external card containers if hass object reference changed
+    // (HA creates new objects when state changes, so reference check is sufficient)
+    if (value && value !== oldHass) {
+      externalCardContainerService.setHass(value);
+    }
+
+    // Let Lit handle the property change for other updates
+    this.requestUpdate('hass', oldHass);
+  }
   @property({ attribute: false, type: Object }) public config?: UltraCardConfig;
 
   @state() private _moduleVisibilityState = new Map<string, boolean>();
@@ -42,7 +62,7 @@ export class UltraCard extends LitElement {
   @state() private _animatingColumns = new Set<string>();
   @state() private _cloudUser: CloudUser | null = null;
   private _lastHassChangeTime = 0;
-  private _templateUpdateListener?: () => void;
+  private _templateUpdateListener?: (event: Event) => void;
   private _authListener?: (user: CloudUser | null) => void;
   /**
    * Flag to ensure module CSS is injected only once per card instance.
@@ -51,7 +71,6 @@ export class UltraCard extends LitElement {
   private _instanceId: string = '';
   private _limitUnsub?: () => void;
   private _isEditorPreviewCard = false;
-  @state() private _renderFlip: boolean = false;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -81,9 +100,13 @@ export class UltraCard extends LitElement {
     // Subscribe to third-party limit service changes to re-render immediately
     try {
       this._limitUnsub = ThirdPartyLimitService.onChange(() => {
-        // Flip to force hard DOM replacement of module wrappers, removing stale overlays
-        this._renderFlip = !this._renderFlip;
-        this.requestUpdate();
+        // Only update if we actually have 3rd party cards that might need lock status change
+        const has3rdPartyCards = this.config?.layout?.rows?.some(row =>
+          row.columns?.some(col => col.modules?.some(mod => mod.type === 'external_card'))
+        );
+        if (has3rdPartyCards) {
+          this.requestUpdate();
+        }
       });
     } catch {}
 
@@ -101,11 +124,34 @@ export class UltraCard extends LitElement {
 
     // Set up clock update service to trigger re-renders for clock modules
     clockUpdateService.setUpdateCallback(() => {
-      this.requestUpdate();
+      // Only update if we have animated clock modules
+      const hasClockModules = this.config?.layout?.rows?.some(row =>
+        row.columns?.some(col => col.modules?.some(mod => mod.type === 'animated_clock'))
+      );
+
+      if (hasClockModules) {
+        this.requestUpdate();
+      }
     });
 
     // Listen for template updates from modules
-    this._templateUpdateListener = () => {
+    this._templateUpdateListener = (event: Event) => {
+      // Check if we have any non-3rd party modules
+      const hasNonExternalModules = this.config?.layout?.rows?.some(row =>
+        row.columns?.some(col => col.modules?.some(mod => mod.type !== 'external_card'))
+      );
+
+      // If we only have 3rd party cards, skip all template updates
+      if (!hasNonExternalModules) {
+        return;
+      }
+
+      // Only update if the event is from a non-external module
+      const detail = (event as CustomEvent).detail;
+      if (detail?.moduleType === 'external_card') {
+        return; // Skip updates from external cards
+      }
+
       this.requestUpdate();
       // Update hover styles when configuration changes
       this._updateHoverEffectStyles();
@@ -218,6 +264,10 @@ export class UltraCard extends LitElement {
       clearTimeout(this._scaleDebounceTimer);
     }
 
+    // Don't destroy containers on disconnect - they will be reused when reconnected
+    // This prevents the flashing when switching views
+    // Containers will be properly cleaned up when modules are actually removed
+
     // Unregister from 3rd party limit service immediately when card is removed
     try {
       if (this._instanceId) {
@@ -278,34 +328,48 @@ export class UltraCard extends LitElement {
     if (changedProps.has('hass')) {
       const currentTime = Date.now();
 
-      // Check if we have any 3rd party cards that need immediate updates
-      const has3rdPartyCards = this.config?.layout?.rows?.some(row =>
-        row.columns?.some(col => col.modules?.some(mod => mod.type === 'external_card'))
-      );
-
-      // For 3rd party cards, update them immediately and directly
-      if (has3rdPartyCards && this.hass) {
-        // Import and call the static method to update all 3rd party cards directly
-        // This bypasses the render cycle for smoother, native-like updates
-        import('../modules/external-card-module').then(({ UltraExternalCardModule }) => {
-          UltraExternalCardModule.updateAllCardHass(this.hass);
-        });
+      // Update logic service with new hass instance
+      if (this.hass) {
+        logicService.setHass(this.hass);
       }
 
-      // For 3rd party cards, update immediately without throttling to match native HA behavior
-      // For other cases, throttle to avoid excessive re-renders (max once every 100ms)
-      const shouldThrottle = !has3rdPartyCards;
-      const throttleDelay = 100;
+      // Check what types of modules we have
+      const moduleTypes = new Set<string>();
+      this.config?.layout?.rows?.forEach(row => {
+        row.columns?.forEach(col => {
+          col.modules?.forEach(mod => {
+            if (mod.type) moduleTypes.add(mod.type);
+          });
+        });
+      });
 
-      if (!shouldThrottle || currentTime - this._lastHassChangeTime > throttleDelay) {
+      const has3rdPartyCards = moduleTypes.has('external_card');
+      const hasNonExternalModules = Array.from(moduleTypes).some(type => type !== 'external_card');
+
+      // Only request update if we have logic conditions or non-3rd party modules that need updates
+      const hasLogicConditions = this.config?.layout?.rows?.some(
+        row =>
+          row.display_conditions?.length > 0 ||
+          row.columns?.some(
+            col =>
+              col.display_conditions?.length > 0 ||
+              col.modules?.some(mod => mod.display_conditions?.length > 0)
+          )
+      );
+
+      // If we ONLY have 3rd party cards and no logic conditions, skip Ultra Card re-render
+      if (has3rdPartyCards && !hasNonExternalModules && !hasLogicConditions) {
+        return; // 3rd party cards update via direct hass passthrough
+      }
+
+      // Throttle Ultra Card re-renders only when needed for logic or other modules
+      const throttleDelay = has3rdPartyCards ? 500 : 100;
+      const shouldUpdate = currentTime - this._lastHassChangeTime > throttleDelay;
+
+      // Only update if we have a reason to (logic conditions or non-external modules)
+      if (shouldUpdate && (hasLogicConditions || hasNonExternalModules)) {
         this._lastHassChangeTime = currentTime;
-
-        // Update logic service with new hass instance
-        if (this.hass) {
-          logicService.setHass(this.hass);
-        }
-
-        // Request update to re-evaluate logic conditions
+        // Request update to re-evaluate logic conditions or update non-3rd party modules
         this.requestUpdate();
       }
     }
@@ -324,14 +388,17 @@ export class UltraCard extends LitElement {
       throw new Error(`Invalid configuration: ${validationResult.errors.join(', ')}`);
     }
 
-    // Check for duplicate module IDs and fix them
+    // Detect preview context EARLY so we can keep IDs stable in previews
+    const isPreviewContext = this._detectEditorPreviewContext();
+
+    // Check for duplicate module IDs and fix them (skip in previews to avoid ID churn)
     const uniqueIdCheck = configValidationService.validateUniqueModuleIds(
       validationResult.correctedConfig!
     );
 
     let finalConfig = validationResult.correctedConfig!;
-    if (!uniqueIdCheck.valid) {
-      // Duplicate module IDs detected; fixing silently
+    if (!isPreviewContext && !uniqueIdCheck.valid) {
+      // Duplicate module IDs detected; fixing silently (only outside previews)
       finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
     }
 
@@ -344,8 +411,8 @@ export class UltraCard extends LitElement {
       const dashboardId = getCurrentDashboardId();
       const cardInstanceId =
         this._instanceId || `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      // Detect if this Ultra Card is being rendered inside the HA element preview
-      this._isEditorPreviewCard = this._detectEditorPreviewContext();
+      // Use the earlier-detected preview flag to keep behavior consistent
+      this._isEditorPreviewCard = isPreviewContext;
       // Attach a non-enumerable flags for downstream resolution
       try {
         Object.defineProperty(this.config, '__ucInstanceId', {
@@ -1257,10 +1324,8 @@ export class UltraCard extends LitElement {
       `;
     }
 
-    // Force DOM replacement across 3P state changes by alternating wrapper element
-    return this._renderFlip
-      ? html`<section class="uc-module-wrap">${moduleContent}</section>`
-      : html`<div class="uc-module-wrap">${moduleContent}</div>`;
+    // Return module content without forcing DOM replacement
+    return html`<div class="uc-module-wrap">${moduleContent}</div>`;
   }
 
   private _parseAnimationDuration(duration: string): number {

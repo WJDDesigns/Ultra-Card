@@ -479,18 +479,32 @@ export abstract class BaseUltraModule implements UltraModule {
    *
    * This dispatches a global event that both the editor popup preview
    * and the actual card listen for to trigger re-renders.
+   *
+   * @param immediate - If true, triggers update immediately without debouncing
    */
-  protected triggerPreviewUpdate(): void {
+  protected triggerPreviewUpdate(immediate: boolean = false): void {
+    // Clear any existing timer if immediate update requested
+    if (immediate && window._ultraCardUpdateTimer) {
+      clearTimeout(window._ultraCardUpdateTimer);
+      window._ultraCardUpdateTimer = null;
+    }
+
     // Global debouncing to prevent multiple modules from triggering rapid updates
     if (!window._ultraCardUpdateTimer) {
+      const delay = immediate ? 0 : 150; // Increased debounce time for better batching
+
       window._ultraCardUpdateTimer = setTimeout(() => {
         const event = new CustomEvent('ultra-card-template-update', {
           bubbles: true,
           composed: true,
+          detail: {
+            timestamp: Date.now(),
+            source: 'module-update',
+          },
         });
         window.dispatchEvent(event);
         window._ultraCardUpdateTimer = null;
-      }, 50); // Debounce to 50ms to allow multiple modules to batch their updates
+      }, delay);
     }
   }
 }

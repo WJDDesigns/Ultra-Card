@@ -130,6 +130,7 @@ class UcExternalCardsService {
       }
 
       if (!this.isCardAvailable(elementName)) {
+        console.error(`[External Card Service] Card ${elementName} is not available/registered`);
         return null;
       }
 

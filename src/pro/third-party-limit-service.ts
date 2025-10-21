@@ -231,6 +231,44 @@ class ThirdPartyLimitServiceImpl {
     if (updated) this.saveFirstSeen(dashboardId, map);
   }
 
+  /**
+   * Recursively extract modules from all nesting levels including containers
+   */
+  private _extractModulesRecursive(
+    modules: CardModule[],
+    dashboardId: string,
+    cardId: string
+  ): Array<{ key: ModuleKey; type: string }> {
+    const results: Array<{ key: ModuleKey; type: string }> = [];
+
+    for (const module of modules) {
+      // Always add the current module
+      const key = `${dashboardId}:${cardId}:${module.id}`;
+      results.push({ key, type: module.type });
+
+      // Check if this is a container module and extract nested modules
+      if (module.type === 'horizontal' || module.type === 'vertical') {
+        const containerModule = module as any; // HorizontalModule | VerticalModule
+        if (containerModule.modules?.length) {
+          results.push(
+            ...this._extractModulesRecursive(containerModule.modules, dashboardId, cardId)
+          );
+        }
+      } else if (module.type === 'slider') {
+        const sliderModule = module as any; // SliderModule
+        if (sliderModule.panes?.length) {
+          sliderModule.panes.forEach((pane: any) => {
+            if (pane.modules?.length) {
+              results.push(...this._extractModulesRecursive(pane.modules, dashboardId, cardId));
+            }
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
   private extractModules(
     dashboardId: string,
     cardId: string,
@@ -243,11 +281,8 @@ class ThirdPartyLimitServiceImpl {
         const cols = row.columns || [];
         cols.forEach(col => {
           const mods = col.modules || [];
-          mods.forEach(m => {
-            // Use dashboard + stable cardId + moduleId to distinguish duplicate cards
-            const key = `${dashboardId}:${cardId}:${m.id}`;
-            out.push({ key, type: (m as any).type });
-          });
+          // Use recursive extraction to get all modules including nested ones
+          out.push(...this._extractModulesRecursive(mods, dashboardId, cardId));
         });
       });
     } catch {
@@ -270,10 +305,13 @@ class ThirdPartyLimitServiceImpl {
           const rows = cfg?.layout?.rows || [];
           rows.forEach((row: any) => {
             (row.columns || []).forEach((col: any) => {
-              (col.modules || []).forEach((m: any) => {
-                if ((m as any).type === 'external_card') {
-                  const key: ModuleKey = `${dashId}:${slotId}:${m.id}`;
-                  out.push({ key, type: 'external_card' });
+              const mods = col.modules || [];
+              // Use recursive extraction to get all modules including nested ones
+              const extractedModules = this._extractModulesRecursive(mods, dashId, slotId);
+              // Filter to only external cards for global scan
+              extractedModules.forEach(m => {
+                if (m.type === 'external_card') {
+                  out.push(m);
                 }
               });
             });

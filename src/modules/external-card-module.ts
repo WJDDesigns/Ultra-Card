@@ -1,32 +1,26 @@
 import { html, TemplateResult, css, CSSResult } from 'lit';
+import { ref } from 'lit/directives/ref.js';
+import { cache } from 'lit/directives/cache.js';
+import { guard } from 'lit/directives/guard.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ExternalCardModule, UltraCardConfig, CardModule } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { ucExternalCardsService } from '../services/uc-external-cards-service';
+import { externalCardContainerService } from '../services/external-card-container-service';
 import {
   ThirdPartyLimitService,
   computeCardInstanceId,
   getCurrentDashboardId,
 } from '../pro/third-party-limit-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
-import { ref } from 'lit/directives/ref.js';
 import yaml from 'js-yaml';
 import '../components/ultra-template-editor';
 
-// Debounce timers for config updates to prevent rapid re-render loops from spurious events
+// Debounce timers for editor config updates to prevent rapid re-render loops
 const updateDebounceTimers = new Map<string, number>();
 
 // Editor element cache to prevent unnecessary recreation and preserve UI state (scroll, focus, dropdowns)
 const editorElementCache = new Map<string, any>();
-
-// Cache for card elements (per module instance) to enable continuous hass updates
-const cardElementCache = new Map<string, HTMLElement>();
-
-// WeakMap to track direct hass update handlers for immediate updates
-const cardHassUpdateHandlers = new WeakMap<HTMLElement, (hass: any) => void>();
-
-// WeakMap to track the last hass instance set on each card to prevent duplicate updates
-const cardLastHass = new WeakMap<HTMLElement, any>();
 
 // Global cache for allowed external card IDs (first 5 by timestamp)
 // This is refreshed periodically to avoid expensive dashboard scans on every render
@@ -60,9 +54,10 @@ export function cleanupExternalCardCache(moduleId: string): void {
   });
   keysToDelete.forEach(key => editorElementCache.delete(key));
 
-  // Clear card element cache (both main and editor preview versions)
-  cardElementCache.delete(moduleId);
-  cardElementCache.delete(`${moduleId}-editor`);
+  // NOTE: We do NOT destroy the container here!
+  // The container is managed by a singleton service and persists across disconnects.
+  // This allows the same card element to be remounted without recreation,
+  // preventing flicker when Lit re-renders cause disconnect/reconnect cycles.
 
   // Clear allowed IDs cache so it refreshes
   invalidateExternalCardCache();
@@ -79,26 +74,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
     version: '1.0.0',
     tags: ['external', 'integration', '3rd-party'],
   };
-
-  /**
-   * Update hass for all cached card elements directly
-   * This allows immediate updates without waiting for render cycles
-   */
-  public static updateAllCardHass(hass: any): void {
-    cardElementCache.forEach(cardElement => {
-      const handler = cardHassUpdateHandlers.get(cardElement);
-      if (handler) {
-        handler(hass);
-        // Track that we updated hass to prevent duplicate updates in refCallback
-        cardLastHass.set(cardElement, hass);
-      } else if (cardElement && typeof (cardElement as any).hass !== 'undefined') {
-        // Fallback: directly update hass if no handler registered
-        (cardElement as any).hass = hass;
-        // Track that we updated hass to prevent duplicate updates in refCallback
-        cardLastHass.set(cardElement, hass);
-      }
-    });
-  }
 
   createDefault(): ExternalCardModule {
     return {
@@ -402,6 +377,14 @@ export class UltraExternalCardModule extends BaseUltraModule {
               if (newConfigKey === currentConfigKey) {
                 return; // Ignore spurious config-changed events
               }
+
+              // IMMEDIATE: Update the Live Preview card element directly (no waiting)
+              // This ensures the Live Preview shows changes immediately
+              const liveContainerId = `${module.id}-live`;
+              externalCardContainerService.updateConfig(liveContainerId, {
+                type: module.card_type,
+                ...e.detail.config,
+              });
 
               // Clear any existing debounce timer
               const existingTimer = updateDebounceTimers.get(module.id);
@@ -743,8 +726,11 @@ export class UltraExternalCardModule extends BaseUltraModule {
       `;
     }
 
-    // Check if card is available
-    const isAvailable = ucExternalCardsService.isCardAvailable(module.card_type);
+    // Check if card is available (remove custom: prefix if present)
+    const cardElementName = module.card_type.startsWith('custom:')
+      ? module.card_type.substring(7)
+      : module.card_type;
+    const isAvailable = ucExternalCardsService.isCardAvailable(cardElementName);
 
     if (!isAvailable) {
       return html`
@@ -764,149 +750,89 @@ export class UltraExternalCardModule extends BaseUltraModule {
       `;
     }
 
-    // Use ref callback to create and mount the card element after Lit renders the container
-    // CRITICAL: Cache card elements and update their hass property on every render to enable
-    // real-time updates (like native HA behavior). This fixes sporadic updates in 3rd party cards.
-    const refCallback = (container: Element | undefined) => {
-      if (!container) {
+    // Use the container service for isolated card management
+    // This provides true isolation from Ultra Card's render cycle
+    const mountContainer = (containerDiv: Element | undefined) => {
+      // ref() calls this with undefined when element is removed during re-renders
+      // This is normal Lit behavior - just skip silently
+      if (!containerDiv || !(containerDiv instanceof HTMLElement)) {
         return;
       }
 
-      // Use different cache keys for editor preview vs main preview to prevent DOM element stealing
-      const cacheKey = isEditorPreview ? `${module.id}-editor` : module.id;
-      let cardElement = cardElementCache.get(cacheKey) as any;
+      // CRITICAL: Use separate container IDs for Live Preview vs HA Preview
+      // The same card element can only be in ONE place in the DOM at a time
+      // If we share the same element, it will "jump" between previews causing disappearance
+      const containerId = isEditorPreview ? `${module.id}-live` : module.id;
 
-      // Check if we need to create a new card element
-      const needsRecreate =
-        !cardElement ||
-        cardElement.tagName.toLowerCase() !== module.card_type.replace('custom:', '');
+      // CRITICAL: Check if container already exists in service before creating a new one
+      // The Live Preview creates a NEW DOM element on every render, but the card element
+      // should persist across renders to prevent flicker
+      const currentChild = containerDiv.firstElementChild;
+      const isAlreadyInitialized = (containerDiv as any)._ucInitialized === containerId;
 
-      if (needsRecreate) {
-        // Create fresh card element
-        try {
-          cardElement = ucExternalCardsService.createCardElement(
-            module.card_type,
-            module.card_config,
-            hass
-          ) as HTMLElement;
+      // Check if we already have the card element in the service
+      const hasExistingContainer = externalCardContainerService.hasContainer(containerId);
 
-          if (!cardElement) {
-            throw new Error('Failed to create card element');
-          }
+      // FAST PATH: If this DOM already has the right card mounted, skip everything
+      if (isAlreadyInitialized && currentChild && hasExistingContainer) {
+        // Already correctly mounted with the right card element, do nothing
+        return;
+      }
 
-          // Apply inline styles to card element to fill container
-          cardElement.style.width = '100%';
-          cardElement.style.minWidth = '0';
-          cardElement.style.flex = '1 1 auto';
-          cardElement.style.display = 'block';
+      // REMOUNT PATH: Container exists but this is a new DOM (Live Preview re-render)
+      // Get the existing container WITHOUT creating a new card element
+      if (hasExistingContainer && !currentChild) {
+        // Get the existing container (this won't create a new one, just returns the existing)
+        const cardConfig = {
+          type: module.card_type,
+          ...(module.card_config || {}),
+        };
 
-          // Clear and mount the card element
-          container.innerHTML = '';
-          container.appendChild(cardElement);
+        const isolatedContainer = externalCardContainerService.getContainer(
+          containerId,
+          module.card_type,
+          cardConfig
+        );
 
-          // Cache the card element for future updates
-          cardElementCache.set(cacheKey, cardElement);
+        // Mount the existing container to the new DOM
+        containerDiv.appendChild(isolatedContainer);
+        (containerDiv as any)._ucInitialized = containerId;
+        return;
+      }
 
-          // Set up direct hass update handler for immediate updates without re-render
-          // This allows 3rd party cards to update exactly like native HA cards
-          const updateHandler = (newHass: any) => {
-            if (cardElement && typeof cardElement.hass !== 'undefined') {
-              // Update hass directly on the card element
-              // This bypasses Ultra Card's render cycle for smoother updates
-              cardElement.hass = newHass;
-            }
-          };
-          cardHassUpdateHandlers.set(cardElement, updateHandler);
+      // SLOW PATH: First mount or config changed - create/update the card element
+      // Get or create the card element
+      const cardConfig = {
+        type: module.card_type,
+        ...(module.card_config || {}),
+      };
 
-          // Track initial hass to prevent duplicate updates
-          cardLastHass.set(cardElement, hass);
-        } catch (error) {
-          console.error(`[External Card] Failed to create/mount ${module.card_type}:`, error);
-          // If card creation fails, show error in container
-          container.innerHTML = `
-            <div class="external-card-placeholder">
-              <div class="ultra-card-logo">
-                <ha-icon icon="mdi:cog" style="--mdc-icon-size: 48px; color: var(--primary-color);"></ha-icon>
-              </div>
-              <p class="card-title">${module.name || module.card_type}</p>
-              <p class="subtitle">3rd Party Card</p>
-              <p class="instruction">Configuring card...</p>
-            </div>
-          `;
-          return;
+      const isolatedContainer = externalCardContainerService.getContainer(
+        containerId,
+        module.card_type,
+        cardConfig
+      );
+
+      // Mount or remount the container
+      if (currentChild !== isolatedContainer) {
+        // Only manipulate DOM if the child is wrong or missing
+        if (currentChild) {
+          containerDiv.removeChild(currentChild);
         }
-      } else {
-        // Card element exists - update its properties for real-time updates
-        try {
-          // Update config if it actually changed
-          const configChanged =
-            JSON.stringify(cardElement.config || {}) !== JSON.stringify(module.card_config || {});
+        containerDiv.appendChild(isolatedContainer);
 
-          if (configChanged) {
-            if (typeof cardElement.setConfig === 'function') {
-              cardElement.setConfig(module.card_config || {});
-            } else {
-              cardElement.config = module.card_config || {};
+        // Force a resize event for cards that might need it (like Entity Progress)
+        // Only on first mount
+        if (!hasExistingContainer) {
+          setTimeout(() => {
+            if (isolatedContainer) {
+              window.dispatchEvent(new Event('resize'));
             }
-          }
-
-          // CRITICAL: Always update hass on every render to enable real-time updates
-          // This replicates native HA behavior where cards receive continuous hass updates
-          // and allows cards like Apex Chart to show loading indicators and update smoothly
-
-          // Check if this is the same hass instance to prevent duplicate updates
-          // (Ultra Card updates hass directly via updateAllCardHass AND via render cycle)
-          const lastHass = cardLastHass.get(cardElement);
-          const isSameHass = lastHass === hass;
-
-          if (!isSameHass) {
-            // On mobile, preserve scroll position during hass updates to prevent iOS scroll jumping
-            const isMobile = window.innerWidth < 768;
-            let savedScrollY = 0;
-
-            if (isMobile) {
-              savedScrollY = window.scrollY;
-            }
-
-            cardElement.hass = hass;
-            cardLastHass.set(cardElement, hass);
-
-            // Restore scroll position on mobile after DOM update (multiple attempts for reliability)
-            if (isMobile && savedScrollY > 0) {
-              // Attempt 1: Immediate in next animation frame
-              requestAnimationFrame(() => {
-                if (window.scrollY !== savedScrollY) {
-                  window.scrollTo(0, savedScrollY);
-                }
-              });
-
-              // Attempt 2: After a short delay (catches delayed redraws)
-              setTimeout(() => {
-                if (window.scrollY !== savedScrollY) {
-                  window.scrollTo(0, savedScrollY);
-                }
-              }, 16);
-
-              // Attempt 3: After a longer delay (catches ApexCharts animation)
-              setTimeout(() => {
-                if (window.scrollY !== savedScrollY) {
-                  window.scrollTo(0, savedScrollY);
-                }
-              }, 100);
-            }
-          }
-
-          // Ensure element is still mounted (might have been detached by Lit)
-          if (!container.contains(cardElement)) {
-            container.innerHTML = '';
-            container.appendChild(cardElement);
-          }
-        } catch (error) {
-          console.error(`[External Card] Failed to update ${module.card_type}:`, error);
-          // If update fails, try to recreate on next render
-          cardElementCache.delete(cacheKey);
+          }, 100);
         }
       }
+
+      (containerDiv as any)._ucInitialized = containerId; // Mark as initialized
     };
 
     // Check if module should be locked (6th+ card for non-Pro users)
@@ -918,32 +844,39 @@ export class UltraExternalCardModule extends BaseUltraModule {
       const evalResult = ThirdPartyLimitService.evaluate(hass);
       const total3p = evalResult.totalThirdParty ?? 0;
       // Render with Pro lock overlay
-      return html`
-        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      return html`${guard(
+        [module.id, module.card_type],
+        () => html`
           <div
-            class="pro-module-locked"
-            style="position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center;"
+            class="external-card-module-container"
+            style=${this.styleObjectToCss(containerStyles)}
           >
             <div
-              ${ref(refCallback)}
-              class="external-card-container uc-external-card"
-              style="
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                flex: 1 1 auto;
-                min-width: 0;
-                min-height: 0;
-                filter: blur(8px);
-                opacity: 0.5;
-                pointer-events: none;
-              "
+              class="pro-module-locked"
+              style="position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center;"
             >
-              <!-- Card will be mounted here -->
-            </div>
-            <div
-              class="pro-module-overlay"
-              style="
+              ${cache(html`
+                <div
+                  ${ref(mountContainer)}
+                  class="external-card-container uc-external-card"
+                  style="
+                  width: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  flex: 1 1 auto;
+                  min-width: 0;
+                  min-height: 0;
+                  filter: blur(8px);
+                  opacity: 0.5;
+                  pointer-events: none;
+                "
+                >
+                  <!-- Card will be mounted here -->
+                </div>
+              `)}
+              <div
+                class="pro-module-overlay"
+                style="
                 position: absolute;
                 top: 0;
                 left: 0;
@@ -960,10 +893,10 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 cursor: default;
                 touch-action: manipulation;
               "
-            >
-              <div
-                class="pro-module-message"
-                style="
+              >
+                <div
+                  class="pro-module-message"
+                  style="
                   text-align: center;
                   color: white;
                   padding: 6px;
@@ -974,49 +907,59 @@ export class UltraExternalCardModule extends BaseUltraModule {
                   gap: 4px;
                   pointer-events: all;
                 "
-              >
-                <ha-icon icon="mdi:lock" style="font-size: 20px; flex-shrink: 0;"></ha-icon>
-                <div style="font-size: 10px; opacity: 0.9; line-height: 1.2; white-space: nowrap;">
-                  ${total3p}/5 3rd Party Cards
-                </div>
-                <div
-                  style="
+                >
+                  <ha-icon icon="mdi:lock" style="font-size: 20px; flex-shrink: 0;"></ha-icon>
+                  <div
+                    style="font-size: 10px; opacity: 0.9; line-height: 1.2; white-space: nowrap;"
+                  >
+                    ${total3p}/5 3rd Party Cards
+                  </div>
+                  <div
+                    style="
                     margin-top: 6px;
                     font-size: 10px;
                     opacity: 0.7;
                     white-space: nowrap;
                   "
-                >
-                  Refresh For Check
+                  >
+                    Refresh For Check
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      `;
+        `
+      )}`;
     }
 
-    // Return the wrapper container with ref callback (unlocked card)
+    // Return the wrapper container with mount callback (unlocked card)
     // Wrap the card content container inside the design container
-    return html`
-      <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
-        <div
-          ${ref(refCallback)}
-          class="external-card-container uc-external-card"
-          style="
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            flex: 1 1 auto;
-            min-width: 0;
-            min-height: 0;
-          "
-          @click=${(e: Event) => e.stopPropagation()}
-        >
-          <!-- Card will be mounted here -->
+    // Use guard() to only re-render when module ID or card type changes
+    // This prevents the 60+ re-renders triggered by the editor from destroying the container
+    return html`${guard(
+      [module.id, module.card_type],
+      () => html`
+        <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          ${cache(html`
+            <div
+              ${ref(mountContainer)}
+              class="external-card-container uc-external-card"
+              style="
+              width: 100%;
+              display: flex;
+              flex-direction: column;
+              flex: 1 1 auto;
+              min-width: 0;
+              min-height: 0;
+            "
+              @click=${(e: Event) => e.stopPropagation()}
+            >
+              <!-- Isolated container will be mounted here -->
+            </div>
+          `)}
         </div>
-      </div>
-    `;
+      `
+    )}`;
   }
 
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {

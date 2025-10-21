@@ -512,10 +512,6 @@ export class UltraLightModule extends BaseUltraModule {
                 const next = e.detail.value.layout;
                 if (next === lightModule.layout) return;
                 updateModule({ layout: next });
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
               },
               false
             )}
@@ -542,10 +538,6 @@ export class UltraLightModule extends BaseUltraModule {
                   const next = e.detail.value.button_alignment;
                   if (next === lightModule.button_alignment) return;
                   updateModule({ button_alignment: next });
-                  // Trigger re-render to update dropdown UI
-                  setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                  }, 50);
                 },
                 false
               )}
@@ -717,10 +709,6 @@ export class UltraLightModule extends BaseUltraModule {
                           const next = Number(e.detail.value.columns);
                           if (isNaN(next) || next === lightModule.columns) return;
                           updateModule({ columns: next });
-                          // Trigger re-render to update dropdown UI
-                          setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                          }, 50);
                         },
                         false
                       )}
@@ -759,10 +747,6 @@ export class UltraLightModule extends BaseUltraModule {
                 const next = Number(e.detail.value.default_transition_time);
                 if (isNaN(next) || next === lightModule.default_transition_time) return;
                 updateModule({ default_transition_time: next });
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
               },
               false
             )}
@@ -1165,8 +1149,6 @@ export class UltraLightModule extends BaseUltraModule {
                       }
 
                       updatePreset(updates);
-                      // Trigger immediate preview update
-                      this.triggerPreviewUpdate();
                     }}
                     @test-preset=${() => {
                       this.applyPreset(preset, lightModule, hass, config);
@@ -1279,7 +1261,6 @@ export class UltraLightModule extends BaseUltraModule {
                         const target = e.target as HTMLInputElement;
                         const brightness = Math.round((parseInt(target.value) / 100) * 255);
                         updatePreset({ brightness });
-                        this.triggerPreviewUpdate();
                       }}
                       class="brightness-slider"
                     />

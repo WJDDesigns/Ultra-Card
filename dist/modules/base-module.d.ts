@@ -159,6 +159,8 @@ export declare abstract class BaseUltraModule implements UltraModule {
      *
      * This dispatches a global event that both the editor popup preview
      * and the actual card listen for to trigger re-renders.
+     *
+     * @param immediate - If true, triggers update immediately without debouncing
      */
-    protected triggerPreviewUpdate(): void;
+    protected triggerPreviewUpdate(immediate?: boolean): void;
 }

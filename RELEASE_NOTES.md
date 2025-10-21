@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta27
+
+### 🚀 Improvements
+
+- **Improved and refactored 3rd party modules** - Enhanced visual rendering and editing experience for third-party card modules with cleaner code structure and better performance
+
 ## Version 2.0-beta26
 
 ### 🐛 Bug Fixes

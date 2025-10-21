@@ -3,7 +3,9 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig } from '../types';
 import '../editor/ultra-card-editor';
 export declare class UltraCard extends LitElement {
-    hass?: HomeAssistant;
+    private _hass?;
+    get hass(): HomeAssistant | undefined;
+    set hass(value: HomeAssistant | undefined);
     config?: UltraCardConfig;
     private _moduleVisibilityState;
     private _animatingModules;
@@ -22,7 +24,6 @@ export declare class UltraCard extends LitElement {
     private _instanceId;
     private _limitUnsub?;
     private _isEditorPreviewCard;
-    private _renderFlip;
     connectedCallback(): void;
     disconnectedCallback(): void;
     /**
