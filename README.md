@@ -174,7 +174,9 @@ Visit **[UltraCard.io](https://ultracard.io)** to unlock cloud sync, automated b
 
 ### Pro Animated Modules 🌟
 
-<img src="https://ultracard.io/wp-content/uploads/2025/10/fishy-uc.gif" alt="fishy" width="300"/>
+<p align="center">
+  <img src="https://ultracard.io/wp-content/uploads/2025/10/fishy-uc.gif" alt="Ultra Card Fishy Demo" width="600">
+</p>
 
 Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)**:
 
