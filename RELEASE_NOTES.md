@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 2.0-beta31
+
+### 🐛 Bug Fixes
+
+- **Fixed issue with cards not being able to have their color adjusted in card settings** - Resolved problem where card color adjustments in the card settings were not working properly
+
 ## Version 2.0-beta30
 
 ### 🚀 New Features

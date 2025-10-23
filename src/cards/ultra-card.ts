@@ -73,6 +73,7 @@ export class UltraCard extends LitElement {
   private _limitUnsub?: () => void;
   private _isEditorPreviewCard = false;
   private _globalTransparencyListener?: () => void;
+  private _globalTransparencyApplied = false;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -825,9 +826,12 @@ export class UltraCard extends LitElement {
 
           // Make background semi-transparent if it's not already
           // This is necessary for backdrop-filter to be visible
-          if (globalTransparency.color) {
-            // User specified a color overlay
-            cardContainer.style.setProperty('background', globalTransparency.color, 'important');
+          if (globalTransparency.color && globalTransparency.color !== 'transparent') {
+            // User specified a color overlay - layer it over existing background
+            const computedBg = getComputedStyle(cardContainer).background || 'transparent';
+            const newBg = `linear-gradient(${globalTransparency.color}, ${globalTransparency.color}), ${computedBg}`;
+            cardContainer.style.setProperty('background', newBg, 'important');
+            console.log(`Ultra Card: Applied color tint overlay: ${globalTransparency.color}`);
           } else {
             // No color specified - make current background semi-transparent
             const computedBg = getComputedStyle(cardContainer).backgroundColor;
@@ -854,13 +858,19 @@ export class UltraCard extends LitElement {
         if (globalTransparency.color && globalTransparency.blur_px === 0) {
           cardContainer.style.setProperty('background', globalTransparency.color, 'important');
         }
-      } else {
-        // Remove global transparency styles
+
+        this._globalTransparencyApplied = true;
+      } else if (this._globalTransparencyApplied) {
+        // Only remove styles if we previously applied them
         cardContainer.style.removeProperty('opacity');
         cardContainer.style.removeProperty('backdrop-filter');
         cardContainer.style.removeProperty('background');
         cardContainer.style.removeProperty('background-color');
         console.log('Ultra Card: Removed global transparency styles');
+        this._globalTransparencyApplied = false;
+
+        // Trigger a re-render to restore user's original styles
+        this.requestUpdate();
       }
     });
   }

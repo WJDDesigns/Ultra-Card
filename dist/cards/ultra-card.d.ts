@@ -25,6 +25,7 @@ export declare class UltraCard extends LitElement {
     private _limitUnsub?;
     private _isEditorPreviewCard;
     private _globalTransparencyListener?;
+    private _globalTransparencyApplied;
     connectedCallback(): void;
     disconnectedCallback(): void;
     /**
