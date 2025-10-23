@@ -3,6 +3,8 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedForecastModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedForecastModuleEditor } from './animated-forecast-module-editor';
 import { getSmartScalingStyles } from '../utils/uc-smart-scaling';
 
@@ -98,6 +100,86 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     // Get temperature unit from weather entity (no conversion needed)
     const tempUnit = weatherData.temperatureUnit;
 
+    // Action handlers for tap, hold, and double-tap
+    let holdTimeout: any = null;
+    let clickTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      isHolding = false;
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (!forecastModule.hold_action || forecastModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (forecastModule.hold_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config
+          );
+        }
+      }, 500);
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (
+          !forecastModule.double_tap_action ||
+          forecastModule.double_tap_action.action !== 'nothing'
+        ) {
+          UltraLinkComponent.handleAction(
+            (forecastModule.double_tap_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config
+          );
+        }
+      } else {
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          clickCount = 0;
+
+          if (!forecastModule.tap_action || forecastModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              (forecastModule.tap_action as any) || ({ action: 'default' } as any),
+              hass,
+              e.target as HTMLElement,
+              config
+            );
+          }
+        }, 300);
+      }
+    };
+
+    const hasActions =
+      (forecastModule.tap_action && forecastModule.tap_action.action !== 'nothing') ||
+      (forecastModule.hold_action && forecastModule.hold_action.action !== 'nothing') ||
+      (forecastModule.double_tap_action && forecastModule.double_tap_action.action !== 'nothing');
+
     return html`
       <style>
         ${this.getStyles()}
@@ -105,6 +187,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       <div
         class="animated-forecast-module-container"
         style="
+          cursor: ${hasActions ? 'pointer' : 'default'};
           --forecast-days: ${forecastModule.forecast_days || 5};
           --forecast-day-size: ${forecastModule.forecast_day_size || 14}px;
           --forecast-temp-size: ${forecastModule.forecast_temp_size || 14}px;
@@ -118,6 +201,8 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
           max-width: ${scalingStyles.maxWidth};
           box-sizing: ${scalingStyles.boxSizing};
         "
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
       >
         <div class="weather-forecast">
           ${weatherData.forecast && weatherData.forecast.length > 0

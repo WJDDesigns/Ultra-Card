@@ -190,7 +190,6 @@ class UcCloudAuthService {
           hass?.user ? 'exists' : 'missing'
         );
       } else {
-        console.log('✅ HA user ID found:', userId);
       }
 
       return userId;
@@ -247,7 +246,6 @@ class UcCloudAuthService {
     const cloudUser = await ucSessionSyncService.getCurrentSession(haUserId, storedUser?.token);
 
     if (cloudUser) {
-      console.log('✅ Found active cloud session, syncing authentication');
       this._setCurrentUser(cloudUser);
       this._saveToStorage();
       this._setupAutoRefresh();

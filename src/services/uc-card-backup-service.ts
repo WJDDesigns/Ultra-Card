@@ -76,8 +76,6 @@ class UcCardBackupService {
         }),
       });
 
-      console.log('✅ Card backup created successfully');
-
       return {
         id: response.backup_id,
         card_name: cardName,
@@ -146,8 +144,6 @@ class UcCardBackupService {
       const response = await this.apiCall(`/card-backups/${backupId}/restore`, {
         method: 'POST',
       });
-
-      console.log('✅ Card backup restored');
 
       return response.config as UltraCardConfig;
     } catch (error) {

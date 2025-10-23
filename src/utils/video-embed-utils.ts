@@ -135,13 +135,15 @@ export function createVideoElement(src: string, options: VideoEmbedOptions = {})
   video.loop = loop;
   video.controls = controls;
   video.playsInline = true;
+  video.style.position = 'absolute';
+  video.style.top = '50%';
+  video.style.left = '50%';
   video.style.width = '100%';
   video.style.height = '100%';
+  video.style.minWidth = '100vw';
+  video.style.minHeight = '100vh';
   video.style.objectFit = 'cover';
-  video.style.position = 'absolute';
-  video.style.top = '0';
-  video.style.left = '0';
-  video.style.transform = `scale(${scale})`;
+  video.style.transform = `translate(-50%, -50%) scale(${scale})`;
   video.style.transformOrigin = 'center center';
 
   return video;
@@ -158,19 +160,38 @@ export function createIframeElement(
   const iframe = document.createElement('iframe');
   iframe.src = src;
   iframe.title = title;
-  iframe.width = '100%';
-  iframe.height = '100%';
   iframe.frameBorder = '0';
   iframe.allow = 'autoplay';
   iframe.allowFullscreen = false;
   iframe.style.position = 'absolute';
-  iframe.style.top = '0';
-  iframe.style.left = '0';
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
   iframe.style.border = 'none';
   iframe.style.pointerEvents = 'none';
-  iframe.style.transform = `scale(${scale})`;
+
+  // For iframes to act like object-fit: cover, we need to make them oversized
+  // The parent container's overflow: hidden will crop the excess
+  // This ensures the video fills the entire viewport on all aspect ratios
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    // On mobile, make iframe much larger to ensure coverage
+    iframe.style.top = '50%';
+    iframe.style.left = '50%';
+    iframe.style.width = '177.77vh'; // 16:9 aspect ratio width based on height
+    iframe.style.height = '100vh';
+    iframe.style.minWidth = '100vw';
+    iframe.style.minHeight = '56.25vw'; // 16:9 aspect ratio height based on width
+    iframe.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  } else {
+    // Desktop: standard coverage technique
+    iframe.style.top = '50%';
+    iframe.style.left = '50%';
+    iframe.style.width = '177.77vh'; // 16:9 aspect ratio
+    iframe.style.height = '100vh';
+    iframe.style.minWidth = '100vw';
+    iframe.style.minHeight = '56.25vw'; // 16:9 aspect ratio
+    iframe.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+
   iframe.style.transformOrigin = 'center center';
 
   return iframe;

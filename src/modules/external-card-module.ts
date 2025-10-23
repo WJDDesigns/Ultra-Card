@@ -521,17 +521,11 @@ export class UltraExternalCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult {
-    console.log('[UC] ExternalCardModule renderYamlTab called');
-    console.log('[UC] Module:', module);
-    console.log('[UC] Module card_type:', module.card_type);
-    console.log('[UC] Module card_config:', module.card_config);
-
     // Convert config to YAML format with proper indentation
     let yamlString: string;
     try {
       // Use card_config or empty object if undefined
       const configToConvert = module.card_config || {};
-      console.log('[UC] Converting config to YAML:', configToConvert);
 
       // Convert to YAML with proper formatting (standard HA card config format)
       yamlString = yaml.dump(configToConvert, {
@@ -547,8 +541,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
       // Remove any leading pipe character if present (shouldn't happen, but defensive)
       yamlString = yamlString.replace(/^\|\s*\n/, '');
-
-      console.log('[UC] Generated YAML string:', yamlString);
     } catch (error) {
       console.error('[UC] Failed to convert config to YAML:', error);
       yamlString = '# Error converting config to YAML\n';
@@ -564,9 +556,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
     };
 
     // Use Ultra Card's own CodeMirror-based editor for YAML
-    console.log('[UC] Using ultra-template-editor for YAML');
-    console.log('[UC] YAML string length:', yamlString.length);
-    console.log('[UC] YAML string preview:', yamlString.substring(0, 100));
 
     return html`
       ${this.injectUcFormStyles()}

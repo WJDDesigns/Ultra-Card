@@ -3,6 +3,8 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedClockModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedClockModuleEditor } from './animated-clock-module-editor';
 import { clockUpdateService } from '../services/clock-update-service';
 import { getImageUrl } from '../utils/image-upload';
@@ -248,6 +250,91 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         clockContent = this._renderFlipClock(hours, minutes, ampm, clockModule);
     }
 
+    // Action handlers for tap, hold, and double-tap
+    let holdTimeout: any = null;
+    let clickTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      isHolding = false;
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (!clockModule.hold_action || clockModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (clockModule.hold_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config
+          );
+        }
+      }, 500); // 500ms hold threshold
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      // Clear hold timer
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      // If this was a hold gesture, don't process as click
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      // Double click detection (within 300ms)
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        // This is a double click
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (!clockModule.double_tap_action || clockModule.double_tap_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (clockModule.double_tap_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config
+          );
+        }
+      } else {
+        // This might be a single click, but wait to see if double click follows
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          // This is a single click
+          clickCount = 0;
+
+          // Execute tap action
+          if (!clockModule.tap_action || clockModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              (clockModule.tap_action as any) || ({ action: 'default' } as any),
+              hass,
+              e.target as HTMLElement,
+              config
+            );
+          }
+        }, 300); // Wait 300ms to see if double click follows
+      }
+    };
+
+    // Determine if actions are configured to show cursor pointer
+    const hasActions =
+      (clockModule.tap_action && clockModule.tap_action.action !== 'nothing') ||
+      (clockModule.hold_action && clockModule.hold_action.action !== 'nothing') ||
+      (clockModule.double_tap_action && clockModule.double_tap_action.action !== 'nothing');
+
     // Container styles for design system integration - properly handle global design properties
     const containerStyles = {
       padding:
@@ -319,13 +406,19 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       boxSizing: scalingStyles.boxSizing,
       // Apply smart scaling constraints
       ...(smartScaling ? { maxWidth: scalingStyles.maxWidth } : {}),
+      // Add cursor pointer when actions are configured
+      cursor: hasActions ? 'pointer' : 'default',
     };
 
     return html`
       <style>
         ${this.getStyles()}
       </style>
-      <div style=${this.objectToStyleString(containerStyles)}>
+      <div
+        style=${this.objectToStyleString(containerStyles)}
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
+      >
         <div
           class="animated-clock-module-container"
           style="

@@ -3,6 +3,8 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedWeatherModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedWeatherModuleEditor } from './animated-weather-module-editor';
 
 export class UltraAnimatedWeatherModule extends BaseUltraModule {
@@ -164,6 +166,86 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
 
     gridTemplate = columns.join(' ') || '1fr';
 
+    // Action handlers for tap, hold, and double-tap
+    let holdTimeout: any = null;
+    let clickTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      isHolding = false;
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (!weatherModule.hold_action || weatherModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (weatherModule.hold_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config
+          );
+        }
+      }, 500);
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (
+          !weatherModule.double_tap_action ||
+          weatherModule.double_tap_action.action !== 'nothing'
+        ) {
+          UltraLinkComponent.handleAction(
+            (weatherModule.double_tap_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config
+          );
+        }
+      } else {
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          clickCount = 0;
+
+          if (!weatherModule.tap_action || weatherModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              (weatherModule.tap_action as any) || ({ action: 'default' } as any),
+              hass,
+              e.target as HTMLElement,
+              config
+            );
+          }
+        }, 300);
+      }
+    };
+
+    const hasActions =
+      (weatherModule.tap_action && weatherModule.tap_action.action !== 'nothing') ||
+      (weatherModule.hold_action && weatherModule.hold_action.action !== 'nothing') ||
+      (weatherModule.double_tap_action && weatherModule.double_tap_action.action !== 'nothing');
+
     return html`
       <style>
         ${this.getStyles()}
@@ -171,6 +253,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       <div
         class="animated-weather-module-container"
         style="
+          cursor: ${hasActions ? 'pointer' : 'default'};
           --column-gap: ${weatherModule.column_gap ?? 12}px;
           --left-column-gap: ${weatherModule.left_column_gap ?? 8}px;
           --right-column-gap: ${weatherModule.right_column_gap ?? 8}px;
@@ -191,6 +274,8 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
           --module-background: ${weatherModule.module_background || 'transparent'};
           --module-border: ${weatherModule.module_border || 'transparent'};
         "
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
       >
         <div class="weather-main-grid" style="grid-template-columns: ${gridTemplate};">
           <!-- Left Column: Location & Condition -->

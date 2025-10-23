@@ -283,7 +283,6 @@ export class UcLightColorPicker extends LitElement {
     const container = this.shadowRoot?.querySelector('.custom-select-container');
 
     if (container && !container.contains(target) && !this.contains(target)) {
-      console.log('🎯 Click outside detected, closing dropdown');
       this._effectDropdownOpen = false;
       this._effectSearchTerm = '';
       this.requestUpdate();
@@ -499,26 +498,16 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleEffectsTabClick(): void {
-    console.log('🎯 Effects tab clicked!');
-    console.log('🎯 Component disabled:', this.disabled);
-    console.log('🎯 Effect list length:', this.effect_list?.length || 0);
-    console.log('🎯 Current mode before:', this.mode);
-
     if (this.disabled) {
-      console.log('🎯 Tab click blocked - component is disabled');
       return;
     }
 
     this.mode = 'effect';
-    console.log('🎯 Current mode after:', this.mode);
     this.requestUpdate();
   }
 
   private handleEffectSelectionSimple(effectValue: string): void {
-    console.log('🎆 Simple effect selection:', effectValue);
-
     if (this.disabled) {
-      console.log('🎆 Component disabled, ignoring');
       return;
     }
 
@@ -528,18 +517,15 @@ export class UcLightColorPicker extends LitElement {
 
     // Update local property
     this.effect = effectValue;
-    console.log('🎆 Updated this.effect to:', this.effect);
 
     // Fire the color-changed event directly
     if (!effectValue || effectValue.trim() === '') {
-      console.log('🎆 No effect selected, clearing and switching to hs mode');
       this.mode = 'hs';
       this.fireColorChanged({
         effect: '',
         mode: 'hs',
       });
     } else {
-      console.log('🎆 Effect selected, switching to effect mode and firing event');
       this.mode = 'effect';
       this.fireColorChanged({
         effect: effectValue,
@@ -550,14 +536,10 @@ export class UcLightColorPicker extends LitElement {
 
   private updateFilteredEffects(): void {
     const searchTerm = this._effectSearchTerm.toLowerCase();
-    console.log('🔍 Filtering effects with search term:', searchTerm);
-    console.log('🔍 Total effect list length:', this.effect_list?.length || 0);
 
     this._filteredEffects = (this.effect_list || []).filter(effect =>
       effect.toLowerCase().includes(searchTerm)
     );
-
-    console.log('🔍 Filtered effects count:', this._filteredEffects.length);
   }
 
   private handleEffectSearch(e: Event): void {
@@ -567,28 +549,20 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private toggleEffectDropdown(): void {
-    console.log('🎯 Toggle dropdown clicked! Current state:', this._effectDropdownOpen);
-    console.log('🎯 Component disabled:', this.disabled);
-
     if (this.disabled) {
-      console.log('🎯 Component is disabled, not opening dropdown');
       return;
     }
 
     this._effectDropdownOpen = !this._effectDropdownOpen;
-    console.log('🎯 New dropdown state:', this._effectDropdownOpen);
 
     if (this._effectDropdownOpen) {
       this.updateFilteredEffects();
-      console.log('🎯 Updated filtered effects, count:', this._filteredEffects.length);
       // Focus search input after dropdown opens
       setTimeout(() => {
         const searchInput = this.shadowRoot?.querySelector('.effect-search') as HTMLInputElement;
         if (searchInput) {
           searchInput.focus();
-          console.log('🎯 Focused search input');
         } else {
-          console.log('🎯 Could not find search input');
         }
       }, 100);
     }
@@ -599,18 +573,14 @@ export class UcLightColorPicker extends LitElement {
   private handleEffectChange(effect: string): void {
     if (this.disabled) return;
 
-    console.log('🎬 handleEffectChange called with:', effect);
-
     // Ignore automatic events triggered by mode changes
     if (this._ignoringNextEffectChange) {
-      console.log('🎬 Ignoring automatic effect change event');
       this._ignoringNextEffectChange = false;
       return;
     }
 
     // Prevent concurrent processing that could cause loops
     if (this._processingEffectChange) {
-      console.log('🎬 Already processing effect change, skipping');
       return;
     }
 
@@ -621,17 +591,13 @@ export class UcLightColorPicker extends LitElement {
       const effectValue = effect || '';
       this.effect = effectValue; // Update local property
 
-      console.log('🎬 Updated this.effect to:', this.effect);
-
       // If effect is empty, clear effect and switch to color mode
       if (!effectValue || effectValue.trim() === '') {
-        console.log('🎬 Effect is empty, clearing effect');
         this.fireColorChanged({
           effect: '',
           mode: 'hs',
         });
       } else {
-        console.log('🎬 Setting effect to:', effectValue);
         // Fire event with effect
         this.fireColorChanged({
           effect: effectValue,
@@ -690,10 +656,7 @@ export class UcLightColorPicker extends LitElement {
           <button
             class="mode-tab ${this.mode === 'effect' ? 'active' : ''}"
             @click=${() => {
-              console.log('🎯 Effects tab clicked!');
-              console.log('🎯 Current mode before:', this.mode);
               this.mode = 'effect';
-              console.log('🎯 Current mode after:', this.mode);
             }}
             .disabled=${this.disabled}
             style="position: relative; z-index: 10;"

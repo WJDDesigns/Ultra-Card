@@ -28,7 +28,6 @@ class UcGlobalTransparencyService {
 
     // Don't apply global transparency if we're in the card editor
     if (document.querySelector('hui-dialog-edit-card')) {
-      console.log('Ultra Card Video BG: Skipping global transparency - in card editor');
       return;
     }
 
@@ -39,7 +38,6 @@ class UcGlobalTransparencyService {
     window.ultraCardGlobalTransparency = config;
 
     // Dispatch custom event for Ultra Cards to listen to
-    console.log('Ultra Card Video BG: Dispatching global transparency event', config);
     window.dispatchEvent(
       new CustomEvent('ultra-card-global-transparency-changed', {
         detail: config,

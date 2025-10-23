@@ -3542,7 +3542,6 @@ export class UltraCardEditor extends LitElement {
     // Priority 1: Check for integration auth (cross-device)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
-      console.log('✅ Using Ultra Card Pro Cloud integration for authentication');
       this._cloudUser = integrationUser;
     } else {
       // Priority 2: Fall back to card-based auth (single device)
@@ -5147,7 +5146,6 @@ export class UltraCardEditor extends LitElement {
 
   private _handleSnapshotRestored(e: CustomEvent) {
     // Snapshot has been automatically restored to the dashboard
-    console.log('✅ Snapshot restored - page will reload');
   }
 
   private _handleCardBackupRestored(e: CustomEvent) {
@@ -5157,7 +5155,6 @@ export class UltraCardEditor extends LitElement {
   }
 
   private async _handleSnapshotSettingsSaved() {
-    console.log('✅ Snapshot settings saved');
     // Refresh scheduler status
     this._updateSnapshotSchedulerStatus();
   }
@@ -5180,7 +5177,6 @@ export class UltraCardEditor extends LitElement {
 
     try {
       this._isCreatingManualSnapshot = true;
-      console.log('📸 Starting manual dashboard snapshot...');
 
       // Create the snapshot
       await ucSnapshotService.createSnapshot();
@@ -5201,8 +5197,6 @@ export class UltraCardEditor extends LitElement {
         composed: true,
       });
       this.dispatchEvent(event);
-
-      console.log('✅ Manual snapshot completed successfully');
     } catch (error) {
       console.error('❌ Manual snapshot failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -5568,12 +5562,10 @@ export class UltraCardEditor extends LitElement {
   private async _handleSyncNow(): Promise<void> {
     try {
       const results = await ucCloudSyncService.syncAll();
-      console.log('✅ Sync completed:', results);
 
       // Show success message (could be enhanced with toast notification)
       const totalSynced = results.favorites.synced + results.colors.synced + results.reviews.synced;
       if (totalSynced > 0) {
-        console.log(`Synced ${totalSynced} items successfully`);
       }
     } catch (error) {
       console.error('❌ Sync failed:', error);
@@ -5590,7 +5582,6 @@ export class UltraCardEditor extends LitElement {
 
     try {
       await ucCloudSyncService.setSyncEnabled(enabled);
-      console.log(`✅ Sync ${enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
       console.error('❌ Failed to toggle sync:', error);
       // Revert checkbox state
@@ -5604,7 +5595,6 @@ export class UltraCardEditor extends LitElement {
   private async _resolveConflict(conflict: any, resolution: 'local' | 'remote'): Promise<void> {
     try {
       await ucCloudSyncService.resolveConflict(conflict, resolution);
-      console.log(`✅ Conflict resolved: ${resolution}`);
     } catch (error) {
       console.error('❌ Failed to resolve conflict:', error);
     }

@@ -80,14 +80,12 @@ export class UltraCard extends LitElement {
 
     // Listen for global transparency changes
     this._globalTransparencyListener = () => {
-      console.log('Ultra Card: Received global transparency event, applying styles');
       this._applyGlobalTransparency();
     };
     window.addEventListener(
       'ultra-card-global-transparency-changed',
       this._globalTransparencyListener
     );
-    console.log('Ultra Card: Registered global transparency listener');
 
     // Apply global transparency if already set
     this._applyGlobalTransparency();
@@ -822,7 +820,6 @@ export class UltraCard extends LitElement {
         if (globalTransparency.blur_px > 0) {
           const blur = `blur(${globalTransparency.blur_px}px)`;
           cardContainer.style.setProperty('backdrop-filter', blur, 'important');
-          console.log(`Ultra Card: Applied backdrop-filter: ${blur} to card-container`);
 
           // Make background semi-transparent if it's not already
           // This is necessary for backdrop-filter to be visible
@@ -831,7 +828,6 @@ export class UltraCard extends LitElement {
             const computedBg = getComputedStyle(cardContainer).background || 'transparent';
             const newBg = `linear-gradient(${globalTransparency.color}, ${globalTransparency.color}), ${computedBg}`;
             cardContainer.style.setProperty('background', newBg, 'important');
-            console.log(`Ultra Card: Applied color tint overlay: ${globalTransparency.color}`);
           } else {
             // No color specified - make current background semi-transparent
             const computedBg = getComputedStyle(cardContainer).backgroundColor;
@@ -840,14 +836,12 @@ export class UltraCard extends LitElement {
               if (computedBg.startsWith('rgb(')) {
                 const rgba = computedBg.replace('rgb(', 'rgba(').replace(')', ', 0.7)');
                 cardContainer.style.setProperty('background-color', rgba, 'important');
-                console.log(`Ultra Card: Made background semi-transparent: ${rgba}`);
               } else if (computedBg.startsWith('rgba(')) {
                 // Already rgba, ensure alpha is not 1
                 const match = computedBg.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
                 if (match) {
                   const rgba = `rgba(${match[1]}, ${match[2]}, ${match[3]}, 0.7)`;
                   cardContainer.style.setProperty('background-color', rgba, 'important');
-                  console.log(`Ultra Card: Adjusted background transparency: ${rgba}`);
                 }
               }
             }
@@ -866,7 +860,6 @@ export class UltraCard extends LitElement {
         cardContainer.style.removeProperty('backdrop-filter');
         cardContainer.style.removeProperty('background');
         cardContainer.style.removeProperty('background-color');
-        console.log('Ultra Card: Removed global transparency styles');
         this._globalTransparencyApplied = false;
 
         // Trigger a re-render to restore user's original styles

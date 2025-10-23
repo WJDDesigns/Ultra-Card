@@ -114,18 +114,20 @@ class UcVideoBgService {
       return;
     }
 
+    // Check if mobile and if enabled on mobile
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile && !activeModule.module.enable_on_mobile) {
+      this.removeBackground();
+      return;
+    }
+
     // Apply global transparency if enabled
     if (activeModule.module.global_card_transparency?.enabled) {
-      console.log(
-        'Ultra Card Video BG: Applying global transparency',
-        activeModule.module.global_card_transparency
-      );
       ucGlobalTransparencyService.apply(
         activeModule.module.global_card_transparency,
         `${activeModule.cardId}-${activeModule.moduleId}`
       );
     } else {
-      console.log('Ultra Card Video BG: Restoring global transparency');
       ucGlobalTransparencyService.restore(`${activeModule.cardId}-${activeModule.moduleId}`);
     }
 
@@ -391,7 +393,8 @@ class UcVideoBgService {
     this.backgroundLayer.style.top = '0';
     this.backgroundLayer.style.left = '0';
     this.backgroundLayer.style.width = '100vw';
-    this.backgroundLayer.style.height = '100vh';
+    this.backgroundLayer.style.height = '100dvh'; // Use dynamic viewport height for mobile
+    this.backgroundLayer.style.minHeight = '100vh'; // Fallback for older browsers
     this.backgroundLayer.style.zIndex = '0'; // Key: z-index 0 makes it visible behind cards
     this.backgroundLayer.style.pointerEvents = 'none';
     this.backgroundLayer.style.overflow = 'hidden';
@@ -408,7 +411,8 @@ class UcVideoBgService {
       huiViewBackground.style.top = '0';
       huiViewBackground.style.left = '0';
       huiViewBackground.style.width = '100vw';
-      huiViewBackground.style.height = '100vh';
+      huiViewBackground.style.height = '100dvh'; // Use dynamic viewport height for mobile
+      huiViewBackground.style.minHeight = '100vh'; // Fallback for older browsers
       huiViewBackground.style.zIndex = '-1';
       huiViewBackground.appendChild(this.backgroundLayer);
     } else {
@@ -430,7 +434,24 @@ class UcVideoBgService {
     if (this.styleElement) return;
 
     this.styleElement = document.createElement('style');
-    this.styleElement.textContent = getCrossfadeStyles();
+    this.styleElement.textContent = `
+      ${getCrossfadeStyles()}
+      
+      /* Mobile-specific video coverage */
+      @media (max-width: 768px) {
+        #uc-video-bg-layer {
+          height: 100dvh !important;
+          min-height: 100vh !important;
+        }
+        
+        #uc-video-bg-layer video,
+        #uc-video-bg-layer iframe {
+          min-width: 100vw !important;
+          min-height: 100dvh !important;
+          object-fit: cover !important;
+        }
+      }
+    `;
     document.head.appendChild(this.styleElement);
   }
 

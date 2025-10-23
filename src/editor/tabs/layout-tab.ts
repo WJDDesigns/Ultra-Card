@@ -1888,20 +1888,14 @@ export class LayoutTab extends LitElement {
         return;
       }
 
-      console.log('Valid preset layout found:', preset.layout);
-      console.log('Layout rows structure:', preset.layout.rows);
-      console.log('First row structure:', preset.layout.rows[0]);
-
       // Create a new layout with extensible arrays
       const newRows = [...currentLayout.rows];
 
       // Add all rows from the preset at the end
       preset.layout.rows.forEach((presetRow, index) => {
-        console.log(`Processing preset row ${index}:`, presetRow);
         try {
           // Clone the row with new IDs
           const newRow = this._cloneRowWithNewIds(presetRow);
-          console.log(`Successfully cloned row ${index}:`, newRow);
           newRows.push(newRow);
         } catch (cloneError) {
           console.error(`Failed to clone row ${index}:`, cloneError);
@@ -1914,9 +1908,6 @@ export class LayoutTab extends LitElement {
         rows: newRows,
         ...(currentLayout.gap !== undefined && { gap: currentLayout.gap }),
       };
-
-      console.log('Final layout to apply:', newLayout);
-      console.log('Number of rows in final layout:', newLayout.rows.length);
 
       this._updateLayout(newLayout);
       this._showModuleSelector = false;
@@ -2302,7 +2293,6 @@ export class LayoutTab extends LitElement {
       // Take first 5
       const allowedIds = new Set(allExternalCards.slice(0, 5).map(card => card.id));
 
-      console.log(`[UC] Allowed external card IDs (first 5):`, Array.from(allowedIds));
       return allowedIds;
     } catch (error) {
       console.error('[UC] Failed to get allowed external card IDs:', error);
@@ -6356,11 +6346,8 @@ export class LayoutTab extends LitElement {
                     <button
                       class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
                       @click=${() => {
-                        console.log('[UC] YAML tab clicked, current tab:', this._activeModuleTab);
                         this._activeModuleTab = 'yaml';
-                        console.log('[UC] YAML tab set to:', this._activeModuleTab);
                         this.requestUpdate();
-                        console.log('[UC] YAML tab requestUpdate called');
                       }}
                     >
                       YAML
@@ -6402,12 +6389,6 @@ export class LayoutTab extends LitElement {
 
             <div class="module-tab-content">
               ${(() => {
-                console.log(
-                  '[UC] Rendering tab content, active tab:',
-                  this._activeModuleTab,
-                  'module type:',
-                  module.type
-                );
                 return '';
               })()}
               ${this._activeModuleTab === 'general'
@@ -6418,20 +6399,10 @@ export class LayoutTab extends LitElement {
                 : ''}
               ${this._activeModuleTab === 'yaml' && module.type === 'external_card'
                 ? (() => {
-                    console.log(
-                      '[UC] Rendering YAML tab for module:',
-                      module.type,
-                      'card_type:',
-                      (module as any).card_type
-                    );
                     return this._renderYamlTab(module);
                   })()
                 : (() => {
                     if (this._activeModuleTab === 'yaml') {
-                      console.log(
-                        '[UC] YAML tab requested but module is not external_card, type:',
-                        module.type
-                      );
                     }
                     return '';
                   })()}
@@ -6640,14 +6611,8 @@ export class LayoutTab extends LitElement {
                   <button
                     class="module-tab ${this._activeModuleTab === 'yaml' ? 'active' : ''}"
                     @click=${() => {
-                      console.log(
-                        '[UC] YAML tab clicked (layout child), current tab:',
-                        this._activeModuleTab
-                      );
                       this._activeModuleTab = 'yaml';
-                      console.log('[UC] YAML tab set to:', this._activeModuleTab);
                       this.requestUpdate();
-                      console.log('[UC] YAML tab requestUpdate called');
                     }}
                   >
                     YAML
@@ -6694,12 +6659,6 @@ export class LayoutTab extends LitElement {
                 : ''}
               ${this._activeModuleTab === 'yaml' && childModule.type === 'external_card'
                 ? (() => {
-                    console.log(
-                      '[UC] Rendering YAML tab for layout child module:',
-                      childModule.type,
-                      'card_type:',
-                      (childModule as any).card_type
-                    );
                     return this._renderLayoutChildYamlTab(childModule);
                   })()
                 : ''}
@@ -7667,23 +7626,15 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderYamlTab(module: CardModule): TemplateResult {
-    console.log('[UC] _renderYamlTab called for module type:', module.type);
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
-    console.log('[UC] Module handler found:', !!moduleHandler);
-    console.log(
-      '[UC] Module handler has renderYamlTab:',
-      moduleHandler && typeof (moduleHandler as any).renderYamlTab === 'function'
-    );
 
     if (moduleHandler && typeof (moduleHandler as any).renderYamlTab === 'function') {
-      console.log('[UC] Calling module handler renderYamlTab');
       return (moduleHandler as any).renderYamlTab(module, this.hass, this.config, updates =>
         this._updateModule(updates)
       );
     }
 
-    console.log('[UC] Using fallback YAML tab (no renderYamlTab method)');
     // Fallback for modules without YAML tab
     return html`
       <div class="settings-section">
@@ -11713,8 +11664,6 @@ export class LayoutTab extends LitElement {
 
   // Layout Module Rules - centralized logic for layout module behavior
   private async _getDefaultCardConfig(cardType: string, fullCardType: string): Promise<any> {
-    console.log(`[UC] Getting default config for card: ${cardType} (full: ${fullCardType})`);
-
     // Validate card type
     if (!cardType || cardType.trim() === '') {
       throw new Error('Card type is required');
@@ -11724,33 +11673,25 @@ export class LayoutTab extends LitElement {
     try {
       const haHelper = await this._tryHACardHelper(fullCardType);
       if (haHelper && typeof haHelper === 'object') {
-        console.log(`[UC] Successfully got config from HA helper for ${cardType}:`, haHelper);
         return haHelper;
       }
-    } catch (error) {
-      console.log(`[UC] HA helper failed for ${cardType}:`, error);
-    }
+    } catch (error) {}
 
     // Then try to get stub config from the card itself
     try {
       const stubConfig = await this._tryGetStubConfig(cardType);
       if (stubConfig && typeof stubConfig === 'object') {
-        console.log(`[UC] Successfully got stub config for ${cardType}`);
         return stubConfig;
       }
-    } catch (error) {
-      console.log(`[UC] Could not get stub config for ${cardType}:`, error);
-    }
+    } catch (error) {}
 
     // Try hardcoded defaults for known problematic cards
     const hardcodedConfig = this._getHardcodedDefault(fullCardType);
     if (hardcodedConfig) {
-      console.log(`[UC] Using hardcoded default for ${cardType}`);
       return hardcodedConfig;
     }
 
     // Only use minimal fallback if everything else fails
-    console.log(`[UC] Using minimal fallback config for ${cardType}`);
     return {
       type: fullCardType,
     };
@@ -11765,8 +11706,6 @@ export class LayoutTab extends LitElement {
       // Check if HA's card helper is available
       const helpers = (window as any).customCards;
       if (helpers && typeof helpers.createCardElement === 'function') {
-        console.log(`[UC] Trying HA card helper for ${fullCardType}`);
-
         // Create a temporary config with just the type
         const tempConfig = { type: fullCardType };
 
@@ -11775,7 +11714,6 @@ export class LayoutTab extends LitElement {
 
         if (element && typeof element.getStubConfig === 'function') {
           const config = await element.getStubConfig();
-          console.log(`[UC] HA helper provided config:`, config);
           return config;
         }
       }
@@ -11783,13 +11721,11 @@ export class LayoutTab extends LitElement {
       // Try using HA's lovelace config if available
       const lovelace = (this.hass as any).lovelace;
       if (lovelace && lovelace.config && lovelace.config.views) {
-        console.log(`[UC] Checking lovelace config for similar cards`);
         // Look for similar cards in the current dashboard
         for (const view of lovelace.config.views) {
           if (view.cards) {
             for (const card of view.cards) {
               if (card.type === fullCardType) {
-                console.log(`[UC] Found existing ${fullCardType} in dashboard, using as template`);
                 // Return a copy without any entity-specific data
                 const template = { ...card };
                 delete template.entity;
@@ -11800,9 +11736,7 @@ export class LayoutTab extends LitElement {
           }
         }
       }
-    } catch (error) {
-      console.log(`[UC] HA card helper error:`, error);
-    }
+    } catch (error) {}
 
     return null;
   }
@@ -11876,7 +11810,6 @@ export class LayoutTab extends LitElement {
     // Get the card element constructor
     const cardConstructor = customElements.get(elementName);
     if (!cardConstructor) {
-      console.log(`[UC] Card element ${elementName} not registered`);
       return null;
     }
 
@@ -11885,24 +11818,15 @@ export class LayoutTab extends LitElement {
 
       // Try static method first (most common - used by ApexCharts, etc.)
       if (typeof (cardConstructor as any).getStubConfig === 'function') {
-        console.log(`[UC] Calling static getStubConfig for ${cardType}`);
-        console.log(`[UC] Hass available:`, !!this.hass);
-        console.log(
-          `[UC] Hass states count:`,
-          this.hass ? Object.keys(this.hass.states || {}).length : 0
-        );
-
         try {
           // Some cards need hass passed as a parameter to the static method
           const result = (cardConstructor as any).getStubConfig(this.hass);
-          console.log(`[UC] Static getStubConfig returned:`, result);
           stubConfigPromise = Promise.resolve(result);
         } catch (staticError) {
           console.warn(`[UC] Static getStubConfig threw error:`, staticError);
           // If static fails, try without parameters (some cards don't expect parameters)
           try {
             const result = (cardConstructor as any).getStubConfig();
-            console.log(`[UC] Static getStubConfig (no params) returned:`, result);
             stubConfigPromise = Promise.resolve(result);
           } catch (noParamError) {
             console.warn(`[UC] Static getStubConfig (no params) also failed:`, noParamError);
@@ -11911,13 +11835,11 @@ export class LayoutTab extends LitElement {
         }
 
         if (!stubConfigPromise) {
-          console.log(`[UC] Static method failed, trying instance method`);
         }
       }
 
       if (!stubConfigPromise) {
         // Try instance method (less common, but some cards use this)
-        console.log(`[UC] Trying instance getStubConfig for ${cardType}`);
         const element = document.createElement(elementName) as any;
 
         // Set hass on the element BEFORE calling getStubConfig
@@ -11926,10 +11848,8 @@ export class LayoutTab extends LitElement {
         }
 
         if (typeof element.getStubConfig === 'function') {
-          console.log(`[UC] Found instance getStubConfig for ${cardType}`);
           stubConfigPromise = Promise.resolve(element.getStubConfig());
         } else {
-          console.log(`[UC] No getStubConfig method found for ${cardType}`);
           return null;
         }
       }
@@ -11941,10 +11861,8 @@ export class LayoutTab extends LitElement {
         );
 
         const stubConfig = await Promise.race([stubConfigPromise, timeoutPromise]);
-        console.log(`[UC] Got stub config for ${cardType}:`, stubConfig);
         return stubConfig;
       } else {
-        console.log(`[UC] No stub config method worked for ${cardType}`);
         return null;
       }
     } catch (error) {

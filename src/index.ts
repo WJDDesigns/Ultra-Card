@@ -30,18 +30,11 @@ setTimeout(() => {
         // Debug: Check sensor directly
         const sensor = hass.states?.['sensor.ultra_card_pro_cloud_authentication_status'];
         if (sensor) {
-          console.log('🔍 Integration sensor found:', {
-            state: sensor.state,
-            tier: sensor.attributes?.subscription_tier,
-            authenticated: sensor.attributes?.authenticated,
-          });
+          // Sensor found, integration status available
         }
 
         if (integrationUser) {
-          console.log('🔍 Integration user detected:', {
-            tier: integrationUser.subscription?.tier,
-            status: integrationUser.subscription?.status,
-          });
+          // Integration user found, authentication successful
           break;
         }
       }

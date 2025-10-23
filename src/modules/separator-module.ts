@@ -66,7 +66,6 @@ export class UltraSeparatorModule extends BaseUltraModule {
       separatorModule.color === 'var(--divider-color)' ||
       separatorModule.color === 'var(--divider-color, #cccccc)'
     ) {
-      console.log('⚠️ Migrating old separator color from CSS variable to actual color');
       updateModule({ color: '#cccccc' });
     }
 
