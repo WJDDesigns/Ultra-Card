@@ -1128,5 +1128,3 @@ Your feedback, testing, preset contributions, and enthusiasm drive this project 
 ---
 
 **Built for Home Assistant with ❤️**
-
-_Current Version: 2.0-beta19_
