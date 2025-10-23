@@ -202,7 +202,7 @@ Unlock the full potential of Ultra Card with **Ultra Card Pro**—a premium tier
 
 ### Get Started
 
-Register for Ultra Card Pro at **[ultracard.io](https://ultracard.io)** to unlock all Pro features. Pro subscriptions support ongoing development and help us build even more amazing features for the community.
+Register for Ultra Card Pro at **[ultracard.io](https://ultracard.io)** to unlock all Pro features. Then install the **[Ultra Card Pro Cloud](https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration)** integration via HACS for seamless authentication across all your devices. Pro subscriptions support ongoing development and help us build even more amazing features for the community.
 
 ## Translations
 

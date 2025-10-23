@@ -68,6 +68,7 @@ export class UltraBarModule extends BaseUltraModule {
       bar_width: 100,
       bar_alignment: 'center',
       border_radius: 10,
+      glass_blur_amount: 8, // Default glass blur amount
 
       // Text Display
       label_alignment: 'space-between',
@@ -1088,6 +1089,82 @@ export class UltraBarModule extends BaseUltraModule {
                       },
                       false
                     )}
+                  </div>
+                `
+              : ''
+          }
+
+          <!-- Glass Blur Amount (only show when glass style is selected) -->
+          ${
+            barModule.bar_style === 'glass'
+              ? html`
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">
+                      ${localize('editor.bar.appearance.glass_blur', lang, 'Glass Blur Amount')}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.appearance.glass_blur_desc',
+                        lang,
+                        'Adjust the blur intensity of the glass effect.'
+                      )}
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="0"
+                        max="20"
+                        step="1"
+                        .value="${barModule.glass_blur_amount || 8}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = parseInt(target.value);
+                          if (!isNaN(value)) {
+                            updateModule({ glass_blur_amount: value });
+                          }
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="0"
+                        max="20"
+                        step="1"
+                        .value="${barModule.glass_blur_amount || 8}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = parseInt(target.value);
+                          if (!isNaN(value)) {
+                            updateModule({ glass_blur_amount: value });
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = parseInt(target.value) || 8;
+                            const increment = e.key === 'ArrowUp' ? 1 : -1;
+                            const newValue = Math.max(0, Math.min(20, currentValue + increment));
+                            updateModule({ glass_blur_amount: newValue });
+                          }
+                        }}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${() => updateModule({ glass_blur_amount: 8 })}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '8')}"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
                   </div>
                 `
               : ''
@@ -3706,7 +3783,7 @@ export class UltraBarModule extends BaseUltraModule {
           // Creates a frosted glass appearance with subtle depth and translucency
           const glassOpacity = 0.15;
           const glassBorderOpacity = 0.25;
-          const glassBlur = 20;
+          const glassBlur = barModule.glass_blur_amount || 8;
 
           barStyleCSS = `
             backdrop-filter: blur(${glassBlur}px) saturate(180%);
@@ -3725,36 +3802,16 @@ export class UltraBarModule extends BaseUltraModule {
             position: relative;
           `;
 
-          // Enhanced fill with liquid glass effect
+          // Fill should be solid, not glass - only the track background has glass effect
           if (barModule.use_gradient) {
             fillOverlayCSS = `
-              backdrop-filter: blur(${glassBlur * 0.6}px) saturate(200%);
-              background: linear-gradient(
-                135deg,
-                rgba(255, 255, 255, 0.25) 0%,
-                rgba(255, 255, 255, 0.1) 30%,
-                rgba(255, 255, 255, 0.05) 70%,
-                rgba(255, 255, 255, 0.15) 100%
-              );
+              background: ${barFillBackground};
               border-radius: ${Math.max(0, borderRadius - 2)}px;
-              box-shadow: 
-                inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
             `;
           } else {
             fillStyleCSS = `
-              backdrop-filter: blur(${glassBlur * 0.6}px) saturate(200%);
-              background: linear-gradient(
-                135deg,
-                rgba(255, 255, 255, 0.25) 0%,
-                rgba(255, 255, 255, 0.1) 30%,
-                rgba(255, 255, 255, 0.05) 70%,
-                rgba(255, 255, 255, 0.15) 100%
-              );
+              background: ${barFillBackground};
               border-radius: ${Math.max(0, borderRadius - 2)}px;
-              box-shadow: 
-                inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
               position: relative;
             `;
           }

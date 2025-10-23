@@ -21,6 +21,7 @@ import { UltraAnimatedClockModule } from './animated-clock-module';
 import { UltraAnimatedWeatherModule } from './animated-weather-module';
 import { UltraAnimatedForecastModule } from './animated-forecast-module';
 import { UltraExternalCardModule } from './external-card-module';
+import { UltraVideoBgModule } from './video-bg-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -66,6 +67,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraAnimatedForecastModule());
     // Register external card module for handling existing cards, but hide from selector
     this.registerModule(new UltraExternalCardModule());
+    // Register video background module (Pro feature)
+    this.registerModule(new UltraVideoBgModule());
   }
 
   // Register a new module (for core modules or third-party modules)

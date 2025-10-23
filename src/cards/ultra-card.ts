@@ -18,6 +18,7 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
+import { ucVideoBgService } from '../services/uc-video-bg-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { dbg3p } from '../utils/uc-debug';
 import {
@@ -71,9 +72,25 @@ export class UltraCard extends LitElement {
   private _instanceId: string = '';
   private _limitUnsub?: () => void;
   private _isEditorPreviewCard = false;
+  private _globalTransparencyListener?: () => void;
 
   connectedCallback(): void {
     super.connectedCallback();
+
+    // Listen for global transparency changes
+    this._globalTransparencyListener = () => {
+      console.log('Ultra Card: Received global transparency event, applying styles');
+      this._applyGlobalTransparency();
+    };
+    window.addEventListener(
+      'ultra-card-global-transparency-changed',
+      this._globalTransparencyListener
+    );
+    console.log('Ultra Card: Registered global transparency listener');
+
+    // Apply global transparency if already set
+    this._applyGlobalTransparency();
+
     // Ensure a stable per-card instance id across remounts, unique per dashboard + slot index
     if (!this._instanceId) {
       const dashboardId = getCurrentDashboardId();
@@ -210,6 +227,9 @@ export class UltraCard extends LitElement {
       };
       window.addEventListener('resize', this._windowResizeHandler);
     }
+
+    // Register video background modules with the service
+    this._registerVideoBgModules();
   }
 
   disconnectedCallback(): void {
@@ -232,6 +252,14 @@ export class UltraCard extends LitElement {
     // Clean up event listener
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+    }
+
+    // Clean up global transparency listener
+    if (this._globalTransparencyListener) {
+      window.removeEventListener(
+        'ultra-card-global-transparency-changed',
+        this._globalTransparencyListener
+      );
     }
 
     // Remove preview flag listener
@@ -274,6 +302,9 @@ export class UltraCard extends LitElement {
         ThirdPartyLimitService.unregister(this._instanceId);
       }
     } catch {}
+
+    // Unregister video background modules
+    this._unregisterVideoBgModules();
   }
 
   /**
@@ -531,6 +562,27 @@ export class UltraCard extends LitElement {
       `;
     }
 
+    // Check if card only contains video_bg modules (which should be invisible on dashboard)
+    const allModules: CardModule[] = [];
+    this.config.layout.rows.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          allModules.push(module);
+        });
+      });
+    });
+
+    const onlyVideoBgModules =
+      allModules.length > 0 && allModules.every(m => m.type === 'video_bg');
+
+    // Check if we're in the card editor (not just dashboard edit mode)
+    const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
+
+    // If only video_bg modules and NOT in card editor, don't render the card container (invisible)
+    if (onlyVideoBgModules && !isInCardEditor) {
+      return html``;
+    }
+
     return html`
       <div class="card-container" style="${cardStyle}">
         ${this.config.layout.rows.map(row => this._renderRow(row))}
@@ -544,6 +596,9 @@ export class UltraCard extends LitElement {
       // Hard reset before re-initializing scaling logic
       this._forceResetScale();
       this._setupResponsiveScaling();
+
+      // Re-register video background modules when config changes
+      this._registerVideoBgModules();
     }
 
     // Only check scaling when config or hass changes (not on every render) and feature is enabled
@@ -738,6 +793,74 @@ export class UltraCard extends LitElement {
         });
       } else {
         this._isScalingInProgress = false;
+      }
+    });
+  }
+
+  /**
+   * Apply global transparency directly to the card-container element
+   */
+  private _applyGlobalTransparency(): void {
+    const globalTransparency = (window as any).ultraCardGlobalTransparency;
+
+    // Wait for card-container to be rendered
+    requestAnimationFrame(() => {
+      const cardContainer = this.shadowRoot?.querySelector('.card-container') as HTMLElement;
+
+      if (!cardContainer) {
+        console.log('Ultra Card: No card-container found to apply transparency');
+        return;
+      }
+
+      if (globalTransparency && globalTransparency.enabled) {
+        // Apply opacity
+        const opacity = globalTransparency.opacity / 100;
+        cardContainer.style.setProperty('opacity', String(opacity), 'important');
+
+        // Apply blur and make background semi-transparent so blur is visible
+        if (globalTransparency.blur_px > 0) {
+          const blur = `blur(${globalTransparency.blur_px}px)`;
+          cardContainer.style.setProperty('backdrop-filter', blur, 'important');
+          console.log(`Ultra Card: Applied backdrop-filter: ${blur} to card-container`);
+
+          // Make background semi-transparent if it's not already
+          // This is necessary for backdrop-filter to be visible
+          if (globalTransparency.color) {
+            // User specified a color overlay
+            cardContainer.style.setProperty('background', globalTransparency.color, 'important');
+          } else {
+            // No color specified - make current background semi-transparent
+            const computedBg = getComputedStyle(cardContainer).backgroundColor;
+            if (computedBg && computedBg !== 'transparent') {
+              // Convert to rgba with opacity
+              if (computedBg.startsWith('rgb(')) {
+                const rgba = computedBg.replace('rgb(', 'rgba(').replace(')', ', 0.7)');
+                cardContainer.style.setProperty('background-color', rgba, 'important');
+                console.log(`Ultra Card: Made background semi-transparent: ${rgba}`);
+              } else if (computedBg.startsWith('rgba(')) {
+                // Already rgba, ensure alpha is not 1
+                const match = computedBg.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+                if (match) {
+                  const rgba = `rgba(${match[1]}, ${match[2]}, ${match[3]}, 0.7)`;
+                  cardContainer.style.setProperty('background-color', rgba, 'important');
+                  console.log(`Ultra Card: Adjusted background transparency: ${rgba}`);
+                }
+              }
+            }
+          }
+        }
+
+        // Apply background color overlay (if specified and no blur)
+        if (globalTransparency.color && globalTransparency.blur_px === 0) {
+          cardContainer.style.setProperty('background', globalTransparency.color, 'important');
+        }
+      } else {
+        // Remove global transparency styles
+        cardContainer.style.removeProperty('opacity');
+        cardContainer.style.removeProperty('backdrop-filter');
+        cardContainer.style.removeProperty('background');
+        cardContainer.style.removeProperty('background-color');
+        console.log('Ultra Card: Removed global transparency styles');
       }
     });
   }
@@ -1918,6 +2041,49 @@ export class UltraCard extends LitElement {
       integrationUser?.subscription?.tier === 'pro' &&
       integrationUser?.subscription?.status === 'active'
     );
+  }
+
+  /**
+   * Register all video background modules with the video background service
+   */
+  private _registerVideoBgModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    // Find all video_bg modules in the configuration
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'video_bg') {
+            ucVideoBgService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all video background modules from the video background service
+   */
+  private _unregisterVideoBgModules(): void {
+    if (!this.config || !this._instanceId) return;
+
+    // Find all video_bg modules and unregister them
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'video_bg') {
+            ucVideoBgService.unregisterModule(this._instanceId!, module.id);
+          }
+        });
+      });
+    });
   }
 
   /**

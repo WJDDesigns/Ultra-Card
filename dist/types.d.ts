@@ -35,7 +35,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -345,6 +345,7 @@ export interface BarModule extends BaseModule {
     bar_alignment?: 'left' | 'center' | 'right';
     height?: number;
     border_radius?: number;
+    glass_blur_amount?: number;
     label_alignment?: 'left' | 'center' | 'right' | 'space-between';
     show_percentage?: boolean;
     percentage_text_size?: number;
@@ -1454,7 +1455,48 @@ export interface ExternalCardModule extends BaseModule {
     card_type: string;
     card_config: Record<string, any>;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule;
+export interface VideoBackgroundRule {
+    id: string;
+    condition_type: 'entity_state' | 'entity_attribute' | 'template' | 'time';
+    entity?: string;
+    attribute?: string;
+    operator?: '=' | '!=' | '>' | '>=' | '<' | '<=' | 'contains' | 'not_contains' | 'has_value' | 'no_value';
+    value?: string | number;
+    template?: string;
+    time_from?: string;
+    time_to?: string;
+    video_source: 'local' | 'url' | 'youtube' | 'vimeo';
+    video_url: string;
+    loop?: boolean;
+    start_time?: number;
+}
+export interface GlobalCardTransparency {
+    enabled: boolean;
+    opacity: number;
+    blur_px: number;
+    color?: string;
+}
+export interface VideoBackgroundModule extends BaseModule {
+    type: 'video_bg';
+    enabled: boolean;
+    editor_only: boolean;
+    controller_id?: string;
+    pause_when_hidden: boolean;
+    respect_reduced_motion: boolean;
+    enable_on_mobile: boolean;
+    opacity: number;
+    blur: string;
+    brightness: string;
+    scale: number;
+    default_source: 'local' | 'url' | 'youtube' | 'vimeo';
+    default_video_url: string;
+    default_loop: boolean;
+    default_muted: boolean;
+    default_start_time: number;
+    rules?: VideoBackgroundRule[];
+    global_card_transparency: GlobalCardTransparency;
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

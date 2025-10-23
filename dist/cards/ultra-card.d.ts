@@ -24,6 +24,7 @@ export declare class UltraCard extends LitElement {
     private _instanceId;
     private _limitUnsub?;
     private _isEditorPreviewCard;
+    private _globalTransparencyListener?;
     connectedCallback(): void;
     disconnectedCallback(): void;
     /**
@@ -58,6 +59,10 @@ export declare class UltraCard extends LitElement {
     private _forceResetScale;
     private _isScalingEnabled;
     private _checkAndScaleContent;
+    /**
+     * Apply global transparency directly to the card-container element
+     */
+    private _applyGlobalTransparency;
     private _getCardStyle;
     /**
      * Get the card background image URL based on the configured type
@@ -121,6 +126,14 @@ export declare class UltraCard extends LitElement {
      * ONLY checks integration auth (no card-based auth)
      */
     private _hasProAccess;
+    /**
+     * Register all video background modules with the video background service
+     */
+    private _registerVideoBgModules;
+    /**
+     * Unregister all video background modules from the video background service
+     */
+    private _unregisterVideoBgModules;
     /**
      * Inject a <style> block containing the combined styles from every registered
      * module into the card's shadow-root. This is required for features such as

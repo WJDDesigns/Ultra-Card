@@ -3862,7 +3862,9 @@ export class UltraCardEditor extends LitElement {
               <h5>📋 Quick Install (2 minutes):</h5>
               <ol>
                 <li>Click <strong>"Install via HACS"</strong> below</li>
-                <li>In HACS: Search "<strong>Ultra Card Pro Cloud</strong>"</li>
+                <li>
+                  In HACS: Search "<strong>Ultra Card Pro Cloud</strong>" (now available in HACS!)
+                </li>
                 <li>Click <strong>Download</strong></li>
                 <li>Restart Home Assistant</li>
                 <li>Go to Settings → Integrations → Add Integration</li>
@@ -3873,7 +3875,7 @@ export class UltraCardEditor extends LitElement {
 
             <div class="status-actions">
               <a
-                href="https://github.com/WJDDesigns/ultra-card-pro-cloud"
+                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
                 target="_blank"
                 class="integration-button integration-button-primary"
               >
@@ -3982,13 +3984,13 @@ export class UltraCardEditor extends LitElement {
           <h4>Ultra Card Pro Authentication</h4>
           <p>
             To unlock Pro features, install the <strong>Ultra Card Pro Cloud</strong> integration
-            from HACS and sign in there. Authentication is managed through the integration for
-            seamless cross-device sync.
+            (now available in HACS!) from HACS and sign in there. Authentication is managed through
+            the integration for seamless cross-device sync.
           </p>
           ${!isIntegrationInstalled
             ? html`
                 <a
-                  href="https://github.com/WJDDesigns/ultra-card-pro-cloud"
+                  href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
                   target="_blank"
                   rel="noopener"
                   class="install-integration-link"

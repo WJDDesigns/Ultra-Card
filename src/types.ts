@@ -87,7 +87,8 @@ export interface BaseModule {
     | 'animated_clock'
     | 'animated_weather'
     | 'animated_forecast'
-    | 'external_card';
+    | 'external_card'
+    | 'video_bg';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -593,6 +594,7 @@ export interface BarModule extends BaseModule {
   bar_alignment?: 'left' | 'center' | 'right';
   height?: number;
   border_radius?: number;
+  glass_blur_amount?: number; // Glass blur amount (0-20px) for glass style
 
   // Text Display
   label_alignment?: 'left' | 'center' | 'right' | 'space-between';
@@ -2576,6 +2578,75 @@ export interface ExternalCardModule extends BaseModule {
   // Note: No tap_action/hold_action - external cards handle their own actions
 }
 
+// Video Background Conditional Rule
+export interface VideoBackgroundRule {
+  id: string;
+  // Condition (when to apply this rule)
+  condition_type: 'entity_state' | 'entity_attribute' | 'template' | 'time';
+  entity?: string;
+  attribute?: string;
+  operator?:
+    | '='
+    | '!='
+    | '>'
+    | '>='
+    | '<'
+    | '<='
+    | 'contains'
+    | 'not_contains'
+    | 'has_value'
+    | 'no_value';
+  value?: string | number;
+  template?: string;
+  time_from?: string;
+  time_to?: string;
+  // Video config (when condition is true)
+  video_source: 'local' | 'url' | 'youtube' | 'vimeo';
+  video_url: string;
+  loop?: boolean;
+  start_time?: number;
+}
+
+// Global Card Transparency Configuration
+export interface GlobalCardTransparency {
+  enabled: boolean;
+  opacity: number; // 0-100
+  blur_px: number; // 0-30
+  color?: string;
+}
+
+// Video Background Module (PRO)
+export interface VideoBackgroundModule extends BaseModule {
+  type: 'video_bg';
+
+  // Core Settings
+  enabled: boolean;
+  editor_only: boolean;
+  controller_id?: string;
+  pause_when_hidden: boolean;
+  respect_reduced_motion: boolean;
+  enable_on_mobile: boolean;
+
+  // Visual Filters
+  opacity: number; // 0-100
+  blur: string; // e.g., '0px', '10px'
+  brightness: string; // e.g., '100%', '150%'
+  scale: number; // 0.5-2.0 for video scaling
+
+  // Default Video Configuration
+  default_source: 'local' | 'url' | 'youtube' | 'vimeo';
+  default_video_url: string;
+  default_loop: boolean;
+  default_muted: boolean; // Always true
+  default_start_time: number;
+
+  // Conditional Rules (evaluated top to bottom)
+  rules?: VideoBackgroundRule[];
+
+  // Global Card Transparency
+  global_card_transparency: GlobalCardTransparency;
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -2599,7 +2670,8 @@ export type CardModule =
   | AnimatedClockModule
   | AnimatedWeatherModule
   | AnimatedForecastModule
-  | ExternalCardModule;
+  | ExternalCardModule
+  | VideoBackgroundModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

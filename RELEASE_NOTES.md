@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 2.0-beta30
+
+### 🚀 New Features
+
+- **Added NEW pro Video Background module** - Allows users to add a module to any card in the view to add video to their background for enhanced visual appeal
+- **Added glass blur slider for Glass style in the bars module** - Enhanced glass effect customization with adjustable blur intensity for the perfect translucent appearance
+- **Added new linking to HACS version of Ultra Card Pro Cloud integration** - Seamless integration with the HACS version of Ultra Card Pro Cloud for enhanced cloud sync capabilities
+
+### 🧹 Code Quality & Preparation
+
+- **Swept up the floor in preparation for the new release of 2.0 to the public** - General code cleanup, optimization, and preparation for the upcoming public 2.0 release
+
 ## Version 2.0-beta28
 
 ### 🐛 Bug Fixes
