@@ -10995,6 +10995,18 @@ export class LayoutTab extends LitElement {
                 <span>Unlimited Cards</span>
               </div>
             `}
+
+        <div class="thirdparty-notebox">
+          <ha-icon icon="mdi:alert-circle"></ha-icon>
+          <div class="notebox-content">
+            <strong>Compatibility Notice:</strong>
+            <p>
+              Some 3rd party modules do not work as intended. Please let us know and we will look
+              into it.
+            </p>
+          </div>
+        </div>
+
         ${availableCards.length > 0
           ? html`
               <div class="thirdparty-section">
@@ -11125,6 +11137,44 @@ export class LayoutTab extends LitElement {
 
         .refresh-btn:hover {
           background: var(--primary-color-hover);
+        }
+
+        .thirdparty-notebox {
+          display: flex;
+          gap: 12px;
+          padding: 16px;
+          background: rgba(255, 152, 0, 0.1);
+          border: 1px solid rgba(255, 152, 0, 0.3);
+          border-radius: 8px;
+          margin-bottom: 16px;
+          align-items: flex-start;
+        }
+
+        .thirdparty-notebox ha-icon {
+          color: #ff9800;
+          --mdc-icon-size: 20px;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .notebox-content {
+          flex: 1;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .notebox-content strong {
+          display: block;
+          margin-bottom: 4px;
+          color: var(--primary-text-color);
+          font-weight: 600;
+        }
+
+        .notebox-content p {
+          margin: 0;
+          color: var(--secondary-text-color);
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .limit-indicator {

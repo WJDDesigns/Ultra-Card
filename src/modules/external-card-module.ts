@@ -22,6 +22,28 @@ const updateDebounceTimers = new Map<string, number>();
 // Editor element cache to prevent unnecessary recreation and preserve UI state (scroll, focus, dropdowns)
 const editorElementCache = new Map<string, any>();
 
+/**
+ * Strip card-mod properties from config before passing to editors
+ * Card-mod is a runtime integration that editors don't understand
+ * These properties should only be present at render time, not editor time
+ */
+function stripCardModProperties(config: any): any {
+  if (!config || typeof config !== 'object') return config;
+
+  const stripped = { ...config };
+
+  // Remove all card-mod related properties (case-insensitive, handle spaces/hyphens/underscores)
+  // Matches: card_mod, card mod, card-mod, cardMod, cardmod, CARD_MOD, etc.
+  Object.keys(stripped).forEach(key => {
+    const normalizedKey = key.toLowerCase().replace(/[-\s]/g, '_');
+    if (normalizedKey === 'card_mod' || normalizedKey.startsWith('card_mod_')) {
+      delete stripped[key];
+    }
+  });
+
+  return stripped;
+}
+
 // Global cache for allowed external card IDs (first 5 by timestamp)
 // This is refreshed periodically to avoid expensive dashboard scans on every render
 let allowedExternalCardIdsCache: Set<string> | null = null;
@@ -370,8 +392,26 @@ export class UltraExternalCardModule extends BaseUltraModule {
           editor.addEventListener('config-changed', (e: CustomEvent) => {
             e.stopPropagation();
             if (e.detail && e.detail.config) {
+              // Preserve card-mod properties from original config
+              // The editor doesn't know about card-mod, so we need to merge it back in
+              const originalCardMod: any = {};
+              if (module.card_config) {
+                Object.keys(module.card_config).forEach(key => {
+                  const normalizedKey = key.toLowerCase().replace(/[-\s]/g, '_');
+                  if (normalizedKey === 'card_mod' || normalizedKey.startsWith('card_mod_')) {
+                    originalCardMod[key] = module.card_config![key];
+                  }
+                });
+              }
+
+              // Merge editor config with preserved card-mod properties
+              const mergedConfig = {
+                ...e.detail.config,
+                ...originalCardMod,
+              };
+
               // Check if config actually changed by comparing with current module config
-              const newConfigKey = JSON.stringify(e.detail.config);
+              const newConfigKey = JSON.stringify(mergedConfig);
               const currentConfigKey = JSON.stringify(module.card_config || {});
 
               if (newConfigKey === currentConfigKey) {
@@ -380,10 +420,11 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
               // IMMEDIATE: Update the Live Preview card element directly (no waiting)
               // This ensures the Live Preview shows changes immediately
+              // Note: Pass full config WITH card_mod to the actual card for rendering
               const liveContainerId = `${module.id}-live`;
               externalCardContainerService.updateConfig(liveContainerId, {
                 type: module.card_type,
-                ...e.detail.config,
+                ...mergedConfig,
               });
 
               // Clear any existing debounce timer
@@ -394,7 +435,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
               // Debounce the update to prevent rapid re-render loops
               const timer = window.setTimeout(() => {
-                updateModule({ card_config: { ...e.detail.config } });
+                updateModule({ card_config: { ...mergedConfig } });
                 updateDebounceTimers.delete(module.id);
               }, 150); // 150ms debounce
 
@@ -429,15 +470,19 @@ export class UltraExternalCardModule extends BaseUltraModule {
       // Only skip config update if editor is currently mounted and config hasn't changed
       try {
         const editorIsMounted = container.contains(editor);
-        const configChanged =
-          JSON.stringify(editor.config || {}) !== JSON.stringify(module.card_config || {});
+
+        // Strip card-mod properties before passing to editor
+        // Card-mod is a runtime integration that editors don't understand
+        const editorConfig = stripCardModProperties(module.card_config || {});
+
+        const configChanged = JSON.stringify(editor.config || {}) !== JSON.stringify(editorConfig);
 
         // Always update config if editor was just remounted OR if config changed
         if (!editorIsMounted || configChanged) {
           if (typeof editor.setConfig === 'function') {
-            editor.setConfig(module.card_config || {});
+            editor.setConfig(editorConfig);
           } else {
-            editor.config = module.card_config || {};
+            editor.config = editorConfig;
           }
         }
 

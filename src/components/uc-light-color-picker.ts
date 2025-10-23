@@ -185,6 +185,55 @@ class LightColorUtils {
   static miredToKelvin(mired: number): number {
     return Math.round(1000000 / mired);
   }
+
+  /**
+   * Convert Mired to RGB
+   */
+  static miredToRgb(mired: number): number[] {
+    const kelvin = this.miredToKelvin(mired);
+    return this.kelvinToRgb(kelvin);
+  }
+
+  /**
+   * Convert Kelvin to RGB
+   */
+  static kelvinToRgb(kelvin: number): number[] {
+    // Algorithm based on Tanner Helland's method
+    let r, g, b;
+    const temp = kelvin / 100;
+
+    // Red calculation
+    if (temp <= 66) {
+      r = 255;
+    } else {
+      r = temp - 60;
+      r = 329.698727446 * Math.pow(r, -0.1332047592);
+      r = Math.max(0, Math.min(255, r));
+    }
+
+    // Green calculation
+    if (temp <= 66) {
+      g = temp;
+      g = 99.4708025861 * Math.log(g) - 161.1195681661;
+    } else {
+      g = temp - 60;
+      g = 288.1221695283 * Math.pow(g, -0.0755148492);
+    }
+    g = Math.max(0, Math.min(255, g));
+
+    // Blue calculation
+    if (temp >= 66) {
+      b = 255;
+    } else if (temp <= 19) {
+      b = 0;
+    } else {
+      b = temp - 10;
+      b = 138.5177312231 * Math.log(b) - 305.0447927307;
+      b = Math.max(0, Math.min(255, b));
+    }
+
+    return [Math.round(r), Math.round(g), Math.round(b)];
+  }
 }
 
 @customElement('uc-light-color-picker')
@@ -277,6 +326,19 @@ export class UcLightColorPicker extends LitElement {
       this._currentXy = [...this.xy_color];
       this._currentRgb = LightColorUtils.xyToRgb(this.xy_color[0], this.xy_color[1]);
       this._currentHs = LightColorUtils.rgbToHs(
+        this._currentRgb[0],
+        this._currentRgb[1],
+        this._currentRgb[2]
+      );
+    } else if (this.color_temp) {
+      // Handle color_temp-only presets by converting to RGB/HS/XY
+      this._currentRgb = LightColorUtils.miredToRgb(this.color_temp);
+      this._currentHs = LightColorUtils.rgbToHs(
+        this._currentRgb[0],
+        this._currentRgb[1],
+        this._currentRgb[2]
+      );
+      this._currentXy = LightColorUtils.rgbToXy(
         this._currentRgb[0],
         this._currentRgb[1],
         this._currentRgb[2]

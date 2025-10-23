@@ -3409,10 +3409,10 @@ export class UltraBarModule extends BaseUltraModule {
       // Attempt to resolve CSS variables or named colors via a temporary element
       try {
         const probe = document.createElement('span');
-        probe.style.color = trimmed;
+        probe.style.backgroundColor = trimmed; // Use backgroundColor to preserve alpha
         // Use body for widest variable scope (HA themes apply at document level)
         document.body.appendChild(probe);
-        const computed = getComputedStyle(probe).color;
+        const computed = getComputedStyle(probe).backgroundColor; // Preserves RGBA
         probe.remove();
         return computed && computed !== 'rgba(0, 0, 0, 0)' ? computed : trimmed;
       } catch {
@@ -3638,48 +3638,58 @@ export class UltraBarModule extends BaseUltraModule {
       case 'neon-glow':
         // For neon glow, we'll add the glow as a separate element positioned at the percentage
         // The glow element is added in the HTML template after the bar fill
-        fillStyleCSS = `
-          filter: brightness(1.1);
-        `;
+        {
+          // Get the base color for the glow effect (handles gradients intelligently)
+          const glowColor = getGlowColorFromGradient(barFillBackground);
 
-        barStyleCSS = `
-          box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-          overflow: hidden;
-        `;
+          // Helper to convert color to rgba with specific opacity
+          const toRgbaWithOpacity = (color: string, opacity: number): string => {
+            // If already rgba, replace the alpha value
+            if (color.startsWith('rgba(')) {
+              return color.replace(/,\s*[\d.]+\s*\)$/, `, ${opacity})`);
+            }
+            // If rgb, convert to rgba
+            if (color.startsWith('rgb(')) {
+              return color.replace('rgb(', 'rgba(').replace(')', `, ${opacity})`);
+            }
+            // For hex colors, CSS variables, or named colors, use color-mix (modern CSS)
+            // Fallback: just use the color as-is (browsers will handle it)
+            return color.includes('#') || color.startsWith('var(') || color.match(/^[a-z]+$/i)
+              ? `color-mix(in srgb, ${color} ${opacity * 100}%, transparent)`
+              : color;
+          };
+
+          fillStyleCSS = `
+            filter: brightness(1.2);
+            box-shadow: 
+              0 0 7px 2px ${toRgbaWithOpacity(glowColor, 0.7)},
+              0 0 14px 6px ${toRgbaWithOpacity(glowColor, 0.5)},
+              0 0 20px 10px ${toRgbaWithOpacity(glowColor, 0.3)},
+              inset 0 0 10px rgba(255, 255, 255, 0.8);
+          `;
+
+          barStyleCSS = `
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            overflow: hidden;
+          `;
+        }
         break;
       case 'outline':
         {
-          // Outline style: Full-width track with bar inside
-          // Track spans 100% width, bar fills only to percentage with gap between
+          // Outline style: Use same code for both solid and gradient modes
           const trackColor = trackBackground || 'rgba(255, 255, 255, 0.1)';
-          const gapSize = 4; // Space between track and bar
+          const gapSize = 4;
           const borderWidth = 2;
+          const outlineColor = resolveCSSColor(barModule.bar_color || 'var(--primary-color)');
 
-          if (barModule.use_gradient) {
-            // Outer outline: always render a full-length gradient ring (matches solid structure)
-            const stops =
-              (barModule as any).gradient_stops && (barModule as any).gradient_stops.length > 0
-                ? [...(barModule as any).gradient_stops]
-                : createDefaultGradientStops();
-            const dir = fillDirection === 'right-to-left' ? 'to left' : 'to right';
-            const borderGradientString = [...stops]
-              .sort((a: any, b: any) => a.position - b.position)
-              .map((s: any) => `${resolveCSSColor(s.color)} ${s.position}%`)
-              .join(', ');
-            const borderBackground = `linear-gradient(${dir}, ${borderGradientString})`;
-
-            // Use padding-box/border-box so gradient only fills the outline area
-            barStyleCSS = `
-            border: ${borderWidth}px solid transparent;
+          barStyleCSS = `
+            border: ${borderWidth}px solid ${outlineColor};
             border-radius: ${borderRadius}px;
+            background: ${trackColor};
             padding: ${gapSize}px;
-            background: linear-gradient(${trackColor}, ${trackColor}) padding-box, ${borderBackground} border-box;
-            background-clip: padding-box, border-box;
-            position: relative;
           `;
 
-            // Fill: same as solid outline (no extra inner ring), gradient only inside
-            fillStyleCSS = `
+          fillStyleCSS = `
             background: ${barFillBackground};
             border: none;
             box-sizing: border-box;
@@ -3688,27 +3698,6 @@ export class UltraBarModule extends BaseUltraModule {
             width: ${percentage}%;
             transition: width 0.3s ease;
           `;
-          } else {
-            // For solid colors, use traditional border
-            const outlineColor = resolveCSSColor(barModule.bar_color || 'var(--primary-color)');
-
-            barStyleCSS = `
-              border: ${borderWidth}px solid ${outlineColor};
-              border-radius: ${borderRadius}px;
-              background: ${trackColor};
-              padding: ${gapSize}px;
-            `;
-
-            fillStyleCSS = `
-            background: ${barFillBackground};
-            border: none;
-            box-sizing: border-box;
-            position: relative;
-            margin: 0;
-            width: ${percentage}%;
-            transition: width 0.3s ease;
-          `;
-          }
         }
         break;
       case 'glass':
@@ -4663,6 +4652,7 @@ export class UltraBarModule extends BaseUltraModule {
                   : (() => {
                       const isRightToLeft = fillDirection === 'right-to-left';
 
+                      // Default rendering for all other styles
                       // Calculate border radius based on direction and percentage
                       let fillBorderRadius = '';
                       if (percentage >= 99.5) {
@@ -4706,150 +4696,6 @@ export class UltraBarModule extends BaseUltraModule {
                         </div>
                       `;
                     })()
-            }
-            
-            <!-- Neon Glow Edge Indicator -->
-            ${
-              barModule.bar_style === 'neon-glow' && percentage < 99.5
-                ? html`
-                    <div
-                      class="bar-neon-glow"
-                      style="
-                    position: absolute; 
-                    top: 0; 
-                    bottom: 0; 
-                    left: ${fillDirection === 'right-to-left' ? 100 - percentage : percentage}%; 
-                    width: 12px; 
-                    background: ${(() => {
-                        // Get the glow color
-                        let glowColor = barModule.bar_color || 'var(--primary-color)';
-                        if (barModule.use_gradient && barModule.gradient_stops) {
-                          const gradientMode = barModule.gradient_display_mode || 'full';
-                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => a.position - b.position
-                            );
-                            let targetStop = sortedStops[sortedStops.length - 1];
-                            for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (
-                                percentage >= sortedStops[i].position &&
-                                percentage <= sortedStops[i + 1].position
-                              ) {
-                                targetStop = sortedStops[i];
-                                break;
-                              }
-                            }
-                            glowColor = targetStop.color;
-                          } else {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => b.position - a.position
-                            );
-                            if (sortedStops.length > 0) {
-                              glowColor = sortedStops[0].color;
-                            }
-                          }
-                        }
-                        return glowColor;
-                      })()};
-                    opacity: 1.0;
-                    box-shadow: 0 0 30px ${(() => {
-                        // Same color logic for glow
-                        let glowColor = barModule.bar_color || 'var(--primary-color)';
-                        if (barModule.use_gradient && barModule.gradient_stops) {
-                          const gradientMode = barModule.gradient_display_mode || 'full';
-                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => a.position - b.position
-                            );
-                            let targetStop = sortedStops[sortedStops.length - 1];
-                            for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (
-                                percentage >= sortedStops[i].position &&
-                                percentage <= sortedStops[i + 1].position
-                              ) {
-                                targetStop = sortedStops[i];
-                                break;
-                              }
-                            }
-                            glowColor = targetStop.color;
-                          } else {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => b.position - a.position
-                            );
-                            if (sortedStops.length > 0) {
-                              glowColor = sortedStops[0].color;
-                            }
-                          }
-                        }
-                        return glowColor;
-                      })()}, 0 0 60px ${(() => {
-                        // Same color logic for second glow
-                        let glowColor = barModule.bar_color || 'var(--primary-color)';
-                        if (barModule.use_gradient && barModule.gradient_stops) {
-                          const gradientMode = barModule.gradient_display_mode || 'full';
-                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => a.position - b.position
-                            );
-                            let targetStop = sortedStops[sortedStops.length - 1];
-                            for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (
-                                percentage >= sortedStops[i].position &&
-                                percentage <= sortedStops[i + 1].position
-                              ) {
-                                targetStop = sortedStops[i];
-                                break;
-                              }
-                            }
-                            glowColor = targetStop.color;
-                          } else {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => b.position - a.position
-                            );
-                            if (sortedStops.length > 0) {
-                              glowColor = sortedStops[0].color;
-                            }
-                          }
-                        }
-                        return glowColor;
-                      })()}, 0 0 90px ${(() => {
-                        // Same color logic for third glow
-                        let glowColor = barModule.bar_color || 'var(--primary-color)';
-                        if (barModule.use_gradient && barModule.gradient_stops) {
-                          const gradientMode = barModule.gradient_display_mode || 'full';
-                          if (gradientMode === 'value-based' || gradientMode === 'cropped') {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => a.position - b.position
-                            );
-                            let targetStop = sortedStops[sortedStops.length - 1];
-                            for (let i = 0; i < sortedStops.length - 1; i++) {
-                              if (
-                                percentage >= sortedStops[i].position &&
-                                percentage <= sortedStops[i + 1].position
-                              ) {
-                                targetStop = sortedStops[i];
-                                break;
-                              }
-                            }
-                            glowColor = targetStop.color;
-                          } else {
-                            const sortedStops = [...barModule.gradient_stops].sort(
-                              (a: any, b: any) => b.position - a.position
-                            );
-                            if (sortedStops.length > 0) {
-                              glowColor = sortedStops[0].color;
-                            }
-                          }
-                        }
-                        return glowColor;
-                      })()}; 
-                    z-index: 4; 
-                    transform: translateX(-50%);
-                    pointer-events: none;
-                  "
-                    ></div>
-                  `
-                : ''
             }
 
             <!-- Limit Indicator -->

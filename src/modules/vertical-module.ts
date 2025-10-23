@@ -392,7 +392,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                   return html`
                     <div
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                      style="max-width: 100%; overflow: hidden; width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
+                      style="max-width: 100%; overflow: hidden; width: 100%; box-sizing: border-box; margin: ${childMargin}; display: flex; justify-content: center; align-items: center; ${isNegativeGap
                         ? 'padding: 0; border: none; background: transparent;'
                         : ''}"
                     >
@@ -769,8 +769,8 @@ export class UltraVerticalModule extends BaseUltraModule {
       moduleWithDesign.padding_bottom ||
       moduleWithDesign.padding_left ||
       moduleWithDesign.padding_right
-      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '8px'}`
-      : '8px';
+      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
+      : '0px';
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
