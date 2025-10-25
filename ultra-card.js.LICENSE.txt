@@ -1,3 +1,8 @@
+/* @preserve
+ * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
+ * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade
+ */
+
 /*! js-yaml 4.1.0 https://github.com/nodeca/js-yaml @license MIT */
 
 /**

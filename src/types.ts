@@ -88,7 +88,8 @@ export interface BaseModule {
     | 'animated_weather'
     | 'animated_forecast'
     | 'external_card'
-    | 'video_bg';
+    | 'video_bg'
+    | 'map';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -600,7 +601,10 @@ export interface BarModule extends BaseModule {
   label_alignment?: 'left' | 'center' | 'right' | 'space-between';
   show_percentage?: boolean;
   percentage_text_size?: number;
-  percentage_text_alignment?: 'left' | 'center' | 'right';
+  percentage_text_alignment?: 'left' | 'center' | 'right' | 'follow-fill';
+  percentage_text_bold?: boolean;
+  percentage_text_italic?: boolean;
+  percentage_text_strikethrough?: boolean;
   show_value?: boolean;
   value_position?: 'inside' | 'outside' | 'none';
 
@@ -2275,6 +2279,110 @@ export interface LightModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Map marker type for individual pins
+export interface MapMarker {
+  id: string;
+  name: string;
+  type: 'manual' | 'entity'; // Manual coordinates or entity-based
+
+  // Manual marker properties
+  latitude?: number;
+  longitude?: number;
+
+  // Entity marker properties
+  entity?: string;
+
+  // Visual customization
+  icon?: string;
+  icon_color?: string;
+  icon_size?: number; // Size in pixels for icon markers
+  marker_image_type?: 'icon' | 'custom_image' | 'entity_image';
+  marker_image?: string; // Custom image URL or upload
+  use_entity_picture?: boolean; // Use entity's entity_picture attribute
+}
+
+// Map Module
+export interface MapModule extends BaseModule {
+  type: 'map';
+
+  // Map provider
+  map_provider: 'openstreetmap' | 'google';
+  google_api_key?: string; // Optional API key for Google Maps JavaScript API
+
+  // Map appearance
+  map_type: 'roadmap' | 'satellite' | 'hybrid' | 'terrain';
+  zoom: number; // 1-20
+
+  // Map controls
+  show_map_controls: boolean;
+  disable_zoom_scroll: boolean;
+  disable_touch_drag: boolean;
+
+  // Auto-zoom for entity markers
+  auto_zoom_entities: boolean; // Auto-calculate zoom to fit all entity markers
+
+  // Manual center coordinates (overrides auto-zoom and default centering)
+  manual_center_latitude?: number;
+  manual_center_longitude?: number;
+
+  // Markers list
+  markers: MapMarker[];
+
+  // Map dimensions
+  map_height?: number; // Height in pixels
+  aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom';
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+}
+
 // Animated Clock Module (PRO)
 export interface AnimatedClockModule extends BaseModule {
   type: 'animated_clock';
@@ -2667,6 +2775,7 @@ export type CardModule =
   | GraphsModule
   | DropdownModule
   | LightModule
+  | MapModule
   | AnimatedClockModule
   | AnimatedWeatherModule
   | AnimatedForecastModule

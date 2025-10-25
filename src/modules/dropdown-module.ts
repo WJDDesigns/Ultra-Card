@@ -407,18 +407,51 @@ export class UltraDropdownModule extends BaseUltraModule {
                             'Text shown when no option is selected.'
                           )}
                         </div>
-                        ${this.renderUcForm(
-                          hass,
-                          { placeholder: dropdownModule.placeholder || '' },
-                          [this.textField('placeholder')],
-                          (e: CustomEvent) => {
-                            const next = e.detail.value.placeholder;
-                            const prev = dropdownModule.placeholder || '';
-                            if (next === prev) return;
-                            updateModule(e.detail.value);
-                          },
-                          false
-                        )}
+                        <ha-textfield
+                          .value=${dropdownModule.placeholder || ''}
+                          placeholder="Select an option..."
+                          @input=${(e: Event) => {
+                            const target = e.target as any;
+                            const input = target.shadowRoot?.querySelector('input') || target;
+                            const value = target.value;
+                            const cursorPosition = input.selectionStart;
+                            const cursorEnd = input.selectionEnd;
+
+                            updateModule({ placeholder: value });
+
+                            requestAnimationFrame(() => {
+                              if (input && typeof cursorPosition === 'number') {
+                                target.value = value;
+                                input.value = value;
+                                input.setSelectionRange(
+                                  cursorPosition,
+                                  cursorEnd || cursorPosition
+                                );
+                              }
+                            });
+                            setTimeout(() => {
+                              if (input && typeof cursorPosition === 'number') {
+                                target.value = value;
+                                input.value = value;
+                                input.setSelectionRange(
+                                  cursorPosition,
+                                  cursorEnd || cursorPosition
+                                );
+                              }
+                            }, 0);
+                            setTimeout(() => {
+                              if (input && typeof cursorPosition === 'number') {
+                                target.value = value;
+                                input.value = value;
+                                input.setSelectionRange(
+                                  cursorPosition,
+                                  cursorEnd || cursorPosition
+                                );
+                              }
+                            }, 10);
+                          }}
+                          style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+                        ></ha-textfield>
                       </div>
                     `
                   : ''}
@@ -863,14 +896,51 @@ export class UltraDropdownModule extends BaseUltraModule {
     return html`
       <!-- Basic Option Settings -->
       <div class="field-group" style="margin-bottom: 12px;">
-        ${this.renderFieldSection(
-          localize('editor.dropdown.option.label', lang, 'Label'),
-          localize('editor.dropdown.option.label_desc', lang, 'Display text for this option'),
-          hass,
-          { label: option.label },
-          [this.textField('label')],
-          (e: CustomEvent) => updateOption(option.id, e.detail.value)
-        )}
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+          ${localize('editor.dropdown.option.label', lang, 'Label')}
+        </div>
+        <div
+          class="field-description"
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${localize('editor.dropdown.option.label_desc', lang, 'Display text for this option')}
+        </div>
+        <ha-textfield
+          .value=${option.label || ''}
+          placeholder="Enter option label"
+          @input=${(e: Event) => {
+            const target = e.target as any;
+            const input = target.shadowRoot?.querySelector('input') || target;
+            const value = target.value;
+            const cursorPosition = input.selectionStart;
+            const cursorEnd = input.selectionEnd;
+
+            updateOption(option.id, { label: value });
+
+            requestAnimationFrame(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            });
+            setTimeout(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            }, 0);
+            setTimeout(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            }, 10);
+          }}
+          style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+        ></ha-textfield>
       </div>
 
       <div class="field-group" style="margin-bottom: 12px;">

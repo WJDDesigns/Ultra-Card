@@ -1326,7 +1326,8 @@
       "sample_text": "Texte d'exemple",
       "dropdown": "Dropdown Module",
       "spinbox": "Spinbox Module",
-      "video_bg": "Video Background Module (Pro)"
+      "video_bg": "Video Background Module (Pro)",
+      "map": "Map Module"
     },
     "dropdown": {
       "basic": {
@@ -1740,6 +1741,116 @@
       "enable_on_mobile_desc": "Enable video backgrounds on mobile devices (may impact performance)",
       "scale": "Scale (%)",
       "scale_desc": "Adjust the size of the video background. Use this to crop or zoom videos with different aspect ratios"
+    },
+    "map": {
+      "tabs": {
+        "general": "General",
+        "markers": "Markers"
+      },
+      "provider": {
+        "title": "Map Provider",
+        "desc": "Choose between OpenStreetMap (free) or Google Maps",
+        "select": "Map Provider",
+        "select_desc": "OpenStreetMap is free and requires no API key. Google Maps offers more features.",
+        "osm": "OpenStreetMap",
+        "google": "Google Maps"
+      },
+      "type": {
+        "title": "Map Type",
+        "desc": "Visual style of the map",
+        "select": "Map Type",
+        "select_desc": "Choose the visual style for the map",
+        "roadmap": "Roadmap",
+        "satellite": "Satellite",
+        "hybrid": "Hybrid",
+        "terrain": "Terrain",
+        "osm_standard": "Standard",
+        "osm_cycle": "Cycle Map",
+        "osm_transport": "Transport",
+        "osm_humanitarian": "Humanitarian"
+      },
+      "zoom": {
+        "title": "Zoom Settings",
+        "desc": "Control map zoom level and auto-fit behavior",
+        "level": "Zoom Level",
+        "level_desc": "Manual zoom level (1-20). Lower values show more area.",
+        "auto": "Auto-Zoom to Fit Entities",
+        "auto_desc": "Automatically calculate zoom to show all entity markers. Overrides manual zoom setting."
+      },
+      "controls": {
+        "title": "Map Controls",
+        "desc": "Configure map interaction controls",
+        "show": "Show Map Controls",
+        "show_desc": "Display zoom, pan, and other map controls",
+        "disable_scroll": "Disable Zoom on Mouse Wheel Scroll",
+        "disable_scroll_desc": "Prevent accidental zooming when scrolling the page",
+        "disable_drag": "Disable Dragging on Touch Screens",
+        "disable_drag_desc": "Prevent map panning on mobile/touch devices"
+      },
+      "dimensions": {
+        "title": "Map Dimensions",
+        "desc": "Control map size and aspect ratio",
+        "aspect_ratio": "Aspect Ratio",
+        "aspect_ratio_desc": "Choose preset aspect ratio or use custom height",
+        "height": "Map Height",
+        "height_desc": "Custom height in pixels"
+      },
+      "markers": {
+        "title": "Map Markers",
+        "desc": "Add custom markers or track entities with location data",
+        "add": "Add Marker",
+        "empty": "No markers added yet",
+        "empty_desc": "Click \"Add Marker\" to create your first map marker"
+      },
+      "marker": {
+        "name": "Marker Name",
+        "name_desc": "Display name for this marker",
+        "name_placeholder": "Enter marker name",
+        "drag": "Drag to reorder",
+        "duplicate": "Duplicate marker",
+        "delete": "Delete marker",
+        "type": {
+          "manual": "Manual Position",
+          "entity": "Entity Tracker"
+        },
+        "type_desc": "Choose marker position source",
+        "manual_position": "Manual Position",
+        "entity_tracker": "Entity Tracker",
+        "entity_desc": "Select a device_tracker, person, or any entity with location data",
+        "latitude": "Latitude",
+        "latitude_range": "Range: -90 to 90",
+        "longitude": "Longitude",
+        "longitude_range": "Range: -180 to 180",
+        "visual": "Visual Settings",
+        "display_type": "Marker Display Type",
+        "display_type_desc": "Choose how the marker appears",
+        "icon": "Marker Icon",
+        "icon_color": "Icon Color",
+        "custom_image": "Custom Image",
+        "custom_image_desc": "Upload an image or enter an image URL",
+        "use_entity_picture": "Use Entity Picture",
+        "use_entity_picture_desc": "Use the entity_picture attribute from the tracked entity",
+        "display": {
+          "icon": "Icon",
+          "custom_image": "Custom Image",
+          "entity_image": "Entity Image"
+        },
+        "entity": "Entity",
+        "icon_optional": "Optional - Leave empty for solid color teardrop",
+        "icon_size": "Icon Size",
+        "icon_size_range": "Range: 8 to 64 pixels",
+        "image_size": "Image Size",
+        "image_size_range": "Range: 8 to 128 pixels"
+      },
+      "style": {
+        "title": "Map Style",
+        "desc": "Choose the visual style of the map tiles",
+        "select": "Tile Style",
+        "select_desc": "Select the map tile style. All styles are free to use."
+      },
+      "google_api_key": "Google Maps API Key (Optional)",
+      "google_api_key_desc": "Enter your Google Maps API key for full JavaScript API features. Without a key, basic tile layers are used (limited features).",
+      "how_to_get_api_key": "How to get a Google Maps API Key →"
     }
   }
 }

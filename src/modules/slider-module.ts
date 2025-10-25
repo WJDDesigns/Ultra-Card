@@ -240,14 +240,53 @@ export class UltraSliderModule extends BaseUltraModule {
             SLIDER LAYOUT
           </div>
 
-          ${this.renderFieldSection(
-            'Slider Width',
-            'Width of the slider container (e.g., 100%, 400px)',
-            hass,
-            { slider_width: sliderModule.slider_width || '100%' },
-            [this.textField('slider_width')],
-            (e: CustomEvent) => updateModule({ slider_width: e.detail.value.slider_width })
-          )}
+          <div style="margin-bottom: 16px;">
+            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+              Slider Width
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+            >
+              Width of the slider container (e.g., 100%, 400px)
+            </div>
+            <ha-textfield
+              .value=${sliderModule.slider_width || '100%'}
+              placeholder="100%"
+              @input=${(e: Event) => {
+                const target = e.target as any;
+                const input = target.shadowRoot?.querySelector('input') || target;
+                const value = target.value;
+                const cursorPosition = input.selectionStart;
+                const cursorEnd = input.selectionEnd;
+
+                updateModule({ slider_width: value });
+
+                requestAnimationFrame(() => {
+                  if (input && typeof cursorPosition === 'number') {
+                    target.value = value;
+                    input.value = value;
+                    input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                  }
+                });
+                setTimeout(() => {
+                  if (input && typeof cursorPosition === 'number') {
+                    target.value = value;
+                    input.value = value;
+                    input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                  }
+                }, 0);
+                setTimeout(() => {
+                  if (input && typeof cursorPosition === 'number') {
+                    target.value = value;
+                    input.value = value;
+                    input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                  }
+                }, 10);
+              }}
+              style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+            ></ha-textfield>
+          </div>
           ${this.renderFieldSection(
             'Slider Height',
             'Height of the slider in pixels',

@@ -462,12 +462,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         width: 100%;
       }
 
-      @media (max-width: 600px) {
-        .weather-main-grid {
-          grid-template-columns: 1fr !important;
-          text-align: center;
-        }
-      }
 
       /* Left Column */
       .weather-info-left {
@@ -479,11 +473,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         justify-content: center;
       }
 
-      @media (max-width: 600px) {
-        .weather-info-left {
-          align-items: center;
-        }
-      }
 
       .weather-location {
         display: flex;
@@ -558,12 +547,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         justify-content: center;
       }
 
-      @media (max-width: 600px) {
-        .weather-info-right {
-          align-items: center;
-          text-align: center;
-        }
-      }
 
       .weather-date {
         font-size: var(--date-size);
@@ -601,49 +584,9 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
 
       /* ========== RESPONSIVE ========== */
       @media (max-width: 768px) {
-        .weather-main-grid {
-          grid-template-columns: 1fr !important;
-          text-align: center;
-        }
-
-        .weather-info-left,
-        .weather-info-right {
-          align-items: center;
-          text-align: center;
-        }
-
-        .weather-icon-center {
-          width: min(120px, 25vw);
-          height: min(120px, 25vw);
-          margin: 0 auto;
-        }
-
-        .meteocon-icon.large {
-          width: 100%;
-          height: 100%;
-        }
-
-        .weather-temp {
-          font-size: clamp(48px, 10vw, 56px);
-        }
-      }
-
-      @media (max-width: 480px) {
         .animated-weather-module-container {
-          padding: clamp(12px, 3%, 16px);
-        }
-
-        .weather-temp {
-          font-size: clamp(36px, 9vw, 48px);
-        }
-
-        .weather-condition {
-          font-size: clamp(16px, 4vw, 18px);
-        }
-
-        .weather-icon-center {
-          width: min(100px, 22vw);
-          height: min(100px, 22vw);
+          transform: scale(min(1, calc(100vw / 500)));
+          transform-origin: top center;
         }
       }
     `;

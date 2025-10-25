@@ -50,7 +50,7 @@ Ultra Card 2.0 represents a complete transformation of the Home Assistant card e
 
 - **Toggle Entity Field** - New entity field for toggle actions providing better control
 - **Enhanced Action System** - Improved integration with Home Assistant's native action system
-- **Entity Source Support** - Dropdown module supports `select` and `input_select` entities
+- **Entity Source Support** - Dropdown module supports select and input_select entities
 - **Smart Action Linking** - Automatic action linking for new modules
 
 ## 🆓 Free Features
@@ -200,7 +200,7 @@ Ultra Card 2.0 represents a complete transformation of the Home Assistant card e
 
 - Interactive dropdown selectors with custom options
 - Support for Home Assistant actions (More Info, Toggle, Navigate, etc.)
-- Entity source mode for `select` and `input_select` entities
+- Entity source mode for select and input_select entities
 - Drag & drop option reordering
 
 **📊 Gauge Module**

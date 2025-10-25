@@ -45,6 +45,7 @@ export declare class LayoutTab extends LitElement {
     private _isUndoRedoAction;
     /** Listen for template updates from modules to refresh live previews */
     private _templateUpdateListener?;
+    private _tabSwitchListener?;
     private _documentClickListener?;
     private _keydownListener?;
     private _templateUpdateTimer?;

@@ -74,28 +74,76 @@ export class UltraTextModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
         <!-- Content Configuration -->
-        ${this.renderSettingsSection(
-          localize('editor.text.content_section.title', lang, 'Content Configuration'),
-          localize(
-            'editor.text.content_section.desc',
-            lang,
-            'Configure the text content and basic settings for this module.'
-          ),
-          [
-            {
-              title: localize('editor.text.text_content', lang, 'Text Content'),
-              description: localize(
-                'editor.text.text_content_desc',
-                lang,
-                'Enter the text content to display in this module.'
-              ),
-              hass,
-              data: { text: textModule.text || '' },
-              schema: [this.textField('text')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
-        )}
+        <!-- Content Configuration -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.text.content_section.title', lang, 'Content Configuration')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.text.content_section.desc',
+              lang,
+              'Configure the text content and basic settings for this module.'
+            )}
+          </div>
+          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+            ${localize('editor.text.text_content', lang, 'Text Content')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.text.text_content_desc',
+              lang,
+              'Enter the text content to display in this module.'
+            )}
+          </div>
+          <ha-textfield
+            .value=${textModule.text || ''}
+            placeholder="Enter text content"
+            @input=${(e: Event) => {
+              const target = e.target as any;
+              const input = target.shadowRoot?.querySelector('input') || target;
+              const value = target.value;
+              const cursorPosition = input.selectionStart;
+              const cursorEnd = input.selectionEnd;
+
+              updateModule({ text: value });
+
+              requestAnimationFrame(() => {
+                if (input && typeof cursorPosition === 'number') {
+                  target.value = value;
+                  input.value = value;
+                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                }
+              });
+              setTimeout(() => {
+                if (input && typeof cursorPosition === 'number') {
+                  target.value = value;
+                  input.value = value;
+                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                }
+              }, 0);
+              setTimeout(() => {
+                if (input && typeof cursorPosition === 'number') {
+                  target.value = value;
+                  input.value = value;
+                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                }
+              }, 10);
+            }}
+            style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+          ></ha-textfield>
+        </div>
 
         <!-- Icon Configuration -->
         <div

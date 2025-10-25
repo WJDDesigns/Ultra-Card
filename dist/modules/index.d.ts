@@ -16,6 +16,7 @@ export * from './camera-module';
 export * from './graphs-module';
 export * from './dropdown-module';
 export * from './light-module';
+export * from './map-module';
 export * from './animated-clock-module';
 export * from './animated-weather-module';
 export * from './animated-forecast-module';

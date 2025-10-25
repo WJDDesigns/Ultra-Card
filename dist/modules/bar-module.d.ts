@@ -30,5 +30,7 @@ export declare class UltraBarModule extends BaseUltraModule {
     private interpolateColor;
     private hexToRgb;
     private rgbToHex;
+    private parseColorToRGBA;
+    private resolveCSSColor;
     private addPixelUnit;
 }

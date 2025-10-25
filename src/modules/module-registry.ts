@@ -17,6 +17,7 @@ import { UltraCameraModule } from './camera-module';
 import { UltraGraphsModule } from './graphs-module';
 import { UltraDropdownModule } from './dropdown-module';
 import { UltraLightModule } from './light-module';
+import { UltraMapModule } from './map-module';
 import { UltraAnimatedClockModule } from './animated-clock-module';
 import { UltraAnimatedWeatherModule } from './animated-weather-module';
 import { UltraAnimatedForecastModule } from './animated-forecast-module';
@@ -62,6 +63,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraGraphsModule());
     this.registerModule(new UltraDropdownModule());
     this.registerModule(new UltraLightModule());
+    this.registerModule(new UltraMapModule());
     this.registerModule(new UltraAnimatedClockModule());
     this.registerModule(new UltraAnimatedWeatherModule());
     this.registerModule(new UltraAnimatedForecastModule());

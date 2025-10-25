@@ -76,6 +76,9 @@ export class UltraBarModule extends BaseUltraModule {
       show_value: false, // Default to percentage, not value
       percentage_text_size: 14,
       percentage_text_alignment: 'center',
+      percentage_text_bold: false,
+      percentage_text_italic: false,
+      percentage_text_strikethrough: false,
       value_position: 'inside',
 
       // Left Side Configuration
@@ -1574,7 +1577,7 @@ export class UltraBarModule extends BaseUltraModule {
                         type="range"
                         class="range-slider"
                         min="8"
-                        max="32"
+                        max="100"
                         step="1"
                         .value="${barModule.percentage_text_size || 14}"
                         @input=${(e: Event) => {
@@ -1602,7 +1605,7 @@ export class UltraBarModule extends BaseUltraModule {
                             const target = e.target as HTMLInputElement;
                             const currentValue = parseInt(target.value) || 14;
                             const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
+                            const newValue = Math.max(8, currentValue + increment);
                             updateModule({ percentage_text_size: newValue });
                           }
                         }}
@@ -1643,6 +1646,14 @@ export class UltraBarModule extends BaseUltraModule {
                             value: 'right',
                             label: localize('editor.common.right', lang, 'Right'),
                           },
+                          {
+                            value: 'follow-fill',
+                            label: localize(
+                              'editor.bar.text_display.follow_fill',
+                              lang,
+                              'Follow Fill'
+                            ),
+                          },
                         ]),
                       ],
                       (e: CustomEvent) => {
@@ -1657,6 +1668,71 @@ export class UltraBarModule extends BaseUltraModule {
                       },
                       false
                     )}
+                  </div>
+
+                  <!-- Text Formatting -->
+                  <div class="field-container" style="margin-bottom: 16px;">
+                    <div class="field-title">
+                      ${localize(
+                        'editor.bar.text_display.text_formatting',
+                        lang,
+                        'Text Formatting'
+                      )}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.text_display.text_formatting_desc',
+                        lang,
+                        'Apply formatting styles to the percentage text.'
+                      )}
+                    </div>
+                    <div class="format-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button
+                        class="format-btn ${barModule.percentage_text_bold ? 'active' : ''}"
+                        @click=${() =>
+                          updateModule({ percentage_text_bold: !barModule.percentage_text_bold })}
+                        style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${barModule.percentage_text_bold
+                          ? 'var(--primary-color)'
+                          : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${barModule.percentage_text_bold
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'};"
+                        title="Bold"
+                      >
+                        <ha-icon icon="mdi:format-bold"></ha-icon>
+                      </button>
+                      <button
+                        class="format-btn ${barModule.percentage_text_italic ? 'active' : ''}"
+                        @click=${() =>
+                          updateModule({
+                            percentage_text_italic: !barModule.percentage_text_italic,
+                          })}
+                        style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${barModule.percentage_text_italic
+                          ? 'var(--primary-color)'
+                          : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${barModule.percentage_text_italic
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'};"
+                        title="Italic"
+                      >
+                        <ha-icon icon="mdi:format-italic"></ha-icon>
+                      </button>
+                      <button
+                        class="format-btn ${barModule.percentage_text_strikethrough
+                          ? 'active'
+                          : ''}"
+                        @click=${() =>
+                          updateModule({
+                            percentage_text_strikethrough: !barModule.percentage_text_strikethrough,
+                          })}
+                        style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${barModule.percentage_text_strikethrough
+                          ? 'var(--primary-color)'
+                          : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${barModule.percentage_text_strikethrough
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'};"
+                        title="Strikethrough"
+                      >
+                        <ha-icon icon="mdi:format-strikethrough"></ha-icon>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Text Color -->
@@ -3497,7 +3573,7 @@ export class UltraBarModule extends BaseUltraModule {
       }
     };
 
-    // Helper function to interpolate color at specific position
+    // Helper function to interpolate color at specific position with alpha preservation
     const interpolateColorAtPosition = (stops: any[], position: number): string => {
       const sortedStops = [...stops].sort((a, b) => a.position - b.position);
 
@@ -3517,36 +3593,12 @@ export class UltraBarModule extends BaseUltraModule {
       if (beforeStop.position === position) return beforeStop.color;
       if (afterStop.position === position) return afterStop.color;
 
-      // Attempt to interpolate between the two stops, resolving CSS vars to RGB first
+      // Interpolate between the two stops using the updated interpolateColor method
       const range = afterStop.position - beforeStop.position;
       const factor = range === 0 ? 0 : (position - beforeStop.position) / range;
 
-      const toHex = (input: string): string | null => {
-        const resolved = resolveCSSColor(input);
-        if (!resolved) return null;
-        if (resolved.startsWith('#')) return resolved;
-        // Convert rgb/rgba to hex
-        const m = resolved.match(
-          /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([0-9.]+))?\s*\)/i
-        );
-        if (m) {
-          const r = Math.max(0, Math.min(255, parseInt(m[1], 10)));
-          const g = Math.max(0, Math.min(255, parseInt(m[2], 10)));
-          const b = Math.max(0, Math.min(255, parseInt(m[3], 10)));
-          return this.rgbToHex(r, g, b);
-        }
-        return null;
-      };
-
-      const beforeHex = toHex(beforeStop.color);
-      const afterHex = toHex(afterStop.color);
-
-      if (beforeHex && afterHex) {
-        return this.interpolateColor(beforeHex, afterHex, factor);
-      }
-
-      // Fallback: choose the nearer stop color if we can't resolve both
-      return resolveCSSColor(factor < 0.5 ? beforeStop.color : afterStop.color);
+      // Use the updated interpolateColor method which preserves alpha
+      return this.interpolateColor(beforeStop.color, afterStop.color, factor);
     };
 
     // Determine bar direction for all styles
@@ -4805,11 +4857,17 @@ export class UltraBarModule extends BaseUltraModule {
                         ? '8px'
                         : barModule.percentage_text_alignment === 'right'
                           ? 'calc(100% - 32px)'
-                          : '50%'};
+                          : barModule.percentage_text_alignment === 'follow-fill'
+                            ? `${Math.min(percentage, 100)}%`
+                            : '50%'};
                     transform: ${barModule.percentage_text_alignment === 'center'
                         ? 'translate(-50%, -50%)'
-                        : 'translate(0, -50%)'};
-                    text-align: ${barModule.percentage_text_alignment || 'center'};
+                        : barModule.percentage_text_alignment === 'follow-fill'
+                          ? 'translate(-100%, -50%)'
+                          : 'translate(0, -50%)'};
+                    text-align: ${barModule.percentage_text_alignment === 'follow-fill'
+                        ? 'right'
+                        : barModule.percentage_text_alignment || 'center'};
                     font-size: ${designProperties.font_size
                         ? `${Math.min(designProperties.font_size, barHeightValue * 0.8)}px`
                         : `${Math.min(barModule.percentage_text_size || 14, barHeightValue * 0.8)}px`};
@@ -4817,7 +4875,11 @@ export class UltraBarModule extends BaseUltraModule {
                       designProperties.color ||
                       moduleWithDesign.color ||
                       'white'};
-                    font-weight: 600;
+                    font-weight: ${barModule.percentage_text_bold ? 'bold' : '600'};
+                    font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
+                    text-decoration: ${barModule.percentage_text_strikethrough
+                        ? 'line-through'
+                        : 'none'};
                     z-index: 10;
                     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
                     white-space: nowrap;
@@ -6040,42 +6102,164 @@ export class UltraBarModule extends BaseUltraModule {
     return 'round';
   }
 
-  // Helper method to interpolate between two colors
+  // Helper method to interpolate between two colors with alpha preservation
   private interpolateColor(color1: string, color2: string, factor: number): string {
-    // Convert colors to RGB
-    const rgb1 = this.hexToRgb(color1);
-    const rgb2 = this.hexToRgb(color2);
+    // Parse both colors to RGBA format
+    const rgba1 = this.parseColorToRGBA(color1);
+    const rgba2 = this.parseColorToRGBA(color2);
 
-    if (!rgb1 || !rgb2) return color1;
+    if (!rgba1 || !rgba2) return color1;
 
-    const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * factor);
-    const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * factor);
-    const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * factor);
+    // Interpolate RGB components
+    const r = Math.round(rgba1.r + (rgba2.r - rgba1.r) * factor);
+    const g = Math.round(rgba1.g + (rgba2.g - rgba1.g) * factor);
+    const b = Math.round(rgba1.b + (rgba2.b - rgba1.b) * factor);
 
-    return this.rgbToHex(r, g, b);
+    // Interpolate alpha channel
+    const a = rgba1.a + (rgba2.a - rgba1.a) * factor;
+
+    // Return rgba() format to preserve alpha channel
+    return `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
   }
 
-  // Helper method to convert hex color to RGB
-  private hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  // Helper method to convert hex color to RGB with alpha support
+  private hexToRgb(hex: string): { r: number; g: number; b: number; a: number } | null {
     // Handle CSS variables and non-hex colors
     if (!hex.startsWith('#')) {
       // For CSS variables, return null to fallback to original color
       return null;
     }
 
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
+    // Support both 6-digit (#RRGGBB) and 8-digit (#RRGGBBAA) hex colors
+    const result6 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const result8 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
+    if (result8) {
+      // 8-digit hex with alpha
+      return {
+        r: parseInt(result8[1], 16),
+        g: parseInt(result8[2], 16),
+        b: parseInt(result8[3], 16),
+        a: parseInt(result8[4], 16) / 255, // Convert 0-255 to 0-1
+      };
+    } else if (result6) {
+      // 6-digit hex without alpha
+      return {
+        r: parseInt(result6[1], 16),
+        g: parseInt(result6[2], 16),
+        b: parseInt(result6[3], 16),
+        a: 1, // Default to fully opaque
+      };
+    }
+
+    return null;
   }
 
-  // Helper method to convert RGB to hex
-  private rgbToHex(r: number, g: number, b: number): string {
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  // Helper method to convert RGB to hex with optional alpha support
+  private rgbToHex(r: number, g: number, b: number, a?: number): string {
+    const rInt = Math.round(Math.max(0, Math.min(255, r)));
+    const gInt = Math.round(Math.max(0, Math.min(255, g)));
+    const bInt = Math.round(Math.max(0, Math.min(255, b)));
+
+    if (a !== undefined && a < 1) {
+      // Include alpha channel for transparency
+      const aInt = Math.round(Math.max(0, Math.min(255, a * 255)));
+      return `#${((1 << 24) + (rInt << 16) + (gInt << 8) + bInt).toString(16).slice(1)}${aInt.toString(16).padStart(2, '0')}`;
+    } else {
+      // Standard 6-digit hex for opaque colors
+      return `#${((1 << 24) + (rInt << 16) + (gInt << 8) + bInt).toString(16).slice(1)}`;
+    }
+  }
+
+  // Helper method to parse any color format to RGBA with alpha preservation
+  private parseColorToRGBA(color: string): { r: number; g: number; b: number; a: number } | null {
+    if (!color) return null;
+
+    // First resolve CSS variables using the existing resolveCSSColor function
+    const resolvedColor = this.resolveCSSColor(color);
+
+    // Handle rgba() format
+    const rgbaMatch = resolvedColor.match(
+      /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/i
+    );
+    if (rgbaMatch) {
+      return {
+        r: parseInt(rgbaMatch[1], 10),
+        g: parseInt(rgbaMatch[2], 10),
+        b: parseInt(rgbaMatch[3], 10),
+        a: parseFloat(rgbaMatch[4]),
+      };
+    }
+
+    // Handle rgb() format (assume alpha = 1)
+    const rgbMatch = resolvedColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+    if (rgbMatch) {
+      return {
+        r: parseInt(rgbMatch[1], 10),
+        g: parseInt(rgbMatch[2], 10),
+        b: parseInt(rgbMatch[3], 10),
+        a: 1,
+      };
+    }
+
+    // Handle hex colors (including 8-digit with alpha)
+    const hexRgba = this.hexToRgb(resolvedColor);
+    if (hexRgba) {
+      return hexRgba;
+    }
+
+    // Handle transparent keyword
+    if (resolvedColor.toLowerCase() === 'transparent') {
+      return { r: 0, g: 0, b: 0, a: 0 };
+    }
+
+    // Fallback: try to resolve as CSS variable again and extract from computed style
+    try {
+      const probe = document.createElement('span');
+      probe.style.color = resolvedColor;
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).color;
+      probe.remove();
+
+      if (computed && computed !== 'rgba(0, 0, 0, 0)') {
+        const computedRgba = computed.match(
+          /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\s*\)/i
+        );
+        if (computedRgba) {
+          return {
+            r: parseInt(computedRgba[1], 10),
+            g: parseInt(computedRgba[2], 10),
+            b: parseInt(computedRgba[3], 10),
+            a: computedRgba[4] ? parseFloat(computedRgba[4]) : 1,
+          };
+        }
+      }
+    } catch {
+      // Ignore errors and fall through to default
+    }
+
+    // Default fallback
+    return { r: 128, g: 128, b: 128, a: 1 };
+  }
+
+  // Helper method to resolve CSS color (extracted from existing resolveCSSColor function)
+  private resolveCSSColor(inputColor: string): string {
+    if (!inputColor) return inputColor;
+    const trimmed = String(inputColor).trim();
+    // Fast-path: hex or rgb/rgba are already concrete colors
+    if (trimmed.startsWith('#') || trimmed.startsWith('rgb')) return trimmed;
+    // Attempt to resolve CSS variables or named colors via a temporary element
+    try {
+      const probe = document.createElement('span');
+      probe.style.backgroundColor = trimmed; // Use backgroundColor to preserve alpha
+      // Use body for widest variable scope (HA themes apply at document level)
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).backgroundColor; // Preserves RGBA
+      probe.remove();
+      return computed && computed !== 'rgba(0, 0, 0, 0)' ? computed : trimmed;
+    } catch {
+      return trimmed;
+    }
   }
 
   // Helper method to ensure border radius values have proper units

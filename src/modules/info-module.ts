@@ -1612,7 +1612,7 @@ export class UltraInfoModule extends BaseUltraModule {
     const gridAlignment = firstEntity.overall_alignment || 'center';
 
     return html`
-      <div class="info-module-container" style=${this.styleObjectToCss(containerStyles)}>
+      <div class="info-module-container" style="${this.styleObjectToCss(containerStyles)}; align-self: ${gridAlignment === 'left' ? 'flex-start' : gridAlignment === 'right' ? 'flex-end' : 'center'};">
         <div class="info-module-preview">
           <div
             class="info-entities"

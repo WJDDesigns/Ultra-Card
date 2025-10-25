@@ -314,9 +314,20 @@ export class UltraLightModule extends BaseUltraModule {
     return entities.some(entityId => {
       const entity = hass.states[entityId];
       const modes = entity?.attributes.supported_color_modes || [];
-      return modes.some(
+
+      // True RGBWW lights
+      const hasRgbww = modes.some(
         (mode: string) => mode === 'rgbww' || mode === 'rgbcct' || mode === 'rgbww_color'
       );
+
+      // OR lights that support BOTH color AND temperature
+      const hasColor = modes.some(
+        (mode: string) => mode === 'xy' || mode === 'hs' || mode === 'rgb'
+      );
+      const hasColorTemp = modes.includes('color_temp');
+      const hasBothModes = hasColor && hasColorTemp;
+
+      return hasRgbww || hasBothModes;
     });
   }
 
@@ -1043,18 +1054,68 @@ export class UltraLightModule extends BaseUltraModule {
         )}
       </div>
 
-      <!-- Basic Settings -->
+      <!-- Preset Name -->
       <div class="field-group" style="margin-bottom: 16px;">
-        ${this.renderFieldSection(
-          'Basic Settings',
-          'Configure preset name and icon',
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+          Preset Name
+        </div>
+        <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;">
+          Display name for this preset
+        </div>
+        <ha-textfield
+          .value=${preset.name || ''}
+          placeholder="Enter preset name"
+          @input=${(e: Event) => {
+            const target = e.target as any;
+            const input = target.shadowRoot?.querySelector('input') || target;
+            const value = target.value;
+            const cursorPosition = input.selectionStart;
+            const cursorEnd = input.selectionEnd;
+
+            // Update immediately
+            updatePreset({ name: value });
+
+            // Preserve cursor position after re-render
+            requestAnimationFrame(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            });
+            setTimeout(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            }, 0);
+            setTimeout(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            }, 10);
+          }}
+          style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+        ></ha-textfield>
+      </div>
+
+      <!-- Preset Icon -->
+      <div class="field-group" style="margin-bottom: 16px;">
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+          Preset Icon
+        </div>
+        <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;">
+          Optional icon for this preset (e.g., mdi:lightbulb)
+        </div>
+        ${this.renderUcForm(
           hass,
-          {
-            name: preset.name || '',
-            icon: preset.icon || '',
-          },
-          [this.textField('name'), this.iconField('icon')],
-          (e: CustomEvent) => updatePreset(e.detail.value)
+          { icon: preset.icon || '' },
+          [this.iconField('icon')],
+          (e: CustomEvent) => updatePreset(e.detail.value),
+          false
         )}
       </div>
 

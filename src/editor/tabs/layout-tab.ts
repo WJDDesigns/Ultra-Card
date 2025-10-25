@@ -171,6 +171,7 @@ export class LayoutTab extends LitElement {
 
   /** Listen for template updates from modules to refresh live previews */
   private _templateUpdateListener?: () => void;
+  private _tabSwitchListener?: (e: CustomEvent) => void;
   private _documentClickListener?: (e: Event) => void;
   private _keydownListener?: (e: KeyboardEvent) => void;
 
@@ -201,6 +202,22 @@ export class LayoutTab extends LitElement {
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
     // Also listen for slider updates
     window.addEventListener('ultra-card-slider-update', this._templateUpdateListener);
+
+    // Listen for tab switch events from modules
+    this._tabSwitchListener = (e: CustomEvent) => {
+      if (e.detail?.tab === 'actions') {
+        this._activeModuleTab = 'actions';
+        this.requestUpdate();
+        // Scroll to top of the popup content to show the actions section
+        setTimeout(() => {
+          const popupContent = this.shadowRoot?.querySelector('.popup-content');
+          if (popupContent) {
+            popupContent.scrollTop = 0;
+          }
+        }, 50);
+      }
+    };
+    document.addEventListener('switch-to-actions-tab', this._tabSwitchListener);
 
     // Add window resize listener for popup repositioning
     this._windowResizeListener = () => {
@@ -605,6 +622,12 @@ export class LayoutTab extends LitElement {
       window.removeEventListener('ultra-card-slider-update', this._templateUpdateListener);
       this._templateUpdateListener = undefined;
     }
+
+    // Remove tab switch listener
+    if (this._tabSwitchListener) {
+      document.removeEventListener('switch-to-actions-tab', this._tabSwitchListener);
+      this._tabSwitchListener = undefined;
+    }
     // Remove window resize listener
     if (this._windowResizeListener) {
       window.removeEventListener('resize', this._windowResizeListener);
@@ -962,8 +985,8 @@ export class LayoutTab extends LitElement {
               {
                 id: `col-${Date.now()}`,
                 modules: [],
-                vertical_alignment: 'center',
-                horizontal_alignment: 'center',
+                vertical_alignment: 'stretch',
+                horizontal_alignment: 'stretch',
               },
             ],
             column_layout: '1-col',
@@ -1162,8 +1185,8 @@ export class LayoutTab extends LitElement {
     const newColumn: CardColumn = {
       id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       modules: [],
-      vertical_alignment: 'center',
-      horizontal_alignment: 'center',
+      vertical_alignment: 'stretch',
+      horizontal_alignment: 'stretch',
     };
 
     // Calculate new column count after adding
@@ -1203,8 +1226,8 @@ export class LayoutTab extends LitElement {
     const newColumn: CardColumn = {
       id: `col-${Date.now()}`,
       modules: [],
-      vertical_alignment: 'center',
-      horizontal_alignment: 'center',
+      vertical_alignment: 'stretch',
+      horizontal_alignment: 'stretch',
     };
 
     // Calculate new column count after adding
@@ -1344,8 +1367,8 @@ export class LayoutTab extends LitElement {
         newColumns.push({
           id: `col-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
           modules: [],
-          vertical_alignment: 'center',
-          horizontal_alignment: 'center',
+          vertical_alignment: 'stretch',
+          horizontal_alignment: 'stretch',
         });
       }
 
@@ -1376,8 +1399,8 @@ export class LayoutTab extends LitElement {
           newColumns.push({
             id: `col-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
             modules: [],
-            vertical_alignment: 'center',
-            horizontal_alignment: 'center',
+            vertical_alignment: 'stretch',
+            horizontal_alignment: 'stretch',
           });
         }
       }
@@ -6932,17 +6955,17 @@ export class LayoutTab extends LitElement {
         (module as any).text_shadow_blur || (module as any).design?.text_shadow_blur,
       text_shadow_color:
         (module as any).text_shadow_color || (module as any).design?.text_shadow_color,
-      // Animation properties
-      animation_type: (module as any).animation_type,
-      animation_entity: (module as any).animation_entity,
-      animation_trigger_type: (module as any).animation_trigger_type,
-      animation_attribute: (module as any).animation_attribute,
-      animation_state: (module as any).animation_state,
-      intro_animation: (module as any).intro_animation,
-      outro_animation: (module as any).outro_animation,
-      animation_duration: (module as any).animation_duration,
-      animation_delay: (module as any).animation_delay,
-      animation_timing: (module as any).animation_timing,
+      // Animation properties - check both top-level and design object
+      animation_type: (module as any).animation_type || (module as any).design?.animation_type,
+      animation_entity: (module as any).animation_entity || (module as any).design?.animation_entity,
+      animation_trigger_type: (module as any).animation_trigger_type || (module as any).design?.animation_trigger_type,
+      animation_attribute: (module as any).animation_attribute || (module as any).design?.animation_attribute,
+      animation_state: (module as any).animation_state || (module as any).design?.animation_state,
+      intro_animation: (module as any).intro_animation || (module as any).design?.intro_animation,
+      outro_animation: (module as any).outro_animation || (module as any).design?.outro_animation,
+      animation_duration: (module as any).animation_duration || (module as any).design?.animation_duration,
+      animation_delay: (module as any).animation_delay || (module as any).design?.animation_delay,
+      animation_timing: (module as any).animation_timing || (module as any).design?.animation_timing,
     };
 
     const result = html`

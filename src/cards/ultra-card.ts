@@ -2221,11 +2221,12 @@ export class UltraCard extends LitElement {
         animation-delay: var(--animation-delay, 0s);
         animation-timing-function: var(--animation-timing, ease);
         animation-fill-mode: both;
-        /* Inherit width from content */
+        /* Inherit alignment from content */
         display: inherit;
-        width: inherit;
         height: inherit;
         flex: inherit;
+        align-self: inherit;
+        justify-self: inherit;
       }
 
       /* Intro Animations */

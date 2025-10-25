@@ -35,7 +35,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'map';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -349,7 +349,10 @@ export interface BarModule extends BaseModule {
     label_alignment?: 'left' | 'center' | 'right' | 'space-between';
     show_percentage?: boolean;
     percentage_text_size?: number;
-    percentage_text_alignment?: 'left' | 'center' | 'right';
+    percentage_text_alignment?: 'left' | 'center' | 'right' | 'follow-fill';
+    percentage_text_bold?: boolean;
+    percentage_text_italic?: boolean;
+    percentage_text_strikethrough?: boolean;
     show_value?: boolean;
     value_position?: 'inside' | 'outside' | 'none';
     left_enabled?: boolean;
@@ -1245,6 +1248,60 @@ export interface LightModule extends BaseModule {
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
+export interface MapMarker {
+    id: string;
+    name: string;
+    type: 'manual' | 'entity';
+    latitude?: number;
+    longitude?: number;
+    entity?: string;
+    icon?: string;
+    icon_color?: string;
+    icon_size?: number;
+    marker_image_type?: 'icon' | 'custom_image' | 'entity_image';
+    marker_image?: string;
+    use_entity_picture?: boolean;
+}
+export interface MapModule extends BaseModule {
+    type: 'map';
+    map_provider: 'openstreetmap' | 'google';
+    google_api_key?: string;
+    map_type: 'roadmap' | 'satellite' | 'hybrid' | 'terrain';
+    zoom: number;
+    show_map_controls: boolean;
+    disable_zoom_scroll: boolean;
+    disable_touch_drag: boolean;
+    auto_zoom_entities: boolean;
+    manual_center_latitude?: number;
+    manual_center_longitude?: number;
+    markers: MapMarker[];
+    map_height?: number;
+    aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom';
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
 export interface AnimatedClockModule extends BaseModule {
     type: 'animated_clock';
     time_format?: '12' | '24';
@@ -1496,7 +1553,7 @@ export interface VideoBackgroundModule extends BaseModule {
     rules?: VideoBackgroundRule[];
     global_card_transparency: GlobalCardTransparency;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

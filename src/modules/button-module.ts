@@ -248,7 +248,38 @@ export class UltraButtonModule extends BaseUltraModule {
           </div>
         </div>
 
-        <!-- Link Action removed: use global Tap/Hold/Double-Tap actions instead -->
+        <!-- Actions Setup Guide -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.button.actions.title', lang, 'Button Actions')}
+          </div>
+          <div
+            class="section-description"
+            style="margin-bottom: 16px; color: var(--secondary-text-color); font-size: 14px;"
+          >
+            ${localize(
+              'editor.button.actions.desc',
+              lang,
+              'Configure what happens when users tap, hold, or double-tap this button.'
+            )}
+          </div>
+          <ha-button
+            raised
+            style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+            @click=${() => {
+              // Dispatch a custom event to switch to actions tab
+              const event = new CustomEvent('switch-to-actions-tab', {
+                bubbles: true,
+                composed: true,
+                detail: { tab: 'actions' },
+              });
+              document.dispatchEvent(event);
+            }}
+          >
+            <ha-icon icon="mdi:gesture-tap" slot="icon"></ha-icon>
+            ${localize('editor.button.actions.setup', lang, 'Set up button actions')}
+          </ha-button>
+        </div>
       </div>
     `;
   }

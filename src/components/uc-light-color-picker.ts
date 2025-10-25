@@ -475,6 +475,59 @@ export class UcLightColorPicker extends LitElement {
     }
   }
 
+  private handleHsChange(component: number, value: number): void {
+    if (this.disabled) return;
+
+    const newHs = [...this._currentHs];
+
+    if (component === 0) {
+      // Hue: 0-360 degrees
+      newHs[0] = Math.max(0, Math.min(360, value));
+    } else {
+      // Saturation: 0-100 percent
+      newHs[1] = Math.max(0, Math.min(100, value));
+    }
+
+    this._currentHs = newHs;
+    this._currentRgb = LightColorUtils.hsToRgb(newHs[0], newHs[1]);
+    this._currentXy = LightColorUtils.rgbToXy(
+      this._currentRgb[0],
+      this._currentRgb[1],
+      this._currentRgb[2]
+    );
+
+    this.fireColorChanged({
+      rgb_color: this._currentRgb,
+      hs_color: this._currentHs,
+      xy_color: this._currentXy,
+      mode: 'hs',
+    });
+  }
+
+  private handleXyChange(component: number, value: number): void {
+    if (this.disabled) return;
+
+    const newXy = [...this._currentXy];
+
+    // XY values typically range from 0 to 1
+    newXy[component] = Math.max(0, Math.min(1, value));
+
+    this._currentXy = newXy;
+    this._currentRgb = LightColorUtils.xyToRgb(newXy[0], newXy[1]);
+    this._currentHs = LightColorUtils.rgbToHs(
+      this._currentRgb[0],
+      this._currentRgb[1],
+      this._currentRgb[2]
+    );
+
+    this.fireColorChanged({
+      rgb_color: this._currentRgb,
+      hs_color: this._currentHs,
+      xy_color: this._currentXy,
+      mode: 'xy',
+    });
+  }
+
   private handleColorTempChange(mired: number): void {
     if (this.disabled) return;
 
@@ -787,18 +840,76 @@ export class UcLightColorPicker extends LitElement {
                   <!-- HS Values -->
                   <div class="hs-section">
                     <div class="section-title">HS Values</div>
-                    <div class="hs-values-display">
-                      <span>H: ${this._currentHs[0]}°</span>
-                      <span>S: ${this._currentHs[1]}%</span>
+                    <div class="hs-inputs">
+                      <div class="hs-input-group">
+                        <label>H (Hue)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="360"
+                          step="1"
+                          .value=${this._currentHs[0]}
+                          .disabled=${this.disabled}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            this.handleHsChange(0, parseInt(target.value) || 0);
+                          }}
+                        />
+                        <span class="unit">°</span>
+                      </div>
+                      <div class="hs-input-group">
+                        <label>S (Sat)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          .value=${this._currentHs[1]}
+                          .disabled=${this.disabled}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            this.handleHsChange(1, parseInt(target.value) || 0);
+                          }}
+                        />
+                        <span class="unit">%</span>
+                      </div>
                     </div>
                   </div>
 
                   <!-- XY Values -->
                   <div class="xy-section">
                     <div class="section-title">XY Values</div>
-                    <div class="xy-values-display">
-                      <span>X: ${this._currentXy[0]}</span>
-                      <span>Y: ${this._currentXy[1]}</span>
+                    <div class="xy-inputs">
+                      <div class="xy-input-group">
+                        <label>X</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.0001"
+                          .value=${this._currentXy[0]}
+                          .disabled=${this.disabled}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            this.handleXyChange(0, parseFloat(target.value) || 0);
+                          }}
+                        />
+                      </div>
+                      <div class="xy-input-group">
+                        <label>Y</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.0001"
+                          .value=${this._currentXy[1]}
+                          .disabled=${this.disabled}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            this.handleXyChange(1, parseFloat(target.value) || 0);
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1291,13 +1402,53 @@ export class UcLightColorPicker extends LitElement {
         position: relative;
       }
 
-      .hs-values-display,
-      .xy-values-display {
+      .hs-inputs,
+      .xy-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .hs-input-group,
+      .xy-input-group {
         display: flex;
-        gap: 16px;
+        flex-direction: column;
+        gap: 4px;
+        position: relative;
+      }
+
+      .hs-input-group label,
+      .xy-input-group label {
         font-size: 12px;
         color: var(--secondary-text-color);
+        font-weight: 500;
+      }
+
+      .hs-input-group input,
+      .xy-input-group input {
+        padding: 6px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 12px;
+        text-align: center;
         font-family: monospace;
+      }
+
+      .hs-input-group input:focus,
+      .xy-input-group input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+      }
+
+      .hs-input-group .unit {
+        position: absolute;
+        right: 8px;
+        bottom: 10px;
+        font-size: 10px;
+        color: var(--secondary-text-color);
+        pointer-events: none;
       }
 
       .color-temp-controls {

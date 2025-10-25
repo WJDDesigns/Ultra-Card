@@ -411,36 +411,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
       /* ========== RESPONSIVE ========== */
       @media (max-width: 768px) {
-        .weather-forecast {
-          gap: clamp(10px, 2%, 12px);
-        }
-
-        .forecast-icon {
-          width: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 40px));
-          height: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 40px));
-        }
-      }
-
-      @media (max-width: 480px) {
         .animated-forecast-module-container {
-          padding: clamp(12px, 3%, 16px);
-        }
-
-        .weather-forecast {
-          gap: clamp(6px, 1.5%, 8px);
-        }
-
-        .forecast-day-name {
-          font-size: min(var(--forecast-day-size), 12px);
-        }
-
-        .forecast-temps {
-          font-size: min(var(--forecast-temp-size), 12px);
-        }
-
-        .forecast-icon {
-          width: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 30px));
-          height: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 30px));
+          transform: scale(min(1, calc(100vw / 600)));
+          transform-origin: top center;
         }
       }
     `;

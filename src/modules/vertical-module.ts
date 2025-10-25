@@ -676,8 +676,10 @@ export class UltraVerticalModule extends BaseUltraModule {
     if (layoutDesign.animation_timing)
       mergedModule.animation_timing = layoutDesign.animation_timing;
 
-    // Apply horizontal alignment inheritance - vertical layout's horizontal alignment overrides child module alignment
-    if (layoutDesign.horizontal_alignment) {
+    // Apply horizontal alignment inheritance - only for child LAYOUT modules
+    // Info, Image, Bar, and Text modules have their own alignment systems and should preserve them
+    if (layoutDesign.horizontal_alignment && 
+        (childModule.type === 'horizontal' || childModule.type === 'vertical')) {
       mergedModule.alignment = layoutDesign.horizontal_alignment;
     }
 

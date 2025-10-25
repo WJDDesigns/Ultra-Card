@@ -746,16 +746,48 @@ ${FormUtils.renderField(
 )}
 ```
 
-### 3. Boolean Toggle
+### 3. Boolean Toggle (Inline Layout)
 
+**All boolean toggles (switches) MUST use the inline layout pattern** where the title and toggle appear on the same line. This is automatically handled by `UcFormUtils.renderFieldSection()` when a boolean field is detected.
+
+**Correct Pattern:**
 ```typescript
-${FormUtils.renderCleanForm(
-  hass,
-  { boolean_field: module.boolean_field || false },
-  [FormUtils.createSchemaItem('boolean_field', { boolean: {} })],
-  (e: CustomEvent) => updateModule({ boolean_field: e.detail.value.boolean_field })
+${this.renderSettingsSection(
+  'Section Title',
+  'Section description',
+  [
+    {
+      title: 'Toggle Title',
+      description: 'Toggle description explaining what this controls',
+      hass,
+      data: { boolean_field: module.boolean_field || false },
+      schema: [this.booleanField('boolean_field')],
+      onChange: (e: CustomEvent) => updateModule({ boolean_field: e.detail.value.boolean_field }),
+    },
+  ]
 )}
 ```
+
+**Visual Layout:**
+- Title and description on the left (flexible width)
+- Toggle switch on the right (fixed position)
+- 16px gap between text and toggle
+- Minimum 48px height for proper touch targets
+- Description appears below title when both are present
+
+**Implementation Notes:**
+- `UcFormUtils.renderFieldSection()` automatically detects boolean fields and applies inline layout
+- The CSS classes `.boolean-field` are applied automatically
+- Title remains bold and primary text color
+- Description uses secondary text color with 0.8 opacity
+- Toggle uses `var(--primary-color)` for active state
+
+**What NOT to do:**
+- ❌ Don't use vertical layout for boolean fields (toggle below title)
+- ❌ Don't manually create custom toggle layouts
+- ❌ Don't use `FormUtils.renderCleanForm()` directly for boolean toggles in settings sections
+
+This pattern ensures consistent, professional-looking toggles across all modules, matching modern UI/UX standards and Home Assistant conventions.
 
 ### 4. Number Range Control with Slider
 
