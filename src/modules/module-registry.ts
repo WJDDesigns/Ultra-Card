@@ -12,6 +12,7 @@ import { UltraMarkdownModule } from './markdown-module';
 import { UltraHorizontalModule } from './horizontal-module';
 import { UltraVerticalModule } from './vertical-module';
 import { UltraSliderModule } from './slider-module';
+import { UltraSliderControlModule } from './slider-control-module';
 import { UltraPageBreakModule } from './pagebreak-module';
 import { UltraCameraModule } from './camera-module';
 import { UltraGraphsModule } from './graphs-module';
@@ -58,6 +59,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraHorizontalModule());
     this.registerModule(new UltraVerticalModule());
     this.registerModule(new UltraSliderModule());
+    this.registerModule(new UltraSliderControlModule());
     this.registerModule(new UltraPageBreakModule());
     this.registerModule(new UltraCameraModule());
     this.registerModule(new UltraGraphsModule());

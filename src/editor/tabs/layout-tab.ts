@@ -795,7 +795,6 @@ export class LayoutTab extends LitElement {
     // Add resizing class for visual feedback
     element.classList.add('popup-resizing');
   }
-
   private _handlePopupResize = (e: MouseEvent): void => {
     if (!this._popupResizeState.isResizing || !this._popupResizeState.element) return;
 
@@ -1576,7 +1575,6 @@ export class LayoutTab extends LitElement {
 - inline code
 - Lists and more!`,
           markdown_content: `This is a markdown module that supports:
-
 - Italic and bold text
 - Links
 - inline code
@@ -2354,7 +2352,6 @@ export class LayoutTab extends LitElement {
   private _openProPage(): void {
     window.open('https://ultracard.io/product/ultra-card-pro/', '_blank');
   }
-
   private _isRefreshingGlobalCount = false;
 
   private _duplicateModule(rowIndex: number, columnIndex: number, moduleIndex: number): void {
@@ -3152,7 +3149,6 @@ export class LayoutTab extends LitElement {
       this.setAttribute('dragging-row', '');
     }
   }
-
   private _onDragEnd(e: DragEvent): void {
     // Reset visual feedback
     const target = e.currentTarget as HTMLElement;
@@ -3807,7 +3803,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   private _renderLayoutModuleAsColumn(
     module: CardModule,
     rowIndex?: number,
@@ -4228,7 +4223,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   private _renderNestedLayoutModule(
     layoutModule: CardModule,
     parentRowIndex?: number,
@@ -4878,6 +4872,29 @@ export class LayoutTab extends LitElement {
     // Clone the dragged module
     const draggedModule = JSON.parse(JSON.stringify(this._draggedItem.data));
 
+    // FIX: Constrain image module sizing when adding to layout modules
+    if (draggedModule.type === 'image') {
+      // Only apply if using default settings (width is 100% and no explicit max-width)
+      const hasDefaultWidth = !draggedModule.design?.width && (!draggedModule.width || draggedModule.width === '100%');
+      
+      if (hasDefaultWidth) {
+        // Initialize design object if it doesn't exist
+        if (!draggedModule.design) {
+          draggedModule.design = {};
+        }
+        
+        // Set responsive width with reasonable constraints
+        draggedModule.width = '100%';
+        // Use min() to ensure responsive scaling: responsive up to 500px, then lock at 500px
+        draggedModule.design.max_width = 'min(100%, 500px)';
+        
+        // Change object_fit to 'cover' for better default appearance in layouts
+        if (!draggedModule.object_fit || draggedModule.object_fit === 'contain') {
+          draggedModule.object_fit = 'cover';
+        }
+      }
+    }
+
     // Check if this is a reordering within the same layout module
     if (
       this._draggedItem.layoutChildIndex !== undefined &&
@@ -5008,7 +5025,6 @@ export class LayoutTab extends LitElement {
       target.style.transform = 'scale(0.95)';
     }
   }
-
   private _onNestedChildDragEnd(e: DragEvent): void {
     e.preventDefault();
     e.stopPropagation();
@@ -5796,7 +5812,6 @@ export class LayoutTab extends LitElement {
     // For other modules, use the standard pattern
     return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${module.type.charAt(0).toUpperCase() + module.type.slice(1)}`;
   }
-
   private _getModuleDisplayName(module: CardModule): string {
     // Check for custom module name first (for editor organization)
     const moduleAny = module as any;
@@ -6455,7 +6470,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   private _renderLayoutChildSettings(): TemplateResult {
     if (!this._selectedLayoutChild) return html``;
 
@@ -7225,7 +7239,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   private _renderRowGeneralTab(row: CardRow): TemplateResult {
     return html`
       <div class="settings-section">
@@ -7972,7 +7985,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   // Render entity attribute condition renderer
   private _renderEntityAttributeConditionGeneric(
     condition: DisplayCondition,
@@ -8610,7 +8622,6 @@ export class LayoutTab extends LitElement {
       ></ultra-global-design-tab>
     `;
   }
-
   private _renderTextDesignTab(module: CardModule): TemplateResult {
     // Only show text design options for text modules
     if (module.type === 'text') {
@@ -9353,7 +9364,6 @@ export class LayoutTab extends LitElement {
     super.firstUpdated(changedProperties);
     // Component has finished initial render
   }
-
   protected updated(changedProperties: Map<string, any>): void {
     super.updated(changedProperties);
 
@@ -9959,7 +9969,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   private _renderModuleSelector(): TemplateResult {
     const registry = getModuleRegistry();
     // Get all modules but exclude external_card from the selector (it's only for 3rd party tab)
@@ -10622,7 +10631,6 @@ export class LayoutTab extends LitElement {
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
   }
-
   private _renderPresetsTab(): TemplateResult {
     const categories = ['all', 'badges', 'layouts', 'widgets', 'custom'] as const;
     const presets = ucPresetsService.getPresetsByCategory(this._selectedPresetCategory);
@@ -10924,7 +10932,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   private _render3rdPartyTab(): TemplateResult {
     // Check Pro access (integration only)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
@@ -11719,7 +11726,6 @@ export class LayoutTab extends LitElement {
       type: fullCardType,
     };
   }
-
   private async _tryHACardHelper(fullCardType: string): Promise<any | null> {
     // Try to use Home Assistant's card helper to get default config
     // This leverages HA's own card creation mechanism
@@ -12089,7 +12095,6 @@ export class LayoutTab extends LitElement {
       </div>
     `;
   }
-
   static get styles() {
     return css`
       :host {
@@ -12888,7 +12893,6 @@ export class LayoutTab extends LitElement {
         height: auto;
         display: block;
       }
-
       .add-module-btn {
         display: flex;
         align-items: center;
@@ -13681,7 +13685,6 @@ export class LayoutTab extends LitElement {
       .close-button:hover {
         color: var(--primary-color);
       }
-
       .action-button {
         background: none;
         border: none;
@@ -14475,7 +14478,6 @@ export class LayoutTab extends LitElement {
       .image-module {
         text-align: center;
       }
-
       .image-placeholder {
         padding: 20px;
         border: 2px dashed var(--divider-color);
@@ -15274,7 +15276,6 @@ export class LayoutTab extends LitElement {
         opacity: 0.5;
         pointer-events: auto;
       }
-
       .drop-target {
         box-shadow: 0 0 20px rgba(var(--rgb-primary-color), 0.6) !important;
         background: rgba(var(--rgb-primary-color), 0.1) !important;
@@ -16075,7 +16076,6 @@ export class LayoutTab extends LitElement {
         overflow: hidden;
         border-radius: 8px;
       }
-
       .preset-slider-container {
         display: flex;
         width: 100%;
@@ -16874,7 +16874,6 @@ export class LayoutTab extends LitElement {
       alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-
   private _truncatePath(path: string): string {
     if (!path) return '';
     const maxLength = 30;

@@ -2317,35 +2317,27 @@ export class UltraIconModule extends BaseUltraModule {
 
                 // Get template result for state text
                 const templateResult = hass?.__uvc_template_strings?.[templateKey];
-                if (templateResult !== undefined) {
-                  const result = String(templateResult).toLowerCase();
-                  const isBooleanResult = [
-                    'true',
-                    'false',
-                    'on',
-                    'off',
-                    'yes',
-                    'no',
-                    '0',
-                    '1',
-                  ].includes(result);
+                if (templateResult !== undefined && String(templateResult).trim() !== '') {
+                  const trimmedResult = String(templateResult).trim();
+                  const resultString = trimmedResult.toLowerCase();
+                  // Check if template returned an icon name (starts with mdi:, hass:, etc.)
+                  const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
+                  // Only use template result as state text if it's NOT a boolean-like value or an icon name
+                  const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
+                    resultString
+                  );
 
-                  if (!isBooleanResult && String(templateResult).trim() !== '') {
-                    // Template returned custom text (not boolean) - use it as state text
-                    if (String(templateResult) !== currentState) {
-                      // It's truly custom text, not just the entity state
-                      displayState = String(templateResult);
+                  if (isIconName) {
+                    // Template returned an icon name - use it for the icon instead of state text
+                    displayIcon = trimmedResult;
+                    // Use actual entity state for display state when icon is being controlled by template
+                    displayState = this._getDisplayStateValue(icon, hass, isActive);
+                  } else if (!isBooleanResult) {
+                    // Check if template returned 'unknown' due to non-existent entity
+                    if (String(templateResult) === 'unknown') {
+                      displayState = `Template Error: Check entity names`;
                     } else {
-                      // Template returned actual entity state - use normal logic below
-                      displayState = isActive
-                        ? icon.custom_active_state_text &&
-                          icon.custom_active_state_text.trim() !== ''
-                          ? icon.custom_active_state_text
-                          : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-                        : icon.custom_inactive_state_text &&
-                            icon.custom_inactive_state_text.trim() !== ''
-                          ? icon.custom_inactive_state_text
-                          : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+                      displayState = String(templateResult);
                     }
                   } else {
                     // Template returned boolean or empty - use normal custom text logic
@@ -3208,13 +3200,21 @@ export class UltraIconModule extends BaseUltraModule {
       // Get template result for state text
       const templateResult = hass?.__uvc_template_strings?.[templateKey];
       if (templateResult !== undefined && String(templateResult).trim() !== '') {
-        const resultString = String(templateResult).toLowerCase();
-        // Only use template result as state text if it's NOT a boolean-like value
+        const trimmedResult = String(templateResult).trim();
+        const resultString = trimmedResult.toLowerCase();
+        // Check if template returned an icon name (starts with mdi:, hass:, etc.)
+        const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
+        // Only use template result as state text if it's NOT a boolean-like value or an icon name
         const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
           resultString
         );
 
-        if (!isBooleanResult) {
+        if (isIconName) {
+          // Template returned an icon name - use it for the icon instead of state text
+          displayIcon = trimmedResult;
+          // Use actual entity state for display state when icon is being controlled by template
+          displayState = this._getDisplayStateValue(icon, hass, isActiveState);
+        } else if (!isBooleanResult) {
           // Check if template returned 'unknown' due to non-existent entity
           if (String(templateResult) === 'unknown') {
             displayState = `Template Error: Check entity names`;

@@ -35,7 +35,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'map';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'map';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -825,6 +825,98 @@ export interface SliderModule extends BaseModule {
         service_data?: Record<string, any>;
     };
 }
+export interface SliderControlModule extends BaseModule {
+    type: 'slider_control';
+    entity: string;
+    name?: string;
+    attribute?: string;
+    min_value?: number;
+    max_value?: number;
+    step?: number;
+    orientation?: 'horizontal' | 'vertical';
+    layout_mode?: 'overlay' | 'split' | 'outside';
+    overlay_position?: 'left' | 'center' | 'right';
+    bar_fill_percentage?: number;
+    outside_position?: 'top' | 'bottom';
+    outside_alignment?: 'start' | 'center' | 'end';
+    split_bar_position?: 'left' | 'right';
+    split_info_position?: 'left' | 'center' | 'right';
+    split_ratio?: number;
+    slider_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'minimal';
+    slider_height?: number;
+    slider_radius?: 'square' | 'round' | 'pill';
+    border_radius?: number;
+    slider_track_color?: string;
+    slider_fill_color?: string;
+    dynamic_fill_color?: boolean;
+    glass_blur_amount?: number;
+    use_gradient?: boolean;
+    gradient_stops?: Array<{
+        id: string;
+        position: number;
+        color: string;
+    }>;
+    show_icon?: boolean;
+    icon?: string;
+    icon_size?: number;
+    icon_color?: string;
+    dynamic_icon?: boolean;
+    icon_as_toggle?: boolean;
+    auto_contrast?: boolean;
+    show_name?: boolean;
+    name_size?: number;
+    name_color?: string;
+    name_bold?: boolean;
+    show_state?: boolean;
+    state_size?: number;
+    state_color?: string;
+    state_bold?: boolean;
+    state_format?: string;
+    show_value?: boolean;
+    value_size?: number;
+    value_color?: string;
+    value_suffix?: string;
+    show_toggle?: boolean;
+    toggle_position?: 'left' | 'right' | 'top' | 'bottom';
+    toggle_size?: number;
+    toggle_color_on?: string;
+    toggle_color_off?: string;
+    show_color_picker?: boolean;
+    color_picker_position?: 'below' | 'right';
+    color_picker_size?: 'small' | 'medium' | 'large';
+    animate_on_change?: boolean;
+    transition_duration?: number;
+    haptic_feedback?: boolean;
+    light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all';
+    cover_invert?: boolean;
+    control_attribute?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
 export interface ButtonModule extends BaseModule {
     type: 'button';
     label: string;
@@ -1553,7 +1645,7 @@ export interface VideoBackgroundModule extends BaseModule {
     rules?: VideoBackgroundRule[];
     global_card_transparency: GlobalCardTransparency;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

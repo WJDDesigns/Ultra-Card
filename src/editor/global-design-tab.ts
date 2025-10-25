@@ -2844,7 +2844,7 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.animation_duration || '2s'}
-                  @input=${(e: Event) =>
+                  @change=${(e: Event) =>
                     this._updateProperty(
                       'animation_duration',
                       (e.target as HTMLInputElement).value
@@ -3194,7 +3194,7 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     .value=${this.designProperties.animation_duration || ''}
-                    @input=${(e: Event) =>
+                    @change=${(e: Event) =>
                       this._updateProperty(
                         'animation_duration',
                         (e.target as HTMLInputElement).value
@@ -3215,7 +3215,7 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     .value=${this.designProperties.animation_delay || ''}
-                    @input=${(e: Event) =>
+                    @change=${(e: Event) =>
                       this._updateProperty('animation_delay', (e.target as HTMLInputElement).value)}
                     placeholder="0s, 100ms"
                     class="property-input"

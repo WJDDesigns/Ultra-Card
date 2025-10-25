@@ -75,6 +75,7 @@ export interface BaseModule {
     | 'horizontal'
     | 'vertical'
     | 'slider'
+    | 'slider_control'
     | 'pagebreak'
     | 'button'
     | 'markdown'
@@ -1478,6 +1479,173 @@ export interface SliderModule extends BaseModule {
   };
 }
 
+// Slider Control Module (Entity Control)
+export interface SliderControlModule extends BaseModule {
+  type: 'slider_control';
+
+  // Entity Configuration
+  entity: string;
+  name?: string;
+  attribute?: string; // Control specific attribute (e.g., 'brightness', 'position', 'value')
+
+  // Value Range
+  min_value?: number;
+  max_value?: number;
+  step?: number;
+
+  // Orientation
+  orientation?: 'horizontal' | 'vertical';
+
+  // Layout Mode
+  layout_mode?: 'overlay' | 'split' | 'outside';
+
+  // Overlay Mode Settings (when bar has info overlaid on top)
+  overlay_position?: 'left' | 'center' | 'right';
+  bar_fill_percentage?: number; // How much of module width/height the bar fills (50-100%)
+
+  // Outside Mode Settings (when info is positioned outside the slider vertically)
+  outside_position?: 'top' | 'bottom';
+  outside_alignment?: 'start' | 'center' | 'end';
+
+  // Split Mode Settings (bar and info are separate horizontally)
+  split_bar_position?: 'left' | 'right';
+  split_info_position?: 'left' | 'center' | 'right';
+  split_ratio?: number; // Percentage for bar vs info (10-90)
+
+  // Slider Visual Style
+  slider_style?:
+    | 'flat'
+    | 'glossy'
+    | 'embossed'
+    | 'inset'
+    | 'gradient-overlay'
+    | 'neon-glow'
+    | 'outline'
+    | 'glass'
+    | 'metallic'
+    | 'neumorphic'
+    | 'minimal';
+
+  // Slider Appearance
+  slider_height?: number; // Height for horizontal, width for vertical
+  slider_radius?: 'square' | 'round' | 'pill';
+  border_radius?: number;
+  slider_track_color?: string;
+  slider_fill_color?: string;
+  dynamic_fill_color?: boolean; // Use entity color (for RGB lights, etc.)
+  glass_blur_amount?: number; // For glass style
+
+  // Gradient Fill Support
+  use_gradient?: boolean;
+  gradient_stops?: Array<{
+    id: string;
+    position: number;
+    color: string;
+  }>;
+
+  // Display Elements
+  show_icon?: boolean;
+  icon?: string;
+  icon_size?: number;
+  icon_color?: string;
+  dynamic_icon?: boolean; // Use entity's default icon
+  icon_as_toggle?: boolean; // Make icon clickable to toggle entity on/off
+  auto_contrast?: boolean; // Automatically adjust text/icon color based on fill color
+
+  show_name?: boolean;
+  name_size?: number;
+  name_color?: string;
+  name_bold?: boolean;
+
+  show_state?: boolean;
+  state_size?: number;
+  state_color?: string;
+  state_bold?: boolean;
+  state_format?: string; // Format string for state display
+
+  show_value?: boolean; // Show numeric value
+  value_size?: number;
+  value_color?: string;
+  value_suffix?: string; // e.g., '%', '°C'
+
+  // Toggle Integration
+  show_toggle?: boolean;
+  toggle_position?: 'left' | 'right' | 'top' | 'bottom';
+  toggle_size?: number;
+  toggle_color_on?: string;
+  toggle_color_off?: string;
+
+  // Light-specific Color Control
+  show_color_picker?: boolean; // For lights - show RGB color picker
+  color_picker_position?: 'below' | 'right';
+  color_picker_size?: 'small' | 'medium' | 'large';
+
+  // Animation & Interaction
+  animate_on_change?: boolean;
+  transition_duration?: number; // Renamed to avoid conflict with BaseModule's animation_duration
+  haptic_feedback?: boolean;
+
+  // Specific Entity Behaviors
+  light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all';
+  cover_invert?: boolean; // Invert direction for covers
+
+  // Attribute control
+  control_attribute?: string; // Specific attribute to control (dropdown selection from entity attributes)
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
 // Button Module
 export interface ButtonModule extends BaseModule {
   type: 'button';
@@ -2767,6 +2935,7 @@ export type CardModule =
   | HorizontalModule
   | VerticalModule
   | SliderModule
+  | SliderControlModule
   | PageBreakModule
   | ButtonModule
   | SpinboxModule

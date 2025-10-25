@@ -1048,7 +1048,9 @@ export class UltraImageModule extends BaseUltraModule {
       maxHeight: designProperties.max_height || 'none',
       minWidth: designProperties.min_width || 'none',
       minHeight: designProperties.min_height || 'auto',
-      overflow: designProperties.overflow || 'visible',
+      // When rendered in a layout context, force overflow hidden to prevent image blowup past card bounds
+      // Otherwise use the design property or default to visible for standalone modules
+      overflow: previewContext === 'live' ? (designProperties.overflow || 'hidden') : (designProperties.overflow || 'visible'),
       clipPath: designProperties.clip_path || 'none',
       backdropFilter: designProperties.backdrop_filter || 'none',
       boxShadow:

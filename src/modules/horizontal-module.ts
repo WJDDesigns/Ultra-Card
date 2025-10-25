@@ -1024,8 +1024,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border-radius: 4px;
         padding: 0;
         transition: all 0.2s ease, transform 0.3s ease;
-        /* Ensure modules maintain readable size */
-        min-width: max-content;
+        /* Child modules should respect parent container bounds */
         min-height: 0;
         overflow: visible;
         box-sizing: border-box;
