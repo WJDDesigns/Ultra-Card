@@ -825,25 +825,75 @@ export interface SliderModule extends BaseModule {
         service_data?: Record<string, any>;
     };
 }
-export interface SliderControlModule extends BaseModule {
-    type: 'slider_control';
+export interface SliderBar {
+    id: string;
+    type: 'numeric' | 'brightness' | 'rgb' | 'color_temp' | 'red' | 'green' | 'blue' | 'attribute';
     entity: string;
-    name?: string;
     attribute?: string;
+    name?: string;
     min_value?: number;
     max_value?: number;
     step?: number;
+    show_icon?: boolean;
+    show_name?: boolean;
+    show_value?: boolean;
+    outside_text_position?: 'left' | 'right';
+    outside_name_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    outside_value_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    split_bar_position?: 'left' | 'right';
+    split_bar_length?: number;
+    overlay_name_position?: 'top' | 'middle' | 'bottom';
+    overlay_value_position?: 'top' | 'middle' | 'bottom';
+    overlay_icon_position?: 'top' | 'middle' | 'bottom';
+    slider_height?: number;
+    slider_track_color?: string;
+    slider_fill_color?: string;
+    dynamic_fill_color?: boolean;
+    slider_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'minimal';
+    glass_blur_amount?: number;
+    slider_radius?: 'square' | 'round' | 'pill';
+    border_radius?: number;
+    use_gradient?: boolean;
+    gradient_stops?: Array<{
+        id: string;
+        position: number;
+        color: string;
+    }>;
+    auto_contrast?: boolean;
+    icon?: string;
+    icon_size?: number;
+    icon_color?: string;
+    dynamic_icon?: boolean;
+    icon_as_toggle?: boolean;
+    name_size?: number;
+    name_color?: string;
+    name_bold?: boolean;
+    value_size?: number;
+    value_color?: string;
+    value_suffix?: string;
+    show_bar_label?: boolean;
+    animate_on_change?: boolean;
+    transition_duration?: number;
+    haptic_feedback?: boolean;
+}
+export interface SliderControlModule extends BaseModule {
+    type: 'slider_control';
+    bars: SliderBar[];
     orientation?: 'horizontal' | 'vertical';
     layout_mode?: 'overlay' | 'split' | 'outside';
-    overlay_position?: 'left' | 'center' | 'right';
-    bar_fill_percentage?: number;
-    outside_position?: 'top' | 'bottom';
-    outside_alignment?: 'start' | 'center' | 'end';
+    overlay_position?: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+    overlay_name_position?: 'top' | 'middle' | 'bottom';
+    overlay_value_position?: 'top' | 'middle' | 'bottom';
+    overlay_icon_position?: 'top' | 'middle' | 'bottom';
+    outside_text_position?: 'left' | 'right';
+    outside_name_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    outside_value_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
     split_bar_position?: 'left' | 'right';
     split_info_position?: 'left' | 'center' | 'right';
-    split_ratio?: number;
+    split_bar_length?: number;
     slider_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'minimal';
     slider_height?: number;
+    bar_spacing?: number;
     slider_radius?: 'square' | 'round' | 'pill';
     border_radius?: number;
     slider_track_color?: string;
@@ -876,6 +926,7 @@ export interface SliderControlModule extends BaseModule {
     value_size?: number;
     value_color?: string;
     value_suffix?: string;
+    show_bar_label?: boolean;
     show_toggle?: boolean;
     toggle_position?: 'left' | 'right' | 'top' | 'bottom';
     toggle_size?: number;
@@ -887,7 +938,14 @@ export interface SliderControlModule extends BaseModule {
     animate_on_change?: boolean;
     transition_duration?: number;
     haptic_feedback?: boolean;
+    entity?: string;
+    name?: string;
+    attribute?: string;
+    min_value?: number;
+    max_value?: number;
+    step?: number;
     light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all';
+    light_slider_order?: string[];
     cover_invert?: boolean;
     control_attribute?: string;
     tap_action?: {
@@ -1173,6 +1231,7 @@ export interface GraphsModule extends BaseModule {
     point_radius?: number;
     bar_width?: number;
     bar_spacing?: number;
+    bar_display_limit?: number;
     stacked?: boolean;
     horizontal?: boolean;
     inner_radius?: number;
@@ -1778,6 +1837,17 @@ export interface FavoriteColor {
     color: string;
     order: number;
 }
+export interface EntityReference {
+    entityId: string;
+    locations: string[];
+    moduleType: string;
+    context?: string;
+}
+export interface EntityMapping {
+    original: string;
+    mapped: string;
+    domain: string;
+}
 export interface PresetDefinition {
     id: string;
     name: string;
@@ -1795,6 +1865,7 @@ export interface PresetDefinition {
         updated: string;
         downloads?: number;
         rating?: number;
+        entityMappings?: EntityMapping[];
     };
 }
 export interface FavoriteRow {

@@ -17,6 +17,9 @@ export declare class UltraButtonModule extends BaseUltraModule {
     private renderSingleActionConfig;
     renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     private styleObjectToCss;
+    private getFlexJustify;
+    private resolveTextShadow;
+    private addPixelUnit;
     private getBackgroundImageCSS;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
 }

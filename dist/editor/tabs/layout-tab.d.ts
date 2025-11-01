@@ -52,6 +52,7 @@ export declare class LayoutTab extends LitElement {
     private _lastTemplateUpdate;
     private _savedScrollPosition;
     private _shouldRestoreScroll;
+    private _entityMappingOpen;
     connectedCallback(): void;
     /** Determine if current device/viewport should be treated as mobile */
     private _isMobileDevice;
@@ -127,6 +128,10 @@ export declare class LayoutTab extends LitElement {
     private _addPageBreakToSlider;
     private _addPageBreakToColumnSlider;
     private _addPreset;
+    private _showEntityMappingDialog;
+    private _applyPresetToLayout;
+    private _remapRowEntities;
+    private _applyMappingsToRow;
     private _addFavorite;
     private _saveRowAsFavorite;
     private _exportRow;
@@ -300,6 +305,9 @@ export declare class LayoutTab extends LitElement {
     private _renderFavoriteDialog;
     private _renderImportDialog;
     private _handleImport;
+    private _showRowImportMappingDialog;
+    private _addImportedRow;
+    private _addImportedRowWithMappings;
     private _getDefaultCardConfig;
     private _tryHACardHelper;
     private _getHardcodedDefault;
