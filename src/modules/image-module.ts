@@ -1134,8 +1134,57 @@ export class UltraImageModule extends BaseUltraModule {
                     src="${imageUrl}"
                     @error=${(e: Event) => {
                       const img = e.currentTarget as HTMLImageElement;
-                      if (img && img.src !== DEFAULT_VEHICLE_IMAGE_FALLBACK) {
-                        img.src = DEFAULT_VEHICLE_IMAGE_FALLBACK; // swap to fallback if primary not accessible
+                      const container = img.closest('.image-module-preview');
+                      if (container) {
+                        // Replace the broken image with a clean error message
+                        container.innerHTML = `
+                          <div style="
+                            width: ${designProperties.width || imageModule.width || '100%'};
+                            height: ${containerHeight};
+                            aspect-ratio: ${containerAspectRatio};
+                            background: var(--secondary-background-color);
+                            border: 2px dashed var(--divider-color);
+                            border-radius: ${imageBorderRadius};
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: var(--secondary-text-color);
+                            font-size: 14px;
+                            margin-left: ${marginLeft};
+                            margin-right: ${marginRight};
+                            padding: 16px;
+                            box-sizing: border-box;
+                            overflow: visible;
+                            min-height: 80px;
+                          ">
+                            <div style="
+                              text-align: center;
+                              max-width: 100%;
+                              word-wrap: break-word;
+                              overflow-wrap: break-word;
+                              white-space: normal;
+                              line-height: 1.4;
+                            ">
+                              <ha-icon
+                                icon="mdi:image-off"
+                                style="font-size: 32px; margin-bottom: 8px; opacity: 0.5; display: block;"
+                              ></ha-icon>
+                              <div style="
+                                font-size: 12px;
+                                font-weight: 500;
+                                max-width: 100%;
+                                word-break: break-word;
+                                hyphens: auto;
+                              ">
+                                ${localize(
+                                  'editor.image.load_error',
+                                  hass?.locale?.language || 'en',
+                                  'Image failed to load'
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        `;
                       }
                     }}
                     alt="${localize('editor.image.alt', hass?.locale?.language || 'en', 'Image')}"
@@ -1155,7 +1204,7 @@ export class UltraImageModule extends BaseUltraModule {
                       aspect-ratio: ${containerAspectRatio};
                       background: var(--secondary-background-color);
                       border: 2px dashed var(--divider-color);
-                      border-radius: 0;
+                      border-radius: ${imageBorderRadius};
                       display: flex;
                       align-items: center;
                       justify-content: center;
@@ -1163,14 +1212,31 @@ export class UltraImageModule extends BaseUltraModule {
                       font-size: 14px;
                       margin-left: ${marginLeft};
                       margin-right: ${marginRight};
+                      padding: 16px;
+                      box-sizing: border-box;
+                      overflow: visible;
+                      min-height: 80px;
                     "
                   >
-                    <div style="text-align: center;">
+                    <div style="
+                      text-align: center;
+                      max-width: 100%;
+                      word-wrap: break-word;
+                      overflow-wrap: break-word;
+                      white-space: normal;
+                      line-height: 1.4;
+                    ">
                       <ha-icon
                         icon="mdi:image-off"
-                        style="font-size: 48px; margin-bottom: 8px; opacity: 0.5;"
+                        style="font-size: 32px; margin-bottom: 8px; opacity: 0.5; display: block;"
                       ></ha-icon>
-                      <div>
+                      <div style="
+                        font-size: 12px;
+                        font-weight: 500;
+                        max-width: 100%;
+                        word-break: break-word;
+                        hyphens: auto;
+                      ">
                         ${localize(
                           'editor.image.no_source',
                           hass?.locale?.language || 'en',

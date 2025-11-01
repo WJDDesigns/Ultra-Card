@@ -1840,7 +1840,8 @@
         "icon_size": "Icon Size",
         "icon_size_range": "Range: 8 to 64 pixels",
         "image_size": "Image Size",
-        "image_size_range": "Range: 8 to 128 pixels"
+        "image_size_range": "Range: 8 to 128 pixels",
+        "type_label": "Marker Type"
       },
       "style": {
         "title": "Map Style",
@@ -1851,6 +1852,21 @@
       "google_api_key": "Google Maps API Key (Optional)",
       "google_api_key_desc": "Enter your Google Maps API key for full JavaScript API features. Without a key, basic tile layers are used (limited features).",
       "how_to_get_api_key": "How to get a Google Maps API Key →"
+    },
+    "entity_mapper": {
+      "title": "Map Entities",
+      "detected_entities": "{count} entities detected",
+      "original_entity": "Original Entity",
+      "map_to": "Map To",
+      "keep_original": "Keep Original",
+      "auto_map": "Auto-Map Similar",
+      "keep_unmapped": "Keep All Unmapped",
+      "clear_all": "Clear All",
+      "apply": "Apply Preset",
+      "cancel": "Cancel",
+      "summary": "{mapped} mapped, {unmapped} unmapped of {total} total",
+      "suggestions": "Suggestions",
+      "no_entities": "No entities found"
     }
   }
 }

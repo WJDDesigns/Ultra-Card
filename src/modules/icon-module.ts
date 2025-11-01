@@ -13,6 +13,7 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
@@ -1713,6 +1714,85 @@ export class UltraIconModule extends BaseUltraModule {
                   : ''}
               </div>
 
+              <!-- Dynamic Icon Template Section -->
+              <div class="template-section" style="margin-bottom: 24px;">
+                <div class="template-header">
+                  <div class="switch-container">
+                    <label class="switch-label"
+                      >${localize(
+                        'editor.icon.dynamic_icon_template_section.title',
+                        lang,
+                        'Dynamic Icon Template'
+                      )}</label
+                    >
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        .checked=${icon.dynamic_icon_template_mode || false}
+                        @change=${(e: Event) => {
+                          const checked = (e.target as HTMLInputElement).checked;
+                          this._updateIcon(
+                            iconModule,
+                            index,
+                            { dynamic_icon_template_mode: checked },
+                            updateModule
+                          );
+                        }}
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                  </div>
+                  <div class="template-description">
+                    ${localize(
+                      'editor.icon.dynamic_icon_template_section.desc',
+                      lang,
+                      'Use Jinja2 templates to dynamically change the icon based on conditions. Return a valid icon name (e.g., mdi:weather-sunny, mdi:home, mdi:lightbulb) or empty for default icon.'
+                    )}
+                  </div>
+                </div>
+
+                ${icon.dynamic_icon_template_mode
+                  ? html`
+                      <div class="template-content">
+                        <ultra-template-editor
+                          .hass=${hass}
+                          .value=${icon.dynamic_icon_template || ''}
+                          .placeholder=${"{% if states('binary_sensor.example') == 'on' %}mdi:lightbulb-on{% else %}mdi:lightbulb-off{% endif %}"}
+                          .minHeight=${100}
+                          .maxHeight=${300}
+                          @value-changed=${(e: CustomEvent) => {
+                            this._updateIcon(
+                              iconModule,
+                              index,
+                              { dynamic_icon_template: e.detail.value },
+                              updateModule
+                            );
+                          }}
+                        ></ultra-template-editor>
+                        <div class="template-help">
+                          <p><strong>Return an icon name:</strong></p>
+                          <ul>
+                            <li><code>mdi:weather-sunny</code> → Weather icon</li>
+                            <li><code>mdi:home</code> → Home icon</li>
+                            <li><code>mdi:lightbulb</code> → Light icon</li>
+                            <li>
+                              <code>{{ states.light.living_room.attributes.icon }}</code>
+                              → Use entity's current icon
+                            </li>
+                          </ul>
+                          <p>
+                            <strong>Example:</strong>
+                            <code
+                              >{% if states('sensor.temperature') | int > 25 %}mdi:thermometer{%
+                              else %}mdi:snowflake{% endif %}</code
+                            >
+                          </p>
+                        </div>
+                      </div>
+                    `
+                  : ''}
+              </div>
+
               <!-- Icon Animation Section -->
               ${this.renderSettingsSection(
                 localize('editor.icon.animation_section.title', lang, 'Icon Animation'),
@@ -2323,9 +2403,16 @@ export class UltraIconModule extends BaseUltraModule {
                   // Check if template returned an icon name (starts with mdi:, hass:, etc.)
                   const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
                   // Only use template result as state text if it's NOT a boolean-like value or an icon name
-                  const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
-                    resultString
-                  );
+                  const isBooleanResult = [
+                    'true',
+                    'false',
+                    'on',
+                    'off',
+                    'yes',
+                    'no',
+                    '0',
+                    '1',
+                  ].includes(resultString);
 
                   if (isIconName) {
                     // Template returned an icon name - use it for the icon instead of state text
@@ -2375,23 +2462,33 @@ export class UltraIconModule extends BaseUltraModule {
                 ? icon.active_icon_background_color || icon.icon_background_color
                 : icon.inactive_icon_background_color || icon.icon_background_color;
 
-              const iconBackgroundStyle =
-                iconBackground !== 'none'
-                  ? {
-                      backgroundColor: icon.use_entity_color_for_icon_background
-                        ? entityState?.attributes?.rgb_color
-                          ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                          : iconBackgroundColor
-                        : iconBackgroundColor,
-                      borderRadius:
-                        iconBackground === 'circle'
-                          ? '50%'
-                          : iconBackground === 'rounded-square'
-                            ? '8px'
-                            : '0',
-                      padding: '8px',
-                    }
-                  : {};
+              const iconBackgroundStyle = (() => {
+                if (iconBackground === 'none') {
+                  return {};
+                }
+
+                const computedColor = icon.use_entity_color_for_icon_background
+                  ? entityState?.attributes?.rgb_color
+                    ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                    : iconBackgroundColor
+                  : iconBackgroundColor;
+
+                const { styles: backgroundStyles } = computeBackgroundStyles({
+                  color: computedColor,
+                  fallback: iconBackgroundColor || 'transparent',
+                });
+
+                return {
+                  ...backgroundStyles,
+                  borderRadius:
+                    iconBackground === 'circle'
+                      ? '50%'
+                      : iconBackground === 'rounded-square'
+                        ? '8px'
+                        : '0',
+                  padding: '8px',
+                };
+              })();
 
               // Always ensure wrapper centers content for animations
               const baseWrapperStyle = {
@@ -2418,7 +2515,7 @@ export class UltraIconModule extends BaseUltraModule {
               }
 
               // Container styles
-              const containerStyles = {
+              const containerStyles: Record<string, string> = {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -2433,14 +2530,28 @@ export class UltraIconModule extends BaseUltraModule {
                       : icon.container_background_shape === 'square'
                         ? '0'
                         : '0',
-                background:
-                  icon.container_background_shape && icon.container_background_shape !== 'none'
-                    ? icon.container_background_color || '#808080'
-                    : 'transparent',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 width: icon.container_width ? `${icon.container_width}%` : 'auto',
               };
+
+              const hasContainerBackground =
+                icon.container_background_shape && icon.container_background_shape !== 'none';
+
+              if (hasContainerBackground) {
+                const { styles: backgroundStyles } = computeBackgroundStyles({
+                  color: icon.container_background_color || '#808080',
+                  fallback: icon.container_background_color || '#808080',
+                  image: this.getBackgroundImageCSS(icon, hass),
+                  imageSize: (icon as any).background_size || 'cover',
+                  imagePosition: icon.background_position || 'center',
+                  imageRepeat: icon.background_repeat || 'no-repeat',
+                });
+                Object.assign(containerStyles, backgroundStyles);
+              } else {
+                containerStyles.background = 'transparent';
+                containerStyles.backgroundColor = 'transparent';
+              }
 
               // Gesture detection variables (using closure to maintain state per icon)
               let clickTimeout: NodeJS.Timeout | null = null;
@@ -3248,23 +3359,29 @@ export class UltraIconModule extends BaseUltraModule {
       ? icon.active_icon_background_color || icon.icon_background_color
       : icon.inactive_icon_background_color || icon.icon_background_color;
 
-    const iconBackgroundStyle =
-      iconBackground !== 'none'
-        ? {
-            backgroundColor: icon.use_entity_color_for_icon_background
-              ? entityState?.attributes?.rgb_color
-                ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                : iconBackgroundColor
-              : iconBackgroundColor,
-            borderRadius:
-              iconBackground === 'circle'
-                ? '50%'
-                : iconBackground === 'rounded-square'
-                  ? '8px'
-                  : '0',
-            padding: '8px',
-          }
-        : {};
+    const iconBackgroundStyle = (() => {
+      if (iconBackground === 'none') {
+        return {};
+      }
+
+      const computedColor = icon.use_entity_color_for_icon_background
+        ? entityState?.attributes?.rgb_color
+          ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+          : iconBackgroundColor
+        : iconBackgroundColor;
+
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: computedColor,
+        fallback: iconBackgroundColor || 'transparent',
+      });
+
+      return {
+        ...backgroundStyles,
+        borderRadius:
+          iconBackground === 'circle' ? '50%' : iconBackground === 'rounded-square' ? '8px' : '0',
+        padding: '8px',
+      };
+    })();
 
     // Always ensure wrapper centers content for animations
     const baseWrapperStyle = {
@@ -3282,7 +3399,7 @@ export class UltraIconModule extends BaseUltraModule {
     const animationClass = currentAnimation !== 'none' ? `icon-animation-${currentAnimation}` : '';
 
     // Container styles - exact same as main card
-    const containerStyles = {
+    const containerStyles: Record<string, string> = {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -3296,19 +3413,29 @@ export class UltraIconModule extends BaseUltraModule {
             : icon.container_background_shape === 'square'
               ? '0'
               : '8px',
-      background:
-        icon.container_background_shape && icon.container_background_shape !== 'none'
-          ? icon.container_background_color || '#808080'
-          : 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(icon, hass),
-      backgroundSize: (icon as any).background_size || 'cover',
-      backgroundPosition: icon.background_position || 'center',
-      backgroundRepeat: icon.background_repeat || 'no-repeat',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       width: icon.container_width ? `${icon.container_width}%` : 'auto',
       margin: '0 auto',
     };
+
+    const hasContainerBackground =
+      icon.container_background_shape && icon.container_background_shape !== 'none';
+
+    if (hasContainerBackground) {
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: icon.container_background_color || '#808080',
+        fallback: icon.container_background_color || '#808080',
+        image: this.getBackgroundImageCSS(icon, hass),
+        imageSize: (icon as any).background_size || 'cover',
+        imagePosition: icon.background_position || 'center',
+        imageRepeat: icon.background_repeat || 'no-repeat',
+      });
+      Object.assign(containerStyles, backgroundStyles);
+    } else {
+      containerStyles.background = 'transparent';
+      containerStyles.backgroundColor = 'transparent';
+    }
 
     // Use actual spacing values for true-to-life preview
     const actualNameIconGap = icon.name_icon_gap ?? 8;
@@ -3603,23 +3730,33 @@ export class UltraIconModule extends BaseUltraModule {
             ? icon.active_icon_background_color || icon.icon_background_color
             : icon.inactive_icon_background_color || icon.icon_background_color;
 
-          const iconBackgroundStyle =
-            iconBackground !== 'none'
-              ? {
-                  backgroundColor: icon.use_entity_color_for_icon_background
-                    ? entityState?.attributes?.rgb_color
-                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                      : iconBackgroundColor
-                    : iconBackgroundColor,
-                  borderRadius:
-                    iconBackground === 'circle'
-                      ? '50%'
-                      : iconBackground === 'rounded-square'
-                        ? '8px'
-                        : '0',
-                  padding: '8px',
-                }
-              : {};
+          const iconBackgroundStyle = (() => {
+            if (iconBackground === 'none') {
+              return {};
+            }
+
+            const computedColor = icon.use_entity_color_for_icon_background
+              ? entityState?.attributes?.rgb_color
+                ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                : iconBackgroundColor
+              : iconBackgroundColor;
+
+            const { styles: backgroundStyles } = computeBackgroundStyles({
+              color: computedColor,
+              fallback: iconBackgroundColor || 'transparent',
+            });
+
+            return {
+              ...backgroundStyles,
+              borderRadius:
+                iconBackground === 'circle'
+                  ? '50%'
+                  : iconBackground === 'rounded-square'
+                    ? '8px'
+                    : '0',
+              padding: '8px',
+            };
+          })();
 
           // Always ensure wrapper centers content for animations
           const baseWrapperStyle = {
@@ -3648,7 +3785,7 @@ export class UltraIconModule extends BaseUltraModule {
           // Animation styles are handled by CSS classes
 
           // Container styles (smaller for split view)
-          const containerStyles = {
+          const containerStyles: Record<string, string> = {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -3662,19 +3799,29 @@ export class UltraIconModule extends BaseUltraModule {
                   : icon.container_background_shape === 'square'
                     ? '0'
                     : '8px',
-            background:
-              icon.container_background_shape && icon.container_background_shape !== 'none'
-                ? icon.container_background_color || '#808080'
-                : 'transparent',
-            backgroundImage: this.getBackgroundImageCSS(icon, hass),
-            backgroundSize: (icon as any).background_size || 'cover',
-            backgroundPosition: icon.background_position || 'center',
-            backgroundRepeat: icon.background_repeat || 'no-repeat',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             width: icon.container_width ? `${icon.container_width}%` : 'auto',
             margin: '0 auto',
           };
+
+          const hasContainerBackground =
+            icon.container_background_shape && icon.container_background_shape !== 'none';
+
+          if (hasContainerBackground) {
+            const { styles: backgroundStyles } = computeBackgroundStyles({
+              color: icon.container_background_color || '#808080',
+              fallback: icon.container_background_color || '#808080',
+              image: this.getBackgroundImageCSS(icon, hass),
+              imageSize: (icon as any).background_size || 'cover',
+              imagePosition: icon.background_position || 'center',
+              imageRepeat: icon.background_repeat || 'no-repeat',
+            });
+            Object.assign(containerStyles, backgroundStyles);
+          } else {
+            containerStyles.background = 'transparent';
+            containerStyles.backgroundColor = 'transparent';
+          }
 
           // Use actual spacing values for true-to-life preview
           const actualNameIconGap = icon.name_icon_gap ?? 8;

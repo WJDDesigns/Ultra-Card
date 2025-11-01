@@ -1480,18 +1480,107 @@ export interface SliderModule extends BaseModule {
 }
 
 // Slider Control Module (Entity Control)
-export interface SliderControlModule extends BaseModule {
-  type: 'slider_control';
-
-  // Entity Configuration
+// Slider Bar Configuration
+export interface SliderBar {
+  id: string;
+  type: 'numeric' | 'brightness' | 'rgb' | 'color_temp' | 'red' | 'green' | 'blue' | 'attribute';
   entity: string;
-  name?: string;
-  attribute?: string; // Control specific attribute (e.g., 'brightness', 'position', 'value')
-
-  // Value Range
+  attribute?: string; // For attribute type
+  name?: string; // Override label
   min_value?: number;
   max_value?: number;
   step?: number;
+
+  // Individual bar visibility controls (optional, falls back to global)
+  show_icon?: boolean;
+  show_name?: boolean;
+  show_value?: boolean;
+
+  // Individual bar positioning controls (optional, falls back to global)
+  outside_text_position?: 'left' | 'right';
+  outside_name_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+  outside_value_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+  split_bar_position?: 'left' | 'right';
+  split_bar_length?: number; // Percentage 0-100, default 60
+  overlay_name_position?: 'top' | 'middle' | 'bottom';
+  overlay_value_position?: 'top' | 'middle' | 'bottom';
+  overlay_icon_position?: 'top' | 'middle' | 'bottom';
+
+  // Per-bar styling overrides (optional, falls back to global)
+  slider_height?: number;
+  slider_track_color?: string;
+  slider_fill_color?: string;
+  dynamic_fill_color?: boolean;
+
+  // Slider Style properties (optional, falls back to global)
+  slider_style?:
+    | 'flat'
+    | 'glossy'
+    | 'embossed'
+    | 'inset'
+    | 'gradient-overlay'
+    | 'neon-glow'
+    | 'outline'
+    | 'glass'
+    | 'metallic'
+    | 'neumorphic'
+    | 'minimal';
+  glass_blur_amount?: number;
+  slider_radius?: 'square' | 'round' | 'pill';
+  border_radius?: number;
+
+  // Additional Color properties (optional, falls back to global)
+  use_gradient?: boolean;
+  gradient_stops?: Array<{
+    id: string;
+    position: number;
+    color: string;
+  }>;
+  auto_contrast?: boolean;
+
+  // Display Element properties (optional, falls back to global)
+  icon?: string;
+  icon_size?: number;
+  icon_color?: string;
+  dynamic_icon?: boolean;
+  icon_as_toggle?: boolean;
+
+  // Name display properties (optional, falls back to global)
+  name_size?: number;
+  name_color?: string;
+  name_bold?: boolean;
+
+  // Value display properties (optional, falls back to global)
+  value_size?: number;
+  value_color?: string;
+  value_suffix?: string;
+  show_bar_label?: boolean;
+
+  // Animation properties (optional, falls back to global)
+  animate_on_change?: boolean;
+  transition_duration?: number;
+  haptic_feedback?: boolean;
+}
+
+export interface SliderControlModule extends BaseModule {
+  type: 'slider_control';
+
+  // Multi-bar Configuration
+  bars: SliderBar[];
 
   // Orientation
   orientation?: 'horizontal' | 'vertical';
@@ -1500,17 +1589,34 @@ export interface SliderControlModule extends BaseModule {
   layout_mode?: 'overlay' | 'split' | 'outside';
 
   // Overlay Mode Settings (when bar has info overlaid on top)
-  overlay_position?: 'left' | 'center' | 'right';
-  bar_fill_percentage?: number; // How much of module width/height the bar fills (50-100%)
+  overlay_position?: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+  overlay_name_position?: 'top' | 'middle' | 'bottom';
+  overlay_value_position?: 'top' | 'middle' | 'bottom';
+  overlay_icon_position?: 'top' | 'middle' | 'bottom';
 
   // Outside Mode Settings (when info is positioned outside the slider vertically)
-  outside_position?: 'top' | 'bottom';
-  outside_alignment?: 'start' | 'center' | 'end';
+  outside_text_position?: 'left' | 'right';
+  outside_name_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+  outside_value_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
 
   // Split Mode Settings (bar and info are separate horizontally)
   split_bar_position?: 'left' | 'right';
   split_info_position?: 'left' | 'center' | 'right';
-  split_ratio?: number; // Percentage for bar vs info (10-90)
+  split_bar_length?: number; // Percentage 0-100, default 60
 
   // Slider Visual Style
   slider_style?:
@@ -1528,6 +1634,7 @@ export interface SliderControlModule extends BaseModule {
 
   // Slider Appearance
   slider_height?: number; // Height for horizontal, width for vertical
+  bar_spacing?: number; // Spacing between multiple bars
   slider_radius?: 'square' | 'round' | 'pill';
   border_radius?: number;
   slider_track_color?: string;
@@ -1567,6 +1674,7 @@ export interface SliderControlModule extends BaseModule {
   value_size?: number;
   value_color?: string;
   value_suffix?: string; // e.g., '%', '°C'
+  show_bar_label?: boolean; // Show bar label (e.g., "Brightness", "RGB Color")
 
   // Toggle Integration
   show_toggle?: boolean;
@@ -1585,12 +1693,17 @@ export interface SliderControlModule extends BaseModule {
   transition_duration?: number; // Renamed to avoid conflict with BaseModule's animation_duration
   haptic_feedback?: boolean;
 
-  // Specific Entity Behaviors
-  light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all';
-  cover_invert?: boolean; // Invert direction for covers
-
-  // Attribute control
-  control_attribute?: string; // Specific attribute to control (dropdown selection from entity attributes)
+  // Legacy support for backward compatibility
+  entity?: string; // Deprecated - use bars array instead
+  name?: string; // Deprecated - use bars array instead
+  attribute?: string; // Deprecated - use bars array instead
+  min_value?: number; // Deprecated - use bars array instead
+  max_value?: number; // Deprecated - use bars array instead
+  step?: number; // Deprecated - use bars array instead
+  light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all'; // Deprecated
+  light_slider_order?: string[]; // Deprecated
+  cover_invert?: boolean; // Deprecated
+  control_attribute?: string; // Deprecated
 
   // Global action configuration
   tap_action?: {
@@ -2142,6 +2255,7 @@ export interface GraphsModule extends BaseModule {
   // Bar/Histogram
   bar_width?: number;
   bar_spacing?: number;
+  bar_display_limit?: number; // Max bars to display (0 = unlimited, default)
   stacked?: boolean;
   horizontal?: boolean;
 
@@ -3215,6 +3329,21 @@ export interface FavoriteColor {
 }
 
 // Preset system types
+
+// Entity mapping types for preset import
+export interface EntityReference {
+  entityId: string;
+  locations: string[]; // JSONPath-like strings indicating where entity is used
+  moduleType: string; // Type of module (icon, info, bar, etc.)
+  context?: string; // Additional context (preset name, label, etc.)
+}
+
+export interface EntityMapping {
+  original: string; // Original entity ID from preset
+  mapped: string; // User's mapped entity ID
+  domain: string; // Entity domain (light, sensor, etc.)
+}
+
 export interface PresetDefinition {
   id: string;
   name: string;
@@ -3233,6 +3362,7 @@ export interface PresetDefinition {
     updated: string;
     downloads?: number;
     rating?: number;
+    entityMappings?: EntityMapping[]; // Store original→mapped entity pairs
   };
 }
 

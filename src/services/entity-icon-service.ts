@@ -10,25 +10,43 @@ import { HomeAssistant } from 'custom-card-helpers';
 export class EntityIconService {
   /**
    * Get the icon for an entity, using Home Assistant's native computation when possible
-   * @param entityId The entity ID
+   * @param entityId The entity ID or entity state object
    * @param hass The Home Assistant instance
    * @returns The computed icon string, or null if no icon could be determined
    */
-  static getEntityIcon(entityId: string, hass: HomeAssistant): string | null {
-    if (!entityId || !hass?.states[entityId]) {
+  static getEntityIcon(entityId: string | any, hass: HomeAssistant): string | null {
+    // Handle case where entityState is passed instead of entityId
+    if (typeof entityId === 'object' && entityId !== null && !Array.isArray(entityId)) {
+      // This is likely an entity state object, try to find the entity ID from hass
+      if (hass?.states) {
+        for (const [id, state] of Object.entries(hass.states)) {
+          if (state === entityId) {
+            entityId = id;
+            break;
+          }
+        }
+      }
+      // If we couldn't find it from the state, use the state object directly
+      if (typeof entityId !== 'string') {
+        // Use the state object directly for enhanced icon detection
+        return this._getEnhancedIconForEntity('unknown', entityId as any);
+      }
+    }
+
+    if (!entityId || !hass?.states[entityId as string]) {
       return null;
     }
 
-    const entityState = hass.states[entityId];
+    const entityState = hass.states[entityId as string];
 
     // First, try to get the icon that Home Assistant would compute
-    const computedIcon = this._getHomeAssistantComputedIcon(entityId, entityState, hass);
+    const computedIcon = this._getHomeAssistantComputedIcon(entityId as string, entityState, hass);
     if (computedIcon) {
       return computedIcon;
     }
 
     // Fallback to enhanced icon detection
-    return this._getEnhancedIconForEntity(entityId, entityState);
+    return this._getEnhancedIconForEntity(entityId as string, entityState);
   }
 
   /**

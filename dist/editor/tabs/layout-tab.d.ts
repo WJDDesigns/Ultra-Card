@@ -184,6 +184,7 @@ export declare class LayoutTab extends LitElement {
     private _isValidDropTarget;
     private _performMove;
     private _moveModule;
+    private _relocateLayoutModule;
     private _moveColumn;
     private _moveRow;
     private _moveNestedChild;

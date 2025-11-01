@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { ucFavoriteColorsService } from '../services/uc-favorite-colors-service';
 import { FavoriteColor } from '../types';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { isGradient } from '../utils/uc-color-utils';
 
 export interface ColorChangedEvent {
   detail: {
@@ -69,6 +70,60 @@ const COLOR_PALETTE = [
   'var(--secondary-text-color)',
   'var(--disabled-text-color)',
   'var(--divider-color)',
+];
+
+// Predefined gradient presets
+const GRADIENT_PRESETS = [
+  {
+    name: 'Sunset',
+    value: 'linear-gradient(90deg, #FF6B6B 0%, #FFE66D 50%, #FF6B6B 100%)',
+  },
+  {
+    name: 'Ocean',
+    value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  },
+  {
+    name: 'Rainbow',
+    value:
+      'linear-gradient(90deg, #ff0000 0%, #ff7f00 14%, #ffff00 28%, #00ff00 42%, #0000ff 56%, #4b0082 70%, #9400d3 84%, #ff0000 100%)',
+  },
+  {
+    name: 'Fire',
+    value: 'linear-gradient(45deg, #ff0000 0%, #ff6600 33%, #ffcc00 66%, #ffff66 100%)',
+  },
+  {
+    name: 'Forest',
+    value: 'linear-gradient(180deg, #134e5e 0%, #71b280 100%)',
+  },
+  {
+    name: 'Sky',
+    value: 'linear-gradient(to bottom, #87CEEB 0%, #98D8E8 50%, #B0E0E6 100%)',
+  },
+  {
+    name: 'Purple Haze',
+    value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  },
+  {
+    name: 'Mint',
+    value: 'linear-gradient(120deg, #a1ffce 0%, #faffd1 100%)',
+  },
+  {
+    name: 'Peach',
+    value: 'linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%)',
+  },
+  {
+    name: 'Cool Blues',
+    value: 'linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)',
+  },
+  {
+    name: 'Warm Reds',
+    value: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
+  },
+  {
+    name: 'Neon Glow',
+    value:
+      'radial-gradient(circle, rgba(120, 119, 198, 1) 0%, rgba(255, 119, 198, 1) 50%, rgba(255, 119, 198, 0) 100%)',
+  },
 ];
 
 @customElement('ultra-color-picker')
@@ -266,16 +321,30 @@ export class UltraColorPicker extends LitElement {
     if (!color) return false;
 
     // Check for CSS gradient functions (linear-gradient, radial-gradient, etc.)
-    if (color.toLowerCase().includes('gradient')) {
-      // Basic validation for gradient syntax - must start with gradient type and have parentheses
+    if (isGradient(color)) {
+      // Enhanced validation for all gradient types with proper syntax checking
       const gradientPattern =
-        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\(.*\)$/i;
-      return gradientPattern.test(color.trim());
+        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient|repeating-conic-gradient)\s*\(/i;
+
+      // Check if it starts with a valid gradient function
+      if (!gradientPattern.test(color.trim())) {
+        return false;
+      }
+
+      // Basic syntax validation - must have matching parentheses
+      let parenCount = 0;
+      for (const char of color) {
+        if (char === '(') parenCount++;
+        if (char === ')') parenCount--;
+        if (parenCount < 0) return false; // More closing than opening
+      }
+
+      return parenCount === 0; // All parentheses must be matched
     }
 
     // Check for common CSS color formats
     const colorFormats = [
-      /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, // Hex
+      /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}|[A-Fa-f0-9]{8})$/, // Hex (including 8-digit with alpha)
       /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/, // RGB
       /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/, // RGBA
       /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/, // HSL
@@ -283,21 +352,156 @@ export class UltraColorPicker extends LitElement {
       /^var\(--[\w-]+\)$/, // CSS variables
     ];
 
-    // Check named colors
+    // Extended named colors list
     const namedColors = [
       'transparent',
-      'red',
-      'blue',
-      'green',
-      'yellow',
-      'orange',
-      'purple',
-      'pink',
-      'brown',
+      'aliceblue',
+      'antiquewhite',
+      'aqua',
+      'aquamarine',
+      'azure',
+      'beige',
+      'bisque',
       'black',
-      'white',
+      'blanchedalmond',
+      'blue',
+      'blueviolet',
+      'brown',
+      'burlywood',
+      'cadetblue',
+      'chartreuse',
+      'chocolate',
+      'coral',
+      'cornflowerblue',
+      'cornsilk',
+      'crimson',
+      'cyan',
+      'darkblue',
+      'darkcyan',
+      'darkgoldenrod',
+      'darkgray',
+      'darkgrey',
+      'darkgreen',
+      'darkkhaki',
+      'darkmagenta',
+      'darkolivegreen',
+      'darkorange',
+      'darkorchid',
+      'darkred',
+      'darksalmon',
+      'darkseagreen',
+      'darkslateblue',
+      'darkslategray',
+      'darkslategrey',
+      'darkturquoise',
+      'darkviolet',
+      'deeppink',
+      'deepskyblue',
+      'dimgray',
+      'dimgrey',
+      'dodgerblue',
+      'firebrick',
+      'floralwhite',
+      'forestgreen',
+      'fuchsia',
+      'gainsboro',
+      'ghostwhite',
+      'gold',
+      'goldenrod',
       'gray',
       'grey',
+      'green',
+      'greenyellow',
+      'honeydew',
+      'hotpink',
+      'indianred',
+      'indigo',
+      'ivory',
+      'khaki',
+      'lavender',
+      'lavenderblush',
+      'lawngreen',
+      'lemonchiffon',
+      'lightblue',
+      'lightcoral',
+      'lightcyan',
+      'lightgoldenrodyellow',
+      'lightgray',
+      'lightgrey',
+      'lightgreen',
+      'lightpink',
+      'lightsalmon',
+      'lightseagreen',
+      'lightskyblue',
+      'lightslategray',
+      'lightslategrey',
+      'lightsteelblue',
+      'lightyellow',
+      'lime',
+      'limegreen',
+      'linen',
+      'magenta',
+      'maroon',
+      'mediumaquamarine',
+      'mediumblue',
+      'mediumorchid',
+      'mediumpurple',
+      'mediumseagreen',
+      'mediumslateblue',
+      'mediumspringgreen',
+      'mediumturquoise',
+      'mediumvioletred',
+      'midnightblue',
+      'mintcream',
+      'mistyrose',
+      'moccasin',
+      'navajowhite',
+      'navy',
+      'oldlace',
+      'olive',
+      'olivedrab',
+      'orange',
+      'orangered',
+      'orchid',
+      'palegoldenrod',
+      'palegreen',
+      'paleturquoise',
+      'palevioletred',
+      'papayawhip',
+      'peachpuff',
+      'peru',
+      'pink',
+      'plum',
+      'powderblue',
+      'purple',
+      'red',
+      'rosybrown',
+      'royalblue',
+      'saddlebrown',
+      'salmon',
+      'sandybrown',
+      'seagreen',
+      'seashell',
+      'sienna',
+      'silver',
+      'skyblue',
+      'slateblue',
+      'slategray',
+      'slategrey',
+      'snow',
+      'springgreen',
+      'steelblue',
+      'tan',
+      'teal',
+      'thistle',
+      'tomato',
+      'turquoise',
+      'violet',
+      'wheat',
+      'white',
+      'whitesmoke',
+      'yellow',
+      'yellowgreen',
     ];
 
     return (
@@ -399,7 +603,7 @@ export class UltraColorPicker extends LitElement {
     }
 
     // Gradients can't be displayed in native color input - use a default color
-    if (displayValue.toLowerCase().includes('gradient')) {
+    if (isGradient(displayValue)) {
       return '#000000';
     }
 
@@ -443,12 +647,8 @@ export class UltraColorPicker extends LitElement {
       return 'var(--primary-text-color)';
     }
 
-    // For CSS variables and complex colors, use white text
-    if (
-      !backgroundColor ||
-      backgroundColor.startsWith('var(') ||
-      backgroundColor.includes('gradient')
-    ) {
+    // For CSS variables, gradients, and complex colors, use theme text with shadow
+    if (!backgroundColor || backgroundColor.startsWith('var(') || isGradient(backgroundColor)) {
       return 'var(--primary-text-color)';
     }
 
@@ -476,7 +676,7 @@ export class UltraColorPicker extends LitElement {
     if (!color) return 100;
 
     // Gradients don't have a single transparency value - default to 100%
-    if (color.toLowerCase().includes('gradient')) {
+    if (isGradient(color)) {
       return 100;
     }
 
@@ -531,7 +731,7 @@ export class UltraColorPicker extends LitElement {
     if (!color) return '#000000';
 
     // Gradients don't have a single base color - return as-is
-    if (color.toLowerCase().includes('gradient')) {
+    if (isGradient(color)) {
       return color;
     }
 
@@ -571,7 +771,7 @@ export class UltraColorPicker extends LitElement {
    */
   private _applyTransparency(baseColor: string, transparency: number): string {
     // Gradients can't have transparency applied easily - return as-is
-    if (baseColor.toLowerCase().includes('gradient')) {
+    if (isGradient(baseColor)) {
       return baseColor;
     }
 
@@ -651,6 +851,7 @@ export class UltraColorPicker extends LitElement {
   protected render(): TemplateResult {
     const displayValue = this._getDisplayValue();
     const nativeInputColor = this._getColorForNativeInput();
+    const gradientActive = isGradient(displayValue);
 
     return html`
       <div class="ultra-color-picker-container">
@@ -659,10 +860,12 @@ export class UltraColorPicker extends LitElement {
         <div class="color-picker-wrapper">
           <!-- Main trigger input field -->
           <div
-            class="color-input-field ${this.disabled ? 'disabled' : ''}"
-            style="background-color: ${displayValue}; color: ${this._getContrastColor(
-              displayValue
-            )};"
+            class="color-input-field ${this.disabled ? 'disabled' : ''} ${gradientActive
+              ? 'gradient-mode'
+              : ''}"
+            style="${gradientActive
+              ? `background: ${displayValue}; color: ${this._getContrastColor(displayValue)};`
+              : `background-color: ${displayValue}; color: ${this._getContrastColor(displayValue)};`}"
             @click=${this._togglePalette}
             tabindex="0"
             role="button"
@@ -674,7 +877,12 @@ export class UltraColorPicker extends LitElement {
               }
             }}
           >
-            <span class="color-value">${displayValue}</span>
+            <span class="color-value ${gradientActive ? 'gradient-text' : ''}"
+              >${displayValue}</span
+            >
+            ${gradientActive
+              ? html`<ha-icon icon="mdi:gradient" class="gradient-icon"></ha-icon>`
+              : ''}
             <ha-icon
               icon="mdi:chevron-${this._showPalette ? 'up' : 'down'}"
               class="dropdown-icon"
@@ -733,7 +941,7 @@ export class UltraColorPicker extends LitElement {
                       @keydown=${this._handleTextInputKeyDown}
                       @click=${(e: Event) => e.stopPropagation()}
                       @focus=${(e: Event) => e.stopPropagation()}
-                      placeholder="e.g. #ff0000, rgb(255,0,0), linear-gradient(...), var(--primary-color)"
+                      placeholder="e.g. #ff0000, rgb(255,0,0), linear-gradient(90deg, red, blue), var(--primary-color)"
                       spellcheck="false"
                     />
                     <button
@@ -753,35 +961,47 @@ export class UltraColorPicker extends LitElement {
                   </div>
                 </div>
 
-                <!-- Transparency Slider Section -->
-                <div class="transparency-section">
-                  <div class="transparency-header">
-                    <label class="transparency-label">Transparency:</label>
-                    <span class="transparency-value">${this._transparency}%</span>
-                  </div>
-                  <div class="transparency-slider-wrapper">
-                    <input
-                      type="range"
-                      class="transparency-slider"
-                      min="0"
-                      max="100"
-                      step="1"
-                      .value=${this._transparency.toString()}
-                      @input=${this._handleTransparencyChange}
-                      @click=${(e: Event) => e.stopPropagation()}
-                      title="Adjust transparency (100% = fully opaque, 0% = fully transparent)"
-                    />
-                    <div class="transparency-track">
-                      <div
-                        class="transparency-preview"
-                        style="background: linear-gradient(to right, 
-                          transparent 0%, 
-                          ${this._getBaseColor(this._currentValue)} 100%
-                        );"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+                <!-- Opacity Slider Section -->
+                ${!isGradient(this._currentValue || '')
+                  ? html`
+                      <div class="transparency-section">
+                        <div class="transparency-header">
+                          <label class="transparency-label">Opacity:</label>
+                          <span class="transparency-value">${this._transparency}%</span>
+                        </div>
+                        <div class="transparency-slider-wrapper">
+                          <input
+                            type="range"
+                            class="transparency-slider"
+                            min="0"
+                            max="100"
+                            step="1"
+                            .value=${this._transparency.toString()}
+                            @input=${this._handleTransparencyChange}
+                            @click=${(e: Event) => e.stopPropagation()}
+                            title="Adjust opacity (100% = fully opaque, 0% = fully transparent)"
+                          />
+                          <div class="transparency-track">
+                            <div
+                              class="transparency-preview"
+                              style="background: linear-gradient(to right, 
+                                transparent 0%, 
+                                ${this._getBaseColor(this._currentValue)} 100%
+                              );"
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    `
+                  : html`
+                      <div class="gradient-info-section">
+                        <ha-icon icon="mdi:information" class="info-icon"></ha-icon>
+                        <span class="gradient-info-text">
+                          Opacity slider is disabled for gradients. Use rgba() colors within your
+                          gradient for transparency.
+                        </span>
+                      </div>
+                    `}
 
                 <!-- Color Palette Grid -->
                 <div class="palette-grid">
@@ -795,6 +1015,29 @@ export class UltraColorPicker extends LitElement {
                       ></div>
                     `
                   )}
+                </div>
+
+                <!-- Gradient Presets Section -->
+                <div class="gradient-presets-section">
+                  <div class="gradient-presets-header">
+                    <label class="gradient-presets-label">Gradient Presets</label>
+                  </div>
+                  <div class="gradient-presets-grid">
+                    ${GRADIENT_PRESETS.map(
+                      gradient => html`
+                        <div
+                          class="gradient-preset-swatch ${this._currentValue === gradient.value
+                            ? 'selected'
+                            : ''}"
+                          style="background: ${gradient.value}"
+                          @click=${(e: Event) => this._selectColor(gradient.value, e)}
+                          title="${gradient.name}"
+                        >
+                          <span class="gradient-preset-name">${gradient.name}</span>
+                        </div>
+                      `
+                    )}
+                  </div>
                 </div>
 
                 <!-- Favorites Section -->
@@ -924,6 +1167,28 @@ export class UltraColorPicker extends LitElement {
         color: var(--primary-text-color);
         font-family: var(--code-font-family, monospace);
         font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .color-input-field.gradient-mode {
+        background-size: cover;
+        background-position: center;
+      }
+
+      .color-value.gradient-text {
+        text-shadow:
+          0 0 4px rgba(0, 0, 0, 0.7),
+          0 0 8px rgba(0, 0, 0, 0.5);
+      }
+
+      .gradient-icon {
+        --mdc-icon-size: 18px;
+        color: var(--primary-color);
+        margin-left: 4px;
+        margin-right: 4px;
+        filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
       }
 
       .dropdown-icon {
@@ -1082,11 +1347,35 @@ export class UltraColorPicker extends LitElement {
         --mdc-icon-size: 18px;
       }
 
-      /* Transparency Slider Section */
+      /* Opacity Slider Section */
       .transparency-section {
         margin-bottom: 16px;
         padding-bottom: 16px;
         border-bottom: 1px solid var(--divider-color);
+      }
+
+      /* Gradient Info Section */
+      .gradient-info-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 16px;
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
+        border-radius: 6px;
+        border: 1px solid rgba(var(--primary-color-rgb, 33, 150, 243), 0.2);
+      }
+
+      .gradient-info-section .info-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+      }
+
+      .gradient-info-text {
+        font-size: 13px;
+        color: var(--primary-text-color);
+        line-height: 1.4;
       }
 
       .transparency-header {
@@ -1349,6 +1638,70 @@ export class UltraColorPicker extends LitElement {
         transform: scale(1.1);
       }
 
+      /* Gradient Presets Section */
+      .gradient-presets-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--divider-color);
+      }
+
+      .gradient-presets-header {
+        margin-bottom: 12px;
+      }
+
+      .gradient-presets-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .gradient-presets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
+        margin-bottom: 0;
+      }
+
+      .gradient-preset-swatch {
+        height: 40px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .gradient-preset-swatch:hover {
+        transform: scale(1.05);
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .gradient-preset-swatch.selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 33, 150, 243), 0.3);
+      }
+
+      .gradient-preset-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: white;
+        text-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.8),
+          0 0 8px rgba(0, 0, 0, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 2px 6px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 3px;
+      }
+
       /* Favorites Section */
       .favorites-section {
         margin-top: 16px;
@@ -1485,6 +1838,20 @@ export class UltraColorPicker extends LitElement {
         .color-swatch {
           width: 28px;
           height: 28px;
+        }
+
+        .gradient-presets-grid {
+          grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+          gap: 6px;
+        }
+
+        .gradient-preset-swatch {
+          height: 35px;
+        }
+
+        .gradient-preset-name {
+          font-size: 10px;
+          padding: 1px 4px;
         }
 
         .input-header {

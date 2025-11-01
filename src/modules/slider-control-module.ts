@@ -1,9 +1,8 @@
 import { TemplateResult, html, css } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, UltraCardConfig, SliderControlModule } from '../types';
+import { CardModule, UltraCardConfig, SliderControlModule, SliderBar } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
-import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { EntityIconService } from '../services/entity-icon-service';
 
@@ -31,44 +30,193 @@ export class UltraSliderControlModule extends BaseUltraModule {
     }
   >();
 
-  createDefault(id?: string, hass?: HomeAssistant): SliderControlModule {
-    // Auto-detect suitable entity (prefer lights, then covers, then fans, then input_numbers)
-    let autoEntity = '';
-    if (hass?.states) {
-      const entityIds = Object.keys(hass.states);
+  // Bar management state
+  private expandedBars: Set<string> = new Set();
+
+  // Track which bars are being interacted with to prevent reactive updates
+  private interactingBars: Set<string> = new Set();
+
+  // Track local values during interaction to prevent glitchy behavior
+  private localSliderValues: Map<string, number> = new Map();
+
+  // Track cooldown period after interaction ends
+  private sliderCooldowns: Map<string, any> = new Map();
+
+  // Track transition state for smooth return to entity value
+  private sliderTransitions: Map<string, any> = new Map();
+
+  // Request update method for UI refresh
+  requestUpdate(): void {
+    // This will be called by the editor to trigger a re-render
+    // The actual implementation depends on the editor context
+  }
+
+  // Cleanup method to prevent memory leaks
+  cleanup(): void {
+    // Clear all cooldown timers
+    this.sliderCooldowns.forEach(timer => {
+      clearTimeout(timer);
+    });
+    this.sliderCooldowns.clear();
+
+    // Clear all transition timers
+    this.sliderTransitions.forEach(timer => {
+      clearInterval(timer);
+    });
+    this.sliderTransitions.clear();
+
+    this.localSliderValues.clear();
+    this.interactingBars.clear();
+  }
+
+  createDefault(id?: string, homeAssistant?: HomeAssistant): SliderControlModule {
+    // Auto-detect suitable entity and create bars array
+    const bars: SliderBar[] = [];
+
+    if (homeAssistant?.states) {
+      const entityIds = Object.keys(homeAssistant.states);
       const light = entityIds.find(id => id.startsWith('light.'));
       const cover = entityIds.find(id => id.startsWith('cover.'));
       const fan = entityIds.find(id => id.startsWith('fan.'));
       const inputNumber = entityIds.find(id => id.startsWith('input_number.'));
-      autoEntity = light || cover || fan || inputNumber || '';
+
+      const autoEntity = light || cover || fan || inputNumber || '';
+
+      if (autoEntity) {
+        // Auto-detect entity capabilities and create appropriate bars
+        if (light) {
+          const entityState = homeAssistant.states[light];
+          if (entityState) {
+            // Always add brightness bar for lights
+            bars.push({
+              id: this.generateId('brightness'),
+              type: 'brightness',
+              entity: light,
+              min_value: 0,
+              max_value: 100,
+              step: 1,
+              // Initialize with some default style settings
+              slider_style: 'flat',
+              show_icon: true,
+              show_name: true,
+              show_value: true,
+              outside_text_position: 'left',
+              outside_name_position: 'top_left',
+              outside_value_position: 'bottom_left',
+            });
+
+            // Add RGB bar if supported
+            if (entityState.attributes.rgb_color) {
+              bars.push({
+                id: this.generateId('rgb'),
+                type: 'rgb',
+                entity: light,
+                min_value: 0,
+                max_value: 100,
+                step: 1,
+                // RGB bars often look better with gradient style
+                slider_style: 'flat',
+                show_icon: true,
+                show_name: true,
+                show_value: true,
+                outside_text_position: 'left',
+                outside_name_position: 'top_left',
+                outside_value_position: 'bottom_left',
+              });
+            }
+
+            // Add color temp bar if supported
+            if (entityState.attributes.color_temp) {
+              bars.push({
+                id: this.generateId('color_temp'),
+                type: 'color_temp',
+                entity: light,
+                min_value: 0,
+                max_value: 100,
+                step: 1,
+                // Color temp bars also benefit from gradient style
+                slider_style: 'flat',
+                show_icon: true,
+                show_name: true,
+                show_value: true,
+                outside_text_position: 'left',
+                outside_name_position: 'top_left',
+                outside_value_position: 'bottom_left',
+              });
+            }
+          }
+        } else if (cover) {
+          bars.push({
+            id: this.generateId('cover'),
+            type: 'numeric',
+            entity: cover,
+            min_value: 0,
+            max_value: 100,
+            step: 1,
+            show_icon: true,
+            show_name: true,
+            show_value: true,
+            outside_text_position: 'left',
+            outside_name_position: 'top_left',
+            outside_value_position: 'bottom_left',
+          });
+        } else if (fan) {
+          bars.push({
+            id: this.generateId('fan'),
+            type: 'numeric',
+            entity: fan,
+            min_value: 0,
+            max_value: 100,
+            step: 1,
+            show_icon: true,
+            show_name: true,
+            show_value: true,
+            outside_text_position: 'left',
+            outside_name_position: 'top_left',
+            outside_value_position: 'bottom_left',
+          });
+        } else if (inputNumber) {
+          const entityState = homeAssistant.states[inputNumber];
+          bars.push({
+            id: this.generateId('input_number'),
+            type: 'numeric',
+            entity: inputNumber,
+            min_value: entityState?.attributes.min || 0,
+            max_value: entityState?.attributes.max || 100,
+            step: entityState?.attributes.step || 1,
+            show_icon: true,
+            show_name: true,
+            show_value: true,
+            outside_text_position: 'left',
+            outside_name_position: 'top_left',
+            outside_value_position: 'bottom_left',
+          });
+        }
+      }
     }
 
     return {
       id: id || this.generateId('slider_control'),
       type: 'slider_control',
 
-      // Entity Configuration
-      entity: autoEntity,
-
-      // Value Range - will be auto-detected from entity
-      min_value: 0,
-      max_value: 100,
-      step: 1,
+      // Multi-bar Configuration
+      bars: bars,
 
       // Orientation & Layout
       orientation: 'horizontal',
-      layout_mode: 'outside',
+      layout_mode: 'overlay',
       overlay_position: 'left',
-      bar_fill_percentage: 100,
-      outside_position: 'top',
-      outside_alignment: 'start',
+      outside_text_position: 'left',
+      outside_name_position: 'top_left',
+      outside_value_position: 'bottom_left',
       split_bar_position: 'left',
       split_info_position: 'right',
-      split_ratio: 60,
+      split_bar_length: 60,
 
       // Slider Visual Style
       slider_style: 'flat',
       slider_height: 55,
+      bar_spacing: 8,
       slider_radius: 'round',
       border_radius: 10,
       slider_track_color: '', // Empty = auto-calculate from fill at 25% opacity
@@ -102,6 +250,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       value_size: 14,
       value_color: 'var(--primary-text-color)',
       value_suffix: '%',
+      show_bar_label: false,
 
       // Toggle Integration
       show_toggle: false,
@@ -120,10 +269,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
       transition_duration: 200,
       haptic_feedback: true,
 
-      // Entity-specific
-      light_control_mode: 'brightness',
-      cover_invert: false,
-
       // Actions
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -139,19 +284,298 @@ export class UltraSliderControlModule extends BaseUltraModule {
     };
   }
 
+  // Migration method for backward compatibility
+  migrateFromLegacy(module: any, homeAssistant?: HomeAssistant): SliderControlModule {
+    const sliderControl = module as SliderControlModule;
+
+    // Check if this is a legacy config (has single entity but no bars)
+    if (sliderControl.entity && (!sliderControl.bars || sliderControl.bars.length === 0)) {
+      const bars: SliderBar[] = [];
+      const entityState = homeAssistant?.states?.[sliderControl.entity];
+
+      if (entityState) {
+        const domain = sliderControl.entity.split('.')[0];
+
+        if (domain === 'light') {
+          // Migrate based on light_control_mode
+          const controlMode = sliderControl.light_control_mode || 'brightness';
+
+          if (controlMode === 'brightness' || controlMode === 'both' || controlMode === 'all') {
+            bars.push({
+              id: this.generateId('brightness'),
+              type: 'brightness',
+              entity: sliderControl.entity,
+              name: sliderControl.name,
+              min_value: sliderControl.min_value,
+              max_value: sliderControl.max_value,
+              step: sliderControl.step,
+              // Copy global style settings to bar
+              slider_style: sliderControl.slider_style,
+              slider_height: sliderControl.slider_height,
+              slider_track_color: sliderControl.slider_track_color,
+              slider_fill_color: sliderControl.slider_fill_color,
+              dynamic_fill_color: sliderControl.dynamic_fill_color,
+              show_icon: sliderControl.show_icon,
+              show_name: sliderControl.show_name,
+              show_value: sliderControl.show_value,
+              icon: sliderControl.icon,
+              icon_size: sliderControl.icon_size,
+              icon_color: sliderControl.icon_color,
+              dynamic_icon: sliderControl.dynamic_icon,
+              icon_as_toggle: sliderControl.icon_as_toggle,
+              name_size: sliderControl.name_size,
+              name_color: sliderControl.name_color,
+              name_bold: sliderControl.name_bold,
+              value_size: sliderControl.value_size,
+              value_color: sliderControl.value_color,
+              value_suffix: sliderControl.value_suffix,
+              auto_contrast: sliderControl.auto_contrast,
+            });
+          }
+
+          if (controlMode === 'rgb' || controlMode === 'both' || controlMode === 'all') {
+            bars.push({
+              id: this.generateId('rgb'),
+              type: 'rgb',
+              entity: sliderControl.entity,
+              min_value: sliderControl.min_value,
+              max_value: sliderControl.max_value,
+              step: sliderControl.step,
+              // Copy global style settings to bar
+              slider_style: sliderControl.slider_style,
+              slider_height: sliderControl.slider_height,
+              slider_track_color: sliderControl.slider_track_color,
+              slider_fill_color: sliderControl.slider_fill_color,
+              dynamic_fill_color: sliderControl.dynamic_fill_color,
+              show_icon: sliderControl.show_icon,
+              show_name: sliderControl.show_name,
+              show_value: sliderControl.show_value,
+              icon: sliderControl.icon,
+              icon_size: sliderControl.icon_size,
+              icon_color: sliderControl.icon_color,
+              dynamic_icon: sliderControl.dynamic_icon,
+              icon_as_toggle: sliderControl.icon_as_toggle,
+              name_size: sliderControl.name_size,
+              name_color: sliderControl.name_color,
+              name_bold: sliderControl.name_bold,
+              value_size: sliderControl.value_size,
+              value_color: sliderControl.value_color,
+              value_suffix: sliderControl.value_suffix,
+              auto_contrast: sliderControl.auto_contrast,
+            });
+          }
+
+          if (controlMode === 'color_temp' || controlMode === 'all') {
+            bars.push({
+              id: this.generateId('color_temp'),
+              type: 'color_temp',
+              entity: sliderControl.entity,
+              min_value: sliderControl.min_value,
+              max_value: sliderControl.max_value,
+              step: sliderControl.step,
+              // Copy global style settings to bar
+              slider_style: sliderControl.slider_style,
+              slider_height: sliderControl.slider_height,
+              slider_track_color: sliderControl.slider_track_color,
+              slider_fill_color: sliderControl.slider_fill_color,
+              dynamic_fill_color: sliderControl.dynamic_fill_color,
+              show_icon: sliderControl.show_icon,
+              show_name: sliderControl.show_name,
+              show_value: sliderControl.show_value,
+              icon: sliderControl.icon,
+              icon_size: sliderControl.icon_size,
+              icon_color: sliderControl.icon_color,
+              dynamic_icon: sliderControl.dynamic_icon,
+              icon_as_toggle: sliderControl.icon_as_toggle,
+              name_size: sliderControl.name_size,
+              name_color: sliderControl.name_color,
+              name_bold: sliderControl.name_bold,
+              value_size: sliderControl.value_size,
+              value_color: sliderControl.value_color,
+              value_suffix: sliderControl.value_suffix,
+              auto_contrast: sliderControl.auto_contrast,
+            });
+          }
+        } else {
+          // Non-light entity
+          bars.push({
+            id: this.generateId('numeric'),
+            type: 'numeric',
+            entity: sliderControl.entity,
+            name: sliderControl.name,
+            min_value: sliderControl.min_value,
+            max_value: sliderControl.max_value,
+            step: sliderControl.step,
+            // Copy global style settings to bar
+            slider_style: sliderControl.slider_style,
+            slider_height: sliderControl.slider_height,
+            slider_track_color: sliderControl.slider_track_color,
+            slider_fill_color: sliderControl.slider_fill_color,
+            dynamic_fill_color: sliderControl.dynamic_fill_color,
+            show_icon: sliderControl.show_icon,
+            show_name: sliderControl.show_name,
+            show_value: sliderControl.show_value,
+            icon: sliderControl.icon,
+            icon_size: sliderControl.icon_size,
+            icon_color: sliderControl.icon_color,
+            dynamic_icon: sliderControl.dynamic_icon,
+            icon_as_toggle: sliderControl.icon_as_toggle,
+            name_size: sliderControl.name_size,
+            name_color: sliderControl.name_color,
+            name_bold: sliderControl.name_bold,
+            value_size: sliderControl.value_size,
+            value_color: sliderControl.value_color,
+            value_suffix: sliderControl.value_suffix,
+            auto_contrast: sliderControl.auto_contrast,
+          });
+        }
+      }
+
+      // Return migrated config
+      return {
+        ...sliderControl,
+        bars: bars,
+        // Keep legacy properties for backward compatibility but mark as deprecated
+        entity: sliderControl.entity, // Keep for reference
+        name: sliderControl.name, // Keep for reference
+        min_value: sliderControl.min_value, // Keep for reference
+        max_value: sliderControl.max_value, // Keep for reference
+        step: sliderControl.step, // Keep for reference
+        light_control_mode: sliderControl.light_control_mode, // Keep for reference
+      };
+    }
+
+    // Already migrated or new config
+    return sliderControl;
+  }
+
+  // Helper methods for bar management
+  private _addBar(type?: string, entity?: string): SliderBar {
+    const barId = this.generateId('bar');
+    const defaultType = type || 'numeric';
+
+    return {
+      id: barId,
+      type: defaultType as any,
+      entity: entity || '',
+      min_value: 0,
+      max_value: 100,
+      step: 1,
+      show_icon: true,
+      show_name: true,
+      show_value: true,
+      outside_text_position: 'left',
+      outside_name_position: 'top_left',
+      outside_value_position: 'bottom_left',
+      overlay_name_position: 'top',
+      overlay_value_position: 'middle',
+      overlay_icon_position: 'bottom',
+      // Default style settings for new bars
+      slider_style: 'flat',
+      dynamic_icon: true,
+      icon_as_toggle: true,
+      name_bold: true,
+      auto_contrast: true,
+    };
+  }
+
+  private _deleteBar(barId: string, bars: SliderBar[]): SliderBar[] {
+    return bars.filter(bar => bar.id !== barId);
+  }
+
+  private _duplicateBar(bar: SliderBar): SliderBar {
+    return {
+      ...bar,
+      id: this.generateId('bar'),
+      name: bar.name ? `${bar.name} (Copy)` : undefined,
+    };
+  }
+
+  private _reorderBars(bars: SliderBar[], fromIndex: number, toIndex: number): SliderBar[] {
+    const newBars = [...bars];
+    const [removed] = newBars.splice(fromIndex, 1);
+    newBars.splice(toIndex, 0, removed);
+    return newBars;
+  }
+
+  private _detectBarType(entity: string, homeAssistant: HomeAssistant): string {
+    if (!entity || !homeAssistant?.states?.[entity]) {
+      return 'numeric';
+    }
+
+    const entityState = homeAssistant.states[entity];
+    const domain = entity.split('.')[0];
+
+    // Check for RGB color support
+    if (entityState.attributes.rgb_color) {
+      return 'rgb';
+    }
+
+    // Check for color temperature support
+    if (entityState.attributes.color_temp) {
+      return 'color_temp';
+    }
+
+    // Check for brightness support (lights)
+    if (domain === 'light' && entityState.attributes.brightness !== undefined) {
+      return 'brightness';
+    }
+
+    // Default to numeric for any entity with numeric state
+    return 'numeric';
+  }
+
+  private _getBarGradient(
+    bar: SliderBar,
+    homeAssistant: HomeAssistant,
+    orientation: 'horizontal' | 'vertical' = 'horizontal'
+  ): string {
+    const gradientDir = orientation === 'vertical' ? '0deg' : '90deg';
+
+    switch (bar.type) {
+      case 'rgb':
+        return orientation === 'vertical'
+          ? `linear-gradient(0deg, rgb(255, 0, 0) 0%, rgb(255, 255, 0) 16.67%, rgb(0, 255, 0) 33.33%, rgb(0, 255, 255) 50%, rgb(0, 0, 255) 66.67%, rgb(255, 0, 255) 83.33%, rgb(255, 0, 0) 100%)`
+          : `linear-gradient(90deg, rgb(255, 0, 0) 0%, rgb(255, 255, 0) 16.67%, rgb(0, 255, 0) 33.33%, rgb(0, 255, 255) 50%, rgb(0, 0, 255) 66.67%, rgb(255, 0, 255) 83.33%, rgb(255, 0, 0) 100%)`;
+
+      case 'color_temp':
+        return `linear-gradient(${gradientDir}, rgb(255, 147, 41) 0%, rgb(255, 180, 112) 10%, rgb(255, 220, 177) 20%, rgb(255, 246, 213) 30%, rgb(255, 255, 255) 50%, rgb(230, 240, 255) 70%, rgb(208, 232, 255) 80%, rgb(169, 200, 255) 90%, rgb(130, 170, 255) 100%)`;
+
+      case 'red':
+        return 'rgb(255, 0, 0)';
+
+      case 'green':
+        return 'rgb(0, 255, 0)';
+
+      case 'blue':
+        return 'rgb(0, 0, 255)';
+
+      case 'brightness':
+      case 'numeric':
+      default:
+        return 'var(--primary-color)';
+    }
+  }
+
   renderGeneralTab(
     module: CardModule,
-    hass: HomeAssistant,
+    homeAssistant: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const sliderControl = module as SliderControlModule;
-    const lang = hass?.locale?.language || 'en';
+    const lang = homeAssistant?.locale?.language || 'en';
+    const layoutMode = sliderControl.layout_mode || 'outside';
 
-    // Detect entity domain for conditional sections
-    const entityDomain = sliderControl.entity ? sliderControl.entity.split('.')[0] : '';
-    const isLight = entityDomain === 'light';
-    const isCover = entityDomain === 'cover';
+    // Check for legacy config and migrate if needed
+    if (sliderControl.entity && (!sliderControl.bars || sliderControl.bars.length === 0)) {
+      const migratedConfig = this.migrateFromLegacy(sliderControl, homeAssistant);
+      updateModule(migratedConfig);
+      return html`<div style="padding: 20px; text-align: center; color: var(--primary-color);">
+        <ha-icon icon="mdi:refresh" style="font-size: 48px; margin-bottom: 12px;"></ha-icon>
+        <div>Migrating to new multi-bar format...</div>
+      </div>`;
+    }
 
     return html`
       <div class="slider-control-general-tab">
@@ -159,12 +583,23 @@ export class UltraSliderControlModule extends BaseUltraModule {
         <style>
           .slider-control-general-tab {
             padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
           }
           .settings-section {
             background: var(--secondary-background-color);
             border-radius: 8px;
             padding: 16px;
-            margin-bottom: 24px;
+          }
+          .settings-section.layout-settings {
+            order: 1;
+          }
+          .settings-section.slider-style {
+            order: 2;
+          }
+          .settings-section.bars-configuration {
+            order: 3;
           }
           .section-title {
             font-size: 18px;
@@ -178,7 +613,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
             margin-bottom: 16px;
           }
           .field-title {
-            font-size: 16px;
+            font-size: ${sliderControl.name_size || 16}px;
             font-weight: 600;
             margin-bottom: 4px;
             color: var(--primary-text-color);
@@ -197,124 +632,1589 @@ export class UltraSliderControlModule extends BaseUltraModule {
             border-radius: 0 8px 8px 0;
             padding: 16px;
           }
+          .bar-item {
+            background: var(--card-background-color);
+            border-radius: 8px;
+            border: 1px solid var(--divider-color);
+            margin-bottom: 12px;
+            overflow: hidden;
+          }
+          .bar-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          }
+          .bar-header:hover {
+            background: var(--secondary-background-color);
+          }
+          .bar-header.expanded {
+            background: var(--secondary-background-color);
+            border-bottom: 1px solid var(--divider-color);
+          }
+          .drag-handle {
+            color: var(--secondary-text-color);
+            margin-right: 12px;
+            cursor: grab;
+          }
+          .drag-handle:active {
+            cursor: grabbing;
+          }
+          .bar-item.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+          }
+          .bar-item.drag-over {
+            border-top: 2px solid var(--primary-color);
+          }
+          .bar-individual-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-right: 8px;
+          }
+          .bar-individual-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            position: relative;
+          }
+          .bar-individual-control:hover {
+            transform: scale(1.1);
+          }
+          .bar-individual-control.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+          }
+          .bar-individual-control.active {
+            background: var(--primary-color);
+          }
+          .bar-individual-control.active:hover {
+            background: var(--primary-color-dark);
+          }
+          .bar-individual-control.inactive {
+            background: var(--secondary-background-color);
+          }
+          .bar-individual-control.inactive:hover {
+            background: var(--divider-color);
+          }
+          .bar-individual-control ha-icon {
+            --mdc-icon-size: 16px;
+            transition: color 0.2s ease;
+          }
+          .bar-individual-control.active ha-icon {
+            color: white;
+          }
+          .bar-individual-control.inactive ha-icon {
+            color: var(--secondary-text-color);
+          }
+          .bar-type-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-right: 12px;
+            min-width: 60px;
+            text-align: center;
+          }
+          .bar-type-badge.numeric {
+            background: #2196f3;
+            color: white;
+          }
+          .bar-type-badge.brightness {
+            background: #ff9800;
+            color: white;
+          }
+          .bar-type-badge.rgb {
+            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff);
+            color: white;
+          }
+          .bar-type-badge.color_temp {
+            background: linear-gradient(45deg, #ff9329, #82aaff);
+            color: white;
+          }
+          .bar-type-badge.red {
+            background: #f44336;
+            color: white;
+          }
+          .bar-type-badge.green {
+            background: #4caf50;
+            color: white;
+          }
+          .bar-type-badge.blue {
+            background: #2196f3;
+            color: white;
+          }
+          .bar-type-badge.attribute {
+            background: #9c27b0;
+            color: white;
+          }
+          .bar-label {
+            flex: 1;
+            font-weight: 500;
+            color: var(--primary-text-color);
+          }
+          .bar-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+          }
+          .bar-action-button {
+            background: none;
+            border: none;
+            color: var(--secondary-text-color);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+          }
+          .bar-action-button:hover {
+            background: var(--secondary-background-color);
+            color: var(--primary-text-color);
+          }
+          .bar-action-button.delete:hover {
+            color: var(--error-color);
+          }
+          .bar-content {
+            padding: 0 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition:
+              max-height 0.2s ease-out,
+              padding 0.2s ease-out;
+            opacity: 0;
+          }
+          .bar-content.expanded {
+            padding: 16px;
+            max-height: 9999px;
+            overflow: visible;
+            opacity: 1;
+            transition:
+              max-height 0.2s ease-in,
+              padding 0.2s ease-in,
+              opacity 0.15s ease-in;
+          }
+          .add-bar-button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 16px;
+          }
+          .add-bar-button:hover {
+            background: var(--primary-color-dark);
+          }
         </style>
 
-        <!-- ENTITY CONFIGURATION -->
-        <div class="settings-section">
-          <div class="section-title">ENTITY CONFIGURATION</div>
-          
-          ${this.renderFieldSection(
-            'Entity',
-            'Select the entity to control with this slider',
-            hass,
-            { entity: sliderControl.entity || '' },
-            [this.entityField('entity')],
-            (e: CustomEvent) => updateModule({ entity: e.detail.value.entity })
-          )}
-          
-          ${this.renderFieldSection(
-            'Name',
-            'Override the entity name (leave empty to use entity name)',
-            hass,
-            { name: sliderControl.name || '' },
-            [this.textField('name')],
-            (e: CustomEvent) => updateModule({ name: e.detail.value.name })
-          )}
-          
+        <!-- BARS CONFIGURATION -->
+        <div class="settings-section bars-configuration">
+          <div class="section-title">BARS CONFIGURATION</div>
 
-          
-          ${this.renderFieldSection(
-            'Min Value',
-            'Minimum value for the slider',
-            hass,
-            { min_value: sliderControl.min_value ?? 0 },
-            [this.numberField('min_value', 0, 1000, 1)],
-            (e: CustomEvent) => updateModule({ min_value: e.detail.value.min_value })
-          )}
-          
-          ${this.renderFieldSection(
-            'Max Value',
-            'Maximum value for the slider',
-            hass,
-            { max_value: sliderControl.max_value ?? 100 },
-            [this.numberField('max_value', 0, 1000, 1)],
-            (e: CustomEvent) => updateModule({ max_value: e.detail.value.max_value })
-          )}
-          
-          ${this.renderFieldSection(
-            'Step',
-            'Step increment for value changes',
-            hass,
-            { step: sliderControl.step ?? 1 },
-            [this.numberField('step', 0.1, 100, 0.1)],
-            (e: CustomEvent) => updateModule({ step: e.detail.value.step })
-          )}
-          
-          ${
-            sliderControl.entity && hass.states[sliderControl.entity]
-              ? html` <div class="conditional-fields-group"></div> `
-              : ''
-          }
-          
-          ${
-            isLight
-              ? html`
-                  <div class="field-container" style="margin-top: 16px;">
-                    <div class="field-title">Light Control Mode</div>
-                    <div class="field-description">What aspect of the light to control</div>
+          <button
+            class="add-bar-button"
+            @click=${() => {
+              const newBar = this._addBar();
+              const updatedBars = [...(sliderControl.bars || []), newBar];
+              updateModule({ bars: updatedBars });
+              // Auto-expand the new bar
+              this.expandedBars.add(newBar.id);
+            }}
+          >
+            <ha-icon icon="mdi:plus" style="margin-right: 8px;"></ha-icon>
+            Add Bar
+          </button>
+
+          ${(sliderControl.bars || []).map((bar, index) => {
+            const entityState = homeAssistant?.states?.[bar.entity];
+            const entityName = entityState?.attributes?.friendly_name || bar.entity;
+            const displayName = bar.name || entityName;
+            const isExpanded = this.expandedBars.has(bar.id);
+            const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
+            const showNameSection = bar.show_name !== false && sliderControl.show_name !== false;
+            const showValueSection = bar.show_value !== false && sliderControl.show_value !== false;
+
+            return html`
+              <div
+                class="bar-item"
+                data-bar-id="${bar.id}"
+                draggable="true"
+                @dragstart=${(e: DragEvent) => {
+                  const composedPath = e.composedPath?.() || [];
+                  const canDrag = composedPath.some(element =>
+                    (element as HTMLElement).classList?.contains('drag-handle')
+                  );
+
+                  if (!canDrag) {
+                    e.preventDefault();
+                    return;
+                  }
+
+                  e.dataTransfer!.setData('text/plain', bar.id);
+                  e.dataTransfer!.effectAllowed = 'move';
+                  (e.currentTarget as HTMLElement).classList.add('dragging');
+                }}
+                @dragend=${(e: DragEvent) => {
+                  (e.currentTarget as HTMLElement).classList.remove('dragging');
+                }}
+                @dragover=${(e: DragEvent) => {
+                  e.preventDefault();
+                  e.dataTransfer!.dropEffect = 'move';
+                  (e.currentTarget as HTMLElement).classList.add('drag-over');
+                }}
+                @dragleave=${(e: DragEvent) => {
+                  (e.currentTarget as HTMLElement).classList.remove('drag-over');
+                }}
+                @drop=${(e: DragEvent) => {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).classList.remove('drag-over');
+                  const draggedBarId = e.dataTransfer!.getData('text/plain');
+                  const targetBarId = bar.id;
+
+                  if (draggedBarId !== targetBarId) {
+                    const updatedBars = [...(sliderControl.bars || [])];
+                    const draggedIndex = updatedBars.findIndex(b => b.id === draggedBarId);
+                    const targetIndex = updatedBars.findIndex(b => b.id === targetBarId);
+
+                    if (draggedIndex !== -1 && targetIndex !== -1) {
+                      const draggedBar = updatedBars.splice(draggedIndex, 1)[0];
+                      updatedBars.splice(targetIndex, 0, draggedBar);
+                      updateModule({ bars: updatedBars });
+                    }
+                  }
+                }}
+              >
+                <div
+                  class="bar-header ${isExpanded ? 'expanded' : ''}"
+                  @click=${() => {
+                    const wasExpanded = this.expandedBars.has(bar.id);
+                    if (wasExpanded) {
+                      this.expandedBars.delete(bar.id);
+                    } else {
+                      this.expandedBars.add(bar.id);
+                    }
+                    this.requestUpdate();
+                  }}
+                >
+                  <ha-icon
+                    icon="mdi:drag-vertical"
+                    class="drag-handle"
+                    @click=${(e: Event) => e.stopPropagation()}
+                  ></ha-icon>
+                  <div class="bar-type-badge ${bar.type}">${bar.type}</div>
+                  <div class="bar-label">${displayName}</div>
+
+                  <!-- Individual Bar Controls -->
+                  <div class="bar-individual-controls">
+                    <div
+                      class="bar-individual-control ${bar.show_icon !== false
+                        ? 'active'
+                        : 'inactive'}"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = {
+                            ...updatedBars[barIndex],
+                            show_icon: !bar.show_icon,
+                          };
+                        }
+                        updateModule({ bars: updatedBars });
+                      }}
+                      title="Toggle icon visibility"
+                    >
+                      <ha-icon icon="mdi:lightbulb"></ha-icon>
+                    </div>
+                    <div
+                      class="bar-individual-control ${bar.show_name !== false
+                        ? 'active'
+                        : 'inactive'}"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = {
+                            ...updatedBars[barIndex],
+                            show_name: !bar.show_name,
+                          };
+                        }
+                        updateModule({ bars: updatedBars });
+                      }}
+                      title="Toggle name visibility"
+                    >
+                      <ha-icon icon="mdi:text"></ha-icon>
+                    </div>
+                    <div
+                      class="bar-individual-control ${bar.show_value !== false
+                        ? 'active'
+                        : 'inactive'}"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = {
+                            ...updatedBars[barIndex],
+                            show_value: !bar.show_value,
+                          };
+                        }
+                        updateModule({ bars: updatedBars });
+                      }}
+                      title="Toggle value visibility"
+                    >
+                      <ha-icon icon="mdi:numeric"></ha-icon>
+                    </div>
+                  </div>
+
+                  <div class="bar-actions">
+                    <button
+                      class="bar-action-button"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        const duplicatedBar = this._duplicateBar(bar);
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        updatedBars.splice(index + 1, 0, duplicatedBar);
+                        updateModule({ bars: updatedBars });
+                      }}
+                      title="Duplicate bar"
+                    >
+                      <ha-icon icon="mdi:content-copy"></ha-icon>
+                    </button>
+                    <button
+                      class="bar-action-button delete"
+                      @click=${(e: Event) => {
+                        e.stopPropagation();
+                        const updatedBars = this._deleteBar(bar.id, sliderControl.bars || []);
+                        updateModule({ bars: updatedBars });
+                      }}
+                      title="Delete bar"
+                    >
+                      <ha-icon icon="mdi:delete"></ha-icon>
+                    </button>
+                    <ha-icon
+                      icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"
+                      style="transition: transform 0.2s ease;"
+                    ></ha-icon>
+                  </div>
+                </div>
+
+                <div class="bar-content ${isExpanded ? 'expanded' : ''}">
+                  ${this.renderFieldSection(
+                    'Entity',
+                    'Select the entity to control with this bar',
+                    homeAssistant,
+                    { entity: bar.entity },
+                    [this.entityField('entity')],
+                    (e: CustomEvent) => {
+                      const updatedBars = [...(sliderControl.bars || [])];
+                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                      if (barIndex !== -1) {
+                        updatedBars[barIndex] = {
+                          ...updatedBars[barIndex],
+                          entity: e.detail.value.entity,
+                        };
+                        // Auto-detect type for new entity
+                        const detectedType = this._detectBarType(
+                          e.detail.value.entity,
+                          homeAssistant
+                        );
+                        updatedBars[barIndex].type = detectedType as any;
+                      }
+                      updateModule({ bars: updatedBars });
+                    }
+                  )}
+                  ${this.renderFieldSection(
+                    'Bar Type',
+                    'Type of slider bar (auto-detected)',
+                    homeAssistant,
+                    { type: bar.type },
+                    [
+                      this.selectField('type', [
+                        { value: 'numeric', label: 'Numeric' },
+                        { value: 'brightness', label: 'Brightness' },
+                        { value: 'rgb', label: 'RGB Color' },
+                        { value: 'color_temp', label: 'Color Temperature' },
+                        { value: 'red', label: 'Red Channel' },
+                        { value: 'green', label: 'Green Channel' },
+                        { value: 'blue', label: 'Blue Channel' },
+                        { value: 'attribute', label: 'Custom Attribute' },
+                      ]),
+                    ],
+                    (e: CustomEvent) => {
+                      const updatedBars = [...(sliderControl.bars || [])];
+                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                      if (barIndex !== -1) {
+                        updatedBars[barIndex] = {
+                          ...updatedBars[barIndex],
+                          type: e.detail.value.type,
+                        };
+                      }
+                      updateModule({ bars: updatedBars });
+                      this.requestUpdate();
+                    }
+                  )}
+                  ${bar.type === 'attribute'
+                    ? html`
+                        ${this.renderFieldSection(
+                          'Attribute',
+                          'Specific attribute to control (e.g., percentage, position, volume_level)',
+                          homeAssistant,
+                          { attribute: bar.attribute || 'percentage' },
+                          [this.textField('attribute')],
+                          (e: CustomEvent) => {
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                attribute: e.detail.value.attribute,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }
+                        )}
+                      `
+                    : ''}
+                  ${this.renderFieldSection(
+                    'Name',
+                    'Override the bar label (leave empty to use entity name)',
+                    homeAssistant,
+                    { name: bar.name || '' },
+                    [this.textField('name')],
+                    (e: CustomEvent) => {
+                      const updatedBars = [...(sliderControl.bars || [])];
+                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                      if (barIndex !== -1) {
+                        updatedBars[barIndex] = {
+                          ...updatedBars[barIndex],
+                          name: e.detail.value.name,
+                        };
+                      }
+                      updateModule({ bars: updatedBars });
+                    }
+                  )}
+                  ${this.renderFieldSection(
+                    'Min Value',
+                    'Minimum value for this bar',
+                    homeAssistant,
+                    { min_value: bar.min_value ?? 0 },
+                    [this.numberField('min_value', 0, 1000, 1)],
+                    (e: CustomEvent) => {
+                      const updatedBars = [...(sliderControl.bars || [])];
+                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                      if (barIndex !== -1) {
+                        updatedBars[barIndex] = {
+                          ...updatedBars[barIndex],
+                          min_value: e.detail.value.min_value,
+                        };
+                      }
+                      updateModule({ bars: updatedBars });
+                    }
+                  )}
+                  ${this.renderFieldSection(
+                    'Max Value',
+                    'Maximum value for this bar',
+                    homeAssistant,
+                    { max_value: bar.max_value ?? 100 },
+                    [this.numberField('max_value', 0, 1000, 1)],
+                    (e: CustomEvent) => {
+                      const updatedBars = [...(sliderControl.bars || [])];
+                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                      if (barIndex !== -1) {
+                        updatedBars[barIndex] = {
+                          ...updatedBars[barIndex],
+                          max_value: e.detail.value.max_value,
+                        };
+                      }
+                      updateModule({ bars: updatedBars });
+                    }
+                  )}
+                  ${this.renderFieldSection(
+                    'Step',
+                    'Step increment for value changes',
+                    homeAssistant,
+                    { step: bar.step ?? 1 },
+                    [this.numberField('step', 0.1, 100, 0.1)],
+                    (e: CustomEvent) => {
+                      const updatedBars = [...(sliderControl.bars || [])];
+                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                      if (barIndex !== -1) {
+                        updatedBars[barIndex] = {
+                          ...updatedBars[barIndex],
+                          step: e.detail.value.step,
+                        };
+                      }
+                      updateModule({ bars: updatedBars });
+                    }
+                  )}
+                  ${sliderControl.layout_mode === 'split'
+                    ? html`
+                        ${this.renderFieldSection(
+                          'Bar Position',
+                          sliderControl.orientation === 'vertical'
+                            ? 'Where to position this bar relative to info content'
+                            : 'Where to position this bar relative to info content',
+                          homeAssistant,
+                          {
+                            split_bar_position:
+                              bar.split_bar_position || sliderControl.split_bar_position || 'left',
+                          },
+                          [
+                            this.selectField(
+                              'split_bar_position',
+                              sliderControl.orientation === 'vertical'
+                                ? [
+                                    { value: 'left', label: 'Top' },
+                                    { value: 'right', label: 'Bottom' },
+                                  ]
+                                : [
+                                    { value: 'left', label: 'Left' },
+                                    { value: 'right', label: 'Right' },
+                                  ]
+                            ),
+                          ],
+                          (e: CustomEvent) => {
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                split_bar_position: e.detail.value.split_bar_position,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }
+                        )}
+                        <div class="field-container">
+                          <div class="field-title">Bar Length</div>
+                          <div class="field-description">Percentage of space for bar (0-100%)</div>
+                          <div style="display: flex; gap: 8px; align-items: center;">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="5"
+                              .value="${bar.split_bar_length ??
+                              sliderControl.split_bar_length ??
+                              60}"
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                const updatedBars = [...(sliderControl.bars || [])];
+                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                if (barIndex !== -1) {
+                                  updatedBars[barIndex] = {
+                                    ...updatedBars[barIndex],
+                                    split_bar_length: parseInt(target.value),
+                                  };
+                                }
+                                updateModule({ bars: updatedBars });
+                              }}
+                              style="flex: 1;"
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              .value="${bar.split_bar_length ??
+                              sliderControl.split_bar_length ??
+                              60}"
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                const value = Math.max(0, Math.min(100, parseInt(target.value)));
+                                const updatedBars = [...(sliderControl.bars || [])];
+                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                if (barIndex !== -1) {
+                                  updatedBars[barIndex] = {
+                                    ...updatedBars[barIndex],
+                                    split_bar_length: value,
+                                  };
+                                }
+                                updateModule({ bars: updatedBars });
+                              }}
+                              style="width: 70px;"
+                            />
+                          </div>
+                        </div>
+                      `
+                    : ''}
+                  ${sliderControl.layout_mode === 'overlay' &&
+                  sliderControl.orientation === 'vertical'
+                    ? html`
+                        ${this.renderFieldSection(
+                          'Name Position',
+                          'Where to place the name inside this bar',
+                          homeAssistant,
+                          {
+                            overlay_name_position:
+                              bar.overlay_name_position ||
+                              sliderControl.overlay_name_position ||
+                              'top',
+                          },
+                          [
+                            this.selectField('overlay_name_position', [
+                              { value: 'top', label: 'Top' },
+                              { value: 'middle', label: 'Middle' },
+                              { value: 'bottom', label: 'Bottom' },
+                            ]),
+                          ],
+                          (e: CustomEvent) => {
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                overlay_name_position: e.detail.value.overlay_name_position,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }
+                        )}
+                        ${this.renderFieldSection(
+                          'Value Position',
+                          'Where to place the value inside this bar',
+                          homeAssistant,
+                          {
+                            overlay_value_position:
+                              bar.overlay_value_position ||
+                              sliderControl.overlay_value_position ||
+                              'middle',
+                          },
+                          [
+                            this.selectField('overlay_value_position', [
+                              { value: 'top', label: 'Top' },
+                              { value: 'middle', label: 'Middle' },
+                              { value: 'bottom', label: 'Bottom' },
+                            ]),
+                          ],
+                          (e: CustomEvent) => {
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                overlay_value_position: e.detail.value.overlay_value_position,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }
+                        )}
+                        ${this.renderFieldSection(
+                          'Icon Position',
+                          'Where to place the icon inside this bar',
+                          homeAssistant,
+                          {
+                            overlay_icon_position:
+                              bar.overlay_icon_position ||
+                              sliderControl.overlay_icon_position ||
+                              'bottom',
+                          },
+                          [
+                            this.selectField('overlay_icon_position', [
+                              { value: 'top', label: 'Top' },
+                              { value: 'middle', label: 'Middle' },
+                              { value: 'bottom', label: 'Bottom' },
+                            ]),
+                          ],
+                          (e: CustomEvent) => {
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                overlay_icon_position: e.detail.value.overlay_icon_position,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }
+                        )}
+                      `
+                    : ''}
+                  ${sliderControl.layout_mode === 'outside' &&
+                  sliderControl.orientation === 'vertical'
+                    ? html`
+                        <div
+                          style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                        >
+                          <div
+                            style="font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px;"
+                          >
+                            VERTICAL OUTSIDE SETTINGS
+                          </div>
+
+                          ${this.renderFieldSection(
+                            'Text Position',
+                            'Choose which side of the bar shows name/value information',
+                            homeAssistant,
+                            {
+                              outside_text_position:
+                                bar.outside_text_position ||
+                                sliderControl.outside_text_position ||
+                                'left',
+                            },
+                            [
+                              this.selectField('outside_text_position', [
+                                { value: 'left', label: 'Left' },
+                                { value: 'right', label: 'Right' },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const updatedBars = [...(sliderControl.bars || [])];
+                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                              if (barIndex !== -1) {
+                                updatedBars[barIndex] = {
+                                  ...updatedBars[barIndex],
+                                  outside_text_position: e.detail.value.outside_text_position,
+                                };
+                              }
+                              updateModule({ bars: updatedBars });
+                            }
+                          )}
+                          ${this.renderFieldSection(
+                            'Name Position',
+                            'Position for the entity name label',
+                            homeAssistant,
+                            {
+                              outside_name_position:
+                                bar.outside_name_position ||
+                                sliderControl.outside_name_position ||
+                                'top_left',
+                            },
+                            [
+                              this.selectField('outside_name_position', [
+                                { value: 'top_left', label: 'Top Left' },
+                                { value: 'top_right', label: 'Top Right' },
+                                { value: 'bottom_left', label: 'Bottom Left' },
+                                { value: 'bottom_right', label: 'Bottom Right' },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const updatedBars = [...(sliderControl.bars || [])];
+                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                              if (barIndex !== -1) {
+                                updatedBars[barIndex] = {
+                                  ...updatedBars[barIndex],
+                                  outside_name_position: e.detail.value.outside_name_position,
+                                };
+                              }
+                              updateModule({ bars: updatedBars });
+                            }
+                          )}
+                          ${this.renderFieldSection(
+                            'Value Position',
+                            'Position for the value label',
+                            homeAssistant,
+                            {
+                              outside_value_position:
+                                bar.outside_value_position ||
+                                sliderControl.outside_value_position ||
+                                'bottom_left',
+                            },
+                            [
+                              this.selectField('outside_value_position', [
+                                { value: 'top_left', label: 'Top Left' },
+                                { value: 'top_right', label: 'Top Right' },
+                                { value: 'bottom_left', label: 'Bottom Left' },
+                                { value: 'bottom_right', label: 'Bottom Right' },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const updatedBars = [...(sliderControl.bars || [])];
+                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                              if (barIndex !== -1) {
+                                updatedBars[barIndex] = {
+                                  ...updatedBars[barIndex],
+                                  outside_value_position: e.detail.value.outside_value_position,
+                                };
+                              }
+                              updateModule({ bars: updatedBars });
+                            }
+                          )}
+                        </div>
+                      `
+                    : ''}
+
+                  <!-- Bar Slider Style -->
+                  <div
+                    style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                  >
+                    <div
+                      style="font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px;"
+                    >
+                      SLIDER STYLE
+                    </div>
+
                     ${this.renderFieldSection(
-                      '',
-                      '',
-                      hass,
-                      { light_control_mode: sliderControl.light_control_mode || 'brightness' },
+                      'Slider Style',
+                      'Visual appearance of the slider',
+                      homeAssistant,
+                      { slider_style: bar.slider_style || sliderControl.slider_style || 'flat' },
                       [
-                        this.selectField('light_control_mode', [
-                          { value: 'brightness', label: 'Brightness' },
-                          { value: 'color_temp', label: 'Color Temperature' },
-                          { value: 'rgb', label: 'RGB Color' },
-                          { value: 'both', label: 'Brightness + RGB' },
-                          { value: 'all', label: 'Brightness + RGB + Color Temp' },
+                        this.selectField('slider_style', [
+                          { value: 'flat', label: 'Flat' },
+                          { value: 'glossy', label: 'Glossy' },
+                          { value: 'embossed', label: 'Embossed' },
+                          { value: 'inset', label: 'Inset' },
+                          { value: 'neon-glow', label: 'Neon Glow' },
+                          { value: 'outline', label: 'Outline' },
+                          { value: 'glass', label: 'Glass' },
+                          { value: 'metallic', label: 'Metallic' },
+                          { value: 'neumorphic', label: 'Neumorphic' },
+                          { value: 'minimal', label: 'Minimal' },
                         ]),
                       ],
-                      (e: CustomEvent) =>
-                        updateModule({ light_control_mode: e.detail.value.light_control_mode })
+                      (e: CustomEvent) => {
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = {
+                            ...updatedBars[barIndex],
+                            slider_style: e.detail.value.slider_style,
+                          };
+                        }
+                        updateModule({ bars: updatedBars });
+                        this.requestUpdate();
+                      }
                     )}
-                  </div>
-                `
-              : ''
-          }
-          
-          ${
-            isCover
-              ? html`
-                  <div
-                    style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;"
-                  >
-                    <div>
-                      <div class="field-title">Invert Direction</div>
-                      <div class="field-description">Reverse the slider direction for covers</div>
+
+                    <div class="field-container">
+                      <div class="field-title">
+                        ${sliderControl.orientation === 'vertical'
+                          ? 'Slider Width'
+                          : 'Slider Height'}
+                      </div>
+                      <div class="field-description">
+                        ${sliderControl.orientation === 'vertical'
+                          ? 'Width of vertical bars in pixels'
+                          : 'Height of horizontal bars in pixels'}
+                      </div>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <input
+                          type="range"
+                          min="20"
+                          max="200"
+                          step="5"
+                          .value="${bar.slider_height || sliderControl.slider_height || 40}"
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                slider_height: parseInt(target.value),
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }}
+                          style="flex: 1;"
+                        />
+                        <input
+                          type="number"
+                          min="20"
+                          max="200"
+                          .value="${bar.slider_height || sliderControl.slider_height || 40}"
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                slider_height: parseInt(target.value),
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }}
+                          style="width: 70px;"
+                        />
+                      </div>
                     </div>
-                    <ha-switch
-                      .checked=${sliderControl.cover_invert ?? false}
-                      @change=${(e: Event) => {
-                        const target = e.target as any;
-                        updateModule({ cover_invert: target.checked });
-                      }}
-                    ></ha-switch>
+
+                    ${this.renderFieldSection(
+                      'Border Radius',
+                      'Slider border radius style',
+                      homeAssistant,
+                      {
+                        slider_radius: bar.slider_radius || sliderControl.slider_radius || 'round',
+                      },
+                      [
+                        this.selectField('slider_radius', [
+                          { value: 'square', label: 'Square' },
+                          { value: 'round', label: 'Round' },
+                          { value: 'pill', label: 'Pill' },
+                        ]),
+                      ],
+                      (e: CustomEvent) => {
+                        const updatedBars = [...(sliderControl.bars || [])];
+                        const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                        if (barIndex !== -1) {
+                          updatedBars[barIndex] = {
+                            ...updatedBars[barIndex],
+                            slider_radius: e.detail.value.slider_radius,
+                          };
+                        }
+                        updateModule({ bars: updatedBars });
+                      }
+                    )}
+                    ${(bar.slider_style || sliderControl.slider_style) === 'glass'
+                      ? html`
+                          <div class="conditional-fields-group">
+                            <div class="field-container">
+                              <div class="field-title">Glass Blur Amount</div>
+                              <div class="field-description">
+                                Backdrop filter blur amount (0-20px)
+                              </div>
+                              <div style="display: flex; gap: 8px; align-items: center;">
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="20"
+                                  step="1"
+                                  .value="${bar.glass_blur_amount ||
+                                  sliderControl.glass_blur_amount ||
+                                  8}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        glass_blur_amount: parseInt(target.value),
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                  style="flex: 1;"
+                                />
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="20"
+                                  .value="${bar.glass_blur_amount ||
+                                  sliderControl.glass_blur_amount ||
+                                  8}"
+                                  @input=${(e: Event) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        glass_blur_amount: parseInt(target.value),
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                  style="width: 70px;"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        `
+                      : ''}
                   </div>
-                `
-              : ''
-          }
+
+                  ${bar.type !== 'rgb' && bar.type !== 'color_temp'
+                    ? html`
+                        <!-- Bar Slider Colors -->
+                        <div
+                          style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                        >
+                          <div
+                            style="font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px;"
+                          >
+                            SLIDER COLORS
+                          </div>
+
+                          <div class="field-container">
+                            <div class="field-title">Track Color</div>
+                            <div class="field-description">
+                              Background color (leave empty for auto: fill at 25% opacity)
+                            </div>
+                            <ultra-color-picker
+                              .value=${bar.slider_track_color ||
+                              sliderControl.slider_track_color ||
+                              ''}
+                              .defaultValue=${''}
+                              .homeAssistant=${homeAssistant}
+                              @value-changed=${(e: CustomEvent) => {
+                                const updatedBars = [...(sliderControl.bars || [])];
+                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                if (barIndex !== -1) {
+                                  updatedBars[barIndex] = {
+                                    ...updatedBars[barIndex],
+                                    slider_track_color: e.detail.value,
+                                  };
+                                }
+                                updateModule({ bars: updatedBars });
+                              }}
+                            ></ultra-color-picker>
+                          </div>
+
+                          ${(bar.dynamic_fill_color ?? sliderControl.dynamic_fill_color ?? false)
+                            ? html``
+                            : html`
+                                <div class="field-container">
+                                  <div class="field-title">Fill Color</div>
+                                  <div class="field-description">
+                                    Color of the filled portion of the slider
+                                  </div>
+                                  <ultra-color-picker
+                                    .value=${bar.slider_fill_color ||
+                                    sliderControl.slider_fill_color ||
+                                    ''}
+                                    .defaultValue=${'var(--primary-color)'}
+                                    .homeAssistant=${homeAssistant}
+                                    @value-changed=${(e: CustomEvent) => {
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          slider_fill_color: e.detail.value,
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                  ></ultra-color-picker>
+                                </div>
+                              `}
+
+                          <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;"
+                          >
+                            <div>
+                              <div class="field-title">Dynamic Fill Color</div>
+                              <div class="field-description">
+                                Use entity color (RGB lights, etc.)
+                              </div>
+                            </div>
+                            <ha-switch
+                              .checked=${bar.dynamic_fill_color ??
+                              sliderControl.dynamic_fill_color ??
+                              false}
+                              @change=${(e: Event) => {
+                                const target = e.target as any;
+                                const updatedBars = [...(sliderControl.bars || [])];
+                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                if (barIndex !== -1) {
+                                  updatedBars[barIndex] = {
+                                    ...updatedBars[barIndex],
+                                    dynamic_fill_color: target.checked,
+                                  };
+                                }
+                                updateModule({ bars: updatedBars });
+                              }}
+                            ></ha-switch>
+                          </div>
+                        </div>
+                      `
+                    : ''}
+
+                  <!-- Bar Display Elements -->
+                  <div
+                    style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                  >
+                    <div
+                      style="font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px;"
+                    >
+                      DISPLAY ELEMENTS
+                    </div>
+
+                    ${layoutMode === 'overlay'
+                      ? html`
+                          <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
+                          >
+                            <div>
+                              <div class="field-title">Auto Contrast</div>
+                              <div class="field-description">
+                                Automatically adjust text/icon color based on fill
+                              </div>
+                            </div>
+                            <ha-switch
+                              .checked=${bar.auto_contrast ?? sliderControl.auto_contrast ?? true}
+                              @change=${(e: Event) => {
+                                const target = e.target as any;
+                                const updatedBars = [...(sliderControl.bars || [])];
+                                const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                if (barIndex !== -1) {
+                                  updatedBars[barIndex] = {
+                                    ...updatedBars[barIndex],
+                                    auto_contrast: target.checked,
+                                  };
+                                }
+                                updateModule({ bars: updatedBars });
+                              }}
+                            ></ha-switch>
+                          </div>
+                        `
+                      : ''}
+
+                    <!-- Icon Settings -->
+                    <div style="margin-bottom: 24px;">
+                      <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                      >
+                        <div>
+                          <div class="field-title">Show Icon</div>
+                          <div class="field-description">Display an icon on the slider</div>
+                        </div>
+                        <ha-switch
+                          .checked=${bar.show_icon ?? sliderControl.show_icon ?? true}
+                          @change=${(e: Event) => {
+                            const target = e.target as any;
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                show_icon: target.checked,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }}
+                        ></ha-switch>
+                      </div>
+
+                      ${(bar.show_icon ?? sliderControl.show_icon) !== false
+                        ? html`
+                            <div class="conditional-fields-group">
+                              ${this.renderFieldSection(
+                                'Icon',
+                                'Icon to display (leave empty for entity icon)',
+                                homeAssistant,
+                                { icon: bar.icon || sliderControl.icon || '' },
+                                [this.iconField('icon')],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = {
+                                      ...updatedBars[barIndex],
+                                      icon: e.detail.value.icon,
+                                    };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+
+                              <div
+                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                              >
+                                <div>
+                                  <div class="field-title">Dynamic Icon</div>
+                                  <div class="field-description">Use entity's default icon</div>
+                                </div>
+                                <ha-switch
+                                  .checked=${bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true}
+                                  @change=${(e: Event) => {
+                                    const target = e.target as any;
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        dynamic_icon: target.checked,
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                ></ha-switch>
+                              </div>
+
+                              <div
+                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                              >
+                                <div>
+                                  <div class="field-title">Icon as Toggle</div>
+                                  <div class="field-description">
+                                    Click icon to toggle entity on/off (icon changes with state)
+                                  </div>
+                                </div>
+                                <ha-switch
+                                  .checked=${bar.icon_as_toggle ??
+                                  sliderControl.icon_as_toggle ??
+                                  true}
+                                  @change=${(e: Event) => {
+                                    const target = e.target as any;
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        icon_as_toggle: target.checked,
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                ></ha-switch>
+                              </div>
+
+                              <div class="field-container">
+                                <div class="field-title">Icon Size</div>
+                                <div class="field-description">Icon size in pixels</div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                  <input
+                                    type="range"
+                                    min="16"
+                                    max="48"
+                                    step="2"
+                                    .value="${bar.icon_size || sliderControl.icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          icon_size: parseInt(target.value),
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                    style="flex: 1;"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="16"
+                                    max="48"
+                                    .value="${bar.icon_size || sliderControl.icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          icon_size: parseInt(target.value),
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                    style="width: 70px;"
+                                  />
+                                </div>
+                              </div>
+
+                              <div class="field-container">
+                                <div class="field-title">Icon Color</div>
+                                <div class="field-description">Color for the icon</div>
+                                <ultra-color-picker
+                                  .value=${bar.icon_color || sliderControl.icon_color || ''}
+                                  .defaultValue=${'var(--primary-text-color)'}
+                                  .homeAssistant=${homeAssistant}
+                                  @value-changed=${(e: CustomEvent) => {
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        icon_color: e.detail.value,
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                ></ultra-color-picker>
+                              </div>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+
+                    <!-- Name Settings -->
+                    <div style="margin-bottom: 24px;">
+                      <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                      >
+                        <div>
+                          <div class="field-title">Show Name</div>
+                          <div class="field-description">Display entity name</div>
+                        </div>
+                        <ha-switch
+                          .checked=${bar.show_name ?? sliderControl.show_name ?? true}
+                          @change=${(e: Event) => {
+                            const target = e.target as any;
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                show_name: target.checked,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }}
+                        ></ha-switch>
+                      </div>
+
+                      ${(bar.show_name ?? sliderControl.show_name) !== false
+                        ? html`
+                            <div class="conditional-fields-group">
+                              <div class="field-container">
+                                <div class="field-title">Name Size</div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                  <input
+                                    type="range"
+                                    min="10"
+                                    max="24"
+                                    step="1"
+                                    .value="${bar.name_size || sliderControl.name_size || 14}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          name_size: parseInt(target.value),
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                    style="flex: 1;"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="10"
+                                    max="24"
+                                    .value="${bar.name_size || sliderControl.name_size || 14}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          name_size: parseInt(target.value),
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                    style="width: 70px;"
+                                  />
+                                </div>
+                              </div>
+
+                              <div class="field-container">
+                                <div class="field-title">Name Color</div>
+                                <ultra-color-picker
+                                  .value=${bar.name_color || sliderControl.name_color || ''}
+                                  .defaultValue=${'var(--primary-text-color)'}
+                                  .homeAssistant=${homeAssistant}
+                                  @value-changed=${(e: CustomEvent) => {
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        name_color: e.detail.value,
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                ></ultra-color-picker>
+                              </div>
+
+                              <div
+                                style="display: flex; align-items: center; justify-content: space-between;"
+                              >
+                                <div class="field-title">Bold</div>
+                                <ha-switch
+                                  .checked=${bar.name_bold ?? sliderControl.name_bold ?? true}
+                                  @change=${(e: Event) => {
+                                    const target = e.target as any;
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        name_bold: target.checked,
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                ></ha-switch>
+                              </div>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+
+                    <!-- Value Settings -->
+                    <div style="margin-bottom: 24px;">
+                      <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                      >
+                        <div>
+                          <div class="field-title">Show Value</div>
+                          <div class="field-description">Display current numeric value</div>
+                        </div>
+                        <ha-switch
+                          .checked=${bar.show_value ?? sliderControl.show_value ?? true}
+                          @change=${(e: Event) => {
+                            const target = e.target as any;
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                show_value: target.checked,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }}
+                        ></ha-switch>
+                      </div>
+
+                      <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
+                      >
+                        <div>
+                          <div class="field-title">Show Bar Label</div>
+                          <div class="field-description">
+                            Display bar label (Brightness, RGB Color, etc.)
+                          </div>
+                        </div>
+                        <ha-switch
+                          .checked=${bar.show_bar_label ?? sliderControl.show_bar_label ?? true}
+                          @change=${(e: Event) => {
+                            const target = e.target as any;
+                            const updatedBars = [...(sliderControl.bars || [])];
+                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                            if (barIndex !== -1) {
+                              updatedBars[barIndex] = {
+                                ...updatedBars[barIndex],
+                                show_bar_label: target.checked,
+                              };
+                            }
+                            updateModule({ bars: updatedBars });
+                          }}
+                        ></ha-switch>
+                      </div>
+
+                      ${(bar.show_value ?? sliderControl.show_value) !== false
+                        ? html`
+                            <div class="conditional-fields-group">
+                              <div class="field-container">
+                                <div class="field-title">Value Size</div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                  <input
+                                    type="range"
+                                    min="10"
+                                    max="24"
+                                    step="1"
+                                    .value="${bar.value_size || sliderControl.value_size || 14}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          value_size: parseInt(target.value),
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                    style="flex: 1;"
+                                  />
+                                  <input
+                                    type="number"
+                                    min="10"
+                                    max="24"
+                                    .value="${bar.value_size || sliderControl.value_size || 14}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const updatedBars = [...(sliderControl.bars || [])];
+                                      const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                      if (barIndex !== -1) {
+                                        updatedBars[barIndex] = {
+                                          ...updatedBars[barIndex],
+                                          value_size: parseInt(target.value),
+                                        };
+                                      }
+                                      updateModule({ bars: updatedBars });
+                                    }}
+                                    style="width: 70px;"
+                                  />
+                                </div>
+                              </div>
+
+                              <div class="field-container">
+                                <div class="field-title">Value Color</div>
+                                <ultra-color-picker
+                                  .value=${bar.value_color || sliderControl.value_color || ''}
+                                  .defaultValue=${'var(--primary-text-color)'}
+                                  .homeAssistant=${homeAssistant}
+                                  @value-changed=${(e: CustomEvent) => {
+                                    const updatedBars = [...(sliderControl.bars || [])];
+                                    const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                    if (barIndex !== -1) {
+                                      updatedBars[barIndex] = {
+                                        ...updatedBars[barIndex],
+                                        value_color: e.detail.value,
+                                      };
+                                    }
+                                    updateModule({ bars: updatedBars });
+                                  }}
+                                ></ultra-color-picker>
+                              </div>
+
+                              ${this.renderFieldSection(
+                                'Value Suffix',
+                                'Text to append to value (e.g., %, °C, °F)',
+                                homeAssistant,
+                                {
+                                  value_suffix:
+                                    bar.value_suffix || sliderControl.value_suffix || '',
+                                },
+                                [this.textField('value_suffix')],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = {
+                                      ...updatedBars[barIndex],
+                                      value_suffix: e.detail.value.value_suffix,
+                                    };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          })}
         </div>
 
-        <!-- LAYOUT & ORIENTATION -->
-        <div class="settings-section">
-          <div class="section-title">LAYOUT & ORIENTATION</div>
-          
+        <!-- LAYOUT SETTINGS -->
+        <div class="settings-section layout-settings">
+          <div class="section-title">LAYOUT SETTINGS</div>
+
           ${this.renderFieldSection(
             'Orientation',
             'Slider direction: horizontal or vertical',
-            hass,
+            homeAssistant,
             { orientation: sliderControl.orientation || 'horizontal' },
             [
               this.selectField('orientation', [
@@ -324,11 +2224,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
             ],
             (e: CustomEvent) => updateModule({ orientation: e.detail.value.orientation })
           )}
-          
           ${this.renderFieldSection(
             'Layout Mode',
             'How to position information relative to the slider',
-            hass,
+            homeAssistant,
             { layout_mode: sliderControl.layout_mode || 'outside' },
             [
               this.selectField('layout_mode', [
@@ -339,700 +2238,79 @@ export class UltraSliderControlModule extends BaseUltraModule {
             ],
             (e: CustomEvent) => updateModule({ layout_mode: e.detail.value.layout_mode })
           )}
-          
-          ${
-            sliderControl.layout_mode === 'outside'
-              ? html`
-                  <div class="conditional-fields-group">
-                    ${this.renderFieldSection(
-                      'Outside Position',
-                      'Where to position information (top or bottom)',
-                      hass,
-                      { outside_position: sliderControl.outside_position || 'top' },
-                      [
-                        this.selectField('outside_position', [
-                          { value: 'top', label: 'Top' },
-                          { value: 'bottom', label: 'Bottom' },
-                        ]),
-                      ],
-                      (e: CustomEvent) =>
-                        updateModule({ outside_position: e.detail.value.outside_position })
-                    )}
-                    ${this.renderFieldSection(
-                      'Outside Alignment',
-                      'How to align the information',
-                      hass,
-                      { outside_alignment: sliderControl.outside_alignment || 'start' },
-                      [
-                        this.selectField('outside_alignment', [
-                          { value: 'start', label: 'Start' },
-                          { value: 'center', label: 'Center' },
-                          { value: 'end', label: 'End' },
-                        ]),
-                      ],
-                      (e: CustomEvent) =>
-                        updateModule({ outside_alignment: e.detail.value.outside_alignment })
-                    )}
+          ${sliderControl.layout_mode === 'overlay' && sliderControl.orientation === 'horizontal'
+            ? html`
+                <div class="conditional-fields-group">
+                  ${this.renderFieldSection(
+                    'Overlay Position',
+                    'Where to position information on the slider',
+                    homeAssistant,
+                    { overlay_position: sliderControl.overlay_position || 'left' },
+                    [
+                      this.selectField('overlay_position', [
+                        { value: 'left', label: 'Left' },
+                        { value: 'center', label: 'Center' },
+                        { value: 'right', label: 'Right' },
+                      ]),
+                    ],
+                    (e: CustomEvent) =>
+                      updateModule({ overlay_position: e.detail.value.overlay_position })
+                  )}
+                </div>
+              `
+            : ''}
+          ${sliderControl.layout_mode === 'split'
+            ? html`
+                <div class="conditional-fields-group">
+                  <div class="field-description">
+                    Configure bar position and ratio inside each bar card below.
                   </div>
-                `
-              : sliderControl.layout_mode === 'overlay'
-                ? html`
-                    <div class="conditional-fields-group">
-                      ${this.renderFieldSection(
-                        'Overlay Position',
-                        'Where to position information on the slider',
-                        hass,
-                        { overlay_position: sliderControl.overlay_position || 'left' },
-                        [
-                          this.selectField('overlay_position', [
-                            { value: 'left', label: 'Left' },
-                            { value: 'center', label: 'Center' },
-                            { value: 'right', label: 'Right' },
-                          ]),
-                        ],
-                        (e: CustomEvent) =>
-                          updateModule({ overlay_position: e.detail.value.overlay_position })
-                      )}
-
-                      <div class="field-container">
-                        <div class="field-title">Bar Fill Percentage</div>
-                        <div class="field-description">
-                          How much of the module the bar fills (50-100%)
-                        </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                          <input
-                            type="range"
-                            min="50"
-                            max="100"
-                            step="1"
-                            .value="${sliderControl.bar_fill_percentage || 100}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ bar_fill_percentage: parseInt(target.value) });
-                            }}
-                            style="flex: 1;"
-                          />
-                          <input
-                            type="number"
-                            min="50"
-                            max="100"
-                            .value="${sliderControl.bar_fill_percentage || 100}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ bar_fill_percentage: parseInt(target.value) });
-                            }}
-                            style="width: 70px;"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  `
-                : ''
-          }
-          
-          ${
-            sliderControl.layout_mode === 'split'
-              ? html`
-                  <div class="conditional-fields-group">
-                    ${this.renderFieldSection(
-                      'Bar Position',
-                      'Where to position the slider bar (left or right)',
-                      hass,
-                      { split_bar_position: sliderControl.split_bar_position || 'left' },
-                      [
-                        this.selectField('split_bar_position', [
-                          { value: 'left', label: 'Left' },
-                          { value: 'right', label: 'Right' },
-                        ]),
-                      ],
-                      (e: CustomEvent) =>
-                        updateModule({ split_bar_position: e.detail.value.split_bar_position })
-                    )}
-                    ${this.renderFieldSection(
-                      'Info Position',
-                      'How to align information in the info section',
-                      hass,
-                      { split_info_position: sliderControl.split_info_position || 'center' },
-                      [
-                        this.selectField('split_info_position', [
-                          { value: 'left', label: 'Left' },
-                          { value: 'center', label: 'Center' },
-                          { value: 'right', label: 'Right' },
-                        ]),
-                      ],
-                      (e: CustomEvent) =>
-                        updateModule({ split_info_position: e.detail.value.split_info_position })
-                    )}
-
-                    <div class="field-container">
-                      <div class="field-title">Split Ratio</div>
-                      <div class="field-description">Percentage for bar vs info (10-90)</div>
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <input
-                          type="range"
-                          min="10"
-                          max="90"
-                          step="5"
-                          .value="${sliderControl.split_ratio || 50}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            updateModule({ split_ratio: parseInt(target.value) });
-                          }}
-                          style="flex: 1;"
-                        />
-                        <input
-                          type="number"
-                          min="10"
-                          max="90"
-                          .value="${sliderControl.split_ratio || 50}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            updateModule({ split_ratio: parseInt(target.value) });
-                          }}
-                          style="width: 70px;"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                `
-              : ''
-          }
+                </div>
+              `
+            : ''}
         </div>
 
-        <!-- SLIDER STYLE -->
+        <!-- Bar Spacing (kept global) -->
         <div class="settings-section">
-          <div class="section-title">SLIDER STYLE</div>
-          
-          ${this.renderFieldSection(
-            'Slider Style',
-            'Visual appearance of the slider',
-            hass,
-            { slider_style: sliderControl.slider_style || 'flat' },
-            [
-              this.selectField('slider_style', [
-                { value: 'flat', label: 'Flat' },
-                { value: 'glossy', label: 'Glossy' },
-                { value: 'embossed', label: 'Embossed' },
-                { value: 'inset', label: 'Inset' },
-                { value: 'neon-glow', label: 'Neon Glow' },
-                { value: 'outline', label: 'Outline' },
-                { value: 'glass', label: 'Glass' },
-                { value: 'metallic', label: 'Metallic' },
-                { value: 'neumorphic', label: 'Neumorphic' },
-                { value: 'minimal', label: 'Minimal' },
-              ]),
-            ],
-            (e: CustomEvent) => updateModule({ slider_style: e.detail.value.slider_style })
-          )}
-          
           <div class="field-container">
-            <div class="field-title">Slider Height</div>
-            <div class="field-description">Height in pixels (for horizontal) or width (for vertical)</div>
+            <div class="field-title">Bar Spacing</div>
+            <div class="field-description">
+              Spacing between multiple bars (negative values allowed for overlap)
+            </div>
             <div style="display: flex; gap: 8px; align-items: center;">
               <input
                 type="range"
-                min="20"
-                max="200"
-                step="5"
-                .value="${sliderControl.slider_height || 40}"
+                min="-20"
+                max="40"
+                step="2"
+                .value="${sliderControl.bar_spacing || 8}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
-                  updateModule({ slider_height: parseInt(target.value) });
+                  updateModule({ bar_spacing: parseInt(target.value) });
                 }}
                 style="flex: 1;"
               />
               <input
                 type="number"
-                min="20"
-                max="200"
-                .value="${sliderControl.slider_height || 40}"
+                min="-20"
+                max="40"
+                .value="${sliderControl.bar_spacing || 8}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
-                  updateModule({ slider_height: parseInt(target.value) });
+                  updateModule({ bar_spacing: parseInt(target.value) });
                 }}
                 style="width: 70px;"
               />
             </div>
           </div>
-          
-          ${this.renderFieldSection(
-            'Border Radius',
-            'Slider border radius style',
-            hass,
-            { slider_radius: sliderControl.slider_radius || 'round' },
-            [
-              this.selectField('slider_radius', [
-                { value: 'square', label: 'Square' },
-                { value: 'round', label: 'Round' },
-                { value: 'pill', label: 'Pill' },
-              ]),
-            ],
-            (e: CustomEvent) => updateModule({ slider_radius: e.detail.value.slider_radius })
-          )}
-          
-          ${
-            sliderControl.slider_style === 'glass'
-              ? html`
-                  <div class="conditional-fields-group">
-                    <div class="field-container">
-                      <div class="field-title">Glass Blur Amount</div>
-                      <div class="field-description">Backdrop filter blur amount (0-20px)</div>
-                      <div style="display: flex; gap: 8px; align-items: center;">
-                        <input
-                          type="range"
-                          min="0"
-                          max="20"
-                          step="1"
-                          .value="${sliderControl.glass_blur_amount || 8}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            updateModule({ glass_blur_amount: parseInt(target.value) });
-                          }}
-                          style="flex: 1;"
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          .value="${sliderControl.glass_blur_amount || 8}"
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            updateModule({ glass_blur_amount: parseInt(target.value) });
-                          }}
-                          style="width: 70px;"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                `
-              : ''
-          }
         </div>
-
-        <!-- SLIDER COLORS -->
-        <div class="settings-section">
-          <div class="section-title">SLIDER COLORS</div>
-          
-          <div class="field-container">
-            <div class="field-title">Track Color</div>
-            <div class="field-description">Background color (leave empty for auto: fill at 25% opacity)</div>
-            <ultra-color-picker
-              .value=${sliderControl.slider_track_color || ''}
-              .defaultValue={''}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ slider_track_color: e.detail.value })}
-            ></ultra-color-picker>
-          </div>
-          
-          <div class="field-container">
-            <div class="field-title">Fill Color</div>
-            <div class="field-description">Color of the filled portion of the slider</div>
-            <ultra-color-picker
-              .value=${sliderControl.slider_fill_color || ''}
-              .defaultValue=${'var(--primary-color)'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) => updateModule({ slider_fill_color: e.detail.value })}
-            ></ultra-color-picker>
-          </div>
-          
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;">
-            <div>
-              <div class="field-title">Dynamic Fill Color</div>
-              <div class="field-description">Use entity color (RGB lights, etc.)</div>
-            </div>
-            <ha-switch
-              .checked=${sliderControl.dynamic_fill_color || false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ dynamic_fill_color: target.checked });
-              }}
-            ></ha-switch>
-          </div>
-        </div>
-
-        <!-- DISPLAY ELEMENTS -->
-        <div class="settings-section">
-          <div class="section-title">DISPLAY ELEMENTS</div>
-          
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <div>
-              <div class="field-title">Auto Contrast</div>
-              <div class="field-description">Automatically adjust text/icon color based on fill</div>
-            </div>
-            <ha-switch
-              .checked=${sliderControl.auto_contrast ?? true}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ auto_contrast: target.checked });
-              }}
-            ></ha-switch>
-          </div>
-          
-          <div style="margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <div>
-                <div class="field-title">Show Icon</div>
-                <div class="field-description">Display an icon on the slider</div>
-              </div>
-              <ha-switch
-                .checked=${sliderControl.show_icon ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ show_icon: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-            
-            ${
-              sliderControl.show_icon
-                ? html`
-                    <div class="conditional-fields-group">
-                      ${this.renderFieldSection(
-                        'Icon',
-                        'Icon to display (leave empty for entity icon)',
-                        hass,
-                        { icon: sliderControl.icon || '' },
-                        [this.iconField('icon')],
-                        (e: CustomEvent) => updateModule({ icon: e.detail.value.icon })
-                      )}
-
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                      >
-                        <div>
-                          <div class="field-title">Dynamic Icon</div>
-                          <div class="field-description">Use entity's default icon</div>
-                        </div>
-                        <ha-switch
-                          .checked=${sliderControl.dynamic_icon ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            updateModule({ dynamic_icon: target.checked });
-                          }}
-                        ></ha-switch>
-                      </div>
-
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;"
-                      >
-                        <div>
-                          <div class="field-title">Icon as Toggle</div>
-                          <div class="field-description">
-                            Click icon to toggle entity on/off (icon changes with state)
-                          </div>
-                        </div>
-                        <ha-switch
-                          .checked=${sliderControl.icon_as_toggle ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            updateModule({ icon_as_toggle: target.checked });
-                          }}
-                        ></ha-switch>
-                      </div>
-
-                      <div class="field-container">
-                        <div class="field-title">Icon Size</div>
-                        <div class="field-description">Icon size in pixels</div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                          <input
-                            type="range"
-                            min="16"
-                            max="48"
-                            step="2"
-                            .value="${sliderControl.icon_size || 24}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ icon_size: parseInt(target.value) });
-                            }}
-                            style="flex: 1;"
-                          />
-                          <input
-                            type="number"
-                            min="16"
-                            max="48"
-                            .value="${sliderControl.icon_size || 24}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ icon_size: parseInt(target.value) });
-                            }}
-                            style="width: 70px;"
-                          />
-                        </div>
-                      </div>
-
-                      <div class="field-container">
-                        <div class="field-title">Icon Color</div>
-                        <div class="field-description">Color for the icon</div>
-                        <ultra-color-picker
-                          .value=${sliderControl.icon_color || ''}
-                          .defaultValue=${'var(--primary-text-color)'}
-                          .hass=${hass}
-                          @value-changed=${(e: CustomEvent) =>
-                            updateModule({ icon_color: e.detail.value })}
-                        ></ultra-color-picker>
-                      </div>
-                    </div>
-                  `
-                : ''
-            }
-          </div>
-          
-          <div style="margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <div>
-                <div class="field-title">Show Name</div>
-                <div class="field-description">Display entity name</div>
-              </div>
-              <ha-switch
-                .checked=${sliderControl.show_name ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ show_name: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-            
-            ${
-              sliderControl.show_name
-                ? html`
-                    <div class="conditional-fields-group">
-                      <div class="field-container">
-                        <div class="field-title">Name Size</div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                          <input
-                            type="range"
-                            min="10"
-                            max="24"
-                            step="1"
-                            .value="${sliderControl.name_size || 14}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ name_size: parseInt(target.value) });
-                            }}
-                            style="flex: 1;"
-                          />
-                          <input
-                            type="number"
-                            min="10"
-                            max="24"
-                            .value="${sliderControl.name_size || 14}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ name_size: parseInt(target.value) });
-                            }}
-                            style="width: 70px;"
-                          />
-                        </div>
-                      </div>
-
-                      <div class="field-container">
-                        <div class="field-title">Name Color</div>
-                        <ultra-color-picker
-                          .value=${sliderControl.name_color || ''}
-                          .defaultValue=${'var(--primary-text-color)'}
-                          .hass=${hass}
-                          @value-changed=${(e: CustomEvent) =>
-                            updateModule({ name_color: e.detail.value })}
-                        ></ultra-color-picker>
-                      </div>
-
-                      <div
-                        style="display: flex; align-items: center; justify-content: space-between;"
-                      >
-                        <div class="field-title">Bold</div>
-                        <ha-switch
-                          .checked=${sliderControl.name_bold ?? true}
-                          @change=${(e: Event) => {
-                            const target = e.target as any;
-                            updateModule({ name_bold: target.checked });
-                          }}
-                        ></ha-switch>
-                      </div>
-                    </div>
-                  `
-                : ''
-            }
-          </div>
-          
-          <div style="margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <div>
-                <div class="field-title">Show Value</div>
-                <div class="field-description">Display current numeric value</div>
-              </div>
-              <ha-switch
-                .checked=${sliderControl.show_value ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ show_value: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-            
-            ${
-              sliderControl.show_value
-                ? html`
-                    <div class="conditional-fields-group">
-                      <div class="field-container">
-                        <div class="field-title">Value Size</div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                          <input
-                            type="range"
-                            min="10"
-                            max="24"
-                            step="1"
-                            .value="${sliderControl.value_size || 14}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ value_size: parseInt(target.value) });
-                            }}
-                            style="flex: 1;"
-                          />
-                          <input
-                            type="number"
-                            min="10"
-                            max="24"
-                            .value="${sliderControl.value_size || 14}"
-                            @input=${(e: Event) => {
-                              const target = e.target as HTMLInputElement;
-                              updateModule({ value_size: parseInt(target.value) });
-                            }}
-                            style="width: 70px;"
-                          />
-                        </div>
-                      </div>
-
-                      <div class="field-container">
-                        <div class="field-title">Value Color</div>
-                        <ultra-color-picker
-                          .value=${sliderControl.value_color || ''}
-                          .defaultValue=${'var(--primary-text-color)'}
-                          .hass=${hass}
-                          @value-changed=${(e: CustomEvent) =>
-                            updateModule({ value_color: e.detail.value })}
-                        ></ultra-color-picker>
-                      </div>
-
-                      ${this.renderFieldSection(
-                        'Value Suffix',
-                        'Text to append to value (e.g., %, °C, °F)',
-                        hass,
-                        { value_suffix: sliderControl.value_suffix || '' },
-                        [this.textField('value_suffix')],
-                        (e: CustomEvent) =>
-                          updateModule({ value_suffix: e.detail.value.value_suffix })
-                      )}
-                    </div>
-                  `
-                : ''
-            }
-          </div>
-        </div>
-
-        <!-- TOGGLE CONTROL -->
-        <div class="settings-section">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <div class="section-title" style="margin-bottom: 0;">TOGGLE CONTROL</div>
-            <ha-switch
-              .checked=${sliderControl.show_toggle || false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ show_toggle: target.checked });
-              }}
-            ></ha-switch>
-          </div>
-          
-          ${
-            sliderControl.show_toggle
-              ? html`
-                  ${this.renderFieldSection(
-                    'Toggle Position',
-                    'Where to place the toggle switch',
-                    hass,
-                    { toggle_position: sliderControl.toggle_position || 'right' },
-                    [
-                      this.selectField('toggle_position', [
-                        { value: 'left', label: 'Left' },
-                        { value: 'right', label: 'Right' },
-                        { value: 'top', label: 'Top' },
-                        { value: 'bottom', label: 'Bottom' },
-                      ]),
-                    ],
-                    (e: CustomEvent) =>
-                      updateModule({ toggle_position: e.detail.value.toggle_position })
-                  )}
-
-                  <div class="field-container">
-                    <div class="field-title">Toggle Size</div>
-                    <div class="field-description">Size of the toggle switch in pixels</div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="range"
-                        min="20"
-                        max="48"
-                        step="2"
-                        .value="${sliderControl.toggle_size || 28}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          updateModule({ toggle_size: parseInt(target.value) });
-                        }}
-                        style="flex: 1;"
-                      />
-                      <input
-                        type="number"
-                        min="20"
-                        max="48"
-                        .value="${sliderControl.toggle_size || 28}"
-                        @input=${(e: Event) => {
-                          const target = e.target as HTMLInputElement;
-                          updateModule({ toggle_size: parseInt(target.value) });
-                        }}
-                        style="width: 70px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="field-container">
-                    <div class="field-title">Toggle Color (On)</div>
-                    <ultra-color-picker
-                      .value=${sliderControl.toggle_color_on || ''}
-                      .defaultValue=${'var(--primary-color)'}
-                      .hass=${hass}
-                      @value-changed=${(e: CustomEvent) =>
-                        updateModule({ toggle_color_on: e.detail.value })}
-                    ></ultra-color-picker>
-                  </div>
-
-                  <div class="field-container">
-                    <div class="field-title">Toggle Color (Off)</div>
-                    <ultra-color-picker
-                      .value=${sliderControl.toggle_color_off || ''}
-                      .defaultValue=${'rgba(var(--rgb-primary-text-color), 0.3)'}
-                      .hass=${hass}
-                      @value-changed=${(e: CustomEvent) =>
-                        updateModule({ toggle_color_off: e.detail.value })}
-                    ></ultra-color-picker>
-                  </div>
-                `
-              : html`
-                  <div
-                    style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
-                  >
-                    Enable toggle to add on/off control
-                  </div>
-                `
-          }
-        </div>
-
-
-
       </div>
     `;
   }
 
   renderActionsTab(
     module: CardModule,
-    hass: HomeAssistant,
+    homeAssistant: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
@@ -1052,7 +2330,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
         >
           ${UltraLinkComponent.render(
-            hass,
+            homeAssistant,
             {
               tap_action: sliderControl.tap_action || { action: 'nothing' },
               hold_action: sliderControl.hold_action || { action: 'nothing' },
@@ -1075,11 +2353,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
   renderLogicTab(
     module: CardModule,
-    hass: HomeAssistant,
+    homeAssistant: HomeAssistant,
     config: UltraCardConfig,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
-    return GlobalLogicTab.render(module, hass, updateModule);
+    // No conditional logic for slider control module
+    return html``;
   }
 
   renderPreview(
@@ -1088,703 +2367,810 @@ export class UltraSliderControlModule extends BaseUltraModule {
     config: UltraCardConfig,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
+    // Render loop fix - removed excessive logging
     const sliderControl = module as SliderControlModule;
+    const homeAssistant = hass;
 
-    if (!sliderControl.entity) {
+    // Check if we have any bars configured
+    if (!sliderControl.bars || sliderControl.bars.length === 0) {
       return html`
         <div style="padding: 20px; text-align: center; color: var(--secondary-text-color);">
           <ha-icon icon="mdi:tune-vertical" style="font-size: 48px; opacity: 0.3;"></ha-icon>
-          <div style="margin-top: 12px;">No entity selected</div>
-        </div>
-      `;
-    }
-
-    const entityState = hass.states[sliderControl.entity];
-    if (!entityState) {
-      return html`
-        <div style="padding: 20px; text-align: center; color: var(--error-color);">
-          <ha-icon icon="mdi:alert-circle" style="font-size: 48px;"></ha-icon>
-          <div style="margin-top: 12px;">Entity not found: ${sliderControl.entity}</div>
-        </div>
-      `;
-    }
-
-    // Extract entity info
-    const domain = sliderControl.entity.split('.')[0];
-    const entityName =
-      sliderControl.name || entityState.attributes.friendly_name || sliderControl.entity;
-    const isOn = entityState.state === 'on' || entityState.state === 'open';
-
-    // Get icon - use a key to force re-render when entity state changes
-    let displayIcon = sliderControl.icon;
-    if (sliderControl.dynamic_icon || !displayIcon) {
-      displayIcon =
-        EntityIconService.getEntityIcon(sliderControl.entity, hass) ||
-        entityState.attributes.icon ||
-        'mdi:help-circle';
-    }
-
-    // If icon_as_toggle is enabled and entity is a light, change icon based on state
-    if (sliderControl.icon_as_toggle && domain === 'light') {
-      if (isOn) {
-        displayIcon = displayIcon || 'mdi:lightbulb-on';
-      } else {
-        displayIcon = displayIcon.replace('-on', '-off') || 'mdi:lightbulb-off';
-        // Special handling for common light icons
-        if (displayIcon === 'mdi:lightbulb') {
-          displayIcon = 'mdi:lightbulb-off';
-        } else if (!displayIcon.includes('-off') && !displayIcon.includes('-outline')) {
-          displayIcon = displayIcon + '-off';
-        }
-      }
-    }
-
-    // Calculate value and percentage
-    let currentValue = 0;
-    let displayValue = '0';
-    let percentage = 0;
-
-    if (domain === 'light') {
-      const brightness = entityState.attributes.brightness || 0;
-      currentValue = Math.round((brightness / 255) * 100);
-      percentage = currentValue;
-      displayValue = `${currentValue}`;
-    } else if (domain === 'cover') {
-      currentValue = parseInt(entityState.attributes.current_position) || 0;
-      percentage = sliderControl.cover_invert ? 100 - currentValue : currentValue;
-      displayValue = `${currentValue}`;
-    } else if (domain === 'fan') {
-      currentValue = parseInt(entityState.attributes.percentage) || 0;
-      percentage = currentValue;
-      displayValue = `${currentValue}`;
-    } else if (domain === 'input_number') {
-      const value = parseFloat(entityState.state) || 0;
-      const min = sliderControl.min_value ?? parseFloat(entityState.attributes.min) ?? 0;
-      const max = sliderControl.max_value ?? parseFloat(entityState.attributes.max) ?? 100;
-      currentValue = value;
-      percentage = ((value - min) / (max - min)) * 100;
-      displayValue = value.toFixed(1);
-    } else if (domain === 'climate') {
-      currentValue = parseFloat(entityState.attributes.temperature) || 0;
-      const min = sliderControl.min_value ?? 16;
-      const max = sliderControl.max_value ?? 30;
-      percentage = ((currentValue - min) / (max - min)) * 100;
-      displayValue = currentValue.toFixed(1);
-    } else {
-      // Generic numeric entity
-      currentValue = parseFloat(entityState.state) || 0;
-      const min = sliderControl.min_value ?? 0;
-      const max = sliderControl.max_value ?? 100;
-      percentage = ((currentValue - min) / (max - min)) * 100;
-      displayValue = currentValue.toFixed(0);
-    }
-
-    // Clamp percentage
-    percentage = Math.max(0, Math.min(100, percentage));
-
-    // Get light control mode
-    const controlMode = sliderControl.light_control_mode || 'brightness';
-    console.log('=== MODULE INIT ===');
-    console.log('Entity:', sliderControl.entity);
-    console.log('Control Mode:', controlMode);
-    console.log('Domain:', domain);
-    console.log('Entity State:', entityState);
-
-    // Handle slider interaction
-    const handleSliderInput = async (e: Event) => {
-      const input = e.target as HTMLInputElement;
-      const newPercentage = parseFloat(input.value);
-
-      // Check if this is an RGB or color temp slider
-      const sliderType = (input as any).dataset.sliderType || 'value';
-      console.log('=== SLIDER INPUT EVENT ===');
-      console.log('Slider type:', sliderType);
-      console.log('New percentage:', newPercentage);
-      console.log('Entity:', sliderControl.entity);
-      console.log('Domain:', domain);
-
-      // Calculate actual value from percentage
-      const min = sliderControl.min_value ?? 0;
-      const max = sliderControl.max_value ?? 100;
-      let newValue = (newPercentage / 100) * (max - min) + min;
-
-      // Call appropriate service
-      try {
-        if (domain === 'light') {
-          const serviceData: any = { entity_id: sliderControl.entity };
-
-          if (sliderType === 'brightness') {
-            const brightness = Math.round((newPercentage / 100) * 255);
-            serviceData.brightness = brightness;
-          } else if (sliderType === 'rgb') {
-            // Rainbow slider: convert hue (0-100%) to RGB
-            // Use full saturation and brightness for vibrant colors
-            const hue = newPercentage / 100; // 0-1
-            const rgb = hsvToRgb(hue, 1, 1);
-            serviceData.rgb_color = rgb;
-            // Clear any active effects to switch to RGB mode
-            serviceData.effect = 'None';
-            console.log(
-              'RGB mode activated! Hue:',
-              hue,
-              'RGB:',
-              rgb,
-              'Entity:',
-              sliderControl.entity
-            );
-          } else if (sliderType === 'red') {
-            const red = Math.round(newPercentage * 2.55);
-            const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
-            serviceData.rgb_color = [red, rgbColor[1], rgbColor[2]];
-          } else if (sliderType === 'green') {
-            const green = Math.round(newPercentage * 2.55);
-            const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
-            serviceData.rgb_color = [rgbColor[0], green, rgbColor[2]];
-          } else if (sliderType === 'blue') {
-            const blue = Math.round(newPercentage * 2.55);
-            const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
-            serviceData.rgb_color = [rgbColor[0], rgbColor[1], blue];
-          } else if (sliderType === 'color_temp') {
-            // Color temp ranges from 154 (warm) to 500 (cool) in mireds
-            const minTemp = 154;
-            const maxTemp = 500;
-            const colorTemp = Math.round(maxTemp - (newPercentage / 100) * (maxTemp - minTemp));
-            serviceData.color_temp = colorTemp;
-            // Clear any active effects to switch to color temp mode
-            serviceData.effect = 'None';
-            console.log('Setting color_temp:', colorTemp, 'for entity:', sliderControl.entity);
-          }
-
-          console.log('=== CALLING LIGHT.TURN_ON ===');
-          console.log('Service Data:', JSON.stringify(serviceData, null, 2));
-          console.log('Entity State Before:', entityState);
-          
-          const result = await hass.callService('light', 'turn_on', serviceData);
-          
-          console.log('Service call result:', result);
-          
-          // Wait a moment and check entity state
-          setTimeout(() => {
-            const newState = hass.states[sliderControl.entity];
-            console.log('Entity State After:', newState);
-            console.log('RGB Color After:', newState?.attributes?.rgb_color);
-            console.log('Color Mode After:', newState?.attributes?.color_mode);
-          }, 500);
-        } else if (domain === 'cover') {
-          const position = sliderControl.cover_invert ? 100 - newPercentage : newPercentage;
-          await hass.callService('cover', 'set_cover_position', {
-            entity_id: sliderControl.entity,
-            position: Math.round(position),
-          });
-        } else if (domain === 'fan') {
-          await hass.callService('fan', 'set_percentage', {
-            entity_id: sliderControl.entity,
-            percentage: Math.round(newPercentage),
-          });
-        } else if (domain === 'input_number') {
-          await hass.callService('input_number', 'set_value', {
-            entity_id: sliderControl.entity,
-            value: newValue,
-          });
-        } else if (domain === 'climate') {
-          await hass.callService('climate', 'set_temperature', {
-            entity_id: sliderControl.entity,
-            temperature: newValue,
-          });
-        }
-
-        // Haptic feedback
-        if (sliderControl.haptic_feedback && 'vibrate' in navigator) {
-          navigator.vibrate(10);
-        }
-      } catch (error) {
-        console.error('Failed to update entity:', error);
-      }
-    };
-
-    const handleToggle = async () => {
-      try {
-        if (domain === 'light' || domain === 'fan' || domain === 'switch') {
-          await hass.callService(domain, isOn ? 'turn_off' : 'turn_on', {
-            entity_id: sliderControl.entity,
-          });
-        } else if (domain === 'cover') {
-          await hass.callService('cover', isOn ? 'close_cover' : 'open_cover', {
-            entity_id: sliderControl.entity,
-          });
-        }
-
-        if (sliderControl.haptic_feedback && 'vibrate' in navigator) {
-          navigator.vibrate(50);
-        }
-      } catch (error) {
-        console.error('Failed to toggle entity:', error);
-      }
-    };
-
-    // Get dynamic fill color if enabled
-    let dynamicFillColor = sliderControl.slider_fill_color || 'var(--primary-color)';
-    let fillRgb = [33, 150, 243]; // Default primary color RGB
-
-    if (sliderControl.dynamic_fill_color && domain === 'light' && isOn) {
-      const rgbColor = entityState.attributes.rgb_color;
-      if (rgbColor && Array.isArray(rgbColor) && rgbColor.length === 3) {
-        dynamicFillColor = `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`;
-        fillRgb = rgbColor;
-      }
-    } else if (sliderControl.slider_fill_color) {
-      // Try to extract RGB from the fill color for luminance calculation
-      fillRgb = this.extractRgbFromColor(sliderControl.slider_fill_color);
-    }
-
-    // Calculate luminance and determine contrast color
-    const luminance = (0.299 * fillRgb[0] + 0.587 * fillRgb[1] + 0.114 * fillRgb[2]) / 255;
-    const isDarkBackground = luminance < 0.5;
-    const contrastColor = isDarkBackground ? '#ffffff' : '#000000';
-
-    // Determine colors based on auto-contrast
-    const getIconColor = () => {
-      if (!sliderControl.auto_contrast) {
-        return sliderControl.icon_color || 'var(--primary-text-color)';
-      }
-      return contrastColor;
-    };
-
-    const getNameColor = () => {
-      if (!sliderControl.auto_contrast) {
-        return sliderControl.name_color || 'var(--primary-text-color)';
-      }
-      return contrastColor;
-    };
-
-    const getValueColor = () => {
-      if (!sliderControl.auto_contrast) {
-        return sliderControl.value_color || 'var(--primary-text-color)';
-      }
-      return contrastColor;
-    };
-
-    // Render toggle switch
-    const renderToggle = () => {
-      if (!sliderControl.show_toggle) return '';
-
-      const togglePos = sliderControl.toggle_position || 'right';
-      const toggleColorOn = sliderControl.toggle_color_on || 'var(--primary-color)';
-      const toggleColorOff = sliderControl.toggle_color_off || 'var(--secondary-text-color)';
-
-      return html`
-        <ha-switch
-          .checked=${isOn}
-          @change=${handleToggle}
-          style="
-            --switch-checked-button-color: ${toggleColorOn};
-            --switch-checked-track-color: ${toggleColorOn};
-            --switch-unchecked-button-color: ${toggleColorOff};
-            --switch-unchecked-track-color: ${toggleColorOff};
-            --mdc-theme-secondary: ${toggleColorOn};
-          "
-        ></ha-switch>
-      `;
-    };
-
-    // Render content elements
-    const renderInfo = () => {
-      const togglePos = sliderControl.toggle_position || 'right';
-
-      return html`
-        <div style="display: flex; align-items: center; gap: 12px;">
-          ${togglePos === 'left' ? renderToggle() : ''}
-          ${sliderControl.show_icon
-            ? html`
-                <ha-icon
-                  .icon="${displayIcon}"
-                  style="
-                    font-size: ${sliderControl.icon_size || 24}px;
-                    color: ${getIconColor()};
-                    cursor: ${sliderControl.icon_as_toggle ? 'pointer' : 'default'};
-                    pointer-events: ${sliderControl.icon_as_toggle ? 'auto' : 'none'};
-                  "
-                  @click=${sliderControl.icon_as_toggle ? handleToggle : null}
-                ></ha-icon>
-              `
-            : ''}
-          <div style="flex: 1; min-width: 0;">
-            ${sliderControl.show_name
-              ? html`
-                  <div
-                    style="
-                      font-size: ${sliderControl.name_size || 14}px;
-                      color: ${getNameColor()};
-                      font-weight: ${sliderControl.name_bold ? '700' : '400'};
-                      white-space: nowrap;
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                    "
-                  >
-                    ${entityName}
-                  </div>
-                `
-              : ''}
-            ${sliderControl.show_value
-              ? html`
-                  <div
-                    style="
-                      font-size: ${sliderControl.value_size || 14}px;
-                      color: ${getValueColor()};
-                      opacity: 0.9;
-                    "
-                  >
-                    ${displayValue}${sliderControl.value_suffix || '%'}
-                  </div>
-                `
-              : ''}
+          <div style="margin-top: 12px;">No bars configured</div>
+          <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">
+            Add bars in the General tab
           </div>
-          ${togglePos === 'right' ? renderToggle() : ''}
         </div>
       `;
-    };
+    }
 
+    // Render each bar
+    const bars = sliderControl.bars || [];
     const orientation = sliderControl.orientation || 'horizontal';
+    const barSpacing = sliderControl.bar_spacing || 8;
     const layoutMode = sliderControl.layout_mode || 'outside';
-    const sliderHeight = sliderControl.slider_height || 55;
-    const fillColor = dynamicFillColor; // Use the dynamic color we calculated above
+    const isVertical = orientation === 'vertical';
+    const verticalSliderHeight = 200; // Base visual height for vertical sliders when not filling parent
+    const orientationClass = isVertical ? 'uc-orientation-vertical' : 'uc-orientation-horizontal';
+    const layoutClass = `uc-layout-${layoutMode}`;
+    const baseLayoutClass = `uc-slider-layout ${layoutClass} ${orientationClass}`;
+    const isOutsideLayout = layoutMode === 'outside';
 
-    // Default track color: use fill color at 25% opacity (like Mushroom card)
-    let trackColor = sliderControl.slider_track_color;
-    if (!trackColor) {
-      // Create a semi-transparent version of the fill color
-      if (fillColor.startsWith('rgb(')) {
-        trackColor = fillColor.replace('rgb(', 'rgba(').replace(')', ', 0.25)');
-      } else if (fillColor.startsWith('rgba(')) {
-        // Extract RGB and set alpha to 0.25
-        const rgbaMatch = fillColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (rgbaMatch) {
-          trackColor = `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, 0.25)`;
+    // Helper to render a single bar
+    const renderSingleBar = (bar: SliderBar, index: number) => {
+      const entityState = homeAssistant?.states?.[bar.entity];
+      if (!entityState) {
+        return html`
+          <div
+            style="padding: 12px; text-align: center; color: var(--error-color); background: var(--error-color); color: white; border-radius: 8px;"
+          >
+            <ha-icon icon="mdi:alert-circle" style="margin-right: 8px;"></ha-icon>
+            Entity not found: ${bar.entity}
+          </div>
+        `;
+      }
+
+      const domain = bar.entity.split('.')[0];
+      const entityName = bar.name || entityState.attributes.friendly_name || bar.entity;
+      const isOn = entityState.state === 'on' || entityState.state === 'open';
+
+      const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
+      const showNameSection = bar.show_name !== false && sliderControl.show_name !== false;
+      const showValueSection = bar.show_value !== false && sliderControl.show_value !== false;
+      const hasInfoSection = showIconSection || showNameSection || showValueSection;
+
+      // Calculate value and percentage based on bar type
+      let currentValue = 0;
+      let displayValue = '0';
+      let percentage = 0;
+
+      if (bar.type === 'brightness') {
+        const brightness = entityState.attributes.brightness || 0;
+        currentValue = Math.round((brightness / 255) * 100);
+        percentage = currentValue;
+        displayValue = `${currentValue}`;
+      } else if (bar.type === 'rgb') {
+        // Convert RGB to hue percentage
+        const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+        const hue = this.rgbToHue(rgbColor[0], rgbColor[1], rgbColor[2]);
+        percentage = Math.max(0, Math.min(100, hue));
+        displayValue = `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`;
+      } else if (bar.type === 'color_temp') {
+        const colorTemp = entityState.attributes.color_temp || 154;
+        const minTemp = 154;
+        const maxTemp = 500;
+        percentage = Math.max(
+          0,
+          Math.min(100, ((maxTemp - colorTemp) / (maxTemp - minTemp)) * 100)
+        );
+        displayValue = `${Math.round(1000000 / colorTemp)}K`;
+      } else if (bar.type === 'red') {
+        const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+        percentage = Math.max(0, Math.min(100, (rgbColor[0] / 255) * 100));
+        displayValue = `${rgbColor[0]}`;
+      } else if (bar.type === 'green') {
+        const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+        percentage = Math.max(0, Math.min(100, (rgbColor[1] / 255) * 100));
+        displayValue = `${rgbColor[1]}`;
+      } else if (bar.type === 'blue') {
+        const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+        percentage = Math.max(0, Math.min(100, (rgbColor[2] / 255) * 100));
+        displayValue = `${rgbColor[2]}`;
+      } else {
+        // Numeric or attribute
+        let value = 0;
+        if (bar.type === 'attribute' && bar.attribute) {
+          value = parseFloat(entityState.attributes[bar.attribute]) || 0;
+        } else {
+          value = parseFloat(entityState.state) || 0;
+        }
+
+        const min = bar.min_value ?? 0;
+        const max = bar.max_value ?? 100;
+        currentValue = value;
+        percentage = ((value - min) / (max - min)) * 100;
+        displayValue = value.toFixed(1);
+      }
+
+      // Clamp percentage
+      percentage = Math.max(0, Math.min(100, percentage));
+
+      const sliderKey = `${bar.entity}-${bar.type}`;
+      const useLocalValue =
+        this.interactingBars.has(sliderKey) || this.localSliderValues.has(sliderKey);
+      const livePercentage = useLocalValue
+        ? (this.localSliderValues.get(sliderKey) ?? percentage)
+        : percentage;
+
+      // Determine fill/gradient for this bar based on overrides and defaults
+      const defaultFill = this._getBarGradient(bar, homeAssistant, orientation);
+      const barFillOverride =
+        typeof bar.slider_fill_color === 'string' ? bar.slider_fill_color.trim() : '';
+      const globalFillOverride =
+        typeof sliderControl.slider_fill_color === 'string'
+          ? sliderControl.slider_fill_color.trim()
+          : '';
+      const isGradientBar = bar.type === 'rgb' || bar.type === 'color_temp';
+      const useDynamicFill = isGradientBar
+        ? false
+        : (bar.dynamic_fill_color ?? sliderControl.dynamic_fill_color ?? false);
+
+      let gradient = defaultFill;
+
+      if (useDynamicFill) {
+        gradient = this.resolveDynamicFillColor(bar, entityState, defaultFill);
+      } else if (!isGradientBar && barFillOverride) {
+        gradient = barFillOverride;
+      } else if (!isGradientBar && globalFillOverride) {
+        gradient = globalFillOverride;
+      }
+      const gradientIsGradientString = gradient.includes('gradient');
+      const applyGradientAsTrack = isGradientBar;
+      const isCustomGradientFill = !applyGradientAsTrack && gradientIsGradientString;
+      const isGradient = gradientIsGradientString;
+      const isVertical = orientation === 'vertical';
+      const ratioApplies = layoutMode === 'split' && (showIconSection || showValueSection);
+      const isVerticalOutsideLayout = isVertical && layoutMode === 'outside';
+      const outsideIconSize = bar.icon_size || sliderControl.icon_size || 16;
+      const outsideIconBaseSpacing = showIconSection ? outsideIconSize + 12 : 0;
+      // Final bar length excluding icon space in vertical-outside layout
+      const targetVerticalHeight = isVerticalOutsideLayout
+        ? Math.max(40, verticalSliderHeight - outsideIconBaseSpacing)
+        : verticalSliderHeight;
+      const gradientDir = isVertical ? '0deg' : '90deg';
+      const overlayFillSnippet = isCustomGradientFill
+        ? `background: ${gradient}; opacity: 1;`
+        : `background: linear-gradient(${gradientDir}, ${gradient} 0%, ${gradient} ${livePercentage}%, transparent ${livePercentage}%, transparent 100%); opacity: 0.8;`;
+      const resolvedOverlayNamePosition =
+        bar.overlay_name_position || sliderControl.overlay_name_position || 'top';
+      const resolvedOverlayValuePosition =
+        bar.overlay_value_position || sliderControl.overlay_value_position || 'middle';
+      const resolvedOverlayIconPosition =
+        bar.overlay_icon_position || sliderControl.overlay_icon_position || 'bottom';
+
+      // Default track color: use fill color at 25% opacity
+      let trackColor = sliderControl.slider_track_color;
+      if (!trackColor) {
+        if (isGradient) {
+          trackColor = 'rgba(var(--rgb-primary-color), 0.25)';
+        } else if (gradient.startsWith('rgb(')) {
+          trackColor = gradient.replace('rgb(', 'rgba(').replace(')', ', 0.25)');
         } else {
           trackColor = 'rgba(var(--rgb-primary-color), 0.25)';
         }
-      } else {
-        trackColor = 'rgba(var(--rgb-primary-color), 0.25)';
       }
-    }
 
-    const sliderStyle = sliderControl.slider_style || 'flat';
+      // Get bar-specific settings with fallback to global
+      const barSliderHeight = bar.slider_height || sliderControl.slider_height || 55;
+      const barSliderStyle = bar.slider_style || sliderControl.slider_style || 'flat';
+      const barSliderRadius = bar.slider_radius || sliderControl.slider_radius || 'round';
+      const barGlassBlurAmount = bar.glass_blur_amount || sliderControl.glass_blur_amount || 8;
 
-    let borderRadius = '10px';
-    if (sliderControl.slider_radius === 'square') borderRadius = '0';
-    else if (sliderControl.slider_radius === 'pill') borderRadius = `${sliderHeight / 2}px`;
-    else borderRadius = '10px';
+      // Build container and slider styles based on slider_style
+      let containerStyles = '';
+      let overlayContent = '';
 
-    // Build container and slider styles based on slider_style
-    const isVertical = orientation === 'vertical';
-    const gradientDirection = isVertical ? 'to top' : 'to right';
+      const baseBackground = applyGradientAsTrack
+        ? gradient
+        : isCustomGradientFill
+          ? trackColor
+          : `linear-gradient(${gradientDir}, ${gradient} 0%, ${gradient} ${livePercentage}%, ${trackColor} ${livePercentage}%, ${trackColor} 100%)`;
 
-    let containerStyles = '';
-    let sliderTrackStyles = '';
-    let overlayContent = '';
+      let borderRadius = '10px';
+      if (barSliderRadius === 'square') borderRadius = '0';
+      else if (barSliderRadius === 'pill') borderRadius = `${barSliderHeight / 2}px`;
 
-    const baseBackground = `linear-gradient(${gradientDirection}, ${fillColor} 0%, ${fillColor} ${percentage}%, ${trackColor} ${percentage}%, ${trackColor} 100%)`;
-
-    switch (sliderStyle) {
-      case 'flat':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-        `;
-        break;
-
-      case 'glossy':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-        `;
-        overlayContent = `
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1) 100%);
-        `;
-        break;
-
-      case 'embossed':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3);
-        `;
-        break;
-
-      case 'inset':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
-        `;
-        break;
-
-      case 'neon-glow':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          box-shadow: 0 0 15px ${fillColor}, 0 0 30px ${fillColor}80, 0 0 45px ${fillColor}40;
-          filter: brightness(1.2);
-        `;
-        break;
-
-      case 'outline':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          border: 2px solid ${fillColor};
-        `;
-        break;
-
-      case 'glass':
-        const blurAmount = sliderControl.glass_blur_amount || 8;
-        containerStyles = `
-          background: transparent;
-          border-radius: ${borderRadius};
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        `;
-        overlayContent = `
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(${blurAmount}px);
-        `;
-        break;
-
-      case 'metallic':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-        `;
-        overlayContent = `
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.15) 100%);
-        `;
-        break;
-
-      case 'neumorphic':
-        containerStyles = `
-          background: ${baseBackground};
-          border-radius: ${borderRadius};
-          box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.5), 4px 4px 8px rgba(0, 0, 0, 0.2);
-        `;
-        break;
-
-      case 'minimal':
-        // Minimal style: thin bar with visible dot slider
-        containerStyles = `
-          background: ${trackColor};
-          border-radius: 10px;
-        `;
-        overlayContent = `
-          background: linear-gradient(${gradientDirection}, ${fillColor} 0%, ${fillColor} ${percentage}%, transparent ${percentage}%, transparent 100%);
-          opacity: 0.8;
-        `;
-        break;
-    }
-
-    // Slider input styles (transparent, sits on top of styled container)
-    // For minimal style, always show thumb (like bar module)
-    const showThumb = sliderStyle === 'minimal';
-    const transition = sliderControl.animate_on_change
-      ? `all ${sliderControl.transition_duration || 200}ms ease`
-      : 'none';
-
-    // For minimal style, use relative positioning so flexbox centering works
-    const sliderInputStyles =
-      sliderStyle === 'minimal'
-        ? `
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      outline: none;
-      cursor: pointer;
-      position: relative;
-      z-index: 2;
-    `
-        : `
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      outline: none;
-      cursor: pointer;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 2;
-    `;
-
-    // Thumb size based on slider height or style
-    // For minimal style with 8px track, use a 16-20px thumb for visibility
-    const thumbSize = sliderStyle === 'minimal' ? 16 : Math.max(sliderHeight * 0.8, 20);
-    const thumbColor = '#ffffff';
-
-    const thumbStyles = showThumb
-      ? `
-      -webkit-appearance: none;
-      appearance: none;
-      width: ${thumbSize}px;
-      height: ${thumbSize}px;
-      background: ${thumbColor};
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      transition: transform 0.1s ease;
-    `
-      : `
-      -webkit-appearance: none;
-      appearance: none;
-      width: 0;
-      height: 0;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-    `;
-
-    // Render a single slider with custom value and type
-    const renderSingleSlider = (
-      sliderValue: number,
-      sliderType: string = 'brightness',
-      label: string = '',
-      color: string = fillColor
-    ) => {
-      // Determine if this is a gradient (contains 'linear-gradient' or multiple rgb values)
-      const isGradient = color.includes('linear-gradient');
-
-      // Use selector ring for RGB and color temp gradients
-      const useSelectorRing = sliderType === 'rgb' || sliderType === 'color_temp';
-      const selectorRingSize = sliderHeight * 1.2;
-
-      let baseBackground: string;
-
-      if (isGradient) {
-        // For gradients, use the full gradient as the track background
-        // For slider fill, we need to overlay on top - this is a simplified approach
-        // We'll use a pseudo-element for the fill in the actual implementation
-        const trackGradient = color;
-        baseBackground = trackGradient;
-      } else {
-        // Solid color background
-        let trackColorForSlider = trackColor;
-        if (color.startsWith('rgb(')) {
-          trackColorForSlider = color.replace('rgb(', 'rgba(').replace(')', ', 0.25)');
-        } else if (color.startsWith('rgba(')) {
-          const rgbaMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-          if (rgbaMatch) {
-            trackColorForSlider = `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, 0.25)`;
-          }
+      switch (barSliderStyle) {
+        case 'flat':
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+          `;
+          break;
+        case 'glossy':
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+          `;
+          overlayContent = `
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1) 100%);
+          `;
+          break;
+        case 'glass': {
+          containerStyles = `
+            background: transparent;
+            border-radius: ${borderRadius};
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          `;
+          overlayContent = `
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(${barGlassBlurAmount}px);
+          `;
+          break;
         }
-        baseBackground = `linear-gradient(${gradientDirection}, ${color} 0%, ${color} ${sliderValue}%, ${trackColorForSlider} ${sliderValue}%, ${trackColorForSlider} 100%)`;
+        case 'minimal':
+          containerStyles = `
+            background: ${trackColor};
+            border-radius: 10px;
+          `;
+          overlayContent = overlayFillSnippet;
+          break;
+        default:
+          containerStyles = `
+            background: ${baseBackground};
+            border-radius: ${borderRadius};
+          `;
       }
+
+      if (isCustomGradientFill && !overlayContent) {
+        overlayContent = overlayFillSnippet;
+      }
+
+      // Handle slider interaction
+      let debounceTimer: any;
+
+      const handleSliderStart = (e: Event) => {
+        this.interactingBars.add(sliderKey);
+        // Clear any existing local value and set current entity percentage
+        this.localSliderValues.delete(sliderKey);
+        this.localSliderValues.set(sliderKey, livePercentage);
+        this.localSliderValues = new Map(this.localSliderValues);
+      };
+
+      const handleSliderEnd = (e: Event) => {
+        this.interactingBars.delete(sliderKey);
+
+        // Keep local value indefinitely until next interaction
+        // This prevents jumping when entity state doesn't match clicked position
+        // The value will be cleared when user starts next interaction
+      };
+
+      const handleSliderInput = (e: Event) => {
+        const input = e.target as HTMLInputElement;
+        const newPercentage = parseFloat(input.value);
+
+        // Store the local value during interaction
+        this.localSliderValues.set(sliderKey, newPercentage);
+        this.localSliderValues = new Map(this.localSliderValues);
+
+        // Clear previous timer
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+
+        // Throttle service calls with longer delay to prevent glitching
+        debounceTimer = setTimeout(() => {
+          try {
+            if (domain === 'light') {
+              const serviceData: any = { entity_id: bar.entity };
+
+              if (bar.type === 'brightness') {
+                const brightness = Math.round((newPercentage / 100) * 255);
+                serviceData.brightness = brightness;
+              } else if (bar.type === 'rgb') {
+                const hue = newPercentage / 100;
+                // Always use full brightness (value=1) for vibrant colors
+                // The brightness slider will control actual light intensity
+                const rgb = this.hsvToRgb(hue, 1, 1);
+                serviceData.rgb_color = rgb;
+                // Don't send brightness to prevent other sliders from moving
+              } else if (bar.type === 'red') {
+                const red = Math.round(newPercentage * 2.55);
+                const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+                serviceData.rgb_color = [red, rgbColor[1], rgbColor[2]];
+              } else if (bar.type === 'green') {
+                const green = Math.round(newPercentage * 2.55);
+                const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+                serviceData.rgb_color = [rgbColor[0], green, rgbColor[2]];
+              } else if (bar.type === 'blue') {
+                const blue = Math.round(newPercentage * 2.55);
+                const rgbColor = entityState.attributes.rgb_color || [255, 255, 255];
+                serviceData.rgb_color = [rgbColor[0], rgbColor[1], blue];
+              } else if (bar.type === 'color_temp') {
+                const minTemp = 154;
+                const maxTemp = 500;
+                const colorTemp = Math.round(maxTemp - (newPercentage / 100) * (maxTemp - minTemp));
+                serviceData.color_temp = colorTemp;
+                // Don't send brightness to prevent other sliders from moving
+              }
+
+              // Don't await - let it run in background
+              homeAssistant.callService('light', 'turn_on', serviceData);
+            } else if (domain === 'cover') {
+              homeAssistant.callService('cover', 'set_cover_position', {
+                entity_id: bar.entity,
+                position: Math.round(newPercentage),
+              });
+            } else if (domain === 'fan') {
+              // Handle fan entities - check if using attribute type
+              if (bar.type === 'attribute' && bar.attribute === 'percentage') {
+                // Convert percentage back to actual value range
+                const min = bar.min_value ?? 0;
+                const max = bar.max_value ?? 100;
+                const step = bar.step ?? 1;
+                let actualValue = (newPercentage / 100) * (max - min) + min;
+                // Snap to step
+                actualValue = Math.round(actualValue / step) * step;
+                // Clamp to range
+                actualValue = Math.max(min, Math.min(max, actualValue));
+                homeAssistant.callService('fan', 'set_percentage', {
+                  entity_id: bar.entity,
+                  percentage: Math.round(actualValue),
+                });
+              } else if (bar.type === 'attribute' && bar.attribute) {
+                // Handle other generic attributes
+                const min = bar.min_value ?? 0;
+                const max = bar.max_value ?? 100;
+                const step = bar.step ?? 1;
+                let actualValue = (newPercentage / 100) * (max - min) + min;
+                // Snap to step
+                actualValue = Math.round(actualValue / step) * step;
+                // Clamp to range
+                actualValue = Math.max(min, Math.min(max, actualValue));
+
+                // Try to call a service based on the attribute name
+                if (bar.attribute === 'volume_level') {
+                  homeAssistant.callService('media_player', 'volume_set', {
+                    entity_id: bar.entity,
+                    volume_level: actualValue / 100, // volume_level is 0-1
+                  });
+                } else {
+                  // For other attributes, try to use the set_value service if available
+                  console.warn(`No specific service handler for attribute: ${bar.attribute}`);
+                }
+              } else if (bar.type === 'numeric' || !bar.type) {
+                // Default numeric control for fans uses percentage
+                homeAssistant.callService('fan', 'set_percentage', {
+                  entity_id: bar.entity,
+                  percentage: Math.round(newPercentage),
+                });
+              }
+            } else if (domain === 'input_number') {
+              const min = bar.min_value ?? 0;
+              const max = bar.max_value ?? 100;
+              const newValue = (newPercentage / 100) * (max - min) + min;
+              homeAssistant.callService('input_number', 'set_value', {
+                entity_id: bar.entity,
+                value: newValue,
+              });
+            }
+
+            if (sliderControl.haptic_feedback && 'vibrate' in navigator) {
+              navigator.vibrate(10);
+            }
+          } catch (error) {
+            console.error('Failed to update entity:', error);
+          }
+        }, 200); // 200ms debounce delay to prevent glitching
+      };
+
+      // Determine container dimensions
+      const isGradientSlider = bar.type === 'rgb' || bar.type === 'color_temp';
+
+      // For gradient sliders, we need asymmetric extension for perfect alignment
+      // Top needs 15px to reach edge, bottom needs 13px to not overshoot
+      const thumbExtensionTop = isVertical ? (isGradientSlider ? 15 : 0) : 0;
+      const thumbExtensionBottom = isVertical ? (isGradientSlider ? 13 : 0) : 0;
+      const inputExtension = thumbExtensionTop + thumbExtensionBottom;
+
+      const shouldFillParent = isVertical && layoutMode === 'split';
+
+      const barWrapperClass = `uc-slider-bar uc-layout-${layoutMode} uc-orientation-${orientation} uc-bar-type-${bar.type}`;
+
+      const containerWidth = isVertical ? `${barSliderHeight}px` : '100%';
+      const containerHeight = isVertical
+        ? shouldFillParent
+          ? '100%'
+          : `${targetVerticalHeight}px`
+        : `${barSliderStyle === 'minimal' ? 8 : barSliderHeight}px`;
 
       return html`
-        <div
-          style="display: flex; flex-direction: column; gap: 4px; width: 100%; ${controlMode ===
-            'all' || controlMode === 'both'
-            ? 'margin-bottom: 16px;'
-            : ''}"
-        >
-          ${label
-            ? html`<div
-                style="font-size: 11px; color: var(--secondary-text-color); text-transform: uppercase; font-weight: 600;"
-              >
-                ${label}
-              </div>`
+        <div class="${barWrapperClass}">
+          ${sliderControl.show_bar_label !== false && layoutMode !== 'outside'
+            ? html`
+                <div
+                  class="uc-slider-label"
+                  style="font-size: 11px; color: var(--secondary-text-color); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;"
+                >
+                  ${entityName}
+                </div>
+              `
             : ''}
+
           <div
-            class="slider-track-container"
+            class="slider-track-container uc-slider-track"
             style="
               position: relative;
-              height: ${sliderStyle === 'minimal' ? 8 : sliderHeight}px;
-              width: 100%;
-              ${isGradient ? `background: ${baseBackground};` : baseBackground};
-              border-radius: ${borderRadius};
-              transition: ${transition};
-              overflow: ${sliderStyle === 'minimal' ? 'visible' : 'hidden'};
-              ${sliderStyle === 'minimal' ? 'display: flex; align-items: center;' : ''}
+              height: ${containerHeight};
+              width: ${containerWidth};
+              ${containerStyles}
+              transition: all ${bar.transition_duration ||
+            sliderControl.transition_duration ||
+            200}ms ease;
+              overflow: ${barSliderStyle === 'minimal' ? 'visible' : 'hidden'};
+              ${barSliderStyle === 'minimal' ? 'display: flex; align-items: center;' : ''}
+              ${isVertical ? 'display: flex; justify-content: center; align-items: center;' : ''}
+              --slider-height: ${barSliderHeight}px;
             "
           >
-            ${isGradient
+            ${overlayContent && !applyGradientAsTrack
               ? html`
-                  <!-- Dim the unfilled portion -->
                   <div
                     style="
                   position: absolute;
                   top: 0;
-                  left: ${sliderValue}%;
-                  width: ${100 - sliderValue}%;
-                  height: 100%;
-                  background: rgba(0, 0, 0, 0.3);
+                  left: 0;
+                  ${isVertical
+                      ? `width: 100%; height: ${livePercentage}%;`
+                      : `height: 100%; width: ${livePercentage}%;`}
+                  ${overlayContent}
                   border-radius: ${borderRadius};
                   pointer-events: none;
-                  z-index: 0;
+                  z-index: 1;
+                  transition: width 80ms ease-out, height 80ms ease-out;
                 "
                   ></div>
                 `
               : ''}
-            ${overlayContent
+
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="${(() => {
+                // Calculate step as percentage of the range
+                const min = bar.min_value ?? 0;
+                const max = bar.max_value ?? 100;
+                const step = bar.step ?? 1;
+                const range = max - min;
+                // Convert step to percentage scale
+                return range > 0 ? (step / range) * 100 : 1;
+              })()}"
+              .value="${livePercentage}"
+              @input=${handleSliderInput}
+              @mousedown=${handleSliderStart}
+              @mouseup=${handleSliderEnd}
+              @touchstart=${handleSliderStart}
+              @touchend=${handleSliderEnd}
+              class="${bar.type === 'rgb' || bar.type === 'color_temp'
+                ? `gradient-slider ${isVertical ? 'vertical-gradient-indicator' : 'horizontal-gradient-indicator'}`
+                : 'fill-slider'}"
+              style="
+                -webkit-appearance: none;
+                appearance: none;
+                width: ${isVertical
+                ? shouldFillParent
+                  ? `calc(100% + ${inputExtension}px)`
+                  : `${targetVerticalHeight + inputExtension}px`
+                : '100%'};
+                height: ${isVertical
+                ? isGradientSlider
+                  ? '32px'
+                  : `${barSliderHeight}px`
+                : '100%'};
+                background: transparent;
+                outline: none;
+                cursor: pointer;
+                position: absolute;
+                top: ${isVertical ? '50%' : '0'};
+                left: ${isVertical ? '50%' : '0'};
+                z-index: 2;
+                ${isVertical
+                ? `transform: translateX(-50%) translateY(-50%) rotate(270deg); transform-origin: center center;`
+                : ''}
+              "
+            />
+
+            ${isGradientSlider
               ? html`
                   <div
-                    style="
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                ${overlayContent}
-                border-radius: ${borderRadius};
-                pointer-events: none;
-                z-index: 1;
-              "
+                    class="slider-indicator ${isVertical
+                      ? 'vertical-indicator'
+                      : 'horizontal-indicator'}"
+                    style="${isVertical
+                      ? `top: ${100 - livePercentage}%;`
+                      : `left: ${livePercentage}%`};"
                   ></div>
                 `
               : ''}
-            <input
-              type="range"
-              data-slider-type="${sliderType}"
-              class="${useSelectorRing ? 'selector-ring-thumb' : ''}"
-              min="0"
-              max="100"
-              step="${sliderControl.step || 1}"
-              .value="${sliderValue}"
-              @input=${handleSliderInput}
-              style="${sliderInputStyles}${useSelectorRing
-                ? ` --thumb-size: ${selectorRingSize}px;`
-                : ''}"
-            />
-            ${useSelectorRing
+            ${layoutMode === 'overlay'
               ? html`
-                  <style>
-                    input.selector-ring-thumb::-webkit-slider-thumb {
-                      width: 4px !important;
-                      height: ${selectorRingSize}px !important;
-                      border: none !important;
-                      border-left: 3px solid #ffffff !important;
-                      border-right: 3px solid #ffffff !important;
-                      background: transparent !important;
-                      border-radius: 0 !important;
-                      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3) !important;
-                      cursor: pointer !important;
-                      -webkit-appearance: none !important;
-                      appearance: none !important;
-                      position: relative !important;
-                    }
-                    input.selector-ring-thumb::-moz-range-thumb {
-                      width: 4px !important;
-                      height: ${selectorRingSize}px !important;
-                      border: none !important;
-                      border-left: 3px solid #ffffff !important;
-                      border-right: 3px solid #ffffff !important;
-                      background: transparent !important;
-                      border-radius: 0 !important;
-                      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3) !important;
-                      cursor: pointer !important;
-                    }
-                  </style>
+                  ${isVertical
+                    ? (() => {
+                        const useAutoContrast =
+                          bar.auto_contrast ?? sliderControl.auto_contrast ?? true;
+                        const contrastColor = livePercentage > 50 ? '#000' : '#fff';
+                        const nameColor = useAutoContrast
+                          ? contrastColor
+                          : bar.name_color ||
+                            sliderControl.name_color ||
+                            'var(--primary-text-color)';
+                        const valueColor = useAutoContrast
+                          ? contrastColor
+                          : bar.value_color ||
+                            sliderControl.value_color ||
+                            'var(--primary-text-color)';
+                        const iconColor = useAutoContrast
+                          ? contrastColor
+                          : bar.icon_color ||
+                            sliderControl.icon_color ||
+                            'var(--primary-text-color)';
+
+                        const overlaySlots: Record<'top' | 'middle' | 'bottom', TemplateResult[]> =
+                          {
+                            top: [],
+                            middle: [],
+                            bottom: [],
+                          };
+
+                        const pushSlot = (
+                          slot: 'top' | 'middle' | 'bottom',
+                          content: TemplateResult | null
+                        ) => {
+                          if (content) {
+                            overlaySlots[slot].push(content);
+                          }
+                        };
+
+                        const nameTemplate = showNameSection
+                          ? html`
+                              <div
+                                class="uc-slider-name uc-overlay-info-item"
+                                style="
+                                  font-size: ${bar.name_size || sliderControl.name_size || 14}px;
+                                  color: ${nameColor};
+                                  font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                                  ? 'bold'
+                                  : 'normal'};
+                                  text-align: center;
+                                  writing-mode: vertical-rl;
+                                  text-orientation: mixed;
+                                "
+                              >
+                                ${entityName}
+                              </div>
+                            `
+                          : null;
+
+                        const valueTemplate = showValueSection
+                          ? html`
+                              <div
+                                class="uc-slider-value uc-overlay-info-item"
+                                style="
+                                  font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                                  color: ${valueColor};
+                                  font-weight: 600;
+                                  text-align: center;
+                                "
+                              >
+                                ${displayValue}${bar.type === 'brightness'
+                                  ? bar.value_suffix || sliderControl.value_suffix || '%'
+                                  : ''}
+                              </div>
+                            `
+                          : null;
+
+                        const iconTemplate = showIconSection
+                          ? html`
+                              <ha-icon
+                                class="uc-slider-icon uc-overlay-info-item"
+                                icon="${bar.icon ||
+                                sliderControl.icon ||
+                                EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                                style="
+                                  --mdc-icon-size: ${bar.icon_size ||
+                                sliderControl.icon_size ||
+                                16}px;
+                                  color: ${iconColor};
+                                "
+                              ></ha-icon>
+                            `
+                          : null;
+
+                        pushSlot(resolvedOverlayNamePosition, nameTemplate);
+                        pushSlot(resolvedOverlayValuePosition, valueTemplate);
+                        pushSlot(resolvedOverlayIconPosition, iconTemplate);
+
+                        return html`
+                          <div
+                            class="uc-overlay-info-container"
+                            style="
+                              position: absolute;
+                              left: 50%;
+                              transform: translateX(-50%);
+                              pointer-events: none;
+                              z-index: 3;
+                              width: 100%;
+                              top: 16px;
+                              height: calc(100% - 32px);
+                              display: grid;
+                              grid-template-rows: auto 1fr auto;
+                              justify-items: center;
+                            "
+                          >
+                            <div
+                              class="uc-slider-info-group uc-overlay-info-slot uc-overlay-slot-top"
+                              style="display: flex; flex-direction: column; align-items: center; gap: 4px;"
+                            >
+                              ${overlaySlots.top.length ? overlaySlots.top : html``}
+                            </div>
+                            <div
+                              class="uc-slider-info-group uc-overlay-info-slot uc-overlay-slot-middle"
+                              style="
+                                width: 100%;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 4px;
+                              "
+                            >
+                              ${overlaySlots.middle.length ? overlaySlots.middle : html``}
+                            </div>
+                            <div
+                              class="uc-slider-info-group uc-overlay-info-slot uc-overlay-slot-bottom"
+                              style="display: flex; flex-direction: column; align-items: center; gap: 4px;"
+                            >
+                              ${overlaySlots.bottom.length ? overlaySlots.bottom : html``}
+                            </div>
+                          </div>
+                        `;
+                      })()
+                    : html`
+                        <!-- Horizontal Overlay Layout (existing logic) -->
+                        ${bar.show_icon !== false && sliderControl.show_icon !== false
+                          ? html`
+                              <ha-icon
+                                icon="${bar.icon ||
+                                sliderControl.icon ||
+                                EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                                style="
+                          position: absolute;
+                          ${sliderControl.overlay_position === 'left'
+                                  ? 'left: 8px;'
+                                  : sliderControl.overlay_position === 'right'
+                                    ? 'right: 8px;'
+                                    : 'left: 8px;'}
+                          top: 50%;
+                          transform: translateY(-50%);
+                          --mdc-icon-size: ${bar.icon_size || sliderControl.icon_size || 16}px;
+                          color: ${(bar.auto_contrast ?? sliderControl.auto_contrast ?? true)
+                                  ? livePercentage > 50
+                                    ? '#000'
+                                    : '#fff'
+                                  : bar.icon_color ||
+                                    sliderControl.icon_color ||
+                                    'var(--primary-text-color)'};
+                          pointer-events: none;
+                          z-index: 3;
+                        "
+                              ></ha-icon>
+                            `
+                          : ''}
+                        ${bar.show_name !== false && sliderControl.show_name !== false
+                          ? html`
+                              <div
+                                class="uc-slider-value"
+                                style="
+                          position: absolute;
+                          ${sliderControl.overlay_position === 'left'
+                                  ? `left: ${bar.show_icon !== false && sliderControl.show_icon !== false ? (bar.icon_size || sliderControl.icon_size || 16) + 16 : 8}px;`
+                                  : sliderControl.overlay_position === 'right'
+                                    ? `right: ${bar.show_value !== false && sliderControl.show_value !== false ? '80px' : 8}px;`
+                                    : `left: ${bar.show_icon !== false && sliderControl.show_icon !== false ? (bar.icon_size || sliderControl.icon_size || 16) + 16 : 8}px;`}
+                          top: 50%;
+                          transform: translateY(-50%);
+                          font-size: ${bar.name_size || sliderControl.name_size || 14}px;
+                          color: ${(bar.auto_contrast ?? sliderControl.auto_contrast ?? true)
+                                  ? livePercentage > 50
+                                    ? '#000'
+                                    : '#fff'
+                                  : bar.name_color ||
+                                    sliderControl.name_color ||
+                                    'var(--primary-text-color)'};
+                          font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                                  ? 'bold'
+                                  : 'normal'};
+                          pointer-events: ${(bar.icon_as_toggle ??
+                                sliderControl.icon_as_toggle ??
+                                true)
+                                  ? 'auto'
+                                  : 'none'};
+                          cursor: ${(bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true)
+                                  ? 'pointer'
+                                  : 'default'};
+                          z-index: 3;
+                          max-width: 120px;
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          white-space: nowrap;
+                        "
+                                @click=${(bar.icon_as_toggle ??
+                                sliderControl.icon_as_toggle ??
+                                true)
+                                  ? async () => {
+                                      try {
+                                        const domain = bar.entity.split('.')[0];
+                                        const isOn =
+                                          entityState?.state === 'on' ||
+                                          entityState?.state === 'open';
+                                        if (domain === 'light') {
+                                          await homeAssistant.callService(
+                                            'light',
+                                            isOn ? 'turn_off' : 'turn_on',
+                                            {
+                                              entity_id: bar.entity,
+                                            }
+                                          );
+                                        } else if (domain === 'cover') {
+                                          await homeAssistant.callService(
+                                            'cover',
+                                            isOn ? 'close_cover' : 'open_cover',
+                                            {
+                                              entity_id: bar.entity,
+                                            }
+                                          );
+                                        } else if (domain === 'fan') {
+                                          await homeAssistant.callService(
+                                            'fan',
+                                            isOn ? 'turn_off' : 'turn_on',
+                                            {
+                                              entity_id: bar.entity,
+                                            }
+                                          );
+                                        } else if (domain === 'switch') {
+                                          await homeAssistant.callService(
+                                            'switch',
+                                            isOn ? 'turn_off' : 'turn_on',
+                                            {
+                                              entity_id: bar.entity,
+                                            }
+                                          );
+                                        }
+                                      } catch (error) {
+                                        console.error('Failed to toggle entity:', error);
+                                      }
+                                    }
+                                  : undefined}
+                              >
+                                ${entityName}
+                              </div>
+                            `
+                          : ''}
+                        ${bar.show_value !== false && sliderControl.show_value !== false
+                          ? html`
+                              <div
+                                style="
+                          position: absolute;
+                          ${sliderControl.overlay_position === 'left'
+                                  ? 'left: 8px;'
+                                  : sliderControl.overlay_position === 'right'
+                                    ? 'right: 8px;'
+                                    : 'right: 8px;'}
+                          top: 50%;
+                          transform: translateY(-50%);
+                          font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                          color: ${(bar.auto_contrast ?? sliderControl.auto_contrast ?? true)
+                                  ? livePercentage > 50
+                                    ? '#000'
+                                    : '#fff'
+                                  : bar.value_color ||
+                                    sliderControl.value_color ||
+                                    'var(--primary-text-color)'};
+                          font-weight: 600;
+                          pointer-events: none;
+                          z-index: 3;
+                        "
+                              >
+                                ${displayValue}${bar.type === 'brightness'
+                                  ? bar.value_suffix || sliderControl.value_suffix || '%'
+                                  : ''}
+                              </div>
+                            `
+                          : ''}
+                      `}
                 `
               : ''}
           </div>
@@ -1792,329 +3178,1024 @@ export class UltraSliderControlModule extends BaseUltraModule {
       `;
     };
 
-    // Render slider with container
-    const renderSliderWithStyles = () => {
-      // For vertical, use a better auto-fit height
-      const verticalHeight = sliderHeight * 4;
-      const verticalWidth = Math.max(sliderHeight, 60); // Minimum width for vertical
+    // Render all bars
+    const barsContent = bars.map((bar, index) => renderSingleBar(bar, index));
 
-      // For minimal style, make it thinner like a bar module
-      const actualHeight = sliderStyle === 'minimal' ? 8 : sliderHeight;
-      const actualVerticalWidth = sliderStyle === 'minimal' ? 8 : verticalWidth;
-
-      return html`
-        <div
-          class="slider-track-container"
-          style="
-            position: relative;
-            ${isVertical
-            ? `height: ${verticalHeight}px; width: ${actualVerticalWidth}px;`
-            : `height: ${actualHeight}px; width: 100%;`}
-            ${containerStyles}
-            transition: ${transition};
-            overflow: ${sliderStyle === 'minimal' ? 'visible' : 'hidden'};
-            ${sliderStyle === 'minimal' ? 'display: flex; align-items: center;' : ''}
-          "
-        >
-          ${overlayContent
-            ? html`
-                <div
-                  style="
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              ${overlayContent}
-              border-radius: ${borderRadius};
-              pointer-events: none;
-              z-index: 1;
-            "
-                ></div>
-              `
-            : ''}
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="${sliderControl.step || 1}"
-            .value="${percentage}"
-            @input=${handleSliderInput}
-            style="${sliderInputStyles}${isVertical
-              ? ' transform: rotate(-90deg); transform-origin: center;'
-              : ''}"
-          />
-        </div>
-      `;
-    };
-
-    // Get current RGB and color temp values for multi-slider modes
-    let rgbValues = [255, 255, 255];
-    let colorTempValue = 0;
-
-    if (
-      domain === 'light' &&
-      entityState.attributes.rgb_color &&
-      Array.isArray(entityState.attributes.rgb_color)
-    ) {
-      rgbValues = entityState.attributes.rgb_color;
-    }
-
-    if (domain === 'light' && entityState.attributes.color_temp) {
-      // Color temp ranges from 154 (warm) to 500 (cool)
-      const minTemp = 154;
-      const maxTemp = 500;
-      const currentTemp = entityState.attributes.color_temp;
-      // Convert to percentage (154 = 100%, 500 = 0%)
-      colorTempValue = ((maxTemp - currentTemp) / (maxTemp - minTemp)) * 100;
-    }
-
-    // Calculate individual RGB percentages
-    const redPercent = (rgbValues[0] / 255) * 100;
-    const greenPercent = (rgbValues[1] / 255) * 100;
-    const bluePercent = (rgbValues[2] / 255) * 100;
-
-    // Calculate combined RGB value (0-100) for rainbow slider
-    // Convert RGB to HSL and use H (hue) for the slider position
-    const rgbToHue = (r: number, g: number, b: number): number => {
-      r = r / 255;
-      g = g / 255;
-      b = b / 255;
-
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const delta = max - min;
-
-      if (delta === 0) return 0;
-
-      let hue = 0;
-      if (max === r) {
-        hue = (((g - b) / delta) % 6) / 6;
-      } else if (max === g) {
-        hue = ((b - r) / delta + 2) / 6;
-      } else {
-        hue = ((r - g) / delta + 4) / 6;
-      }
-
-      // Ensure hue is between 0 and 1
-      if (hue < 0) hue += 1;
-      if (hue > 1) hue -= 1;
-
-      return hue * 100; // Convert to 0-100 range
-    };
-
-    const rgbHuePercent = rgbToHue(rgbValues[0], rgbValues[1], rgbValues[2]);
-
-    // Helper to convert HSV to RGB (h in range 0-1, s and v in range 0-1)
-    const hsvToRgb = (h: number, s: number, v: number): [number, number, number] => {
-      const c = v * s;
-      const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
-      const m = v - c;
-
-      let r = 0,
-        g = 0,
-        b = 0;
-
-      if (h < 1 / 6) {
-        r = c;
-        g = x;
-        b = 0;
-      } else if (h < 2 / 6) {
-        r = x;
-        g = c;
-        b = 0;
-      } else if (h < 3 / 6) {
-        r = 0;
-        g = c;
-        b = x;
-      } else if (h < 4 / 6) {
-        r = 0;
-        g = x;
-        b = c;
-      } else if (h < 5 / 6) {
-        r = x;
-        g = 0;
-        b = c;
-      } else {
-        r = c;
-        g = 0;
-        b = x;
-      }
-
-      return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
-    };
-
-    // Build final layout based on mode
+    // Build layout based on mode
     let finalLayout;
 
-    // For multi-slider modes, wrap the sliders
-    let slidersContent = renderSliderWithStyles();
-
-    // Replace with multi-slider content if needed
-    if (domain === 'light') {
-      if (controlMode === 'rgb') {
-        // Rainbow gradient for RGB
-        const rainbowGradient =
-          'linear-gradient(90deg, rgb(255, 0, 0) 0%, rgb(255, 127, 0) 16.67%, rgb(255, 255, 0) 33.33%, rgb(0, 255, 0) 50%, rgb(0, 0, 255) 66.67%, rgb(75, 0, 130) 83.33%, rgb(148, 0, 211) 100%)';
-        slidersContent = html`${renderSingleSlider(
-          rgbHuePercent,
-          'rgb',
-          'RGB Color',
-          rainbowGradient
-        )}`;
-      } else if (controlMode === 'both') {
-        const rainbowGradient =
-          'linear-gradient(90deg, rgb(255, 0, 0) 0%, rgb(255, 127, 0) 16.67%, rgb(255, 255, 0) 33.33%, rgb(0, 255, 0) 50%, rgb(0, 0, 255) 66.67%, rgb(75, 0, 130) 83.33%, rgb(148, 0, 211) 100%)';
-        slidersContent = html`
-          ${renderSingleSlider(rgbHuePercent, 'rgb', 'RGB Color', rainbowGradient)}
-          ${renderSingleSlider(percentage, 'brightness', 'Brightness', fillColor)}
-        `;
-      } else if (controlMode === 'all') {
-        const rainbowGradient =
-          'linear-gradient(90deg, rgb(255, 0, 0) 0%, rgb(255, 127, 0) 16.67%, rgb(255, 255, 0) 33.33%, rgb(0, 255, 0) 50%, rgb(0, 0, 255) 66.67%, rgb(75, 0, 130) 83.33%, rgb(148, 0, 211) 100%)';
-        const tempGradient =
-          'linear-gradient(90deg, rgb(255, 103, 0) 0%, rgb(255, 147, 41) 12.5%, rgb(255, 196, 136) 25%, rgb(255, 215, 176) 37.5%, rgb(255, 246, 213) 50%, rgb(241, 250, 255) 62.5%, rgb(208, 232, 255) 75%, rgb(169, 200, 255) 87.5%, rgb(130, 170, 255) 100%)';
-        slidersContent = html`
-          ${renderSingleSlider(rgbHuePercent, 'rgb', 'RGB Color', rainbowGradient)}
-          ${renderSingleSlider(colorTempValue, 'color_temp', 'Color Temp', tempGradient)}
-          ${renderSingleSlider(percentage, 'brightness', 'Brightness', fillColor)}
-        `;
-      } else if (controlMode === 'color_temp') {
-        const tempGradient =
-          'linear-gradient(90deg, rgb(255, 103, 0) 0%, rgb(255, 147, 41) 12.5%, rgb(255, 196, 136) 25%, rgb(255, 215, 176) 37.5%, rgb(255, 246, 213) 50%, rgb(241, 250, 255) 62.5%, rgb(208, 232, 255) 75%, rgb(169, 200, 255) 87.5%, rgb(130, 170, 255) 100%)';
-        slidersContent = html`${renderSingleSlider(
-          colorTempValue,
-          'color_temp',
-          'Color Temp',
-          tempGradient
-        )}`;
-      }
-    }
-
     if (layoutMode === 'outside') {
-      // Outside mode: info positioned outside the slider (top/bottom only)
-      const outsidePos = sliderControl.outside_position || 'top';
-      const outsideAlign = sliderControl.outside_alignment || 'start';
+      // Create individual bar info for outside layout
+      const barsWithInfo = bars.map((bar, index) => {
+        const entityState = homeAssistant?.states?.[bar.entity];
+        const entityName = bar.name || entityState?.attributes.friendly_name || bar.entity;
 
-      const alignmentStyle =
-        outsideAlign === 'center' ? 'center' : outsideAlign === 'end' ? 'flex-end' : 'flex-start';
+        let displayValue = '0';
+        if (entityState) {
+          switch (bar.type) {
+            case 'brightness': {
+              const brightness = entityState.attributes.brightness || 0;
+              displayValue = `${Math.round((brightness / 255) * 100)}`;
+              break;
+            }
+            case 'rgb': {
+              const rgb = entityState.attributes.rgb_color || [255, 255, 255];
+              displayValue = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+              break;
+            }
+            case 'color_temp': {
+              const colorTemp = entityState.attributes.color_temp || 154;
+              displayValue = `${Math.round(1000000 / colorTemp)}K`;
+              break;
+            }
+            case 'red':
+            case 'green':
+            case 'blue': {
+              const color = entityState.attributes.rgb_color || [255, 255, 255];
+              const colorIndex = bar.type === 'red' ? 0 : bar.type === 'green' ? 1 : 2;
+              displayValue = `${color[colorIndex]}`;
+              break;
+            }
+            case 'attribute': {
+              if (bar.attribute && entityState.attributes[bar.attribute] !== undefined) {
+                const value = parseFloat(entityState.attributes[bar.attribute]) || 0;
+                displayValue = `${Math.round(value)}`;
+                if (bar.attribute === 'percentage') {
+                  displayValue += '%';
+                }
+              } else {
+                displayValue = '0';
+              }
+              break;
+            }
+            default: {
+              displayValue = `${entityState.state}`;
+            }
+          }
+        }
 
-      if (outsidePos === 'top') {
-        finalLayout = html`
-          <div
-            style="display: flex; flex-direction: column; gap: 12px; align-items: ${alignmentStyle};"
-          >
-            <div style="flex-shrink: 0;">${renderInfo()}</div>
-            ${slidersContent}
-          </div>
-        `;
-      } else {
-        // bottom
-        finalLayout = html`
-          <div
-            style="display: flex; flex-direction: column; gap: 12px; align-items: ${alignmentStyle};"
-          >
-            ${slidersContent}
-            <div style="flex-shrink: 0;">${renderInfo()}</div>
-          </div>
-        `;
-      }
+        const barElement = renderSingleBar(bar, index);
+        const showIconOutside = bar.show_icon !== false && sliderControl.show_icon !== false;
+        const outsideIconSize = bar.icon_size || sliderControl.icon_size || 16;
+        const outsideIconGap = 8; // Gap between bar and icon
+        const outsideIconTotalSpace = showIconOutside ? outsideIconSize + outsideIconGap : 0;
+
+        if (isVertical) {
+          // When icon is shown, bar should be shorter (bar + gap + icon = 200px total)
+          // When icon is hidden, bar takes full 200px
+          const effectiveWrapperHeight = verticalSliderHeight;
+          const barHeightWithinWrapper = showIconOutside
+            ? verticalSliderHeight - outsideIconTotalSpace
+            : verticalSliderHeight;
+
+          const normalizeOutsidePosition = (
+            position: string | undefined,
+            fallback: 'top_left' | 'bottom_left'
+          ): 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' => {
+            if (!position) {
+              return fallback;
+            }
+            switch (position) {
+              case 'top_left':
+              case 'top_right':
+              case 'bottom_left':
+              case 'bottom_right':
+                return position;
+              case 'top':
+              case 'middle':
+                return 'top_left';
+              case 'bottom':
+                return 'bottom_left';
+              default:
+                return fallback;
+            }
+          };
+
+          const outsideTextPos =
+            bar.outside_text_position || sliderControl.outside_text_position || 'left';
+
+          const namePlacement = normalizeOutsidePosition(
+            bar.outside_name_position ?? sliderControl.outside_name_position,
+            'top_left'
+          );
+          const valuePlacement = normalizeOutsidePosition(
+            bar.outside_value_position ?? sliderControl.outside_value_position,
+            'bottom_left'
+          );
+
+          const showName = bar.show_name !== false && sliderControl.show_name !== false;
+          const showValue = bar.show_value !== false && sliderControl.show_value !== false;
+
+          const topLeftItems: TemplateResult[] = [];
+          const topRightItems: TemplateResult[] = [];
+          const bottomLeftItems: TemplateResult[] = [];
+          const bottomRightItems: TemplateResult[] = [];
+
+          if (showName) {
+            const nameLabel = html`
+              <div
+                style="
+                  writing-mode: vertical-rl;
+                  text-orientation: mixed;
+                  font-size: ${bar.name_size || sliderControl.name_size || 16}px;
+                  color: ${bar.name_color ||
+                sliderControl.name_color ||
+                'var(--primary-text-color)'};
+                  font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                  ? '500'
+                  : 'normal'};
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+                class="uc-slider-name"
+              >
+                ${entityName}
+              </div>
+            `;
+
+            switch (namePlacement) {
+              case 'top_right':
+                topRightItems.push(nameLabel);
+                break;
+              case 'bottom_left':
+                bottomLeftItems.push(nameLabel);
+                break;
+              case 'bottom_right':
+                bottomRightItems.push(nameLabel);
+                break;
+              case 'top_left':
+              default:
+                topLeftItems.push(nameLabel);
+                break;
+            }
+          }
+
+          if (showValue) {
+            const valueLabel = html`
+              <div
+                style="
+                  writing-mode: vertical-rl;
+                  text-orientation: mixed;
+                  font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                  color: ${bar.value_color ||
+                sliderControl.value_color ||
+                'var(--secondary-text-color)'};
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+                class="uc-slider-value"
+              >
+                ${displayValue}${bar.type === 'brightness'
+                  ? bar.value_suffix || sliderControl.value_suffix || '%'
+                  : ''}
+              </div>
+            `;
+
+            switch (valuePlacement) {
+              case 'top_right':
+                topRightItems.push(valueLabel);
+                break;
+              case 'bottom_left':
+                bottomLeftItems.push(valueLabel);
+                break;
+              case 'bottom_right':
+                bottomRightItems.push(valueLabel);
+                break;
+              case 'top_left':
+              default:
+                topLeftItems.push(valueLabel);
+                break;
+            }
+          }
+
+          const renderGroup = (items: TemplateResult[], align: 'flex-start' | 'flex-end') =>
+            items.length
+              ? html`<div
+                  style="display: flex; flex-direction: column; align-items: ${align}; gap: 4px;"
+                >
+                  ${items}
+                </div>`
+              : html`<div style="min-width: 0;"></div>`;
+
+          const hasTopRow = topLeftItems.length > 0 || topRightItems.length > 0;
+          const hasBottomRow = bottomLeftItems.length > 0 || bottomRightItems.length > 0;
+          const hasInfoLabels = hasTopRow || hasBottomRow;
+
+          const buildInfoColumn = () => {
+            if (!hasInfoLabels) {
+              return html``;
+            }
+
+            return html`
+              <div
+                style="display: flex; flex-direction: column; height: ${barHeightWithinWrapper}px; overflow: hidden;"
+                class="uc-slider-info-column"
+              >
+                ${hasTopRow
+                  ? html`<div style="display: flex; justify-content: space-between; gap: 0;">
+                      ${renderGroup(topLeftItems, 'flex-start')}
+                      ${renderGroup(topRightItems, 'flex-end')}
+                    </div>`
+                  : ''}
+                ${hasTopRow || hasBottomRow ? html`<div style="flex: 1;"></div>` : html``}
+                ${hasBottomRow
+                  ? html`<div style="display: flex; justify-content: space-between; gap: 0;">
+                      ${renderGroup(bottomLeftItems, 'flex-start')}
+                      ${renderGroup(bottomRightItems, 'flex-end')}
+                    </div>`
+                  : ''}
+              </div>
+            `;
+          };
+
+          const containerGap = hasInfoLabels ? 4 : 0;
+
+          const renderOutsideInfoColumn = () => buildInfoColumn();
+
+          const outsideItemClass = `uc-slider-item uc-layout-${layoutMode} uc-orientation-vertical uc-bar-type-${bar.type}`;
+
+          return html`
+            <div
+              class="${outsideItemClass}"
+              style="display: flex; align-items: flex-start; justify-content: center; gap: ${containerGap}px; height: ${effectiveWrapperHeight}px;"
+            >
+              ${hasInfoLabels && outsideTextPos === 'left' ? renderOutsideInfoColumn() : ''}
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  height: ${barHeightWithinWrapper}px;
+                  min-height: ${barHeightWithinWrapper}px;
+                  gap: ${showIconOutside ? '8px' : '0'};
+                "
+                class="uc-slider-track-wrapper"
+              >
+                <div
+                  style="height: ${barHeightWithinWrapper}px; display: flex; align-items: center; justify-content: center; width: 100%; flex-shrink: 0;"
+                >
+                  ${barElement}
+                </div>
+                ${showIconOutside
+                  ? html`
+                      <div style="flex-shrink: 0;">
+                        <ha-icon
+                          class="uc-slider-icon uc-icon-vertical-outside"
+                          icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                          style="--mdc-icon-size: ${outsideIconSize}px; color: ${(bar.dynamic_icon ??
+                            sliderControl.dynamic_icon ??
+                            true) &&
+                          entityState?.attributes.rgb_color
+                            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                            : bar.icon_color ||
+                              sliderControl.icon_color ||
+                              'var(--secondary-text-color)'}; cursor: ${(bar.icon_as_toggle ??
+                          sliderControl.icon_as_toggle ??
+                          true)
+                            ? 'pointer'
+                            : 'default'};"
+                          @click=${sliderControl.icon_as_toggle
+                            ? async () => {
+                                try {
+                                  const domain = bar.entity.split('.')[0];
+                                  const isOn =
+                                    entityState?.state === 'on' || entityState?.state === 'open';
+                                  if (domain === 'light') {
+                                    await homeAssistant.callService(
+                                      'light',
+                                      isOn ? 'turn_off' : 'turn_on',
+                                      {
+                                        entity_id: bar.entity,
+                                      }
+                                    );
+                                  } else if (domain === 'cover') {
+                                    await homeAssistant.callService(
+                                      'cover',
+                                      isOn ? 'close_cover' : 'open_cover',
+                                      {
+                                        entity_id: bar.entity,
+                                      }
+                                    );
+                                  } else if (domain === 'fan') {
+                                    await homeAssistant.callService(
+                                      'fan',
+                                      isOn ? 'turn_off' : 'turn_on',
+                                      {
+                                        entity_id: bar.entity,
+                                      }
+                                    );
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to toggle entity:', error);
+                                }
+                              }
+                            : undefined}
+                        ></ha-icon>
+                      </div>
+                    `
+                  : ''}
+              </div>
+              ${hasInfoLabels && outsideTextPos === 'right' ? renderOutsideInfoColumn() : ''}
+            </div>
+          `;
+        } else {
+          // Horizontal Outside Layout (existing logic)
+          const barInfo = html`
+            <div
+              class="uc-slider-info"
+              style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;"
+            >
+              <div
+                class="uc-slider-info-group"
+                style="display: flex; align-items: center; gap: 8px;"
+              >
+                ${bar.show_icon !== false && sliderControl.show_icon !== false
+                  ? html`
+                      <ha-icon
+                        class="uc-slider-icon"
+                        icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                        style="--mdc-icon-size: ${sliderControl.icon_size ||
+                        16}px; color: ${sliderControl.dynamic_icon &&
+                        entityState?.attributes.rgb_color
+                          ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                          : 'var(--secondary-text-color)'}; vertical-align: middle; cursor: ${sliderControl.icon_as_toggle
+                          ? 'pointer'
+                          : 'default'};"
+                        @click=${sliderControl.icon_as_toggle
+                          ? async () => {
+                              try {
+                                const domain = bar.entity.split('.')[0];
+                                const isOn =
+                                  entityState?.state === 'on' || entityState?.state === 'open';
+                                if (domain === 'light') {
+                                  await homeAssistant.callService(
+                                    'light',
+                                    isOn ? 'turn_off' : 'turn_on',
+                                    {
+                                      entity_id: bar.entity,
+                                    }
+                                  );
+                                } else if (domain === 'cover') {
+                                  await homeAssistant.callService(
+                                    'cover',
+                                    isOn ? 'close_cover' : 'open_cover',
+                                    {
+                                      entity_id: bar.entity,
+                                    }
+                                  );
+                                } else if (domain === 'fan') {
+                                  await homeAssistant.callService(
+                                    'fan',
+                                    isOn ? 'turn_off' : 'turn_on',
+                                    {
+                                      entity_id: bar.entity,
+                                    }
+                                  );
+                                }
+                              } catch (error) {
+                                console.error('Failed to toggle entity:', error);
+                              }
+                            }
+                          : undefined}
+                      ></ha-icon>
+                    `
+                  : ''}
+                ${bar.show_name !== false && sliderControl.show_name !== false
+                  ? html`
+                      <div
+                        class="uc-slider-name"
+                        style="font-size: ${bar.name_size ||
+                        sliderControl.name_size ||
+                        14}px; color: ${bar.name_color ||
+                        sliderControl.name_color ||
+                        'var(--secondary-text-color)'}; font-weight: ${(bar.name_bold ??
+                        sliderControl.name_bold ??
+                        true)
+                          ? '600'
+                          : 'normal'}; line-height: 1; display: flex; align-items: center;"
+                      >
+                        ${entityName}
+                      </div>
+                    `
+                  : ''}
+              </div>
+              ${bar.show_value !== false && sliderControl.show_value !== false
+                ? html`
+                    <div
+                      class="uc-slider-value"
+                      class="uc-slider-value"
+                      style="font-size: ${bar.value_size ||
+                      sliderControl.value_size ||
+                      14}px; color: ${bar.value_color ||
+                      sliderControl.value_color ||
+                      'var(--secondary-text-color)'}; font-weight: 600;"
+                    >
+                      ${displayValue}${bar.type === 'brightness'
+                        ? bar.value_suffix || sliderControl.value_suffix || '%'
+                        : ''}
+                    </div>
+                  `
+                : ''}
+            </div>
+          `;
+
+          return html`
+            <div
+              class="uc-slider-item uc-layout-${layoutMode} uc-orientation-horizontal uc-bar-type-${bar.type}"
+            >
+              ${barInfo} ${barElement}
+            </div>
+          `;
+        }
+      });
+
+      finalLayout = html`
+        <div
+          class="${baseLayoutClass}"
+          style="display: flex; flex-direction: ${isVertical
+            ? 'row'
+            : 'column'}; width: 100%; gap: ${barSpacing}px; align-items: ${isVertical
+            ? 'flex-start'
+            : 'stretch'};"
+        >
+          ${barsWithInfo}
+        </div>
+      `;
     } else if (layoutMode === 'overlay') {
       const overlayPos = sliderControl.overlay_position || 'left';
 
-      // On slider overlay
       finalLayout = html`
         <div
+          class="${baseLayoutClass}"
           style="position: relative; ${isVertical
-            ? 'display: flex; flex-direction: column; align-items: center;'
+            ? 'display: flex; flex-direction: column; align-items: center; justify-content: center;'
             : ''}"
         >
-          ${slidersContent}
           <div
-            style="
-              position: absolute;
-              ${isVertical
-              ? `left: 50%; transform: translateX(-50%); ${overlayPos === 'left' || overlayPos === 'center' ? 'top: 12px;' : 'bottom: 12px;'}`
-              : `top: 50%; left: ${overlayPos === 'left' ? '12px' : overlayPos === 'right' ? 'auto' : '50%'}; right: ${overlayPos === 'right' ? '12px' : 'auto'}; transform: translate(${overlayPos === 'center' ? '-50%' : '0'}, -50%);`}
-              pointer-events: none;
-              z-index: 3;
-            "
+            class="uc-slider-items"
+            style="display: flex; ${isVertical
+              ? 'flex-direction: row; gap: ' +
+                barSpacing +
+                'px; justify-content: center; align-items: center;'
+              : 'flex-direction: column; gap: ' + barSpacing + 'px;'} width: 100%;"
           >
-            ${renderInfo()}
+            ${barsContent}
           </div>
         </div>
       `;
     } else {
-      // Split mode (left/right only)
-      const barPos = sliderControl.split_bar_position || 'left';
-      const infoPos = sliderControl.split_info_position || 'right';
-      const ratio = sliderControl.split_ratio || 60;
+      // Split mode
+      const defaultSplitBarPosition = sliderControl.split_bar_position || 'left';
+      const defaultSplitBarLength = sliderControl.split_bar_length ?? 60;
 
-      const sliderPart = html`<div
-        style="flex: ${ratio}; display: flex; flex-direction: column; align-items: center; justify-content: center;"
-      >
-        ${slidersContent}
-      </div>`;
-      const infoPart = html`
+      // Create combined info + bar for each slider
+      const combinedBars = bars.map((bar, index) => {
+        const entityState = homeAssistant?.states?.[bar.entity];
+        const entityName = bar.name || entityState?.attributes.friendly_name || bar.entity;
+
+        const barPosition = bar.split_bar_position || defaultSplitBarPosition;
+        const barLength = bar.split_bar_length ?? defaultSplitBarLength;
+        const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
+        const showNameSection = bar.show_name !== false && sliderControl.show_name !== false;
+        const showValueSection = bar.show_value !== false && sliderControl.show_value !== false;
+        const hasInfoSection = showIconSection || showNameSection || showValueSection;
+
+        // Calculate bar and info sizes using percentages
+        // For vertical: use min-height to ensure bars are always visible
+        // At 100%, use a large min-height; otherwise calculate proportionally
+        const verticalBaseHeight = 200; // Base height for 100% bar
+        const barSize = isVertical
+          ? barLength === 100
+            ? `min-height: ${verticalBaseHeight}px; height: 100%;`
+            : `height: ${barLength}%; min-height: ${Math.floor((verticalBaseHeight * barLength) / 100)}px;`
+          : `width: ${barLength}%;`;
+
+        const infoSize = isVertical
+          ? `height: ${100 - barLength}%;`
+          : `width: ${100 - barLength}%;`;
+
+        // Always show info container unless bar is 100% (need it for spacing even if empty)
+        const shouldShowInfoContainer = barLength < 100;
+
+        let displayValue = '0';
+        if (entityState) {
+          switch (bar.type) {
+            case 'brightness': {
+              const brightness = entityState.attributes.brightness || 0;
+              displayValue = `${Math.round((brightness / 255) * 100)}`;
+              break;
+            }
+            case 'rgb': {
+              const rgb = entityState.attributes.rgb_color || [255, 255, 255];
+              displayValue = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+              break;
+            }
+            case 'color_temp': {
+              const colorTemp = entityState.attributes.color_temp || 154;
+              displayValue = `${Math.round(1000000 / colorTemp)}K`;
+              break;
+            }
+            case 'red':
+            case 'green':
+            case 'blue': {
+              const color = entityState.attributes.rgb_color || [255, 255, 255];
+              const colorIndex = bar.type === 'red' ? 0 : bar.type === 'green' ? 1 : 2;
+              displayValue = `${color[colorIndex]}`;
+              break;
+            }
+            case 'attribute': {
+              if (bar.attribute && entityState.attributes[bar.attribute] !== undefined) {
+                const value = parseFloat(entityState.attributes[bar.attribute]) || 0;
+                displayValue = `${Math.round(value)}`;
+                if (bar.attribute === 'percentage') {
+                  displayValue += '%';
+                }
+              } else {
+                displayValue = '0';
+              }
+              break;
+            }
+            default: {
+              displayValue = `${entityState.state}`;
+            }
+          }
+        }
+
+        const barElement = renderSingleBar(bar, index);
+
+        const itemClass = `uc-slider-item uc-layout-${layoutMode} ${
+          isVertical ? 'uc-orientation-vertical' : 'uc-orientation-horizontal'
+        } uc-bar-type-${bar.type}`;
+
+        const itemAlign = isOutsideLayout && isVertical ? 'stretch' : 'center';
+        const infoSpacingStyle = isVertical
+          ? barPosition === 'left'
+            ? 'margin-bottom: 8px;'
+            : 'margin-top: 8px;'
+          : '';
+
+        return html`
+          <div
+            class="${itemClass}"
+            style="display: flex; align-items: ${itemAlign}; ${isVertical
+              ? 'flex-direction: column; height: 100%;'
+              : 'width: 100%;'}"
+          >
+            ${barPosition === 'left'
+              ? html`
+                  <!-- Info section first -->
+                  <div
+                    class="uc-slider-info"
+                    style="${infoSize} display: ${shouldShowInfoContainer
+                      ? 'flex'
+                      : 'none'}; align-items: center; justify-content: center; ${isVertical
+                      ? 'flex-direction: column; text-align: center; padding-top: 4px;'
+                      : ''}"
+                  >
+                    ${showIconSection
+                      ? html`
+                          <ha-icon
+                            class="uc-slider-icon"
+                            icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                            style="--mdc-icon-size: ${bar.icon_size ||
+                            sliderControl.icon_size ||
+                            16}px; color: ${(bar.dynamic_icon ??
+                              sliderControl.dynamic_icon ??
+                              true) &&
+                            entityState?.attributes.rgb_color
+                              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                              : bar.icon_color ||
+                                sliderControl.icon_color ||
+                                'var(--primary-text-color)'}; cursor: ${(bar.icon_as_toggle ??
+                            sliderControl.icon_as_toggle ??
+                            true)
+                              ? 'pointer'
+                              : 'default'};"
+                            @click=${sliderControl.icon_as_toggle
+                              ? async () => {
+                                  try {
+                                    const domain = bar.entity.split('.')[0];
+                                    const isOn =
+                                      entityState?.state === 'on' || entityState?.state === 'open';
+                                    if (domain === 'light') {
+                                      await homeAssistant.callService(
+                                        'light',
+                                        isOn ? 'turn_off' : 'turn_on',
+                                        {
+                                          entity_id: bar.entity,
+                                        }
+                                      );
+                                    } else if (domain === 'cover') {
+                                      await homeAssistant.callService(
+                                        'cover',
+                                        isOn ? 'close_cover' : 'open_cover',
+                                        {
+                                          entity_id: bar.entity,
+                                        }
+                                      );
+                                    } else if (domain === 'fan') {
+                                      await homeAssistant.callService(
+                                        'fan',
+                                        isOn ? 'turn_off' : 'turn_on',
+                                        {
+                                          entity_id: bar.entity,
+                                        }
+                                      );
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to toggle entity:', error);
+                                  }
+                                }
+                              : undefined}
+                          ></ha-icon>
+                        `
+                      : ''}
+                    <div style="${isVertical ? '' : 'flex: 1;'}">
+                      ${showNameSection
+                        ? html`
+                            <div
+                              class="uc-slider-name"
+                              style="font-size: ${bar.name_size ||
+                              sliderControl.name_size ||
+                              16}px; color: ${bar.name_color ||
+                              sliderControl.name_color ||
+                              'var(--primary-text-color)'}; font-weight: ${(bar.name_bold ??
+                              sliderControl.name_bold ??
+                              true)
+                                ? '500'
+                                : 'normal'};"
+                            >
+                              ${entityName}
+                            </div>
+                          `
+                        : ''}
+                      ${showValueSection
+                        ? html`
+                            <div
+                              class="uc-slider-value"
+                              style="font-size: ${bar.value_size ||
+                              sliderControl.value_size ||
+                              14}px; color: ${bar.value_color ||
+                              sliderControl.value_color ||
+                              'var(--secondary-text-color)'};"
+                            >
+                              ${displayValue}${bar.type === 'brightness'
+                                ? bar.value_suffix || sliderControl.value_suffix || '%'
+                                : ''}
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  </div>
+                  <!-- Bar section -->
+                  <div
+                    class="uc-slider-track-wrapper"
+                    style="${barSize} ${isVertical
+                      ? 'display: flex; justify-content: center; align-items: stretch;'
+                      : ''}"
+                  >
+                    ${barElement}
+                  </div>
+                `
+              : html`
+                  <!-- Bar first, then info (right position) -->
+                  <div
+                    class="uc-slider-track-wrapper"
+                    style="${barSize} ${isVertical
+                      ? 'display: flex; justify-content: center; align-items: stretch;'
+                      : ''}"
+                  >
+                    ${barElement}
+                  </div>
+                  <div
+                    class="uc-slider-info"
+                    style="${infoSize} display: ${shouldShowInfoContainer
+                      ? 'flex'
+                      : 'none'}; align-items: center; justify-content: center; ${isVertical
+                      ? `flex-direction: column; text-align: center; ${infoSpacingStyle}`
+                      : 'none'}; align-items: center; justify-content: center; ${isVertical
+                      ? `flex-direction: column; text-align: center; ${infoSpacingStyle}`
+                      : ''}"
+                  >
+                    ${showIconSection
+                      ? html`
+                          <ha-icon
+                            class="uc-slider-icon"
+                            icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                            style="--mdc-icon-size: ${bar.icon_size ||
+                            sliderControl.icon_size ||
+                            16}px; color: ${(bar.dynamic_icon ??
+                              sliderControl.dynamic_icon ??
+                              true) &&
+                            entityState?.attributes.rgb_color
+                              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                              : bar.icon_color ||
+                                sliderControl.icon_color ||
+                                'var(--primary-text-color)'}; cursor: ${(bar.icon_as_toggle ??
+                            sliderControl.icon_as_toggle ??
+                            true)
+                              ? 'pointer'
+                              : 'default'};"
+                            @click=${sliderControl.icon_as_toggle
+                              ? async () => {
+                                  try {
+                                    const domain = bar.entity.split('.')[0];
+                                    const isOn =
+                                      entityState?.state === 'on' || entityState?.state === 'open';
+                                    if (domain === 'light') {
+                                      await homeAssistant.callService(
+                                        'light',
+                                        isOn ? 'turn_off' : 'turn_on',
+                                        {
+                                          entity_id: bar.entity,
+                                        }
+                                      );
+                                    } else if (domain === 'cover') {
+                                      await homeAssistant.callService(
+                                        'cover',
+                                        isOn ? 'close_cover' : 'open_cover',
+                                        {
+                                          entity_id: bar.entity,
+                                        }
+                                      );
+                                    } else if (domain === 'fan') {
+                                      await homeAssistant.callService(
+                                        'fan',
+                                        isOn ? 'turn_off' : 'turn_on',
+                                        {
+                                          entity_id: bar.entity,
+                                        }
+                                      );
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to toggle entity:', error);
+                                  }
+                                }
+                              : undefined}
+                          ></ha-icon>
+                        `
+                      : ''}
+                    <div style="${isVertical ? '' : 'flex: 1;'}">
+                      ${showNameSection
+                        ? html`
+                            <div
+                              class="uc-slider-name"
+                              style="font-size: ${bar.name_size ||
+                              sliderControl.name_size ||
+                              16}px; color: ${bar.name_color ||
+                              sliderControl.name_color ||
+                              'var(--primary-text-color)'}; font-weight: ${(bar.name_bold ??
+                              sliderControl.name_bold ??
+                              true)
+                                ? '500'
+                                : 'normal'};"
+                            >
+                              ${entityName}
+                            </div>
+                          `
+                        : ''}
+                      ${showValueSection
+                        ? html`
+                            <div
+                              class="uc-slider-value"
+                              style="font-size: ${bar.value_size ||
+                              sliderControl.value_size ||
+                              14}px; color: ${bar.value_color ||
+                              sliderControl.value_color ||
+                              'var(--secondary-text-color)'};"
+                            >
+                              ${displayValue}${bar.type === 'brightness'
+                                ? bar.value_suffix || sliderControl.value_suffix || '%'
+                                : ''}
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  </div>
+                `}
+          </div>
+        `;
+      });
+
+      finalLayout = html`
         <div
-          style="
-          flex: ${100 - ratio}; 
-          display: flex; 
-          align-items: center;
-          justify-content: ${infoPos === 'center'
-            ? 'center'
-            : infoPos === 'right'
-              ? 'flex-end'
-              : 'flex-start'};
-        "
+          class="${baseLayoutClass}"
+          style="display: flex; flex-direction: ${isVertical
+            ? 'row'
+            : 'column'}; width: 100%; ${isVertical
+            ? 'height: 100%;'
+            : ''} gap: ${barSpacing}px; align-items: ${isVertical
+            ? 'stretch'
+            : 'stretch'}; justify-content: ${isVertical ? 'center' : 'stretch'};"
         >
-          ${renderInfo()}
+          ${combinedBars}
         </div>
       `;
-
-      if (barPos === 'left') {
-        finalLayout = html`
-          <div style="display: flex; gap: 12px; align-items: center;">
-            ${sliderPart} ${infoPart}
-          </div>
-        `;
-      } else {
-        // right
-        finalLayout = html`
-          <div style="display: flex; gap: 12px; align-items: center;">
-            ${infoPart} ${sliderPart}
-          </div>
-        `;
-      }
     }
 
     return html`
-      <div class="slider-control-container" style="padding: 16px; position: relative;">
+      <div
+        class="slider-control-container ${baseLayoutClass}"
+        style="padding: 16px; position: relative; ${isVertical
+          ? 'display: flex; justify-content: center; align-items: center;'
+          : ''} ${isOutsideLayout ? 'overflow: hidden;' : ''}"
+      >
         <style>
-          .slider-control-container input[type="range"]::-webkit-slider-track {
+          .slider-control-container input[type='range']::-webkit-slider-track {
             background: transparent;
             height: 100%;
           }
-          .slider-control-container input[type="range"]::-moz-range-track {
+          .slider-control-container input[type='range']::-moz-range-track {
             background: transparent;
             height: 100%;
           }
-          .slider-control-container input[type="range"]::-webkit-slider-thumb {
-            ${thumbStyles}
+
+          /* Fill sliders (brightness, numeric) - no thumb, just fill/empty cut line */
+          .slider-control-container input.fill-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 0;
+            height: 0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
           }
-          .slider-control-container input[type="range"]::-moz-range-thumb {
-            ${thumbStyles}
+          .slider-control-container input.fill-slider::-moz-range-thumb {
+            width: 0;
+            height: 0;
+            background: transparent;
+            border: none;
+            cursor: pointer;
           }
-          .slider-control-container input[type="range"]:hover::-webkit-slider-thumb {
-            transform: ${showThumb ? 'scale(1.1)' : 'none'};
+
+          /* Gradient slider thumb styling */
+          .slider-control-container
+            .slider-track-container
+            input.gradient-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1px;
+            height: var(--slider-height, 55px);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            margin: 0;
+            opacity: 0;
           }
-          .slider-control-container input[type="range"]:hover::-moz-range-thumb {
-            transform: ${showThumb ? 'scale(1.1)' : 'none'};
+          .slider-control-container
+            .slider-track-container
+            input.gradient-slider::-moz-range-thumb {
+            width: 1px;
+            height: var(--slider-height, 55px);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            margin: 0;
+            opacity: 0;
+          }
+
+          .slider-control-container .slider-track-container .slider-indicator {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #ffffff;
+            border-radius: 4px;
+            box-shadow:
+              0 0 8px rgba(0, 0, 0, 0.5),
+              inset 0 0 3px rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            will-change: top, left;
+            transition:
+              top 80ms ease-out,
+              left 80ms ease-out;
+            z-index: 3;
+          }
+          .slider-control-container .slider-track-container .slider-indicator.horizontal-indicator {
+            width: 8px;
+            height: var(--slider-height, 55px);
+            top: 50%;
+            transform: translate(-50%, -50%);
+          }
+          .slider-control-container .slider-track-container .slider-indicator.vertical-indicator {
+            height: 8px;
+            width: var(--slider-height, 55px);
+            left: 50%;
+            transform: translate(-50%, -50%);
           }
         </style>
+
         ${finalLayout}
       </div>
     `;
+  }
+
+  // Helper methods for color conversion
+  private resolveDynamicFillColor(bar: SliderBar, entityState: any, fallback: string): string {
+    if (!entityState || !entityState.attributes) {
+      return fallback;
+    }
+
+    const attributes = entityState.attributes;
+
+    if (Array.isArray(attributes.rgb_color) && attributes.rgb_color.length === 3) {
+      const [r, g, b] = attributes.rgb_color;
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    if (Array.isArray(attributes.hs_color) && attributes.hs_color.length >= 2) {
+      const [h, s] = attributes.hs_color;
+      const rgb = this.hsvToRgb(
+        ((h ?? 0) % 360) / 360,
+        Math.max(0, Math.min(100, s ?? 100)) / 100,
+        1
+      );
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+
+    if (typeof attributes.color_temp === 'number' && attributes.color_temp > 0) {
+      const kelvin = Math.max(1000, Math.min(40000, Math.round(1000000 / attributes.color_temp)));
+      const [r, g, b] = this.colorTemperatureToRGB(kelvin);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    if (typeof attributes.color === 'string' && attributes.color.trim()) {
+      return attributes.color;
+    }
+
+    return fallback;
+  }
+
+  private rgbToHue(r: number, g: number, b: number): number {
+    const red = r / 255;
+    const green = g / 255;
+    const blue = b / 255;
+
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const delta = max - min;
+
+    if (delta === 0) return 0;
+
+    let hue = 0;
+    if (max === red) {
+      hue = (((green - blue) / delta) % 6) / 6;
+    } else if (max === green) {
+      hue = ((blue - red) / delta + 2) / 6;
+    } else {
+      hue = ((red - green) / delta + 4) / 6;
+    }
+
+    if (hue < 0) hue += 1;
+    if (hue > 1) hue -= 1;
+
+    // Convert to percentage for our specific gradient
+    // Our gradient: red(0%) -> yellow(16.67%) -> green(33.33%) -> cyan(50%) -> blue(66.67%) -> magenta(83.33%) -> red(100%)
+    // Map HSV hue (0-1) to our gradient positions (0-100%)
+    // For pure red (255, 0, 0), hue should be 0, which maps to 0% (bottom of gradient)
+    return hue * 100;
+  }
+
+  private hsvToRgb(h: number, s: number, v: number): [number, number, number] {
+    const c = v * s;
+    const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
+    const m = v - c;
+
+    let red = 0,
+      green = 0,
+      blue = 0;
+
+    if (h < 1 / 6) {
+      red = c;
+      green = x;
+      blue = 0;
+    } else if (h < 2 / 6) {
+      red = x;
+      green = c;
+      blue = 0;
+    } else if (h < 3 / 6) {
+      red = 0;
+      green = c;
+      blue = x;
+    } else if (h < 4 / 6) {
+      red = 0;
+      green = x;
+      blue = c;
+    } else if (h < 5 / 6) {
+      red = x;
+      green = 0;
+      blue = c;
+    } else {
+      red = c;
+      green = 0;
+      blue = x;
+    }
+
+    return [
+      Math.round((red + m) * 255),
+      Math.round((green + m) * 255),
+      Math.round((blue + m) * 255),
+    ];
   }
 
   /**
@@ -2156,21 +4237,52 @@ export class UltraSliderControlModule extends BaseUltraModule {
     return [33, 150, 243];
   }
 
+  private colorTemperatureToRGB(kelvin: number): [number, number, number] {
+    const temperature = kelvin / 100;
+
+    let red: number;
+    let green: number;
+    let blue: number;
+
+    if (temperature <= 66) {
+      red = 255;
+      green = 99.4708025861 * Math.log(Math.max(1, temperature)) - 161.1195681661;
+      blue =
+        temperature <= 19
+          ? 0
+          : 138.5177312231 * Math.log(Math.max(1, temperature - 10)) - 305.0447927307;
+    } else {
+      red = 329.698727446 * Math.pow(temperature - 60, -0.1332047592);
+      green = 288.1221695283 * Math.pow(temperature - 60, -0.0755148492);
+      blue = 255;
+    }
+
+    const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+
+    return [clamp(red), clamp(green), clamp(blue)];
+  }
+
   validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const sliderControl = module as SliderControlModule;
     const errors = [...baseValidation.errors];
 
-    // Entity is required
-    if (!sliderControl.entity || sliderControl.entity.trim() === '') {
-      errors.push('Entity is required for Slider Control');
-    }
+    // Check if we have bars configured
+    if (!sliderControl.bars || sliderControl.bars.length === 0) {
+      errors.push('At least one bar is required for Slider Control');
+    } else {
+      // Validate each bar
+      sliderControl.bars.forEach((bar, index) => {
+        if (!bar.entity || bar.entity.trim() === '') {
+          errors.push(`Bar ${index + 1}: Entity is required`);
+        }
 
-    // Validate value ranges
-    if (sliderControl.min_value !== undefined && sliderControl.max_value !== undefined) {
-      if (sliderControl.min_value >= sliderControl.max_value) {
-        errors.push('Min value must be less than max value');
-      }
+        if (bar.min_value !== undefined && bar.max_value !== undefined) {
+          if (bar.min_value >= bar.max_value) {
+            errors.push(`Bar ${index + 1}: Min value must be less than max value`);
+          }
+        }
+      });
     }
 
     // Validate slider height

@@ -2,11 +2,13 @@ import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, LightModule, UltraCardConfig } from '../types';
+import { CardModule, LightModule, UltraCardConfig, EntityMapping, EntityReference } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-light-color-picker';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { simpleEntityMapper } from '../components/uc-simple-entity-mapper';
+import { entityMapper } from '../services/uc-entity-mapper';
 
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
@@ -844,7 +846,7 @@ export class UltraLightModule extends BaseUltraModule {
               },
             ],
             onChange: (e: CustomEvent) =>
-              this.importPresets(e.detail.value.import_data, lightModule, updateModule),
+              this.importPresets(e.detail.value.import_data, lightModule, updateModule, hass),
           },
         ])}
 
@@ -1846,7 +1848,8 @@ export class UltraLightModule extends BaseUltraModule {
   private importPresets(
     jsonData: string,
     lightModule: LightModule,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    hass: HomeAssistant
   ): void {
     try {
       if (!jsonData.trim()) return;
@@ -1859,6 +1862,102 @@ export class UltraLightModule extends BaseUltraModule {
           id: this.generateId('preset'),
         }));
 
+        // Detect entities in imported presets
+        const entityReferences = this._detectLightPresetEntities(importedPresets);
+
+        if (entityReferences.length > 0 && hass) {
+          // Show entity mapping dialog
+          this._showLightPresetMappingDialog(
+            importedPresets,
+            entityReferences,
+            lightModule,
+            updateModule,
+            hass
+          );
+        } else {
+          // No entities or no hass, import directly
+          const newPresets = [...(lightModule.presets || []), ...importedPresets];
+          updateModule({ presets: newPresets });
+
+          // Show success message
+          const event = new CustomEvent('hass-notification', {
+            detail: { message: `Successfully imported ${importedPresets.length} presets` },
+          });
+          document.dispatchEvent(event);
+        }
+      }
+    } catch (error) {
+      // Show error message
+      const event = new CustomEvent('hass-notification', {
+        detail: { message: 'Failed to import presets: Invalid JSON format' },
+      });
+      document.dispatchEvent(event);
+    }
+  }
+
+  private _detectLightPresetEntities(presets: any[]): EntityReference[] {
+    const references: Map<string, EntityReference> = new Map();
+
+    presets.forEach((preset, presetIndex) => {
+      if (preset.entities && Array.isArray(preset.entities)) {
+        preset.entities.forEach((entity: string, entityIndex: number) => {
+          if (references.has(entity)) {
+            const existing = references.get(entity)!;
+            existing.locations.push(`presets[${presetIndex}].entities[${entityIndex}]`);
+            if (preset.name && !existing.context?.includes(preset.name)) {
+              existing.context = existing.context
+                ? `${existing.context}, ${preset.name}`
+                : preset.name;
+            }
+          } else {
+            references.set(entity, {
+              entityId: entity,
+              locations: [`presets[${presetIndex}].entities[${entityIndex}]`],
+              moduleType: 'light',
+              context: preset.name,
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(references.values());
+  }
+
+  private _showLightPresetMappingDialog(
+    importedPresets: any[],
+    entityReferences: EntityReference[],
+    lightModule: LightModule,
+    updateModule: (updates: Partial<CardModule>) => void,
+    hass: HomeAssistant
+  ): void {
+    if (!hass) return;
+
+    // Show the simple entity mapper dialog
+    simpleEntityMapper.show(
+      hass,
+      `Map Entities for Light Presets`,
+      entityReferences,
+      (mappings: EntityMapping[]) => {
+        console.log('✅ Apply light preset mappings:', mappings);
+        // Apply mappings to presets
+        const mappedPresets = this._applyMappingsToLightPresets(importedPresets, mappings);
+
+        // Add mapped presets
+        const newPresets = [...(lightModule.presets || []), ...mappedPresets];
+        updateModule({ presets: newPresets });
+
+        // Show success message
+        const event = new CustomEvent('hass-notification', {
+          detail: {
+            message: `Successfully imported ${mappedPresets.length} presets with ${mappings.length} entity mapping(s)`,
+          },
+        });
+        document.dispatchEvent(event);
+      },
+      () => {
+        console.log('❌ Cancel light preset mapping');
+        // Cancel - add presets with original entities (no mappings)
         const newPresets = [...(lightModule.presets || []), ...importedPresets];
         updateModule({ presets: newPresets });
 
@@ -1868,13 +1967,19 @@ export class UltraLightModule extends BaseUltraModule {
         });
         document.dispatchEvent(event);
       }
-    } catch (error) {
-      // Show error message
-      const event = new CustomEvent('hass-notification', {
-        detail: { message: 'Failed to import presets: Invalid JSON format' },
-      });
-      document.dispatchEvent(event);
-    }
+    );
+  }
+
+  private _applyMappingsToLightPresets(presets: any[], mappings: EntityMapping[]): any[] {
+    if (mappings.length === 0) return presets;
+
+    const mappingMap = new Map<string, string>();
+    mappings.forEach(m => mappingMap.set(m.original, m.mapped));
+
+    return presets.map(preset => ({
+      ...preset,
+      entities: preset.entities?.map((entity: string) => mappingMap.get(entity) || entity) || [],
+    }));
   }
 
   private async applyPreset(

@@ -458,15 +458,24 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   // In horizontal layouts we want bars and horizontal separators to take remaining width while
                   // icons and other modules keep their natural width. If alignment is
                   // 'justify' then allow all children to grow evenly.
-                  const isBar = (childModule as any)?.type === 'bar';
+                  const childType = (childModule as any)?.type;
+                  const isBar = childType === 'bar';
                   const isHorizontalSeparator =
-                    (childModule as any)?.type === 'separator' &&
+                    childType === 'separator' &&
                     ((childModule as any)?.orientation === 'horizontal' ||
                       !(childModule as any)?.orientation);
-                  const isExternalCard = (childModule as any)?.type === 'external_card';
+                  const isExternalCard = childType === 'external_card';
+                  const isLayoutChild =
+                    childType === 'horizontal' ||
+                    childType === 'vertical' ||
+                    childType === 'slider';
                   const allowGrowForAll = horizontalModule.alignment === 'justify';
                   const shouldGrow =
-                    isBar || isHorizontalSeparator || isExternalCard || allowGrowForAll;
+                    isBar ||
+                    isHorizontalSeparator ||
+                    isExternalCard ||
+                    allowGrowForAll ||
+                    isLayoutChild;
                   const flexGrow = shouldGrow ? 1 : 0;
                   const flexShrink = shouldGrow ? 1 : 0;
                   const flexBasis = shouldGrow ? '0' : 'content';
@@ -482,7 +491,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                     flex-basis: ${flexBasis};
                     min-width: ${minWidth};
                     ${!isExternalCard ? `width: auto;` : ''}
-                    ${isExternalCard ? `max-width: 100%;` : ''}
+                    ${isExternalCard || isLayoutChild ? `max-width: 100%;` : ''}
                     align-self: ${alignSelf};
                     box-sizing: border-box;
                     margin: ${childMargin};
@@ -783,8 +792,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     // Apply alignment inheritance - only for child LAYOUT modules
     // Info, Image, Bar, and Text modules have their own alignment systems and should preserve them
-    if (layoutDesign.alignment && 
-        (childModule.type === 'horizontal' || childModule.type === 'vertical')) {
+    if (
+      layoutDesign.alignment &&
+      (childModule.type === 'horizontal' || childModule.type === 'vertical')
+    ) {
       mergedModule.alignment = layoutDesign.alignment;
     }
 

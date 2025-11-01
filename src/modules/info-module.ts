@@ -10,6 +10,7 @@ import { EntityIconService } from '../services/entity-icon-service';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -644,143 +645,244 @@ export class UltraInfoModule extends BaseUltraModule {
             `
           : ''}
 
-        <!-- Template Mode Section -->
-        <div
-          class="settings-section template-mode-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
-        >
-          <div
-            class="section-title"
-            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
-          >
-            ${localize('editor.info.template.title', lang, 'Template Mode')}
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
-          >
-            ${localize(
-              'editor.info.template.desc',
-              lang,
-              'Use a template to format the entity value. Templates allow you to use Home Assistant templating syntax for complex formatting.'
-            )}
-          </div>
-
-          <div class="field-group" style="margin-bottom: 16px;">
-            <ha-form
-              .hass=${hass}
-              .data=${{ template_mode: entity.template_mode || false }}
-              .schema=${[
-                {
-                  name: 'template_mode',
-                  label: localize('editor.info.template.mode', lang, 'Template Mode'),
-                  description: localize(
-                    'editor.info.template.mode_desc',
-                    lang,
-                    'Use Home Assistant templating syntax to format the value'
-                  ),
-                  selector: { boolean: {} },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) => {
-                this._updateEntity(
-                  infoModule,
-                  0,
-                  { template_mode: e.detail.value.template_mode },
-                  updateModule
-                );
-                setTimeout(() => this.triggerPreviewUpdate(), 50);
-              }}
-            ></ha-form>
+        <!-- Advanced Template Mode Section -->
+        <div class="template-section" style="margin-bottom: 24px;">
+          <div class="template-header">
+            <div class="switch-container">
+              <label class="switch-label"
+                >${localize(
+                  'editor.info.advanced_template_section.title',
+                  lang,
+                  'Advanced Template Mode'
+                )}</label
+              >
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  .checked=${entity.template_mode || false}
+                  @change=${(e: Event) => {
+                    const checked = (e.target as HTMLInputElement).checked;
+                    this._updateEntity(infoModule, 0, { template_mode: checked }, updateModule);
+                  }}
+                />
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="template-description">
+              ${localize(
+                'editor.info.advanced_template_section.desc',
+                lang,
+                'Use Jinja2 templates for advanced value control. Templates can control visibility (true/false to show/hide) and customize display text. Return custom text for display, return actual entity state for fallback.'
+              )}
+            </div>
           </div>
 
           ${entity.template_mode
             ? html`
-                <div class="field-group" style="margin-bottom: 16px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                  >
-                    ${localize('editor.info.template.value', lang, 'Value Template')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.info.template.value_desc',
-                      lang,
-                      'Template to format the entity value using Jinja2 syntax'
-                    )}
-                  </div>
+                <div class="template-content">
                   <ultra-template-editor
                     .hass=${hass}
                     .value=${entity.template || ''}
-                    .placeholder=${"{{ states('sensor.example') }}"}
-                    .minHeight=${100}
-                    .maxHeight=${300}
+                    .placeholder=${"{% if states('binary_sensor.example') == 'on' %}Active{% else %}Inactive{% endif %}"}
+                    .minHeight=${150}
+                    .maxHeight=${400}
                     @value-changed=${(e: CustomEvent) => {
                       this._updateEntity(infoModule, 0, { template: e.detail.value }, updateModule);
                       this._handleTemplateChange(e.detail.value, infoModule, 0, hass);
                     }}
                   ></ultra-template-editor>
+                  <div class="template-help">
+                    <p><strong>For visibility control, return a boolean:</strong></p>
+                    <ul>
+                      <li>
+                        <code>true</code>, <code>on</code>, <code>yes</code>, <code>1</code> → Show
+                        value (Active State)
+                      </li>
+                      <li>
+                        <code>false</code>, <code>off</code>, <code>no</code>, <code>0</code> → Hide
+                        value (Inactive State)
+                      </li>
+                    </ul>
+                    <p><strong>For custom display text, return a string:</strong></p>
+                    <ul>
+                      <li>
+                        <code
+                          >{% if states('weather.forecast_home') == 'cloudy' %}About to Rain{% else
+                          %}{{ states('weather.forecast_home') }}{% endif %}</code
+                        >
+                        → When cloudy: shows "About to Rain" (Active), when not cloudy: shows actual
+                        state (Inactive)
+                      </li>
+                      <li>
+                        <code>{{ states('sensor.temperature') | round(1) }}°F</code> → Shows
+                        formatted temperature and Active State is current
+                      </li>
+                    </ul>
+                    <p>
+                      <strong>Note:</strong> Use the same entity name throughout your template to
+                      avoid "unknown" states
+                    </p>
+                  </div>
                 </div>
+              `
+            : ''}
+        </div>
 
-                <div class="template-examples">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
-                  >
-                    ${localize('editor.info.examples_title', lang, 'Common Examples:')}
+        <!-- Dynamic Icon Template Section -->
+        <div class="template-section" style="margin-bottom: 24px;">
+          <div class="template-header">
+            <div class="switch-container">
+              <label class="switch-label"
+                >${localize(
+                  'editor.info.dynamic_icon_template_section.title',
+                  lang,
+                  'Dynamic Icon Template'
+                )}</label
+              >
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  .checked=${entity.dynamic_icon_template_mode || false}
+                  @change=${(e: Event) => {
+                    const checked = (e.target as HTMLInputElement).checked;
+                    this._updateEntity(
+                      infoModule,
+                      0,
+                      { dynamic_icon_template_mode: checked },
+                      updateModule
+                    );
+                  }}
+                />
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="template-description">
+              ${localize(
+                'editor.info.dynamic_icon_template_section.desc',
+                lang,
+                'Use Jinja2 templates to dynamically change the icon based on conditions. Return a valid icon name (e.g., mdi:weather-sunny, mdi:home, mdi:lightbulb) or empty for default icon.'
+              )}
+            </div>
+          </div>
+
+          ${entity.dynamic_icon_template_mode
+            ? html`
+                <div class="template-content">
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${entity.dynamic_icon_template || ''}
+                    .placeholder=${"{% if states('binary_sensor.example') == 'on' %}mdi:lightbulb-on{% else %}mdi:lightbulb-off{% endif %}"}
+                    .minHeight=${100}
+                    .maxHeight=${300}
+                    @value-changed=${(e: CustomEvent) => {
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { dynamic_icon_template: e.detail.value },
+                        updateModule
+                      );
+                    }}
+                  ></ultra-template-editor>
+                  <div class="template-help">
+                    <p><strong>Return an icon name:</strong></p>
+                    <ul>
+                      <li><code>mdi:weather-sunny</code> → Weather icon</li>
+                      <li><code>mdi:home</code> → Home icon</li>
+                      <li><code>mdi:lightbulb</code> → Light icon</li>
+                      <li>
+                        <code>{{ states.light.living_room.attributes.icon }}</code>
+                        → Use entity's current icon
+                      </li>
+                    </ul>
+                    <p>
+                      <strong>Example:</strong>
+                      <code
+                        >{% if states('sensor.temperature') | int > 25 %}mdi:thermometer{% else
+                        %}mdi:snowflake{% endif %}</code
+                      >
+                    </p>
                   </div>
+                </div>
+              `
+            : ''}
+        </div>
 
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      {{ states('sensor.${entity.entity?.split('.')[1] || 'example'}') }}
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize('editor.info.example_basic', lang, 'Basic value')}
-                    </div>
-                  </div>
+        <!-- Dynamic Icon Color Template Section -->
+        <div class="template-section" style="margin-bottom: 24px;">
+          <div class="template-header">
+            <div class="switch-container">
+              <label class="switch-label"
+                >${localize(
+                  'editor.info.dynamic_color_template_section.title',
+                  lang,
+                  'Dynamic Icon Color Template'
+                )}</label
+              >
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  .checked=${entity.dynamic_color_template_mode || false}
+                  @change=${(e: Event) => {
+                    const checked = (e.target as HTMLInputElement).checked;
+                    this._updateEntity(
+                      infoModule,
+                      0,
+                      { dynamic_color_template_mode: checked },
+                      updateModule
+                    );
+                  }}
+                />
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div class="template-description">
+              ${localize(
+                'editor.info.dynamic_color_template_section.desc',
+                lang,
+                'Use Jinja2 templates to dynamically change icon color based on conditions. Return a valid CSS color value (e.g., #FF0000, rgb(255,0,0), red) or empty for default color.'
+              )}
+            </div>
+          </div>
 
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      {{ states('sensor.${entity.entity?.split('.')[1] || 'example'}') | float(0) }}
-                      km
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize('editor.info.example_units', lang, 'With units')}
-                    </div>
-                  </div>
-
-                  <div class="example-item" style="margin-bottom: 16px;">
-                    <div
-                      class="example-code"
-                      style="background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; color: #d4d4d4; margin-bottom: 8px;"
-                    >
-                      {{ states('sensor.${entity.entity?.split('.')[1] || 'example'}') | float(0) |
-                      round(1) }}
-                    </div>
-                    <div
-                      class="example-description"
-                      style="font-size: 12px; color: var(--secondary-text-color);"
-                    >
-                      ${localize('editor.info.example_round', lang, 'Round to 1 decimal')}
-                    </div>
+          ${entity.dynamic_color_template_mode
+            ? html`
+                <div class="template-content">
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${entity.dynamic_color_template || ''}
+                    .placeholder=${"{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"}
+                    .minHeight=${100}
+                    .maxHeight=${300}
+                    @value-changed=${(e: CustomEvent) => {
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { dynamic_color_template: e.detail.value },
+                        updateModule
+                      );
+                    }}
+                  ></ultra-template-editor>
+                  <div class="template-help">
+                    <p><strong>Return a CSS color value:</strong></p>
+                    <ul>
+                      <li><code>#FF0000</code> → Red color in hex</li>
+                      <li><code>rgb(255, 0, 0)</code> → Red color in RGB</li>
+                      <li><code>red</code> → Red color by name</li>
+                      <li>
+                        <code
+                          >{{ states.light.living_room.attributes.rgb_color | join(',') |
+                          format('rgb(%s)') }}</code
+                        >
+                        → Use entity RGB color
+                      </li>
+                    </ul>
+                    <p>
+                      <strong>Example:</strong>
+                      <code
+                        >{% if states('sensor.temperature') | int > 25 %}#FF4444{% else %}#4444FF{%
+                        endif %}</code
+                      >
+                    </p>
                   </div>
                 </div>
               `
@@ -1561,18 +1663,6 @@ export class UltraInfoModule extends BaseUltraModule {
         moduleWithDesign.margin_right
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
-      background:
-        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(
-        { ...moduleWithDesign, ...designProperties },
-        hass
-      ),
-      backgroundSize:
-        designProperties.background_size || moduleWithDesign.background_size || 'cover',
-      backgroundPosition:
-        designProperties.background_position || moduleWithDesign.background_position || 'center',
-      backgroundRepeat:
-        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
       border:
         (designProperties.border_style || moduleWithDesign.border_style) &&
         (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
@@ -1604,6 +1694,18 @@ export class UltraInfoModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
+    const { styles: containerBackgroundStyles } = computeBackgroundStyles({
+      color: designProperties.background_color || moduleWithDesign.background_color,
+      fallback: moduleWithDesign.background_color || 'transparent',
+      image: this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass),
+      imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      imagePosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      imageRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+    });
+    Object.assign(containerStyles, containerBackgroundStyles);
+
     // Get the first entity with proper defaults for consistent grid alignment
     const firstEntity =
       infoModule.info_entities && infoModule.info_entities.length > 0
@@ -1612,7 +1714,14 @@ export class UltraInfoModule extends BaseUltraModule {
     const gridAlignment = firstEntity.overall_alignment || 'center';
 
     return html`
-      <div class="info-module-container" style="${this.styleObjectToCss(containerStyles)}; align-self: ${gridAlignment === 'left' ? 'flex-start' : gridAlignment === 'right' ? 'flex-end' : 'center'};">
+      <div
+        class="info-module-container"
+        style="${this.styleObjectToCss(containerStyles)}; align-self: ${gridAlignment === 'left'
+          ? 'flex-start'
+          : gridAlignment === 'right'
+            ? 'flex-end'
+            : 'center'};"
+      >
         <div class="info-module-preview">
           <div
             class="info-entities"
@@ -1716,7 +1825,47 @@ export class UltraInfoModule extends BaseUltraModule {
               const displayName = hasCustomName
                 ? String(originalEntity.name)
                 : entityState?.attributes?.friendly_name || entity.entity;
-              const displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
+              // Get base icon
+              let displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
+
+              // Apply dynamic icon template if enabled
+              if (entity.dynamic_icon_template_mode && entity.dynamic_icon_template) {
+                // Initialize template service if needed
+                if (!this._templateService && hass) {
+                  this._templateService = new TemplateService(hass);
+                }
+                const templateHash = this._hashString(entity.dynamic_icon_template);
+                const templateKey = `dynamic_icon_info_${entity.entity}_${index}_${templateHash}`;
+
+                if (!hass.__uvc_template_strings) {
+                  hass.__uvc_template_strings = {};
+                }
+
+                if (
+                  this._templateService &&
+                  !this._templateService.hasTemplateSubscription(templateKey)
+                ) {
+                  this._templateService.subscribeToTemplate(
+                    entity.dynamic_icon_template,
+                    templateKey,
+                    () => {
+                      if (typeof window !== 'undefined') {
+                        if (!window._ultraCardUpdateTimer) {
+                          window._ultraCardUpdateTimer = setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            window._ultraCardUpdateTimer = null;
+                          }, 50);
+                        }
+                      }
+                    }
+                  );
+                }
+
+                const iconTemplateResult = hass?.__uvc_template_strings?.[templateKey];
+                if (iconTemplateResult && String(iconTemplateResult).trim() !== '') {
+                  displayIcon = String(iconTemplateResult);
+                }
+              }
 
               const iconPosition = entity.icon_position || 'left';
               const iconAlignment = entity.icon_alignment || 'center';
@@ -1750,9 +1899,61 @@ export class UltraInfoModule extends BaseUltraModule {
                         <ha-icon
                           icon="${displayIcon}"
                           class="entity-icon"
-                          style="color: ${designProperties.color ||
-                          entity.icon_color ||
-                          'var(--primary-color)'}; --mdc-icon-size: ${getIconSizeWithUnits(
+                          style="color: ${(() => {
+                            // Get base color
+                            let displayColor =
+                              designProperties.color || entity.icon_color || 'var(--primary-color)';
+
+                            // Apply dynamic color template if enabled
+                            if (
+                              entity.dynamic_color_template_mode &&
+                              entity.dynamic_color_template
+                            ) {
+                              // Initialize template service if needed
+                              if (!this._templateService && hass) {
+                                this._templateService = new TemplateService(hass);
+                              }
+                              const templateHash = this._hashString(entity.dynamic_color_template);
+                              const templateKey = `dynamic_color_info_${entity.entity}_${index}_${templateHash}`;
+
+                              if (!hass.__uvc_template_strings) {
+                                hass.__uvc_template_strings = {};
+                              }
+
+                              if (
+                                this._templateService &&
+                                !this._templateService.hasTemplateSubscription(templateKey)
+                              ) {
+                                this._templateService.subscribeToTemplate(
+                                  entity.dynamic_color_template,
+                                  templateKey,
+                                  () => {
+                                    if (typeof window !== 'undefined') {
+                                      if (!window._ultraCardUpdateTimer) {
+                                        window._ultraCardUpdateTimer = setTimeout(() => {
+                                          window.dispatchEvent(
+                                            new CustomEvent('ultra-card-template-update')
+                                          );
+                                          window._ultraCardUpdateTimer = null;
+                                        }, 50);
+                                      }
+                                    }
+                                  }
+                                );
+                              }
+
+                              const colorTemplateResult =
+                                hass?.__uvc_template_strings?.[templateKey];
+                              if (
+                                colorTemplateResult &&
+                                String(colorTemplateResult).trim() !== ''
+                              ) {
+                                displayColor = String(colorTemplateResult);
+                              }
+                            }
+
+                            return displayColor;
+                          })()}; --mdc-icon-size: ${getIconSizeWithUnits(
                             designProperties.font_size,
                             entity.icon_size || 26
                           )};"
@@ -2266,6 +2467,148 @@ export class UltraInfoModule extends BaseUltraModule {
       }
 
       /* Legacy hover effects removed - now handled by new hover effects system */
+
+      /* Template Section Styles */
+      .template-section {
+        background: var(--card-background-color);
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid var(--divider-color);
+        margin-bottom: 32px;
+      }
+
+      .template-header {
+        margin-bottom: 16px;
+      }
+
+      .switch-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .switch-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-color);
+      }
+
+      /* Toggle Switch Styles */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--disabled-color);
+        transition: 0.3s;
+        border-radius: 24px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: var(--primary-color);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      .slider.round {
+        border-radius: 24px;
+      }
+
+      .slider.round:before {
+        border-radius: 50%;
+      }
+
+      .template-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+
+      .template-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .template-editor {
+        min-height: 120px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        resize: vertical;
+        padding: 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--code-editor-background-color, #1e1e1e);
+        color: var(--primary-text-color);
+        outline: none;
+        transition: border-color 0.2s ease;
+      }
+
+      .template-editor:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      .template-help {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        font-style: italic;
+        margin-top: 4px;
+      }
+
+      .template-help p {
+        margin: 8px 0;
+        font-weight: 500;
+      }
+
+      .template-help ul {
+        margin: 4px 0;
+        padding-left: 16px;
+      }
+
+      .template-help li {
+        margin: 2px 0;
+      }
+
+      .template-help code {
+        background: rgba(var(--rgb-primary-color), 0.1);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+      }
     `;
   }
 

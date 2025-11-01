@@ -1,5 +1,15 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta3
+
+### 🐛 Bug Fixes & Improvements
+
+- **Improved Nested Layout Logic** - Enhanced nested layout system with automatic scaling and better layout handling for complex card structures
+- **Fixed Dropdown Clipping** - Resolved issue where dropdowns in slider modules were being clipped by container boundaries
+- **Fixed Slider Auto Play** - Corrected auto play functionality in slider modules to work reliably
+
+---
+
 ## Version 2.0.0
 
 Ultra Card 2.0 represents a complete transformation of the Home Assistant card experience, featuring a complete TypeScript rewrite, revolutionary new modules, and professional-grade features that set the new standard for dashboard customization.

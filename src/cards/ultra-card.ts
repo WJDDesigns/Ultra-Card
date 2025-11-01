@@ -21,6 +21,7 @@ import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service
 import { ucVideoBgService } from '../services/uc-video-bg-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { dbg3p } from '../utils/uc-debug';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import {
   ThirdPartyLimitService,
   computeCardInstanceId,
@@ -657,6 +658,7 @@ export class UltraCard extends LitElement {
   private _scaleDebounceTimer?: number;
   private _currentScale: number = 1;
   private _lastMeasuredWidth: number = 0;
+  private _lastContentWidth: number = 0;
   private _visibilityChangeHandler?: () => void;
   private _windowResizeHandler?: () => void;
   private _isScalingInProgress: boolean = false;
@@ -706,28 +708,13 @@ export class UltraCard extends LitElement {
       return;
     }
 
-    // Get the container's available width (from parent)
     const availableWidth = this.offsetWidth;
+    const previousMeasuredWidth = this._lastMeasuredWidth;
+    const previousContentWidth = this._lastContentWidth;
+    const forcedCheck = previousMeasuredWidth === 0;
+    const wasScaledDown = this._currentScale < 1;
 
-    // If lastMeasuredWidth is 0, this is a forced recalculation - always proceed
-    const forcedCheck = this._lastMeasuredWidth === 0;
-    const currentlyScaledDown = this._currentScale < 1;
-
-    if (!forcedCheck && !currentlyScaledDown) {
-      // Skip if width hasn't changed significantly (prevents feedback loops)
-      // BUT always allow check if we need to reset scale back to 1 (when going from narrow to wide)
-      const widthChanged = Math.abs(availableWidth - this._lastMeasuredWidth) >= 5;
-      const needsReset = availableWidth > this._lastMeasuredWidth;
-
-      if (!widthChanged && !needsReset) {
-        this._isScalingInProgress = false;
-        return;
-      }
-    }
-
-    this._lastMeasuredWidth = availableWidth;
-
-    // Temporarily disable observer to prevent feedback loop
+    // Temporarily disable observer to prevent feedback loop while we measure
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
     }
@@ -739,35 +726,44 @@ export class UltraCard extends LitElement {
     // Force a layout recalculation
     void container.offsetHeight;
 
-    // Wait for next frame to ensure layout is complete
     requestAnimationFrame(() => {
-      // Get the actual content width (including overflow)
+      const measuredAvailableWidth = this.offsetWidth || availableWidth;
       const contentWidth = container.scrollWidth;
 
-      // Calculate scale needed
+      const widthChanged =
+        forcedCheck || Math.abs(measuredAvailableWidth - previousMeasuredWidth) >= 4;
+      const contentChanged = forcedCheck || Math.abs(contentWidth - previousContentWidth) >= 4;
+      const shouldRecalculate = widthChanged || contentChanged || wasScaledDown;
+
+      this._lastMeasuredWidth = measuredAvailableWidth;
+      this._lastContentWidth = contentWidth;
+
+      if (!shouldRecalculate) {
+        if (this._resizeObserver && this._isScalingEnabled()) {
+          requestAnimationFrame(() => {
+            this._resizeObserver?.observe(this);
+            this._isScalingInProgress = false;
+          });
+        } else {
+          this._isScalingInProgress = false;
+        }
+        return;
+      }
+
       let finalScale = 1;
 
-      // Only scale if content is actually wider than available space
-      // Add a small threshold to prevent unnecessary scaling for minor differences
-      if (contentWidth > availableWidth + 10 && availableWidth > 0) {
-        const scale = availableWidth / contentWidth;
-        // Use exact scale (no shrinking margin) and clamp
+      if (contentWidth > measuredAvailableWidth + 8 && measuredAvailableWidth > 0) {
+        const scale = measuredAvailableWidth / contentWidth;
         finalScale = Math.max(0.5, Math.min(1, scale));
       }
 
-      // Avoid tiny repeated downscales; if new target is within 0.02 of current, keep current
+      // Avoid micro adjustments when already scaled
       if (this._currentScale < 1 && finalScale < 1) {
-        if (Math.abs(finalScale - this._currentScale) < 0.02) {
+        if (Math.abs(finalScale - this._currentScale) < 0.01) {
           finalScale = this._currentScale;
         }
       }
 
-      // If the available width grew relative to last measure, prefer resetting to 1.0
-      if (availableWidth >= this._lastMeasuredWidth) {
-        finalScale = 1;
-      }
-
-      // Always apply the calculated scale (even if it's 1.0) to ensure proper reset
       this._currentScale = finalScale;
 
       if (finalScale < 1) {
@@ -775,15 +771,12 @@ export class UltraCard extends LitElement {
         container.style.transformOrigin = 'top left';
         container.style.width = `${100 / finalScale}%`;
       } else {
-        // Explicitly reset to ensure we return to normal size
         container.style.transform = '';
         container.style.width = '';
         container.style.transformOrigin = '';
       }
 
-      // Re-enable observer after changes are applied
       if (this._resizeObserver && this._isScalingEnabled()) {
-        // Re-observe on next frame to avoid immediate feedback
         requestAnimationFrame(() => {
           if (this._resizeObserver && this._isScalingEnabled()) {
             this._resizeObserver.observe(this);
@@ -1730,20 +1723,6 @@ export class UltraCard extends LitElement {
           : row.margin
             ? `${row.margin}px`
             : undefined,
-      // Background - when filter is present, move to CSS variables for ::before element
-      background: hasBackgroundFilter
-        ? 'transparent'
-        : design.background_color || row.background_color || 'transparent',
-      backgroundImage: hasBackgroundFilter ? 'none' : this._resolveBackgroundImageCSS(design),
-      backgroundSize: hasBackgroundFilter
-        ? undefined
-        : design.background_size || (design.background_image ? 'cover' : undefined),
-      backgroundPosition: hasBackgroundFilter
-        ? undefined
-        : design.background_position || (design.background_image ? 'center' : undefined),
-      backgroundRepeat: hasBackgroundFilter
-        ? undefined
-        : design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1779,8 +1758,8 @@ export class UltraCard extends LitElement {
       boxSizing: 'border-box',
     };
 
-    // Add CSS variables for background filter support (used by ::before pseudo-element)
     if (hasBackgroundFilter) {
+      // Add CSS variables for background filter support (used by ::before pseudo-element)
       designStyles['--bg-image'] = this._resolveBackgroundImageCSS(design);
       designStyles['--bg-size'] =
         design.background_size || (design.background_image ? 'cover' : 'auto');
@@ -1791,6 +1770,20 @@ export class UltraCard extends LitElement {
       designStyles['--bg-filter'] = design.background_filter;
       // Set actual background color on main element (not on ::before)
       designStyles.background = design.background_color || row.background_color || 'transparent';
+      designStyles.backgroundColor =
+        design.background_color || row.background_color || 'transparent';
+    } else {
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: design.background_color ?? row.background_color,
+        fallback: row.background_color || 'transparent',
+        image: this._resolveBackgroundImageCSS(design),
+        imageSize: design.background_size || (design.background_image ? 'cover' : undefined),
+        imagePosition:
+          design.background_position || (design.background_image ? 'center' : undefined),
+        imageRepeat:
+          design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+      });
+      Object.assign(designStyles, backgroundStyles);
     }
 
     // Filter out undefined values and combine styles
@@ -1855,20 +1848,6 @@ export class UltraCard extends LitElement {
           : column.margin
             ? `${column.margin}px`
             : undefined,
-      // Background - when filter is present, move to CSS variables for ::before element
-      background: hasBackgroundFilter
-        ? 'transparent'
-        : design.background_color || column.background_color || 'transparent',
-      backgroundImage: hasBackgroundFilter ? 'none' : this._resolveBackgroundImageCSS(design),
-      backgroundSize: hasBackgroundFilter
-        ? undefined
-        : design.background_size || (design.background_image ? 'cover' : undefined),
-      backgroundPosition: hasBackgroundFilter
-        ? undefined
-        : design.background_position || (design.background_image ? 'center' : undefined),
-      backgroundRepeat: hasBackgroundFilter
-        ? undefined
-        : design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1904,8 +1883,8 @@ export class UltraCard extends LitElement {
       boxSizing: 'border-box',
     };
 
-    // Add CSS variables for background filter support (used by ::before pseudo-element)
     if (hasBackgroundFilter) {
+      // Add CSS variables for background filter support (used by ::before pseudo-element)
       designStyles['--bg-image'] = this._resolveBackgroundImageCSS(design);
       designStyles['--bg-size'] =
         design.background_size || (design.background_image ? 'cover' : 'auto');
@@ -1916,6 +1895,20 @@ export class UltraCard extends LitElement {
       designStyles['--bg-filter'] = design.background_filter;
       // Set actual background color on main element (not on ::before)
       designStyles.background = design.background_color || column.background_color || 'transparent';
+      designStyles.backgroundColor =
+        design.background_color || column.background_color || 'transparent';
+    } else {
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: design.background_color ?? column.background_color,
+        fallback: column.background_color || 'transparent',
+        image: this._resolveBackgroundImageCSS(design),
+        imageSize: design.background_size || (design.background_image ? 'cover' : undefined),
+        imagePosition:
+          design.background_position || (design.background_image ? 'center' : undefined),
+        imageRepeat:
+          design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+      });
+      Object.assign(designStyles, backgroundStyles);
     }
 
     // Filter out undefined values and combine styles

@@ -43,9 +43,9 @@ export class UltraMapModule extends BaseUltraModule {
           id: this.generateId('marker'),
           name: 'My Location',
           type: 'manual',
-          latitude: 40.7128,
-          longitude: -74.006,
-          icon: '', // Empty by default - users can add their own
+          latitude: 37.2384841,
+          longitude: -115.8250479,
+          icon: 'mdi:alien',
           icon_color: 'var(--primary-color)',
           icon_size: 20, // Default icon size
           marker_image_type: 'icon',
@@ -118,9 +118,9 @@ export class UltraMapModule extends BaseUltraModule {
         id: this.generateId('marker'),
         name: 'New Marker',
         type: 'manual',
-        latitude: 40.7128,
-        longitude: -74.006,
-        icon: '', // Empty by default
+        latitude: 37.2384841,
+        longitude: -115.8250479,
+        icon: 'mdi:alien',
         icon_color: 'var(--primary-color)',
         icon_size: 20, // Default icon size
         marker_image_type: 'icon',
@@ -293,7 +293,11 @@ export class UltraMapModule extends BaseUltraModule {
         <!-- Manual Center Coordinates -->
         ${this.renderSettingsSection(
           localize('editor.map.center.title', lang, 'Map Center'),
-          localize('editor.map.center.desc', lang, 'Manually set the map center coordinates. Leave empty to use first marker or auto-zoom.'),
+          localize(
+            'editor.map.center.desc',
+            lang,
+            'Manually set the map center coordinates. Leave empty to use first marker or auto-zoom.'
+          ),
           [
             {
               title: localize('editor.map.center.latitude', lang, 'Center Latitude'),
@@ -543,23 +547,43 @@ export class UltraMapModule extends BaseUltraModule {
     const lang = hass?.locale?.language || 'en';
 
     const updateMarker = (updates: Partial<MapMarker>) => {
-      console.log('[MapModule] ===== updateMarker START =====');
-      console.log('[MapModule] Updates:', updates);
-      console.log('[MapModule] Current marker before update:', marker);
-      console.log('[MapModule] Module ID:', mapModule.id);
+      const hasChanges = Object.entries(updates).some(([key, value]) => {
+        const currentValue = (marker as any)[key];
+        if (currentValue === value) {
+          return false;
+        }
+        if (typeof currentValue === 'number' && typeof value === 'number') {
+          if (Number.isNaN(currentValue) && Number.isNaN(value)) {
+            return false;
+          }
+          return currentValue !== value;
+        }
+        return true;
+      });
+
+      if (!hasChanges) {
+        return;
+      }
 
       const newMarkers = [...(mapModule.markers || [])];
       newMarkers[index] = { ...marker, ...updates };
 
-      console.log('[MapModule] New marker after update:', newMarkers[index]);
-      console.log('[MapModule] Calling updateModule...');
+      const shouldDelay =
+        Object.keys(updates).length === 1 &&
+        Object.prototype.hasOwnProperty.call(updates, 'icon_size');
 
-      // Use a small delay to prevent excessive re-renders during slider changes
-      setTimeout(() => {
+      const commitUpdate = () => {
         updateModule({ markers: newMarkers });
-      }, 50);
 
-      console.log('[MapModule] ===== updateMarker END =====');
+        // Always kick the preview so Leaflet map regenerates markers and bounds
+        setTimeout(() => this.triggerPreviewUpdate(), 50);
+      };
+
+      if (shouldDelay) {
+        setTimeout(commitUpdate, 50);
+      } else {
+        commitUpdate();
+      }
     };
 
     const deleteMarker = () => {
@@ -787,7 +811,7 @@ export class UltraMapModule extends BaseUltraModule {
       <!-- Marker Type -->
       <div class="field-group" style="margin-bottom: 16px;">
         <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          ${localize('editor.map.marker.type', lang, 'Marker Type')}
+          ${localize('editor.map.marker.type_label', lang, 'Marker Type')}
         </div>
         <div
           class="field-description"
@@ -799,7 +823,14 @@ export class UltraMapModule extends BaseUltraModule {
           hass,
           { type: marker.type || 'manual' },
           [this.selectField('type', markerTypeOptions)],
-          (e: CustomEvent) => updateMarker({ type: e.detail.value.type }),
+          (e: CustomEvent) => {
+            const nextType = e.detail.value.type;
+            const currentType = marker.type || 'manual';
+            if (!nextType || nextType === currentType) {
+              return;
+            }
+            updateMarker({ type: nextType });
+          },
           false
         )}
       </div>
@@ -1381,7 +1412,6 @@ export class UltraMapModule extends BaseUltraModule {
       if (previousState !== stateSignature) {
         this.entityStateCache.set(cacheKey, stateSignature);
         hasChanges = true;
-        console.log(`[MapModule] Entity ${marker.entity} location changed: ${stateSignature}`);
       }
     }
 
@@ -1391,7 +1421,6 @@ export class UltraMapModule extends BaseUltraModule {
       const map = this.mapInstances.get(mapId);
 
       if (map && (map as any)._container) {
-        console.log('[MapModule] Auto-updating map due to entity location changes');
         this.updateExistingMap(map, mapModule, hass);
       }
     }
@@ -1463,12 +1492,6 @@ export class UltraMapModule extends BaseUltraModule {
       this._trackEntityChanges(mapModule, mapId, hass);
     }
 
-    console.log('[MapModule] ===== renderPreview CALLED =====');
-    console.log('[MapModule] Context:', previewContext || 'main');
-    console.log('[MapModule] Map ID:', mapId);
-    console.log('[MapModule] Module ID:', mapModule.id);
-    console.log('[MapModule] Markers count:', mapModule.markers?.length || 0);
-
     // Calculate height based on aspect ratio
     let height = mapModule.map_height || 400;
     if (mapModule.aspect_ratio && mapModule.aspect_ratio !== 'custom') {
@@ -1515,7 +1538,6 @@ export class UltraMapModule extends BaseUltraModule {
         // Update existing map if module data has changed
         // This works for all contexts: live, ha-preview, and dashboard
         if (!elemAny._ucLastUpdate || JSON.stringify(mapModule) !== elemAny._ucLastUpdate) {
-          console.log(`[MapModule] ${previewContext || 'main'} context - updating with new data`);
           elemAny._ucLastUpdate = JSON.stringify(mapModule);
           this.updateExistingMap(map, mapModule, hass);
         }
@@ -1528,7 +1550,6 @@ export class UltraMapModule extends BaseUltraModule {
       }
 
       // Initialize new map
-      console.log('[MapModule] Initializing new map:', mapId);
       this.initializingMaps.add(mapId);
 
       // Use requestAnimationFrame for better timing
@@ -1639,24 +1660,13 @@ export class UltraMapModule extends BaseUltraModule {
     mapModule: MapModule,
     hass: HomeAssistant
   ): void {
-    console.log('[MapModule] Attempting to initialize map:', mapId);
-
     if (!container) {
-      console.warn('[MapModule] Container not provided:', mapId);
       this.initializingMaps.delete(mapId);
       return;
     }
 
-    console.log(
-      '[MapModule] Container found, dimensions:',
-      container.offsetWidth,
-      'x',
-      container.offsetHeight
-    );
-
     // Check if container has dimensions
     if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-      console.warn('[MapModule] Container has no dimensions, retrying...');
       this.initializingMaps.delete(mapId);
       setTimeout(() => {
         if (!this.mapInstances.has(mapId) && !this.initializingMaps.has(mapId)) {
@@ -1688,7 +1698,6 @@ export class UltraMapModule extends BaseUltraModule {
     const validMarkers: Array<{ lat: number; lon: number; marker: MapMarker }> = [];
 
     // Collect all valid marker coordinates
-    console.log('[MapModule] Processing', mapModule.markers?.length || 0, 'markers');
     for (const marker of mapModule.markers || []) {
       let lat: number | undefined;
       let lon: number | undefined;
@@ -1696,57 +1705,43 @@ export class UltraMapModule extends BaseUltraModule {
       if (marker.type === 'manual') {
         lat = marker.latitude;
         lon = marker.longitude;
-        console.log('[MapModule] Manual marker:', marker.name, lat, lon);
       } else if (marker.type === 'entity' && marker.entity) {
-        console.log('[MapModule] Entity marker:', marker.name, marker.entity);
         const coords = this.extractCoordinates(marker.entity, hass);
         if (coords) {
           lat = coords.latitude;
           lon = coords.longitude;
-          console.log('[MapModule] Extracted coords:', lat, lon);
-        } else {
-          console.warn('[MapModule] Could not extract coords for', marker.entity);
         }
       }
 
       if (lat !== undefined && lon !== undefined) {
         validMarkers.push({ lat, lon, marker });
         // Only use first marker as center if no manual center is set
-        if (validMarkers.length === 1 && !mapModule.manual_center_latitude && !mapModule.manual_center_longitude) {
+        if (
+          validMarkers.length === 1 &&
+          !mapModule.manual_center_latitude &&
+          !mapModule.manual_center_longitude
+        ) {
           centerLat = lat;
           centerLon = lon;
         }
       }
     }
-    console.log('[MapModule] Found', validMarkers.length, 'valid markers');
 
     // Calculate zoom and center
     const zoom = mapModule.zoom || 14;
     const useAutoZoom = mapModule.auto_zoom_entities && validMarkers.length > 0;
-    
+
     // For auto-zoom, we'll use fitBounds after initialization
     // For manual zoom, use the specified center or first marker
     const initialZoom = useAutoZoom ? 10 : zoom; // Start with a neutral zoom for auto-zoom
 
     // Initialize Leaflet map
     try {
-
-      console.log(
-        '[MapModule] Creating Leaflet map at',
-        centerLat,
-        centerLon,
-        'zoom',
-        initialZoom,
-        'auto-zoom:',
-        useAutoZoom
-      );
       const map = L.map(container, {
         zoomControl: mapModule.show_map_controls ?? true,
         scrollWheelZoom: !mapModule.disable_zoom_scroll,
         dragging: !mapModule.disable_touch_drag,
       }).setView([centerLat, centerLon], initialZoom);
-
-      console.log('[MapModule] Leaflet map created successfully');
 
       // Store map reference both in the global map and on the element itself
       this.mapInstances.set(mapId, map);
@@ -1762,15 +1757,12 @@ export class UltraMapModule extends BaseUltraModule {
       // Force map to recalculate size
       setTimeout(() => {
         map.invalidateSize();
-        console.log('[MapModule] Map size invalidated');
       }, 100);
 
       // Add tile layer based on provider
       const mapProvider = mapModule.map_provider || 'openstreetmap';
       const mapType = mapModule.map_type || 'roadmap';
       const tileKey = `${mapProvider}-${mapType}`;
-
-      console.log('[MapModule] Using provider:', mapProvider, 'style:', mapType);
 
       let tileLayer;
       if (mapProvider === 'google') {
@@ -1816,7 +1808,6 @@ export class UltraMapModule extends BaseUltraModule {
       (map as any)._mapModuleTileKey = tileKey;
 
       // Add markers
-      console.log('[MapModule] Adding', validMarkers.length, 'markers');
       const leafletMarkers: L.Marker[] = [];
       for (const { lat, lon, marker } of validMarkers) {
         const leafletMarker = this.addLeafletMarker(map, marker, hass);
@@ -1831,11 +1822,6 @@ export class UltraMapModule extends BaseUltraModule {
       if (useAutoZoom) {
         const autoZoomResult = this.calculateAutoZoom(mapModule.markers || [], hass);
         if (autoZoomResult) {
-          console.log(
-            '[MapModule] Auto-zoom init - fitting bounds with maxZoom:',
-            zoom
-          );
-
           // Use fitBounds with generous padding to prevent markers from being cut off
           // maxZoom respects user's zoom preference
           map.fitBounds(autoZoomResult.bounds, {
@@ -1845,11 +1831,7 @@ export class UltraMapModule extends BaseUltraModule {
           });
         }
       }
-
-      console.log('[MapModule] Map initialization complete!');
-    } catch (error) {
-      console.error('[MapModule] Error initializing Leaflet map:', error);
-    }
+    } catch (error) {}
   }
 
   private updateAllMapsForModule(
@@ -1874,7 +1856,6 @@ export class UltraMapModule extends BaseUltraModule {
         this.updateExistingMap(map, mapModule, hass);
       }
     } catch (error) {
-      console.error('[MapModule] Error updating map:', error);
     } finally {
       // Clear the update flag after a longer delay to prevent rapid re-triggering
       setTimeout(() => {
@@ -1894,10 +1875,6 @@ export class UltraMapModule extends BaseUltraModule {
 
     try {
       // Update map settings without recreating it
-      console.log('[MapModule] Updating existing map');
-      console.log('[MapModule] auto_zoom_entities:', mapModule.auto_zoom_entities);
-      console.log('[MapModule] manual zoom setting:', mapModule.zoom);
-      console.log('[MapModule] markers count:', mapModule.markers?.length || 0);
 
       // Calculate zoom and center based on auto-zoom setting
       const targetZoom = mapModule.zoom || 14;
@@ -1905,11 +1882,6 @@ export class UltraMapModule extends BaseUltraModule {
       if (mapModule.auto_zoom_entities && mapModule.markers && mapModule.markers.length > 0) {
         const autoZoomResult = this.calculateAutoZoom(mapModule.markers, hass);
         if (autoZoomResult) {
-          console.log(
-            '[MapModule] Auto-zoom update - fitting bounds with maxZoom:',
-            targetZoom
-          );
-
           // Use fitBounds with generous padding to prevent markers from being cut off
           // maxZoom respects user's zoom preference
           map.fitBounds(autoZoomResult.bounds, {
@@ -1922,11 +1894,13 @@ export class UltraMapModule extends BaseUltraModule {
         // Auto-zoom is disabled - use manual center or first marker
         // Priority: 1. Manual center, 2. First marker with valid coords
         let newCenter: L.LatLng | null = null;
-        
-        if (mapModule.manual_center_latitude !== undefined && mapModule.manual_center_longitude !== undefined) {
+
+        if (
+          mapModule.manual_center_latitude !== undefined &&
+          mapModule.manual_center_longitude !== undefined
+        ) {
           // Use manual center if set
           newCenter = L.latLng(mapModule.manual_center_latitude, mapModule.manual_center_longitude);
-          console.log('[MapModule] Using manual center:', newCenter);
         } else if (mapModule.markers && mapModule.markers.length > 0) {
           // Use first marker with valid coordinates
           for (const marker of mapModule.markers) {
@@ -1934,31 +1908,22 @@ export class UltraMapModule extends BaseUltraModule {
               const coords = this.extractCoordinates(marker.entity, hass);
               if (coords) {
                 newCenter = L.latLng(coords.latitude, coords.longitude);
-                console.log('[MapModule] Using first entity marker as center:', newCenter);
                 break;
               }
-            } else if (marker.type === 'manual' && marker.latitude !== undefined && marker.longitude !== undefined) {
+            } else if (
+              marker.type === 'manual' &&
+              marker.latitude !== undefined &&
+              marker.longitude !== undefined
+            ) {
               newCenter = L.latLng(marker.latitude, marker.longitude);
-              console.log('[MapModule] Using first manual marker as center:', newCenter);
               break;
             }
           }
         }
-        
-        console.log(
-          '[MapModule] Auto-zoom disabled - applying manual zoom:',
-          targetZoom,
-          'current zoom:',
-          map.getZoom(),
-          'new center:',
-          newCenter
-        );
-        
         // Update view with new center and zoom
         if (newCenter) {
           map.setView(newCenter, targetZoom, { animate: false });
         } else if (map.getZoom() !== targetZoom) {
-          console.log('[MapModule] Updating zoom to:', targetZoom);
           map.setZoom(targetZoom);
         }
       }
@@ -1981,8 +1946,6 @@ export class UltraMapModule extends BaseUltraModule {
       const tileKey = `${mapProvider}-${mapType}`;
 
       if (currentTileLayer && mapAny._mapModuleTileKey !== tileKey) {
-        console.log('[MapModule] Tile layer changed, updating...');
-
         // Add new tile layer first (for smooth transition)
         let newTileLayer;
         if (mapProvider === 'google') {
@@ -2091,9 +2054,7 @@ export class UltraMapModule extends BaseUltraModule {
             if (leafletMarker) {
               newMarkers.push(leafletMarker);
             }
-          } catch (error) {
-            console.error('[MapModule] Error adding marker:', error);
-          }
+          } catch (error) {}
         }
         mapAny._mapModuleMarkers = newMarkers;
       }, 100);
@@ -2101,7 +2062,6 @@ export class UltraMapModule extends BaseUltraModule {
       // Invalidate size in case container resized
       setTimeout(() => map.invalidateSize(), 50);
     } catch (error) {
-      console.error('[MapModule] Error updating existing map:', error);
     } finally {
       // Finish update and run any pending update immediately after
       setTimeout(() => {
@@ -2115,15 +2075,12 @@ export class UltraMapModule extends BaseUltraModule {
   }
 
   private addLeafletMarker(map: L.Map, marker: MapMarker, hass: HomeAssistant): L.Marker {
-    console.log('[MapModule] Adding marker:', marker.name, 'at', marker.latitude, marker.longitude);
-
     const coords = this.extractCoordinates(marker.entity || '', hass) || {
       latitude: marker.latitude,
       longitude: marker.longitude,
     };
 
     if (!coords) {
-      console.warn('[MapModule] No coordinates for marker:', marker.name);
       return null as any;
     }
 
@@ -2175,8 +2132,6 @@ export class UltraMapModule extends BaseUltraModule {
         const imageSize = marker.icon_size || 32;
         const containerSize = Math.max(40, imageSize + 8);
 
-        console.log('[MapModule] Entity picture:', entityPicture, 'size:', imageSize);
-
         const entityIcon = L.divIcon({
           html: `
             <div style="
@@ -2219,21 +2174,11 @@ export class UltraMapModule extends BaseUltraModule {
 
       // CRITICAL: If using icon marker with an icon, replace placeholder with actual ha-icon element
       const markerType = marker.marker_image_type || 'icon';
-      console.log(
-        '[MapModule] Marker type:',
-        markerType,
-        'icon:',
-        marker.icon,
-        'will inject:',
-        markerType === 'icon' && marker.icon && marker.icon.trim() !== ''
-      );
       if (markerType === 'icon' && marker.icon && marker.icon.trim() !== '') {
         setTimeout(() => {
-          console.log('[MapModule] Injecting ha-icon for marker:', marker.name);
           this._injectHaIconIntoMarker(leafletMarker, marker);
         }, 0);
       } else if (markerType === 'icon') {
-        console.log('[MapModule] Skipping injection - no icon or empty icon string');
       }
     }
 
@@ -2250,20 +2195,14 @@ export class UltraMapModule extends BaseUltraModule {
   }
 
   private _injectHaIconIntoMarker(leafletMarker: L.Marker, marker: MapMarker): void {
-    console.log('[MapModule] _injectHaIconIntoMarker called for:', marker.name);
     const iconEl = (leafletMarker as any)._icon;
-    console.log('[MapModule] iconEl found:', !!iconEl);
     if (!iconEl) {
-      console.error('[MapModule] No _icon element on marker!');
       return;
     }
 
     // Find the placeholder div for the icon
     const iconPlaceholder = iconEl.querySelector('[data-icon-placeholder]');
-    console.log('[MapModule] iconPlaceholder found:', !!iconPlaceholder);
     if (!iconPlaceholder) {
-      console.error('[MapModule] No data-icon-placeholder found in marker HTML!');
-      console.log('[MapModule] Marker HTML:', iconEl.innerHTML);
       return;
     }
 
@@ -2276,16 +2215,6 @@ export class UltraMapModule extends BaseUltraModule {
     const containerSize = iconSize * 2.5;
     const teardropSize = containerSize * 0.8;
     const actualIconSize = teardropSize * 0.6;
-
-    console.log(
-      '[MapModule] Creating ha-icon with size:',
-      actualIconSize,
-      'icon:',
-      marker.icon,
-      'color:',
-      color
-    );
-
     // Set the icon property (not just attribute)
     (haIcon as any).icon = marker.icon || '';
 
@@ -2322,7 +2251,6 @@ export class UltraMapModule extends BaseUltraModule {
     const baseDelay = 30; // Reduced from 50ms to 30ms for faster initial attempts
 
     if (attempt >= maxAttempts) {
-      console.warn('[MapModule] Failed to apply icon sizing after', maxAttempts, 'attempts');
       // As a fallback, try to apply sizing to the ha-icon element itself
       this._applyFallbackIconSizing(haIcon, actualIconSize, color);
       return;
@@ -2346,7 +2274,6 @@ export class UltraMapModule extends BaseUltraModule {
         for (const selector of svgSelectors) {
           svg = haIcon.shadowRoot.querySelector(selector) as SVGElement;
           if (svg) {
-            console.log('[MapModule] Found SVG with selector:', selector);
             break;
           }
         }
@@ -2387,20 +2314,10 @@ export class UltraMapModule extends BaseUltraModule {
               justify-content: center !important;
             `;
           }
-
-          console.log(
-            '[MapModule] Successfully applied icon sizing on attempt',
-            attempt + 1,
-            'size:',
-            actualIconSize,
-            'color:',
-            color
-          );
         } else {
           // Try to style ha-svg-icon directly if no SVG found
           const haSvgIcon = haIcon.shadowRoot.querySelector('ha-svg-icon') as HTMLElement;
           if (haSvgIcon) {
-            console.log('[MapModule] Found ha-svg-icon, applying sizing directly');
             haSvgIcon.style.cssText = `
               width: ${actualIconSize}px !important;
               height: ${actualIconSize}px !important;
@@ -2412,30 +2329,11 @@ export class UltraMapModule extends BaseUltraModule {
             if (haSvgIcon.hasAttribute('size')) {
               haSvgIcon.setAttribute('size', actualIconSize.toString());
             }
-
-            console.log('[MapModule] Applied sizing to ha-svg-icon element');
           } else {
-            // Debug: Log the shadow root structure
-            console.log(
-              '[MapModule] SVG not found in shadow DOM, attempt',
-              attempt + 1,
-              'of',
-              maxAttempts
-            );
-            console.log(
-              '[MapModule] Shadow root contents:',
-              haIcon.shadowRoot.innerHTML.substring(0, 200) + '...'
-            );
-            this._applyIconSizingWithRetry(haIcon, actualIconSize, color, attempt + 1);
+            // Debug: Log the shadow root structure            this._applyIconSizingWithRetry(haIcon, actualIconSize, color, attempt + 1);
           }
         }
       } else {
-        console.log(
-          '[MapModule] Shadow root not available, attempt',
-          attempt + 1,
-          'of',
-          maxAttempts
-        );
         this._applyIconSizingWithRetry(haIcon, actualIconSize, color, attempt + 1);
       }
     }, delay);
@@ -2446,8 +2344,6 @@ export class UltraMapModule extends BaseUltraModule {
     actualIconSize: number,
     color: string
   ): void {
-    console.log('[MapModule] Applying fallback icon sizing to ha-icon element');
-
     // Apply sizing directly to the ha-icon element as a fallback
     haIcon.style.cssText = `
       width: ${actualIconSize}px !important;
@@ -2478,7 +2374,6 @@ export class UltraMapModule extends BaseUltraModule {
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
         if (mutation.type === 'childList' && haIcon.shadowRoot) {
-          console.log('[MapModule] Shadow root detected via MutationObserver');
           this._applyIconSizingToElement(haIcon, actualIconSize, color);
           observer.disconnect(); // Stop observing once we've applied the sizing
         }
@@ -2522,7 +2417,6 @@ export class UltraMapModule extends BaseUltraModule {
     for (const selector of svgSelectors) {
       svg = haIcon.shadowRoot.querySelector(selector) as SVGElement;
       if (svg) {
-        console.log('[MapModule] Found SVG with selector:', selector);
         break;
       }
     }
@@ -2564,14 +2458,12 @@ export class UltraMapModule extends BaseUltraModule {
         `;
       }
 
-      console.log('[MapModule] Successfully applied icon sizing via MutationObserver');
       return true;
     }
 
     // Try to style ha-svg-icon directly if no SVG found
     const haSvgIcon = haIcon.shadowRoot.querySelector('ha-svg-icon') as HTMLElement;
     if (haSvgIcon) {
-      console.log('[MapModule] Found ha-svg-icon via MutationObserver, applying sizing directly');
       haSvgIcon.style.cssText = `
         width: ${actualIconSize}px !important;
         height: ${actualIconSize}px !important;
@@ -2584,7 +2476,6 @@ export class UltraMapModule extends BaseUltraModule {
         haSvgIcon.setAttribute('size', actualIconSize.toString());
       }
 
-      console.log('[MapModule] Applied sizing to ha-svg-icon element via MutationObserver');
       return true;
     }
 
@@ -2603,16 +2494,6 @@ export class UltraMapModule extends BaseUltraModule {
     // Icon should be 60% of the teardrop size for good visual balance
     const actualIconSize = teardropSize * 0.6;
     const anchorY = containerSize;
-
-    console.log('[MapModule] ===== ICON SIZING DEBUG =====');
-    console.log('[MapModule] Input iconSize from marker:', iconSize);
-    console.log('[MapModule] Calculated containerSize:', containerSize);
-    console.log('[MapModule] Calculated teardropSize:', teardropSize);
-    console.log('[MapModule] Calculated actualIconSize:', actualIconSize);
-    console.log('[MapModule] Icon:', icon);
-    console.log('[MapModule] Color:', color);
-    console.log('[MapModule] Full marker object:', marker);
-    console.log('[MapModule] ================================');
 
     // If no icon specified, show just the colored teardrop
     if (!icon || icon.trim() === '') {
@@ -2649,8 +2530,6 @@ export class UltraMapModule extends BaseUltraModule {
     // Create icon marker with ha-icon inside
     // Position icon in the circular part of the teardrop (upper portion)
     const iconOffsetY = teardropSize * 0.3; // Position icon 30% from top of teardrop
-
-    console.log('[MapModule] Icon positioning - iconOffsetY:', iconOffsetY);
 
     const htmlContent = `
         <div style="
@@ -2690,8 +2569,6 @@ export class UltraMapModule extends BaseUltraModule {
           </div>
         </div>
       `;
-
-    console.log('[MapModule] Generated HTML for icon marker:', htmlContent);
 
     return L.divIcon({
       html: htmlContent,

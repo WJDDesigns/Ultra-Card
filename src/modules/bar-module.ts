@@ -3604,6 +3604,95 @@ export class UltraBarModule extends BaseUltraModule {
     // Determine bar direction for all styles
     const fillDirection = (barModule as any).bar_direction || 'left-to-right';
 
+    const resolveFontSize = (value: any, fallback: number): string => {
+      if (value === undefined || value === null || value === '') {
+        return `${fallback}px`;
+      }
+      if (typeof value === 'number') {
+        return `${value}px`;
+      }
+      const trimmed = String(value).trim();
+      if (trimmed === '') {
+        return `${fallback}px`;
+      }
+      const specialValues = ['inherit', 'initial', 'unset', 'auto'];
+      if (specialValues.includes(trimmed.toLowerCase())) {
+        return `${fallback}px`;
+      }
+      if (/^[0-9.]+$/.test(trimmed)) {
+        return `${trimmed}px`;
+      }
+      return trimmed;
+    };
+
+    const percentageFontSize = (() => {
+      const designSize = designProperties.font_size ?? moduleWithDesign.font_size;
+      if (designSize !== undefined && designSize !== null && designSize !== '') {
+        return resolveFontSize(designSize, barModule.percentage_text_size ?? 14);
+      }
+      return resolveFontSize(barModule.percentage_text_size ?? 14, 14);
+    })();
+
+    const followFillTransform =
+      fillDirection === 'right-to-left'
+        ? 'translate(-100%, -50%) translateX(4px)'
+        : 'translate(-100%, -50%) translateX(-4px)';
+
+    const showPercentageText = barModule.show_percentage !== false;
+    const percentageTextAlignment = barModule.percentage_text_alignment || 'center';
+
+    const percentageDisplayText = (() => {
+      if (!showPercentageText) {
+        return '';
+      }
+
+      if (barModule.show_value) {
+        if (isPreviewMode) {
+          return '65 kWh';
+        }
+
+        const pctType = (barModule as any).percentage_type || 'entity';
+
+        if (pctType === 'difference') {
+          const currentEntity = (barModule as any).percentage_current_entity;
+          if (currentEntity && hass?.states[currentEntity]) {
+            const currentState = hass.states[currentEntity];
+            try {
+              return formatEntityState(hass, currentEntity, {
+                includeUnit: true,
+              });
+            } catch (_e) {
+              return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
+            }
+          }
+        } else if (pctType === 'template') {
+          const template = (barModule as any).percentage_template;
+          if (template && hass) {
+            if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+            const key = `bar_percentage_${barModule.id}_${this._hashString(template)}`;
+            const rendered = hass.__uvc_template_strings?.[key];
+            if (rendered !== undefined) {
+              return String(rendered);
+            }
+          }
+        }
+
+        const entityState = hass?.states[barModule.entity];
+        if (entityState) {
+          try {
+            return formatEntityState(hass, barModule.entity, {
+              includeUnit: true,
+            });
+          } catch (_e) {
+            return `${entityState.state}${entityState.attributes?.unit_of_measurement || ''}`;
+          }
+        }
+        return 'N/A';
+      }
+
+      return `${Math.round(percentage)}%`;
+    })();
+
     if (barModule.use_gradient) {
       // Ensure gradient stops exist, create defaults if needed
       const gradientStops =
@@ -4845,105 +4934,49 @@ export class UltraBarModule extends BaseUltraModule {
             }
 
             <!-- Percentage Text (Inside Bar) -->
-            ${
-              barModule.show_percentage
-                ? html`
-                    <div
-                      class="percentage-text"
-                      style="
-                    position: absolute;
-                    top: 50%;
-                    left: ${barModule.percentage_text_alignment === 'left'
-                        ? '8px'
-                        : barModule.percentage_text_alignment === 'right'
-                          ? 'calc(100% - 32px)'
-                          : barModule.percentage_text_alignment === 'follow-fill'
-                            ? `${Math.min(percentage, 100)}%`
-                            : '50%'};
-                    transform: ${barModule.percentage_text_alignment === 'center'
-                        ? 'translate(-50%, -50%)'
-                        : barModule.percentage_text_alignment === 'follow-fill'
-                          ? 'translate(-100%, -50%)'
-                          : 'translate(0, -50%)'};
-                    text-align: ${barModule.percentage_text_alignment === 'follow-fill'
-                        ? 'right'
-                        : barModule.percentage_text_alignment || 'center'};
-                    font-size: ${designProperties.font_size
-                        ? `${Math.min(designProperties.font_size, barHeightValue * 0.8)}px`
-                        : `${Math.min(barModule.percentage_text_size || 14, barHeightValue * 0.8)}px`};
-                    color: ${barModule.percentage_text_color ||
-                      designProperties.color ||
-                      moduleWithDesign.color ||
-                      'white'};
-                    font-weight: ${barModule.percentage_text_bold ? 'bold' : '600'};
-                    font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
-                    text-decoration: ${barModule.percentage_text_strikethrough
-                        ? 'line-through'
-                        : 'none'};
-                    z-index: 10;
-                    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    max-width: 100%;
-                  "
-                    >
-                      ${(() => {
-                        if (barModule.show_value) {
-                          // Show entity value instead of percentage based on percentage_type
-                          if (isPreviewMode) {
-                            return '65 kWh'; // Demo value for preview
-                          }
-
-                          const pctType = (barModule as any).percentage_type || 'entity';
-
-                          if (pctType === 'difference') {
-                            // For difference mode, show the current value from percentage_current_entity
-                            const currentEntity = (barModule as any).percentage_current_entity;
-                            if (currentEntity && hass?.states[currentEntity]) {
-                              const currentState = hass.states[currentEntity];
-                              try {
-                                return formatEntityState(hass, currentEntity, {
-                                  includeUnit: true,
-                                });
-                              } catch (_e) {
-                                return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
-                              }
-                            }
-                          } else if (pctType === 'template') {
-                            // For template mode, show the template result (raw value)
-                            const template = (barModule as any).percentage_template;
-                            if (template && hass) {
-                              if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-                              const key = `bar_percentage_${barModule.id}_${this._hashString(template)}`;
-                              const rendered = hass.__uvc_template_strings?.[key];
-                              if (rendered !== undefined) {
-                                return String(rendered);
-                              }
-                            }
-                          }
-
-                          // Fallback to main entity
-                          const entityState = hass?.states[barModule.entity];
-                          if (entityState) {
-                            try {
-                              return formatEntityState(hass, barModule.entity, {
-                                includeUnit: true,
-                              });
-                            } catch (_e) {
-                              return `${entityState.state}${entityState.attributes?.unit_of_measurement || ''}`;
-                            }
-                          }
-                          return 'N/A';
-                        } else {
-                          // Show percentage (default behavior)
-                          return `${Math.round(percentage)}%`;
-                        }
-                      })()}
-                    </div>
-                  `
-                : ''
-            }
+            <div
+              class="percentage-text"
+              style="
+                display: ${showPercentageText ? 'block' : 'none'};
+                position: absolute;
+                top: 50%;
+                left: ${
+                  percentageTextAlignment === 'left'
+                    ? '8px'
+                    : percentageTextAlignment === 'right'
+                      ? 'calc(100% - 32px)'
+                      : percentageTextAlignment === 'follow-fill'
+                        ? `${Math.min(percentage, 100)}%`
+                        : '50%'
+                };
+                transform: ${
+                  percentageTextAlignment === 'center'
+                    ? 'translate(-50%, -50%)'
+                    : percentageTextAlignment === 'follow-fill'
+                      ? followFillTransform
+                      : 'translate(0, -50%)'
+                };
+                text-align: ${percentageTextAlignment === 'follow-fill' ? 'right' : percentageTextAlignment};
+                font-size: ${percentageFontSize};
+                color: ${
+                  barModule.percentage_text_color ||
+                  designProperties.color ||
+                  moduleWithDesign.color ||
+                  'white'
+                };
+                font-weight: ${barModule.percentage_text_bold ? 'bold' : '600'};
+                font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
+                text-decoration: ${barModule.percentage_text_strikethrough ? 'line-through' : 'none'};
+                z-index: 10;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+              "
+            >
+              ${percentageDisplayText}
+            </div>
           </div>
 
           ${

@@ -8,6 +8,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
@@ -669,19 +670,6 @@ export class UltraTextModule extends BaseUltraModule {
         moduleWithDesign.margin_right
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
-      // Only apply container-level design properties if specifically configured
-      background:
-        designProperties.background_color || moduleWithDesign.background_color || 'inherit',
-      backgroundImage: this.getBackgroundImageCSS(
-        { ...moduleWithDesign, ...designProperties },
-        hass
-      ),
-      backgroundSize:
-        designProperties.background_size || moduleWithDesign.background_size || 'cover',
-      backgroundPosition:
-        designProperties.background_position || moduleWithDesign.background_position || 'center',
-      backgroundRepeat:
-        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
       border:
         (designProperties.border_style || moduleWithDesign.border_style) &&
         (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
@@ -717,6 +705,19 @@ export class UltraTextModule extends BaseUltraModule {
             : 'none',
       boxSizing: 'border-box',
     };
+
+    const { styles: backgroundStyles } = computeBackgroundStyles({
+      color: designProperties.background_color || moduleWithDesign.background_color,
+      fallback: moduleWithDesign.background_color || 'inherit',
+      image: this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass),
+      imageSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      imagePosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      imageRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+    });
+    Object.assign(containerStyles, backgroundStyles);
 
     // Get hover effect configuration from module design
     const hoverEffect = (moduleWithDesign as any).design?.hover_effect;

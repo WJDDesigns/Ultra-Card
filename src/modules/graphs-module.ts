@@ -8,6 +8,7 @@ import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { FormUtils } from '../utils/form-utils';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import '../entity-picker';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
@@ -179,6 +180,9 @@ export class UltraGraphsModule extends BaseUltraModule {
       // New: pie/donut slice labels
       show_slice_labels: true,
 
+      // Bar chart display limit
+      bar_display_limit: 0, // 0 = unlimited
+
       // Global link configuration (store undefined to show Default)
       tap_action: undefined,
       hold_action: undefined,
@@ -259,11 +263,48 @@ export class UltraGraphsModule extends BaseUltraModule {
     return html`
       <div class="uc-graphs-general-tab">
         ${FormUtils.injectCleanFormStyles()}
+        <style>
+          .uc-graphs-general-tab {
+            padding: 8px;
+          }
+          .settings-section {
+            background: var(--secondary-background-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(var(--rgb-primary-color), 0.12);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+          .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .field-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+            margin-bottom: 4px;
+          }
+          .field-description {
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            margin-bottom: 12px;
+            opacity: 0.8;
+            line-height: 1.4;
+          }
+        </style>
 
         <!-- Data Source Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -368,7 +409,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Chart Type Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -404,7 +445,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Data Sources Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -1024,7 +1065,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Display Options Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -1034,7 +1075,9 @@ export class UltraGraphsModule extends BaseUltraModule {
             ${localize('editor.graphs.display.title', lang, 'Display Options')}
           </div>
 
-          <div style="display: grid; gap: 16px;">
+          <div
+            style="display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%; overflow: visible;"
+          >
             <!-- Show Graph Title Toggle -->
             <label
               style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
@@ -1197,7 +1240,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 ${localize('editor.graphs.display.chart_height', lang, 'Chart Height')}
               </label>
               <div
-                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
+                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
               >
                 <input
                   type="range"
@@ -1271,7 +1314,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 ${localize('editor.graphs.display.chart_width', lang, 'Chart Width (%)')}
               </label>
               <div
-                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
+                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
               >
                 <input
                   type="range"
@@ -1471,7 +1514,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             )}
 
             <!-- Background Color -->
-            <div>
+            <div style="position: relative; overflow: visible; z-index: 9999;">
               <label
                 style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
               >
@@ -1485,6 +1528,99 @@ export class UltraGraphsModule extends BaseUltraModule {
                 style="width: 100%; height: 40px;"
               ></ultra-color-picker>
             </div>
+
+            <!-- Bar Display Limit (Only for Bar Charts) -->
+            ${graphsModule.chart_type === 'bar'
+              ? html`
+                  <div>
+                    <label
+                      style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.bar_display_limit',
+                        lang,
+                        'Max Bars to Display'
+                      )}
+                    </label>
+                    <div
+                      style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
+                    >
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        .value=${graphsModule.bar_display_limit ?? 0}
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const val = Math.max(0, Math.min(100, parseInt(target.value)));
+                          updateModule({ bar_display_limit: val });
+                        }}
+                        style="
+                          width: 100%;
+                          height: 4px;
+                          background: var(--divider-color);
+                          border-radius: 2px;
+                          outline: none;
+                          -webkit-appearance: none;
+                        "
+                      />
+                      <span
+                        style="font-size: 13px; color: var(--secondary-text-color); min-width: 80px; text-align: right;"
+                        >${(graphsModule.bar_display_limit ?? 0 === 0)
+                          ? 'Unlimited'
+                          : `${graphsModule.bar_display_limit ?? 0} bars`}</span
+                      >
+                      <button
+                        @click=${() => updateModule({ bar_display_limit: 0 })}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default (Unlimited)'
+                        )}"
+                        style="
+                          width: 32px;
+                          height: 32px;
+                          padding: 0;
+                          border: 1px solid var(--divider-color);
+                          border-radius: 4px;
+                          background: var(--secondary-background-color);
+                          color: var(--primary-text-color);
+                          cursor: pointer;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          transition: all 0.2s ease;
+                          flex-shrink: 0;
+                        "
+                        @mouseenter=${(e: Event) => {
+                          const btn = e.target as HTMLButtonElement;
+                          btn.style.background = 'var(--primary-color)';
+                          btn.style.color = 'var(--text-primary-color)';
+                          btn.style.borderColor = 'var(--primary-color)';
+                        }}
+                        @mouseleave=${(e: Event) => {
+                          const btn = e.target as HTMLButtonElement;
+                          btn.style.background = 'var(--secondary-background-color)';
+                          btn.style.color = 'var(--primary-text-color)';
+                          btn.style.borderColor = 'var(--divider-color)';
+                        }}
+                      >
+                        <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                      </button>
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.bar_display_limit_desc',
+                        lang,
+                        'Set to 0 or higher value to limit the number of bars shown. Useful when time period contains many data points. Set to 0 for unlimited.'
+                      )}
+                    </div>
+                  </div>
+                `
+              : ''}
 
             <!-- Chart Options -->
             <label
@@ -1710,6 +1846,20 @@ export class UltraGraphsModule extends BaseUltraModule {
     };
 
     // Container styles for positioning and effects - design has priority
+    const bgColor =
+      designProperties.background_color || moduleWithDesign.background_color || 'transparent';
+    const bgImage = this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass);
+    const bgStyles = computeBackgroundStyles({
+      color: bgColor,
+      image: bgImage !== 'none' ? bgImage : undefined,
+      imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      imagePosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      imageRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      fallback: 'transparent',
+    });
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -1722,7 +1872,6 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -1734,22 +1883,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.margin_right
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
-      background:
-        designProperties.background_color && designProperties.background_color !== 'transparent'
-          ? designProperties.background_color
-          : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
-            ? moduleWithDesign.background_color
-            : 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(
-        { ...moduleWithDesign, ...designProperties },
-        hass
-      ),
-      backgroundSize:
-        designProperties.background_size || moduleWithDesign.background_size || 'cover',
-      backgroundPosition:
-        designProperties.background_position || moduleWithDesign.background_position || 'center',
-      backgroundRepeat:
-        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      ...bgStyles.styles,
       backdropFilter: designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || '',
       border: designProperties.border_style
         ? `${designProperties.border_width || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
@@ -2798,111 +2932,279 @@ export class UltraGraphsModule extends BaseUltraModule {
     textStyle?: string,
     hass?: HomeAssistant
   ): TemplateResult {
-    const maxValue = Math.max(...data.map(d => d.value));
+    const historyData = this._historyData[module.id];
+    let timePoints: string[] = [];
+    let datasets: Array<{
+      name: string;
+      color: string;
+      values: number[];
+      unit?: string;
+      entityId?: string;
+      originalValues?: number[];
+    }> = [];
+
+    if (historyData && Array.isArray(historyData.timePoints) && historyData.timePoints.length) {
+      timePoints = historyData.timePoints;
+      datasets = (historyData.datasets || []).map((dataset: any, index: number) => ({
+        name: dataset.name,
+        color: this._formatColor(dataset.color) || this._getDefaultColor(index),
+        values: Array.isArray(dataset.values) ? dataset.values : [],
+        unit: dataset.unit,
+        entityId: dataset.entityId,
+      }));
+    }
+
+    if (timePoints.length === 0 || datasets.length === 0) {
+      timePoints = this._generateTimePoints(module.time_period);
+      datasets = (module.entities || [])
+        .filter(e => (module.data_source === 'forecast' ? e.forecast_attribute : e.entity))
+        .map((entityConfig, index) => {
+          const fallback = data[index];
+          const value = fallback ? fallback.value : 0;
+          const values = new Array(timePoints.length).fill(value);
+          return {
+            name:
+              entityConfig.name ||
+              fallback?.name ||
+              entityConfig.entity ||
+              this._getForecastAttributeLabel(entityConfig.forecast_attribute || ''),
+            color: this._formatColor(entityConfig.color) || this._getDefaultColor(index),
+            values,
+            unit: fallback?.unit,
+            entityId: fallback?.entityId || entityConfig.entity || module.forecast_entity,
+          };
+        });
+    }
+
+    if (timePoints.length === 0 || datasets.length === 0) {
+      return html`<div style="color: var(--secondary-text-color);">No data available</div>`;
+    }
+
+    let normalizedDatasets = datasets;
+    if (module.normalize_values && datasets.length > 1) {
+      normalizedDatasets = datasets.map(dataset => {
+        const datasetMax = Math.max(...dataset.values);
+        const datasetMin = Math.min(...dataset.values);
+        const datasetRange = datasetMax - datasetMin || 1;
+        return {
+          ...dataset,
+          originalValues: dataset.values,
+          values: dataset.values.map(value => ((value - datasetMin) / datasetRange) * 100),
+        };
+      });
+    }
+
+    const allValues = normalizedDatasets.flatMap(d => d.values);
+    const maxValue = allValues.length ? Math.max(...allValues) : 0;
+    const minValue = allValues.length ? Math.min(...allValues) : 0;
+    const valueRange = maxValue - minValue || 1;
+
+    const labelArea = 28;
+    const barAreaHeight = Math.max(40, chartHeight - labelArea);
+    const scale = barAreaHeight / valueRange;
+
+    let zeroY: number;
+    if (minValue >= 0) {
+      zeroY = barAreaHeight;
+    } else if (maxValue <= 0) {
+      zeroY = 0;
+    } else {
+      zeroY = maxValue * scale;
+    }
+
+    const alignSetting = ((module as any).chart_alignment || 'center') as
+      | 'left'
+      | 'center'
+      | 'right';
+    const justifyContent =
+      alignSetting === 'left' ? 'flex-start' : alignSetting === 'right' ? 'flex-end' : 'center';
+
+    const datasetCount = normalizedDatasets.length;
+    const overlapFactor = 0.55;
+    const barWidth = Math.max(12, Math.min(28, 32 - datasetCount));
+    const groupWidth = Math.max(
+      48,
+      Math.round(barWidth + Math.max(0, datasetCount - 1) * barWidth * overlapFactor) + 12
+    );
+    const groupsMinWidth = Math.max(groupWidth * timePoints.length, 120);
+    const showTooltips = module.show_tooltips !== false;
+
+    // Apply bar display limit: show only the last N bars if limit is set
+    const displayLimit = module.bar_display_limit ?? 0;
+    let displayTimePoints = timePoints;
+    let displayDatasets = normalizedDatasets;
+
+    if (displayLimit > 0 && timePoints.length > displayLimit) {
+      const startIndex = timePoints.length - displayLimit;
+      displayTimePoints = timePoints.slice(startIndex);
+      displayDatasets = normalizedDatasets.map(dataset => ({
+        ...dataset,
+        values: dataset.values.slice(startIndex),
+        originalValues: dataset.originalValues
+          ? dataset.originalValues.slice(startIndex)
+          : undefined,
+      }));
+    }
+
+    const displayGroupsMinWidth = Math.max(groupWidth * displayTimePoints.length, 120);
 
     return html`
       <div
         class="bar-chart-container"
         style="
-          width:100%; 
-          height:${chartHeight}px; 
-          display:flex; 
-          align-items:center; 
-          justify-content:${(() => {
-          const a = ((module as any).chart_alignment || 'center') as string;
-          return a === 'left' ? 'flex-start' : a === 'right' ? 'flex-end' : 'center';
-        })()};
-          overflow: hidden;
-          box-sizing: border-box;
+          width:100%;
+          height:${chartHeight}px;
+          display:flex;
+          align-items:center;
+          justify-content:${justifyContent};
+          overflow:hidden;
+          box-sizing:border-box;
         "
       >
         <div
+          class="bar-chart-scroll"
           style="
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: flex-end;
-            justify-content: ${(() => {
-            const a = ((module as any).chart_alignment || 'center') as string;
-            if (a === 'left') return 'flex-start';
-            if (a === 'right') return 'flex-end';
-            return 'center';
-          })()};
-            gap: 8px;
-            padding: 8px;
-            box-sizing: border-box;
-            overflow: hidden;
+            width:100%;
+            height:100%;
+            overflow-x:auto;
+            overflow-y:hidden;
+            box-sizing:border-box;
           "
         >
-          ${data.map(d => {
-            const barHeight = maxValue > 0 ? (d.value / maxValue) * (chartHeight - 40) : 0;
-            return html`
-              <div
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  flex: 0 0 auto;
-                  width: 60px;
-                  max-width: calc(100% / ${data.length});
-                  box-sizing: border-box;
-                "
-              >
+          <div
+            class="bar-chart-groups"
+            style="
+              position:relative;
+              display:flex;
+              align-items:flex-end;
+              justify-content:${justifyContent};
+              gap:12px;
+              min-width:${displayGroupsMinWidth}px;
+              height:${barAreaHeight}px;
+              padding:0 12px;
+              box-sizing:border-box;
+            "
+          >
+            ${displayTimePoints.map((timePoint, pointIndex) => {
+              return html`
                 <div
+                  class="bar-group"
                   style="
-                    font-size: 11px;
-                    ${textStyle || ''};
-                    margin-bottom: 4px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    width: 100%;
-                    text-align: center;
+                    flex:0 0 ${groupWidth}px;
+                    height:100%;
+                    position:relative;
+                    box-sizing:border-box;
                   "
                 >
-                  ${(() => {
-                    let formatted = `${d.value}${d.unit || ''}`;
-                    if (hass && d.entityId) {
-                      try {
-                        formatted = formatEntityState(hass, d.entityId, {
-                          state: d.value,
-                          includeUnit: true,
-                        });
-                      } catch (_) {}
-                    }
-                    // Truncate long values
-                    return formatted.length > 8 ? formatted.substring(0, 8) + '...' : formatted;
-                  })()}
+                  <div
+                    class="bar-group-inner"
+                    style="
+                      position:relative;
+                      width:100%;
+                      height:100%;
+                    "
+                  >
+                    <div
+                      class="bar-group-zero-line"
+                      style="
+                        position:absolute;
+                        left:0;
+                        right:0;
+                        top:${zeroY}px;
+                        border-top:1px solid rgba(255,255,255,0.1);
+                        pointer-events:none;
+                      "
+                    ></div>
+                    ${displayDatasets.map((dataset, datasetIndex) => {
+                      const value = dataset.values[pointIndex] ?? 0;
+                      const originalValue =
+                        module.normalize_values && dataset.originalValues
+                          ? dataset.originalValues[pointIndex]
+                          : dataset.values[pointIndex];
+                      const entityId = dataset.entityId;
+                      let formatted = `${originalValue ?? 0}${dataset.unit || ''}`;
+                      if (hass && entityId !== undefined && originalValue !== undefined) {
+                        try {
+                          formatted = formatEntityState(hass, entityId, {
+                            state: originalValue,
+                            includeUnit: true,
+                          });
+                        } catch (_) {
+                          // ignore formatting errors
+                        }
+                      }
+
+                      const valueY = maxValue === minValue ? zeroY : (maxValue - value) * scale;
+                      const top = Math.min(zeroY, valueY);
+                      const barHeight = Math.max(2, Math.abs(zeroY - valueY));
+                      const offset =
+                        (datasetIndex - (datasetCount - 1) / 2) * (barWidth * overlapFactor);
+                      const showStaticValue = datasetCount === 1;
+
+                      return html`
+                        <div
+                          class="bar-segment"
+                          style="
+                            position:absolute;
+                            left:50%;
+                            bottom:0;
+                            width:${barWidth}px;
+                            transform:translateX(${offset}px);
+                            border-radius:3px 3px 0 0;
+                            background:${dataset.color};
+                            box-shadow:0 4px 10px rgba(0,0,0,0.15);
+                            cursor:${showTooltips ? 'pointer' : 'default'};
+                            top:${top}px;
+                            height:${barHeight}px;
+                            z-index:${100 + datasetIndex};
+                          "
+                          @mouseenter=${showTooltips
+                            ? (e: MouseEvent) =>
+                                this._showTooltip(e, module.id, dataset.name, formatted, timePoint)
+                            : null}
+                          @mouseleave=${showTooltips
+                            ? (e: MouseEvent) => this._hideTooltip(module.id, e)
+                            : null}
+                          title=${showTooltips ? '' : formatted}
+                        >
+                          ${showStaticValue
+                            ? html`<span
+                                style="
+                                  position:absolute;
+                                  left:50%;
+                                  bottom:100%;
+                                  transform:translate(-50%, -6px);
+                                  font-size:11px;
+                                  color: var(--secondary-text-color);
+                                  white-space:nowrap;
+                                  ${textStyle || ''};
+                                "
+                              >
+                                ${formatted}
+                              </span>`
+                            : ''}
+                        </div>
+                      `;
+                    })}
+                  </div>
+                  <div
+                    class="bar-group-label"
+                    style="
+                      margin-top:4px;
+                      font-size:11px;
+                      text-align:center;
+                      color: var(--secondary-text-color);
+                      white-space:nowrap;
+                      overflow:hidden;
+                      text-overflow:ellipsis;
+                    "
+                  >
+                    ${timePoint}
+                  </div>
                 </div>
-                <div
-                  style="
-                    width: 100%;
-                    height: ${barHeight}px;
-                    background: ${d.color};
-                    border-radius: 3px 3px 0 0;
-                    transition: height 0.3s ease;
-                    min-height: 2px;
-                  "
-                ></div>
-                <div
-                  style="
-                    font-size: 10px;
-                    ${textStyle || ''};
-                    opacity: 0.8;
-                    margin-top: 4px;
-                    text-align: center;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    width: 100%;
-                  "
-                  title="${d.name}"
-                >
-                  ${d.name.length > 8 ? d.name.substring(0, 8) + '...' : d.name}
-                </div>
-              </div>
-            `;
-          })}
+              `;
+            })}
+          </div>
         </div>
       </div>
     `;
@@ -4311,6 +4613,10 @@ export class UltraGraphsModule extends BaseUltraModule {
       .uc-graphs-actions-tab,
       .uc-graphs-other-tab {
         padding: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
       }
 
       .entities-repeater {
@@ -4717,6 +5023,71 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       .reset-btn ha-icon {
         font-size: 16px;
+      }
+
+      /* Settings section width containment */
+      .settings-section {
+        max-width: 100%;
+        box-sizing: border-box;
+        width: 100%;
+        overflow: visible;
+      }
+
+      .settings-section > div[style*="display: grid"] {
+        max-width: 100%;
+        box-sizing: border-box;
+        width: 100%;
+        overflow: visible;
+      }
+
+      /* Ensure all grid children stay within bounds */
+      .settings-section div {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Field sections must respect container width */
+      .settings-section .field-section {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
+      }
+
+      /* Ensure ha-form respects container width */
+      .settings-section ha-form {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Force all ha-form internals to respect width */
+      .settings-section ha-form * {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Specific fix for ha-select dropdowns */
+      .settings-section ha-select,
+      .settings-section ha-textfield,
+      .settings-section input,
+      .settings-section select {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .settings-section ultra-color-picker {
+        width: 100%;
+        max-width: 100%;
+        display: block;
+      }
+      .settings-section ultra-color-picker .color-input-field {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .settings-section ultra-color-picker .color-value {
+        min-width: 0;
       }
     `;
   }

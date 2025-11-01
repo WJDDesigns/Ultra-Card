@@ -508,119 +508,261 @@ export class UltraButtonModule extends BaseUltraModule {
   ): TemplateResult {
     const buttonModule = module as ButtonModule;
 
-    // Apply design properties with priority - global design overrides module-specific props
     const moduleWithDesign = buttonModule as any;
     const designProperties = (buttonModule as any).design || {};
 
-    // Resolve text and background styles
-    const textColor = designProperties.color || buttonModule.text_color || 'white';
-    const fontSize = designProperties.font_size || '14px';
+    const mirroredFontSize =
+      typeof moduleWithDesign.font_size === 'string' ? moduleWithDesign.font_size : undefined;
+    const rawFontSize =
+      (typeof designProperties.font_size === 'string' && designProperties.font_size.trim() !== ''
+        ? designProperties.font_size
+        : mirroredFontSize) || '14px';
+    const fontSize = this.addPixelUnit(rawFontSize) || '14px';
+
+    // Debug log for font size resolution
+    if (designProperties.font_size || mirroredFontSize) {
+      console.log('Button Font Size Debug:', {
+        'designProperties.font_size': designProperties.font_size,
+        mirroredFontSize: mirroredFontSize,
+        rawFontSize: rawFontSize,
+        finalFontSize: fontSize,
+        fullDesignProps: designProperties,
+      });
+    }
+
     const backgroundColor =
       designProperties.background_color || buttonModule.background_color || 'var(--primary-color)';
 
-    // Map style to visual treatment
-    const styleClass = buttonModule.style || 'flat';
-    const buttonBaseStyle = `
-      color: ${textColor};
-      padding: 12px 24px;
-      font-size: ${fontSize};
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 40px;
-    `;
+    const hasCustomTextColor =
+      !!designProperties.color ||
+      !!moduleWithDesign.color ||
+      !!buttonModule.text_color ||
+      !!moduleWithDesign.text_color;
 
-    const styleOverrides: Record<string, string> = {
-      flat: `background: ${backgroundColor}; border: none; box-shadow: none;`,
-      glossy: `background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)) , ${backgroundColor}; border: none;`,
-      embossed: `background: ${backgroundColor}; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15);`,
-      inset: `background: ${backgroundColor}; border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);`,
-      'gradient-overlay': `background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${backgroundColor}; border: none;`,
-      'neon-glow': `background: ${backgroundColor}; border: none; box-shadow: 0 0 10px ${backgroundColor}, 0 0 20px ${backgroundColor};`,
-      outline: `background: transparent; border: 2px solid ${backgroundColor}; color: ${backgroundColor};`,
-      glass: `background: ${backgroundColor}; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25);`,
-      metallic: `background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); color: #333; border: 1px solid #bbb;`,
+    const textColor =
+      designProperties.color ||
+      moduleWithDesign.color ||
+      buttonModule.text_color ||
+      moduleWithDesign.text_color ||
+      'white';
+
+    const fontWeight = designProperties.font_weight || moduleWithDesign.font_weight || '500';
+    const fontFamily = designProperties.font_family || moduleWithDesign.font_family || 'inherit';
+    const fontStyle = designProperties.font_style || moduleWithDesign.font_style || 'normal';
+    const textTransform =
+      designProperties.text_transform || moduleWithDesign.text_transform || 'none';
+    const letterSpacingRaw =
+      designProperties.letter_spacing || moduleWithDesign.letter_spacing || undefined;
+    const letterSpacing =
+      letterSpacingRaw !== undefined &&
+      letterSpacingRaw !== null &&
+      `${letterSpacingRaw}`.trim() !== ''
+        ? `${letterSpacingRaw}`
+        : undefined;
+    const lineHeightRaw = designProperties.line_height || moduleWithDesign.line_height;
+    const lineHeight =
+      lineHeightRaw !== undefined && lineHeightRaw !== null && `${lineHeightRaw}`.trim() !== ''
+        ? `${lineHeightRaw}`
+        : undefined;
+
+    const moduleAlignment = buttonModule.alignment || 'center';
+    const containerJustify = this.getFlexJustify(moduleAlignment);
+
+    const textAlignValue =
+      designProperties.text_align || moduleWithDesign.text_align || moduleAlignment;
+    const contentJustify = this.getFlexJustify(textAlignValue, true);
+
+    const textShadow = this.resolveTextShadow(designProperties, moduleWithDesign);
+
+    const styleClass = buttonModule.style || 'flat';
+
+    const baseButtonStyle: Record<string, string> = {
+      color: textColor,
+      padding: '12px 24px',
+      fontSize,
+      fontWeight: String(fontWeight),
+      fontFamily,
+      fontStyle,
+      textTransform,
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) ||
+        '8px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: contentJustify,
+      gap: '8px',
+      minHeight: '40px',
+      textShadow,
     };
 
-    const buttonStyle = `${buttonBaseStyle} ${styleOverrides[styleClass] || styleOverrides.flat}`;
+    if (letterSpacing) {
+      baseButtonStyle.letterSpacing = letterSpacing;
+    }
 
-    const alignment = `
-      display: flex;
-      justify-content: ${
-        buttonModule.alignment === 'left'
-          ? 'flex-start'
-          : buttonModule.alignment === 'right'
-            ? 'flex-end'
-            : 'center'
-      };
-    `;
+    if (lineHeight) {
+      baseButtonStyle.lineHeight = lineHeight;
+    }
 
-    // Container honors global design (padding/margin/background/border, etc.)
+    const styleOverrides: Record<string, Record<string, string>> = {
+      flat: {
+        background: backgroundColor,
+        border: 'none',
+        boxShadow: 'none',
+      },
+      glossy: {
+        background: `linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), ${backgroundColor}`,
+        border: 'none',
+      },
+      embossed: {
+        background: backgroundColor,
+        border: '1px solid rgba(0,0,0,0.15)',
+        boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)',
+      },
+      inset: {
+        background: backgroundColor,
+        border: 'none',
+        boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)',
+      },
+      'gradient-overlay': {
+        background: `linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${backgroundColor}`,
+        border: 'none',
+      },
+      'neon-glow': {
+        background: backgroundColor,
+        border: 'none',
+        boxShadow: `0 0 10px ${backgroundColor}, 0 0 20px ${backgroundColor}`,
+      },
+      outline: {
+        background: 'transparent',
+        border: `2px solid ${backgroundColor}`,
+      },
+      glass: {
+        background: backgroundColor,
+        backdropFilter: 'blur(6px)',
+        border: '1px solid rgba(255,255,255,0.25)',
+      },
+      metallic: {
+        background: 'linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)',
+        border: '1px solid #bbb',
+      },
+    };
+
+    if (!hasCustomTextColor) {
+      styleOverrides.outline.color = backgroundColor;
+      styleOverrides.metallic.color = '#333';
+    }
+
+    const mergedButtonStyle: Record<string, string> = {
+      ...baseButtonStyle,
+      ...(styleOverrides[styleClass] || styleOverrides.flat),
+    };
+
+    const dimensions = [
+      ['width', designProperties.width ?? moduleWithDesign.width],
+      ['height', designProperties.height ?? moduleWithDesign.height],
+      ['maxWidth', designProperties.max_width ?? moduleWithDesign.max_width],
+      ['maxHeight', designProperties.max_height ?? moduleWithDesign.max_height],
+      ['minWidth', designProperties.min_width ?? moduleWithDesign.min_width],
+      ['minHeight', designProperties.min_height ?? moduleWithDesign.min_height],
+    ] as Array<[string, unknown]>;
+
+    dimensions.forEach(([key, value]) => {
+      const normalized = this.addPixelUnit(value as string | number | undefined | null);
+      if (normalized) {
+        mergedButtonStyle[key] = normalized;
+      }
+    });
+
+    if (!mergedButtonStyle.width && moduleAlignment === 'justify') {
+      mergedButtonStyle.width = '100%';
+    }
+
+    const alignmentStyles: Record<string, string> = {
+      display: 'flex',
+      justifyContent: containerJustify,
+      alignItems: 'center',
+      width: '100%',
+    };
+
+    const paddingTop = this.addPixelUnit(
+      designProperties.padding_top || moduleWithDesign.padding_top
+    );
+    const paddingRight = this.addPixelUnit(
+      designProperties.padding_right || moduleWithDesign.padding_right
+    );
+    const paddingBottom = this.addPixelUnit(
+      designProperties.padding_bottom || moduleWithDesign.padding_bottom
+    );
+    const paddingLeft = this.addPixelUnit(
+      designProperties.padding_left || moduleWithDesign.padding_left
+    );
+    const hasPadding = paddingTop || paddingRight || paddingBottom || paddingLeft;
+
+    const marginTop = this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top);
+    const marginRight = this.addPixelUnit(
+      designProperties.margin_right || moduleWithDesign.margin_right
+    );
+    const marginBottom = this.addPixelUnit(
+      designProperties.margin_bottom || moduleWithDesign.margin_bottom
+    );
+    const marginLeft = this.addPixelUnit(
+      designProperties.margin_left || moduleWithDesign.margin_left
+    );
+    const hasMargin = marginTop || marginRight || marginBottom || marginLeft;
+
     const containerStyles = {
-      // Keep container fluid so module sizing doesn't affect layout siblings
       width: '100%',
       height: 'auto',
       maxWidth: 'none',
       maxHeight: 'none',
       minWidth: 'auto',
       minHeight: 'auto',
-      // Only apply padding if explicitly set by user
-      padding:
-        designProperties.padding_top ||
-        designProperties.padding_bottom ||
-        designProperties.padding_left ||
-        designProperties.padding_right
-          ? `${designProperties.padding_top || '0px'} ${designProperties.padding_right || '0px'} ${designProperties.padding_bottom || '0px'} ${designProperties.padding_left || '0px'}`
-          : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
-      margin:
-        designProperties.margin_top ||
-        designProperties.margin_bottom ||
-        designProperties.margin_left ||
-        designProperties.margin_right
-          ? `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0px'}`
-          : '8px 0',
+      padding: hasPadding
+        ? `${paddingTop || '0'} ${paddingRight || '0'} ${paddingBottom || '0'} ${paddingLeft || '0'}`
+        : '0',
+      margin: hasMargin
+        ? `${marginTop || '8px'} ${marginRight || '0'} ${marginBottom || '8px'} ${marginLeft || '0'}`
+        : '8px 0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
         hass
       ),
-      'background-size': 'cover',
-      'background-position': 'center',
-      'background-repeat': 'no-repeat',
-      'border-radius': designProperties.border_radius || '8px',
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) ||
+        '8px',
       border:
         designProperties.border_style && designProperties.border_style !== 'none'
-          ? `${designProperties.border_width || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
+          ? `${this.addPixelUnit(designProperties.border_width) || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
           : 'none',
-      'box-shadow':
+      boxShadow:
         designProperties.box_shadow_h ||
         designProperties.box_shadow_v ||
         designProperties.box_shadow_blur ||
         designProperties.box_shadow_spread
-          ? `${designProperties.box_shadow_h || '0px'} ${designProperties.box_shadow_v || '0px'} ${designProperties.box_shadow_blur || '0px'} ${designProperties.box_shadow_spread || '0px'} ${designProperties.box_shadow_color || 'rgba(0,0,0,.2)'}`
+          ? `${this.addPixelUnit(designProperties.box_shadow_h) || '0px'} ${this.addPixelUnit(designProperties.box_shadow_v) || '0px'} ${this.addPixelUnit(designProperties.box_shadow_blur) || '0px'} ${this.addPixelUnit(designProperties.box_shadow_spread) || '0px'} ${designProperties.box_shadow_color || 'rgba(0,0,0,.2)'}`
           : 'none',
-      'box-sizing': 'border-box',
+      boxSizing: 'border-box',
     } as Record<string, string>;
 
-    // Gesture handling variables
     let clickTimeout: any = null;
     let holdTimeout: any = null;
     let isHolding = false;
     let clickCount = 0;
     let lastClickTime = 0;
 
-    // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
       isHolding = false;
 
-      // Start hold timer
       holdTimeout = setTimeout(() => {
         isHolding = true;
         if (buttonModule.hold_action && buttonModule.hold_action.action !== 'nothing') {
@@ -631,18 +773,16 @@ export class UltraButtonModule extends BaseUltraModule {
             config
           );
         }
-      }, 500); // 500ms hold threshold
+      }, 500);
     };
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      // Clear hold timer
       if (holdTimeout) {
         clearTimeout(holdTimeout);
         holdTimeout = null;
       }
 
-      // If this was a hold gesture, don't process as click
       if (isHolding) {
         isHolding = false;
         return;
@@ -651,9 +791,7 @@ export class UltraButtonModule extends BaseUltraModule {
       const now = Date.now();
       const timeSinceLastClick = now - lastClickTime;
 
-      // Double click detection (within 300ms)
       if (timeSinceLastClick < 300 && clickCount === 1) {
-        // This is a double click
         if (clickTimeout) {
           clearTimeout(clickTimeout);
           clickTimeout = null;
@@ -673,15 +811,12 @@ export class UltraButtonModule extends BaseUltraModule {
           );
         }
       } else {
-        // This might be a single click, but wait to see if double click follows
         clickCount = 1;
         lastClickTime = now;
 
         clickTimeout = setTimeout(() => {
-          // This is a single click
           clickCount = 0;
 
-          // Execute tap action or fall back to legacy action
           if (!buttonModule.tap_action || buttonModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
               (buttonModule.tap_action as any) || ({ action: 'default' } as any),
@@ -691,47 +826,24 @@ export class UltraButtonModule extends BaseUltraModule {
               (buttonModule as any).entity
             );
           } else if (buttonModule.action) {
-            // Legacy support
             linkService.setHass(hass);
             linkService.executeAction(buttonModule.action);
           }
-        }, 300); // Wait 300ms to see if double click follows
+        }, 300);
       }
     };
 
-    // Get hover effect configuration from module design
     const hoverEffect = (buttonModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
     return html`
-      <div class="button-module-container" style=${this.styleObjectToCss(containerStyles)}>
-        <div class="button-module-preview" style="${alignment}">
+      <div class="button-module-container" style="${this.styleObjectToCss(containerStyles)}">
+        <div class="button-module-preview" style="${this.styleObjectToCss(alignmentStyles)}">
           <button
-            class="ultra-button ${styleClass} ${buttonModule.alignment === 'justify'
+            class="ultra-button ${styleClass} ${moduleAlignment === 'justify'
               ? 'justify'
               : ''} ${hoverEffectClass}"
-            style="${buttonStyle} ${buttonModule.alignment === 'justify'
-              ? 'width: 100%;'
-              : designProperties.width || (moduleWithDesign as any).width
-                ? `width: ${designProperties.width || (moduleWithDesign as any).width};`
-                : ''} ${designProperties.height || (moduleWithDesign as any).height
-              ? `height: ${designProperties.height || (moduleWithDesign as any).height};`
-              : ''} ${designProperties.max_width || (moduleWithDesign as any).max_width
-              ? `max-width: ${designProperties.max_width || (moduleWithDesign as any).max_width};`
-              : ''} ${designProperties.max_height || (moduleWithDesign as any).max_height
-              ? `max-height: ${designProperties.max_height || (moduleWithDesign as any).max_height};`
-              : ''} ${designProperties.min_width || (moduleWithDesign as any).min_width
-              ? `min-width: ${designProperties.min_width || (moduleWithDesign as any).min_width};`
-              : ''} ${designProperties.min_height || (moduleWithDesign as any).min_height
-              ? `min-height: ${designProperties.min_height || (moduleWithDesign as any).min_height};`
-              : ''} ${designProperties.text_align
-              ? `text-align:${designProperties.text_align};`
-              : ''} ${designProperties.text_shadow_h ||
-            designProperties.text_shadow_v ||
-            designProperties.text_shadow_blur ||
-            designProperties.text_shadow_color
-              ? `text-shadow:${designProperties.text_shadow_h || '0px'} ${designProperties.text_shadow_v || '0px'} ${designProperties.text_shadow_blur || '0px'} ${designProperties.text_shadow_color || 'rgba(0,0,0,.2)'};`
-              : ''}"
+            style="${this.styleObjectToCss(mergedButtonStyle)}"
             @pointerdown=${handlePointerDown}
             @pointerup=${handlePointerUp}
           >
@@ -752,6 +864,81 @@ export class UltraButtonModule extends BaseUltraModule {
     return Object.entries(styles)
       .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
       .join('; ');
+  }
+
+  private getFlexJustify(
+    alignment: string | undefined,
+    allowSpaceBetween: boolean = false
+  ): string {
+    switch (alignment) {
+      case 'left':
+        return 'flex-start';
+      case 'right':
+        return 'flex-end';
+      case 'justify':
+        return allowSpaceBetween ? 'space-between' : 'center';
+      default:
+        return 'center';
+    }
+  }
+
+  private resolveTextShadow(
+    design: Record<string, any>,
+    moduleWithDesign: Record<string, any>
+  ): string {
+    const designHasShadow = [
+      'text_shadow_h',
+      'text_shadow_v',
+      'text_shadow_blur',
+      'text_shadow_color',
+    ].some(key => {
+      const value = design[key];
+      return value !== undefined && value !== null && `${value}`.trim() !== '';
+    });
+
+    if (designHasShadow) {
+      return `${this.addPixelUnit(design.text_shadow_h) || '0px'} ${this.addPixelUnit(design.text_shadow_v) || '0px'} ${this.addPixelUnit(design.text_shadow_blur) || '0px'} ${design.text_shadow_color || 'rgba(0,0,0,.2)'}`;
+    }
+
+    const moduleHasShadow = [
+      'text_shadow_h',
+      'text_shadow_v',
+      'text_shadow_blur',
+      'text_shadow_color',
+    ].some(key => {
+      const value = moduleWithDesign[key];
+      return value !== undefined && value !== null && `${value}`.trim() !== '';
+    });
+
+    if (moduleHasShadow) {
+      return `${this.addPixelUnit(moduleWithDesign.text_shadow_h) || '0px'} ${this.addPixelUnit(moduleWithDesign.text_shadow_v) || '0px'} ${this.addPixelUnit(moduleWithDesign.text_shadow_blur) || '0px'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,.2)'}`;
+    }
+
+    return 'none';
+  }
+
+  private addPixelUnit(value: string | number | undefined | null): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    const str = String(value).trim();
+    if (!str) {
+      return undefined;
+    }
+
+    if (/^-?\d+(?:\.\d+)?$/.test(str)) {
+      return `${str}px`;
+    }
+
+    if (/^(?:-?\d+(?:\.\d+)?\s+)+-?\d+(?:\.\d+)?$/.test(str)) {
+      return str
+        .split(/\s+/)
+        .map(part => (/^-?\d+(?:\.\d+)?$/.test(part) ? `${part}px` : part))
+        .join(' ');
+    }
+
+    return str;
   }
 
   // Trigger preview update for reactive UI

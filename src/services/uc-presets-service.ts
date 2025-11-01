@@ -87,6 +87,43 @@ class UcPresetsService {
   }
 
   /**
+   * Export a preset for sharing
+   * Reverses entity mappings to restore original entity names
+   */
+  exportPreset(preset: PresetDefinition): PresetDefinition {
+    // If preset has entity mappings, reverse them before export
+    if (preset.metadata.entityMappings && preset.metadata.entityMappings.length > 0) {
+      // Import entity mapper to reverse mappings
+      return this._reversePresetMappings(preset);
+    }
+
+    // No mappings, return as-is
+    return preset;
+  }
+
+  /**
+   * Reverse entity mappings in a preset (for export)
+   */
+  private _reversePresetMappings(preset: PresetDefinition): PresetDefinition {
+    // Import dynamically to avoid circular dependencies
+    const { entityMapper } = require('./uc-entity-mapper');
+    const reversedMappings = entityMapper.reverseMappings(preset.metadata.entityMappings!);
+
+    // Apply reversed mappings to the layout
+    const restoredLayout = entityMapper.applyMappingToLayout(preset.layout, reversedMappings);
+
+    // Return preset with restored layout and cleared mappings
+    return {
+      ...preset,
+      layout: restoredLayout,
+      metadata: {
+        ...preset.metadata,
+        entityMappings: undefined, // Clear mappings in exported version
+      },
+    };
+  }
+
+  /**
    * Subscribe to preset changes
    */
   subscribe(callback: (presets: PresetDefinition[]) => void): () => void {

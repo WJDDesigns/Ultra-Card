@@ -53,6 +53,7 @@ export declare class UltraCard extends LitElement {
     private _scaleDebounceTimer?;
     private _currentScale;
     private _lastMeasuredWidth;
+    private _lastContentWidth;
     private _visibilityChangeHandler?;
     private _windowResizeHandler?;
     private _isScalingInProgress;

@@ -1081,31 +1081,34 @@ export class UltraSliderModule extends BaseUltraModule {
       SliderStateManager.clearTimer(sliderModule.id);
     };
 
-    // If auto-play is disabled, ensure cleanup
-    if (!sliderModule.auto_play && SliderStateManager.isInitialized(sliderModule.id)) {
-      SliderStateManager.clearTimer(sliderModule.id);
-      SliderStateManager.setInitialized(sliderModule.id, false);
-    }
-
-    // Check if delay has changed - if so, restart timer
-    const currentDelay = SliderStateManager.getCurrentDelay(sliderModule.id);
-    const newDelay = sliderModule.auto_play_delay || 3000;
-    const delayChanged = currentDelay !== undefined && currentDelay !== newDelay;
-
-    if (delayChanged && sliderModule.auto_play) {
-      SliderStateManager.clearTimer(sliderModule.id);
-      SliderStateManager.setInitialized(sliderModule.id, false);
-    }
-
-    // Start auto-play if enabled (ONLY if not already initialized)
-    // This prevents creating multiple timers on re-renders
+    // Simplified, more robust auto-play management
     const existingTimer = SliderStateManager.getTimer(sliderModule.id);
-    const isInit = SliderStateManager.isInitialized(sliderModule.id);
 
-    if (sliderModule.auto_play && !existingTimer && !isInit) {
-      SliderStateManager.setInitialized(sliderModule.id, true);
-      SliderStateManager.setCurrentDelay(sliderModule.id, newDelay);
-      setTimeout(() => startAutoPlay(), 100);
+    // Always cleanup when auto_play is disabled, regardless of initialization state
+    if (!sliderModule.auto_play) {
+      if (existingTimer) {
+        SliderStateManager.clearTimer(sliderModule.id);
+      }
+      SliderStateManager.setInitialized(sliderModule.id, false);
+    } else {
+      // Auto-play is enabled - check if we need to restart due to delay change
+      const currentDelay = SliderStateManager.getCurrentDelay(sliderModule.id);
+      const newDelay = sliderModule.auto_play_delay || 3000;
+      const delayChanged = currentDelay !== undefined && currentDelay !== newDelay;
+
+      // If delay changed, clear existing timer so a new one starts with the new delay
+      if (delayChanged && existingTimer) {
+        SliderStateManager.clearTimer(sliderModule.id);
+      }
+
+      // Start timer only if one isn't already running
+      const timerAfterCheck = SliderStateManager.getTimer(sliderModule.id);
+      if (!timerAfterCheck) {
+        SliderStateManager.setInitialized(sliderModule.id, true);
+        SliderStateManager.setCurrentDelay(sliderModule.id, newDelay);
+        // Start auto-play immediately, without delay
+        startAutoPlay();
+      }
     }
 
     const renderPagination = () => {
@@ -1355,6 +1358,8 @@ export class UltraSliderModule extends BaseUltraModule {
           align-items: stretch;
           padding: ${sliderModule.gap || 0}px;
           box-sizing: border-box;
+          position: relative;
+          z-index: auto;
         }
 
         /* Slide effects - flex items */

@@ -1360,7 +1360,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
-                style="position: absolute; top: 100%; left: 0; right: 0; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: absolute !important; top: 100%; left: 0; right: 0; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001 !important; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
               >
@@ -1831,7 +1831,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       .dropdown-options {
         position: absolute !important;
-        z-index: 10 !important;
+        z-index: 10001 !important;
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
