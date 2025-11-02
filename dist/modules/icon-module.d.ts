@@ -45,6 +45,11 @@ export declare class UltraIconModule extends BaseUltraModule {
      */
     private _getStateMappings;
     private _evaluateIconState;
+    /**
+     * Build entity context for unified templates
+     * Provides access to entity data, attributes, and helper functions
+     */
+    private _getEntityContext;
     getStyles(): string;
     private _addIcon;
     private _removeIcon;

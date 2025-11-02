@@ -10442,70 +10442,72 @@ export class LayoutTab extends LitElement {
           }}
         ></div>
         <div class="selector-content draggable-popup" id="module-selector-popup">
-          <div
-            class="selector-header"
-            @mousedown=${(e: MouseEvent) => {
-              const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
-              if (popup) this._startPopupDrag(e, popup);
-            }}
-          >
-            <div class="selector-header-top">
-              <h3>Add Module</h3>
-              <button
-                class="close-button"
-                title="Close"
-                @mousedown=${(e: Event) => e.stopPropagation()}
-                @click=${() => {
-                  this._showModuleSelector = false;
-                  this._selectedLayoutModuleIndex = -1;
-                  this._selectedNestedChildIndex = -1;
-                }}
-              >
-                ×
-              </button>
-            </div>
-            ${isAddingToLayoutModule
-              ? html`<p class="selector-subtitle">
-                  Adding to layout module (content modules and layout modules allowed up to 2 levels
-                  deep)
-                </p>`
-              : ''}
-          </div>
-
-          <!-- Tab Navigation -->
-          <div class="module-selector-tabs">
-            <button
-              class="tab-button ${this._activeModuleSelectorTab === 'modules' ? 'active' : ''}"
-              @click=${() => (this._activeModuleSelectorTab = 'modules')}
-            >
-              <ha-icon icon="mdi:puzzle"></ha-icon>
-              <span>Modules</span>
-            </button>
-            <button
-              class="tab-button ${this._activeModuleSelectorTab === '3rdparty' ? 'active' : ''}"
-              @click=${() => (this._activeModuleSelectorTab = '3rdparty')}
-            >
-              <ha-icon icon="mdi:card-multiple"></ha-icon>
-              <span>3rd Party</span>
-            </button>
-            <button
-              class="tab-button ${this._activeModuleSelectorTab === 'presets' ? 'active' : ''}"
-              @click=${() => {
-                this._activeModuleSelectorTab = 'presets';
-                // Refresh WordPress presets when presets tab is opened
-                ucPresetsService.refreshWordPressPresets();
+          <div class="selector-header-wrapper">
+            <div
+              class="selector-header"
+              @mousedown=${(e: MouseEvent) => {
+                const popup = (e.target as HTMLElement).closest('.selector-content') as HTMLElement;
+                if (popup) this._startPopupDrag(e, popup);
               }}
             >
-              <ha-icon icon="mdi:palette"></ha-icon>
-              <span>Presets</span>
-            </button>
-            <button
-              class="tab-button ${this._activeModuleSelectorTab === 'favorites' ? 'active' : ''}"
-              @click=${() => (this._activeModuleSelectorTab = 'favorites')}
-            >
-              <ha-icon icon="mdi:heart"></ha-icon>
-              <span>Favorites</span>
-            </button>
+              <div class="selector-header-top">
+                <h3>Add Module</h3>
+                <button
+                  class="close-button"
+                  title="Close"
+                  @mousedown=${(e: Event) => e.stopPropagation()}
+                  @click=${() => {
+                    this._showModuleSelector = false;
+                    this._selectedLayoutModuleIndex = -1;
+                    this._selectedNestedChildIndex = -1;
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              ${isAddingToLayoutModule
+                ? html`<p class="selector-subtitle">
+                    Adding to layout module (content modules and layout modules allowed up to 2
+                    levels deep)
+                  </p>`
+                : ''}
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="module-selector-tabs">
+              <button
+                class="tab-button ${this._activeModuleSelectorTab === 'modules' ? 'active' : ''}"
+                @click=${() => (this._activeModuleSelectorTab = 'modules')}
+              >
+                <ha-icon icon="mdi:puzzle"></ha-icon>
+                <span>Modules</span>
+              </button>
+              <button
+                class="tab-button ${this._activeModuleSelectorTab === '3rdparty' ? 'active' : ''}"
+                @click=${() => (this._activeModuleSelectorTab = '3rdparty')}
+              >
+                <ha-icon icon="mdi:card-multiple"></ha-icon>
+                <span>3rd Party</span>
+              </button>
+              <button
+                class="tab-button ${this._activeModuleSelectorTab === 'presets' ? 'active' : ''}"
+                @click=${() => {
+                  this._activeModuleSelectorTab = 'presets';
+                  // Refresh WordPress presets when presets tab is opened
+                  ucPresetsService.refreshWordPressPresets();
+                }}
+              >
+                <ha-icon icon="mdi:palette"></ha-icon>
+                <span>Presets</span>
+              </button>
+              <button
+                class="tab-button ${this._activeModuleSelectorTab === 'favorites' ? 'active' : ''}"
+                @click=${() => (this._activeModuleSelectorTab = 'favorites')}
+              >
+                <ha-icon icon="mdi:heart"></ha-icon>
+                <span>Favorites</span>
+              </button>
+            </div>
           </div>
 
           <div class="selector-body">
@@ -13470,18 +13472,21 @@ export class LayoutTab extends LitElement {
         }
       }
 
-      .selector-header {
-        position: sticky; /* keep header visible while scrolling */
+      .selector-header-wrapper {
+        position: sticky; /* keep header and tabs visible while scrolling */
         top: 0;
         z-index: ${Z_INDEX.POPUP_STICKY_ELEMENTS};
         background: var(--card-background-color);
-        padding: 20px 24px 16px; /* add horizontal padding to match container */
-        border-bottom: 1px solid var(--divider-color);
-        margin-bottom: 16px;
+        border-radius: 8px 8px 0 0; /* maintain top border radius */
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px; /* Space between sticky header/tabs and content */
+      }
+
+      .selector-header {
+        padding: 20px 24px 16px;
         cursor: move;
         user-select: none;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-        border-radius: 8px 8px 0 0; /* maintain top border radius */
+        background: var(--card-background-color);
       }
 
       .selector-header-top {
@@ -13495,6 +13500,13 @@ export class LayoutTab extends LitElement {
       .selector-header h3 {
         margin: 0; /* align vertically with X */
         flex: 1; /* push the X to the far right */
+      }
+
+      .selector-subtitle {
+        margin: 8px 0 0 0;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
       }
 
       .selector-header .close-button {
@@ -16086,7 +16098,7 @@ export class LayoutTab extends LitElement {
         display: flex;
         border-bottom: 1px solid var(--divider-color);
         background: var(--secondary-background-color);
-        margin-bottom: 16px;
+        /* Tabs are inside sticky wrapper, no separate positioning needed */
         /* Ensure tabs don't overflow on mobile */
         overflow-x: auto;
         overflow-y: hidden;
@@ -17084,9 +17096,7 @@ export class LayoutTab extends LitElement {
 
         /* Improve tab visibility on mobile */
         .module-selector-tabs {
-          position: sticky;
-          top: 0;
-          z-index: ${Z_INDEX.POPUP_TABS};
+          /* Tabs are now inside sticky header, no need for separate sticky positioning */
           background: var(--secondary-background-color);
           border-bottom: 2px solid var(--divider-color);
           gap: 0; /* Remove gap on mobile for better fit */

@@ -6,6 +6,18 @@ declare global {
     }
 }
 export type ActionType = 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+export interface UnifiedTemplateResponse {
+    icon?: string;
+    icon_color?: string;
+    name?: string;
+    name_color?: string;
+    state_text?: string;
+    state_color?: string;
+    content?: string;
+    color?: string;
+    value?: number | string;
+    label?: string;
+}
 export interface ModuleActionConfig {
     action: ActionType;
     entity?: string;
@@ -121,6 +133,9 @@ export interface TextModule extends BaseModule {
     font_style?: 'normal' | 'italic' | 'oblique';
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
     hover_effect?: 'none' | 'color' | 'scale' | 'glow' | 'lift';
@@ -281,6 +296,9 @@ export interface InfoEntityConfig {
     dynamic_icon_template?: string;
     dynamic_color_template_mode?: boolean;
     dynamic_color_template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     icon_position?: 'left' | 'right' | 'top' | 'bottom';
     icon_alignment?: 'start' | 'center' | 'end';
     content_alignment?: 'start' | 'center' | 'end';
@@ -403,6 +421,9 @@ export interface BarModule extends BaseModule {
     animation?: boolean;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     bar_animation_enabled?: boolean;
     bar_animation_entity?: string;
     bar_animation_trigger_type?: 'state' | 'attribute';
@@ -521,6 +542,9 @@ export interface GaugeModule extends BaseModule {
     }>;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -663,6 +687,9 @@ export interface IconConfig {
     dynamic_icon_template?: string;
     dynamic_color_template_mode?: boolean;
     dynamic_color_template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
 }
 export interface IconModule extends BaseModule {
     type: 'icon';
@@ -1038,6 +1065,9 @@ export interface SpinboxModule extends BaseModule {
     value_font_size?: number;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1070,6 +1100,9 @@ export interface MarkdownModule extends BaseModule {
     hide_if_no_link?: boolean;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     font_size?: number;
     font_family?: string;
     color?: string;
@@ -1160,6 +1193,9 @@ export interface CameraModule extends BaseModule {
     };
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }

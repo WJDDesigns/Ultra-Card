@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta4
+
+### 🧪 Experimental Features
+
+- **New Template System for Testing** - Experimental template evaluation system for advanced testing and validation
+
+---
+
 ## Version 2.1.0-beta3
 
 ### 🐛 Bug Fixes & Improvements

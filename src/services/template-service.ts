@@ -68,11 +68,14 @@ export class TemplateService {
    * Subscribe to a template and store results for later use
    * @param template The template string to subscribe to
    * @param templateKey The unique key to identify this template subscription
+   * @param onResultChanged Optional callback when template result changes
+   * @param variables Optional context variables to pass to the template (for entity context)
    */
   public async subscribeToTemplate(
     template: string,
     templateKey: string,
-    onResultChanged?: () => void
+    onResultChanged?: () => void,
+    variables?: Record<string, any>
   ): Promise<void> {
     if (!template || !this.hass) {
       return;
@@ -120,13 +123,14 @@ export class TemplateService {
         {
           type: 'render_template',
           template: template,
+          variables: variables || {}, // Pass entity context variables to HA
         }
       );
 
       // Store the unsubscribe function directly instead of wrapping it in a Promise
       this._templateSubscriptions.set(templateKey, Promise.resolve(unsubFunc));
     } catch (err) {
-      console.error(`[UltraVehicleCard] Failed to subscribe to template: ${template}`, err);
+      console.error(`[UltraCard] Failed to subscribe to template: ${template}`, err);
     }
   }
 

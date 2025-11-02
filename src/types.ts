@@ -19,6 +19,24 @@ export type ActionType =
   | 'assist'
   | 'nothing';
 
+// Unified Template Response (parsed from JSON template results)
+export interface UnifiedTemplateResponse {
+  // Display properties (icon module)
+  icon?: string;
+  icon_color?: string;
+  // Display properties (general)
+  name?: string;
+  name_color?: string;
+  state_text?: string;
+  state_color?: string;
+  // Display properties (text/content modules)
+  content?: string;
+  color?: string;
+  // Display properties (bar module)
+  value?: number | string;
+  label?: string;
+}
+
 export interface ModuleActionConfig {
   action: ActionType;
   entity?: string;
@@ -248,6 +266,10 @@ export interface TextModule extends BaseModule {
   font_style?: 'normal' | 'italic' | 'oblique';
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -475,6 +497,10 @@ export interface InfoEntityConfig {
   dynamic_icon_template?: string;
   dynamic_color_template_mode?: boolean;
   dynamic_color_template?: string;
+  // Unified template system (replaces multiple template boxes)
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Icon positioning and alignment
   icon_position?: 'left' | 'right' | 'top' | 'bottom';
   icon_alignment?: 'start' | 'center' | 'end';
@@ -670,6 +696,10 @@ export interface BarModule extends BaseModule {
   animation?: boolean;
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
 
   // Bar Animation (state/attribute triggered)
   bar_animation_enabled?: boolean;
@@ -906,6 +936,10 @@ export interface GaugeModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
 
   // Global action configuration
   tap_action?: {
@@ -1179,6 +1213,11 @@ export interface IconConfig {
   dynamic_icon_template?: string;
   dynamic_color_template_mode?: boolean;
   dynamic_color_template?: string;
+
+  // Unified template system (replaces multiple template boxes)
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean; // When true, template controls state logic too
 }
 
 // Icon Module
@@ -1878,6 +1917,10 @@ export interface SpinboxModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Global action configuration
   tap_action?: {
     action:
@@ -1937,6 +1980,10 @@ export interface MarkdownModule extends BaseModule {
   hide_if_no_link?: boolean;
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Styling options
   font_size?: number;
   font_family?: string;
@@ -2110,6 +2157,10 @@ export interface CameraModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;

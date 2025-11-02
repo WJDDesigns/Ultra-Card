@@ -40,10 +40,6 @@ setTimeout(() => {
       }
     }
 
-    if (!hassFound) {
-      console.log('⚠️ No hass found on ultra-card elements yet');
-    }
-
     const isPro = integrationUser?.subscription?.tier === 'pro';
 
     if (isPro) {

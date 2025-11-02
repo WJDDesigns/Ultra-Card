@@ -40,8 +40,10 @@ export declare class TemplateService {
      * Subscribe to a template and store results for later use
      * @param template The template string to subscribe to
      * @param templateKey The unique key to identify this template subscription
+     * @param onResultChanged Optional callback when template result changes
+     * @param variables Optional context variables to pass to the template (for entity context)
      */
-    subscribeToTemplate(template: string, templateKey: string, onResultChanged?: () => void): Promise<void>;
+    subscribeToTemplate(template: string, templateKey: string, onResultChanged?: () => void, variables?: Record<string, any>): Promise<void>;
     /**
      * Helper method to parse template results consistently
      * @param result The raw result from the template evaluation
