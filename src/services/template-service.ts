@@ -141,6 +141,14 @@ export class TemplateService {
    * @returns Boolean interpretation of the template result
    */
   public parseTemplateResult(result: any, templateKey?: string): boolean {
+    // Check if this is a unified template (which should not be interpreted as boolean)
+    if (templateKey && templateKey.startsWith('unified_')) {
+      // Unified templates return JSON or strings that are parsed by the module
+      // The original string value is stored in __uvc_template_strings
+      // Return true to indicate the template was successfully processed
+      return true;
+    }
+
     // Check if this is an info entity template (which should not be interpreted as boolean)
     if (templateKey && templateKey.startsWith('info_entity_')) {
       // Info entity templates should preserve their actual values

@@ -8,6 +8,8 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { TemplateService } from '../services/template-service';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
 
@@ -60,6 +62,8 @@ export class UltraSpinboxModule extends BaseUltraModule {
       smart_scaling: true,
       // Template support
       template_mode: false,
+      unified_template_mode: false,
+      unified_template: '',
       template: '',
     };
   }

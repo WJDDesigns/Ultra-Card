@@ -39,15 +39,45 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     return { _error: 'Template returned undefined or null' };
   }
 
+  // If Home Assistant returns an object directly (not a string), use it as-is
+  if (typeof templateResult === 'object' && !Array.isArray(templateResult)) {
+    // Sanitize and validate properties
+    const result: UnifiedTemplateResult = {};
+
+    // Icon module properties
+    if (templateResult.icon !== undefined) result.icon = String(templateResult.icon);
+    if (templateResult.icon_color !== undefined)
+      result.icon_color = String(templateResult.icon_color);
+    if (templateResult.name !== undefined) result.name = String(templateResult.name);
+    if (templateResult.name_color !== undefined)
+      result.name_color = String(templateResult.name_color);
+    if (templateResult.state_text !== undefined)
+      result.state_text = String(templateResult.state_text);
+    if (templateResult.state_color !== undefined)
+      result.state_color = String(templateResult.state_color);
+
+    // Text/content module properties
+    if (templateResult.content !== undefined) result.content = String(templateResult.content);
+    if (templateResult.color !== undefined) result.color = String(templateResult.color);
+
+    // Bar module properties
+    if (templateResult.value !== undefined) result.value = templateResult.value;
+    if (templateResult.label !== undefined) result.label = String(templateResult.label);
+
+    return result;
+  }
+
   const resultStr = String(templateResult).trim();
 
   if (resultStr === '') {
     return { _error: 'Template returned empty string' };
   }
 
-  // Check if result is JSON
-  if ((resultStr.startsWith('{') && resultStr.endsWith('}')) || 
-      (resultStr.startsWith('[') && resultStr.endsWith(']'))) {
+  // Check if result is JSON string
+  if (
+    (resultStr.startsWith('{') && resultStr.endsWith('}')) ||
+    (resultStr.startsWith('[') && resultStr.endsWith(']'))
+  ) {
     try {
       const parsed = JSON.parse(resultStr);
 
@@ -157,4 +187,3 @@ export function validateUnifiedTemplate(template: string): { valid: boolean; err
     errors,
   };
 }
-

@@ -2020,13 +2020,21 @@ export class UltraInfoModule extends BaseUltraModule {
                   displayValue = 'N/A';
                 }
               }
+
+              // Override displayValue with template state_text if available
+              if ((entity as any)._template_state_text !== undefined) {
+                displayValue = (entity as any)._template_state_text;
+              }
+
               const hasCustomName =
                 originalEntity.name !== undefined &&
                 originalEntity.name !== null &&
                 String(originalEntity.name).trim() !== '';
-              const displayName = hasCustomName
-                ? String(originalEntity.name)
-                : entityState?.attributes?.friendly_name || entity.entity;
+              const displayName =
+                (entity as any)._template_name ||
+                (hasCustomName
+                  ? String(originalEntity.name)
+                  : entityState?.attributes?.friendly_name || entity.entity);
               // Get base icon and color
               let displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
               let displayIconColor =
@@ -2076,6 +2084,19 @@ export class UltraInfoModule extends BaseUltraModule {
                   if (!hasTemplateError(parsed)) {
                     if (parsed.icon) displayIcon = parsed.icon;
                     if (parsed.icon_color) displayIconColor = parsed.icon_color;
+                    // Store template properties for later use
+                    if (parsed.name) {
+                      (entity as any)._template_name = parsed.name;
+                    }
+                    if (parsed.state_text !== undefined) {
+                      (entity as any)._template_state_text = parsed.state_text;
+                    }
+                    if (parsed.name_color) {
+                      (entity as any)._template_name_color = parsed.name_color;
+                    }
+                    if (parsed.state_color) {
+                      (entity as any)._template_state_color = parsed.state_color;
+                    }
                   }
                 }
               }
@@ -2251,7 +2272,8 @@ export class UltraInfoModule extends BaseUltraModule {
                         <div
                           class="entity-name"
                           style="
-                    color: ${designProperties.color ||
+                    color: ${(entity as any)._template_name_color ||
+                          designProperties.color ||
                           entity.name_color ||
                           'var(--secondary-text-color)'};
                     font-size: ${getFontSizeWithUnits(
@@ -2282,7 +2304,8 @@ export class UltraInfoModule extends BaseUltraModule {
                         <div
                           class="entity-value"
                           style="
-                        color: ${designProperties.color ||
+                        color: ${(entity as any)._template_state_color ||
+                          designProperties.color ||
                           entity.state_color ||
                           entity.text_color ||
                           'var(--primary-text-color)'};

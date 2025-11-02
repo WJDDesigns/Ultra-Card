@@ -2557,6 +2557,19 @@ export class UltraIconModule extends BaseUltraModule {
                   if (!hasTemplateError(parsed)) {
                     if (parsed.icon) displayIcon = parsed.icon;
                     if (parsed.icon_color) displayColor = parsed.icon_color;
+                    // Store template name, state_text, and colors for later use
+                    if (parsed.name) {
+                      (icon as any)._template_name = parsed.name;
+                    }
+                    if (parsed.state_text !== undefined) {
+                      (icon as any)._template_state_text = parsed.state_text;
+                    }
+                    if (parsed.name_color) {
+                      (icon as any)._template_name_color = parsed.name_color;
+                    }
+                    if (parsed.state_color) {
+                      (icon as any)._template_state_color = parsed.state_color;
+                    }
                   }
                 }
               }
@@ -2656,9 +2669,11 @@ export class UltraIconModule extends BaseUltraModule {
               }
 
               const nameColor =
+                (icon as any)._template_name_color ||
                 designProperties.color ||
                 (isActive ? icon.active_name_color : icon.inactive_name_color);
               const stateColor =
+                (icon as any)._template_state_color ||
                 designProperties.color ||
                 (isActive ? icon.active_state_color : icon.inactive_state_color);
 
@@ -2682,20 +2697,26 @@ export class UltraIconModule extends BaseUltraModule {
                     : undefined,
               };
 
-              const displayName = isActive
-                ? icon.custom_active_name_text ||
-                  icon.name ||
-                  entityState?.attributes?.friendly_name ||
-                  icon.entity
-                : icon.custom_inactive_name_text ||
-                  icon.name ||
-                  entityState?.attributes?.friendly_name ||
-                  icon.entity;
+              const displayName =
+                (icon as any)._template_name ||
+                (isActive
+                  ? icon.custom_active_name_text ||
+                    icon.name ||
+                    entityState?.attributes?.friendly_name ||
+                    icon.entity
+                  : icon.custom_inactive_name_text ||
+                    icon.name ||
+                    entityState?.attributes?.friendly_name ||
+                    icon.entity);
 
               let displayState: string;
 
-              // Check template_mode first for state text
-              if (icon.template_mode && icon.template) {
+              // PRIORITY 1: Check unified template state_text first
+              if ((icon as any)._template_state_text !== undefined) {
+                displayState = (icon as any)._template_state_text;
+              }
+              // PRIORITY 2: Check template_mode for state text (legacy)
+              else if (icon.template_mode && icon.template) {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
@@ -3522,6 +3543,19 @@ export class UltraIconModule extends BaseUltraModule {
         if (!hasTemplateError(parsed)) {
           if (parsed.icon) displayIcon = parsed.icon;
           if (parsed.icon_color) displayColor = parsed.icon_color;
+          // Store template name, state_text, and colors for later use
+          if (parsed.name) {
+            (icon as any)._template_name = parsed.name;
+          }
+          if (parsed.state_text !== undefined) {
+            (icon as any)._template_state_text = parsed.state_text;
+          }
+          if (parsed.name_color) {
+            (icon as any)._template_name_color = parsed.name_color;
+          }
+          if (parsed.state_color) {
+            (icon as any)._template_state_color = parsed.state_color;
+          }
         }
       }
     }
@@ -3595,9 +3629,11 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     const nameColor =
+      (icon as any)._template_name_color ||
       designProperties?.color ||
       (isActiveState ? icon.active_name_color : icon.inactive_name_color);
     const stateColor =
+      (icon as any)._template_state_color ||
       designProperties?.color ||
       (isActiveState ? icon.active_state_color : icon.inactive_state_color);
 
@@ -3633,20 +3669,26 @@ export class UltraIconModule extends BaseUltraModule {
           textShadow: undefined,
         };
 
-    const displayName = isActiveState
-      ? icon.custom_active_name_text ||
-        icon.name ||
-        entityState?.attributes?.friendly_name ||
-        icon.entity
-      : icon.custom_inactive_name_text ||
-        icon.name ||
-        entityState?.attributes?.friendly_name ||
-        icon.entity;
+    const displayName =
+      (icon as any)._template_name ||
+      (isActiveState
+        ? icon.custom_active_name_text ||
+          icon.name ||
+          entityState?.attributes?.friendly_name ||
+          icon.entity
+        : icon.custom_inactive_name_text ||
+          icon.name ||
+          entityState?.attributes?.friendly_name ||
+          icon.entity);
 
     let displayState: string;
 
-    // Check if template mode is enabled for state text customization
-    if (icon.template_mode && icon.template) {
+    // PRIORITY 1: Check unified template state_text first
+    if ((icon as any)._template_state_text !== undefined) {
+      displayState = (icon as any)._template_state_text;
+    }
+    // PRIORITY 2: Check if template mode is enabled for state text customization (legacy)
+    else if (icon.template_mode && icon.template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -4042,9 +4084,11 @@ export class UltraIconModule extends BaseUltraModule {
                 : icon.inactive_icon_color;
 
           const nameColor =
+            (icon as any)._template_name_color ||
             designProperties.color ||
             (isActive ? icon.active_name_color : icon.inactive_name_color);
           const stateColor =
+            (icon as any)._template_state_color ||
             designProperties.color ||
             (isActive ? icon.active_state_color : icon.inactive_state_color);
 
@@ -4068,20 +4112,27 @@ export class UltraIconModule extends BaseUltraModule {
                 : undefined,
           };
 
-          const displayName = isActive
-            ? icon.custom_active_name_text ||
-              icon.name ||
-              entityState?.attributes?.friendly_name ||
-              icon.entity
-            : icon.custom_inactive_name_text ||
-              icon.name ||
-              entityState?.attributes?.friendly_name ||
-              icon.entity;
+          const displayName =
+            (icon as any)._template_name ||
+            (isActive
+              ? icon.custom_active_name_text ||
+                icon.name ||
+                entityState?.attributes?.friendly_name ||
+                icon.entity
+              : icon.custom_inactive_name_text ||
+                icon.name ||
+                entityState?.attributes?.friendly_name ||
+                icon.entity);
 
           let displayState: string;
 
-          // Use the new display state helper that checks for attributes
-          displayState = this._getDisplayStateValue(icon, hass, isActive);
+          // PRIORITY 1: Check unified template state_text first
+          if ((icon as any)._template_state_text !== undefined) {
+            displayState = (icon as any)._template_state_text;
+          } else {
+            // Use the new display state helper that checks for attributes
+            displayState = this._getDisplayStateValue(icon, hass, isActive);
+          }
 
           // Icon background styles - use active/inactive specific properties
           const iconBackground = isActive

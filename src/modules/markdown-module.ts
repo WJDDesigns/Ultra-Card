@@ -9,6 +9,8 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { marked } from 'marked';
 
 export class UltraMarkdownModule extends BaseUltraModule {
@@ -102,6 +104,8 @@ All standard markdown features are automatically enabled!`,
       enable_code_highlighting: true,
       // Template configuration
       template_mode: false,
+      unified_template_mode: false,
+      unified_template: '',
       template: '',
       // Global action configuration
       tap_action: { action: 'nothing' },
@@ -694,11 +698,53 @@ All standard markdown features are automatically enabled!`,
     };
 
     // Create a cache key for this content
-    // Use template content if template mode is enabled, otherwise use markdown content
-    const sourceContent =
-      markdownModule.template_mode && markdownModule.template
-        ? markdownModule.template
-        : markdownModule.markdown_content || '';
+    // PRIORITY 1: Unified template
+    let sourceContent = '';
+    let contentColor: string | undefined;
+    
+    if (markdownModule.unified_template_mode && markdownModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (hass) {
+        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+        const templateHash = this._hashString(markdownModule.unified_template);
+        const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
+        
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            markdown_content: markdownModule.markdown_content,
+          });
+          this._templateService.subscribeToTemplate(markdownModule.unified_template, templateKey, () => {
+            if (typeof window !== 'undefined') {
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
+            }
+          }, context);
+        }
+        
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.content !== undefined) sourceContent = parsed.content;
+            if (parsed.color) contentColor = parsed.color;
+          }
+        }
+      }
+    }
+    // PRIORITY 2: Legacy template mode
+    else if (markdownModule.template_mode && markdownModule.template) {
+      sourceContent = markdownModule.template;
+    }
+    // PRIORITY 3: Regular markdown content
+    else {
+      sourceContent = markdownModule.markdown_content || '';
+    }
 
     const contentKey = `${markdownModule.id}_${this._hashString(sourceContent)}`;
 

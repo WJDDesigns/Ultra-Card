@@ -1,5 +1,41 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta5
+
+### 🚀 Major Features
+
+- **Unified Template System** - Revolutionary new template system that replaces multiple template boxes with one powerful unified template
+  - Control multiple properties from a single template (icon, color, name, state text, and their colors)
+  - Uses entity context variables (`state`, `entity`, `attributes`, `name`) for seamless entity remapping
+  - Returns JSON objects for multi-property control or simple strings for single properties
+  - Fully implemented in 5 core modules: Icon, Info, Text, Bar, and Markdown
+  - Basic structure added to Graphs, Spinbox, and Camera modules
+  - See UNIFIED_TEMPLATES.md for complete documentation and examples
+
+### 🐛 Bug Fixes
+
+- **Fixed Template Object Parsing** - Fixed critical bug where Home Assistant returned templates as objects instead of strings
+- **Fixed Template Boolean Parsing** - Templates are no longer incorrectly interpreted as boolean values
+- **Removed Debug Logging** - Cleaned up console output for production use
+
+### 📋 Module Support
+
+**Fully Supported (6 Properties)**:
+- Icon Module: `icon`, `icon_color`, `name`, `name_color`, `state_text`, `state_color`
+- Info Module: `icon`, `icon_color`, `name`, `name_color`, `state_text`, `state_color`
+
+**Fully Supported (Content + Color)**:
+- Text Module: `content`, `color`
+- Bar Module: `value`, `color`
+- Markdown Module: `content`, `color`
+
+**Basic Structure Added**:
+- Graphs Module (fields added, rendering TBD)
+- Spinbox Module (fields added, rendering TBD)  
+- Camera Module (fields added, rendering TBD)
+
+---
+
 ## Version 2.1.0-beta4
 
 ### 🧪 Experimental Features

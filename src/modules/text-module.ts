@@ -10,6 +10,8 @@ import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -46,6 +48,8 @@ export class UltraTextModule extends BaseUltraModule {
       icon_position: 'before',
       template_mode: false,
       template: '',
+      unified_template_mode: false,
+      unified_template: '',
       // Hover configuration
       enable_hover_effect: true,
       hover_background_color: 'var(--divider-color)',
@@ -502,6 +506,10 @@ export class UltraTextModule extends BaseUltraModule {
       right: 'flex-end',
     };
 
+    // Declare template variables before textStyles
+    let displayText: string = textModule.text || 'Sample Text';
+    let displayColor: string | undefined;
+
     const textStyles = {
       fontSize: (() => {
         if (
@@ -520,7 +528,7 @@ export class UltraTextModule extends BaseUltraModule {
         return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
-      color: designProperties.color || moduleWithDesign.color || 'inherit',
+      color: displayColor || designProperties.color || moduleWithDesign.color || 'inherit',
       textAlign: chosenAlign,
       fontWeight: (() => {
         if (designProperties.font_weight) return designProperties.font_weight;
@@ -570,8 +578,52 @@ export class UltraTextModule extends BaseUltraModule {
       : '';
 
     // Determine display text: prefer template result if template_mode is enabled
-    let displayText: string = textModule.text || 'Sample Text';
-    if (textModule.template_mode && textModule.template) {
+    // PRIORITY 1: Unified template (if enabled)
+    if (textModule.unified_template_mode && textModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(textModule.unified_template);
+        const templateKey = `unified_text_${textModule.id}_${templateHash}`;
+
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            text: textModule.text,
+          });
+          this._templateService.subscribeToTemplate(
+            textModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.content !== undefined) displayText = parsed.content;
+            if (parsed.color) displayColor = parsed.color;
+          }
+        }
+      }
+    }
+    // PRIORITY 2: Legacy template mode
+    else if (textModule.template_mode && textModule.template) {
       // Initialize template service
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -710,8 +762,7 @@ export class UltraTextModule extends BaseUltraModule {
       color: designProperties.background_color || moduleWithDesign.background_color,
       fallback: moduleWithDesign.background_color || 'inherit',
       image: this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass),
-      imageSize:
-        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',
       imagePosition:
         designProperties.background_position || moduleWithDesign.background_position || 'center',
       imageRepeat:

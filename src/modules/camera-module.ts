@@ -89,6 +89,8 @@ export class UltraCameraModule extends BaseUltraModule {
 
       // Template support
       template_mode: false,
+      unified_template_mode: false,
+      unified_template: '',
       template: '',
 
       // Global design defaults for camera module - responsive by default

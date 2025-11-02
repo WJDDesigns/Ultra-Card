@@ -3,6 +3,8 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '../types';
 import { TemplateService } from '../services/template-service';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
@@ -190,6 +192,8 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       // Templates
       template_mode: false,
+      unified_template_mode: false,
+      unified_template: '',
       template: '',
 
       // Logic (visibility) defaults

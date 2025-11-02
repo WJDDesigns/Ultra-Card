@@ -13,6 +13,8 @@ import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import {
   GradientStop,
   generateGradientString,
@@ -140,6 +142,8 @@ export class UltraBarModule extends BaseUltraModule {
       animation: true,
       template_mode: false,
       template: '',
+      unified_template_mode: false,
+      unified_template: '',
 
       // Bar Animation (state/attribute triggered)
       bar_animation_enabled: false,
@@ -3316,15 +3320,62 @@ export class UltraBarModule extends BaseUltraModule {
 
     // Resolve bar percentage based on selected percentage calculation mode
     let percentage = 0;
+    let barColor: string | undefined;
+    let barLabel: string | undefined;
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
+    
+    // PRIORITY 1: Unified template (if enabled)
+    if (barModule.unified_template_mode && barModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (hass) {
+        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+        const templateHash = this._hashString(barModule.unified_template);
+        const templateKey = `unified_bar_${barModule.id}_${templateHash}`;
+        
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext(barModule.entity, hass, {
+            entity: barModule.entity,
+          });
+          this._templateService.subscribeToTemplate(barModule.unified_template, templateKey, () => {
+            if (typeof window !== 'undefined') {
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
+            }
+          }, context);
+        }
+        
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.value !== undefined) {
+              const num = typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
+              if (!isNaN(num)) {
+                percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
+              }
+            }
+            if (parsed.color) barColor = parsed.color;
+            if (parsed.label) barLabel = parsed.label;
+          }
+        }
+      }
+    }
 
     // For preview purposes, if no entity is configured, show a demo bar with 65%
     const hasValidEntity = barModule.entity && hass?.states[barModule.entity];
     const isPreviewMode = !hasValidEntity;
 
-    const pctType = (barModule as any).percentage_type || 'entity';
-    if (pctType === 'template' && (barModule as any).percentage_template) {
+    // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
+    if (!barModule.unified_template_mode) {
+      const pctType = (barModule as any).percentage_type || 'entity';
+      if (pctType === 'template' && (barModule as any).percentage_template) {
       // Template-driven percentage
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -3398,11 +3449,12 @@ export class UltraBarModule extends BaseUltraModule {
           maxValue = 100;
         }
       }
-      percentage = clampPercent((value / maxValue) * 100);
+        percentage = clampPercent((value / maxValue) * 100);
+      }
     }
 
     // If in preview mode (no valid entity), show demo percentage
-    if (isPreviewMode) {
+    if (isPreviewMode && !barModule.unified_template_mode) {
       percentage = 65; // Demo value for preview
     }
 
@@ -3550,7 +3602,7 @@ export class UltraBarModule extends BaseUltraModule {
         : (resolvedBorderRadius as number);
 
     // Generate gradient or solid color for bar fill
-    let barFillBackground = barModule.bar_color || moduleWithDesign.color || 'var(--primary-color)';
+    let barFillBackground = barColor || barModule.bar_color || moduleWithDesign.color || 'var(--primary-color)';
 
     // Resolve CSS variable colors (var(--...)) to computed RGB values when needed.
     // This ensures gradients and value-based colors render the same whether a hex or a CSS variable is provided.
