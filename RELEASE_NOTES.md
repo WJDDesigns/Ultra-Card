@@ -22,7 +22,7 @@ The "Migrate to Unified Template" button now generates properly formatted JSON:
 - Clean single-line format
 - Result: Valid JSON that parses correctly
 
-Thanks to @LightningManGTS and @Konijntje for reporting this issue!
+Thanks LightningManGTS and Konijntje for reporting!
 
 ---
 
