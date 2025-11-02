@@ -13,16 +13,14 @@
 The "Migrate to Unified Template" button now generates properly formatted JSON:
 
 **Before (Broken)**:
-```
-{
-  "icon_color": {% if ... %} #43a047 {% else %} #ffa600 {% endif %}
-}
-```
+- icon_color property was missing quotes around template code
+- Multi-line format with excessive whitespace
+- Result: Invalid JSON that wouldn't parse
 
 **After (Fixed)**:
-```
-{ "icon_color": "{% if ... %} #43a047 {% else %} #ffa600 {% endif %}" }
-```
+- Template code properly wrapped in quotes for valid JSON
+- Clean single-line format
+- Result: Valid JSON that parses correctly
 
 Thanks to @LightningManGTS and @Konijntje for reporting this issue!
 
