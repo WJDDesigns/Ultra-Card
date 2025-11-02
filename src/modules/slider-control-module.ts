@@ -100,6 +100,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
               show_icon: true,
               show_name: true,
               show_value: true,
+              // Individual element positioning
+              icon_position: 'left',
+              name_position: 'left',
+              value_position: 'right',
+              info_section_position: 'left',
+              // Legacy positioning (backward compatibility)
               outside_text_position: 'left',
               outside_name_position: 'top_left',
               outside_value_position: 'bottom_left',
@@ -119,6 +125,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 show_icon: true,
                 show_name: true,
                 show_value: true,
+                // Individual element positioning
+                icon_position: 'left',
+                name_position: 'left',
+                value_position: 'right',
+                info_section_position: 'left',
+                // Legacy positioning (backward compatibility)
                 outside_text_position: 'left',
                 outside_name_position: 'top_left',
                 outside_value_position: 'bottom_left',
@@ -139,6 +151,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 show_icon: true,
                 show_name: true,
                 show_value: true,
+                // Individual element positioning
+                icon_position: 'left',
+                name_position: 'left',
+                value_position: 'right',
+                info_section_position: 'left',
+                // Legacy positioning (backward compatibility)
                 outside_text_position: 'left',
                 outside_name_position: 'top_left',
                 outside_value_position: 'bottom_left',
@@ -156,6 +174,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
             show_icon: true,
             show_name: true,
             show_value: true,
+            // Individual element positioning
+            icon_position: 'left',
+            name_position: 'left',
+            value_position: 'right',
+            info_section_position: 'left',
+            // Legacy positioning (backward compatibility)
             outside_text_position: 'left',
             outside_name_position: 'top_left',
             outside_value_position: 'bottom_left',
@@ -171,6 +195,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
             show_icon: true,
             show_name: true,
             show_value: true,
+            // Individual element positioning
+            icon_position: 'left',
+            name_position: 'left',
+            value_position: 'right',
+            info_section_position: 'left',
+            // Legacy positioning (backward compatibility)
             outside_text_position: 'left',
             outside_name_position: 'top_left',
             outside_value_position: 'bottom_left',
@@ -187,6 +217,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
             show_icon: true,
             show_name: true,
             show_value: true,
+            // Individual element positioning
+            icon_position: 'left',
+            name_position: 'left',
+            value_position: 'right',
+            info_section_position: 'left',
+            // Legacy positioning (backward compatibility)
             outside_text_position: 'left',
             outside_name_position: 'top_left',
             outside_value_position: 'bottom_left',
@@ -205,7 +241,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
       // Orientation & Layout
       orientation: 'horizontal',
       layout_mode: 'overlay',
-      overlay_position: 'left',
       outside_text_position: 'left',
       outside_name_position: 'top_left',
       outside_value_position: 'bottom_left',
@@ -464,12 +499,19 @@ export class UltraSliderControlModule extends BaseUltraModule {
       show_icon: true,
       show_name: true,
       show_value: true,
+      // Individual element positioning (modern approach)
+      icon_position: 'left',
+      name_position: 'left',
+      value_position: 'right',
+      info_section_position: 'left',
+      // Legacy positioning (kept for backward compatibility)
       outside_text_position: 'left',
       outside_name_position: 'top_left',
       outside_value_position: 'bottom_left',
       overlay_name_position: 'top',
       overlay_value_position: 'middle',
       overlay_icon_position: 'bottom',
+      content_position: 'left',
       // Default style settings for new bars
       slider_style: 'flat',
       dynamic_icon: true,
@@ -1160,44 +1202,187 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       updateModule({ bars: updatedBars });
                     }
                   )}
+                  ${(() => {
+                    const layoutMode = sliderControl.layout_mode || 'overlay';
+                    const orientation = sliderControl.orientation || 'horizontal';
+
+                    // Determine positioning options based on layout and orientation
+                    let positionOptions: { value: string; label: string }[] = [];
+
+                    if (layoutMode === 'overlay') {
+                      if (orientation === 'horizontal') {
+                        positionOptions = [
+                          { value: 'left', label: 'Left' },
+                          { value: 'center', label: 'Center' },
+                          { value: 'right', label: 'Right' },
+                        ];
+                      } else {
+                        positionOptions = [
+                          { value: 'bottom', label: 'Bottom' },
+                          { value: 'center', label: 'Center' },
+                          { value: 'top', label: 'Top' },
+                        ];
+                      }
+                    } else if (layoutMode === 'split') {
+                      if (orientation === 'horizontal') {
+                        positionOptions = [
+                          { value: 'left', label: 'Left' },
+                          { value: 'right', label: 'Right' },
+                        ];
+                      } else {
+                        positionOptions = [
+                          { value: 'top', label: 'Top' },
+                          { value: 'bottom', label: 'Bottom' },
+                        ];
+                      }
+                    } else if (layoutMode === 'outside') {
+                      if (orientation === 'horizontal') {
+                        positionOptions = [
+                          { value: 'top_left', label: 'Top Left' },
+                          { value: 'top_center', label: 'Top Center' },
+                          { value: 'top_right', label: 'Top Right' },
+                          { value: 'bottom_left', label: 'Bottom Left' },
+                          { value: 'bottom_center', label: 'Bottom Center' },
+                          { value: 'bottom_right', label: 'Bottom Right' },
+                        ];
+                      } else {
+                        positionOptions = [
+                          { value: 'left_top', label: 'Left Top' },
+                          { value: 'left_center', label: 'Left Center' },
+                          { value: 'left_bottom', label: 'Left Bottom' },
+                          { value: 'right_top', label: 'Right Top' },
+                          { value: 'right_center', label: 'Right Center' },
+                          { value: 'right_bottom', label: 'Right Bottom' },
+                        ];
+                      }
+                    }
+
+                    return html`
+                      <div
+                        style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                      >
+                        <div
+                          style="font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px;"
+                        >
+                          ELEMENT POSITIONING
+                        </div>
+
+                        ${bar.show_icon !== false && sliderControl.show_icon !== false
+                          ? html`
+                              ${this.renderFieldSection(
+                                'Icon Position',
+                                'Position of the icon element',
+                                homeAssistant,
+                                {
+                                  icon_position: bar.icon_position || 'left',
+                                },
+                                [this.selectField('icon_position', positionOptions)],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = {
+                                      ...updatedBars[barIndex],
+                                      icon_position: e.detail.value.icon_position,
+                                    };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+                            `
+                          : ''}
+                        ${bar.show_name !== false && sliderControl.show_name !== false
+                          ? html`
+                              ${this.renderFieldSection(
+                                'Name Position',
+                                'Position of the name label',
+                                homeAssistant,
+                                {
+                                  name_position: bar.name_position || 'left',
+                                },
+                                [this.selectField('name_position', positionOptions)],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = {
+                                      ...updatedBars[barIndex],
+                                      name_position: e.detail.value.name_position,
+                                    };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+                            `
+                          : ''}
+                        ${bar.show_value !== false && sliderControl.show_value !== false
+                          ? html`
+                              ${this.renderFieldSection(
+                                'Value Position',
+                                'Position of the value display',
+                                homeAssistant,
+                                {
+                                  value_position: bar.value_position || 'right',
+                                },
+                                [this.selectField('value_position', positionOptions)],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = {
+                                      ...updatedBars[barIndex],
+                                      value_position: e.detail.value.value_position,
+                                    };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+                            `
+                          : ''}
+                        ${layoutMode === 'split'
+                          ? html`
+                              ${this.renderFieldSection(
+                                'Info Section Position',
+                                'Position of the entire info section relative to the bar',
+                                homeAssistant,
+                                {
+                                  info_section_position:
+                                    bar.info_section_position ||
+                                    (orientation === 'horizontal' ? 'left' : 'top'),
+                                },
+                                [
+                                  this.selectField(
+                                    'info_section_position',
+                                    orientation === 'horizontal'
+                                      ? [
+                                          { value: 'left', label: 'Left' },
+                                          { value: 'right', label: 'Right' },
+                                        ]
+                                      : [
+                                          { value: 'top', label: 'Top' },
+                                          { value: 'bottom', label: 'Bottom' },
+                                        ]
+                                  ),
+                                ],
+                                (e: CustomEvent) => {
+                                  const updatedBars = [...(sliderControl.bars || [])];
+                                  const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                                  if (barIndex !== -1) {
+                                    updatedBars[barIndex] = {
+                                      ...updatedBars[barIndex],
+                                      info_section_position: e.detail.value.info_section_position,
+                                    };
+                                  }
+                                  updateModule({ bars: updatedBars });
+                                }
+                              )}
+                            `
+                          : ''}
+                      </div>
+                    `;
+                  })()}
                   ${sliderControl.layout_mode === 'split'
                     ? html`
-                        ${this.renderFieldSection(
-                          'Bar Position',
-                          sliderControl.orientation === 'vertical'
-                            ? 'Where to position this bar relative to info content'
-                            : 'Where to position this bar relative to info content',
-                          homeAssistant,
-                          {
-                            split_bar_position:
-                              bar.split_bar_position || sliderControl.split_bar_position || 'left',
-                          },
-                          [
-                            this.selectField(
-                              'split_bar_position',
-                              sliderControl.orientation === 'vertical'
-                                ? [
-                                    { value: 'left', label: 'Top' },
-                                    { value: 'right', label: 'Bottom' },
-                                  ]
-                                : [
-                                    { value: 'left', label: 'Left' },
-                                    { value: 'right', label: 'Right' },
-                                  ]
-                            ),
-                          ],
-                          (e: CustomEvent) => {
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                split_bar_position: e.detail.value.split_bar_position,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }
-                        )}
                         <div class="field-container">
                           <div class="field-title">Bar Length</div>
                           <div class="field-description">Percentage of space for bar (0-100%)</div>
@@ -1247,201 +1432,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
                               style="width: 70px;"
                             />
                           </div>
-                        </div>
-                      `
-                    : ''}
-                  ${sliderControl.layout_mode === 'overlay' &&
-                  sliderControl.orientation === 'vertical'
-                    ? html`
-                        ${this.renderFieldSection(
-                          'Name Position',
-                          'Where to place the name inside this bar',
-                          homeAssistant,
-                          {
-                            overlay_name_position:
-                              bar.overlay_name_position ||
-                              sliderControl.overlay_name_position ||
-                              'top',
-                          },
-                          [
-                            this.selectField('overlay_name_position', [
-                              { value: 'top', label: 'Top' },
-                              { value: 'middle', label: 'Middle' },
-                              { value: 'bottom', label: 'Bottom' },
-                            ]),
-                          ],
-                          (e: CustomEvent) => {
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                overlay_name_position: e.detail.value.overlay_name_position,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }
-                        )}
-                        ${this.renderFieldSection(
-                          'Value Position',
-                          'Where to place the value inside this bar',
-                          homeAssistant,
-                          {
-                            overlay_value_position:
-                              bar.overlay_value_position ||
-                              sliderControl.overlay_value_position ||
-                              'middle',
-                          },
-                          [
-                            this.selectField('overlay_value_position', [
-                              { value: 'top', label: 'Top' },
-                              { value: 'middle', label: 'Middle' },
-                              { value: 'bottom', label: 'Bottom' },
-                            ]),
-                          ],
-                          (e: CustomEvent) => {
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                overlay_value_position: e.detail.value.overlay_value_position,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }
-                        )}
-                        ${this.renderFieldSection(
-                          'Icon Position',
-                          'Where to place the icon inside this bar',
-                          homeAssistant,
-                          {
-                            overlay_icon_position:
-                              bar.overlay_icon_position ||
-                              sliderControl.overlay_icon_position ||
-                              'bottom',
-                          },
-                          [
-                            this.selectField('overlay_icon_position', [
-                              { value: 'top', label: 'Top' },
-                              { value: 'middle', label: 'Middle' },
-                              { value: 'bottom', label: 'Bottom' },
-                            ]),
-                          ],
-                          (e: CustomEvent) => {
-                            const updatedBars = [...(sliderControl.bars || [])];
-                            const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                            if (barIndex !== -1) {
-                              updatedBars[barIndex] = {
-                                ...updatedBars[barIndex],
-                                overlay_icon_position: e.detail.value.overlay_icon_position,
-                              };
-                            }
-                            updateModule({ bars: updatedBars });
-                          }
-                        )}
-                      `
-                    : ''}
-                  ${sliderControl.layout_mode === 'outside' &&
-                  sliderControl.orientation === 'vertical'
-                    ? html`
-                        <div
-                          style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
-                        >
-                          <div
-                            style="font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px;"
-                          >
-                            VERTICAL OUTSIDE SETTINGS
-                          </div>
-
-                          ${this.renderFieldSection(
-                            'Text Position',
-                            'Choose which side of the bar shows name/value information',
-                            homeAssistant,
-                            {
-                              outside_text_position:
-                                bar.outside_text_position ||
-                                sliderControl.outside_text_position ||
-                                'left',
-                            },
-                            [
-                              this.selectField('outside_text_position', [
-                                { value: 'left', label: 'Left' },
-                                { value: 'right', label: 'Right' },
-                              ]),
-                            ],
-                            (e: CustomEvent) => {
-                              const updatedBars = [...(sliderControl.bars || [])];
-                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                              if (barIndex !== -1) {
-                                updatedBars[barIndex] = {
-                                  ...updatedBars[barIndex],
-                                  outside_text_position: e.detail.value.outside_text_position,
-                                };
-                              }
-                              updateModule({ bars: updatedBars });
-                            }
-                          )}
-                          ${this.renderFieldSection(
-                            'Name Position',
-                            'Position for the entity name label',
-                            homeAssistant,
-                            {
-                              outside_name_position:
-                                bar.outside_name_position ||
-                                sliderControl.outside_name_position ||
-                                'top_left',
-                            },
-                            [
-                              this.selectField('outside_name_position', [
-                                { value: 'top_left', label: 'Top Left' },
-                                { value: 'top_right', label: 'Top Right' },
-                                { value: 'bottom_left', label: 'Bottom Left' },
-                                { value: 'bottom_right', label: 'Bottom Right' },
-                              ]),
-                            ],
-                            (e: CustomEvent) => {
-                              const updatedBars = [...(sliderControl.bars || [])];
-                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                              if (barIndex !== -1) {
-                                updatedBars[barIndex] = {
-                                  ...updatedBars[barIndex],
-                                  outside_name_position: e.detail.value.outside_name_position,
-                                };
-                              }
-                              updateModule({ bars: updatedBars });
-                            }
-                          )}
-                          ${this.renderFieldSection(
-                            'Value Position',
-                            'Position for the value label',
-                            homeAssistant,
-                            {
-                              outside_value_position:
-                                bar.outside_value_position ||
-                                sliderControl.outside_value_position ||
-                                'bottom_left',
-                            },
-                            [
-                              this.selectField('outside_value_position', [
-                                { value: 'top_left', label: 'Top Left' },
-                                { value: 'top_right', label: 'Top Right' },
-                                { value: 'bottom_left', label: 'Bottom Left' },
-                                { value: 'bottom_right', label: 'Bottom Right' },
-                              ]),
-                            ],
-                            (e: CustomEvent) => {
-                              const updatedBars = [...(sliderControl.bars || [])];
-                              const barIndex = updatedBars.findIndex(b => b.id === bar.id);
-                              if (barIndex !== -1) {
-                                updatedBars[barIndex] = {
-                                  ...updatedBars[barIndex],
-                                  outside_value_position: e.detail.value.outside_value_position,
-                                };
-                              }
-                              updateModule({ bars: updatedBars });
-                            }
-                          )}
                         </div>
                       `
                     : ''}
@@ -2238,27 +2228,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
             ],
             (e: CustomEvent) => updateModule({ layout_mode: e.detail.value.layout_mode })
           )}
-          ${sliderControl.layout_mode === 'overlay' && sliderControl.orientation === 'horizontal'
-            ? html`
-                <div class="conditional-fields-group">
-                  ${this.renderFieldSection(
-                    'Overlay Position',
-                    'Where to position information on the slider',
-                    homeAssistant,
-                    { overlay_position: sliderControl.overlay_position || 'left' },
-                    [
-                      this.selectField('overlay_position', [
-                        { value: 'left', label: 'Left' },
-                        { value: 'center', label: 'Center' },
-                        { value: 'right', label: 'Right' },
-                      ]),
-                    ],
-                    (e: CustomEvent) =>
-                      updateModule({ overlay_position: e.detail.value.overlay_position })
-                  )}
-                </div>
-              `
-            : ''}
           ${sliderControl.layout_mode === 'split'
             ? html`
                 <div class="conditional-fields-group">
@@ -2879,6 +2848,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
               ? html`
                   ${isVertical
                     ? (() => {
+                        const iconPos = bar.icon_position || 'center';
+                        const namePos = bar.name_position || 'center';
+                        const valuePos = bar.value_position || 'center';
+
                         const useAutoContrast =
                           bar.auto_contrast ?? sliderControl.auto_contrast ?? true;
                         const contrastColor = livePercentage > 50 ? '#000' : '#fff';
@@ -2897,53 +2870,99 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           : bar.icon_color ||
                             sliderControl.icon_color ||
                             'var(--primary-text-color)';
+                        const iconToggle =
+                          bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
 
-                        const overlaySlots: Record<'top' | 'middle' | 'bottom', TemplateResult[]> =
-                          {
-                            top: [],
-                            middle: [],
-                            bottom: [],
-                          };
+                        const toggleHandler = iconToggle
+                          ? async () => {
+                              try {
+                                const domain = bar.entity.split('.')[0];
+                                const isOn =
+                                  entityState?.state === 'on' || entityState?.state === 'open';
+                                if (domain === 'light') {
+                                  await homeAssistant.callService(
+                                    'light',
+                                    isOn ? 'turn_off' : 'turn_on',
+                                    { entity_id: bar.entity }
+                                  );
+                                } else if (domain === 'cover') {
+                                  await homeAssistant.callService(
+                                    'cover',
+                                    isOn ? 'close_cover' : 'open_cover',
+                                    { entity_id: bar.entity }
+                                  );
+                                } else if (domain === 'fan') {
+                                  await homeAssistant.callService(
+                                    'fan',
+                                    isOn ? 'turn_off' : 'turn_on',
+                                    { entity_id: bar.entity }
+                                  );
+                                } else if (domain === 'switch') {
+                                  await homeAssistant.callService(
+                                    'switch',
+                                    isOn ? 'turn_off' : 'turn_on',
+                                    { entity_id: bar.entity }
+                                  );
+                                }
+                              } catch (error) {
+                                console.error('Failed to toggle entity:', error);
+                              }
+                            }
+                          : undefined;
 
-                        const pushSlot = (
-                          slot: 'top' | 'middle' | 'bottom',
-                          content: TemplateResult | null
-                        ) => {
-                          if (content) {
-                            overlaySlots[slot].push(content);
-                          }
-                        };
+                        // Group elements by position
+                        const topElements: TemplateResult[] = [];
+                        const middleElements: TemplateResult[] = [];
+                        const bottomElements: TemplateResult[] = [];
 
-                        const nameTemplate = showNameSection
+                        const iconElement = showIconSection
+                          ? html`
+                              <ha-icon
+                                class="uc-slider-icon uc-overlay-info-item"
+                                icon="${bar.icon ||
+                                sliderControl.icon ||
+                                EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                                style="
+                              --mdc-icon-size: ${bar.icon_size || sliderControl.icon_size || 16}px;
+                              color: ${iconColor};
+                              cursor: ${iconToggle ? 'pointer' : 'default'};
+                              pointer-events: ${iconToggle ? 'auto' : 'none'};
+                            "
+                                @click=${toggleHandler}
+                              ></ha-icon>
+                            `
+                          : null;
+
+                        const nameElement = showNameSection
                           ? html`
                               <div
                                 class="uc-slider-name uc-overlay-info-item"
                                 style="
-                                  font-size: ${bar.name_size || sliderControl.name_size || 14}px;
-                                  color: ${nameColor};
-                                  font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                              font-size: ${bar.name_size || sliderControl.name_size || 14}px;
+                              color: ${nameColor};
+                              font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
                                   ? 'bold'
                                   : 'normal'};
-                                  text-align: center;
-                                  writing-mode: vertical-rl;
-                                  text-orientation: mixed;
-                                "
+                              text-align: center;
+                              writing-mode: vertical-rl;
+                              text-orientation: mixed;
+                            "
                               >
                                 ${entityName}
                               </div>
                             `
                           : null;
 
-                        const valueTemplate = showValueSection
+                        const valueElement = showValueSection
                           ? html`
                               <div
                                 class="uc-slider-value uc-overlay-info-item"
                                 style="
-                                  font-size: ${bar.value_size || sliderControl.value_size || 14}px;
-                                  color: ${valueColor};
-                                  font-weight: 600;
-                                  text-align: center;
-                                "
+                              font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                              color: ${valueColor};
+                              font-weight: 600;
+                              text-align: center;
+                            "
                               >
                                 ${displayValue}${bar.type === 'brightness'
                                   ? bar.value_suffix || sliderControl.value_suffix || '%'
@@ -2952,26 +2971,22 @@ export class UltraSliderControlModule extends BaseUltraModule {
                             `
                           : null;
 
-                        const iconTemplate = showIconSection
-                          ? html`
-                              <ha-icon
-                                class="uc-slider-icon uc-overlay-info-item"
-                                icon="${bar.icon ||
-                                sliderControl.icon ||
-                                EntityIconService.getEntityIcon(entityState, homeAssistant)}"
-                                style="
-                                  --mdc-icon-size: ${bar.icon_size ||
-                                sliderControl.icon_size ||
-                                16}px;
-                                  color: ${iconColor};
-                                "
-                              ></ha-icon>
-                            `
-                          : null;
-
-                        pushSlot(resolvedOverlayNamePosition, nameTemplate);
-                        pushSlot(resolvedOverlayValuePosition, valueTemplate);
-                        pushSlot(resolvedOverlayIconPosition, iconTemplate);
+                        // Assign elements to positions
+                        if (iconElement) {
+                          if (iconPos === 'top') topElements.push(iconElement);
+                          else if (iconPos === 'bottom') bottomElements.push(iconElement);
+                          else middleElements.push(iconElement);
+                        }
+                        if (nameElement) {
+                          if (namePos === 'top') topElements.push(nameElement);
+                          else if (namePos === 'bottom') bottomElements.push(nameElement);
+                          else middleElements.push(nameElement);
+                        }
+                        if (valueElement) {
+                          if (valuePos === 'top') topElements.push(valueElement);
+                          else if (valuePos === 'bottom') bottomElements.push(valueElement);
+                          else middleElements.push(valueElement);
+                        }
 
                         return html`
                           <div
@@ -2991,185 +3006,229 @@ export class UltraSliderControlModule extends BaseUltraModule {
                             "
                           >
                             <div
-                              class="uc-slider-info-group uc-overlay-info-slot uc-overlay-slot-top"
                               style="display: flex; flex-direction: column; align-items: center; gap: 4px;"
                             >
-                              ${overlaySlots.top.length ? overlaySlots.top : html``}
+                              ${topElements}
                             </div>
                             <div
-                              class="uc-slider-info-group uc-overlay-info-slot uc-overlay-slot-middle"
-                              style="
-                                width: 100%;
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 4px;
-                              "
+                              style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;"
                             >
-                              ${overlaySlots.middle.length ? overlaySlots.middle : html``}
+                              ${middleElements}
                             </div>
                             <div
-                              class="uc-slider-info-group uc-overlay-info-slot uc-overlay-slot-bottom"
                               style="display: flex; flex-direction: column; align-items: center; gap: 4px;"
                             >
-                              ${overlaySlots.bottom.length ? overlaySlots.bottom : html``}
+                              ${bottomElements}
                             </div>
                           </div>
                         `;
                       })()
                     : html`
-                        <!-- Horizontal Overlay Layout (existing logic) -->
-                        ${bar.show_icon !== false && sliderControl.show_icon !== false
-                          ? html`
-                              <ha-icon
-                                icon="${bar.icon ||
-                                sliderControl.icon ||
-                                EntityIconService.getEntityIcon(entityState, homeAssistant)}"
-                                style="
-                          position: absolute;
-                          ${sliderControl.overlay_position === 'left'
-                                  ? 'left: 8px;'
-                                  : sliderControl.overlay_position === 'right'
-                                    ? 'right: 8px;'
-                                    : 'left: 8px;'}
-                          top: 50%;
-                          transform: translateY(-50%);
-                          --mdc-icon-size: ${bar.icon_size || sliderControl.icon_size || 16}px;
-                          color: ${(bar.auto_contrast ?? sliderControl.auto_contrast ?? true)
-                                  ? livePercentage > 50
-                                    ? '#000'
-                                    : '#fff'
-                                  : bar.icon_color ||
-                                    sliderControl.icon_color ||
-                                    'var(--primary-text-color)'};
-                          pointer-events: none;
-                          z-index: 3;
-                        "
-                              ></ha-icon>
-                            `
-                          : ''}
-                        ${bar.show_name !== false && sliderControl.show_name !== false
-                          ? html`
-                              <div
-                                class="uc-slider-value"
-                                style="
-                          position: absolute;
-                          ${sliderControl.overlay_position === 'left'
-                                  ? `left: ${bar.show_icon !== false && sliderControl.show_icon !== false ? (bar.icon_size || sliderControl.icon_size || 16) + 16 : 8}px;`
-                                  : sliderControl.overlay_position === 'right'
-                                    ? `right: ${bar.show_value !== false && sliderControl.show_value !== false ? '80px' : 8}px;`
-                                    : `left: ${bar.show_icon !== false && sliderControl.show_icon !== false ? (bar.icon_size || sliderControl.icon_size || 16) + 16 : 8}px;`}
-                          top: 50%;
-                          transform: translateY(-50%);
-                          font-size: ${bar.name_size || sliderControl.name_size || 14}px;
-                          color: ${(bar.auto_contrast ?? sliderControl.auto_contrast ?? true)
-                                  ? livePercentage > 50
-                                    ? '#000'
-                                    : '#fff'
-                                  : bar.name_color ||
-                                    sliderControl.name_color ||
-                                    'var(--primary-text-color)'};
-                          font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
-                                  ? 'bold'
-                                  : 'normal'};
-                          pointer-events: ${(bar.icon_as_toggle ??
-                                sliderControl.icon_as_toggle ??
-                                true)
-                                  ? 'auto'
-                                  : 'none'};
-                          cursor: ${(bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true)
-                                  ? 'pointer'
-                                  : 'default'};
-                          z-index: 3;
-                          max-width: 120px;
-                          overflow: hidden;
-                          text-overflow: ellipsis;
-                          white-space: nowrap;
-                        "
-                                @click=${(bar.icon_as_toggle ??
-                                sliderControl.icon_as_toggle ??
-                                true)
-                                  ? async () => {
-                                      try {
-                                        const domain = bar.entity.split('.')[0];
-                                        const isOn =
-                                          entityState?.state === 'on' ||
-                                          entityState?.state === 'open';
-                                        if (domain === 'light') {
-                                          await homeAssistant.callService(
-                                            'light',
-                                            isOn ? 'turn_off' : 'turn_on',
-                                            {
-                                              entity_id: bar.entity,
-                                            }
-                                          );
-                                        } else if (domain === 'cover') {
-                                          await homeAssistant.callService(
-                                            'cover',
-                                            isOn ? 'close_cover' : 'open_cover',
-                                            {
-                                              entity_id: bar.entity,
-                                            }
-                                          );
-                                        } else if (domain === 'fan') {
-                                          await homeAssistant.callService(
-                                            'fan',
-                                            isOn ? 'turn_off' : 'turn_on',
-                                            {
-                                              entity_id: bar.entity,
-                                            }
-                                          );
-                                        } else if (domain === 'switch') {
-                                          await homeAssistant.callService(
-                                            'switch',
-                                            isOn ? 'turn_off' : 'turn_on',
-                                            {
-                                              entity_id: bar.entity,
-                                            }
-                                          );
-                                        }
-                                      } catch (error) {
-                                        console.error('Failed to toggle entity:', error);
-                                      }
-                                    }
-                                  : undefined}
-                              >
-                                ${entityName}
-                              </div>
-                            `
-                          : ''}
-                        ${bar.show_value !== false && sliderControl.show_value !== false
-                          ? html`
-                              <div
-                                style="
-                          position: absolute;
-                          ${sliderControl.overlay_position === 'left'
-                                  ? 'left: 8px;'
-                                  : sliderControl.overlay_position === 'right'
-                                    ? 'right: 8px;'
-                                    : 'right: 8px;'}
-                          top: 50%;
-                          transform: translateY(-50%);
-                          font-size: ${bar.value_size || sliderControl.value_size || 14}px;
-                          color: ${(bar.auto_contrast ?? sliderControl.auto_contrast ?? true)
-                                  ? livePercentage > 50
-                                    ? '#000'
-                                    : '#fff'
-                                  : bar.value_color ||
-                                    sliderControl.value_color ||
-                                    'var(--primary-text-color)'};
-                          font-weight: 600;
-                          pointer-events: none;
-                          z-index: 3;
-                        "
-                              >
-                                ${displayValue}${bar.type === 'brightness'
-                                  ? bar.value_suffix || sliderControl.value_suffix || '%'
-                                  : ''}
-                              </div>
-                            `
-                          : ''}
+                        <!-- Horizontal Overlay Layout with Individual Element Positioning -->
+                        ${(() => {
+                          const iconPos = bar.icon_position || 'left';
+                          const namePos = bar.name_position || 'left';
+                          const valuePos = bar.value_position || 'right';
+
+                          const iconToggle =
+                            bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+                          const iconSize = bar.icon_size || sliderControl.icon_size || 16;
+                          const autoContrast =
+                            bar.auto_contrast ?? sliderControl.auto_contrast ?? true;
+                          const contrastColor = autoContrast
+                            ? livePercentage > 50
+                              ? '#000'
+                              : '#fff'
+                            : '';
+
+                          const toggleHandler = iconToggle
+                            ? async () => {
+                                try {
+                                  const domain = bar.entity.split('.')[0];
+                                  const isOn =
+                                    entityState?.state === 'on' || entityState?.state === 'open';
+                                  if (domain === 'light') {
+                                    await homeAssistant.callService(
+                                      'light',
+                                      isOn ? 'turn_off' : 'turn_on',
+                                      { entity_id: bar.entity }
+                                    );
+                                  } else if (domain === 'cover') {
+                                    await homeAssistant.callService(
+                                      'cover',
+                                      isOn ? 'close_cover' : 'open_cover',
+                                      { entity_id: bar.entity }
+                                    );
+                                  } else if (domain === 'fan') {
+                                    await homeAssistant.callService(
+                                      'fan',
+                                      isOn ? 'turn_off' : 'turn_on',
+                                      { entity_id: bar.entity }
+                                    );
+                                  } else if (domain === 'switch') {
+                                    await homeAssistant.callService(
+                                      'switch',
+                                      isOn ? 'turn_off' : 'turn_on',
+                                      { entity_id: bar.entity }
+                                    );
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to toggle entity:', error);
+                                }
+                              }
+                            : undefined;
+
+                          // Group elements by position to avoid overlap
+                          const leftElements: TemplateResult[] = [];
+                          const centerElements: TemplateResult[] = [];
+                          const rightElements: TemplateResult[] = [];
+
+                          const iconElement = showIconSection
+                            ? html`
+                                <ha-icon
+                                  icon="${bar.icon ||
+                                  sliderControl.icon ||
+                                  EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                                  style="
+                                    --mdc-icon-size: ${iconSize}px;
+                                    color: ${autoContrast
+                                    ? contrastColor
+                                    : bar.icon_color ||
+                                      sliderControl.icon_color ||
+                                      'var(--primary-text-color)'};
+                                    pointer-events: ${iconToggle ? 'auto' : 'none'};
+                                    cursor: ${iconToggle ? 'pointer' : 'default'};
+                                  "
+                                  @click=${toggleHandler}
+                                ></ha-icon>
+                              `
+                            : null;
+
+                          const nameElement = showNameSection
+                            ? html`
+                                <div
+                                  class="uc-slider-name"
+                                  style="
+                                    font-size: ${bar.name_size || sliderControl.name_size || 14}px;
+                                    color: ${autoContrast
+                                    ? contrastColor
+                                    : bar.name_color ||
+                                      sliderControl.name_color ||
+                                      'var(--primary-text-color)'};
+                                    font-weight: ${(bar.name_bold ??
+                                  sliderControl.name_bold ??
+                                  true)
+                                    ? 'bold'
+                                    : 'normal'};
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                    white-space: nowrap;
+                                    max-width: 150px;
+                                  "
+                                >
+                                  ${entityName}
+                                </div>
+                              `
+                            : null;
+
+                          const valueElement = showValueSection
+                            ? html`
+                                <div
+                                  class="uc-slider-value"
+                                  style="
+                                    font-size: ${bar.value_size ||
+                                  sliderControl.value_size ||
+                                  14}px;
+                                    color: ${autoContrast
+                                    ? contrastColor
+                                    : bar.value_color ||
+                                      sliderControl.value_color ||
+                                      'var(--primary-text-color)'};
+                                    font-weight: 600;
+                                  "
+                                >
+                                  ${displayValue}${bar.type === 'brightness'
+                                    ? bar.value_suffix || sliderControl.value_suffix || '%'
+                                    : ''}
+                                </div>
+                              `
+                            : null;
+
+                          // Assign elements to position groups
+                          if (iconElement) {
+                            if (iconPos === 'left') leftElements.push(iconElement);
+                            else if (iconPos === 'right') rightElements.push(iconElement);
+                            else centerElements.push(iconElement);
+                          }
+                          if (nameElement) {
+                            if (namePos === 'left') leftElements.push(nameElement);
+                            else if (namePos === 'right') rightElements.push(nameElement);
+                            else centerElements.push(nameElement);
+                          }
+                          if (valueElement) {
+                            if (valuePos === 'left') leftElements.push(valueElement);
+                            else if (valuePos === 'right') rightElements.push(valueElement);
+                            else centerElements.push(valueElement);
+                          }
+
+                          return html`
+                            <div
+                              style="position: absolute; inset: 0; pointer-events: none; z-index: 3;"
+                            >
+                              ${leftElements.length
+                                ? html`
+                                    <div
+                                      style="
+                                        position: absolute;
+                                        left: 8px;
+                                        top: 50%;
+                                        transform: translateY(-50%);
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                      "
+                                    >
+                                      ${leftElements}
+                                    </div>
+                                  `
+                                : ''}
+                              ${centerElements.length
+                                ? html`
+                                    <div
+                                      style="
+                                        position: absolute;
+                                        left: 50%;
+                                        top: 50%;
+                                        transform: translate(-50%, -50%);
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                      "
+                                    >
+                                      ${centerElements}
+                                    </div>
+                                  `
+                                : ''}
+                              ${rightElements.length
+                                ? html`
+                                    <div
+                                      style="
+                                        position: absolute;
+                                        right: 8px;
+                                        top: 50%;
+                                        transform: translateY(-50%);
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                      "
+                                    >
+                                      ${rightElements}
+                                    </div>
+                                  `
+                                : ''}
+                            </div>
+                          `;
+                        })()}
                       `}
                 `
               : ''}
@@ -3241,371 +3300,319 @@ export class UltraSliderControlModule extends BaseUltraModule {
         const outsideIconTotalSpace = showIconOutside ? outsideIconSize + outsideIconGap : 0;
 
         if (isVertical) {
-          // When icon is shown, bar should be shorter (bar + gap + icon = 200px total)
-          // When icon is hidden, bar takes full 200px
-          const effectiveWrapperHeight = verticalSliderHeight;
-          const barHeightWithinWrapper = showIconOutside
-            ? verticalSliderHeight - outsideIconTotalSpace
-            : verticalSliderHeight;
+          // Vertical Outside Layout with Individual Element Positioning
+          const iconPos = bar.icon_position || 'left_top';
+          const namePos = bar.name_position || 'left_top';
+          const valuePos = bar.value_position || 'left_bottom';
 
-          const normalizeOutsidePosition = (
-            position: string | undefined,
-            fallback: 'top_left' | 'bottom_left'
-          ): 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' => {
-            if (!position) {
-              return fallback;
-            }
-            switch (position) {
-              case 'top_left':
-              case 'top_right':
-              case 'bottom_left':
-              case 'bottom_right':
-                return position;
-              case 'top':
-              case 'middle':
-                return 'top_left';
-              case 'bottom':
-                return 'bottom_left';
-              default:
-                return fallback;
-            }
-          };
-
-          const outsideTextPos =
-            bar.outside_text_position || sliderControl.outside_text_position || 'left';
-
-          const namePlacement = normalizeOutsidePosition(
-            bar.outside_name_position ?? sliderControl.outside_name_position,
-            'top_left'
-          );
-          const valuePlacement = normalizeOutsidePosition(
-            bar.outside_value_position ?? sliderControl.outside_value_position,
-            'bottom_left'
-          );
-
+          const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
           const showName = bar.show_name !== false && sliderControl.show_name !== false;
           const showValue = bar.show_value !== false && sliderControl.show_value !== false;
 
-          const topLeftItems: TemplateResult[] = [];
-          const topRightItems: TemplateResult[] = [];
-          const bottomLeftItems: TemplateResult[] = [];
-          const bottomRightItems: TemplateResult[] = [];
+          // Group elements by position area (6 possible positions)
+          const positionGroups: Record<string, TemplateResult[]> = {
+            left_top: [],
+            left_center: [],
+            left_bottom: [],
+            right_top: [],
+            right_center: [],
+            right_bottom: [],
+          };
 
-          if (showName) {
-            const nameLabel = html`
-              <div
-                style="
-                  writing-mode: vertical-rl;
-                  text-orientation: mixed;
-                  font-size: ${bar.name_size || sliderControl.name_size || 16}px;
-                  color: ${bar.name_color ||
-                sliderControl.name_color ||
-                'var(--primary-text-color)'};
-                  font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
-                  ? '500'
-                  : 'normal'};
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-                class="uc-slider-name"
-              >
-                ${entityName}
-              </div>
-            `;
+          const iconToggle = bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+          const toggleHandler = iconToggle
+            ? async () => {
+                try {
+                  const domain = bar.entity.split('.')[0];
+                  const isOn = entityState?.state === 'on' || entityState?.state === 'open';
+                  if (domain === 'light') {
+                    await homeAssistant.callService('light', isOn ? 'turn_off' : 'turn_on', {
+                      entity_id: bar.entity,
+                    });
+                  } else if (domain === 'cover') {
+                    await homeAssistant.callService('cover', isOn ? 'close_cover' : 'open_cover', {
+                      entity_id: bar.entity,
+                    });
+                  } else if (domain === 'fan') {
+                    await homeAssistant.callService('fan', isOn ? 'turn_off' : 'turn_on', {
+                      entity_id: bar.entity,
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to toggle entity:', error);
+                }
+              }
+            : undefined;
 
-            switch (namePlacement) {
-              case 'top_right':
-                topRightItems.push(nameLabel);
-                break;
-              case 'bottom_left':
-                bottomLeftItems.push(nameLabel);
-                break;
-              case 'bottom_right':
-                bottomRightItems.push(nameLabel);
-                break;
-              case 'top_left':
-              default:
-                topLeftItems.push(nameLabel);
-                break;
-            }
-          }
+          // Create elements
+          const iconElement = showIconSection
+            ? html`
+                <ha-icon
+                  icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                  style="
+                --mdc-icon-size: ${outsideIconSize}px;
+                color: ${(bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
+                  entityState?.attributes.rgb_color
+                    ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                    : bar.icon_color || sliderControl.icon_color || 'var(--secondary-text-color)'};
+                cursor: ${iconToggle ? 'pointer' : 'default'};
+                pointer-events: ${iconToggle ? 'auto' : 'none'};
+              "
+                  @click=${toggleHandler}
+                ></ha-icon>
+              `
+            : null;
 
-          if (showValue) {
-            const valueLabel = html`
-              <div
-                style="
-                  writing-mode: vertical-rl;
-                  text-orientation: mixed;
-                  font-size: ${bar.value_size || sliderControl.value_size || 14}px;
-                  color: ${bar.value_color ||
-                sliderControl.value_color ||
-                'var(--secondary-text-color)'};
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-                class="uc-slider-value"
-              >
-                ${displayValue}${bar.type === 'brightness'
-                  ? bar.value_suffix || sliderControl.value_suffix || '%'
-                  : ''}
-              </div>
-            `;
-
-            switch (valuePlacement) {
-              case 'top_right':
-                topRightItems.push(valueLabel);
-                break;
-              case 'bottom_left':
-                bottomLeftItems.push(valueLabel);
-                break;
-              case 'bottom_right':
-                bottomRightItems.push(valueLabel);
-                break;
-              case 'top_left':
-              default:
-                topLeftItems.push(valueLabel);
-                break;
-            }
-          }
-
-          const renderGroup = (items: TemplateResult[], align: 'flex-start' | 'flex-end') =>
-            items.length
-              ? html`<div
-                  style="display: flex; flex-direction: column; align-items: ${align}; gap: 4px;"
+          const nameElement = showName
+            ? html`
+                <div
+                  class="uc-slider-name"
+                  style="
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                font-size: ${bar.name_size || sliderControl.name_size || 16}px;
+                color: ${bar.name_color || sliderControl.name_color || 'var(--primary-text-color)'};
+                font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                    ? '500'
+                    : 'normal'};
+              "
                 >
-                  ${items}
-                </div>`
-              : html`<div style="min-width: 0;"></div>`;
+                  ${entityName}
+                </div>
+              `
+            : null;
 
-          const hasTopRow = topLeftItems.length > 0 || topRightItems.length > 0;
-          const hasBottomRow = bottomLeftItems.length > 0 || bottomRightItems.length > 0;
-          const hasInfoLabels = hasTopRow || hasBottomRow;
+          const valueElement = showValue
+            ? html`
+                <div
+                  class="uc-slider-value"
+                  style="
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                color: ${bar.value_color ||
+                  sliderControl.value_color ||
+                  'var(--secondary-text-color)'};
+              "
+                >
+                  ${displayValue}${bar.type === 'brightness'
+                    ? bar.value_suffix || sliderControl.value_suffix || '%'
+                    : ''}
+                </div>
+              `
+            : null;
 
-          const buildInfoColumn = () => {
-            if (!hasInfoLabels) {
-              return html``;
-            }
+          // Assign elements to position groups
+          if (iconElement && positionGroups[iconPos]) positionGroups[iconPos].push(iconElement);
+          if (nameElement && positionGroups[namePos]) positionGroups[namePos].push(nameElement);
+          if (valueElement && positionGroups[valuePos]) positionGroups[valuePos].push(valueElement);
+
+          // Check which sides have content
+          const hasLeftContent =
+            positionGroups.left_top.length +
+              positionGroups.left_center.length +
+              positionGroups.left_bottom.length >
+            0;
+          const hasRightContent =
+            positionGroups.right_top.length +
+              positionGroups.right_center.length +
+              positionGroups.right_bottom.length >
+            0;
+
+          const barHeightWithinWrapper = verticalSliderHeight;
+
+          const renderPositionColumn = (side: 'left' | 'right') => {
+            const topItems = positionGroups[`${side}_top`];
+            const centerItems = positionGroups[`${side}_center`];
+            const bottomItems = positionGroups[`${side}_bottom`];
+
+            const hasContent = topItems.length + centerItems.length + bottomItems.length > 0;
+            if (!hasContent) return html``;
 
             return html`
               <div
-                style="display: flex; flex-direction: column; height: ${barHeightWithinWrapper}px; overflow: hidden;"
-                class="uc-slider-info-column"
+                style="display: flex; flex-direction: column; height: ${barHeightWithinWrapper}px; justify-content: space-between;"
               >
-                ${hasTopRow
-                  ? html`<div style="display: flex; justify-content: space-between; gap: 0;">
-                      ${renderGroup(topLeftItems, 'flex-start')}
-                      ${renderGroup(topRightItems, 'flex-end')}
-                    </div>`
-                  : ''}
-                ${hasTopRow || hasBottomRow ? html`<div style="flex: 1;"></div>` : html``}
-                ${hasBottomRow
-                  ? html`<div style="display: flex; justify-content: space-between; gap: 0;">
-                      ${renderGroup(bottomLeftItems, 'flex-start')}
-                      ${renderGroup(bottomRightItems, 'flex-end')}
-                    </div>`
-                  : ''}
+                <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                  ${topItems}
+                </div>
+                <div
+                  style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; flex: 1;"
+                >
+                  ${centerItems}
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                  ${bottomItems}
+                </div>
               </div>
             `;
           };
 
-          const containerGap = hasInfoLabels ? 4 : 0;
-
-          const renderOutsideInfoColumn = () => buildInfoColumn();
-
-          const outsideItemClass = `uc-slider-item uc-layout-${layoutMode} uc-orientation-vertical uc-bar-type-${bar.type}`;
-
           return html`
             <div
-              class="${outsideItemClass}"
-              style="display: flex; align-items: flex-start; justify-content: center; gap: ${containerGap}px; height: ${effectiveWrapperHeight}px;"
+              class="uc-slider-item uc-layout-${layoutMode} uc-orientation-vertical uc-bar-type-${bar.type}"
+              style="display: flex; align-items: flex-start; justify-content: center; gap: 8px; height: ${verticalSliderHeight}px;"
             >
-              ${hasInfoLabels && outsideTextPos === 'left' ? renderOutsideInfoColumn() : ''}
+              ${hasLeftContent ? renderPositionColumn('left') : ''}
               <div
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  height: ${barHeightWithinWrapper}px;
-                  min-height: ${barHeightWithinWrapper}px;
-                  gap: ${showIconOutside ? '8px' : '0'};
-                "
-                class="uc-slider-track-wrapper"
+                style="height: ${barHeightWithinWrapper}px; display: flex; align-items: center; justify-content: center;"
               >
-                <div
-                  style="height: ${barHeightWithinWrapper}px; display: flex; align-items: center; justify-content: center; width: 100%; flex-shrink: 0;"
-                >
-                  ${barElement}
-                </div>
-                ${showIconOutside
-                  ? html`
-                      <div style="flex-shrink: 0;">
-                        <ha-icon
-                          class="uc-slider-icon uc-icon-vertical-outside"
-                          icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
-                          style="--mdc-icon-size: ${outsideIconSize}px; color: ${(bar.dynamic_icon ??
-                            sliderControl.dynamic_icon ??
-                            true) &&
-                          entityState?.attributes.rgb_color
-                            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                            : bar.icon_color ||
-                              sliderControl.icon_color ||
-                              'var(--secondary-text-color)'}; cursor: ${(bar.icon_as_toggle ??
-                          sliderControl.icon_as_toggle ??
-                          true)
-                            ? 'pointer'
-                            : 'default'};"
-                          @click=${sliderControl.icon_as_toggle
-                            ? async () => {
-                                try {
-                                  const domain = bar.entity.split('.')[0];
-                                  const isOn =
-                                    entityState?.state === 'on' || entityState?.state === 'open';
-                                  if (domain === 'light') {
-                                    await homeAssistant.callService(
-                                      'light',
-                                      isOn ? 'turn_off' : 'turn_on',
-                                      {
-                                        entity_id: bar.entity,
-                                      }
-                                    );
-                                  } else if (domain === 'cover') {
-                                    await homeAssistant.callService(
-                                      'cover',
-                                      isOn ? 'close_cover' : 'open_cover',
-                                      {
-                                        entity_id: bar.entity,
-                                      }
-                                    );
-                                  } else if (domain === 'fan') {
-                                    await homeAssistant.callService(
-                                      'fan',
-                                      isOn ? 'turn_off' : 'turn_on',
-                                      {
-                                        entity_id: bar.entity,
-                                      }
-                                    );
-                                  }
-                                } catch (error) {
-                                  console.error('Failed to toggle entity:', error);
-                                }
-                              }
-                            : undefined}
-                        ></ha-icon>
-                      </div>
-                    `
-                  : ''}
+                ${barElement}
               </div>
-              ${hasInfoLabels && outsideTextPos === 'right' ? renderOutsideInfoColumn() : ''}
+              ${hasRightContent ? renderPositionColumn('right') : ''}
             </div>
           `;
         } else {
-          // Horizontal Outside Layout (existing logic)
-          const barInfo = html`
-            <div
-              class="uc-slider-info"
-              style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;"
-            >
+          // Horizontal Outside Layout with Individual Element Positioning
+          const iconPos = bar.icon_position || 'top_left';
+          const namePos = bar.name_position || 'top_left';
+          const valuePos = bar.value_position || 'top_right';
+
+          const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
+          const showName = bar.show_name !== false && sliderControl.show_name !== false;
+          const showValue = bar.show_value !== false && sliderControl.show_value !== false;
+
+          // Group elements by position area (6 possible positions)
+          const positionGroups: Record<string, TemplateResult[]> = {
+            top_left: [],
+            top_center: [],
+            top_right: [],
+            bottom_left: [],
+            bottom_center: [],
+            bottom_right: [],
+          };
+
+          const iconToggle = bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+          const toggleHandler = iconToggle
+            ? async () => {
+                try {
+                  const domain = bar.entity.split('.')[0];
+                  const isOn = entityState?.state === 'on' || entityState?.state === 'open';
+                  if (domain === 'light') {
+                    await homeAssistant.callService('light', isOn ? 'turn_off' : 'turn_on', {
+                      entity_id: bar.entity,
+                    });
+                  } else if (domain === 'cover') {
+                    await homeAssistant.callService('cover', isOn ? 'close_cover' : 'open_cover', {
+                      entity_id: bar.entity,
+                    });
+                  } else if (domain === 'fan') {
+                    await homeAssistant.callService('fan', isOn ? 'turn_off' : 'turn_on', {
+                      entity_id: bar.entity,
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to toggle entity:', error);
+                }
+              }
+            : undefined;
+
+          // Create elements
+          const iconElement = showIconSection
+            ? html`
+                <ha-icon
+                  icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                  style="
+                --mdc-icon-size: ${sliderControl.icon_size || 16}px;
+                color: ${sliderControl.dynamic_icon && entityState?.attributes.rgb_color
+                    ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                    : 'var(--secondary-text-color)'};
+                cursor: ${iconToggle ? 'pointer' : 'default'};
+                pointer-events: ${iconToggle ? 'auto' : 'none'};
+              "
+                  @click=${toggleHandler}
+                ></ha-icon>
+              `
+            : null;
+
+          const nameElement = showName
+            ? html`
+                <div
+                  class="uc-slider-name"
+                  style="
+                font-size: ${bar.name_size || sliderControl.name_size || 14}px;
+                color: ${bar.name_color ||
+                  sliderControl.name_color ||
+                  'var(--secondary-text-color)'};
+                font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                    ? '600'
+                    : 'normal'};
+                line-height: 1;
+              "
+                >
+                  ${entityName}
+                </div>
+              `
+            : null;
+
+          const valueElement = showValue
+            ? html`
+                <div
+                  class="uc-slider-value"
+                  style="
+                font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                color: ${bar.value_color ||
+                  sliderControl.value_color ||
+                  'var(--secondary-text-color)'};
+                font-weight: 600;
+              "
+                >
+                  ${displayValue}${bar.type === 'brightness'
+                    ? bar.value_suffix || sliderControl.value_suffix || '%'
+                    : ''}
+                </div>
+              `
+            : null;
+
+          // Assign elements to position groups
+          if (iconElement && positionGroups[iconPos]) positionGroups[iconPos].push(iconElement);
+          if (nameElement && positionGroups[namePos]) positionGroups[namePos].push(nameElement);
+          if (valueElement && positionGroups[valuePos]) positionGroups[valuePos].push(valueElement);
+
+          // Check which rows have content
+          const hasTopContent =
+            positionGroups.top_left.length +
+              positionGroups.top_center.length +
+              positionGroups.top_right.length >
+            0;
+          const hasBottomContent =
+            positionGroups.bottom_left.length +
+              positionGroups.bottom_center.length +
+              positionGroups.bottom_right.length >
+            0;
+
+          const renderPositionRow = (row: 'top' | 'bottom') => {
+            const leftItems = positionGroups[`${row}_left`];
+            const centerItems = positionGroups[`${row}_center`];
+            const rightItems = positionGroups[`${row}_right`];
+
+            const hasContent = leftItems.length + centerItems.length + rightItems.length > 0;
+            if (!hasContent) return html``;
+
+            return html`
               <div
-                class="uc-slider-info-group"
-                style="display: flex; align-items: center; gap: 8px;"
+                style="display: flex; justify-content: space-between; align-items: center; width: 100%; ${row ===
+                'top'
+                  ? 'margin-bottom: 4px;'
+                  : 'margin-top: 4px;'}"
               >
-                ${bar.show_icon !== false && sliderControl.show_icon !== false
-                  ? html`
-                      <ha-icon
-                        class="uc-slider-icon"
-                        icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
-                        style="--mdc-icon-size: ${sliderControl.icon_size ||
-                        16}px; color: ${sliderControl.dynamic_icon &&
-                        entityState?.attributes.rgb_color
-                          ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                          : 'var(--secondary-text-color)'}; vertical-align: middle; cursor: ${sliderControl.icon_as_toggle
-                          ? 'pointer'
-                          : 'default'};"
-                        @click=${sliderControl.icon_as_toggle
-                          ? async () => {
-                              try {
-                                const domain = bar.entity.split('.')[0];
-                                const isOn =
-                                  entityState?.state === 'on' || entityState?.state === 'open';
-                                if (domain === 'light') {
-                                  await homeAssistant.callService(
-                                    'light',
-                                    isOn ? 'turn_off' : 'turn_on',
-                                    {
-                                      entity_id: bar.entity,
-                                    }
-                                  );
-                                } else if (domain === 'cover') {
-                                  await homeAssistant.callService(
-                                    'cover',
-                                    isOn ? 'close_cover' : 'open_cover',
-                                    {
-                                      entity_id: bar.entity,
-                                    }
-                                  );
-                                } else if (domain === 'fan') {
-                                  await homeAssistant.callService(
-                                    'fan',
-                                    isOn ? 'turn_off' : 'turn_on',
-                                    {
-                                      entity_id: bar.entity,
-                                    }
-                                  );
-                                }
-                              } catch (error) {
-                                console.error('Failed to toggle entity:', error);
-                              }
-                            }
-                          : undefined}
-                      ></ha-icon>
-                    `
-                  : ''}
-                ${bar.show_name !== false && sliderControl.show_name !== false
-                  ? html`
-                      <div
-                        class="uc-slider-name"
-                        style="font-size: ${bar.name_size ||
-                        sliderControl.name_size ||
-                        14}px; color: ${bar.name_color ||
-                        sliderControl.name_color ||
-                        'var(--secondary-text-color)'}; font-weight: ${(bar.name_bold ??
-                        sliderControl.name_bold ??
-                        true)
-                          ? '600'
-                          : 'normal'}; line-height: 1; display: flex; align-items: center;"
-                      >
-                        ${entityName}
-                      </div>
-                    `
-                  : ''}
+                <div style="display: flex; align-items: center; gap: 8px;">${leftItems}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">${centerItems}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">${rightItems}</div>
               </div>
-              ${bar.show_value !== false && sliderControl.show_value !== false
-                ? html`
-                    <div
-                      class="uc-slider-value"
-                      class="uc-slider-value"
-                      style="font-size: ${bar.value_size ||
-                      sliderControl.value_size ||
-                      14}px; color: ${bar.value_color ||
-                      sliderControl.value_color ||
-                      'var(--secondary-text-color)'}; font-weight: 600;"
-                    >
-                      ${displayValue}${bar.type === 'brightness'
-                        ? bar.value_suffix || sliderControl.value_suffix || '%'
-                        : ''}
-                    </div>
-                  `
-                : ''}
-            </div>
+            `;
+          };
+
+          const barInfo = html`
+            ${hasTopContent ? renderPositionRow('top') : ''}
+            ${hasBottomContent ? renderPositionRow('bottom') : ''}
           `;
 
           return html`
             <div
               class="uc-slider-item uc-layout-${layoutMode} uc-orientation-horizontal uc-bar-type-${bar.type}"
             >
-              ${barInfo} ${barElement}
+              ${barInfo}${barElement}
             </div>
           `;
         }
@@ -3624,8 +3631,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
         </div>
       `;
     } else if (layoutMode === 'overlay') {
-      const overlayPos = sliderControl.overlay_position || 'left';
-
       finalLayout = html`
         <div
           class="${baseLayoutClass}"
@@ -3655,7 +3660,15 @@ export class UltraSliderControlModule extends BaseUltraModule {
         const entityState = homeAssistant?.states?.[bar.entity];
         const entityName = bar.name || entityState?.attributes.friendly_name || bar.entity;
 
-        const barPosition = bar.split_bar_position || defaultSplitBarPosition;
+        // Use info_section_position for split mode to determine bar/info layout
+        const infoSectionPos = bar.info_section_position || (isVertical ? 'top' : 'left');
+        const barPosition = isVertical
+          ? infoSectionPos === 'bottom'
+            ? 'left'
+            : 'right' // If info is bottom, bar is top (left); if info is top, bar is bottom (right)
+          : infoSectionPos === 'right'
+            ? 'left'
+            : 'right'; // If info is right, bar is left; if info is left, bar is right
         const barLength = bar.split_bar_length ?? defaultSplitBarLength;
         const showIconSection = bar.show_icon !== false && sliderControl.show_icon !== false;
         const showNameSection = bar.show_name !== false && sliderControl.show_name !== false;
@@ -3736,6 +3749,104 @@ export class UltraSliderControlModule extends BaseUltraModule {
             : 'margin-top: 8px;'
           : '';
 
+        // Build info section with individual element positioning
+        const renderInfoSection = () => {
+          if (!shouldShowInfoContainer) return html``;
+
+          const iconToggle = bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+          const toggleHandler = iconToggle
+            ? async () => {
+                try {
+                  const domain = bar.entity.split('.')[0];
+                  const isOn = entityState?.state === 'on' || entityState?.state === 'open';
+                  if (domain === 'light') {
+                    await homeAssistant.callService('light', isOn ? 'turn_off' : 'turn_on', {
+                      entity_id: bar.entity,
+                    });
+                  } else if (domain === 'cover') {
+                    await homeAssistant.callService('cover', isOn ? 'close_cover' : 'open_cover', {
+                      entity_id: bar.entity,
+                    });
+                  } else if (domain === 'fan') {
+                    await homeAssistant.callService('fan', isOn ? 'turn_off' : 'turn_on', {
+                      entity_id: bar.entity,
+                    });
+                  }
+                } catch (error) {
+                  console.error('Failed to toggle entity:', error);
+                }
+              }
+            : undefined;
+
+          const allElements: TemplateResult[] = [];
+
+          if (showIconSection) {
+            allElements.push(html`
+              <ha-icon
+                icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
+                style="
+                  --mdc-icon-size: ${bar.icon_size || sliderControl.icon_size || 16}px;
+                  color: ${(bar.dynamic_icon ?? sliderControl.dynamic_icon ?? true) &&
+                entityState?.attributes.rgb_color
+                  ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                  : bar.icon_color || sliderControl.icon_color || 'var(--primary-text-color)'};
+                  cursor: ${iconToggle ? 'pointer' : 'default'};
+                  pointer-events: ${iconToggle ? 'auto' : 'none'};
+                "
+                @click=${toggleHandler}
+              ></ha-icon>
+            `);
+          }
+
+          if (showNameSection) {
+            allElements.push(html`
+              <div
+                class="uc-slider-name"
+                style="
+                  font-size: ${bar.name_size || sliderControl.name_size || 16}px;
+                  color: ${bar.name_color ||
+                sliderControl.name_color ||
+                'var(--primary-text-color)'};
+                  font-weight: ${(bar.name_bold ?? sliderControl.name_bold ?? true)
+                  ? '500'
+                  : 'normal'};
+                "
+              >
+                ${entityName}
+              </div>
+            `);
+          }
+
+          if (showValueSection) {
+            allElements.push(html`
+              <div
+                class="uc-slider-value"
+                style="
+                  font-size: ${bar.value_size || sliderControl.value_size || 14}px;
+                  color: ${bar.value_color ||
+                sliderControl.value_color ||
+                'var(--secondary-text-color)'};
+                "
+              >
+                ${displayValue}${bar.type === 'brightness'
+                  ? bar.value_suffix || sliderControl.value_suffix || '%'
+                  : ''}
+              </div>
+            `);
+          }
+
+          return html`
+            <div
+              class="uc-slider-info"
+              style="${infoSize} display: flex; align-items: center; justify-content: center; ${isVertical
+                ? 'flex-direction: column; text-align: center;'
+                : 'flex-direction: row;'} gap: 8px;"
+            >
+              ${allElements}
+            </div>
+          `;
+        };
+
         return html`
           <div
             class="${itemClass}"
@@ -3745,111 +3856,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           >
             ${barPosition === 'left'
               ? html`
-                  <!-- Info section first -->
-                  <div
-                    class="uc-slider-info"
-                    style="${infoSize} display: ${shouldShowInfoContainer
-                      ? 'flex'
-                      : 'none'}; align-items: center; justify-content: center; ${isVertical
-                      ? 'flex-direction: column; text-align: center; padding-top: 4px;'
-                      : ''}"
-                  >
-                    ${showIconSection
-                      ? html`
-                          <ha-icon
-                            class="uc-slider-icon"
-                            icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
-                            style="--mdc-icon-size: ${bar.icon_size ||
-                            sliderControl.icon_size ||
-                            16}px; color: ${(bar.dynamic_icon ??
-                              sliderControl.dynamic_icon ??
-                              true) &&
-                            entityState?.attributes.rgb_color
-                              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                              : bar.icon_color ||
-                                sliderControl.icon_color ||
-                                'var(--primary-text-color)'}; cursor: ${(bar.icon_as_toggle ??
-                            sliderControl.icon_as_toggle ??
-                            true)
-                              ? 'pointer'
-                              : 'default'};"
-                            @click=${sliderControl.icon_as_toggle
-                              ? async () => {
-                                  try {
-                                    const domain = bar.entity.split('.')[0];
-                                    const isOn =
-                                      entityState?.state === 'on' || entityState?.state === 'open';
-                                    if (domain === 'light') {
-                                      await homeAssistant.callService(
-                                        'light',
-                                        isOn ? 'turn_off' : 'turn_on',
-                                        {
-                                          entity_id: bar.entity,
-                                        }
-                                      );
-                                    } else if (domain === 'cover') {
-                                      await homeAssistant.callService(
-                                        'cover',
-                                        isOn ? 'close_cover' : 'open_cover',
-                                        {
-                                          entity_id: bar.entity,
-                                        }
-                                      );
-                                    } else if (domain === 'fan') {
-                                      await homeAssistant.callService(
-                                        'fan',
-                                        isOn ? 'turn_off' : 'turn_on',
-                                        {
-                                          entity_id: bar.entity,
-                                        }
-                                      );
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to toggle entity:', error);
-                                  }
-                                }
-                              : undefined}
-                          ></ha-icon>
-                        `
-                      : ''}
-                    <div style="${isVertical ? '' : 'flex: 1;'}">
-                      ${showNameSection
-                        ? html`
-                            <div
-                              class="uc-slider-name"
-                              style="font-size: ${bar.name_size ||
-                              sliderControl.name_size ||
-                              16}px; color: ${bar.name_color ||
-                              sliderControl.name_color ||
-                              'var(--primary-text-color)'}; font-weight: ${(bar.name_bold ??
-                              sliderControl.name_bold ??
-                              true)
-                                ? '500'
-                                : 'normal'};"
-                            >
-                              ${entityName}
-                            </div>
-                          `
-                        : ''}
-                      ${showValueSection
-                        ? html`
-                            <div
-                              class="uc-slider-value"
-                              style="font-size: ${bar.value_size ||
-                              sliderControl.value_size ||
-                              14}px; color: ${bar.value_color ||
-                              sliderControl.value_color ||
-                              'var(--secondary-text-color)'};"
-                            >
-                              ${displayValue}${bar.type === 'brightness'
-                                ? bar.value_suffix || sliderControl.value_suffix || '%'
-                                : ''}
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  </div>
-                  <!-- Bar section -->
+                  ${renderInfoSection()}
                   <div
                     class="uc-slider-track-wrapper"
                     style="${barSize} ${isVertical
@@ -3860,7 +3867,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
                   </div>
                 `
               : html`
-                  <!-- Bar first, then info (right position) -->
                   <div
                     class="uc-slider-track-wrapper"
                     style="${barSize} ${isVertical
@@ -3869,111 +3875,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                   >
                     ${barElement}
                   </div>
-                  <div
-                    class="uc-slider-info"
-                    style="${infoSize} display: ${shouldShowInfoContainer
-                      ? 'flex'
-                      : 'none'}; align-items: center; justify-content: center; ${isVertical
-                      ? `flex-direction: column; text-align: center; ${infoSpacingStyle}`
-                      : 'none'}; align-items: center; justify-content: center; ${isVertical
-                      ? `flex-direction: column; text-align: center; ${infoSpacingStyle}`
-                      : ''}"
-                  >
-                    ${showIconSection
-                      ? html`
-                          <ha-icon
-                            class="uc-slider-icon"
-                            icon="${EntityIconService.getEntityIcon(entityState, homeAssistant)}"
-                            style="--mdc-icon-size: ${bar.icon_size ||
-                            sliderControl.icon_size ||
-                            16}px; color: ${(bar.dynamic_icon ??
-                              sliderControl.dynamic_icon ??
-                              true) &&
-                            entityState?.attributes.rgb_color
-                              ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                              : bar.icon_color ||
-                                sliderControl.icon_color ||
-                                'var(--primary-text-color)'}; cursor: ${(bar.icon_as_toggle ??
-                            sliderControl.icon_as_toggle ??
-                            true)
-                              ? 'pointer'
-                              : 'default'};"
-                            @click=${sliderControl.icon_as_toggle
-                              ? async () => {
-                                  try {
-                                    const domain = bar.entity.split('.')[0];
-                                    const isOn =
-                                      entityState?.state === 'on' || entityState?.state === 'open';
-                                    if (domain === 'light') {
-                                      await homeAssistant.callService(
-                                        'light',
-                                        isOn ? 'turn_off' : 'turn_on',
-                                        {
-                                          entity_id: bar.entity,
-                                        }
-                                      );
-                                    } else if (domain === 'cover') {
-                                      await homeAssistant.callService(
-                                        'cover',
-                                        isOn ? 'close_cover' : 'open_cover',
-                                        {
-                                          entity_id: bar.entity,
-                                        }
-                                      );
-                                    } else if (domain === 'fan') {
-                                      await homeAssistant.callService(
-                                        'fan',
-                                        isOn ? 'turn_off' : 'turn_on',
-                                        {
-                                          entity_id: bar.entity,
-                                        }
-                                      );
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to toggle entity:', error);
-                                  }
-                                }
-                              : undefined}
-                          ></ha-icon>
-                        `
-                      : ''}
-                    <div style="${isVertical ? '' : 'flex: 1;'}">
-                      ${showNameSection
-                        ? html`
-                            <div
-                              class="uc-slider-name"
-                              style="font-size: ${bar.name_size ||
-                              sliderControl.name_size ||
-                              16}px; color: ${bar.name_color ||
-                              sliderControl.name_color ||
-                              'var(--primary-text-color)'}; font-weight: ${(bar.name_bold ??
-                              sliderControl.name_bold ??
-                              true)
-                                ? '500'
-                                : 'normal'};"
-                            >
-                              ${entityName}
-                            </div>
-                          `
-                        : ''}
-                      ${showValueSection
-                        ? html`
-                            <div
-                              class="uc-slider-value"
-                              style="font-size: ${bar.value_size ||
-                              sliderControl.value_size ||
-                              14}px; color: ${bar.value_color ||
-                              sliderControl.value_color ||
-                              'var(--secondary-text-color)'};"
-                            >
-                              ${displayValue}${bar.type === 'brightness'
-                                ? bar.value_suffix || sliderControl.value_suffix || '%'
-                                : ''}
-                            </div>
-                          `
-                        : ''}
-                    </div>
-                  </div>
+                  ${renderInfoSection()}
                 `}
           </div>
         `;

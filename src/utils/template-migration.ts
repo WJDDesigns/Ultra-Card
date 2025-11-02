@@ -75,20 +75,21 @@ export function migrateToUnified(config: any): MigrationResult {
   }
   // Priority 2: Multiple dynamic templates (display only)
   else if (detection.hasDynamicIconTemplate || detection.hasDynamicColorTemplate) {
-    // Build JSON structure combining templates
+    // Build JSON structure combining templates as clean single-line format
     const jsonParts: string[] = [];
 
     if (detection.hasDynamicIconTemplate) {
       migratedFrom.push('dynamic_icon_template');
-      jsonParts.push(`  "icon": ${wrapTemplateInJinja(config.dynamic_icon_template)}`);
+      jsonParts.push(`"icon": ${wrapTemplateInJinja(config.dynamic_icon_template)}`);
     }
 
     if (detection.hasDynamicColorTemplate) {
       migratedFrom.push('dynamic_color_template');
-      jsonParts.push(`  "icon_color": ${wrapTemplateInJinja(config.dynamic_color_template)}`);
+      jsonParts.push(`"icon_color": ${wrapTemplateInJinja(config.dynamic_color_template)}`);
     }
 
-    unifiedTemplate = `{\n${jsonParts.join(',\n')}\n}`;
+    // Use single-line format for cleaner output
+    unifiedTemplate = `{ ${jsonParts.join(', ')} }`;
     ignoreEntityState = false; // Preserve display-only behavior
   }
 
@@ -108,11 +109,14 @@ export function migrateToUnified(config: any): MigrationResult {
 function wrapTemplateInJinja(template: string): string {
   if (!template) return '""';
 
-  const trimmed = template.trim();
+  // Remove excessive whitespace and normalize
+  const trimmed = template.trim().replace(/\s+/g, ' ');
 
-  // If it's already a complete Jinja2 expression, return as-is
+  // If it's a Jinja2 template expression, wrap it in quotes for JSON
   if (trimmed.startsWith('{%') || trimmed.startsWith('{{')) {
-    return trimmed;
+    // Escape any existing quotes in the template
+    const escaped = trimmed.replace(/"/g, '\\"');
+    return `"${escaped}"`;
   }
 
   // If it's a simple value, wrap in quotes
@@ -211,4 +215,3 @@ export function applyMigration(config: any): any {
     // dynamic_color_template_mode: false,
   };
 }
-

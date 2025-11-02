@@ -872,6 +872,11 @@ export interface SliderBar {
     overlay_name_position?: 'top' | 'middle' | 'bottom';
     overlay_value_position?: 'top' | 'middle' | 'bottom';
     overlay_icon_position?: 'top' | 'middle' | 'bottom';
+    content_position?: 'left' | 'center' | 'right' | 'bottom' | 'top' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    icon_position?: 'left' | 'center' | 'right' | 'top' | 'bottom' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    name_position?: 'left' | 'center' | 'right' | 'top' | 'bottom' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    value_position?: 'left' | 'center' | 'right' | 'top' | 'bottom' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    info_section_position?: 'left' | 'right' | 'top' | 'bottom';
     slider_height?: number;
     slider_track_color?: string;
     slider_fill_color?: string;

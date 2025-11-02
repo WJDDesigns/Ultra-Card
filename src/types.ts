@@ -1559,6 +1559,92 @@ export interface SliderBar {
   overlay_value_position?: 'top' | 'middle' | 'bottom';
   overlay_icon_position?: 'top' | 'middle' | 'bottom';
 
+  // Unified content positioning for all layout modes (deprecated, use individual positions below)
+  content_position?: // Horizontal Overlay: Left, Center, Right
+  | 'left'
+    | 'center'
+    | 'right'
+    // Vertical Overlay: Bottom, Center, Top
+    | 'bottom'
+    | 'top'
+    // Horizontal Split: Left, Right (position of content relative to bar)
+    // Vertical Split: Top, Bottom (position of content relative to bar)
+    // Horizontal Outside: Top Left, Top Center, Top Right, Bottom Left, Bottom Center, Bottom Right
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right'
+    // Vertical Outside: Left Top, Left Center, Left Bottom, Right Top, Right Center, Right Bottom
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom';
+
+  // Individual element positioning (overrides content_position if set)
+  icon_position?:
+    | 'left'
+    | 'center'
+    | 'right' // Horizontal Overlay
+    | 'top'
+    | 'bottom' // Vertical Overlay
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right' // Horizontal Outside
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom'; // Vertical Outside
+
+  name_position?:
+    | 'left'
+    | 'center'
+    | 'right' // Horizontal Overlay
+    | 'top'
+    | 'bottom' // Vertical Overlay
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right' // Horizontal Outside
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom'; // Vertical Outside
+
+  value_position?:
+    | 'left'
+    | 'center'
+    | 'right' // Horizontal Overlay
+    | 'top'
+    | 'bottom' // Vertical Overlay
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right' // Horizontal Outside
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom'; // Vertical Outside
+
+  // For split mode - where content section is positioned relative to bar
+  info_section_position?: 'left' | 'right' | 'top' | 'bottom';
+
   // Per-bar styling overrides (optional, falls back to global)
   slider_height?: number;
   slider_track_color?: string;

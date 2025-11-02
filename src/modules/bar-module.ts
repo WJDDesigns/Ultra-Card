@@ -3324,7 +3324,7 @@ export class UltraBarModule extends BaseUltraModule {
     let barLabel: string | undefined;
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
-    
+
     // PRIORITY 1: Unified template (if enabled)
     if (barModule.unified_template_mode && barModule.unified_template) {
       if (!this._templateService && hass) {
@@ -3334,29 +3334,35 @@ export class UltraBarModule extends BaseUltraModule {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
         const templateHash = this._hashString(barModule.unified_template);
         const templateKey = `unified_bar_${barModule.id}_${templateHash}`;
-        
+
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           const context = buildEntityContext(barModule.entity, hass, {
             entity: barModule.entity,
           });
-          this._templateService.subscribeToTemplate(barModule.unified_template, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
+          this._templateService.subscribeToTemplate(
+            barModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
               }
-            }
-          }, context);
+            },
+            context
+          );
         }
-        
+
         const unifiedResult = hass.__uvc_template_strings?.[templateKey];
         if (unifiedResult && String(unifiedResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(unifiedResult);
           if (!hasTemplateError(parsed)) {
             if (parsed.value !== undefined) {
-              const num = typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
+              const num =
+                typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
               if (!isNaN(num)) {
                 percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
               }
@@ -3376,79 +3382,79 @@ export class UltraBarModule extends BaseUltraModule {
     if (!barModule.unified_template_mode) {
       const pctType = (barModule as any).percentage_type || 'entity';
       if (pctType === 'template' && (barModule as any).percentage_template) {
-      // Template-driven percentage
-      if (!this._templateService && hass) {
-        this._templateService = new TemplateService(hass);
-      }
-      if (hass) {
-        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const tpl = (barModule as any).percentage_template as string;
-        const key = `bar_percentage_${barModule.id}_${this._hashString(tpl)}`;
-        if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-          this._templateService.subscribeToTemplate(tpl, key, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
-              }
-            }
-          });
+        // Template-driven percentage
+        if (!this._templateService && hass) {
+          this._templateService = new TemplateService(hass);
         }
-        const rendered = hass.__uvc_template_strings?.[key];
-        if (rendered !== undefined) {
-          const num = parseFloat(String(rendered));
-          if (!isNaN(num)) {
-            // Accept 0..100 directly; if 0..1 assume fraction and upscale
-            percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
+        if (hass) {
+          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+          const tpl = (barModule as any).percentage_template as string;
+          const key = `bar_percentage_${barModule.id}_${this._hashString(tpl)}`;
+          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
+            this._templateService.subscribeToTemplate(tpl, key, () => {
+              if (typeof window !== 'undefined') {
+                // Use global debounced update
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            });
+          }
+          const rendered = hass.__uvc_template_strings?.[key];
+          if (rendered !== undefined) {
+            const num = parseFloat(String(rendered));
+            if (!isNaN(num)) {
+              // Accept 0..100 directly; if 0..1 assume fraction and upscale
+              percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
+            }
           }
         }
-      }
-    } else if (pctType === 'attribute') {
-      const entId = (barModule as any).percentage_attribute_entity || (barModule as any).entity;
-      const attrName = (barModule as any).percentage_attribute_name || '';
-      const st = entId ? hass?.states[entId] : undefined;
-      const raw = attrName ? (st?.attributes as any)?.[attrName] : undefined;
-      const unit = st?.attributes?.unit_of_measurement || '';
-      const num = parseFloat(String(raw ?? '0'));
-      if (!isNaN(num)) {
-        if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
-          percentage = clampPercent(num);
-        } else if (st?.attributes?.max) {
-          const max = parseFloat(String(st.attributes.max));
-          percentage = max > 0 ? clampPercent((num / max) * 100) : 0;
-        } else {
-          // Assume direct percent
-          percentage = clampPercent(num);
+      } else if (pctType === 'attribute') {
+        const entId = (barModule as any).percentage_attribute_entity || (barModule as any).entity;
+        const attrName = (barModule as any).percentage_attribute_name || '';
+        const st = entId ? hass?.states[entId] : undefined;
+        const raw = attrName ? (st?.attributes as any)?.[attrName] : undefined;
+        const unit = st?.attributes?.unit_of_measurement || '';
+        const num = parseFloat(String(raw ?? '0'));
+        if (!isNaN(num)) {
+          if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
+            percentage = clampPercent(num);
+          } else if (st?.attributes?.max) {
+            const max = parseFloat(String(st.attributes.max));
+            percentage = max > 0 ? clampPercent((num / max) * 100) : 0;
+          } else {
+            // Assume direct percent
+            percentage = clampPercent(num);
+          }
         }
-      }
-    } else if (pctType === 'difference') {
-      const currId = (barModule as any).percentage_current_entity;
-      const totalId = (barModule as any).percentage_total_entity;
-      const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
-      const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
-      percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
-    } else {
-      // Entity-based percentage
-      const entityState = hass?.states[barModule.entity];
-      let value = 0;
-      let maxValue = 100;
-      let unit = '';
+      } else if (pctType === 'difference') {
+        const currId = (barModule as any).percentage_current_entity;
+        const totalId = (barModule as any).percentage_total_entity;
+        const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
+        const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
+        percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
+      } else {
+        // Entity-based percentage
+        const entityState = hass?.states[barModule.entity];
+        let value = 0;
+        let maxValue = 100;
+        let unit = '';
 
-      if (entityState) {
-        value = parseFloat(entityState.state) || 0;
-        unit = entityState.attributes?.unit_of_measurement || '';
+        if (entityState) {
+          value = parseFloat(entityState.state) || 0;
+          unit = entityState.attributes?.unit_of_measurement || '';
 
-        if (entityState.attributes?.max) {
-          maxValue = parseFloat(entityState.attributes.max);
-        } else if (unit === '%') {
-          maxValue = 100;
-        } else if (entityState.attributes?.device_class === 'battery') {
-          maxValue = 100;
+          if (entityState.attributes?.max) {
+            maxValue = parseFloat(entityState.attributes.max);
+          } else if (unit === '%') {
+            maxValue = 100;
+          } else if (entityState.attributes?.device_class === 'battery') {
+            maxValue = 100;
+          }
         }
-      }
         percentage = clampPercent((value / maxValue) * 100);
       }
     }
@@ -3602,7 +3608,8 @@ export class UltraBarModule extends BaseUltraModule {
         : (resolvedBorderRadius as number);
 
     // Generate gradient or solid color for bar fill
-    let barFillBackground = barColor || barModule.bar_color || moduleWithDesign.color || 'var(--primary-color)';
+    let barFillBackground =
+      barColor || barModule.bar_color || moduleWithDesign.color || 'var(--primary-color)';
 
     // Resolve CSS variable colors (var(--...)) to computed RGB values when needed.
     // This ensures gradients and value-based colors render the same whether a hex or a CSS variable is provided.

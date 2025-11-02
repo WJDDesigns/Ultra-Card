@@ -701,7 +701,7 @@ All standard markdown features are automatically enabled!`,
     // PRIORITY 1: Unified template
     let sourceContent = '';
     let contentColor: string | undefined;
-    
+
     if (markdownModule.unified_template_mode && markdownModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -710,23 +710,28 @@ All standard markdown features are automatically enabled!`,
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
         const templateHash = this._hashString(markdownModule.unified_template);
         const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
-        
+
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
           const context = buildEntityContext('', hass, {
             markdown_content: markdownModule.markdown_content,
           });
-          this._templateService.subscribeToTemplate(markdownModule.unified_template, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
+          this._templateService.subscribeToTemplate(
+            markdownModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
               }
-            }
-          }, context);
+            },
+            context
+          );
         }
-        
+
         const unifiedResult = hass.__uvc_template_strings?.[templateKey];
         if (unifiedResult && String(unifiedResult).trim() !== '') {
           const parsed = parseUnifiedTemplate(unifiedResult);

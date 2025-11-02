@@ -1,5 +1,33 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta6
+
+### 🐛 Critical Migration Fixes
+
+- **Fixed Migration Quote Bug** - Migration now properly wraps template code in quotes for valid JSON
+- **Fixed Migration Whitespace** - Normalized whitespace to prevent parsing errors from newlines and tabs
+- **Cleaner Migration Output** - Single-line JSON format for better readability and reliability
+
+### 📋 What Was Fixed
+
+The "Migrate to Unified Template" button now generates properly formatted JSON:
+
+**Before (Broken)**:
+```
+{
+  "icon_color": {% if ... %} #43a047 {% else %} #ffa600 {% endif %}
+}
+```
+
+**After (Fixed)**:
+```
+{ "icon_color": "{% if ... %} #43a047 {% else %} #ffa600 {% endif %}" }
+```
+
+Thanks to @LightningManGTS and @Konijntje for reporting this issue!
+
+---
+
 ## Version 2.1.0-beta5
 
 ### 🚀 Major Features
