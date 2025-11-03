@@ -1,5 +1,15 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta7
+
+### 🐛 Bug Fixes
+
+- **Fixed dropdown module issues in slider** - Resolved issues with dropdown module functionality when used within slider modules
+- **Fixed light module issues** - Corrected various problems affecting the light module functionality
+- **Improved light module navigation** - Enhanced navigation and user experience within the light module
+
+---
+
 ## Version 2.1.0-beta6
 
 ### 🐛 Critical Migration Fixes
@@ -13,11 +23,13 @@
 The "Migrate to Unified Template" button now generates properly formatted JSON:
 
 **Before (Broken)**:
+
 - icon_color property was missing quotes around template code
 - Multi-line format with excessive whitespace
 - Result: Invalid JSON that wouldn't parse
 
 **After (Fixed)**:
+
 - Template code properly wrapped in quotes for valid JSON
 - Clean single-line format
 - Result: Valid JSON that parses correctly

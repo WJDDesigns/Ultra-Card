@@ -1812,6 +1812,18 @@ export class UltraLightModule extends BaseUltraModule {
   }
 
   private getPresetColorMode(preset: LightPreset): 'rgb' | 'hs' | 'xy' | 'color_temp' {
+    // Check if this is RGBWW mode (both color and color_temp are set)
+    const hasColorRgb = preset.rgb_color || preset.hs_color || preset.xy_color;
+    const isRgbwwMode = hasColorRgb && preset.color_temp !== undefined;
+
+    // In RGBWW mode, prioritize color mode (don't switch to color_temp tab)
+    if (isRgbwwMode) {
+      if (preset.hs_color) return 'hs';
+      if (preset.rgb_color) return 'rgb';
+      if (preset.xy_color) return 'xy';
+    }
+
+    // Not RGBWW mode - use normal priority
     if (preset.color_temp) return 'color_temp';
     if (preset.hs_color) return 'hs';
     if (preset.xy_color) return 'xy';
@@ -2047,6 +2059,57 @@ export class UltraLightModule extends BaseUltraModule {
       // Check if this is RGBWW mode (both color and temp defined)
       const isRgbwwMode =
         (preset.rgb_color || preset.hs_color || preset.xy_color) && preset.color_temp !== undefined;
+
+      // Prevent conflicts: Home Assistant requires mutually exclusive color descriptors
+      // Detect which descriptor types are present
+      const hasColorRgb =
+        preset.rgb_color !== undefined ||
+        preset.hs_color !== undefined ||
+        preset.xy_color !== undefined;
+      const hasColorTemp = preset.color_temp !== undefined;
+      const hasWhite = preset.white !== undefined;
+      const hasRgbw = preset.rgbw_color !== undefined;
+      const hasRgbww = preset.rgbww_color !== undefined;
+      const hasEffect = preset.effect && preset.effect.trim() !== '';
+
+      // Priority order (highest to lowest): Effect > RGBWW specific > RGBW specific > White > Color Temp > RGB/HS/XY
+      // Clear conflicting descriptors to prevent HA error "two or more values in the same group of exclusion"
+      if (!isRgbwwMode && !hasEffect) {
+        // Not in RGBWW mode and no effect - enforce single descriptor
+        if (hasRgbww) {
+          // Use rgbww_color exclusively
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+          delete (preset as any).color_temp;
+          delete (preset as any).rgbw_color;
+          delete (preset as any).white;
+        } else if (hasRgbw) {
+          // Use rgbw_color exclusively
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+          delete (preset as any).color_temp;
+          delete (preset as any).white;
+        } else if (hasWhite) {
+          // Use white exclusively - clear all other color descriptors
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+          delete (preset as any).color_temp;
+        } else if (hasColorTemp && hasColorRgb) {
+          // Both color_temp and RGB set but not RGBWW mode - prioritize color_temp
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+        } else if (hasColorRgb) {
+          // RGB/HS/XY mode - clear white
+          delete (preset as any).white;
+        }
+      } else if (isRgbwwMode) {
+        // RGBWW mode - allow color + temp together, but clear white
+        delete (preset as any).white;
+      }
 
       // Add color - handle RGBWW mode specially
       if (preset.effect && preset.effect.trim() !== '') {

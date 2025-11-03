@@ -356,17 +356,41 @@ export class UcLightColorPicker extends LitElement {
       effectiveMode = 'rgbww';
     }
 
+    // Build detail object with only relevant properties to prevent conflicts
+    // Home Assistant requires mutually exclusive color descriptors
+    const detail: any = {
+      mode: effectiveMode,
+      rgbww_mode: this.rgbww_mode,
+    };
+
+    // Include properties based on mode to prevent "two or more values in the same group of exclusion" error
+    if (effectiveMode === 'effect') {
+      // Effect mode - only effect, no color descriptors
+      detail.effect = this.effect;
+    } else if (effectiveMode === 'rgbww') {
+      // RGBWW mode - allow both color and color_temp
+      detail.rgb_color = this._currentRgb;
+      detail.hs_color = this._currentHs;
+      detail.xy_color = this._currentXy;
+      detail.color_temp = this._currentColorTemp;
+      detail.effect = ''; // Clear effect
+    } else if (effectiveMode === 'color_temp') {
+      // Color temperature only - no RGB or white
+      detail.color_temp = this._currentColorTemp;
+      detail.effect = ''; // Clear effect
+    } else if (effectiveMode === 'hs' || effectiveMode === 'rgb' || effectiveMode === 'xy') {
+      // Color modes - include color but not color_temp or white
+      detail.rgb_color = this._currentRgb;
+      detail.hs_color = this._currentHs;
+      detail.xy_color = this._currentXy;
+      detail.effect = ''; // Clear effect
+    }
+
+    // Apply any explicit updates (these override the defaults)
+    Object.assign(detail, updates);
+
     const event = new CustomEvent('color-changed', {
-      detail: {
-        rgb_color: this._currentRgb,
-        hs_color: this._currentHs,
-        xy_color: this._currentXy,
-        color_temp: this._currentColorTemp,
-        effect: this.effect,
-        mode: effectiveMode,
-        rgbww_mode: this.rgbww_mode,
-        ...updates,
-      },
+      detail,
     });
     this.dispatchEvent(event);
   }
@@ -694,22 +718,53 @@ export class UcLightColorPicker extends LitElement {
         <div class="color-mode-tabs">
           <button
             class="mode-tab ${this.mode === 'hs' ? 'active' : ''}"
-            @click=${() => (this.mode = 'hs')}
+            @click=${() => {
+              if (this.mode !== 'hs') {
+                this.mode = 'hs';
+                // Fire color-changed event to clear conflicting descriptors
+                this.fireColorChanged({
+                  rgb_color: this._currentRgb,
+                  hs_color: this._currentHs,
+                  xy_color: this._currentXy,
+                  mode: 'hs',
+                });
+              }
+            }}
             .disabled=${this.disabled}
           >
             Color
           </button>
-          <button
-            class="mode-tab ${this.mode === 'color_temp' ? 'active' : ''}"
-            @click=${() => (this.mode = 'color_temp')}
-            .disabled=${this.disabled}
-          >
-            White
-          </button>
+          ${!this.rgbww_mode
+            ? html`
+                <button
+                  class="mode-tab ${this.mode === 'color_temp' ? 'active' : ''}"
+                  @click=${() => {
+                    if (this.mode !== 'color_temp') {
+                      this.mode = 'color_temp';
+                      // Fire color-changed event to clear conflicting descriptors
+                      this.fireColorChanged({
+                        color_temp: this._currentColorTemp,
+                        mode: 'color_temp',
+                      });
+                    }
+                  }}
+                  .disabled=${this.disabled}
+                >
+                  White
+                </button>
+              `
+            : ''}
           <button
             class="mode-tab ${this.mode === 'effect' ? 'active' : ''}"
             @click=${() => {
-              this.mode = 'effect';
+              if (this.mode !== 'effect') {
+                this.mode = 'effect';
+                // Fire color-changed event to clear conflicting descriptors
+                this.fireColorChanged({
+                  effect: this.effect,
+                  mode: 'effect',
+                });
+              }
             }}
             .disabled=${this.disabled}
             style="position: relative; z-index: 10;"

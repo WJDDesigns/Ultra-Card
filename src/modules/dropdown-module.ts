@@ -22,8 +22,14 @@ export class UltraDropdownModule extends BaseUltraModule {
   };
 
   private expandedOptions: Set<string> = new Set();
-  private dropdownOpen: boolean = false;
+  private dropdownOpenStates: Map<string, boolean> = new Map(); // moduleId -> isOpen
   private currentSelection: Map<string, string> = new Map(); // moduleId -> selectedOption
+  private clickOutsideHandler: ((e: Event) => void) | null = null;
+  private portaledDropdowns: Map<string, HTMLElement> = new Map(); // moduleId -> portaled element
+  private moduleContexts: Map<
+    string,
+    { module: DropdownModule; hass: HomeAssistant; config?: UltraCardConfig }
+  > = new Map(); // Store module contexts for event handling
 
   // Trigger preview update for reactive UI
 
@@ -1168,6 +1174,9 @@ export class UltraDropdownModule extends BaseUltraModule {
   ): TemplateResult {
     const dropdownModule = module as DropdownModule;
 
+    // Store module context for event handling in portaled dropdowns
+    this.moduleContexts.set(dropdownModule.id, { module: dropdownModule, hass, config });
+
     // Apply design properties with priority - global design properties are stored directly on the module
     const moduleWithDesign = dropdownModule as any;
 
@@ -1317,6 +1326,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     return html`
       <div
         class="dropdown-module-container ${hoverEffectClass}"
+        data-module-id="${dropdownModule.id}"
         style=${this.styleObjectToCss(containerStyles)}
       >
         <div
@@ -1330,7 +1340,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                 style="${dropdownStyles} display: flex; align-items: center; justify-content: space-between;"
                 @click=${(e: Event) => {
                   console.log('Dropdown clicked');
-                  this.toggleDropdown(e);
+                  this.toggleDropdown(e, dropdownModule.id);
                 }}
               >
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -1360,7 +1370,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
-                style="position: absolute !important; top: 100%; left: 0; right: 0; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001 !important; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001 !important; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
               >
@@ -1372,7 +1382,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                         @click=${(e: Event) => {
                           console.log('Placeholder option clicked');
                           this.selectOption('', dropdownModule);
-                          this.closeDropdown(e);
+                          this.closeDropdown(e, dropdownModule.id);
                         }}
                       >
                         <span
@@ -1471,7 +1481,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                           }
                         }
 
-                        this.closeDropdown(e);
+                        this.closeDropdown(e, dropdownModule.id);
                       }}
                       @mouseenter=${(e: Event) => {
                         const target = e.target as HTMLElement;
@@ -1602,41 +1612,272 @@ export class UltraDropdownModule extends BaseUltraModule {
     return option.icon_color || 'var(--primary-color)';
   }
 
-  private toggleDropdown(event?: Event): void {
-    this.dropdownOpen = !this.dropdownOpen;
-
-    // Find the dropdown options relative to the clicked element
+  private toggleDropdown(event?: Event, moduleId?: string): void {
+    // Find the dropdown options and selected element relative to the clicked element
     let dropdownElement: HTMLElement | null = null;
+    let selectedElement: HTMLElement | null = null;
+    let instanceId = moduleId || 'default';
+
     if (event) {
       const target = event.target as HTMLElement;
+      console.log('Toggle dropdown - target:', target);
+
+      // The target might be the selected element itself or a child
+      selectedElement = target.classList.contains('dropdown-selected')
+        ? target
+        : (target.closest('.dropdown-selected') as HTMLElement);
+
+      console.log('Found selectedElement:', selectedElement);
+
       const container = target.closest('.custom-dropdown');
+      console.log('Found container:', container);
+
+      // Try to get module ID from the container's data attribute
+      const moduleContainer = target.closest('.dropdown-module-container') as HTMLElement;
+      if (moduleContainer?.dataset?.moduleId) {
+        instanceId = moduleContainer.dataset.moduleId;
+      }
+
       dropdownElement = container?.querySelector('.dropdown-options') as HTMLElement;
+      console.log('Found dropdownElement:', dropdownElement);
     } else {
       dropdownElement = document.querySelector('.dropdown-options') as HTMLElement;
+      selectedElement = document.querySelector('.dropdown-selected') as HTMLElement;
     }
 
+    // Toggle state for this specific instance
+    const currentState = this.dropdownOpenStates.get(instanceId) || false;
+    const newState = !currentState;
+    this.dropdownOpenStates.set(instanceId, newState);
+
+    console.log(`Toggling dropdown ${instanceId}: ${currentState} -> ${newState}`);
+
     if (dropdownElement) {
-      dropdownElement.style.display = this.dropdownOpen ? 'block' : 'none';
-      console.log('Dropdown toggled:', this.dropdownOpen ? 'open' : 'closed');
+      if (newState) {
+        // Get position of the selected element
+        if (selectedElement) {
+          const rect = selectedElement.getBoundingClientRect();
+
+          // Create or reuse portaled dropdown
+          let portaledDropdown = this.portaledDropdowns.get(instanceId);
+
+          if (!portaledDropdown) {
+            // Clone the dropdown element for portaling
+            console.log('Creating portaled dropdown for', instanceId);
+            portaledDropdown = dropdownElement.cloneNode(true) as HTMLElement;
+            portaledDropdown.id = `portaled-dropdown-${instanceId}`;
+            portaledDropdown.dataset.instanceId = instanceId;
+            document.body.appendChild(portaledDropdown);
+            this.portaledDropdowns.set(instanceId, portaledDropdown);
+          } else {
+            // Update the cloned dropdown's content from the original
+            portaledDropdown.innerHTML = dropdownElement.innerHTML;
+          }
+
+          // Re-attach event handlers to the cloned dropdown's options
+          this.attachPortaledDropdownHandlers(portaledDropdown, instanceId);
+
+          // Position portaled dropdown using fixed positioning
+          portaledDropdown.style.position = 'fixed';
+          portaledDropdown.style.top = `${rect.bottom}px`;
+          portaledDropdown.style.left = `${rect.left}px`;
+          portaledDropdown.style.width = `${rect.width}px`;
+          portaledDropdown.style.right = 'auto';
+          portaledDropdown.style.display = 'block';
+          portaledDropdown.style.zIndex = '10001';
+
+          // Hide the original dropdown
+          dropdownElement.style.display = 'none';
+
+          // Set up click-outside handler
+          this.setupClickOutsideHandler(portaledDropdown, selectedElement, instanceId);
+
+          console.log('Dropdown opened at position:', {
+            top: rect.bottom,
+            left: rect.left,
+            width: rect.width,
+            portaled: true,
+            instanceId,
+          });
+        } else {
+          // Fallback if selectedElement not found
+          console.warn('selectedElement not found, using fallback positioning');
+          dropdownElement.style.display = 'block';
+        }
+      } else {
+        // Hide portaled dropdown
+        const portaledDropdown = this.portaledDropdowns.get(instanceId);
+        if (portaledDropdown) {
+          portaledDropdown.style.display = 'none';
+        }
+        dropdownElement.style.display = 'none';
+        this.removeClickOutsideHandler();
+      }
+      console.log('Dropdown toggled:', newState ? 'open' : 'closed');
+    } else {
+      console.error('Could not find dropdown element');
     }
   }
 
-  private closeDropdown(event?: Event): void {
-    this.dropdownOpen = false;
+  private closeDropdown(event?: Event, moduleId?: string): void {
+    let instanceId = moduleId || 'default';
 
-    // Find the dropdown options relative to the event if provided
-    let dropdownElement: HTMLElement | null = null;
     if (event) {
       const target = event.target as HTMLElement;
-      const container = target.closest('.custom-dropdown');
-      dropdownElement = container?.querySelector('.dropdown-options') as HTMLElement;
-    } else {
-      dropdownElement = document.querySelector('.dropdown-options') as HTMLElement;
+
+      // Try to get module ID from the container's data attribute
+      const moduleContainer = target.closest('.dropdown-module-container') as HTMLElement;
+      if (moduleContainer?.dataset?.moduleId) {
+        instanceId = moduleContainer.dataset.moduleId;
+      }
     }
 
-    if (dropdownElement) {
-      dropdownElement.style.display = 'none';
-      console.log('Dropdown closed');
+    // Update state for this specific instance
+    this.dropdownOpenStates.set(instanceId, false);
+
+    // Hide the portaled dropdown
+    const portaledDropdown = this.portaledDropdowns.get(instanceId);
+    if (portaledDropdown) {
+      portaledDropdown.style.display = 'none';
+      console.log(`Portaled dropdown ${instanceId} closed`);
+    }
+
+    this.removeClickOutsideHandler();
+  }
+
+  private setupClickOutsideHandler(
+    portaledDropdown: HTMLElement,
+    selectedElement: HTMLElement,
+    moduleId: string
+  ): void {
+    // Remove any existing handler first
+    this.removeClickOutsideHandler();
+
+    this.clickOutsideHandler = (e: Event) => {
+      const target = e.target as HTMLElement;
+
+      // Don't close if clicking inside portaled dropdown or on the selected element
+      if (
+        portaledDropdown.contains(target) ||
+        selectedElement.contains(target) ||
+        target === portaledDropdown ||
+        target === selectedElement
+      ) {
+        return;
+      }
+
+      // Close the dropdown
+      console.log('Click outside detected, closing dropdown');
+      this.dropdownOpenStates.set(moduleId, false);
+      portaledDropdown.style.display = 'none';
+      this.removeClickOutsideHandler();
+    };
+
+    // Add listener with a slight delay to avoid immediate triggering
+    setTimeout(() => {
+      document.addEventListener('click', this.clickOutsideHandler!, true);
+    }, 10);
+  }
+
+  private removeClickOutsideHandler(): void {
+    if (this.clickOutsideHandler) {
+      document.removeEventListener('click', this.clickOutsideHandler, true);
+      this.clickOutsideHandler = null;
+    }
+  }
+
+  private attachPortaledDropdownHandlers(portaledDropdown: HTMLElement, instanceId: string): void {
+    const context = this.moduleContexts.get(instanceId);
+    if (!context) {
+      console.error('No module context found for', instanceId);
+      return;
+    }
+
+    const { module: dropdownModule, hass, config } = context;
+    const isEntityMode = dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
+
+    // Get all option elements in the portaled dropdown
+    const optionElements = portaledDropdown.querySelectorAll('.dropdown-option');
+
+    if (isEntityMode) {
+      // Entity mode: get options from entity
+      const entityOptions = this.getOptionsFromEntity(dropdownModule, hass);
+
+      optionElements.forEach((optionEl, index) => {
+        // Remove old listeners by cloning and replacing
+        const newOptionEl = optionEl.cloneNode(true) as HTMLElement;
+        optionEl.replaceWith(newOptionEl);
+
+        newOptionEl.addEventListener('click', e => {
+          e.stopPropagation();
+          const optionValue = entityOptions[index];
+          if (optionValue) {
+            console.log('Entity option clicked:', optionValue);
+            this.updateEntitySelection(dropdownModule, optionValue, hass);
+            this.closeDropdown(undefined, instanceId);
+          }
+        });
+
+        // Hover effects
+        newOptionEl.addEventListener('mouseenter', () => {
+          newOptionEl.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
+        });
+        newOptionEl.addEventListener('mouseleave', () => {
+          newOptionEl.style.backgroundColor = 'transparent';
+        });
+      });
+    } else {
+      // Manual mode: use configured options
+      const options = dropdownModule.options;
+
+      optionElements.forEach((optionEl, index) => {
+        // Skip placeholder option (it's at index 0 if track_state is false)
+        const optionIndex = !dropdownModule.track_state ? index - 1 : index;
+
+        if (optionIndex < 0) {
+          // This is the placeholder
+          const newOptionEl = optionEl.cloneNode(true) as HTMLElement;
+          optionEl.replaceWith(newOptionEl);
+
+          newOptionEl.addEventListener('click', e => {
+            e.stopPropagation();
+            console.log('Placeholder clicked');
+            this.selectOption('', dropdownModule);
+            this.closeDropdown(undefined, instanceId);
+          });
+          return;
+        }
+
+        const option = options[optionIndex];
+        if (!option) return;
+
+        // Remove old listeners by cloning and replacing
+        const newOptionEl = optionEl.cloneNode(true) as HTMLElement;
+        optionEl.replaceWith(newOptionEl);
+
+        newOptionEl.addEventListener('click', e => {
+          e.stopPropagation();
+          console.log('Option clicked:', option.label);
+
+          // Track state if enabled
+          if (dropdownModule.track_state) {
+            this.currentSelection.set(instanceId, option.label);
+          }
+
+          // Execute the option's action
+          this.selectOption(option.label, dropdownModule);
+          this.executeOptionAction(option, hass, newOptionEl, config);
+          this.closeDropdown(undefined, instanceId);
+        });
+
+        // Hover effects
+        newOptionEl.addEventListener('mouseenter', () => {
+          newOptionEl.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
+        });
+        newOptionEl.addEventListener('mouseleave', () => {
+          newOptionEl.style.backgroundColor = 'transparent';
+        });
+      });
     }
   }
 
@@ -1780,11 +2021,13 @@ export class UltraDropdownModule extends BaseUltraModule {
         position: relative;
         pointer-events: auto;
         isolation: isolate;
+        overflow: visible !important;
       }
 
       .dropdown-module-preview {
         width: 100%;
         position: relative;
+        overflow: visible !important;
       }
 
       /* label styles removed */
@@ -1803,6 +2046,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         position: relative;
         width: inherit;
         height: inherit;
+        overflow: visible !important;
       }
 
       .dropdown-selected {
@@ -1830,7 +2074,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
 
       .dropdown-options {
-        position: absolute !important;
+        position: fixed !important;
         z-index: 10001 !important;
         background: var(--card-background-color) !important;
         border: 1px solid var(--divider-color) !important;
