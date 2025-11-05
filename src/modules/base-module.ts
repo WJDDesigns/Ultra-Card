@@ -507,4 +507,160 @@ export abstract class BaseUltraModule implements UltraModule {
       }, delay);
     }
   }
+
+  /**
+   * Render a beautiful gradient error state for incomplete module configuration
+   * Matches the website's gradient aesthetic (purple → pink → blue)
+   *
+   * @param title - Main error title (e.g., "Configure Entities")
+   * @param subtitle - Helpful subtitle text (e.g., "Select an entity in the General tab")
+   * @param icon - Icon to display (defaults to alert circle)
+   * @returns TemplateResult with gradient error state
+   */
+  protected renderGradientErrorState(
+    title: string,
+    subtitle: string,
+    icon: string = 'mdi:alert-circle-outline'
+  ): TemplateResult {
+    return html`
+      <style>
+        ${this.getGradientErrorStateStyles()}
+      </style>
+      <div class="ultra-config-needed">
+        <div class="ultra-config-gradient"></div>
+        <div class="ultra-config-content">
+          <ha-icon icon="${icon}"></ha-icon>
+          <div class="ultra-config-text">
+            <div class="ultra-config-title">${title}</div>
+            <div class="ultra-config-subtitle">${subtitle}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render a compact warning banner for partial configuration issues
+   * Shows when some items are valid but others need configuration
+   *
+   * @param message - Warning message to display
+   * @param count - Optional count to display (e.g., "2 items need configuration")
+   * @returns TemplateResult with gradient warning banner
+   */
+  protected renderGradientWarningBanner(message: string, count?: number): TemplateResult {
+    const displayMessage = count !== undefined ? `${count} ${message}` : message;
+
+    return html`
+      <style>
+        ${this.getGradientErrorStateStyles()}
+      </style>
+      <div class="ultra-config-banner">
+        <div class="ultra-config-banner-gradient"></div>
+        <div class="ultra-config-banner-content">
+          <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+          <span>${displayMessage}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Get shared CSS styles for gradient error states
+   * Called by renderGradientErrorState and renderGradientWarningBanner
+   *
+   * @returns CSS string with gradient error state styles
+   */
+  protected getGradientErrorStateStyles(): string {
+    return `
+      /* Ultra Card Modern Gradient Error State */
+      .ultra-config-needed {
+        position: relative;
+        padding: 16px;
+        border-radius: 12px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .ultra-config-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.15) 0%, 
+          rgba(236, 72, 153, 0.15) 50%, 
+          rgba(59, 130, 246, 0.15) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .ultra-config-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 24px;
+      }
+
+      .ultra-config-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .ultra-config-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 2px;
+      }
+
+      .ultra-config-subtitle {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compact Warning Banner */
+      .ultra-config-banner {
+        position: relative;
+        padding: 10px 14px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        backdrop-filter: blur(10px);
+      }
+
+      .ultra-config-banner-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.12) 0%, 
+          rgba(236, 72, 153, 0.12) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-banner-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--primary-text-color);
+      }
+
+      .ultra-config-banner-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 18px;
+      }
+    `;
+  }
 }

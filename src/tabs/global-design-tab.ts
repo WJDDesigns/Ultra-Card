@@ -487,37 +487,6 @@ export class GlobalDesignTab {
             (e: CustomEvent) => updateDesign(e.detail.value)
           )}
         </div>
-
-        <!-- Smart Scaling Section -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
-        >
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <ha-icon icon="mdi:fit-to-screen" style="color: var(--primary-color);"></ha-icon>
-            <span style="font-size: 16px; font-weight: 600; color: var(--primary-text-color);">
-              Smart Scaling
-            </span>
-          </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-          >
-            When enabled, content automatically scales to fit within the card boundaries. Disable to
-            allow overflow effects like glows and shadows to extend beyond bounds.
-          </div>
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 14px; color: var(--primary-text-color);"
-              >Enable Smart Scaling</span
-            >
-            <ha-switch
-              .checked="${module.smart_scaling !== false}"
-              @change="${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ smart_scaling: target.checked } as Partial<M>);
-              }}"
-            ></ha-switch>
-          </div>
-        </div>
       </div>
       ${(() => {
         try {

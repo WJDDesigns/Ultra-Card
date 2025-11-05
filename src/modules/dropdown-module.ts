@@ -71,7 +71,6 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
       // Hover configuration
       enable_hover_effect: false,
       hover_background_color: 'var(--primary-color)',
@@ -1256,8 +1255,31 @@ export class UltraDropdownModule extends BaseUltraModule {
       box-sizing: border-box;
     `;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    const isEntityMode = dropdownModule.source_mode === 'entity';
+
+    if (
+      isEntityMode &&
+      (!dropdownModule.source_entity || dropdownModule.source_entity.trim() === '')
+    ) {
+      return this.renderGradientErrorState(
+        'Configure Source Entity',
+        'Select a source entity in the General tab',
+        'mdi:format-list-bulleted'
+      );
+    }
+
+    if (!isEntityMode && (!dropdownModule.options || dropdownModule.options.length === 0)) {
+      return this.renderGradientErrorState(
+        'Add Options',
+        'Configure dropdown options in the General tab',
+        'mdi:format-list-bulleted'
+      );
+    }
+
     // Determine if we're in entity source mode
-    const isEntityMode = dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
+    const isEntityModeValid =
+      dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
 
     // Get options based on mode
     let availableOptions: Array<{
@@ -1268,7 +1290,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     }> = [];
     let currentSelectedLabel: string | undefined;
 
-    if (isEntityMode) {
+    if (isEntityModeValid) {
       // Entity source mode: get options from entity
       const entityOptions = this.getOptionsFromEntity(dropdownModule, hass);
       const entityState = this.getCurrentStateFromEntity(dropdownModule, hass);
@@ -1306,17 +1328,17 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (
       !currentSelectedOption &&
       availableOptions.length > 0 &&
-      (isEntityMode || dropdownModule.track_state)
+      (isEntityModeValid || dropdownModule.track_state)
     ) {
       currentSelectedOption = availableOptions[0];
-      if (!isEntityMode) {
+      if (!isEntityModeValid) {
         // Store the first option as current selection for manual mode
         const moduleId = dropdownModule.id;
         this.currentSelection.set(moduleId, currentSelectedOption.label);
       }
     }
 
-    const showPlaceholder = !isEntityMode && !dropdownModule.track_state;
+    const showPlaceholder = !isEntityModeValid && !dropdownModule.track_state;
     const placeholderText = dropdownModule.placeholder || 'Choose an option...';
 
     // Get hover effect configuration from module design
@@ -1955,29 +1977,25 @@ export class UltraDropdownModule extends BaseUltraModule {
     const dropdownModule = module as DropdownModule;
     const errors = [...baseValidation.errors];
 
+    // LENIENT VALIDATION: Allow incomplete configuration - UI will show placeholders
     // Check source mode
     const isEntityMode = dropdownModule.source_mode === 'entity';
 
     if (isEntityMode) {
-      // Entity mode validation
-      if (!dropdownModule.source_entity) {
-        errors.push('Source entity is required when using entity source mode');
+      // Entity mode validation - allow empty, UI will handle
+      // Only validate action requirements if source entity is configured
+      if (dropdownModule.source_entity && dropdownModule.source_entity.trim() !== '') {
+        // Could add specific entity format validation here if needed
       }
     } else {
-      // Manual mode validation
-      if (!dropdownModule.options || dropdownModule.options.length === 0) {
-        errors.push('At least one dropdown option is required in manual mode');
-      } else {
+      // Manual mode validation - only validate options that have content
+      if (dropdownModule.options && dropdownModule.options.length > 0) {
         dropdownModule.options.forEach((option, index) => {
-          if (!option.label || option.label.trim() === '') {
-            errors.push(`Option ${index + 1}: Label is required`);
-          }
+          // Only validate options that have been started
+          const hasContent = (option.label && option.label.trim() !== '') || option.action;
 
-          // Validate action configuration
-          if (!option.action || !option.action.action) {
-            errors.push(`Option ${index + 1}: Action is required`);
-          } else {
-            // Validate action-specific requirements
+          if (hasContent && option.action) {
+            // Validate action-specific requirements (only truly critical errors)
             switch (option.action.action) {
               case 'more-info':
               case 'toggle':

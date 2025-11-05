@@ -51,7 +51,6 @@ export interface BaseModule {
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
-    smart_scaling?: boolean;
     background_color?: string;
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';
@@ -301,7 +300,8 @@ export interface InfoEntityConfig {
     ignore_entity_state_config?: boolean;
     icon_position?: 'left' | 'right' | 'top' | 'bottom';
     icon_alignment?: 'start' | 'center' | 'end';
-    content_alignment?: 'start' | 'center' | 'end';
+    name_alignment?: 'start' | 'center' | 'end';
+    state_alignment?: 'start' | 'center' | 'end';
     overall_alignment?: 'left' | 'center' | 'right';
     icon_gap?: number;
     name_value_layout?: 'vertical' | 'horizontal';
@@ -795,13 +795,14 @@ export interface SliderModule extends BaseModule {
     type: 'slider';
     modules: CardModule[];
     show_pagination?: boolean;
-    pagination_style?: 'dots' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar';
+    pagination_style?: 'dots' | 'dots-and-dash' | 'dash-lines' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar' | 'scrollbar' | 'dynamic';
     pagination_position?: 'top' | 'bottom' | 'left' | 'right';
     pagination_color?: string;
     pagination_active_color?: string;
     pagination_size?: number;
+    pagination_overlay?: boolean;
     show_arrows?: boolean;
-    arrow_position?: 'inside' | 'outside';
+    arrow_position_offset?: number;
     arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
     arrow_size?: number;
     arrow_color?: string;
@@ -809,9 +810,8 @@ export interface SliderModule extends BaseModule {
     prev_arrow_icon?: string;
     next_arrow_icon?: string;
     arrows_always_visible?: boolean;
-    transition_effect?: 'slide-left' | 'slide-right' | 'slide-top' | 'slide-bottom' | 'fade' | 'zoom-in' | 'zoom-out' | 'circle';
+    transition_effect?: 'slide' | 'fade' | 'cube' | 'coverflow' | 'flip' | 'zoom' | 'slide-left' | 'slide-right' | 'slide-top' | 'slide-bottom' | 'zoom-in' | 'zoom-out' | 'circle';
     transition_speed?: number;
-    transition_easing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
     auto_play?: boolean;
     auto_play_delay?: number;
     pause_on_hover?: boolean;
@@ -819,14 +819,15 @@ export interface SliderModule extends BaseModule {
     allow_swipe?: boolean;
     allow_keyboard?: boolean;
     allow_mousewheel?: boolean;
+    slider_direction?: 'horizontal' | 'vertical';
+    centered_slides?: boolean;
     slider_height?: number;
+    auto_height?: boolean;
     slider_width?: string;
     gap?: number;
     slides_per_view?: number;
     space_between?: number;
     vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-    mobile_slides_per_view?: number;
-    mobile_space_between?: number;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;

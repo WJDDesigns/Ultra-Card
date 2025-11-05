@@ -163,4 +163,30 @@ export declare abstract class BaseUltraModule implements UltraModule {
      * @param immediate - If true, triggers update immediately without debouncing
      */
     protected triggerPreviewUpdate(immediate?: boolean): void;
+    /**
+     * Render a beautiful gradient error state for incomplete module configuration
+     * Matches the website's gradient aesthetic (purple → pink → blue)
+     *
+     * @param title - Main error title (e.g., "Configure Entities")
+     * @param subtitle - Helpful subtitle text (e.g., "Select an entity in the General tab")
+     * @param icon - Icon to display (defaults to alert circle)
+     * @returns TemplateResult with gradient error state
+     */
+    protected renderGradientErrorState(title: string, subtitle: string, icon?: string): TemplateResult;
+    /**
+     * Render a compact warning banner for partial configuration issues
+     * Shows when some items are valid but others need configuration
+     *
+     * @param message - Warning message to display
+     * @param count - Optional count to display (e.g., "2 items need configuration")
+     * @returns TemplateResult with gradient warning banner
+     */
+    protected renderGradientWarningBanner(message: string, count?: number): TemplateResult;
+    /**
+     * Get shared CSS styles for gradient error states
+     * Called by renderGradientErrorState and renderGradientWarningBanner
+     *
+     * @returns CSS string with gradient error state styles
+     */
+    protected getGradientErrorStateStyles(): string;
 }

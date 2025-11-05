@@ -62,7 +62,6 @@ export class UltraTextModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -477,6 +476,23 @@ export class UltraTextModule extends BaseUltraModule {
     const textModule = module as TextModule;
     const lang = hass?.locale?.language || 'en';
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!textModule.template_mode && (!textModule.text || textModule.text.trim() === '')) {
+      return this.renderGradientErrorState(
+        'Enter Text Content',
+        'Add text in the General tab',
+        'mdi:format-text'
+      );
+    }
+
+    if (textModule.template_mode && (!textModule.template || textModule.template.trim() === '')) {
+      return this.renderGradientErrorState(
+        'Configure Template',
+        'Enter template code in the General tab',
+        'mdi:code-braces'
+      );
+    }
+
     // Check if element should be hidden when no link
     if (textModule.hide_if_no_link && !this.hasActiveLink(textModule)) {
       return html`<div class="text-module-hidden">
@@ -799,18 +815,17 @@ export class UltraTextModule extends BaseUltraModule {
     const textModule = module as TextModule;
     const errors = [...baseValidation.errors];
 
-    if (!textModule.text || textModule.text.trim() === '') {
-      errors.push('Text content is required');
-    }
+    // LENIENT VALIDATION: Allow empty text - UI will show placeholder
+    // Only validate for truly breaking errors
 
-    // Validate icon format if provided
+    // Validate icon format if provided (only if it has content)
     if (textModule.icon && textModule.icon.trim() !== '') {
       if (!textModule.icon.includes(':')) {
         errors.push('Icon must be in format "mdi:icon-name" or "hass:icon-name"');
       }
     }
 
-    // Validate link format if provided (legacy)
+    // Validate link format if provided (only if it has content)
     if (textModule.link && textModule.link.trim() !== '') {
       try {
         new URL(textModule.link);
@@ -822,7 +837,7 @@ export class UltraTextModule extends BaseUltraModule {
       }
     }
 
-    // Validate global link actions
+    // Validate global link actions (only truly critical action validation errors)
     if (
       textModule.tap_action &&
       textModule.tap_action.action !== 'default' &&
@@ -843,11 +858,6 @@ export class UltraTextModule extends BaseUltraModule {
       textModule.double_tap_action.action !== 'nothing'
     ) {
       errors.push(...this.validateAction(textModule.double_tap_action));
-    }
-
-    // Validate template if template mode is enabled
-    if (textModule.template_mode && (!textModule.template || textModule.template.trim() === '')) {
-      errors.push('Template code is required when template mode is enabled');
     }
 
     return {

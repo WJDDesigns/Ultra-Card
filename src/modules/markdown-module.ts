@@ -114,7 +114,6 @@ All standard markdown features are automatically enabled!`,
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -377,6 +376,15 @@ All standard markdown features are automatically enabled!`,
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const markdownModule = module as MarkdownModule;
+
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '') {
+      return this.renderGradientErrorState(
+        'Add Markdown Content',
+        'Enter markdown content in the General tab',
+        'mdi:language-markdown-outline'
+      );
+    }
 
     // Set up template update listener if not already set up
     if (!this._templateUpdateListener && typeof window !== 'undefined') {
@@ -918,9 +926,8 @@ All standard markdown features are automatically enabled!`,
     const markdownModule = module as MarkdownModule;
     const errors = [...baseValidation.errors];
 
-    if (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '') {
-      errors.push('Markdown content is required');
-    }
+    // LENIENT VALIDATION: Allow empty markdown - UI will show placeholder
+    // Only validate for truly breaking errors
 
     if (
       markdownModule.font_size &&
@@ -929,7 +936,7 @@ All standard markdown features are automatically enabled!`,
       errors.push('Font size must be between 1 and 200 pixels');
     }
 
-    // Validate link format if provided
+    // Validate link format if provided (only if it has content)
     if (markdownModule.link && markdownModule.link.trim() !== '') {
       try {
         new URL(markdownModule.link);

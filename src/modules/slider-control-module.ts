@@ -315,7 +315,6 @@ export class UltraSliderControlModule extends BaseUltraModule {
       // Logic
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -2340,21 +2339,35 @@ export class UltraSliderControlModule extends BaseUltraModule {
     const sliderControl = module as SliderControlModule;
     const homeAssistant = hass;
 
-    // Check if we have any bars configured
+    // GRACEFUL RENDERING: Check for incomplete configuration
     if (!sliderControl.bars || sliderControl.bars.length === 0) {
-      return html`
-        <div style="padding: 20px; text-align: center; color: var(--secondary-text-color);">
-          <ha-icon icon="mdi:tune-vertical" style="font-size: 48px; opacity: 0.3;"></ha-icon>
-          <div style="margin-top: 12px;">No bars configured</div>
-          <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">
-            Add bars in the General tab
-          </div>
-        </div>
-      `;
+      return this.renderGradientErrorState(
+        'Add Bars',
+        'Configure slider bars in the General tab',
+        'mdi:tune-vertical'
+      );
     }
 
+    // Check if any bars have entities configured
+    const validBars = sliderControl.bars.filter(b => b.entity && b.entity.trim() !== '');
+    const incompleteBars = sliderControl.bars.filter(b => !b.entity || b.entity.trim() === '');
+
+    if (validBars.length === 0 && incompleteBars.length > 0) {
+      const barList = incompleteBars.map((b, i) => b.name || `Bar ${i + 1}`).join(', ');
+      return this.renderGradientErrorState('Bars Need Entities', barList, 'mdi:tune-vertical');
+    }
+
+    // Show warning banner if some bars are incomplete
+    const warningBanner =
+      incompleteBars.length > 0
+        ? this.renderGradientWarningBanner(
+            `${incompleteBars.length > 1 ? 'bars' : 'bar'} need${incompleteBars.length === 1 ? 's' : ''} entities`,
+            incompleteBars.length
+          )
+        : '';
+
     // Render each bar
-    const bars = sliderControl.bars || [];
+    const bars = validBars;
     const orientation = sliderControl.orientation || 'horizontal';
     const barSpacing = sliderControl.bar_spacing || 8;
     const layoutMode = sliderControl.layout_mode || 'outside';
@@ -3904,6 +3917,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           ? 'display: flex; justify-content: center; align-items: center;'
           : ''} ${isOutsideLayout ? 'overflow: hidden;' : ''}"
       >
+        ${warningBanner}
         <style>
           .slider-control-container input[type='range']::-webkit-slider-track {
             background: transparent;
@@ -4169,25 +4183,25 @@ export class UltraSliderControlModule extends BaseUltraModule {
     const sliderControl = module as SliderControlModule;
     const errors = [...baseValidation.errors];
 
-    // Check if we have bars configured
-    if (!sliderControl.bars || sliderControl.bars.length === 0) {
-      errors.push('At least one bar is required for Slider Control');
-    } else {
-      // Validate each bar
+    // LENIENT VALIDATION: Allow empty/incomplete bars - UI will show placeholder
+    // Only validate bars that have been started
+    if (sliderControl.bars && sliderControl.bars.length > 0) {
+      // Validate each bar - but only for truly breaking errors
       sliderControl.bars.forEach((bar, index) => {
-        if (!bar.entity || bar.entity.trim() === '') {
-          errors.push(`Bar ${index + 1}: Entity is required`);
-        }
+        // Only validate bars that have some content
+        const hasContent = bar.entity && bar.entity.trim() !== '';
 
-        if (bar.min_value !== undefined && bar.max_value !== undefined) {
-          if (bar.min_value >= bar.max_value) {
-            errors.push(`Bar ${index + 1}: Min value must be less than max value`);
+        if (hasContent) {
+          if (bar.min_value !== undefined && bar.max_value !== undefined) {
+            if (bar.min_value >= bar.max_value) {
+              errors.push(`Bar ${index + 1}: Min value must be less than max value`);
+            }
           }
         }
       });
     }
 
-    // Validate slider height
+    // Validate slider height (truly breaking if invalid)
     if (
       sliderControl.slider_height &&
       (sliderControl.slider_height < 20 || sliderControl.slider_height > 200)

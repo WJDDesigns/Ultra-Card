@@ -259,12 +259,13 @@ export class UcLightColorPicker extends LitElement {
   @state() private _currentHs: number[] = [0, 0];
   @state() private _currentXy: number[] = [0.3127, 0.329];
   @state() private _currentColorTemp = 333; // ~3000K
-  @state() private _showColorPicker = false;
   @state() private _ignoringNextEffectChange = false;
   @state() private _processingEffectChange = false;
   @state() private _effectDropdownOpen = false;
   @state() private _effectSearchTerm = '';
   @state() private _filteredEffects: string[] = [];
+  @state() private _focusedInput: string | null = null; // Track which input is focused to prevent value resets
+  @state() private _lastChangedMode: 'rgb' | 'hs' | 'xy' | null = null; // Track which mode was last changed to prevent drift
 
   protected firstUpdated(): void {
     this.updateCurrentValues();
@@ -279,10 +280,11 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleClickOutside = (e: Event): void => {
-    const target = e.target as Node;
-    const container = this.shadowRoot?.querySelector('.custom-select-container');
+    const path = e.composedPath();
+    const effectContainer = this.shadowRoot?.querySelector('.custom-select-container');
 
-    if (container && !container.contains(target) && !this.contains(target)) {
+    // Close effect dropdown if clicking outside
+    if (effectContainer && !path.includes(effectContainer)) {
       this._effectDropdownOpen = false;
       this._effectSearchTerm = '';
       this.requestUpdate();
@@ -301,47 +303,72 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private updateCurrentValues(): void {
+    // Don't recalculate the color space that was just manually edited to prevent drift
+    // Only skip recalculation if we're currently editing that mode
+    const skipXy =
+      this._lastChangedMode === 'xy' &&
+      (this._focusedInput === 'xy-x' || this._focusedInput === 'xy-y');
+    const skipHs =
+      this._lastChangedMode === 'hs' &&
+      (this._focusedInput === 'hs-hue' || this._focusedInput === 'hs-sat');
+
     if (this.rgb_color) {
       this._currentRgb = [...this.rgb_color];
-      this._currentHs = LightColorUtils.rgbToHs(
-        this.rgb_color[0],
-        this.rgb_color[1],
-        this.rgb_color[2]
-      );
-      this._currentXy = LightColorUtils.rgbToXy(
-        this.rgb_color[0],
-        this.rgb_color[1],
-        this.rgb_color[2]
-      );
+      if (!skipHs) {
+        this._currentHs = LightColorUtils.rgbToHs(
+          this.rgb_color[0],
+          this.rgb_color[1],
+          this.rgb_color[2]
+        );
+      }
+      if (!skipXy) {
+        this._currentXy = LightColorUtils.rgbToXy(
+          this.rgb_color[0],
+          this.rgb_color[1],
+          this.rgb_color[2]
+        );
+      }
     } else if (this.hs_color) {
-      this._currentHs = [...this.hs_color];
-      this._currentRgb = LightColorUtils.hsToRgb(this.hs_color[0], this.hs_color[1]);
-      this._currentXy = LightColorUtils.rgbToXy(
-        this._currentRgb[0],
-        this._currentRgb[1],
-        this._currentRgb[2]
-      );
+      if (!skipHs) {
+        this._currentHs = [...this.hs_color];
+      }
+      this._currentRgb = LightColorUtils.hsToRgb(this._currentHs[0], this._currentHs[1]);
+      if (!skipXy) {
+        this._currentXy = LightColorUtils.rgbToXy(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
     } else if (this.xy_color) {
-      this._currentXy = [...this.xy_color];
-      this._currentRgb = LightColorUtils.xyToRgb(this.xy_color[0], this.xy_color[1]);
-      this._currentHs = LightColorUtils.rgbToHs(
-        this._currentRgb[0],
-        this._currentRgb[1],
-        this._currentRgb[2]
-      );
+      if (!skipXy) {
+        this._currentXy = [...this.xy_color];
+      }
+      this._currentRgb = LightColorUtils.xyToRgb(this._currentXy[0], this._currentXy[1]);
+      if (!skipHs) {
+        this._currentHs = LightColorUtils.rgbToHs(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
     } else if (this.color_temp) {
       // Handle color_temp-only presets by converting to RGB/HS/XY
       this._currentRgb = LightColorUtils.miredToRgb(this.color_temp);
-      this._currentHs = LightColorUtils.rgbToHs(
-        this._currentRgb[0],
-        this._currentRgb[1],
-        this._currentRgb[2]
-      );
-      this._currentXy = LightColorUtils.rgbToXy(
-        this._currentRgb[0],
-        this._currentRgb[1],
-        this._currentRgb[2]
-      );
+      if (!skipHs) {
+        this._currentHs = LightColorUtils.rgbToHs(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
+      if (!skipXy) {
+        this._currentXy = LightColorUtils.rgbToXy(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
     }
 
     if (this.color_temp) {
@@ -395,15 +422,33 @@ export class UcLightColorPicker extends LitElement {
     this.dispatchEvent(event);
   }
 
-  private openColorPicker(): void {
-    if (this.disabled) return;
-    this._showColorPicker = !this._showColorPicker;
-  }
-
   private handleUltraColorPickerChange(e: CustomEvent): void {
     const newColor = e.detail.value;
-    this.handleHexChange(newColor);
-    this._showColorPicker = false;
+
+    // Handle both HEX and RGBA values from ultra-color-picker
+    if (newColor.startsWith('rgba') || newColor.startsWith('rgb')) {
+      // Parse RGBA/RGB value
+      const match = newColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+      if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+
+        this._currentRgb = [r, g, b];
+        this._currentHs = LightColorUtils.rgbToHs(r, g, b);
+        this._currentXy = LightColorUtils.rgbToXy(r, g, b);
+
+        this.fireColorChanged({
+          rgb_color: this._currentRgb,
+          hs_color: this._currentHs,
+          xy_color: this._currentXy,
+          mode: 'rgb',
+        });
+      }
+    } else {
+      // Handle HEX value
+      this.handleHexChange(newColor);
+    }
   }
 
   private handleTestPreset() {
@@ -520,6 +565,9 @@ export class UcLightColorPicker extends LitElement {
       this._currentRgb[2]
     );
 
+    // Track that HS was the last changed mode
+    this._lastChangedMode = 'hs';
+
     this.fireColorChanged({
       rgb_color: this._currentRgb,
       hs_color: this._currentHs,
@@ -543,6 +591,9 @@ export class UcLightColorPicker extends LitElement {
       this._currentRgb[1],
       this._currentRgb[2]
     );
+
+    // Track that XY was the last changed mode
+    this._lastChangedMode = 'xy';
 
     this.fireColorChanged({
       rgb_color: this._currentRgb,
@@ -854,42 +905,14 @@ export class UcLightColorPicker extends LitElement {
                     </div>
                   </div>
 
-                  <!-- HEX Value -->
-                  <div class="hex-section">
-                    <div class="hex-input-group">
-                      <label>HEX</label>
-                      <div class="hex-input-container">
-                        <input
-                          type="text"
-                          .value=${currentHex}
-                          .disabled=${this.disabled}
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            this.handleHexChange(target.value);
-                          }}
-                          placeholder="#ffffff"
-                        />
-                        <div
-                          class="color-preview clickable"
-                          style="background-color: ${currentHex};"
-                          @click=${this.openColorPicker}
-                          title="Click to open color picker"
-                        ></div>
-                      </div>
-
-                      <!-- Ultra Color Picker -->
-                      ${this._showColorPicker
-                        ? html`
-                            <div class="color-picker-dropdown">
-                              <ultra-color-picker
-                                .hass=${this.hass}
-                                .value=${currentHex}
-                                @value-changed=${this.handleUltraColorPickerChange}
-                              ></ultra-color-picker>
-                            </div>
-                          `
-                        : ''}
-                    </div>
+                  <!-- Color Picker -->
+                  <div class="color-picker-section">
+                    <div class="section-title">Color Picker</div>
+                    <ultra-color-picker
+                      .hass=${this.hass}
+                      .value=${currentHex}
+                      @value-changed=${this.handleUltraColorPickerChange}
+                    ></ultra-color-picker>
                   </div>
 
                   <!-- HS Values -->
@@ -899,15 +922,77 @@ export class UcLightColorPicker extends LitElement {
                       <div class="hs-input-group">
                         <label>H (Hue)</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           min="0"
                           max="360"
-                          step="1"
-                          .value=${this._currentHs[0]}
+                          .value=${this._focusedInput === 'hs-hue'
+                            ? undefined
+                            : this._currentHs[0].toString()}
                           .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'hs-hue';
+                            // Preserve current value when focusing
                             const target = e.target as HTMLInputElement;
-                            this.handleHsChange(0, parseInt(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(360, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(0, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(360, numValue));
+                            const target = e.target as HTMLInputElement;
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(0, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                         <span class="unit">°</span>
@@ -915,15 +1000,77 @@ export class UcLightColorPicker extends LitElement {
                       <div class="hs-input-group">
                         <label>S (Sat)</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           min="0"
                           max="100"
-                          step="1"
-                          .value=${this._currentHs[1]}
+                          .value=${this._focusedInput === 'hs-sat'
+                            ? undefined
+                            : this._currentHs[1].toString()}
                           .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'hs-sat';
+                            // Preserve current value when focusing
                             const target = e.target as HTMLInputElement;
-                            this.handleHsChange(1, parseInt(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(100, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(1, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(100, numValue));
+                            const target = e.target as HTMLInputElement;
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(1, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                         <span class="unit">%</span>
@@ -938,30 +1085,164 @@ export class UcLightColorPicker extends LitElement {
                       <div class="xy-input-group">
                         <label>X</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="decimal"
+                          pattern="[0-9.]*"
                           min="0"
                           max="1"
                           step="0.0001"
-                          .value=${this._currentXy[0]}
+                          .value=${this._focusedInput === 'xy-x'
+                            ? undefined
+                            : this._currentXy[0].toString()}
                           .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'xy-x';
+                            // Preserve current value when focusing
                             const target = e.target as HTMLInputElement;
-                            this.handleXyChange(0, parseFloat(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            // Format to preserve reasonable decimal precision (up to 4 decimal places)
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(0, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            const target = e.target as HTMLInputElement;
+                            // Format to preserve reasonable decimal precision
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(0, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                       </div>
                       <div class="xy-input-group">
                         <label>Y</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="decimal"
+                          pattern="[0-9.]*"
                           min="0"
                           max="1"
                           step="0.0001"
-                          .value=${this._currentXy[1]}
+                          .value=${this._focusedInput === 'xy-y'
+                            ? undefined
+                            : this._currentXy[1].toString()}
                           .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'xy-y';
+                            // Preserve current value when focusing
                             const target = e.target as HTMLInputElement;
-                            this.handleXyChange(1, parseFloat(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            // Format to preserve reasonable decimal precision (up to 4 decimal places)
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(1, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            const target = e.target as HTMLInputElement;
+                            // Format to preserve reasonable decimal precision
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(1, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                       </div>
@@ -1385,76 +1666,10 @@ export class UcLightColorPicker extends LitElement {
         border-color: var(--primary-color);
       }
 
-      .hex-input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .hex-input-group label {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        font-weight: 500;
-      }
-
-      .hex-input-container {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .hex-input-container input {
-        flex: 1;
-        padding: 6px 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
+      .color-picker-section {
         background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        font-family: monospace;
-        font-size: 12px;
-        text-transform: uppercase;
-      }
-
-      .hex-input-container input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-      }
-
-      .color-preview {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        border: 1px solid var(--divider-color);
-        flex-shrink: 0;
-        transition: all 0.2s ease;
-      }
-
-      .color-preview.clickable {
-        cursor: pointer;
-      }
-
-      .color-preview.clickable:hover {
-        transform: scale(1.1);
-        border-color: var(--primary-color);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      }
-
-      .color-picker-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: ${Z_INDEX.DROPDOWN_MENU};
-        margin-top: 8px;
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         padding: 16px;
-      }
-
-      .hex-input-group {
-        position: relative;
       }
 
       .hs-inputs,

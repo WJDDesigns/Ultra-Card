@@ -320,7 +320,6 @@ export class UltraIconModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -2463,8 +2462,41 @@ export class UltraIconModule extends BaseUltraModule {
       : html``;
     this._localStylesInjected = true;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    const validIcons = (iconModule.icons || []).filter(i => i.entity && i.entity.trim() !== '');
+    const incompleteIcons = (iconModule.icons || []).filter(
+      i => !i.entity || i.entity.trim() === ''
+    );
+
+    if (!iconModule.icons || iconModule.icons.length === 0) {
+      return html`
+        ${localStyle}
+        ${this.renderGradientErrorState(
+          'Add Icons',
+          'Configure icons in the General tab',
+          'mdi:shape-outline'
+        )}
+      `;
+    }
+
+    if (validIcons.length === 0 && incompleteIcons.length > 0) {
+      const iconList = incompleteIcons.map((i, idx) => `Icon ${idx + 1}`).join(', ');
+      return html`
+        ${localStyle}
+        ${this.renderGradientErrorState('Icons Need Entities', iconList, 'mdi:shape-outline')}
+      `;
+    }
+
+    const warningBanner =
+      incompleteIcons.length > 0
+        ? this.renderGradientWarningBanner(
+            `${incompleteIcons.length > 1 ? 'icons' : 'icon'} need${incompleteIcons.length === 1 ? 's' : ''} entities`,
+            incompleteIcons.length
+          )
+        : '';
+
     return html`
-      ${localStyle}
+      ${localStyle} ${warningBanner}
       <div class="icon-module-container" style=${this.styleObjectToCss(containerStyles)}>
         <div class="icon-module-preview">
           <div
@@ -2473,13 +2505,13 @@ export class UltraIconModule extends BaseUltraModule {
             display: grid;
             grid-template-columns: repeat(${Math.min(
               iconModule.columns || 3,
-              iconModule.icons.length
+              validIcons.length
             )}, 1fr);
             gap: ${iconModule.gap || 16}px;
             justify-content: ${iconModule.alignment || 'center'};
           "
           >
-            ${iconModule.icons.slice(0, 6).map(icon => {
+            ${validIcons.slice(0, 6).map(icon => {
               const entityState = hass?.states[icon.entity];
               const currentState = entityState?.state || 'unknown';
 
@@ -3167,7 +3199,7 @@ export class UltraIconModule extends BaseUltraModule {
                 </div>
               `;
             })}
-            ${iconModule.icons.length > 6
+            ${validIcons.length > 6
               ? html`
                   <div
                     class="more-icons"
@@ -3181,14 +3213,14 @@ export class UltraIconModule extends BaseUltraModule {
                 font-style: italic;
               "
                   >
-                    +${iconModule.icons.length - 6} more
+                    +${validIcons.length - 6} more
                   </div>
                 `
               : ''}
           </div>
 
           <!-- More Icons Indicator -->
-          ${iconModule.icons.length > 6
+          ${validIcons.length > 6
             ? html`
                 <div
                   class="more-icons"
@@ -3203,7 +3235,7 @@ export class UltraIconModule extends BaseUltraModule {
                     margin-top: 8px;
                   "
                 >
-                  +${iconModule.icons.length - 6} more icons
+                  +${validIcons.length - 6} more icons
                 </div>
               `
             : ''}
@@ -4379,19 +4411,21 @@ export class UltraIconModule extends BaseUltraModule {
     const iconModule = module as IconModule;
     const errors = [...baseValidation.errors];
 
-    if (!iconModule.icons || iconModule.icons.length === 0) {
-      errors.push('At least one icon is required');
+    // LENIENT VALIDATION: Allow empty/incomplete icons - UI will show placeholder
+    // Only validate icons that have been started
+    if (iconModule.icons && iconModule.icons.length > 0) {
+      iconModule.icons.forEach((icon, index) => {
+        // Only validate icons that have some content
+        const hasContent =
+          (icon.entity && icon.entity.trim() !== '') ||
+          (icon.icon_inactive && icon.icon_inactive.trim() !== '');
+
+        if (hasContent) {
+          // Only validate truly critical errors
+          // Icon format validation could go here if needed
+        }
+      });
     }
-
-    iconModule.icons.forEach((icon, index) => {
-      if (!icon.entity || icon.entity.trim() === '') {
-        errors.push(`Icon ${index + 1}: Entity ID is required`);
-      }
-
-      if (!icon.icon_inactive || icon.icon_inactive.trim() === '') {
-        errors.push(`Icon ${index + 1}: Inactive icon is required`);
-      }
-    });
 
     return {
       valid: errors.length === 0,

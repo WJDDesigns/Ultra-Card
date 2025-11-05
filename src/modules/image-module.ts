@@ -84,7 +84,6 @@ export class UltraImageModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -808,6 +807,31 @@ export class UltraImageModule extends BaseUltraModule {
   ): TemplateResult {
     const imageModule = module as ImageModule;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    // Only show error for non-default types that have no image configured
+    const needsConfig =
+      (imageModule.image_type === 'url' &&
+        (!imageModule.image_url || imageModule.image_url.trim() === '')) ||
+      (imageModule.image_type === 'upload' &&
+        (!imageModule.image_url || imageModule.image_url.trim() === '')) ||
+      (imageModule.image_type === 'entity' &&
+        (!imageModule.image_entity || imageModule.image_entity.trim() === '')) ||
+      (imageModule.image_type === 'attribute' &&
+        (!imageModule.image_entity || imageModule.image_entity.trim() === ''));
+
+    if (needsConfig) {
+      const subtitle =
+        imageModule.image_type === 'url'
+          ? 'Enter an image URL in the General tab'
+          : imageModule.image_type === 'upload'
+            ? 'Upload an image in the General tab'
+            : imageModule.image_type === 'entity'
+              ? 'Select an image entity in the General tab'
+              : 'Select an entity and attribute in the General tab';
+
+      return this.renderGradientErrorState('Configure Image Source', subtitle, 'mdi:image-outline');
+    }
+
     // Determine image source based on type
     let imageUrl = '';
 
@@ -1050,7 +1074,10 @@ export class UltraImageModule extends BaseUltraModule {
       minHeight: designProperties.min_height || 'auto',
       // When rendered in a layout context, force overflow hidden to prevent image blowup past card bounds
       // Otherwise use the design property or default to visible for standalone modules
-      overflow: previewContext === 'live' ? (designProperties.overflow || 'hidden') : (designProperties.overflow || 'visible'),
+      overflow:
+        previewContext === 'live'
+          ? designProperties.overflow || 'hidden'
+          : designProperties.overflow || 'visible',
       clipPath: designProperties.clip_path || 'none',
       backdropFilter: designProperties.backdrop_filter || 'none',
       boxShadow:
@@ -1218,25 +1245,29 @@ export class UltraImageModule extends BaseUltraModule {
                       min-height: 80px;
                     "
                   >
-                    <div style="
+                    <div
+                      style="
                       text-align: center;
                       max-width: 100%;
                       word-wrap: break-word;
                       overflow-wrap: break-word;
                       white-space: normal;
                       line-height: 1.4;
-                    ">
+                    "
+                    >
                       <ha-icon
                         icon="mdi:image-off"
                         style="font-size: 32px; margin-bottom: 8px; opacity: 0.5; display: block;"
                       ></ha-icon>
-                      <div style="
+                      <div
+                        style="
                         font-size: 12px;
                         font-weight: 500;
                         max-width: 100%;
                         word-break: break-word;
                         hyphens: auto;
-                      ">
+                      "
+                      >
                         ${localize(
                           'editor.image.no_source',
                           hass?.locale?.language || 'en',
@@ -1302,32 +1333,29 @@ export class UltraImageModule extends BaseUltraModule {
     const imageModule = module as ImageModule;
     const errors = [...baseValidation.errors];
 
-    // Validate based on image_type
+    // LENIENT VALIDATION: Allow incomplete configuration - UI will show placeholder
+    // Only validate for truly breaking errors
+
+    // Validate based on image_type (only if content is partially configured)
     switch (imageModule.image_type) {
       case 'url':
-        if (!imageModule.image_url || imageModule.image_url.trim() === '') {
-          errors.push('Image URL is required when using URL type');
-        }
+        // Allow empty - UI will handle
         break;
 
       case 'upload':
-        if (!imageModule.image_url || imageModule.image_url.trim() === '') {
-          errors.push('Uploaded image is required when using upload type');
-        }
+        // Allow empty - UI will handle
         break;
 
       case 'entity':
-        if (!imageModule.image_entity || imageModule.image_entity.trim() === '') {
-          errors.push('Image entity is required when using entity type');
-        }
+        // Allow empty - UI will handle
         break;
 
       case 'attribute':
-        if (!imageModule.image_entity || imageModule.image_entity.trim() === '') {
-          errors.push('Entity is required when using attribute type');
-        }
-        if (!imageModule.image_attribute || imageModule.image_attribute.trim() === '') {
-          errors.push('Attribute name is required when using attribute type');
+        // If entity is set but attribute is missing, that's an error
+        if (imageModule.image_entity && imageModule.image_entity.trim() !== '') {
+          if (!imageModule.image_attribute || imageModule.image_attribute.trim() === '') {
+            errors.push('Attribute name is required when using attribute type');
+          }
         }
         break;
 
@@ -1341,7 +1369,8 @@ export class UltraImageModule extends BaseUltraModule {
         break;
     }
 
-    if (imageModule.link_enabled && !imageModule.link_url) {
+    // Only validate link if link is enabled and has no URL
+    if (imageModule.link_enabled && imageModule.link_url && imageModule.link_url.trim() === '') {
       errors.push('Link URL is required when link is enabled');
     }
 

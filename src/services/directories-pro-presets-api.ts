@@ -41,8 +41,11 @@ export class DirectoriesProPresetsAPI {
   private static readonly CACHE_TIMESTAMP_KEY = 'ultra-card-directories-pro-presets-timestamp';
   private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private static readonly EXTENDED_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for CORS fallback
+  private static readonly MAX_CACHE_ENTRIES = 10; // Maximum number of cache entries to keep
+  private static readonly MAX_ENTRY_SIZE = 500 * 1024; // 500KB max per entry (rough estimate)
 
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private localStorageDisabled = false; // Flag to disable localStorage if quota keeps failing
   private corsProxies = [
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',
@@ -379,11 +382,55 @@ export class DirectoriesProPresetsAPI {
    * Save data to localStorage with timestamp
    */
   private _saveToLocalStorage(key: string, data: { data: any; timestamp: number }): void {
+    // Skip if localStorage is disabled due to persistent quota issues
+    if (this.localStorageDisabled) {
+      return;
+    }
+
     try {
+      // Clean up expired entries before saving to prevent quota issues
+      this._cleanupExpiredCache();
+      
+      // Check if data is too large before saving
+      const serialized = JSON.stringify(data);
+      const estimatedSize = new Blob([serialized]).size;
+      
+      if (estimatedSize > DirectoriesProPresetsAPI.MAX_ENTRY_SIZE) {
+        // Entry too large, skip silently (still cached in memory)
+        return;
+      }
+      
       const storageKey = `wp-presets-cache-${key}`;
-      localStorage.setItem(storageKey, JSON.stringify(data));
+      localStorage.setItem(storageKey, serialized);
     } catch (error) {
-      console.warn('Failed to save to localStorage:', error);
+      // If quota exceeded, try cleaning up more aggressively and retry
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        // Clean up aggressively (silently, no user-facing warning)
+        this._clearAllPresetCache();
+        
+        try {
+          // Retry after cleanup
+          const serialized = JSON.stringify(data);
+          const estimatedSize = new Blob([serialized]).size;
+          
+          // Only retry if the entry isn't too large
+          if (estimatedSize <= DirectoriesProPresetsAPI.MAX_ENTRY_SIZE) {
+            const storageKey = `wp-presets-cache-${key}`;
+            localStorage.setItem(storageKey, serialized);
+          }
+          // If too large, silently skip (already cached in memory)
+        } catch (retryError) {
+          // If still failing after clearing all preset cache, localStorage is likely full from other data
+          // Disable localStorage caching for this session and rely on memory cache only
+          console.info('localStorage is full. Using memory cache only. Preset loading will continue to work normally.');
+          this.localStorageDisabled = true;
+          
+          // Clear all preset cache entries one more time to free up what we can
+          this._clearAllPresetCache();
+        }
+      } else {
+        // Other errors (non-quota) - fail silently, memory cache will handle it
+      }
     }
   }
 
@@ -394,6 +441,11 @@ export class DirectoriesProPresetsAPI {
     key: string,
     allowStale = false
   ): { data: any; timestamp: number } | null {
+    // Skip if localStorage is disabled
+    if (this.localStorageDisabled) {
+      return null;
+    }
+
     try {
       const storageKey = `wp-presets-cache-${key}`;
       const stored = localStorage.getItem(storageKey);
@@ -550,9 +602,157 @@ export class DirectoriesProPresetsAPI {
   }
 
   /**
+   * Clean up expired cache entries proactively
+   */
+  private _cleanupExpiredCache(): void {
+    // Skip if localStorage is disabled
+    if (this.localStorageDisabled) {
+      return;
+    }
+
+    try {
+      const keys = Object.keys(localStorage);
+      const presetCacheKeys = keys.filter(key => key.startsWith('wp-presets-cache-'));
+      const now = Date.now();
+
+      let cleanedCount = 0;
+      presetCacheKeys.forEach(key => {
+        try {
+          const stored = localStorage.getItem(key);
+          if (!stored) return;
+
+          const parsed = JSON.parse(stored);
+          const cacheAge = now - parsed.timestamp;
+
+          // Remove expired entries (beyond regular cache duration)
+          if (cacheAge > DirectoriesProPresetsAPI.CACHE_DURATION) {
+            localStorage.removeItem(key);
+            cleanedCount++;
+          }
+        } catch {
+          // Invalid entry, remove it
+          localStorage.removeItem(key);
+          cleanedCount++;
+        }
+      });
+
+      // Also enforce cache size limit proactively
+      const remainingKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('wp-presets-cache-')
+      );
+      
+      if (remainingKeys.length > DirectoriesProPresetsAPI.MAX_CACHE_ENTRIES) {
+        // Sort by timestamp and remove oldest
+        const entriesWithTimestamps = remainingKeys
+          .map(key => {
+            try {
+              const stored = localStorage.getItem(key);
+              if (!stored) return null;
+              const parsed = JSON.parse(stored);
+              return { key, timestamp: parsed.timestamp };
+            } catch {
+              return { key, timestamp: 0 };
+            }
+          })
+          .filter(Boolean)
+          .sort((a, b) => (a?.timestamp || 0) - (b?.timestamp || 0));
+
+        const toRemove = entriesWithTimestamps.slice(
+          0,
+          entriesWithTimestamps.length - DirectoriesProPresetsAPI.MAX_CACHE_ENTRIES
+        );
+
+        toRemove.forEach(entry => {
+          if (entry?.key) {
+            localStorage.removeItem(entry.key);
+            cleanedCount++;
+          }
+        });
+      }
+
+      // Cleanup happens silently
+    } catch (error) {
+      console.warn('Failed to cleanup expired cache:', error);
+    }
+  }
+
+  /**
+   * Aggressively clean up cache to free space (removes oldest entries)
+   */
+  private _cleanupCacheAggressively(): void {
+    try {
+      const keys = Object.keys(localStorage);
+      const presetCacheKeys = keys.filter(key => key.startsWith('wp-presets-cache-'));
+      
+      if (presetCacheKeys.length <= DirectoriesProPresetsAPI.MAX_CACHE_ENTRIES) {
+        return; // Already under limit
+      }
+
+      // Sort by timestamp (oldest first) and remove oldest entries
+      const entriesWithTimestamps = presetCacheKeys
+        .map(key => {
+          try {
+            const stored = localStorage.getItem(key);
+            if (!stored) return null;
+            const parsed = JSON.parse(stored);
+            return { key, timestamp: parsed.timestamp };
+          } catch {
+            // Invalid entry, mark for removal
+            return { key, timestamp: 0 };
+          }
+        })
+        .filter(Boolean)
+        .sort((a, b) => (a?.timestamp || 0) - (b?.timestamp || 0));
+
+      // Remove oldest entries until we're under the limit
+      const entriesToRemove = entriesWithTimestamps.slice(
+        0,
+        entriesWithTimestamps.length - DirectoriesProPresetsAPI.MAX_CACHE_ENTRIES
+      );
+
+      entriesToRemove.forEach(entry => {
+        if (entry?.key) {
+          localStorage.removeItem(entry.key);
+        }
+      });
+
+      // Silent cleanup
+    } catch (error) {
+      // Silent failure
+    }
+  }
+
+  /**
+   * Clear ALL preset cache entries (most aggressive cleanup)
+   */
+  private _clearAllPresetCache(): void {
+    try {
+      const keys = Object.keys(localStorage);
+      const presetCacheKeys = keys.filter(key => key.startsWith('wp-presets-cache-'));
+      
+      presetCacheKeys.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Ignore errors during cleanup
+        }
+      });
+
+      // Silent cleanup - no console message needed
+    } catch (error) {
+      // Silent failure - no console message needed
+    }
+  }
+
+  /**
    * Get fallback cache from any previous successful calls
    */
   private _getFallbackCache(): WordPressPresetsResponse | null {
+    // Skip if localStorage is disabled
+    if (this.localStorageDisabled) {
+      return null;
+    }
+
     try {
       const keys = Object.keys(localStorage);
       const presetCacheKeys = keys.filter(key => key.startsWith('wp-presets-cache-presets_'));

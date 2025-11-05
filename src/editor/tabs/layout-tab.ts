@@ -2935,8 +2935,8 @@ export class LayoutTab extends LitElement {
             ?.modules[this._selectedModule.moduleIndex];
       }
 
-      if (currentModule?.type === 'bar') {
-        // For bar modules, update the design.width instead of top-level width
+      if (currentModule?.type === 'bar' || isChildEdit) {
+        // For bar modules and child modules in layouts, update the design.width instead of top-level width
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
         moduleUpdates.design.width = updates.width;
       } else {
@@ -2959,18 +2959,70 @@ export class LayoutTab extends LitElement {
             ?.modules[this._selectedModule.moduleIndex];
       }
 
-      if (currentModule?.type === 'bar') {
-        // For bar modules, update the design.height instead of top-level height
+      if (currentModule?.type === 'bar' || isChildEdit) {
+        // For bar modules and child modules in layouts, update the design.height instead of top-level height
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
         moduleUpdates.design.height = updates.height;
       } else {
         moduleUpdates.height = updates.height;
       }
     }
-    if (updates.hasOwnProperty('max_width')) moduleUpdates.max_width = updates.max_width;
-    if (updates.hasOwnProperty('max_height')) moduleUpdates.max_height = updates.max_height;
-    if (updates.hasOwnProperty('min_width')) moduleUpdates.min_width = updates.min_width;
-    if (updates.hasOwnProperty('min_height')) moduleUpdates.min_height = updates.min_height;
+    if (updates.hasOwnProperty('max_width')) {
+      if (isChildEdit) {
+        const layout = this._ensureLayout();
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        const currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design.max_width = updates.max_width;
+      } else {
+        moduleUpdates.max_width = updates.max_width;
+      }
+    }
+    if (updates.hasOwnProperty('max_height')) {
+      if (isChildEdit) {
+        const layout = this._ensureLayout();
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        const currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design.max_height = updates.max_height;
+      } else {
+        moduleUpdates.max_height = updates.max_height;
+      }
+    }
+    if (updates.hasOwnProperty('min_width')) {
+      if (isChildEdit) {
+        const layout = this._ensureLayout();
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        const currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design.min_width = updates.min_width;
+      } else {
+        moduleUpdates.min_width = updates.min_width;
+      }
+    }
+    if (updates.hasOwnProperty('min_height')) {
+      if (isChildEdit) {
+        const layout = this._ensureLayout();
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        const currentModule = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+        if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+        moduleUpdates.design.min_height = updates.min_height;
+      } else {
+        moduleUpdates.min_height = updates.min_height;
+      }
+    }
 
     // Position properties
     if (updates.hasOwnProperty('position')) moduleUpdates.position = updates.position;
@@ -3046,10 +3098,6 @@ export class LayoutTab extends LitElement {
     if (updates.hasOwnProperty('animation_timing'))
       moduleUpdates.animation_timing = updates.animation_timing;
 
-    // Handle smart scaling
-    if (updates.hasOwnProperty('smart_scaling'))
-      moduleUpdates.smart_scaling = updates.smart_scaling;
-
     // Handle margin/padding updates
     if (
       updates.hasOwnProperty('margin_top') ||
@@ -3112,9 +3160,19 @@ export class LayoutTab extends LitElement {
       updates.hasOwnProperty('padding_left') ||
       updates.hasOwnProperty('padding_right')
     ) {
-      const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
       const layout = this._ensureLayout();
-      const module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      let module: any = null;
+      
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        module = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else if (this._selectedModule) {
+        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+        module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      }
 
       if (module) {
         // Check if all padding properties are being reset to undefined
@@ -3159,9 +3217,19 @@ export class LayoutTab extends LitElement {
       updates.hasOwnProperty('border_width') ||
       updates.hasOwnProperty('border_color')
     ) {
-      const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
       const layout = this._ensureLayout();
-      const module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      let module: any = null;
+      
+      if (isChildEdit) {
+        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+          this._selectedLayoutChild!;
+        module = (
+          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+        )?.modules?.[childIndex] as any;
+      } else if (this._selectedModule) {
+        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+        module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
+      }
 
       if (module) {
         // Check if all border properties are being reset to undefined
@@ -7177,122 +7245,134 @@ export class LayoutTab extends LitElement {
   }
 
   private _renderLayoutChildDesignTab(module: CardModule): TemplateResult {
-    // Create a custom update method for child modules
+    // Use the main _updateModuleDesign method which has all the complex logic
+    // for handling margin/padding/border objects and property conversions
     const updateChildModuleDesign = (updates: Partial<DesignProperties>) => {
-      // Deep-merge design updates into the existing child module design
-      const layout = this._ensureLayout();
-      const selChild = this._selectedLayoutChild;
-      let currentModule: any = undefined;
-      if (selChild) {
-        const parentModule: any = (layout.rows[selChild.parentRowIndex]?.columns[
-          selChild.parentColumnIndex
-        ]?.modules || [])[selChild.parentModuleIndex];
-        currentModule = (parentModule?.modules || [])[selChild.childIndex];
-      }
-
-      const existingDesign = (currentModule as any)?.design || {};
-      const mergedDesign = { ...existingDesign, ...updates } as any;
-
-      const modulePatch: any = { design: mergedDesign };
-      // Mirror background_color to top-level for preview compatibility
-      if (Object.prototype.hasOwnProperty.call(updates, 'background_color')) {
-        modulePatch.background_color = (updates as any).background_color;
-        // For Bar child modules, also set bar_background_color so the track updates immediately
-        if (currentModule?.type === 'bar') {
-          modulePatch.bar_background_color = (updates as any).background_color as any;
-        }
-      }
-
-      // Mirror font_size to top-level for text modules and other modules that read module.font_size
-      if (Object.prototype.hasOwnProperty.call(updates, 'font_size')) {
-        modulePatch.font_size = (updates as any).font_size;
-      }
-
-      this._updateLayoutChildModule(modulePatch);
+      this._updateModuleDesign(updates);
     };
 
     // Create a custom design properties object for the child module
+    // IMPORTANT: Check design object FIRST, then top-level properties for consistent priority
     const designProperties = {
-      color: (module as any).color,
-      text_align: (module as any).text_align || (module as any).design?.text_align,
-      font_size: (module as any).font_size || (module as any).design?.font_size,
-      line_height: (module as any).line_height || (module as any).design?.line_height,
-      letter_spacing: (module as any).letter_spacing || (module as any).design?.letter_spacing,
-      font_family: (module as any).font_family || (module as any).design?.font_family,
-      font_weight: (module as any).font_weight || (module as any).design?.font_weight,
-      text_transform: (module as any).text_transform || (module as any).design?.text_transform,
-      font_style: (module as any).font_style || (module as any).design?.font_style,
+      color: (module as any).design?.color || (module as any).color,
+      text_align: (module as any).design?.text_align || (module as any).text_align,
+      font_size: (module as any).design?.font_size || (module as any).font_size,
+      line_height: (module as any).design?.line_height || (module as any).line_height,
+      letter_spacing: (module as any).design?.letter_spacing || (module as any).letter_spacing,
+      font_family: (module as any).design?.font_family || (module as any).font_family,
+      font_weight: (module as any).design?.font_weight || (module as any).font_weight,
+      text_transform: (module as any).design?.text_transform || (module as any).text_transform,
+      font_style: (module as any).design?.font_style || (module as any).font_style,
       background_color:
-        (module as any).background_color || (module as any).design?.background_color,
+        (module as any).design?.background_color || (module as any).background_color,
       background_image:
-        (module as any).background_image || (module as any).design?.background_image,
+        (module as any).design?.background_image || (module as any).background_image,
       background_image_type:
-        (module as any).background_image_type || (module as any).design?.background_image_type,
+        (module as any).design?.background_image_type || (module as any).background_image_type,
       background_image_entity:
-        (module as any).background_image_entity || (module as any).design?.background_image_entity,
+        (module as any).design?.background_image_entity || (module as any).background_image_entity,
       background_repeat:
-        (module as any).background_repeat || (module as any).design?.background_repeat,
+        (module as any).design?.background_repeat || (module as any).background_repeat,
       background_position:
-        (module as any).background_position || (module as any).design?.background_position,
-      background_size: (module as any).background_size || (module as any).design?.background_size,
-      backdrop_filter: (module as any).backdrop_filter || (module as any).design?.backdrop_filter,
+        (module as any).design?.background_position || (module as any).background_position,
+      background_size: (module as any).design?.background_size || (module as any).background_size,
+      backdrop_filter: (module as any).design?.backdrop_filter || (module as any).backdrop_filter,
       background_filter:
-        (module as any).background_filter || (module as any).design?.background_filter,
-      width: (module as any).width || (module as any).design?.width,
-      height: (module as any).height || (module as any).design?.height,
-      max_width: (module as any).max_width || (module as any).design?.max_width,
-      max_height: (module as any).max_height || (module as any).design?.max_height,
-      min_width: (module as any).min_width || (module as any).design?.min_width,
-      min_height: (module as any).min_height || (module as any).design?.min_height,
-      margin_top: (module as any).margin_top || (module as any).design?.margin_top,
-      margin_bottom: (module as any).margin_bottom || (module as any).design?.margin_bottom,
-      margin_left: (module as any).margin_left || (module as any).design?.margin_left,
-      margin_right: (module as any).margin_right || (module as any).design?.margin_right,
-      padding_top: (module as any).padding_top || (module as any).design?.padding_top,
-      padding_bottom: (module as any).padding_bottom || (module as any).design?.padding_bottom,
-      padding_left: (module as any).padding_left || (module as any).design?.padding_left,
-      padding_right: (module as any).padding_right || (module as any).design?.padding_right,
-      border_radius: (module as any).border_radius || (module as any).design?.border_radius,
-      border_style: (module as any).border_style || (module as any).design?.border_style,
-      border_width: (module as any).border_width || (module as any).design?.border_width,
-      border_color: (module as any).border_color || (module as any).design?.border_color,
-      position: (module as any).position || (module as any).design?.position,
-      top: (module as any).top || (module as any).design?.top,
-      bottom: (module as any).bottom || (module as any).design?.bottom,
-      left: (module as any).left || (module as any).design?.left,
-      right: (module as any).right || (module as any).design?.right,
-      z_index: (module as any).z_index || (module as any).design?.z_index,
-      overflow: (module as any).overflow || (module as any).design?.overflow,
-      clip_path: (module as any).clip_path || (module as any).design?.clip_path,
-      box_shadow_h: (module as any).box_shadow_h || (module as any).design?.box_shadow_h,
-      box_shadow_v: (module as any).box_shadow_v || (module as any).design?.box_shadow_v,
-      box_shadow_blur: (module as any).box_shadow_blur || (module as any).design?.box_shadow_blur,
+        (module as any).design?.background_filter || (module as any).background_filter,
+      width: (module as any).design?.width || (module as any).width,
+      height: (module as any).design?.height || (module as any).height,
+      max_width: (module as any).design?.max_width || (module as any).max_width,
+      max_height: (module as any).design?.max_height || (module as any).max_height,
+      min_width: (module as any).design?.min_width || (module as any).min_width,
+      min_height: (module as any).design?.min_height || (module as any).min_height,
+      // Margin: check design object, then margin object, then top-level properties
+      margin_top:
+        (module as any).design?.margin_top ||
+        (module as any).margin?.top ||
+        (module as any).margin_top,
+      margin_bottom:
+        (module as any).design?.margin_bottom ||
+        (module as any).margin?.bottom ||
+        (module as any).margin_bottom,
+      margin_left:
+        (module as any).design?.margin_left ||
+        (module as any).margin?.left ||
+        (module as any).margin_left,
+      margin_right:
+        (module as any).design?.margin_right ||
+        (module as any).margin?.right ||
+        (module as any).margin_right,
+      // Padding: check design object, then padding object, then top-level properties
+      padding_top:
+        (module as any).design?.padding_top ||
+        (module as any).padding?.top ||
+        (module as any).padding_top,
+      padding_bottom:
+        (module as any).design?.padding_bottom ||
+        (module as any).padding?.bottom ||
+        (module as any).padding_bottom,
+      padding_left:
+        (module as any).design?.padding_left ||
+        (module as any).padding?.left ||
+        (module as any).padding_left,
+      padding_right:
+        (module as any).design?.padding_right ||
+        (module as any).padding?.right ||
+        (module as any).padding_right,
+      // Border: check design object, then border object, then top-level properties
+      border_radius:
+        (module as any).design?.border_radius ||
+        (module as any).border?.radius ||
+        (module as any).border_radius,
+      border_style:
+        (module as any).design?.border_style ||
+        (module as any).border?.style ||
+        (module as any).border_style,
+      border_width:
+        (module as any).design?.border_width ||
+        (module as any).border?.width ||
+        (module as any).border_width,
+      border_color:
+        (module as any).design?.border_color ||
+        (module as any).border?.color ||
+        (module as any).border_color,
+      position: (module as any).design?.position || (module as any).position,
+      top: (module as any).design?.top || (module as any).top,
+      bottom: (module as any).design?.bottom || (module as any).bottom,
+      left: (module as any).design?.left || (module as any).left,
+      right: (module as any).design?.right || (module as any).right,
+      z_index: (module as any).design?.z_index || (module as any).z_index,
+      overflow: (module as any).design?.overflow || (module as any).overflow,
+      clip_path: (module as any).design?.clip_path || (module as any).clip_path,
+      box_shadow_h: (module as any).design?.box_shadow_h || (module as any).box_shadow_h,
+      box_shadow_v: (module as any).design?.box_shadow_v || (module as any).box_shadow_v,
+      box_shadow_blur: (module as any).design?.box_shadow_blur || (module as any).box_shadow_blur,
       box_shadow_spread:
-        (module as any).box_shadow_spread || (module as any).design?.box_shadow_spread,
+        (module as any).design?.box_shadow_spread || (module as any).box_shadow_spread,
       box_shadow_color:
-        (module as any).box_shadow_color || (module as any).design?.box_shadow_color,
-      text_shadow_h: (module as any).text_shadow_h || (module as any).design?.text_shadow_h,
-      text_shadow_v: (module as any).text_shadow_v || (module as any).design?.text_shadow_v,
+        (module as any).design?.box_shadow_color || (module as any).box_shadow_color,
+      text_shadow_h: (module as any).design?.text_shadow_h || (module as any).text_shadow_h,
+      text_shadow_v: (module as any).design?.text_shadow_v || (module as any).text_shadow_v,
       text_shadow_blur:
-        (module as any).text_shadow_blur || (module as any).design?.text_shadow_blur,
+        (module as any).design?.text_shadow_blur || (module as any).text_shadow_blur,
       text_shadow_color:
-        (module as any).text_shadow_color || (module as any).design?.text_shadow_color,
-      // Animation properties - check both top-level and design object
-      animation_type: (module as any).animation_type || (module as any).design?.animation_type,
+        (module as any).design?.text_shadow_color || (module as any).text_shadow_color,
+      // Animation properties - check design object first for consistency
+      animation_type: (module as any).design?.animation_type || (module as any).animation_type,
       animation_entity:
-        (module as any).animation_entity || (module as any).design?.animation_entity,
+        (module as any).design?.animation_entity || (module as any).animation_entity,
       animation_trigger_type:
-        (module as any).animation_trigger_type || (module as any).design?.animation_trigger_type,
+        (module as any).design?.animation_trigger_type || (module as any).animation_trigger_type,
       animation_attribute:
-        (module as any).animation_attribute || (module as any).design?.animation_attribute,
-      animation_state: (module as any).animation_state || (module as any).design?.animation_state,
-      intro_animation: (module as any).intro_animation || (module as any).design?.intro_animation,
-      outro_animation: (module as any).outro_animation || (module as any).design?.outro_animation,
+        (module as any).design?.animation_attribute || (module as any).animation_attribute,
+      animation_state: (module as any).design?.animation_state || (module as any).animation_state,
+      intro_animation: (module as any).design?.intro_animation || (module as any).intro_animation,
+      outro_animation: (module as any).design?.outro_animation || (module as any).outro_animation,
       animation_duration:
-        (module as any).animation_duration || (module as any).design?.animation_duration,
-      animation_delay: (module as any).animation_delay || (module as any).design?.animation_delay,
+        (module as any).design?.animation_duration || (module as any).animation_duration,
+      animation_delay: (module as any).design?.animation_delay || (module as any).animation_delay,
       animation_timing:
-        (module as any).animation_timing || (module as any).design?.animation_timing,
+        (module as any).design?.animation_timing || (module as any).animation_timing,
     };
 
     const result = html`
@@ -8918,8 +8998,6 @@ export class LayoutTab extends LitElement {
       animation_duration: (module as any).animation_duration,
       animation_delay: (module as any).animation_delay,
       animation_timing: (module as any).animation_timing,
-      // Smart Scaling
-      smart_scaling: (module as any).smart_scaling,
     };
 
     return html`

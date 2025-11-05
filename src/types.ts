@@ -113,8 +113,6 @@ export interface BaseModule {
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
-  // Smart Scaling - automatically scale content to fit within container boundaries
-  smart_scaling?: boolean; // Default: true
   // Legacy design properties (for backward compatibility)
   background_color?: string;
   background_image?: string;
@@ -504,7 +502,8 @@ export interface InfoEntityConfig {
   // Icon positioning and alignment
   icon_position?: 'left' | 'right' | 'top' | 'bottom';
   icon_alignment?: 'start' | 'center' | 'end';
-  content_alignment?: 'start' | 'center' | 'end';
+  name_alignment?: 'start' | 'center' | 'end';
+  state_alignment?: 'start' | 'center' | 'end';
   overall_alignment?: 'left' | 'center' | 'right';
   icon_gap?: number;
   // Name/Value layout when icon is disabled
@@ -1414,15 +1413,16 @@ export interface SliderModule extends BaseModule {
 
   // Pagination Configuration
   show_pagination?: boolean;
-  pagination_style?: 'dots' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar';
+  pagination_style?: 'dots' | 'dots-and-dash' | 'dash-lines' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar' | 'scrollbar' | 'dynamic';
   pagination_position?: 'top' | 'bottom' | 'left' | 'right';
   pagination_color?: string;
   pagination_active_color?: string;
   pagination_size?: number;
+  pagination_overlay?: boolean; // Whether pagination overlays content or gets its own space
 
   // Navigation Arrows Configuration
   show_arrows?: boolean;
-  arrow_position?: 'inside' | 'outside';
+  arrow_position_offset?: number; // Offset for arrow position (positive = more inside, negative = more outside)
   arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
   arrow_size?: number;
   arrow_color?: string;
@@ -1433,16 +1433,21 @@ export interface SliderModule extends BaseModule {
 
   // Transition Configuration
   transition_effect?:
+    | 'slide'
+    | 'fade'
+    | 'cube'
+    | 'coverflow'
+    | 'flip'
+    | 'zoom'
+    // Legacy options for backward compatibility
     | 'slide-left'
     | 'slide-right'
     | 'slide-top'
     | 'slide-bottom'
-    | 'fade'
     | 'zoom-in'
     | 'zoom-out'
     | 'circle';
   transition_speed?: number;
-  transition_easing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
   // Auto-play Configuration
   auto_play?: boolean;
@@ -1456,16 +1461,15 @@ export interface SliderModule extends BaseModule {
   allow_mousewheel?: boolean;
 
   // Layout Configuration
+  slider_direction?: 'horizontal' | 'vertical';
+  centered_slides?: boolean;
   slider_height?: number;
+  auto_height?: boolean; // When true, slider adjusts to content height (default: true)
   slider_width?: string;
   gap?: number;
   slides_per_view?: number;
   space_between?: number;
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-
-  // Mobile Configuration
-  mobile_slides_per_view?: number;
-  mobile_space_between?: number;
 
   // Global action configuration
   tap_action?: {

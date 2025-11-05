@@ -15,7 +15,6 @@ export interface DesignProperties {
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';
     background_image_entity?: string;
-    smart_scaling?: boolean;
     background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
     background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
     background_size?: 'cover' | 'contain' | 'auto' | string;

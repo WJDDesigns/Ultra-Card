@@ -167,7 +167,6 @@ export class UltraBarModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -3318,6 +3317,15 @@ export class UltraBarModule extends BaseUltraModule {
   ): TemplateResult {
     const barModule = module as BarModule;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!barModule.entity || barModule.entity.trim() === '') {
+      return this.renderGradientErrorState(
+        'Select Entity',
+        'Choose an entity in the General tab',
+        'mdi:chart-box-outline'
+      );
+    }
+
     // Resolve bar percentage based on selected percentage calculation mode
     let percentage = 0;
     let barColor: string | undefined;
@@ -5160,9 +5168,8 @@ export class UltraBarModule extends BaseUltraModule {
     const barModule = module as BarModule;
     const errors = [...baseValidation.errors];
 
-    if (!barModule.entity || barModule.entity.trim() === '') {
-      errors.push('Entity ID is required');
-    }
+    // LENIENT VALIDATION: Allow empty entity - UI will show placeholder
+    // Only validate for truly breaking errors
 
     if (barModule.height && (barModule.height < 5 || barModule.height > 200)) {
       errors.push('Bar height must be between 5 and 200 pixels');
@@ -5172,7 +5179,7 @@ export class UltraBarModule extends BaseUltraModule {
       errors.push('Border radius must be between 0 and 100 pixels');
     }
 
-    // Validate limit entity if provided
+    // Validate limit entity if provided (only if it has content)
     if (barModule.limit_entity && barModule.limit_entity.trim() !== '') {
       // Basic entity ID format validation
       if (!barModule.limit_entity.includes('.')) {

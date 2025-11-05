@@ -1189,43 +1189,6 @@ export class UltraCardEditor extends LitElement {
                   }}
                 ></ha-form>
               </div>
-
-              <div class="setting-item setting-inline">
-                <label>
-                  ${localize('editor.behavior.responsive_scaling', lang, 'Smart Scaling')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.behavior.responsive_scaling_desc',
-                    lang,
-                    'Intelligently scales content to fit tighter columns or edit panels (experimental)'
-                  )}
-                  <br /><small style="opacity: 0.7;"
-                    >⚠️ Experimental: Smart Scaling adapts the card when space is tight (edit mode,
-                    small columns). Disable if you prefer fixed sizing.</small
-                  >
-                </div>
-                <ha-form
-                  .hass=${this.hass}
-                  .data=${{ responsive_scaling: this.config.responsive_scaling !== false }}
-                  .schema=${[
-                    {
-                      name: 'responsive_scaling',
-                      label: '',
-                      selector: {
-                        boolean: {},
-                      },
-                    },
-                  ]}
-                  .computeLabel=${() => ''}
-                  @value-changed=${(e: CustomEvent) => {
-                    const enabled = (e.detail as any)?.value?.responsive_scaling;
-                    if (enabled !== undefined) {
-                      this._updateConfig({ responsive_scaling: enabled });
-                    }
-                  }}
-                ></ha-form>
-              </div>
             </div>
           </div>
 

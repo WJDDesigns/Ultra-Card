@@ -2953,12 +2953,6 @@ export class UltraCard extends LitElement {
         }
       }
 
-      @container (min-width: 500px) {
-        .card-row {
-          margin-bottom: 16px;
-        }
-      }
-
       /* Pro Module Locked Overlay */
       .pro-module-locked {
         position: relative;

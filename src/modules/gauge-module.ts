@@ -116,7 +116,6 @@ export class UltraGaugeModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -1584,6 +1583,16 @@ export class UltraGaugeModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const gaugeModule = module as GaugeModule;
+
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!gaugeModule.entity || gaugeModule.entity.trim() === '') {
+      return this.renderGradientErrorState(
+        'Select Entity',
+        'Choose an entity in the General tab',
+        'mdi:gauge-empty'
+      );
+    }
+
     const value = this.calculateGaugeValue(gaugeModule, hass);
     const displayName = this.getDisplayName(gaugeModule, hass);
 
@@ -3975,9 +3984,8 @@ export class UltraGaugeModule extends BaseUltraModule {
     const gaugeModule = module as GaugeModule;
     const errors = [...baseValidation.errors];
 
-    if (!gaugeModule.entity || gaugeModule.entity.trim() === '') {
-      errors.push('Entity is required');
-    }
+    // LENIENT VALIDATION: Allow empty entity - UI will show placeholder
+    // Only validate for truly breaking errors
 
     if (gaugeModule.min_value !== undefined && gaugeModule.max_value !== undefined) {
       if (gaugeModule.min_value >= gaugeModule.max_value) {
@@ -3985,17 +3993,20 @@ export class UltraGaugeModule extends BaseUltraModule {
       }
     }
 
-    if (gaugeModule.value_type === 'attribute') {
-      if (!gaugeModule.value_attribute_entity || !gaugeModule.value_attribute_name) {
-        errors.push(
-          'Attribute entity and attribute name are required when using attribute value type'
-        );
+    // Only validate attribute/template if entity is configured
+    if (gaugeModule.entity && gaugeModule.entity.trim() !== '') {
+      if (gaugeModule.value_type === 'attribute') {
+        if (!gaugeModule.value_attribute_entity || !gaugeModule.value_attribute_name) {
+          errors.push(
+            'Attribute entity and attribute name are required when using attribute value type'
+          );
+        }
       }
-    }
 
-    if (gaugeModule.value_type === 'template') {
-      if (!gaugeModule.value_template || gaugeModule.value_template.trim() === '') {
-        errors.push('Template is required when using template value type');
+      if (gaugeModule.value_type === 'template') {
+        if (!gaugeModule.value_template || gaugeModule.value_template.trim() === '') {
+          errors.push('Template is required when using template value type');
+        }
       }
     }
 

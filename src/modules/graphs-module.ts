@@ -199,7 +199,6 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     } as any;
   }
 
@@ -1931,36 +1930,21 @@ export class UltraGraphsModule extends BaseUltraModule {
         ? graphsModule.entities.some(e => e.forecast_attribute)
         : graphsModule.entities.some(e => e.entity));
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!graphsModule.chart_type) {
+      return this.renderGradientErrorState(
+        'Select Chart Type',
+        'Choose a chart type in the General tab',
+        'mdi:chart-line'
+      );
+    }
+
     if (!hasEntities) {
-      const resolvedBgColor = resolvedBackgroundColor;
-      return html`
-        <div class="uc-graphs-module" style="${this.styleObjectToCss(containerStyles)}">
-          <div
-            class="chart-placeholder"
-            style="
-              height: ${Math.min(
-              200,
-              typeof graphsModule.chart_height === 'number'
-                ? graphsModule.chart_height
-                : parseInt(String(graphsModule.chart_height)) || 160
-            )}px;
-              background: ${this._formatColor(resolvedBgColor) || 'rgba(0, 0, 0, 0.2)'};
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            ${composeTextStyle({ color: resolvedTextColor })};
-            font-size: 14px;
-          "
-          >
-            <div style="text-align: center;">
-              <ha-icon icon="mdi:chart-line" style="font-size: 48px; opacity: 0.5;"></ha-icon>
-              <div style="margin-top: 8px;">No entities configured</div>
-              <div style="font-size: 12px; opacity: 0.7;">Add entities to display chart</div>
-            </div>
-          </div>
-        </div>
-      `;
+      const subtitle =
+        graphsModule.data_source === 'forecast'
+          ? 'Configure forecast attributes in the General tab'
+          : 'Add entities to display chart';
+      return this.renderGradientErrorState('Configure Entities', subtitle, 'mdi:chart-line');
     }
 
     // Primary entity for header details
@@ -4477,51 +4461,24 @@ export class UltraGraphsModule extends BaseUltraModule {
     const graphsModule = module as GraphsModule;
     const errors = [...baseValidation.errors];
 
-    if (!graphsModule.chart_type) {
-      errors.push('Chart type is required');
-    }
+    // LENIENT VALIDATION: Allow incomplete configuration - UI will show placeholders
+    // Only validate for truly breaking errors
 
-    // Forecast mode validation
-    if (graphsModule.data_source === 'forecast') {
-      if (!graphsModule.forecast_entity) {
-        errors.push('Weather entity is required for forecast mode');
-      }
-
-      if (!graphsModule.entities || graphsModule.entities.length === 0) {
-        errors.push('At least one forecast attribute is required');
-      } else {
-        graphsModule.entities.forEach((entity, index) => {
-          if (!entity.forecast_attribute) {
-            errors.push(`Entity ${index + 1}: Forecast attribute selection is required`);
-          }
-        });
-      }
-    } else {
-      // History mode validation
-      if (!graphsModule.entities || graphsModule.entities.length === 0) {
-        errors.push('At least one entity is required');
-      } else {
-        graphsModule.entities.forEach((entity, index) => {
-          if (!entity.entity) {
-            errors.push(`Entity ${index + 1}: Entity selection is required`);
-          }
-        });
-      }
-    }
-
+    // Validate custom time period (only if custom is selected and has content)
     if (graphsModule.time_period === 'custom') {
-      if (!graphsModule.custom_time_start) {
-        errors.push('Custom start time is required');
+      if (graphsModule.custom_time_start && !graphsModule.custom_time_end) {
+        errors.push('Custom end time is required when start time is set');
       }
-      if (!graphsModule.custom_time_end) {
-        errors.push('Custom end time is required');
+      if (graphsModule.custom_time_end && !graphsModule.custom_time_start) {
+        errors.push('Custom start time is required when end time is set');
       }
     }
 
-    // Template validation
+    // Template validation - only if template mode is explicitly enabled
     if (
       graphsModule.template_mode &&
-      (!graphsModule.template || graphsModule.template.trim() === '')
+      graphsModule.template &&
+      graphsModule.template.trim() === ''
     ) {
       errors.push('Template code is required when template mode is enabled');
     }

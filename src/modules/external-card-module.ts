@@ -105,7 +105,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
       card_config: {},
       name: '',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 

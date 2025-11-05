@@ -46,7 +46,6 @@ Cloud sync, automatic daily backups with 30-day retention, and smart restore fun
 - **🎨 Drag-and-Drop Builder** - Effortlessly arrange layouts with instant visual feedback
 - **🛠️ Visual Editor** - Configure everything through an intuitive UI, no YAML required
 - **🎯 4-Tab Module Settings** - General, Actions, Logic, and Design for complete control
-- **📏 Smart Scaling** - Intelligent responsive scaling adapts to narrow columns automatically
 - **📱 Mobile Optimized** - Touch gestures and responsive layouts for all devices
 
 ### Endless Possibilities

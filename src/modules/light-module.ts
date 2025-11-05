@@ -299,7 +299,6 @@ export class UltraLightModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -1459,50 +1458,6 @@ export class UltraLightModule extends BaseUltraModule {
             </div>
           </div>
 
-          <!-- Per-Preset Styling -->
-          <div
-            style="margin-bottom: 16px; background: rgba(var(--rgb-accent-color), 0.05); border-radius: 6px; padding: 12px;"
-          >
-            <div style="font-weight: 500; margin-bottom: 12px; color: var(--primary-text-color);">
-              Button Style
-            </div>
-
-            ${this.renderFieldSection(
-              'Button Style',
-              'Visual style for this preset button',
-              hass,
-              { button_style: preset.button_style || 'filled' },
-              [
-                this.selectField('button_style', [
-                  { value: 'filled', label: 'Filled (solid background)' },
-                  { value: 'outlined', label: 'Outlined (border only)' },
-                  { value: 'text', label: 'Text (minimal style)' },
-                ]),
-              ],
-              (e: CustomEvent) => updatePreset({ button_style: e.detail.value.button_style })
-            )}
-
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;"
-            >
-              <div>
-                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                  Show Label
-                </div>
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Display preset name on this button
-                </div>
-              </div>
-              <ha-switch
-                .checked=${preset.show_label ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updatePreset({ show_label: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
-
           <!-- Custom Colors (only show when smart contrast is disabled) -->
           ${
             !preset.smart_color
@@ -2259,6 +2214,8 @@ export class UltraLightModule extends BaseUltraModule {
       width: '100%',
     };
 
+    // GRACEFUL RENDERING: Show helpful placeholders for incomplete configurations
+
     if (presets.length === 0) {
       return html`
         <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
@@ -2266,6 +2223,30 @@ export class UltraLightModule extends BaseUltraModule {
             <ha-icon icon="mdi:lightbulb-group"></ha-icon>
             <div>No presets configured</div>
             <div class="config-hint">Add presets in the General tab</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Check if any presets are missing entities
+    const validPresets = presets.filter(p => p.entities && p.entities.length > 0);
+    const incompletePresets = presets.filter(p => !p.entities || p.entities.length === 0);
+
+    // If ALL presets are incomplete, show a sleek, compact error state
+    if (validPresets.length === 0 && presets.length > 0) {
+      const presetList = incompletePresets.map((p, i) => p.name || `Preset ${i + 1}`).join(', ');
+
+      return html`
+        <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div class="ultra-config-needed">
+            <div class="ultra-config-gradient"></div>
+            <div class="ultra-config-content">
+              <ha-icon icon="mdi:lightbulb-alert-outline"></ha-icon>
+              <div class="ultra-config-text">
+                <div class="ultra-config-title">Configure Entities</div>
+                <div class="ultra-config-subtitle">${presetList}</div>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -2298,10 +2279,28 @@ export class UltraLightModule extends BaseUltraModule {
       `;
     }
 
+    // Show sleek warning banner if some presets are incomplete (but render valid ones)
+    const warningBanner =
+      incompletePresets.length > 0
+        ? html`
+            <div class="ultra-config-banner">
+              <div class="ultra-config-banner-gradient"></div>
+              <div class="ultra-config-banner-content">
+                <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+                <span
+                  >${incompletePresets.length} preset${incompletePresets.length > 1 ? 's' : ''} need
+                  configuration</span
+                >
+              </div>
+            </div>
+          `
+        : '';
+
     return html`
       <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        ${warningBanner}
         <div class="presets-container ${layout}" style="${containerLayoutStyles}">
-          ${presets.map(preset =>
+          ${validPresets.map(preset =>
             this.renderPresetButton(preset, lightModule, hass, showLabels, buttonStyle, config)
           )}
         </div>
@@ -2689,28 +2688,47 @@ export class UltraLightModule extends BaseUltraModule {
     const lightModule = module as LightModule;
     const errors = [...baseValidation.errors];
 
-    // Check if at least one preset is configured
-    if (!lightModule.presets || lightModule.presets.length === 0) {
-      errors.push('At least one preset must be configured');
-    }
+    // LENIENT VALIDATION: Allow empty/incomplete presets - they will show helpful placeholders
+    // Don't fail validation for missing presets or entities - let the UI handle it gracefully
+    // Only validate presets that have been started (have a name or entities)
 
-    // Validate each preset
+    // Validate each preset - but only for truly breaking configuration errors
     (lightModule.presets || []).forEach((preset, index) => {
-      const presetErrors = this.validatePreset(preset);
-      presetErrors.forEach(error => {
-        errors.push(`Preset ${index + 1}: ${error}`);
-      });
+      // Only validate presets that have some content (started configuration)
+      const hasContent =
+        (preset.name && preset.name.trim() !== '') ||
+        (preset.entities && preset.entities.length > 0);
+
+      if (hasContent) {
+        // Only check for truly critical errors that would break functionality
+        // Don't fail on missing entities - the UI will show a helpful placeholder
+        const presetErrors = this.validatePreset(preset);
+
+        // Filter out non-critical errors that can be shown in the UI instead
+        const criticalErrors = presetErrors.filter(err => {
+          // Allow missing entities - UI will show placeholder
+          if (err.includes('At least one entity must be selected')) return false;
+          // Allow missing light settings - user might be configuring turn_off
+          if (err.includes('At least one light setting')) return false;
+          return true;
+        });
+
+        criticalErrors.forEach(error => {
+          errors.push(`Preset ${index + 1}: ${error}`);
+        });
+      }
     });
 
-    // Validate transition time
+    // Validate transition time (truly breaking if invalid)
     if (
-      lightModule.default_transition_time &&
+      lightModule.default_transition_time !== undefined &&
+      lightModule.default_transition_time !== null &&
       (lightModule.default_transition_time < 0 || lightModule.default_transition_time > 10)
     ) {
       errors.push('Default transition time must be between 0 and 10 seconds');
     }
 
-    // Validate grid columns
+    // Validate grid columns (truly breaking if invalid)
     if (
       lightModule.layout === 'grid' &&
       lightModule.columns &&
@@ -2719,6 +2737,8 @@ export class UltraLightModule extends BaseUltraModule {
       errors.push('Grid columns must be between 1 and 6');
     }
 
+    // Always return valid unless there are CRITICAL errors
+    // This allows the module to render with helpful placeholders for incomplete config
     return { valid: errors.length === 0, errors };
   }
 
@@ -2749,6 +2769,96 @@ export class UltraLightModule extends BaseUltraModule {
         font-size: 12px;
         opacity: 0.7;
         margin-top: 8px;
+      }
+
+      /* Ultra Card Modern Gradient Error State */
+      .ultra-config-needed {
+        position: relative;
+        padding: 16px;
+        border-radius: 12px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .ultra-config-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.15) 0%, 
+          rgba(236, 72, 153, 0.15) 50%, 
+          rgba(59, 130, 246, 0.15) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .ultra-config-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 24px;
+      }
+
+      .ultra-config-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .ultra-config-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 2px;
+      }
+
+      .ultra-config-subtitle {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compact Warning Banner */
+      .ultra-config-banner {
+        position: relative;
+        padding: 10px 14px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        backdrop-filter: blur(10px);
+      }
+
+      .ultra-config-banner-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.12) 0%, 
+          rgba(236, 72, 153, 0.12) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-banner-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--primary-text-color);
+      }
+
+      .ultra-config-banner-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 18px;
       }
 
       .presets-container {

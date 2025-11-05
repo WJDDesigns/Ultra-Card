@@ -83,7 +83,8 @@ export class UltraInfoModule extends BaseUltraModule {
           // Icon positioning and alignment
           icon_position: 'left',
           icon_alignment: 'center',
-          content_alignment: 'start',
+          name_alignment: 'start',
+          state_alignment: 'start',
           overall_alignment: 'center',
           icon_gap: 8,
           // Name/Value layout when icon is disabled
@@ -103,7 +104,6 @@ export class UltraInfoModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -134,7 +134,8 @@ export class UltraInfoModule extends BaseUltraModule {
       icon_position: entity.icon_position || 'left',
       overall_alignment: entity.overall_alignment || 'center',
       icon_alignment: entity.icon_alignment || 'center',
-      content_alignment: entity.content_alignment || 'start',
+      name_alignment: entity.name_alignment || 'start',
+      state_alignment: entity.state_alignment || 'start',
       name_value_layout: entity.name_value_layout || 'vertical',
       name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
     };
@@ -1469,48 +1470,95 @@ export class UltraInfoModule extends BaseUltraModule {
             </div>
           </div>
 
-          <!-- Overall Alignment -->
-          <div class="field-group" style="margin-bottom: 24px;">
-            <div
-              class="field-title"
-              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
-            >
-              ${localize('editor.info.overall_alignment', lang, 'Overall Alignment')}
+          <!-- Overall Alignment and Name Alignment Side by Side -->
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; margin-bottom: 24px;"
+          >
+            <!-- Overall Alignment -->
+            <div class="field-group">
+              <div
+                class="field-title"
+                style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+              >
+                ${localize('editor.info.overall_alignment', lang, 'Overall Alignment')}
+              </div>
+              <div
+                class="control-button-group"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
+              >
+                ${[
+                  { value: 'left', icon: 'mdi:format-align-left' },
+                  { value: 'center', icon: 'mdi:format-align-center' },
+                  { value: 'right', icon: 'mdi:format-align-right' },
+                ].map(
+                  alignment => html`
+                    <button
+                      type="button"
+                      class="control-btn ${(entity.overall_alignment || 'center') ===
+                      alignment.value
+                        ? 'active'
+                        : ''}"
+                      @click=${() => {
+                        this._updateEntity(
+                          infoModule,
+                          0,
+                          { overall_alignment: alignment.value as any },
+                          updateModule
+                        );
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
+                    >
+                      <ha-icon icon="${alignment.icon}"></ha-icon>
+                    </button>
+                  `
+                )}
+              </div>
             </div>
-            <div
-              class="control-button-group"
-              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%;"
-            >
-              ${[
-                { value: 'left', icon: 'mdi:format-align-left' },
-                { value: 'center', icon: 'mdi:format-align-center' },
-                { value: 'right', icon: 'mdi:format-align-right' },
-              ].map(
-                alignment => html`
-                  <button
-                    type="button"
-                    class="control-btn ${(entity.overall_alignment || 'center') === alignment.value
-                      ? 'active'
-                      : ''}"
-                    @click=${() => {
-                      this._updateEntity(
-                        infoModule,
-                        0,
-                        { overall_alignment: alignment.value as any },
-                        updateModule
-                      );
-                      setTimeout(() => this.triggerPreviewUpdate(), 50);
-                    }}
-                    title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
-                  >
-                    <ha-icon icon="${alignment.icon}"></ha-icon>
-                  </button>
-                `
-              )}
+
+            <!-- Name Alignment -->
+            <div class="field-group">
+              <div
+                class="field-title"
+                style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+              >
+                ${localize('editor.info.name_alignment', lang, 'Name Alignment')}
+              </div>
+              <div
+                class="control-button-group"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
+              >
+                ${[
+                  { value: 'start', icon: 'mdi:format-align-left' },
+                  { value: 'center', icon: 'mdi:format-align-center' },
+                  { value: 'end', icon: 'mdi:format-align-right' },
+                ].map(
+                  alignment => html`
+                    <button
+                      type="button"
+                      class="control-btn ${(entity.name_alignment || 'start') === alignment.value
+                        ? 'active'
+                        : ''}"
+                      @click=${() => {
+                        this._updateEntity(
+                          infoModule,
+                          0,
+                          { name_alignment: alignment.value as any },
+                          updateModule
+                        );
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      title="${alignment.value.charAt(0).toUpperCase() + alignment.value.slice(1)}"
+                    >
+                      <ha-icon icon="${alignment.icon}"></ha-icon>
+                    </button>
+                  `
+                )}
+              </div>
             </div>
           </div>
 
-          <!-- Icon and Content Alignment Side by Side -->
+          <!-- Icon Alignment and State Alignment Side by Side -->
           <div
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px;"
           >
@@ -1555,13 +1603,13 @@ export class UltraInfoModule extends BaseUltraModule {
               </div>
             </div>
 
-            <!-- Content Alignment -->
+            <!-- State Alignment -->
             <div class="field-group">
               <div
                 class="field-title"
                 style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
               >
-                ${localize('editor.info.content_alignment', lang, 'Content Alignment')}
+                ${localize('editor.info.state_alignment', lang, 'State Alignment')}
               </div>
               <div
                 class="control-button-group"
@@ -1575,14 +1623,14 @@ export class UltraInfoModule extends BaseUltraModule {
                   alignment => html`
                     <button
                       type="button"
-                      class="control-btn ${(entity.content_alignment || 'start') === alignment.value
+                      class="control-btn ${(entity.state_alignment || 'start') === alignment.value
                         ? 'active'
                         : ''}"
                       @click=${() => {
                         this._updateEntity(
                           infoModule,
                           0,
-                          { content_alignment: alignment.value as any },
+                          { state_alignment: alignment.value as any },
                           updateModule
                         );
                         setTimeout(() => this.triggerPreviewUpdate(), 50);
@@ -1793,26 +1841,28 @@ export class UltraInfoModule extends BaseUltraModule {
       return 'clamp(18px, 4vw, 26px)';
     };
 
-    // Get text alignment from design properties with priority.
-    // Fallback order: design.text_align → entity.content_alignment → entity.overall_alignment → 'center'
-    const getTextAlignment = (entity: any) => {
+    // Get name text alignment
+    const getNameAlignment = (entity: any) => {
       if (designProperties.text_align && designProperties.text_align !== 'inherit') {
         return designProperties.text_align;
       }
-      const contentAlignment: string | undefined = entity.content_alignment;
-      if (contentAlignment === 'start') return 'left';
-      if (contentAlignment === 'end') return 'right';
-      if (contentAlignment === 'center') return 'center';
+      const nameAlignment: string | undefined = entity.name_alignment;
+      if (nameAlignment === 'start') return 'left';
+      if (nameAlignment === 'end') return 'right';
+      if (nameAlignment === 'center') return 'center';
+      return 'left';
+    };
 
-      // If content alignment is not set, mirror overall alignment for a cohesive look
-      const overallAlignment: string | undefined = entity.overall_alignment;
-      if (!contentAlignment && overallAlignment) {
-        if (overallAlignment === 'left') return 'left';
-        if (overallAlignment === 'right') return 'right';
-        if (overallAlignment === 'center') return 'center';
+    // Get state text alignment
+    const getStateAlignment = (entity: any) => {
+      if (designProperties.text_align && designProperties.text_align !== 'inherit') {
+        return designProperties.text_align;
       }
-
-      return 'center';
+      const stateAlignment: string | undefined = entity.state_alignment;
+      if (stateAlignment === 'start') return 'left';
+      if (stateAlignment === 'end') return 'right';
+      if (stateAlignment === 'center') return 'center';
+      return 'left';
     };
 
     // Compute flex alignment used for the content container cross-axis alignment
@@ -1824,20 +1874,12 @@ export class UltraInfoModule extends BaseUltraModule {
             ? 'flex-end'
             : 'center';
       }
-      const contentAlignment: string | undefined = entity.content_alignment;
-      if (contentAlignment === 'start') return 'flex-start';
-      if (contentAlignment === 'end') return 'flex-end';
-      if (contentAlignment === 'center') return 'center';
-
-      // Mirror overall alignment if content alignment is not set
-      const overallAlignment: string | undefined = entity.overall_alignment;
-      if (!contentAlignment && overallAlignment) {
-        if (overallAlignment === 'left') return 'flex-start';
-        if (overallAlignment === 'right') return 'flex-end';
-        if (overallAlignment === 'center') return 'center';
-      }
-
-      return 'center';
+      // Use name_alignment as the primary alignment for the container
+      const nameAlignment: string | undefined = entity.name_alignment;
+      if (nameAlignment === 'start') return 'flex-start';
+      if (nameAlignment === 'end') return 'flex-end';
+      if (nameAlignment === 'center') return 'center';
+      return 'flex-start';
     };
 
     // Container styles for design system with proper priority: design properties override module properties
@@ -1908,6 +1950,33 @@ export class UltraInfoModule extends BaseUltraModule {
     });
     Object.assign(containerStyles, containerBackgroundStyles);
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    const validEntities = (infoModule.info_entities || []).filter(
+      e => e.entity && e.entity.trim() !== ''
+    );
+    const incompleteEntities = (infoModule.info_entities || []).filter(
+      e => !e.entity || e.entity.trim() === ''
+    );
+
+    // If no entities configured at all, show gradient error state
+    if (!infoModule.info_entities || infoModule.info_entities.length === 0) {
+      return this.renderGradientErrorState(
+        'Configure Entities',
+        'Add info entities in the General tab',
+        'mdi:information-outline'
+      );
+    }
+
+    // If ALL entities are incomplete, show gradient error state
+    if (validEntities.length === 0 && incompleteEntities.length > 0) {
+      const entityList = incompleteEntities.map((e, i) => `Entity ${i + 1}`).join(', ');
+      return this.renderGradientErrorState(
+        'Entities Need Configuration',
+        entityList,
+        'mdi:information-outline'
+      );
+    }
+
     // Get the first entity with proper defaults for consistent grid alignment
     const firstEntity =
       infoModule.info_entities && infoModule.info_entities.length > 0
@@ -1915,7 +1984,17 @@ export class UltraInfoModule extends BaseUltraModule {
         : this.createDefault().info_entities[0];
     const gridAlignment = firstEntity.overall_alignment || 'center';
 
+    // Show warning banner if some entities are incomplete
+    const warningBanner =
+      incompleteEntities.length > 0
+        ? this.renderGradientWarningBanner(
+            `${incompleteEntities.length > 1 ? 'entities' : 'entity'} need configuration`,
+            incompleteEntities.length
+          )
+        : '';
+
     return html`
+      ${warningBanner}
       <div
         class="info-module-container"
         style="${this.styleObjectToCss(containerStyles)}; align-self: ${gridAlignment === 'left'
@@ -1943,7 +2022,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 : 'center'};
           "
           >
-            ${infoModule.info_entities.slice(0, 3).map((originalEntity, index) => {
+            ${validEntities.slice(0, 3).map((originalEntity, index) => {
               // Ensure entity has default values merged for consistent rendering
               const defaultEntity = this.createDefault().info_entities[0];
               let entity = { ...defaultEntity, ...originalEntity };
@@ -1952,7 +2031,8 @@ export class UltraInfoModule extends BaseUltraModule {
                 icon_position: entity.icon_position || 'left',
                 overall_alignment: entity.overall_alignment || 'center',
                 icon_alignment: entity.icon_alignment || 'center',
-                content_alignment: entity.content_alignment || 'start',
+                name_alignment: entity.name_alignment || 'start',
+                state_alignment: entity.state_alignment || 'start',
                 name_value_layout: entity.name_value_layout || 'vertical',
                 name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
               };
@@ -2141,7 +2221,8 @@ export class UltraInfoModule extends BaseUltraModule {
 
               const iconPosition = entity.icon_position || 'left';
               const iconAlignment = entity.icon_alignment || 'center';
-              const contentAlignment = entity.content_alignment || 'center';
+              const nameAlignment = entity.name_alignment || 'start';
+              const stateAlignment = entity.state_alignment || 'start';
               const overallAlignment = entity.overall_alignment || 'center';
               const iconGap = entity.icon_gap || 8;
 
@@ -2262,7 +2343,6 @@ export class UltraInfoModule extends BaseUltraModule {
                   align-items: ${nameValueLayout === 'horizontal'
                     ? 'center'
                     : getFlexAlignment(entity)};
-                  text-align: ${getTextAlignment(entity)};
                   flex-direction: ${nameValueLayout === 'horizontal' ? 'row' : 'column'};
                   gap: ${nameValueGap}px;
                 "
@@ -2290,9 +2370,10 @@ export class UltraInfoModule extends BaseUltraModule {
                     font-family: ${designProperties.font_family || 'inherit'};
                     line-height: ${designProperties.line_height || 'inherit'};
                     letter-spacing: ${designProperties.letter_spacing || 'inherit'};
-                    text-align: ${getTextAlignment(entity)};
+                    text-align: ${getNameAlignment(entity)};
                     text-shadow: ${getTextShadow()};
                     ${nameValueLayout === 'horizontal' ? 'white-space: nowrap;' : ''}
+                    width: 100%;
                   "
                         >
                           ${displayName}
@@ -2323,8 +2404,9 @@ export class UltraInfoModule extends BaseUltraModule {
                         font-family: ${designProperties.font_family || 'inherit'};
                         line-height: ${designProperties.line_height || 'inherit'};
                         letter-spacing: ${designProperties.letter_spacing || 'inherit'};
-                        text-align: ${getTextAlignment(entity)};
+                        text-align: ${getStateAlignment(entity)};
                         text-shadow: ${getTextShadow()};
+                        width: 100%;
                       "
                         >
                           ${displayValue}
@@ -2406,10 +2488,8 @@ export class UltraInfoModule extends BaseUltraModule {
 
               return element;
             })}
-            ${infoModule.info_entities.length > 3
-              ? html`
-                  <div class="more-entities">+${infoModule.info_entities.length - 3} more</div>
-                `
+            ${validEntities.length > 3
+              ? html` <div class="more-entities">+${validEntities.length - 3} more</div> `
               : ''}
           </div>
         </div>
@@ -2422,13 +2502,15 @@ export class UltraInfoModule extends BaseUltraModule {
     const infoModule = module as InfoModule;
     const errors = [...baseValidation.errors];
 
-    if (!infoModule.info_entities || infoModule.info_entities.length === 0) {
-      errors.push('At least one info entity is required');
-    }
+    // LENIENT VALIDATION: Allow empty/incomplete entities - they will show helpful placeholders
+    // Only validate entities that have been started (have some configuration)
+    (infoModule.info_entities || []).forEach((entity, index) => {
+      // Only validate entities that have some content
+      const hasContent = entity.entity && entity.entity.trim() !== '';
 
-    infoModule.info_entities.forEach((entity, index) => {
-      if (!entity.entity || entity.entity.trim() === '') {
-        errors.push(`Entity ${index + 1}: Entity ID is required`);
+      if (hasContent) {
+        // Validate only truly breaking configuration errors
+        // Entity format validation, etc.
       }
     });
 
@@ -3097,7 +3179,8 @@ export class UltraInfoModule extends BaseUltraModule {
       // Icon positioning and alignment
       icon_position: 'left',
       icon_alignment: 'center',
-      content_alignment: 'start',
+      name_alignment: 'start',
+      state_alignment: 'start',
       overall_alignment: 'center',
       icon_gap: 8,
       // Name/Value layout when icon is disabled

@@ -58,7 +58,6 @@ export class UltraMapModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -2610,20 +2609,24 @@ export class UltraMapModule extends BaseUltraModule {
     const errors: string[] = [];
     const mapModule = module as MapModule;
 
-    // Validate markers
+    // LENIENT VALIDATION: Already lenient, only validates if markers exist
+    // Only validate markers that have been started
     if (mapModule.markers && mapModule.markers.length > 0) {
       mapModule.markers.forEach((marker, index) => {
         if (marker.type === 'manual') {
-          if (marker.latitude === undefined || marker.latitude < -90 || marker.latitude > 90) {
-            errors.push(`Marker ${index + 1}: Invalid latitude value`);
+          // Only validate if coordinates are partially set
+          if (marker.latitude !== undefined) {
+            if (marker.latitude < -90 || marker.latitude > 90) {
+              errors.push(`Marker ${index + 1}: Invalid latitude value`);
+            }
           }
-          if (marker.longitude === undefined || marker.longitude < -180 || marker.longitude > 180) {
-            errors.push(`Marker ${index + 1}: Invalid longitude value`);
+          if (marker.longitude !== undefined) {
+            if (marker.longitude < -180 || marker.longitude > 180) {
+              errors.push(`Marker ${index + 1}: Invalid longitude value`);
+            }
           }
         } else if (marker.type === 'entity') {
-          if (!marker.entity) {
-            errors.push(`Marker ${index + 1}: No entity selected`);
-          }
+          // Allow empty entity - UI will handle
         }
       });
     }

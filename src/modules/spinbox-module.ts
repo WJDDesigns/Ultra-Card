@@ -59,7 +59,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
       // Template support
       template_mode: false,
       unified_template_mode: false,

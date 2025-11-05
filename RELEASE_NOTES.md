@@ -1,5 +1,22 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta8
+
+### 🚀 Major Improvements
+
+- **Improved Slider Module based on swiper** - Enhanced slider module with better performance and features using Swiper library (Note: vertical slider is still not complete)
+- **Removed Smart Scaling** - Removed smart scaling feature as it wasn't working as expected
+
+### 🐛 Bug Fixes
+
+- **Fixed input limitation on light module in xy and hs** - Resolved input constraints in light module for XY and HS color modes
+- **Fixed odd card panel heights in different viewport sizing** - Corrected card panel height issues across various viewport sizes
+- **Fixed color pick and button style issues** - Resolved color picker and button styling problems
+- **Improved module config error handling** - Enhanced error handling for module configuration issues
+- **Updated alignment options in info module** - Improved alignment options available in the info module
+
+---
+
 ## Version 2.1.0-beta7
 
 ### 🐛 Bug Fixes
@@ -129,7 +146,6 @@ Ultra Card 2.0 represents a complete transformation of the Home Assistant card e
 
 ### 🎯 Smart Features
 
-- **Smart Scaling** - Intelligent responsive scaling that adapts card content to fit tighter columns
 - **Haptic Feedback** - Global tactile feedback option for all interactions
 - **Auto Action Linking** - Automatic action linking for icon and info modules
 - **Entity Image Support** - Rich visual displays with entity image integration

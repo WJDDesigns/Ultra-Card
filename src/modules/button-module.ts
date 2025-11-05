@@ -45,7 +45,6 @@ export class UltraButtonModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -518,17 +517,6 @@ export class UltraButtonModule extends BaseUltraModule {
         ? designProperties.font_size
         : mirroredFontSize) || '14px';
     const fontSize = this.addPixelUnit(rawFontSize) || '14px';
-
-    // Debug log for font size resolution
-    if (designProperties.font_size || mirroredFontSize) {
-      console.log('Button Font Size Debug:', {
-        'designProperties.font_size': designProperties.font_size,
-        mirroredFontSize: mirroredFontSize,
-        rawFontSize: rawFontSize,
-        finalFontSize: fontSize,
-        fullDesignProps: designProperties,
-      });
-    }
 
     const backgroundColor =
       designProperties.background_color || buttonModule.background_color || 'var(--primary-color)';

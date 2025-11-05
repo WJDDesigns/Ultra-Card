@@ -8,7 +8,6 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedClockModuleEditor } from './animated-clock-module-editor';
 import { clockUpdateService } from '../services/clock-update-service';
 import { getImageUrl } from '../utils/image-upload';
-import { getSmartScalingStyles } from '../utils/uc-smart-scaling';
 
 export class UltraAnimatedClockModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -163,7 +162,6 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -185,10 +183,6 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     const clockModule = module as AnimatedClockModule;
     const moduleWithDesign = clockModule as any;
     const designProperties = moduleWithDesign.design || {};
-
-    // Get smart scaling setting (default true)
-    const smartScaling = clockModule.smart_scaling !== false;
-    const scalingStyles = getSmartScalingStyles(smartScaling);
 
     // Register this clock with the update service
     const updateFrequency = parseInt(clockModule.update_frequency || '1');
@@ -397,15 +391,13 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       backdropFilter:
         designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || undefined,
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || undefined,
-      overflow: designProperties.overflow || moduleWithDesign.overflow || scalingStyles.overflow,
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
       // Flexbox for proper centering and responsive behavior
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      boxSizing: scalingStyles.boxSizing,
-      // Apply smart scaling constraints
-      ...(smartScaling ? { maxWidth: scalingStyles.maxWidth } : {}),
+      boxSizing: 'border-box',
       // Add cursor pointer when actions are configured
       cursor: hasActions ? 'pointer' : 'default',
     };

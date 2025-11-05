@@ -102,7 +102,6 @@ export class UltraCameraModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -1362,6 +1361,29 @@ export class UltraCameraModule extends BaseUltraModule {
     const cameraModule = module as CameraModule;
     const moduleWithDesign = cameraModule as any;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (
+      !cameraModule.template_mode &&
+      (!cameraModule.entity || cameraModule.entity.trim() === '')
+    ) {
+      return this.renderGradientErrorState(
+        'Select Camera Entity',
+        'Choose a camera entity in the General tab',
+        'mdi:camera-outline'
+      );
+    }
+
+    if (
+      cameraModule.template_mode &&
+      (!cameraModule.template || cameraModule.template.trim() === '')
+    ) {
+      return this.renderGradientErrorState(
+        'Configure Template',
+        'Enter template code in the General tab',
+        'mdi:camera-outline'
+      );
+    }
+
     // Extract design properties from global design tab
     const designProperties = moduleWithDesign.design || {};
 
@@ -1792,35 +1814,22 @@ export class UltraCameraModule extends BaseUltraModule {
     const cameraModule = module as CameraModule;
     const errors = [...baseValidation.errors];
 
-    // Entity validation (unless template mode)
-    if (
-      !cameraModule.template_mode &&
-      (!cameraModule.entity || cameraModule.entity.trim() === '')
-    ) {
-      errors.push('Camera entity is required when not using template mode');
-    }
+    // LENIENT VALIDATION: Allow empty entity/template - UI will show placeholder
+    // Only validate for truly breaking errors
 
-    // Template validation
-    if (
-      cameraModule.template_mode &&
-      (!cameraModule.template || cameraModule.template.trim() === '')
-    ) {
-      errors.push('Template code is required when template mode is enabled');
-    }
-
-    // Refresh interval validation
+    // Refresh interval validation (truly breaking if out of range)
     if (cameraModule.auto_refresh !== false && cameraModule.refresh_interval) {
       if (cameraModule.refresh_interval < 5 || cameraModule.refresh_interval > 300) {
         errors.push('Refresh interval must be between 5 and 300 seconds');
       }
     }
 
-    // Border radius validation
+    // Border radius validation (truly breaking if invalid)
     if (cameraModule.border_radius && isNaN(Number(cameraModule.border_radius))) {
       errors.push('Border radius must be a number');
     }
 
-    // Rotation validation
+    // Rotation validation (truly breaking if out of range)
     if (cameraModule.rotation !== undefined && cameraModule.rotation !== null) {
       if (
         isNaN(Number(cameraModule.rotation)) ||
@@ -1831,7 +1840,7 @@ export class UltraCameraModule extends BaseUltraModule {
       }
     }
 
-    // Action validation
+    // Action validation (only if actions are configured)
     if (cameraModule.tap_action && cameraModule.tap_action.action) {
       errors.push(...this.validateAction(cameraModule.tap_action));
     }
