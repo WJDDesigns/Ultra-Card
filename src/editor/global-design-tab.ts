@@ -274,6 +274,13 @@ export class GlobalDesignTab extends LitElement {
     side: 'top' | 'bottom' | 'left' | 'right',
     value: string
   ): void {
+    console.log('📏 [UPDATE SPACING]', {
+      type,
+      side,
+      value,
+      currentDesignProperties: { ...this.designProperties },
+      hasOnUpdate: !!this.onUpdate,
+    });
     // Get current lock state and ensure it's boolean
     const isSpacingLocked =
       type === 'margin' ? Boolean(this._marginLocked) : Boolean(this._paddingLocked);
@@ -285,24 +292,42 @@ export class GlobalDesignTab extends LitElement {
       return;
     }
 
+    // Normalize empty strings to undefined for proper deletion
+    const normalizeValue = (val: string): any => {
+      if (val === '' || val === null || (typeof val === 'string' && val.trim() === '')) {
+        return undefined;
+      }
+      return val;
+    };
+
+    const normalizedValue = normalizeValue(value);
+
     let updates: Partial<DesignProperties>;
 
     if (isSpacingLocked) {
       // When locked, apply to all sides (user expects mirrored behavior)
       // This should only happen when updating from the top field
       updates = {
-        [`${type}_top`]: value,
-        [`${type}_bottom`]: value,
-        [`${type}_left`]: value,
-        [`${type}_right`]: value,
+        [`${type}_top`]: normalizedValue,
+        [`${type}_bottom`]: normalizedValue,
+        [`${type}_left`]: normalizedValue,
+        [`${type}_right`]: normalizedValue,
       };
     } else {
       // When unlocked, apply to specific side only (default behavior)
-      updates = { [`${type}_${side}`]: value };
+      updates = { [`${type}_${side}`]: normalizedValue };
     }
 
-    // Update local designProperties immediately
-    this.designProperties = { ...(this.designProperties || {}), ...updates } as any;
+    // Update local designProperties immediately, removing properties set to undefined
+    const newDesignProperties = { ...(this.designProperties || {}) };
+    for (const [key, val] of Object.entries(updates)) {
+      if (val === undefined) {
+        delete (newDesignProperties as any)[key];
+      } else {
+        (newDesignProperties as any)[key] = val;
+      }
+    }
+    this.designProperties = newDesignProperties as any;
 
     // For locked spacing fields, force immediate UI update to sync all fields
     const isSpacingUpdate = Object.keys(updates).some(
@@ -333,6 +358,41 @@ export class GlobalDesignTab extends LitElement {
       });
       this.dispatchEvent(event);
     }
+  }
+
+  private _createSpacingInputHandler(
+    type: 'margin' | 'padding',
+    side: 'top' | 'bottom' | 'left' | 'right'
+  ): (e: Event) => void {
+    return (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const value = target.value;
+      // Store cursor position
+      const cursorPosition = target.selectionStart;
+      const cursorEnd = target.selectionEnd;
+
+      // Update property
+      this._updateSpacing(type, side, value);
+
+      // Preserve user input and cursor position - use multiple attempts to ensure it works
+      const preserveValueAndCursor = () => {
+        if (target) {
+          // If the input value was reset by reactive update, restore user input
+          if (target.value !== value) {
+            target.value = value;
+          }
+          // Restore cursor position
+          if (typeof cursorPosition === 'number') {
+            target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+          }
+        }
+      };
+
+      // Try multiple times to catch delayed re-renders
+      requestAnimationFrame(preserveValueAndCursor);
+      setTimeout(preserveValueAndCursor, 0);
+      setTimeout(preserveValueAndCursor, 10);
+    };
   }
 
   private _createRobustInputHandler(
@@ -489,7 +549,11 @@ export class GlobalDesignTab extends LitElement {
   }
 
   private _resetSection(section: string): void {
-    // Add debugging to help track reset actions
+    console.log('🔄 [RESET SECTION]', {
+      section,
+      currentDesignProperties: { ...this.designProperties },
+      hasOnUpdate: !!this.onUpdate,
+    });
 
     // Create a reset object that explicitly removes properties
     const resetProperties: Record<string, undefined> = {};
@@ -581,23 +645,37 @@ export class GlobalDesignTab extends LitElement {
 
     // Update local state immediately so UI reflects the reset
     this.designProperties = { ...(this.designProperties || {}), ...resetProperties } as any;
+    console.log('🔄 [RESET SECTION] After local update', {
+      section,
+      resetProperties,
+      newDesignProperties: { ...this.designProperties },
+    });
     this.requestUpdate();
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
       try {
+        console.log('🔄 [RESET SECTION] Calling onUpdate callback', {
+          section,
+          resetProperties,
+        });
         this.onUpdate(resetProperties);
       } catch (error) {
         console.error(`🔄 GlobalDesignTab: Callback error for ${section}:`, error);
       }
     } else {
       // Dispatch event for event-listener based integrations
+      console.log('🔄 [RESET SECTION] Dispatching design-changed event', {
+        section,
+        resetProperties,
+      });
       const event = new CustomEvent('design-changed', {
         detail: resetProperties,
         bubbles: true,
         composed: true,
       });
       const dispatched = this.dispatchEvent(event);
+      console.log('🔄 [RESET SECTION] Event dispatched', { dispatched });
     }
 
     // Force component re-render to update UI indicators after a small delay
@@ -1895,23 +1973,7 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="8px, auto, 1rem"
                     .value=${this.designProperties.margin_top || ''}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'top', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'top')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_top',
                       () => this.designProperties.margin_top || '',
@@ -1933,23 +1995,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_right || ''}
                     .disabled=${this._marginLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'right', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'right')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_right',
                       () => this.designProperties.margin_right || '',
@@ -1971,23 +2017,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_bottom || ''}
                     .disabled=${this._marginLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'bottom', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'bottom')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_bottom',
                       () => this.designProperties.margin_bottom || '',
@@ -2009,23 +2039,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_left || ''}
                     .disabled=${this._marginLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'left', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'left')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_left',
                       () => this.designProperties.margin_left || '',
@@ -2062,23 +2076,7 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_top || ''}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'top', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'top')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_top',
                       () => this.designProperties.padding_top || '',
@@ -2100,23 +2098,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_right || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'right', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'right')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_right',
                       () => this.designProperties.padding_right || '',
@@ -2138,23 +2120,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_bottom || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'bottom', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'bottom')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_bottom',
                       () => this.designProperties.padding_bottom || '',
@@ -2176,23 +2142,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_left || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'left', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'left')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_left',
                       () => this.designProperties.padding_left || '',

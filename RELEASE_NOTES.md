@@ -1,5 +1,15 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta9
+
+### 🐛 Bug Fixes
+
+- **Improved and fixed nested layout css** - Enhanced CSS handling for nested layouts
+- **Fixed slider update issues** - Resolved problems with slider module updates
+- **Fixed issues with light module color settings** - Corrected color setting functionality in the light module
+
+---
+
 ## Version 2.1.0-beta8
 
 ### 🚀 Major Improvements

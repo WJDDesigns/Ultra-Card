@@ -171,6 +171,11 @@ export declare class LayoutTab extends LitElement {
     private _openModuleSettings;
     private _updateModule;
     private _updateLayoutChildModule;
+    /**
+     * Helper method to get the correct module for design updates.
+     * Handles both regular module edits and nested layout child module edits.
+     */
+    private _getModuleForDesignUpdate;
     private _updateModuleDesign;
     private _closeModuleSettings;
     private _navigateToPro;

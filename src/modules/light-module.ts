@@ -2011,11 +2011,10 @@ export class UltraLightModule extends BaseUltraModule {
         serviceData.brightness = preset.brightness;
       }
 
-      // Check if this is RGBWW mode (both color and temp defined)
-      const isRgbwwMode =
-        (preset.rgb_color || preset.hs_color || preset.xy_color) && preset.color_temp !== undefined;
-
       // Prevent conflicts: Home Assistant requires mutually exclusive color descriptors
+      // IMPORTANT: Home Assistant does NOT allow multiple color descriptors in one service call,
+      // even if the device supports both (like RGBWW lights). Send them sequentially instead.
+      
       // Detect which descriptor types are present
       const hasColorRgb =
         preset.rgb_color !== undefined ||
@@ -2027,9 +2026,59 @@ export class UltraLightModule extends BaseUltraModule {
       const hasRgbww = preset.rgbww_color !== undefined;
       const hasEffect = preset.effect && preset.effect.trim() !== '';
 
-      // Priority order (highest to lowest): Effect > RGBWW specific > RGBW specific > White > Color Temp > RGB/HS/XY
-      // Clear conflicting descriptors to prevent HA error "two or more values in the same group of exclusion"
-      if (!isRgbwwMode && !hasEffect) {
+      // Check if this is RGBWW mode (both color and temp defined)
+      const isRgbwwMode = hasColorRgb && hasColorTemp && !hasEffect;
+
+      // Handle RGBWW mode with sequential calls (Home Assistant doesn't allow both in one call)
+      if (isRgbwwMode) {
+        // RGBWW mode: Send color first, then color_temp in a second call
+        // This matches Home Assistant's behavior where values persist across mode changes
+        
+        // First call: Set color (RGB/HS/XY) - priority: RGB > HS > XY
+        const colorServiceData: any = { ...serviceData };
+        if (preset.rgb_color !== undefined) {
+          colorServiceData.rgb_color = preset.rgb_color;
+        } else if (preset.hs_color !== undefined) {
+          colorServiceData.hs_color = preset.hs_color;
+        } else if (preset.xy_color !== undefined) {
+          colorServiceData.xy_color = preset.xy_color;
+        }
+        // Ensure NO color_temp in the first call
+        delete colorServiceData.color_temp;
+        delete colorServiceData.white;
+        delete colorServiceData.rgbw_color;
+        delete colorServiceData.rgbww_color;
+        
+        if (isWLED) {
+          colorServiceData.effect = 'Solid'; // Clear effects for WLED devices
+        }
+
+        // Second call: Set color temperature
+        const tempServiceData: any = { ...serviceData };
+        tempServiceData.color_temp = preset.color_temp;
+        // Ensure NO color descriptors in the second call
+        delete tempServiceData.rgb_color;
+        delete tempServiceData.hs_color;
+        delete tempServiceData.xy_color;
+        delete tempServiceData.rgbw_color;
+        delete tempServiceData.rgbww_color;
+        delete tempServiceData.white;
+        
+        if (isWLED) {
+          tempServiceData.effect = 'Solid'; // Clear effects for WLED devices
+        }
+
+        // Send both calls sequentially
+        const serviceName = action === 'toggle' ? 'turn_on' : 'turn_on';
+        await this.callLightService(serviceName, entityId, colorServiceData, hass);
+        // Small delay to ensure first call completes before second
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await this.callLightService(serviceName, entityId, tempServiceData, hass);
+        continue; // Skip the normal single-call logic below
+      }
+
+      // Normal mode: enforce single descriptor per call
+      if (!hasEffect) {
         // Not in RGBWW mode and no effect - enforce single descriptor
         if (hasRgbww) {
           // Use rgbww_color exclusively
@@ -2061,12 +2110,9 @@ export class UltraLightModule extends BaseUltraModule {
           // RGB/HS/XY mode - clear white
           delete (preset as any).white;
         }
-      } else if (isRgbwwMode) {
-        // RGBWW mode - allow color + temp together, but clear white
-        delete (preset as any).white;
       }
 
-      // Add color - handle RGBWW mode specially
+      // Add color - handle effects and single descriptor modes
       if (preset.effect && preset.effect.trim() !== '') {
         // Check if this entity supports the selected effect
         const entityEffectList = this.getEffectList(entityId, hass);
@@ -2112,24 +2158,8 @@ export class UltraLightModule extends BaseUltraModule {
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
-      } else if (isRgbwwMode) {
-        // RGBWW mode: Send BOTH color and color temperature
-        // Priority: RGB > HS > XY for color value
-        if (preset.rgb_color !== undefined) {
-          serviceData.rgb_color = preset.rgb_color;
-        } else if (preset.hs_color !== undefined) {
-          serviceData.hs_color = preset.hs_color;
-        } else if (preset.xy_color !== undefined) {
-          serviceData.xy_color = preset.xy_color;
-        }
-        // Always include color temp in RGBWW mode
-        serviceData.color_temp = preset.color_temp;
-
-        if (isWLED) {
-          serviceData.effect = 'Solid'; // Clear effects for WLED devices
-        }
-      } else if (preset.color_temp !== undefined) {
-        // Color temperature mode only
+      } else if (preset.color_temp !== undefined && !hasColorRgb) {
+        // Color temperature mode only (when no color is set)
         serviceData.color_temp = preset.color_temp;
       } else if (isWLED && preset.rgb_color !== undefined) {
         // For WLED devices, prioritize RGB color mode and clear effects

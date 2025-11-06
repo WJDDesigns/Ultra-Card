@@ -2713,6 +2713,12 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateLayoutChildModule(updates: Partial<CardModule>): void {
+    console.log('💾 [UPDATE LAYOUT CHILD MODULE] Called', {
+      updates,
+      selectedLayoutChild: this._selectedLayoutChild,
+      selectedNestedChildIndex: this._selectedNestedChildIndex,
+    });
+    
     if (!this._selectedLayoutChild) {
       return;
     }
@@ -2741,6 +2747,8 @@ export class LayoutTab extends LitElement {
     const layoutModule = targetColumn.modules[parentModuleIndex] as any;
 
     // Check if we're updating a nested child module (module inside a nested layout)
+    let updatedModule: any;
+    
     if (this._selectedNestedChildIndex >= 0) {
       // We're updating a nested child module
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
@@ -2755,30 +2763,57 @@ export class LayoutTab extends LitElement {
       const originalChildModule = nestedLayoutModule.modules[this._selectedNestedChildIndex];
 
       // Create updated module by copying original and applying updates
-      const updatedModule: any = { ...originalChildModule };
+      updatedModule = { ...originalChildModule };
 
       // Special handling: deep-merge nested design object so partial updates don't wipe other fields
       if (updates.hasOwnProperty('design')) {
         const incomingDesign = (updates as any).design || {};
         const existingDesign = (updatedModule.design || {}) as Record<string, any>;
         const mergedDesign: Record<string, any> = { ...existingDesign };
+        console.log('💾 [UPDATE LAYOUT CHILD MODULE] Merging design object', {
+          incomingDesign,
+          existingDesign,
+          beforeMerge: { ...mergedDesign },
+        });
         for (const [dKey, dVal] of Object.entries(incomingDesign)) {
           if (dVal === undefined) {
             delete mergedDesign[dKey];
+            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Deleting design.${dKey}`);
           } else {
             mergedDesign[dKey] = dVal;
+            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Setting design.${dKey} =`, dVal);
           }
         }
-        updatedModule.design = mergedDesign;
+        // If design object is empty after deletions, remove it entirely
+        if (Object.keys(mergedDesign).length === 0) {
+          delete updatedModule.design;
+          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Design object empty, deleting it');
+        } else {
+          updatedModule.design = mergedDesign;
+          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Final merged design', mergedDesign);
+        }
       }
 
       // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
+      // IMPORTANT: For nested modules, also clean up top-level padding/margin objects to prevent fallback
       for (const [key, value] of Object.entries(updates)) {
         if (key === 'design') continue;
         if (value === undefined) {
           delete updatedModule[key];
         } else {
           updatedModule[key] = value;
+        }
+      }
+      
+      // For nested modules, clean up top-level padding/margin objects to prevent reading from them
+      if (this._selectedNestedChildIndex >= 0 || (!this._selectedModule && !!this._selectedLayoutChild)) {
+        // This is a nested module edit - remove top-level padding/margin objects
+        // They should only exist in design object
+        if (updatedModule.padding && typeof updatedModule.padding === 'object') {
+          delete updatedModule.padding;
+        }
+        if (updatedModule.margin && typeof updatedModule.margin === 'object') {
+          delete updatedModule.margin;
         }
       }
 
@@ -2791,24 +2826,39 @@ export class LayoutTab extends LitElement {
       const originalChildModule = layoutModule.modules[childIndex];
 
       // Create updated module by copying original and applying updates
-      const updatedModule: any = { ...originalChildModule };
+      updatedModule = { ...originalChildModule };
 
       // Special handling: deep-merge nested design object so partial updates don't wipe other fields
       if (updates.hasOwnProperty('design')) {
         const incomingDesign = (updates as any).design || {};
         const existingDesign = (updatedModule.design || {}) as Record<string, any>;
         const mergedDesign: Record<string, any> = { ...existingDesign };
+        console.log('💾 [UPDATE LAYOUT CHILD MODULE] Merging design object', {
+          incomingDesign,
+          existingDesign,
+          beforeMerge: { ...mergedDesign },
+        });
         for (const [dKey, dVal] of Object.entries(incomingDesign)) {
           if (dVal === undefined) {
             delete mergedDesign[dKey];
+            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Deleting design.${dKey}`);
           } else {
             mergedDesign[dKey] = dVal;
+            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Setting design.${dKey} =`, dVal);
           }
         }
-        updatedModule.design = mergedDesign;
+        // If design object is empty after deletions, remove it entirely
+        if (Object.keys(mergedDesign).length === 0) {
+          delete updatedModule.design;
+          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Design object empty, deleting it');
+        } else {
+          updatedModule.design = mergedDesign;
+          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Final merged design', mergedDesign);
+        }
       }
 
       // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
+      // IMPORTANT: For nested modules, also clean up top-level padding/margin objects to prevent fallback
       for (const [key, value] of Object.entries(updates)) {
         if (key === 'design') continue;
         if (value === undefined) {
@@ -2817,14 +2867,78 @@ export class LayoutTab extends LitElement {
           updatedModule[key] = value;
         }
       }
+      
+      // For nested modules, clean up top-level padding/margin objects to prevent reading from them
+      if (this._selectedNestedChildIndex >= 0 || (!this._selectedModule && !!this._selectedLayoutChild)) {
+        // This is a nested module edit - remove top-level padding/margin objects
+        // They should only exist in design object
+        if (updatedModule.padding && typeof updatedModule.padding === 'object') {
+          delete updatedModule.padding;
+        }
+        if (updatedModule.margin && typeof updatedModule.margin === 'object') {
+          delete updatedModule.margin;
+        }
+      }
 
       // Update the child module in the layout
       layoutModule.modules[childIndex] = updatedModule;
     }
 
+    console.log('💾 [UPDATE LAYOUT CHILD MODULE] Final updated module', {
+      updatedModule: JSON.parse(JSON.stringify(updatedModule)),
+      moduleId: (updatedModule as any).id,
+      design: (updatedModule as any).design,
+      padding: (updatedModule as any).padding,
+      margin: (updatedModule as any).margin,
+    });
     this._updateLayout(newLayout);
   }
+
+  /**
+   * Helper method to get the correct module for design updates.
+   * Handles both regular module edits and nested layout child module edits.
+   */
+  private _getModuleForDesignUpdate(): any | null {
+    if (this._selectedModule) {
+      // Regular module edit
+      const layout = this._ensureLayout();
+      const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
+      return layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex] || null;
+    } else if (this._selectedLayoutChild) {
+      // Layout child module edit (could be nested)
+      const layout = this._ensureLayout();
+      const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+        this._selectedLayoutChild;
+      
+      const layoutModule = (
+        layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
+      );
+      
+      if (!layoutModule?.modules?.[childIndex]) return null;
+      
+      // Check if this is a nested child module (module inside a nested layout)
+      if (this._selectedNestedChildIndex >= 0) {
+        const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+        if (!nestedLayoutModule?.modules?.[this._selectedNestedChildIndex]) return null;
+        return nestedLayoutModule.modules[this._selectedNestedChildIndex];
+      } else {
+        // Regular layout child module
+        return layoutModule.modules[childIndex];
+      }
+    }
+    
+    return null;
+  }
+
   private _updateModuleDesign(updates: Partial<DesignProperties>): void {
+    console.log('🔧 [UPDATE MODULE DESIGN] Called', {
+      updates,
+      isChildEdit: !this._selectedModule && !!this._selectedLayoutChild,
+      selectedModule: this._selectedModule,
+      selectedLayoutChild: this._selectedLayoutChild,
+      selectedNestedChildIndex: this._selectedNestedChildIndex,
+    });
+    
     // Support both direct module edits and child-module edits inside layout containers
     const isChildEdit = !this._selectedModule && !!this._selectedLayoutChild;
     if (!this._selectedModule && !this._selectedLayoutChild) {
@@ -2832,24 +2946,21 @@ export class LayoutTab extends LitElement {
       return;
     }
 
+    // Helper function to normalize empty strings to undefined for proper deletion
+    const normalizeValue = (value: any): any => {
+      if (value === '' || value === null || (typeof value === 'string' && value.trim() === '')) {
+        return undefined;
+      }
+      return value;
+    };
+
     const moduleUpdates: any = {};
 
     // Convert design properties back to module properties (including undefined for reset)
     if (updates.hasOwnProperty('color')) moduleUpdates.color = updates.color;
     if (updates.hasOwnProperty('text_align')) {
       // Get the actual module to check its type
-      const layout = this._ensureLayout();
-      let actualModule: any = null;
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        actualModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else {
-        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule!;
-        actualModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
-      }
+      const actualModule = this._getModuleForDesignUpdate();
 
       // For modules that use design object for text_align (like text modules), update the design object
       if (actualModule && actualModule.type === 'text') {
@@ -2862,18 +2973,7 @@ export class LayoutTab extends LitElement {
     if (updates.hasOwnProperty('font_size')) {
       // For text modules, store font_size in design for consistency with module rendering,
       // and mirror a numeric top-level value for compatibility where needed.
-      const layout = this._ensureLayout();
-      let actualModule: any = null;
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        actualModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else {
-        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule!;
-        actualModule = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
-      }
+      const actualModule = this._getModuleForDesignUpdate();
 
       if (actualModule && actualModule.type === 'text') {
         if (!moduleUpdates.design) moduleUpdates.design = { ...(actualModule.design || {}) };
@@ -2891,19 +2991,7 @@ export class LayoutTab extends LitElement {
       moduleUpdates.text_transform = updates.text_transform;
     if (updates.hasOwnProperty('font_style')) moduleUpdates.font_style = updates.font_style;
     if (updates.hasOwnProperty('background_color')) {
-      const layout = this._ensureLayout();
-      let currentModule: any = null;
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else if (this._selectedModule) {
-        currentModule =
-          layout.rows[this._selectedModule.rowIndex]?.columns[this._selectedModule.columnIndex]
-            ?.modules[this._selectedModule.moduleIndex];
-      }
+      const currentModule = this._getModuleForDesignUpdate();
       if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
       moduleUpdates.design.background_color = updates.background_color;
       // Also set top-level for immediate preview compatibility
@@ -2921,106 +3009,68 @@ export class LayoutTab extends LitElement {
       moduleUpdates.background_filter = updates.background_filter;
     if (updates.hasOwnProperty('width')) {
       // Check if this is a bar module that stores width in design object
-      const layout = this._ensureLayout();
-      let currentModule: any = null;
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else if (this._selectedModule) {
-        currentModule =
-          layout.rows[this._selectedModule.rowIndex]?.columns[this._selectedModule.columnIndex]
-            ?.modules[this._selectedModule.moduleIndex];
-      }
+      const currentModule = this._getModuleForDesignUpdate();
 
       if (currentModule?.type === 'bar' || isChildEdit) {
         // For bar modules and child modules in layouts, update the design.width instead of top-level width
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
-        moduleUpdates.design.width = updates.width;
+        // Convert empty string to undefined for proper deletion
+        moduleUpdates.design.width = normalizeValue(updates.width);
       } else {
-        moduleUpdates.width = updates.width;
+        moduleUpdates.width = normalizeValue(updates.width);
       }
     }
     if (updates.hasOwnProperty('height')) {
       // Check if this is a bar module that stores height in design object
-      const layout = this._ensureLayout();
-      let currentModule: any = null;
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else if (this._selectedModule) {
-        currentModule =
-          layout.rows[this._selectedModule.rowIndex]?.columns[this._selectedModule.columnIndex]
-            ?.modules[this._selectedModule.moduleIndex];
-      }
+      const currentModule = this._getModuleForDesignUpdate();
 
       if (currentModule?.type === 'bar' || isChildEdit) {
         // For bar modules and child modules in layouts, update the design.height instead of top-level height
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
-        moduleUpdates.design.height = updates.height;
+        // Convert empty string to undefined for proper deletion
+        moduleUpdates.design.height = normalizeValue(updates.height);
       } else {
-        moduleUpdates.height = updates.height;
+        moduleUpdates.height = normalizeValue(updates.height);
       }
     }
     if (updates.hasOwnProperty('max_width')) {
       if (isChildEdit) {
-        const layout = this._ensureLayout();
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        const currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
+        const currentModule = this._getModuleForDesignUpdate();
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
-        moduleUpdates.design.max_width = updates.max_width;
+        // Convert empty string to undefined for proper deletion
+        moduleUpdates.design.max_width = normalizeValue(updates.max_width);
       } else {
-        moduleUpdates.max_width = updates.max_width;
+        moduleUpdates.max_width = normalizeValue(updates.max_width);
       }
     }
     if (updates.hasOwnProperty('max_height')) {
       if (isChildEdit) {
-        const layout = this._ensureLayout();
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        const currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
+        const currentModule = this._getModuleForDesignUpdate();
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
-        moduleUpdates.design.max_height = updates.max_height;
+        // Convert empty string to undefined for proper deletion
+        moduleUpdates.design.max_height = normalizeValue(updates.max_height);
       } else {
-        moduleUpdates.max_height = updates.max_height;
+        moduleUpdates.max_height = normalizeValue(updates.max_height);
       }
     }
     if (updates.hasOwnProperty('min_width')) {
       if (isChildEdit) {
-        const layout = this._ensureLayout();
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        const currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
+        const currentModule = this._getModuleForDesignUpdate();
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
-        moduleUpdates.design.min_width = updates.min_width;
+        // Convert empty string to undefined for proper deletion
+        moduleUpdates.design.min_width = normalizeValue(updates.min_width);
       } else {
-        moduleUpdates.min_width = updates.min_width;
+        moduleUpdates.min_width = normalizeValue(updates.min_width);
       }
     }
     if (updates.hasOwnProperty('min_height')) {
       if (isChildEdit) {
-        const layout = this._ensureLayout();
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        const currentModule = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
+        const currentModule = this._getModuleForDesignUpdate();
         if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
-        moduleUpdates.design.min_height = updates.min_height;
+        // Convert empty string to undefined for proper deletion
+        moduleUpdates.design.min_height = normalizeValue(updates.min_height);
       } else {
-        moduleUpdates.min_height = updates.min_height;
+        moduleUpdates.min_height = normalizeValue(updates.min_height);
       }
     }
 
@@ -3105,33 +3155,40 @@ export class LayoutTab extends LitElement {
       updates.hasOwnProperty('margin_left') ||
       updates.hasOwnProperty('margin_right')
     ) {
-      const layout = this._ensureLayout();
-      let module: any = null;
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        module = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else if (this._selectedModule) {
-        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-        module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
-      }
+      const module = this._getModuleForDesignUpdate();
 
       if (module) {
-        // Check if all margin properties are being reset to undefined
+        // Convert empty strings to undefined for proper deletion
+        // IMPORTANT: Check flat properties FIRST (design.margin_top), then object (design.margin.top)
+        // This matches how we're reading them in _renderLayoutChildDesignTab
         const marginTop = updates.hasOwnProperty('margin_top')
-          ? updates.margin_top
-          : (module as any).margin?.top;
+          ? normalizeValue(updates.margin_top)
+          : isChildEdit
+            ? (module as any).design?.margin_top !== undefined
+              ? (module as any).design.margin_top
+              : (module as any).design?.margin?.top
+            : (module as any).margin?.top;
         const marginBottom = updates.hasOwnProperty('margin_bottom')
-          ? updates.margin_bottom
-          : (module as any).margin?.bottom;
+          ? normalizeValue(updates.margin_bottom)
+          : isChildEdit
+            ? (module as any).design?.margin_bottom !== undefined
+              ? (module as any).design.margin_bottom
+              : (module as any).design?.margin?.bottom
+            : (module as any).margin?.bottom;
         const marginLeft = updates.hasOwnProperty('margin_left')
-          ? updates.margin_left
-          : (module as any).margin?.left;
+          ? normalizeValue(updates.margin_left)
+          : isChildEdit
+            ? (module as any).design?.margin_left !== undefined
+              ? (module as any).design.margin_left
+              : (module as any).design?.margin?.left
+            : (module as any).margin?.left;
         const marginRight = updates.hasOwnProperty('margin_right')
-          ? updates.margin_right
-          : (module as any).margin?.right;
+          ? normalizeValue(updates.margin_right)
+          : isChildEdit
+            ? (module as any).design?.margin_right !== undefined
+              ? (module as any).design.margin_right
+              : (module as any).design?.margin?.right
+            : (module as any).margin?.right;
 
         if (
           marginTop === undefined &&
@@ -3140,16 +3197,92 @@ export class LayoutTab extends LitElement {
           marginRight === undefined
         ) {
           // All margin properties are being reset, delete the entire margin object
-          moduleUpdates.margin = undefined;
+          if (isChildEdit) {
+            // For nested modules, set to undefined so merge logic can delete them
+            const currentModule = this._getModuleForDesignUpdate();
+            if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+            // Set to undefined (not delete) so merge logic can delete them
+            moduleUpdates.design.margin_top = undefined;
+            moduleUpdates.design.margin_bottom = undefined;
+            moduleUpdates.design.margin_left = undefined;
+            moduleUpdates.design.margin_right = undefined;
+            // Also delete margin object if it exists
+            delete moduleUpdates.design.margin;
+          } else {
+            moduleUpdates.margin = undefined;
+          }
         } else {
           // Some margin properties exist, create/update the margin object
-          const currentMargin = (module as any).margin || {};
-          moduleUpdates.margin = {
-            top: marginTop !== undefined ? marginTop : currentMargin.top,
-            bottom: marginBottom !== undefined ? marginBottom : currentMargin.bottom,
-            left: marginLeft !== undefined ? marginLeft : currentMargin.left,
-            right: marginRight !== undefined ? marginRight : currentMargin.right,
-          };
+          // IMPORTANT: Check flat properties FIRST when reading current values
+          // CRITICAL: For nested modules, NEVER read from top-level margin - only use design properties
+          const currentMargin = isChildEdit
+            ? {
+                top: (module as any).design?.margin_top !== undefined
+                  ? (module as any).design.margin_top
+                  : (module as any).design?.margin?.top,
+                bottom: (module as any).design?.margin_bottom !== undefined
+                  ? (module as any).design.margin_bottom
+                  : (module as any).design?.margin?.bottom,
+                left: (module as any).design?.margin_left !== undefined
+                  ? (module as any).design.margin_left
+                  : (module as any).design?.margin?.left,
+                right: (module as any).design?.margin_right !== undefined
+                  ? (module as any).design.margin_right
+                  : (module as any).design?.margin?.right,
+              }
+            : (module as any).margin || {};
+          const marginObj: Record<string, any> = {};
+          
+          // Only include properties that are explicitly set or already exist
+          // If a property is in updates, use it (even if undefined to clear it)
+          // Otherwise, preserve existing value
+          if (updates.hasOwnProperty('margin_top')) {
+            marginObj.top = marginTop;
+          } else if (currentMargin.top !== undefined) {
+            marginObj.top = currentMargin.top;
+          }
+          if (updates.hasOwnProperty('margin_bottom')) {
+            marginObj.bottom = marginBottom;
+          } else if (currentMargin.bottom !== undefined) {
+            marginObj.bottom = currentMargin.bottom;
+          }
+          if (updates.hasOwnProperty('margin_left')) {
+            marginObj.left = marginLeft;
+          } else if (currentMargin.left !== undefined) {
+            marginObj.left = currentMargin.left;
+          }
+          if (updates.hasOwnProperty('margin_right')) {
+            marginObj.right = marginRight;
+          } else if (currentMargin.right !== undefined) {
+            marginObj.right = currentMargin.right;
+          }
+          
+          // For nested modules, store as flat properties in design object (not as design.margin object)
+          // This matches how we're reading them
+          if (isChildEdit) {
+            const currentModule = this._getModuleForDesignUpdate();
+            if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+            // Store as flat properties, not as margin object
+            // CRITICAL: Explicitly set to undefined (not delete) so merge logic can delete them
+            if (updates.hasOwnProperty('margin_top')) {
+              moduleUpdates.design.margin_top = marginTop; // undefined will be deleted by merge
+            }
+            if (updates.hasOwnProperty('margin_bottom')) {
+              moduleUpdates.design.margin_bottom = marginBottom; // undefined will be deleted by merge
+            }
+            if (updates.hasOwnProperty('margin_left')) {
+              moduleUpdates.design.margin_left = marginLeft; // undefined will be deleted by merge
+            }
+            if (updates.hasOwnProperty('margin_right')) {
+              moduleUpdates.design.margin_right = marginRight; // undefined will be deleted by merge
+            }
+            // Also delete the old margin object if it exists
+            if (moduleUpdates.design.margin) {
+              delete moduleUpdates.design.margin;
+            }
+          } else {
+            moduleUpdates.margin = marginObj;
+          }
         }
       }
     }
@@ -3160,34 +3293,41 @@ export class LayoutTab extends LitElement {
       updates.hasOwnProperty('padding_left') ||
       updates.hasOwnProperty('padding_right')
     ) {
-      const layout = this._ensureLayout();
-      let module: any = null;
-      
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        module = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else if (this._selectedModule) {
-        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-        module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
-      }
+      const module = this._getModuleForDesignUpdate();
 
       if (module) {
-        // Check if all padding properties are being reset to undefined
+        // Convert empty strings to undefined for proper deletion
+        // IMPORTANT: Check flat properties FIRST (design.padding_top), then object (design.padding.top)
+        // This matches how we're reading them in _renderLayoutChildDesignTab
+        // CRITICAL: For nested modules, NEVER read from top-level padding - only use design properties
         const paddingTop = updates.hasOwnProperty('padding_top')
-          ? updates.padding_top
-          : (module as any).padding?.top;
+          ? normalizeValue(updates.padding_top)
+          : isChildEdit
+            ? (module as any).design?.padding_top !== undefined
+              ? (module as any).design.padding_top
+              : (module as any).design?.padding?.top
+            : (module as any).padding?.top;
         const paddingBottom = updates.hasOwnProperty('padding_bottom')
-          ? updates.padding_bottom
-          : (module as any).padding?.bottom;
+          ? normalizeValue(updates.padding_bottom)
+          : isChildEdit
+            ? (module as any).design?.padding_bottom !== undefined
+              ? (module as any).design.padding_bottom
+              : (module as any).design?.padding?.bottom
+            : (module as any).padding?.bottom;
         const paddingLeft = updates.hasOwnProperty('padding_left')
-          ? updates.padding_left
-          : (module as any).padding?.left;
+          ? normalizeValue(updates.padding_left)
+          : isChildEdit
+            ? (module as any).design?.padding_left !== undefined
+              ? (module as any).design.padding_left
+              : (module as any).design?.padding?.left
+            : (module as any).padding?.left;
         const paddingRight = updates.hasOwnProperty('padding_right')
-          ? updates.padding_right
-          : (module as any).padding?.right;
+          ? normalizeValue(updates.padding_right)
+          : isChildEdit
+            ? (module as any).design?.padding_right !== undefined
+              ? (module as any).design.padding_right
+              : (module as any).design?.padding?.right
+            : (module as any).padding?.right;
 
         if (
           paddingTop === undefined &&
@@ -3196,16 +3336,92 @@ export class LayoutTab extends LitElement {
           paddingRight === undefined
         ) {
           // All padding properties are being reset, delete the entire padding object
-          moduleUpdates.padding = undefined;
+          if (isChildEdit) {
+            // For nested modules, set to undefined so merge logic can delete them
+            const currentModule = this._getModuleForDesignUpdate();
+            if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+            // Set to undefined (not delete) so merge logic can delete them
+            moduleUpdates.design.padding_top = undefined;
+            moduleUpdates.design.padding_bottom = undefined;
+            moduleUpdates.design.padding_left = undefined;
+            moduleUpdates.design.padding_right = undefined;
+            // Also delete padding object if it exists
+            delete moduleUpdates.design.padding;
+          } else {
+            moduleUpdates.padding = undefined;
+          }
         } else {
           // Some padding properties exist, create/update the padding object
-          const currentPadding = (module as any).padding || {};
-          moduleUpdates.padding = {
-            top: paddingTop !== undefined ? paddingTop : currentPadding.top,
-            bottom: paddingBottom !== undefined ? paddingBottom : currentPadding.bottom,
-            left: paddingLeft !== undefined ? paddingLeft : currentPadding.left,
-            right: paddingRight !== undefined ? paddingRight : currentPadding.right,
-          };
+          // IMPORTANT: Check flat properties FIRST when reading current values
+          // CRITICAL: For nested modules, NEVER read from top-level padding - only use design properties
+          const currentPadding = isChildEdit
+            ? {
+                top: (module as any).design?.padding_top !== undefined
+                  ? (module as any).design.padding_top
+                  : (module as any).design?.padding?.top,
+                bottom: (module as any).design?.padding_bottom !== undefined
+                  ? (module as any).design.padding_bottom
+                  : (module as any).design?.padding?.bottom,
+                left: (module as any).design?.padding_left !== undefined
+                  ? (module as any).design.padding_left
+                  : (module as any).design?.padding?.left,
+                right: (module as any).design?.padding_right !== undefined
+                  ? (module as any).design.padding_right
+                  : (module as any).design?.padding?.right,
+              }
+            : (module as any).padding || {};
+          const paddingObj: Record<string, any> = {};
+          
+          // Only include properties that are explicitly set or already exist
+          // If a property is in updates, use it (even if undefined to clear it)
+          // Otherwise, preserve existing value
+          if (updates.hasOwnProperty('padding_top')) {
+            paddingObj.top = paddingTop;
+          } else if (currentPadding.top !== undefined) {
+            paddingObj.top = currentPadding.top;
+          }
+          if (updates.hasOwnProperty('padding_bottom')) {
+            paddingObj.bottom = paddingBottom;
+          } else if (currentPadding.bottom !== undefined) {
+            paddingObj.bottom = currentPadding.bottom;
+          }
+          if (updates.hasOwnProperty('padding_left')) {
+            paddingObj.left = paddingLeft;
+          } else if (currentPadding.left !== undefined) {
+            paddingObj.left = currentPadding.left;
+          }
+          if (updates.hasOwnProperty('padding_right')) {
+            paddingObj.right = paddingRight;
+          } else if (currentPadding.right !== undefined) {
+            paddingObj.right = currentPadding.right;
+          }
+          
+          // For nested modules, store as flat properties in design object (not as design.padding object)
+          // This matches how we're reading them
+          if (isChildEdit) {
+            const currentModule = this._getModuleForDesignUpdate();
+            if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+            // Store as flat properties, not as padding object
+            // CRITICAL: Explicitly set to undefined (not delete) so merge logic can delete them
+            if (updates.hasOwnProperty('padding_top')) {
+              moduleUpdates.design.padding_top = paddingTop; // undefined will be deleted by merge
+            }
+            if (updates.hasOwnProperty('padding_bottom')) {
+              moduleUpdates.design.padding_bottom = paddingBottom; // undefined will be deleted by merge
+            }
+            if (updates.hasOwnProperty('padding_left')) {
+              moduleUpdates.design.padding_left = paddingLeft; // undefined will be deleted by merge
+            }
+            if (updates.hasOwnProperty('padding_right')) {
+              moduleUpdates.design.padding_right = paddingRight; // undefined will be deleted by merge
+            }
+            // Also delete the old padding object if it exists
+            if (moduleUpdates.design.padding) {
+              delete moduleUpdates.design.padding;
+            }
+          } else {
+            moduleUpdates.padding = paddingObj;
+          }
         }
       }
     }
@@ -3217,34 +3433,30 @@ export class LayoutTab extends LitElement {
       updates.hasOwnProperty('border_width') ||
       updates.hasOwnProperty('border_color')
     ) {
-      const layout = this._ensureLayout();
-      let module: any = null;
-      
-      if (isChildEdit) {
-        const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
-          this._selectedLayoutChild!;
-        module = (
-          layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-        )?.modules?.[childIndex] as any;
-      } else if (this._selectedModule) {
-        const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
-        module = layout.rows[rowIndex]?.columns[columnIndex]?.modules[moduleIndex];
-      }
+      const module = this._getModuleForDesignUpdate();
 
       if (module) {
-        // Check if all border properties are being reset to undefined
+        // Convert empty strings to undefined for proper deletion
         const borderRadius = updates.hasOwnProperty('border_radius')
-          ? updates.border_radius
-          : (module as any).border?.radius;
+          ? normalizeValue(updates.border_radius)
+          : isChildEdit
+            ? (module as any).design?.border?.radius
+            : (module as any).border?.radius;
         const borderStyle = updates.hasOwnProperty('border_style')
-          ? updates.border_style
-          : (module as any).border?.style;
+          ? normalizeValue(updates.border_style)
+          : isChildEdit
+            ? (module as any).design?.border?.style
+            : (module as any).border?.style;
         const borderWidth = updates.hasOwnProperty('border_width')
-          ? updates.border_width
-          : (module as any).border?.width;
+          ? normalizeValue(updates.border_width)
+          : isChildEdit
+            ? (module as any).design?.border?.width
+            : (module as any).border?.width;
         const borderColor = updates.hasOwnProperty('border_color')
-          ? updates.border_color
-          : (module as any).border?.color;
+          ? normalizeValue(updates.border_color)
+          : isChildEdit
+            ? (module as any).design?.border?.color
+            : (module as any).border?.color;
 
         if (
           borderRadius === undefined &&
@@ -3253,11 +3465,20 @@ export class LayoutTab extends LitElement {
           borderColor === undefined
         ) {
           // All border properties are being reset, delete the entire border object
-          moduleUpdates.border = undefined;
+          if (isChildEdit) {
+            // For nested modules, store in design object
+            const currentModule = this._getModuleForDesignUpdate();
+            if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+            moduleUpdates.design.border = undefined;
+          } else {
+            moduleUpdates.border = undefined;
+          }
         } else {
           // Some border properties exist, create/update the border object
-          const currentBorder = (module as any).border || {};
-          moduleUpdates.border = {
+          const currentBorder = isChildEdit
+            ? (module as any).design?.border || {}
+            : (module as any).border || {};
+          const borderObj = {
             radius:
               borderRadius !== undefined
                 ? parseFloat(borderRadius) || 0
@@ -3269,6 +3490,14 @@ export class LayoutTab extends LitElement {
                 ? borderColor
                 : currentBorder.color || 'var(--divider-color)',
           };
+          if (isChildEdit) {
+            // For nested modules, store in design object
+            const currentModule = this._getModuleForDesignUpdate();
+            if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
+            moduleUpdates.design.border = borderObj;
+          } else {
+            moduleUpdates.border = borderObj;
+          }
         }
       }
     }
@@ -7248,11 +7477,25 @@ export class LayoutTab extends LitElement {
     // Use the main _updateModuleDesign method which has all the complex logic
     // for handling margin/padding/border objects and property conversions
     const updateChildModuleDesign = (updates: Partial<DesignProperties>) => {
+      console.log('🎨 [DESIGN TAB] updateChildModuleDesign called', {
+        updates,
+        moduleId: (module as any).id,
+        moduleType: module.type,
+        currentModule: JSON.parse(JSON.stringify(module)),
+      });
       this._updateModuleDesign(updates);
     };
 
     // Create a custom design properties object for the child module
     // IMPORTANT: Check design object FIRST, then top-level properties for consistent priority
+    console.log('🎨 [DESIGN TAB] Reading initial design properties', {
+      moduleId: (module as any).id,
+      moduleType: module.type,
+      design: (module as any).design,
+      padding: (module as any).padding,
+      margin: (module as any).margin,
+      border: (module as any).border,
+    });
     const designProperties = {
       color: (module as any).design?.color || (module as any).color,
       text_align: (module as any).design?.text_align || (module as any).text_align,
@@ -7286,56 +7529,101 @@ export class LayoutTab extends LitElement {
       min_width: (module as any).design?.min_width || (module as any).min_width,
       min_height: (module as any).design?.min_height || (module as any).min_height,
       // Margin: check design object, then margin object, then top-level properties
+      // IMPORTANT: Check flat properties FIRST (design.margin_left), then object (design.margin.left)
+      // This matches how we're storing them in _updateModuleDesign
       margin_top:
-        (module as any).design?.margin_top ||
-        (module as any).margin?.top ||
-        (module as any).margin_top,
+        (module as any).design?.margin_top !== undefined
+          ? (module as any).design.margin_top
+          : (module as any).design?.margin?.top !== undefined
+            ? (module as any).design.margin.top
+            : (module as any).design?.margin !== undefined
+              ? undefined // design.margin exists but top is undefined, so return undefined (don't fall back)
+              : (module as any).margin?.top !== undefined
+                ? (module as any).margin.top
+                : (module as any).margin_top,
       margin_bottom:
-        (module as any).design?.margin_bottom ||
-        (module as any).margin?.bottom ||
-        (module as any).margin_bottom,
+        (module as any).design?.margin_bottom !== undefined
+          ? (module as any).design.margin_bottom
+          : (module as any).design?.margin?.bottom !== undefined
+            ? (module as any).design.margin.bottom
+            : (module as any).design?.margin !== undefined
+              ? undefined
+              : (module as any).margin?.bottom !== undefined
+                ? (module as any).margin.bottom
+                : (module as any).margin_bottom,
       margin_left:
-        (module as any).design?.margin_left ||
-        (module as any).margin?.left ||
-        (module as any).margin_left,
+        (module as any).design?.margin_left !== undefined
+          ? (module as any).design.margin_left
+          : (module as any).design?.margin?.left !== undefined
+            ? (module as any).design.margin.left
+            : (module as any).design?.margin !== undefined
+              ? undefined
+              : (module as any).margin?.left !== undefined
+                ? (module as any).margin.left
+                : (module as any).margin_left,
       margin_right:
-        (module as any).design?.margin_right ||
-        (module as any).margin?.right ||
-        (module as any).margin_right,
+        (module as any).design?.margin_right !== undefined
+          ? (module as any).design.margin_right
+          : (module as any).design?.margin?.right !== undefined
+            ? (module as any).design.margin.right
+            : (module as any).design?.margin !== undefined
+              ? undefined
+              : (module as any).margin?.right !== undefined
+                ? (module as any).margin.right
+                : (module as any).margin_right,
       // Padding: check design object, then padding object, then top-level properties
+      // IMPORTANT: Check flat properties FIRST (design.padding_left), then object (design.padding.left)
+      // This matches how we're storing them in _updateModuleDesign
+      // CRITICAL: For nested modules, NEVER fall back to top-level padding object - only use design properties
       padding_top:
-        (module as any).design?.padding_top ||
-        (module as any).padding?.top ||
-        (module as any).padding_top,
+        (module as any).design?.padding_top !== undefined
+          ? (module as any).design.padding_top
+          : (module as any).design?.padding?.top !== undefined
+            ? (module as any).design.padding.top
+            : undefined, // Don't fall back to top-level padding for nested modules
       padding_bottom:
-        (module as any).design?.padding_bottom ||
-        (module as any).padding?.bottom ||
-        (module as any).padding_bottom,
+        (module as any).design?.padding_bottom !== undefined
+          ? (module as any).design.padding_bottom
+          : (module as any).design?.padding?.bottom !== undefined
+            ? (module as any).design.padding.bottom
+            : undefined, // Don't fall back to top-level padding for nested modules
       padding_left:
-        (module as any).design?.padding_left ||
-        (module as any).padding?.left ||
-        (module as any).padding_left,
+        (module as any).design?.padding_left !== undefined
+          ? (module as any).design.padding_left
+          : (module as any).design?.padding?.left !== undefined
+            ? (module as any).design.padding.left
+            : undefined, // Don't fall back to top-level padding for nested modules
       padding_right:
-        (module as any).design?.padding_right ||
-        (module as any).padding?.right ||
-        (module as any).padding_right,
+        (module as any).design?.padding_right !== undefined
+          ? (module as any).design.padding_right
+          : (module as any).design?.padding?.right !== undefined
+            ? (module as any).design.padding.right
+            : undefined, // Don't fall back to top-level padding for nested modules
       // Border: check design object, then border object, then top-level properties
       border_radius:
-        (module as any).design?.border_radius ||
-        (module as any).border?.radius ||
-        (module as any).border_radius,
+        (module as any).design?.border?.radius !== undefined
+          ? (module as any).design.border.radius
+          : (module as any).design?.border_radius ||
+            (module as any).border?.radius ||
+            (module as any).border_radius,
       border_style:
-        (module as any).design?.border_style ||
-        (module as any).border?.style ||
-        (module as any).border_style,
+        (module as any).design?.border?.style !== undefined
+          ? (module as any).design.border.style
+          : (module as any).design?.border_style ||
+            (module as any).border?.style ||
+            (module as any).border_style,
       border_width:
-        (module as any).design?.border_width ||
-        (module as any).border?.width ||
-        (module as any).border_width,
+        (module as any).design?.border?.width !== undefined
+          ? (module as any).design.border.width
+          : (module as any).design?.border_width ||
+            (module as any).border?.width ||
+            (module as any).border_width,
       border_color:
-        (module as any).design?.border_color ||
-        (module as any).border?.color ||
-        (module as any).border_color,
+        (module as any).design?.border?.color !== undefined
+          ? (module as any).design.border.color
+          : (module as any).design?.border_color ||
+            (module as any).border?.color ||
+            (module as any).border_color,
       position: (module as any).design?.position || (module as any).position,
       top: (module as any).design?.top || (module as any).top,
       bottom: (module as any).design?.bottom || (module as any).bottom,
@@ -7346,7 +7634,8 @@ export class LayoutTab extends LitElement {
       clip_path: (module as any).design?.clip_path || (module as any).clip_path,
       box_shadow_h: (module as any).design?.box_shadow_h || (module as any).box_shadow_h,
       box_shadow_v: (module as any).design?.box_shadow_v || (module as any).box_shadow_v,
-      box_shadow_blur: (module as any).design?.box_shadow_blur || (module as any).box_shadow_blur,
+      box_shadow_blur:
+        (module as any).design?.box_shadow_blur || (module as any).box_shadow_blur,
       box_shadow_spread:
         (module as any).design?.box_shadow_spread || (module as any).box_shadow_spread,
       box_shadow_color:
@@ -7374,7 +7663,19 @@ export class LayoutTab extends LitElement {
       animation_timing:
         (module as any).design?.animation_timing || (module as any).animation_timing,
     };
-
+    
+    console.log('🎨 [DESIGN TAB] Final design properties', {
+      moduleId: (module as any).id,
+      padding_top: designProperties.padding_top,
+      padding_right: designProperties.padding_right,
+      padding_bottom: designProperties.padding_bottom,
+      padding_left: designProperties.padding_left,
+      margin_top: designProperties.margin_top,
+      margin_right: designProperties.margin_right,
+      margin_bottom: designProperties.margin_bottom,
+      margin_left: designProperties.margin_left,
+    });
+    
     const result = html`
       <ultra-global-design-tab
         .hass=${this.hass}

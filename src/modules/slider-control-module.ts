@@ -2460,7 +2460,26 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const sliderKey = `${bar.entity}-${bar.type}`;
       const useLocalValue =
         this.interactingBars.has(sliderKey) || this.localSliderValues.has(sliderKey);
-      const livePercentage = useLocalValue
+
+      // Check if entity state changed significantly - if so, clear cache
+      if (useLocalValue && !this.interactingBars.has(sliderKey)) {
+        // If entity is off and we have a cached value, clear it
+        const isEntityOff = entityState?.state === 'off' || entityState?.state === 'closed';
+        if (isEntityOff) {
+          // Entity is off, should show 0%
+          this.localSliderValues.delete(sliderKey);
+        } else {
+          // Check if cached value differs significantly from actual state
+          const cachedValue = this.localSliderValues.get(sliderKey) ?? percentage;
+          const diff = Math.abs(cachedValue - percentage);
+          // If difference is large (more than 5%), entity state likely changed externally
+          if (diff > 5) {
+            this.localSliderValues.delete(sliderKey);
+          }
+        }
+      }
+
+      const livePercentage = this.interactingBars.has(sliderKey) || this.localSliderValues.has(sliderKey)
         ? (this.localSliderValues.get(sliderKey) ?? percentage)
         : percentage;
 
@@ -2917,6 +2936,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                     { entity_id: bar.entity }
                                   );
                                 }
+                                
+                                // Clear cached slider value after toggle to ensure slider reflects new state
+                                this.localSliderValues.delete(sliderKey);
+                                this.localSliderValues = new Map(this.localSliderValues);
                               } catch (error) {
                                 console.error('Failed to toggle entity:', error);
                               }
@@ -3085,6 +3108,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
                                       { entity_id: bar.entity }
                                     );
                                   }
+                                  
+                                  // Clear cached slider value after toggle to ensure slider reflects new state
+                                  this.localSliderValues.delete(sliderKey);
+                                  this.localSliderValues = new Map(this.localSliderValues);
                                 } catch (error) {
                                   console.error('Failed to toggle entity:', error);
                                 }
@@ -3333,6 +3360,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           };
 
           const iconToggle = bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+          const barSliderKey = `${bar.entity}-${bar.type}`;
           const toggleHandler = iconToggle
             ? async () => {
                 try {
@@ -3351,6 +3379,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       entity_id: bar.entity,
                     });
                   }
+                  
+                  // Clear cached slider value after toggle to ensure slider reflects new state
+                  this.localSliderValues.delete(barSliderKey);
+                  this.localSliderValues = new Map(this.localSliderValues);
                 } catch (error) {
                   console.error('Failed to toggle entity:', error);
                 }
@@ -3496,6 +3528,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           };
 
           const iconToggle = bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+          const barSliderKey = `${bar.entity}-${bar.type}`;
           const toggleHandler = iconToggle
             ? async () => {
                 try {
@@ -3514,6 +3547,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       entity_id: bar.entity,
                     });
                   }
+                  
+                  // Clear cached slider value after toggle to ensure slider reflects new state
+                  this.localSliderValues.delete(barSliderKey);
+                  this.localSliderValues = new Map(this.localSliderValues);
                 } catch (error) {
                   console.error('Failed to toggle entity:', error);
                 }
@@ -3767,6 +3804,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
           if (!shouldShowInfoContainer) return html``;
 
           const iconToggle = bar.icon_as_toggle ?? sliderControl.icon_as_toggle ?? true;
+          const barSliderKey = `${bar.entity}-${bar.type}`;
           const toggleHandler = iconToggle
             ? async () => {
                 try {
@@ -3785,6 +3823,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       entity_id: bar.entity,
                     });
                   }
+                  
+                  // Clear cached slider value after toggle to ensure slider reflects new state
+                  this.localSliderValues.delete(barSliderKey);
+                  this.localSliderValues = new Map(this.localSliderValues);
                 } catch (error) {
                   console.error('Failed to toggle entity:', error);
                 }

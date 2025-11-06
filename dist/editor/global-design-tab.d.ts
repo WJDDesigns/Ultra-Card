@@ -86,6 +86,7 @@ export declare class GlobalDesignTab extends LitElement {
     private _toggleSection;
     private _updateProperty;
     private _updateSpacing;
+    private _createSpacingInputHandler;
     private _createRobustInputHandler;
     private _createProtectedKeydownHandler;
     private _handleNumericKeydown;

@@ -284,9 +284,82 @@ export class UltraHorizontalModule extends BaseUltraModule {
         ? horizontalModule.alignment
         : 'center';
 
-    const containerStyles = {
+    // Smart default width: fit-content for content-based alignments (wraps to content), 100% for distribution-based (needs full width)
+    const width = ((effective as any).width !== undefined && (effective as any).width !== null && (effective as any).width !== '') 
+      ? (effective as any).width 
+      : (horizontalAlign === 'justify' || horizontalAlign === 'space-between' || horizontalAlign === 'space-around' 
+        ? '100%' 
+        : 'fit-content');
+
+    // Determine if height is fit-content (when height is not explicitly set or is auto)
+    const height = (effective as any).height || undefined;
+    const isHeightFitContent = !height || height === 'auto' || height === 'fit-content';
+
+    // Get vertical alignment for margin calculation
+    const verticalAlign = horizontalModule.vertical_alignment || 'center';
+
+    // Calculate margins with auto-positioning based on alignment
+    const baseMargin = this.getMarginCSS(effective);
+    // Parse margin string: "top right bottom left" or "0" if no margins set
+    let marginTop = '0';
+    let marginRight = '0';
+    let marginBottom = '0';
+    let marginLeft = '0';
+    
+    if (baseMargin && baseMargin !== '0') {
+      const marginParts = baseMargin.split(' ');
+      marginTop = marginParts[0] || '0';
+      marginRight = marginParts[1] || '0';
+      marginBottom = marginParts[2] || '0';
+      marginLeft = marginParts[3] || '0';
+    }
+
+    // Check if user explicitly set margins (check both margin object and individual properties)
+    const hasExplicitMarginTop = (effective as any).margin?.top !== undefined || (effective as any).margin_top !== undefined;
+    const hasExplicitMarginRight = (effective as any).margin?.right !== undefined || (effective as any).margin_right !== undefined;
+    const hasExplicitMarginBottom = (effective as any).margin?.bottom !== undefined || (effective as any).margin_bottom !== undefined;
+    const hasExplicitMarginLeft = (effective as any).margin?.left !== undefined || (effective as any).margin_left !== undefined;
+
+    // Apply horizontal auto margins based on alignment when width is fit-content
+    if (width === 'fit-content' && !hasExplicitMarginLeft && !hasExplicitMarginRight) {
+      if (horizontalAlign === 'left') {
+        marginLeft = '0';
+        marginRight = 'auto';
+      } else if (horizontalAlign === 'right') {
+        marginLeft = 'auto';
+        marginRight = '0';
+      } else if (horizontalAlign === 'center') {
+        marginLeft = 'auto';
+        marginRight = 'auto';
+      }
+      // For justify/space-between/space-around, no auto margins (needs full width, so width won't be fit-content anyway)
+    }
+
+    // Apply vertical auto margins based on vertical_alignment when height is fit-content
+    if (isHeightFitContent && !hasExplicitMarginTop && !hasExplicitMarginBottom) {
+      if (verticalAlign === 'top') {
+        marginTop = '0';
+        marginBottom = 'auto';
+      } else if (verticalAlign === 'bottom') {
+        marginTop = 'auto';
+        marginBottom = '0';
+      } else if (verticalAlign === 'center') {
+        marginTop = 'auto';
+        marginBottom = 'auto';
+      }
+      // For stretch/baseline, no auto margins (needs full height)
+    }
+
+    // Build final margin string
+    const finalMargin = `${marginTop} ${marginRight} ${marginBottom} ${marginLeft}`;
+
+    // When width is fit-content, apply margin to wrapper for positioning
+    // When width is 100%, margin stays on inner content for spacing
+    const wrapperMargin = width === 'fit-content' ? finalMargin : undefined;
+    const contentMargin = width === 'fit-content' ? undefined : finalMargin;
+
+    const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
-      margin: this.getMarginCSS(effective),
       background: this.getBackgroundCSS(effective),
       backgroundImage: this.getBackgroundImageCSS(effective, hass),
       backgroundSize: effective.background_size || 'cover',
@@ -299,7 +372,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
       position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
       zIndex: (effective as any).z_index || 'auto',
       // Respect sizing controls from design/global design
-      width: (effective as any).width || '100%',
+      // Smart default: fit-content for content-based alignments (wraps to content), 100% for distribution-based (needs full width)
+      width: width,
       height: (effective as any).height || undefined,
       maxWidth: (effective as any).max_width || undefined,
       minWidth: (effective as any).min_width || undefined,
@@ -327,6 +401,11 @@ export class UltraHorizontalModule extends BaseUltraModule {
       overflowY: 'visible',
       boxSizing: 'border-box',
     };
+
+    // Only add margin to containerStyles if contentMargin is defined
+    if (contentMargin !== undefined) {
+      containerStyles.margin = contentMargin;
+    }
 
     // Gesture handling variables
     let clickTimeout: any = null;
@@ -422,7 +501,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       <style>
         ${this.getStyles()}
       </style>
-      <div class="horizontal-module-preview">
+      <div class="horizontal-module-preview" style="width: ${containerStyles.width === 'fit-content' ? 'fit-content' : '100%'}; ${wrapperMargin ? `margin: ${wrapperMargin};` : ''}">
         <div
           class="horizontal-preview-content ${hoverEffectClass}"
           style="${this.styleObjectToCss(
