@@ -209,7 +209,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 min="-50"
                 max="50"
                 step="0.1"
-                .value="${horizontalModule.gap || 0.7}"
+                .value="${horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -221,7 +221,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 class="gap-input"
                 style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
                 step="0.1"
-                .value="${horizontalModule.gap || 0.7}"
+                .value="${horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -233,7 +233,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                     e.preventDefault();
                     const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 0.7;
+                    const currentValue = parseFloat(target.value) || 0;
                     const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
                     const newValue = currentValue + increment;
                     const roundedValue = Math.round(newValue * 10) / 10;
@@ -277,7 +277,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Wrapping should use flexbox wrap, not force column mode
 
     // Container styles for positioning and effects
-    const gapValue = horizontalModule.gap || 0.7;
+    const gapValue = horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7;
     // Prefer centered horizontal alignment by default
     const horizontalAlign =
       horizontalModule.alignment !== undefined && horizontalModule.alignment !== null

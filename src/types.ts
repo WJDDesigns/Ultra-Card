@@ -2530,6 +2530,10 @@ export interface DropdownModule extends BaseModule {
   current_selection?: string; // Tracks the currently selected option label
   track_state?: boolean; // Whether to track and display current selection
 
+  // Dynamic templates
+  unified_template_mode?: boolean;
+  unified_template?: string;
+
   // Visual Configuration (label removed)
 
   // Global action configuration
@@ -3389,7 +3393,7 @@ export interface CardColumn {
   name?: string;
   modules: CardModule[];
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-  horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
+  horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch' | 'space-between' | 'space-around' | 'justify';
   background_color?: string;
   padding?: number;
   margin?: number;
@@ -3441,6 +3445,8 @@ export interface CardRow {
   gap?: number;
   column_alignment?: 'top' | 'middle' | 'bottom';
   content_alignment?: 'start' | 'end' | 'center' | 'stretch';
+  full_width?: boolean; // Default true for backwards compatibility
+  width_percent?: number; // Default 100, only used when full_width is false
   background_color?: string;
   padding?: number;
   margin?: number;

@@ -175,7 +175,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 min="-50"
                 max="50"
                 step="0.1"
-                .value="${verticalModule.gap || 1.2}"
+                .value="${verticalModule.gap !== undefined ? verticalModule.gap : 1.2}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -187,7 +187,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 class="gap-input"
                 style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
                 step="0.1"
-                .value="${verticalModule.gap || 1.2}"
+                .value="${verticalModule.gap !== undefined ? verticalModule.gap : 1.2}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -199,7 +199,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                     e.preventDefault();
                     const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 1.2;
+                    const currentValue = parseFloat(target.value) || 0;
                     const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
                     const newValue = currentValue + increment;
                     const roundedValue = Math.round(newValue * 10) / 10;
@@ -237,7 +237,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     const hasChildren = verticalModule.modules && verticalModule.modules.length > 0;
 
     // Container styles for positioning and effects
-    const gapValue = verticalModule.gap || 1.2;
+    const gapValue = verticalModule.gap !== undefined ? verticalModule.gap : 1.2;
     const containerStyles = {
       padding: this.getPaddingCSS(effective),
       margin: this.getMarginCSS(effective),

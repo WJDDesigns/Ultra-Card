@@ -1717,12 +1717,15 @@ export class UltraCard extends LitElement {
             ? `${row.padding}px`
             : undefined,
       // Margin (override default marginBottom if design margin is set)
+      // If full_width is false and no explicit margins are set, center the row with auto margins
       margin:
-        design.margin_top || design.margin_bottom || design.margin_left || design.margin_right
-          ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '0'} ${design.margin_left || '0'}`
-          : row.margin
-            ? `${row.margin}px`
-            : undefined,
+        row.full_width === false && !design.margin_top && !design.margin_bottom && !design.margin_left && !design.margin_right && !row.margin
+          ? '0 auto' // Center horizontally when not full width
+          : design.margin_top || design.margin_bottom || design.margin_left || design.margin_right
+            ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '0'} ${design.margin_left || '0'}`
+            : row.margin
+              ? `${row.margin}px`
+              : undefined,
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1738,8 +1741,10 @@ export class UltraCard extends LitElement {
       left: design.left || 'auto',
       right: design.right || 'auto',
       zIndex: design.z_index || 'auto',
-      // Size
-      width: design.width || '100%',
+      // Size - respect row width settings unless design width is explicitly set
+      width: design.width || (row.full_width === false 
+        ? `${row.width_percent !== undefined ? row.width_percent : 100}%`
+        : '100%'),
       height: design.height || 'auto',
       maxWidth: design.max_width || 'none',
       maxHeight: design.max_height || 'none',
@@ -1801,33 +1806,65 @@ export class UltraCard extends LitElement {
   private _generateColumnStyles(column: CardColumn): string {
     const design = column.design || {};
 
+    // When using space-between, space-around, or justify, switch to horizontal layout
+    const useHorizontalLayout = 
+      column.horizontal_alignment === 'space-between' || 
+      column.horizontal_alignment === 'space-around' ||
+      column.horizontal_alignment === 'justify';
+
     const baseStyles: Record<string, string> = {
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: useHorizontalLayout ? 'row' : 'column',
       // No gap - row controls spacing between columns, modules within column have no forced spacing
     };
 
     // Apply column alignment only if explicitly set
     if (column.horizontal_alignment) {
-      baseStyles.alignItems =
-        column.horizontal_alignment === 'left'
-          ? 'flex-start'
-          : column.horizontal_alignment === 'right'
-            ? 'flex-end'
-            : column.horizontal_alignment === 'stretch'
-              ? 'stretch'
-              : 'center';
+      if (useHorizontalLayout) {
+        // For horizontal layout (space-between, space-around, justify)
+        baseStyles.justifyContent =
+          column.horizontal_alignment === 'space-between'
+            ? 'space-between'
+            : column.horizontal_alignment === 'space-around'
+              ? 'space-around'
+              : column.horizontal_alignment === 'justify'
+                ? 'space-between' // justify behaves like space-between for horizontal
+                : 'center';
+      } else {
+        // For vertical layout (left, center, right, stretch)
+        baseStyles.alignItems =
+          column.horizontal_alignment === 'left'
+            ? 'flex-start'
+            : column.horizontal_alignment === 'right'
+              ? 'flex-end'
+              : column.horizontal_alignment === 'stretch'
+                ? 'stretch'
+                : 'center';
+      }
     }
 
     if (column.vertical_alignment) {
-      baseStyles.justifyContent =
-        column.vertical_alignment === 'top'
-          ? 'flex-start'
-          : column.vertical_alignment === 'bottom'
-            ? 'flex-end'
-            : column.vertical_alignment === 'stretch'
-              ? 'stretch'
-              : 'center';
+      if (useHorizontalLayout) {
+        // In horizontal mode, vertical alignment becomes alignItems (cross-axis)
+        baseStyles.alignItems =
+          column.vertical_alignment === 'top'
+            ? 'flex-start'
+            : column.vertical_alignment === 'bottom'
+              ? 'flex-end'
+              : column.vertical_alignment === 'stretch'
+                ? 'stretch'
+                : 'center';
+      } else {
+        // In vertical mode, vertical alignment is justifyContent (main axis)
+        baseStyles.justifyContent =
+          column.vertical_alignment === 'top'
+            ? 'flex-start'
+            : column.vertical_alignment === 'bottom'
+              ? 'flex-end'
+              : column.vertical_alignment === 'stretch'
+                ? 'stretch'
+                : 'center';
+      }
     }
 
     // Check if background filter is applied - if so, use CSS variables for ::before pseudo-element

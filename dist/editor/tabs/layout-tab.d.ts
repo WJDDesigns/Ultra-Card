@@ -232,6 +232,11 @@ export declare class LayoutTab extends LitElement {
     private _openNestedChildSettings;
     private _regenerateModuleIds;
     private _deleteLayoutChildModule;
+    /**
+     * Converts module type names to friendly display titles
+     * Example: "animated_clock" -> "Animated Clock"
+     */
+    private _formatModuleTypeName;
     private _getModuleSettingsTitle;
     private _getModuleDisplayName;
     private _generateModuleInfo;

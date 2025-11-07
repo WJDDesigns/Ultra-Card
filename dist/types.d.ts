@@ -1345,6 +1345,8 @@ export interface DropdownModule extends BaseModule {
     }>;
     current_selection?: string;
     track_state?: boolean;
+    unified_template_mode?: boolean;
+    unified_template?: string;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1836,7 +1838,7 @@ export interface CardColumn {
     name?: string;
     modules: CardModule[];
     vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-    horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
+    horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch' | 'space-between' | 'space-around' | 'justify';
     background_color?: string;
     padding?: number;
     margin?: number;
@@ -1857,6 +1859,8 @@ export interface CardRow {
     gap?: number;
     column_alignment?: 'top' | 'middle' | 'bottom';
     content_alignment?: 'start' | 'end' | 'center' | 'stretch';
+    full_width?: boolean;
+    width_percent?: number;
     background_color?: string;
     padding?: number;
     margin?: number;

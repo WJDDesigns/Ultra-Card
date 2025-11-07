@@ -890,14 +890,16 @@ export class UltraColorPicker extends LitElement {
           </div>
 
           <!-- Reset button -->
-          <ha-icon-button
-            class="reset-button ${this._isDefaultValue() ? 'disabled' : ''}"
-            .disabled=${this._isDefaultValue()}
-            @click=${this._resetToDefault}
-            .title=${'Reset to default'}
-          >
-            <ha-icon icon="mdi:refresh"></ha-icon>
-          </ha-icon-button>
+          <div class="reset-button-wrapper">
+            <ha-icon-button
+              class="reset-button ${this._isDefaultValue() ? 'disabled' : ''}"
+              .disabled=${this._isDefaultValue()}
+              @click=${this._resetToDefault}
+              .title=${'Reset to default'}
+            >
+              <ha-icon icon="mdi:refresh"></ha-icon>
+            </ha-icon-button>
+          </div>
         </div>
 
         <!-- Accordion-style palette -->
@@ -1103,6 +1105,7 @@ export class UltraColorPicker extends LitElement {
         flex-direction: column;
         gap: 8px;
         width: 100%;
+        max-width: 100%;
         position: relative;
         box-sizing: border-box;
         z-index: ${Z_INDEX.COLOR_PICKER_CONTAINER};
@@ -1120,13 +1123,19 @@ export class UltraColorPicker extends LitElement {
         align-items: center;
         gap: 12px;
         position: relative;
-        /* Ensure palette can overflow this container */
-        overflow: visible;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+        /* Allow palette dropdown to overflow vertically, but clip horizontally */
+        overflow-x: hidden;
+        overflow-y: visible;
         z-index: ${Z_INDEX.MODULE_CONTENT};
       }
 
       .color-input-field {
-        flex: 1;
+        flex: 1 1 0%;
+        min-width: 0;
         padding: 8px 12px;
         border: 1px solid var(--divider-color);
         border-radius: 6px;
@@ -1142,6 +1151,8 @@ export class UltraColorPicker extends LitElement {
         align-items: center;
         justify-content: space-between;
         position: relative;
+        box-sizing: border-box;
+        overflow: hidden;
       }
 
       .color-input-field:hover:not(.disabled) {
@@ -1163,7 +1174,8 @@ export class UltraColorPicker extends LitElement {
       }
 
       .color-value {
-        flex: 1;
+        flex: 1 1 0%;
+        min-width: 0;
         color: var(--primary-text-color);
         font-family: var(--code-font-family, monospace);
         font-size: 14px;
@@ -1198,13 +1210,23 @@ export class UltraColorPicker extends LitElement {
         margin-left: 8px;
       }
 
+      .reset-button-wrapper {
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+        contain: size layout style;
+      }
+
       .reset-button {
         --mdc-icon-button-size: 40px;
         --mdc-icon-size: 20px;
         --mdc-theme-primary: var(--primary-color);
         border-radius: 6px;
         transition: all 0.2s ease;
-        flex-shrink: 0;
+        box-sizing: border-box;
       }
 
       .reset-button:not(.disabled):hover {

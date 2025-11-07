@@ -1,5 +1,14 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta10
+
+### 🚀 Improvements
+
+- **Improved CSS for nested layouts** - Enhanced CSS handling for nested layout structures
+- **Added alignments to column** - New alignment options for column modules
+
+---
+
 ## Version 2.1.0-beta9
 
 ### 🐛 Bug Fixes

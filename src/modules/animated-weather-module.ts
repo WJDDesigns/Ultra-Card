@@ -124,6 +124,78 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const weatherModule = module as AnimatedWeatherModule;
+    const moduleWithDesign = weatherModule as any;
+    const designFromDesignObject = (weatherModule as any).design || {};
+
+    // Create merged design properties object that prioritizes top-level properties (where Global Design saves)
+    // over design object properties, and includes all properties needed by the container styles
+    const designProperties = {
+      // Text properties - prioritize top-level (where Global Design saves them)
+      color: (weatherModule as any).color || designFromDesignObject.color,
+      // Container properties - also check both locations
+      background_color:
+        (weatherModule as any).background_color || designFromDesignObject.background_color,
+      background_image:
+        (weatherModule as any).background_image || designFromDesignObject.background_image,
+      background_image_type:
+        (weatherModule as any).background_image_type ||
+        designFromDesignObject.background_image_type,
+      background_image_entity:
+        (weatherModule as any).background_image_entity ||
+        designFromDesignObject.background_image_entity,
+      background_image_upload:
+        (weatherModule as any).background_image_upload ||
+        designFromDesignObject.background_image_upload,
+      background_image_url:
+        (weatherModule as any).background_image_url || designFromDesignObject.background_image_url,
+      background_size:
+        (weatherModule as any).background_size || designFromDesignObject.background_size,
+      background_position:
+        (weatherModule as any).background_position || designFromDesignObject.background_position,
+      background_repeat:
+        (weatherModule as any).background_repeat || designFromDesignObject.background_repeat,
+      padding_top:
+        designFromDesignObject.padding_top !== undefined
+          ? designFromDesignObject.padding_top
+          : (weatherModule as any).padding_top,
+      padding_bottom:
+        designFromDesignObject.padding_bottom !== undefined
+          ? designFromDesignObject.padding_bottom
+          : (weatherModule as any).padding_bottom,
+      padding_left:
+        designFromDesignObject.padding_left !== undefined
+          ? designFromDesignObject.padding_left
+          : (weatherModule as any).padding_left,
+      padding_right:
+        designFromDesignObject.padding_right !== undefined
+          ? designFromDesignObject.padding_right
+          : (weatherModule as any).padding_right,
+      margin_top:
+        designFromDesignObject.margin_top !== undefined
+          ? designFromDesignObject.margin_top
+          : (weatherModule as any).margin_top,
+      margin_bottom:
+        designFromDesignObject.margin_bottom !== undefined
+          ? designFromDesignObject.margin_bottom
+          : (weatherModule as any).margin_bottom,
+      margin_left:
+        designFromDesignObject.margin_left !== undefined
+          ? designFromDesignObject.margin_left
+          : (weatherModule as any).margin_left,
+      margin_right:
+        designFromDesignObject.margin_right !== undefined
+          ? designFromDesignObject.margin_right
+          : (weatherModule as any).margin_right,
+      border_radius:
+        (weatherModule as any).border_radius || designFromDesignObject.border_radius,
+      border_style:
+        (weatherModule as any).border_style || designFromDesignObject.border_style,
+      border_width:
+        (weatherModule as any).border_width || designFromDesignObject.border_width,
+      border_color:
+        (weatherModule as any).border_color || designFromDesignObject.border_color,
+    };
+
     const weatherData = this._getWeatherData(hass, weatherModule);
     const now = new Date();
 
@@ -245,37 +317,100 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       (weatherModule.hold_action && weatherModule.hold_action.action !== 'nothing') ||
       (weatherModule.double_tap_action && weatherModule.double_tap_action.action !== 'nothing');
 
+    // Apply text color override from global design - if set, override all text colors
+    const globalTextColor = designProperties.color;
+    const locationColor = globalTextColor || weatherModule.location_color || 'var(--primary-text-color)';
+    const conditionColor = globalTextColor || weatherModule.condition_color || 'var(--primary-text-color)';
+    const customEntityColor = globalTextColor || weatherModule.custom_entity_color || 'var(--primary-text-color)';
+    const dateColor = globalTextColor || weatherModule.date_color || 'var(--primary-text-color)';
+    const temperatureColor = globalTextColor || weatherModule.temperature_color || 'var(--primary-text-color)';
+    const tempRangeColor = globalTextColor || weatherModule.temp_range_color || 'var(--primary-text-color)';
+
+    // Container styles for design system integration - properly handle global design properties
+    const containerStyles = {
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
+        moduleWithDesign.padding_top ||
+        moduleWithDesign.padding_bottom ||
+        moduleWithDesign.padding_left ||
+        moduleWithDesign.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : undefined,
+      // Standard 8px top/bottom margin for proper web design spacing
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
+        moduleWithDesign.margin_top ||
+        moduleWithDesign.margin_bottom ||
+        moduleWithDesign.margin_left ||
+        moduleWithDesign.margin_right
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '8px 0',
+      background:
+        designProperties.background_color || moduleWithDesign.background_color || weatherModule.module_background || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position ||
+        moduleWithDesign.background_position ||
+        'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      border:
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || weatherModule.module_border || 'var(--divider-color)'}`
+          : weatherModule.module_border && weatherModule.module_border !== 'transparent'
+            ? `2px solid ${weatherModule.module_border}`
+            : undefined,
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || undefined,
+      boxSizing: 'border-box',
+      // Add cursor pointer when actions are configured
+      cursor: hasActions ? 'pointer' : 'default',
+    };
+
     return html`
       <style>
         ${this.getStyles()}
       </style>
       <div
-        class="animated-weather-module-container"
-        style="
-          cursor: ${hasActions ? 'pointer' : 'default'};
-          --column-gap: ${weatherModule.column_gap ?? 12}px;
-          --left-column-gap: ${weatherModule.left_column_gap ?? 8}px;
-          --right-column-gap: ${weatherModule.right_column_gap ?? 8}px;
-          --location-size: ${weatherModule.location_size || 16}px;
-          --condition-size: ${weatherModule.condition_size || 24}px;
-          --custom-entity-size: ${weatherModule.custom_entity_size || 18}px;
-          --date-size: ${weatherModule.date_size || 16}px;
-          --temperature-size: ${weatherModule.temperature_size || 64}px;
-          --temp-range-size: ${weatherModule.temp_range_size || 18}px;
-          --main-icon-size: ${weatherModule.main_icon_size || 120}px;
-          --location-color: ${weatherModule.location_color || 'var(--primary-text-color)'};
-          --condition-color: ${weatherModule.condition_color || 'var(--primary-text-color)'};
-          --custom-entity-color: ${weatherModule.custom_entity_color ||
-        'var(--primary-text-color)'};
-          --date-color: ${weatherModule.date_color || 'var(--primary-text-color)'};
-          --temperature-color: ${weatherModule.temperature_color || 'var(--primary-text-color)'};
-          --temp-range-color: ${weatherModule.temp_range_color || 'var(--primary-text-color)'};
-          --module-background: ${weatherModule.module_background || 'transparent'};
-          --module-border: ${weatherModule.module_border || 'transparent'};
-        "
+        style=${this.objectToStyleString(containerStyles)}
         @pointerdown=${handlePointerDown}
         @pointerup=${handlePointerUp}
       >
+        <div
+          class="animated-weather-module-container"
+          style="
+            --column-gap: ${weatherModule.column_gap ?? 12}px;
+            --left-column-gap: ${weatherModule.left_column_gap ?? 8}px;
+            --right-column-gap: ${weatherModule.right_column_gap ?? 8}px;
+            --location-size: ${weatherModule.location_size || 16}px;
+            --condition-size: ${weatherModule.condition_size || 24}px;
+            --custom-entity-size: ${weatherModule.custom_entity_size || 18}px;
+            --date-size: ${weatherModule.date_size || 16}px;
+            --temperature-size: ${weatherModule.temperature_size || 64}px;
+            --temp-range-size: ${weatherModule.temp_range_size || 18}px;
+            --main-icon-size: ${weatherModule.main_icon_size || 120}px;
+            --location-color: ${locationColor};
+            --condition-color: ${conditionColor};
+            --custom-entity-color: ${customEntityColor};
+            --date-color: ${dateColor};
+            --temperature-color: ${temperatureColor};
+            --temp-range-color: ${tempRangeColor};
+            --module-background: ${weatherModule.module_background || 'transparent'};
+            --module-border: ${weatherModule.module_border || 'transparent'};
+          "
+        >
         <div class="weather-main-grid" style="grid-template-columns: ${gridTemplate};">
           <!-- Left Column: Location & Condition -->
           ${showLeft
@@ -346,6 +481,55 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Helper method to convert style object to CSS string
+   */
+  private objectToStyleString(styles: Record<string, any>): string {
+    return Object.entries(styles)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+      .join('; ');
+  }
+
+  /**
+   * Helper method to add pixel unit if needed
+   */
+  private addPixelUnit(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    if (
+      typeof value === 'string' &&
+      (value.includes('px') ||
+        value.includes('%') ||
+        value.includes('em') ||
+        value.includes('rem') ||
+        value.includes('vh') ||
+        value.includes('vw'))
+    ) {
+      return value;
+    }
+    return `${value}px`;
+  }
+
+  /**
+   * Helper method to get background image CSS
+   */
+  private getBackgroundImageCSS(moduleWithDesign: any, hass?: HomeAssistant): string {
+    const backgroundType = moduleWithDesign.background_image_type || 'none';
+
+    if (backgroundType === 'entity' && moduleWithDesign.background_image_entity && hass) {
+      const entity = hass.states[moduleWithDesign.background_image_entity];
+      if (entity && entity.attributes.entity_picture) {
+        return `url('${entity.attributes.entity_picture}')`;
+      }
+    } else if (backgroundType === 'upload' && moduleWithDesign.background_image_upload) {
+      return `url('${moduleWithDesign.background_image_upload}')`;
+    } else if (backgroundType === 'url' && moduleWithDesign.background_image_url) {
+      return `url('${moduleWithDesign.background_image_url}')`;
+    }
+
+    return '';
   }
 
   /**
@@ -443,7 +627,6 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .animated-weather-module-container {
-        border-radius: clamp(8px, 2%, 16px);
         padding: clamp(12px, 2.5%, 20px) clamp(12px, 2%, 16px);
         position: relative;
         overflow: hidden;

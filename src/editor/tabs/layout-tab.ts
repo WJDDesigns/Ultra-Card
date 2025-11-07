@@ -2718,7 +2718,7 @@ export class LayoutTab extends LitElement {
       selectedLayoutChild: this._selectedLayoutChild,
       selectedNestedChildIndex: this._selectedNestedChildIndex,
     });
-    
+
     if (!this._selectedLayoutChild) {
       return;
     }
@@ -2748,7 +2748,7 @@ export class LayoutTab extends LitElement {
 
     // Check if we're updating a nested child module (module inside a nested layout)
     let updatedModule: any;
-    
+
     if (this._selectedNestedChildIndex >= 0) {
       // We're updating a nested child module
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
@@ -2804,9 +2804,12 @@ export class LayoutTab extends LitElement {
           updatedModule[key] = value;
         }
       }
-      
+
       // For nested modules, clean up top-level padding/margin objects to prevent reading from them
-      if (this._selectedNestedChildIndex >= 0 || (!this._selectedModule && !!this._selectedLayoutChild)) {
+      if (
+        this._selectedNestedChildIndex >= 0 ||
+        (!this._selectedModule && !!this._selectedLayoutChild)
+      ) {
         // This is a nested module edit - remove top-level padding/margin objects
         // They should only exist in design object
         if (updatedModule.padding && typeof updatedModule.padding === 'object') {
@@ -2867,9 +2870,12 @@ export class LayoutTab extends LitElement {
           updatedModule[key] = value;
         }
       }
-      
+
       // For nested modules, clean up top-level padding/margin objects to prevent reading from them
-      if (this._selectedNestedChildIndex >= 0 || (!this._selectedModule && !!this._selectedLayoutChild)) {
+      if (
+        this._selectedNestedChildIndex >= 0 ||
+        (!this._selectedModule && !!this._selectedLayoutChild)
+      ) {
         // This is a nested module edit - remove top-level padding/margin objects
         // They should only exist in design object
         if (updatedModule.padding && typeof updatedModule.padding === 'object') {
@@ -2909,13 +2915,13 @@ export class LayoutTab extends LitElement {
       const layout = this._ensureLayout();
       const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
         this._selectedLayoutChild;
-      
-      const layoutModule = (
-        layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any
-      );
-      
+
+      const layoutModule = layout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[
+        parentModuleIndex
+      ] as any;
+
       if (!layoutModule?.modules?.[childIndex]) return null;
-      
+
       // Check if this is a nested child module (module inside a nested layout)
       if (this._selectedNestedChildIndex >= 0) {
         const nestedLayoutModule = layoutModule.modules[childIndex] as any;
@@ -2926,7 +2932,7 @@ export class LayoutTab extends LitElement {
         return layoutModule.modules[childIndex];
       }
     }
-    
+
     return null;
   }
 
@@ -2938,7 +2944,7 @@ export class LayoutTab extends LitElement {
       selectedLayoutChild: this._selectedLayoutChild,
       selectedNestedChildIndex: this._selectedNestedChildIndex,
     });
-    
+
     // Support both direct module edits and child-module edits inside layout containers
     const isChildEdit = !this._selectedModule && !!this._selectedLayoutChild;
     if (!this._selectedModule && !this._selectedLayoutChild) {
@@ -3217,22 +3223,26 @@ export class LayoutTab extends LitElement {
           // CRITICAL: For nested modules, NEVER read from top-level margin - only use design properties
           const currentMargin = isChildEdit
             ? {
-                top: (module as any).design?.margin_top !== undefined
-                  ? (module as any).design.margin_top
-                  : (module as any).design?.margin?.top,
-                bottom: (module as any).design?.margin_bottom !== undefined
-                  ? (module as any).design.margin_bottom
-                  : (module as any).design?.margin?.bottom,
-                left: (module as any).design?.margin_left !== undefined
-                  ? (module as any).design.margin_left
-                  : (module as any).design?.margin?.left,
-                right: (module as any).design?.margin_right !== undefined
-                  ? (module as any).design.margin_right
-                  : (module as any).design?.margin?.right,
+                top:
+                  (module as any).design?.margin_top !== undefined
+                    ? (module as any).design.margin_top
+                    : (module as any).design?.margin?.top,
+                bottom:
+                  (module as any).design?.margin_bottom !== undefined
+                    ? (module as any).design.margin_bottom
+                    : (module as any).design?.margin?.bottom,
+                left:
+                  (module as any).design?.margin_left !== undefined
+                    ? (module as any).design.margin_left
+                    : (module as any).design?.margin?.left,
+                right:
+                  (module as any).design?.margin_right !== undefined
+                    ? (module as any).design.margin_right
+                    : (module as any).design?.margin?.right,
               }
             : (module as any).margin || {};
           const marginObj: Record<string, any> = {};
-          
+
           // Only include properties that are explicitly set or already exist
           // If a property is in updates, use it (even if undefined to clear it)
           // Otherwise, preserve existing value
@@ -3256,7 +3266,7 @@ export class LayoutTab extends LitElement {
           } else if (currentMargin.right !== undefined) {
             marginObj.right = currentMargin.right;
           }
-          
+
           // For nested modules, store as flat properties in design object (not as design.margin object)
           // This matches how we're reading them
           if (isChildEdit) {
@@ -3356,22 +3366,26 @@ export class LayoutTab extends LitElement {
           // CRITICAL: For nested modules, NEVER read from top-level padding - only use design properties
           const currentPadding = isChildEdit
             ? {
-                top: (module as any).design?.padding_top !== undefined
-                  ? (module as any).design.padding_top
-                  : (module as any).design?.padding?.top,
-                bottom: (module as any).design?.padding_bottom !== undefined
-                  ? (module as any).design.padding_bottom
-                  : (module as any).design?.padding?.bottom,
-                left: (module as any).design?.padding_left !== undefined
-                  ? (module as any).design.padding_left
-                  : (module as any).design?.padding?.left,
-                right: (module as any).design?.padding_right !== undefined
-                  ? (module as any).design.padding_right
-                  : (module as any).design?.padding?.right,
+                top:
+                  (module as any).design?.padding_top !== undefined
+                    ? (module as any).design.padding_top
+                    : (module as any).design?.padding?.top,
+                bottom:
+                  (module as any).design?.padding_bottom !== undefined
+                    ? (module as any).design.padding_bottom
+                    : (module as any).design?.padding?.bottom,
+                left:
+                  (module as any).design?.padding_left !== undefined
+                    ? (module as any).design.padding_left
+                    : (module as any).design?.padding?.left,
+                right:
+                  (module as any).design?.padding_right !== undefined
+                    ? (module as any).design.padding_right
+                    : (module as any).design?.padding?.right,
               }
             : (module as any).padding || {};
           const paddingObj: Record<string, any> = {};
-          
+
           // Only include properties that are explicitly set or already exist
           // If a property is in updates, use it (even if undefined to clear it)
           // Otherwise, preserve existing value
@@ -3395,7 +3409,7 @@ export class LayoutTab extends LitElement {
           } else if (currentPadding.right !== undefined) {
             paddingObj.right = currentPadding.right;
           }
-          
+
           // For nested modules, store as flat properties in design object (not as design.padding object)
           // This matches how we're reading them
           if (isChildEdit) {
@@ -6398,6 +6412,17 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
   }
 
+  /**
+   * Converts module type names to friendly display titles
+   * Example: "animated_clock" -> "Animated Clock"
+   */
+  private _formatModuleTypeName(moduleType: string): string {
+    return moduleType
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   private _getModuleSettingsTitle(module: CardModule, lang: string): string {
     // For external cards, show the friendly card name
     if (module.type === 'external_card') {
@@ -6416,7 +6441,7 @@ export class LayoutTab extends LitElement {
     }
 
     // For other modules, use the standard pattern
-    return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${module.type.charAt(0).toUpperCase() + module.type.slice(1)}`;
+    return `${localize('editor.layout.module_settings_title', lang, 'Module Settings')} - ${this._formatModuleTypeName(module.type)}`;
   }
   private _getModuleDisplayName(module: CardModule): string {
     // Check for custom module name first (for editor organization)
@@ -6456,7 +6481,7 @@ export class LayoutTab extends LitElement {
       case 'external_card':
         return '3rd Party Card';
       default:
-        return module.type.charAt(0).toUpperCase() + module.type.slice(1) + ' Module';
+        return `${this._formatModuleTypeName(module.type)} Module`;
     }
   }
 
@@ -6579,7 +6604,7 @@ export class LayoutTab extends LitElement {
         if (moduleAny.value !== undefined) return `Value: ${moduleAny.value}`;
         if (moduleAny.text)
           return `Text: ${moduleAny.text.length > 20 ? moduleAny.text.substring(0, 20) + '...' : moduleAny.text}`;
-        return `${module.type.charAt(0).toUpperCase()}${module.type.slice(1)} module`;
+        return `${this._formatModuleTypeName(module.type)} module`;
     }
   }
 
@@ -7634,8 +7659,7 @@ export class LayoutTab extends LitElement {
       clip_path: (module as any).design?.clip_path || (module as any).clip_path,
       box_shadow_h: (module as any).design?.box_shadow_h || (module as any).box_shadow_h,
       box_shadow_v: (module as any).design?.box_shadow_v || (module as any).box_shadow_v,
-      box_shadow_blur:
-        (module as any).design?.box_shadow_blur || (module as any).box_shadow_blur,
+      box_shadow_blur: (module as any).design?.box_shadow_blur || (module as any).box_shadow_blur,
       box_shadow_spread:
         (module as any).design?.box_shadow_spread || (module as any).box_shadow_spread,
       box_shadow_color:
@@ -7663,7 +7687,7 @@ export class LayoutTab extends LitElement {
       animation_timing:
         (module as any).design?.animation_timing || (module as any).animation_timing,
     };
-    
+
     console.log('🎨 [DESIGN TAB] Final design properties', {
       moduleId: (module as any).id,
       padding_top: designProperties.padding_top,
@@ -7675,7 +7699,7 @@ export class LayoutTab extends LitElement {
       margin_bottom: designProperties.margin_bottom,
       margin_left: designProperties.margin_left,
     });
-    
+
     const result = html`
       <ultra-global-design-tab
         .hass=${this.hass}
@@ -7934,85 +7958,354 @@ export class LayoutTab extends LitElement {
   }
   private _renderRowGeneralTab(row: CardRow): TemplateResult {
     return html`
-      <div class="settings-section">
-        <label
-          >${localize(
-            'editor.layout.row_name',
-            this.hass?.locale?.language || 'en',
-            'Row Name'
-          )}:</label
-        >
-        <input
-          type="text"
-          .value=${(row as any).row_name || ''}
-          placeholder="Give this row a custom name to make it easier to identify in the editor"
-          @input=${(e: Event) => {
-            const value = (e.target as HTMLInputElement).value;
-            this._updateRow({ row_name: value } as any);
-          }}
-        />
-        <div class="hint-text">
-          Give this row a custom name to make it easier to identify in the editor.
+      <style>
+        .row-general-settings {
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        .row-general-settings .settings-section {
+          background: var(--secondary-background-color);
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 0;
+          overflow-y: visible;
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 100%;
+        }
+        .section-title {
+          font-size: 18px;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: var(--primary-color);
+          margin-bottom: 16px;
+          letter-spacing: 0.5px;
+        }
+        .field-container {
+          margin-bottom: 16px;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        .field-container:last-child {
+          margin-bottom: 0;
+        }
+        .field-container ultra-color-picker {
+          width: 100%;
+          max-width: 100%;
+          display: block;
+          box-sizing: border-box;
+        }
+        .field-title {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 4px;
+          color: var(--primary-text-color);
+        }
+        .field-description {
+          font-size: 13px;
+          color: var(--secondary-text-color);
+          margin-bottom: 12px;
+          opacity: 0.8;
+          line-height: 1.4;
+        }
+        .toggle-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+          padding: 4px 0;
+          width: 100%;
+          max-width: 100%;
+        }
+        .toggle-row .field-title {
+          margin: 0 !important;
+          padding: 0 !important;
+          flex: 1 1 auto;
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--primary-text-color);
+          line-height: 1.4;
+        }
+        .toggle-row ha-switch {
+          flex: 0 0 auto;
+        }
+        .gap-control-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .gap-slider {
+          flex: 1;
+          height: 6px;
+          background: var(--divider-color);
+          border-radius: 3px;
+          outline: none;
+          appearance: none;
+          -webkit-appearance: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .gap-slider::-webkit-slider-thumb {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 20px;
+          height: 20px;
+          background: var(--primary-color);
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .gap-slider::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          background: var(--primary-color);
+          border-radius: 50%;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .gap-slider:hover {
+          background: var(--primary-color);
+          opacity: 0.7;
+        }
+        .gap-slider:hover::-webkit-slider-thumb {
+          transform: scale(1.1);
+        }
+        .gap-slider:hover::-moz-range-thumb {
+          transform: scale(1.1);
+        }
+        .gap-input {
+          width: 48px !important;
+          max-width: 48px !important;
+          min-width: 48px !important;
+          padding: 4px 6px !important;
+          border: 1px solid var(--divider-color);
+          border-radius: 4px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font-size: 13px;
+          text-align: center;
+          transition: border-color 0.2s ease;
+        }
+        .gap-input:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+        }
+        input[type='text'] {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 4px;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font-size: 14px;
+          transition: border-color 0.2s ease;
+        }
+        input[type='text']:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+        }
+      </style>
+      <div class="row-general-settings">
+        <!-- Row Name Section -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.layout.row_name', this.hass?.locale?.language || 'en', 'Row Name')}
+          </div>
+          <div class="field-container">
+            <div class="field-description">
+              ${localize(
+                'editor.layout.row_name_desc',
+                this.hass?.locale?.language || 'en',
+                'Give this row a custom name to make it easier to identify in the editor.'
+              )}
+            </div>
+            <input
+              type="text"
+              .value=${(row as any).row_name || ''}
+              placeholder="Enter row name..."
+              @input=${(e: Event) => {
+                const value = (e.target as HTMLInputElement).value;
+                this._updateRow({ row_name: value } as any);
+              }}
+            />
+          </div>
         </div>
-      </div>
-      <div class="settings-section">
-        <ultra-color-picker
-          .label=${localize(
-            'editor.layout.row_background_color',
-            this.hass?.locale?.language || 'en',
-            'Row Background Color'
-          )}
-          .value=${row.background_color || ''}
-          .defaultValue=${'var(--ha-card-background, var(--card-background-color, #fff))'}
-          .hass=${this.hass}
-          @value-changed=${(e: CustomEvent) => {
-            const value = e.detail.value;
-            this._updateRow({ background_color: value });
-          }}
-        ></ultra-color-picker>
-      </div>
-      <div class="settings-section">
-        <label
-          >${localize(
-            'editor.layout.column_gap',
-            this.hass?.locale?.language || 'en',
-            'Column Gap (px)'
-          )}:</label
-        >
-        <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
-          <input
-            type="range"
-            class="gap-slider"
-            min="0"
-            max="50"
-            step="1"
-            .value="${row.gap ?? 16}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const value = Number(target.value);
-              this._updateRow({ gap: value });
-            }}
-          />
-          <input
-            type="number"
-            class="gap-input"
-            min="0"
-            max="50"
-            step="1"
-            .value="${row.gap ?? 16}"
-            @input=${(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              const value = Number(target.value);
-              if (!isNaN(value)) {
-                this._updateRow({ gap: value });
-              }
-            }}
-            @keydown=${(e: KeyboardEvent) => {
-              if (e.key === 'Enter') {
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-          />
+
+        <!-- Row Background Color Section -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize(
+              'editor.layout.row_background_color',
+              this.hass?.locale?.language || 'en',
+              'Row Background Color'
+            )}
+          </div>
+          <div class="field-container">
+            <ultra-color-picker
+              .value=${row.background_color || ''}
+              .defaultValue=${'var(--ha-card-background, var(--card-background-color, #fff))'}
+              .hass=${this.hass}
+              @value-changed=${(e: CustomEvent) => {
+                const value = e.detail.value;
+                this._updateRow({ background_color: value });
+              }}
+            ></ultra-color-picker>
+          </div>
+        </div>
+
+        <!-- Column Gap Section -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize(
+              'editor.layout.column_gap',
+              this.hass?.locale?.language || 'en',
+              'Column Gap'
+            )}
+          </div>
+          <div class="field-container">
+            <div class="field-description">
+              ${localize(
+                'editor.layout.column_gap_desc',
+                this.hass?.locale?.language || 'en',
+                'Set the spacing between columns in pixels.'
+              )}
+            </div>
+            <div class="gap-control-container">
+              <input
+                type="range"
+                class="gap-slider"
+                min="0"
+                max="50"
+                step="1"
+                .value="${row.gap ?? 16}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  this._updateRow({ gap: value });
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="0"
+                max="50"
+                step="1"
+                .value="${row.gap ?? 16}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    this._updateRow({ gap: value });
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+              <span style="font-size: 13px; color: var(--secondary-text-color);">px</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row Width Section -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.layout.row_width', this.hass?.locale?.language || 'en', 'Row Width')}
+          </div>
+          <div class="field-container">
+            <div class="toggle-row">
+              <div class="field-title">
+                ${localize(
+                  'editor.layout.full_width',
+                  this.hass?.locale?.language || 'en',
+                  'Full Width'
+                )}
+              </div>
+              <ha-switch
+                .checked=${row.full_width !== false}
+                @change=${(e: Event) => {
+                  const target = e.target as any;
+                  this._updateRow({ full_width: target.checked });
+                }}
+              ></ha-switch>
+            </div>
+            <div class="field-description">
+              ${localize(
+                'editor.layout.full_width_desc',
+                this.hass?.locale?.language || 'en',
+                'When enabled, the row spans the full width of the card. When disabled, you can set a custom width percentage.'
+              )}
+            </div>
+            ${row.full_width === false
+              ? html`
+                  <div class="field-container" style="margin-top: 16px;">
+                    <div class="field-title">
+                      ${localize(
+                        'editor.layout.width_percent',
+                        this.hass?.locale?.language || 'en',
+                        'Width Percentage'
+                      )}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.layout.width_percent_desc',
+                        this.hass?.locale?.language || 'en',
+                        'Set the row width as a percentage of the card width (0-100%).'
+                      )}
+                    </div>
+                    <div class="gap-control-container">
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="0"
+                        max="100"
+                        step="1"
+                        .value="${row.width_percent !== undefined ? row.width_percent : 100}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          this._updateRow({ width_percent: value });
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="0"
+                        max="100"
+                        step="1"
+                        .value="${row.width_percent !== undefined ? row.width_percent : 100}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = Number(target.value);
+                          if (!isNaN(value) && value >= 0 && value <= 100) {
+                            this._updateRow({ width_percent: value });
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                      />
+                      <span style="font-size: 13px; color: var(--secondary-text-color);">%</span>
+                    </div>
+                  </div>
+                `
+              : ''}
+          </div>
         </div>
       </div>
     `;
@@ -8159,6 +8452,23 @@ export class LayoutTab extends LitElement {
               this.hass?.locale?.language || 'en',
               'Right'
             )}
+          </option>
+          <option value="space-between">
+            ${localize(
+              'editor.common.space_between',
+              this.hass?.locale?.language || 'en',
+              'Space Between'
+            )}
+          </option>
+          <option value="space-around">
+            ${localize(
+              'editor.common.space_around',
+              this.hass?.locale?.language || 'en',
+              'Space Around'
+            )}
+          </option>
+          <option value="justify">
+            ${localize('editor.common.justify', this.hass?.locale?.language || 'en', 'Justify')}
           </option>
           <option value="stretch">
             ${localize(

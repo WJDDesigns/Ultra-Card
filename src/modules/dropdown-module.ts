@@ -7,7 +7,14 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { TemplateService } from '../services/template-service';
+import {
+  parseUnifiedTemplate,
+  hasTemplateError,
+  isStringResult,
+} from '../utils/template-parser';
 import '../components/ultra-color-picker';
+import '../components/ultra-template-editor';
 
 export class UltraDropdownModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -30,6 +37,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     string,
     { module: DropdownModule; hass: HomeAssistant; config?: UltraCardConfig }
   > = new Map(); // Store module contexts for event handling
+  private _templateService?: TemplateService;
 
   // Trigger preview update for reactive UI
 
@@ -63,6 +71,8 @@ export class UltraDropdownModule extends BaseUltraModule {
       entity_option_customization: {}, // Empty customization by default
       current_selection: 'Turn On Lights', // Default to first option
       track_state: true, // Enable state tracking by default
+      unified_template_mode: false,
+      unified_template: '',
       // label removed
       // Global actions
       tap_action: { action: 'nothing' },
@@ -461,6 +471,99 @@ export class UltraDropdownModule extends BaseUltraModule {
                     `
                   : ''}
               </div>
+
+              <!-- Unified Template Section -->
+              ${dropdownModule.source_mode === 'manual'
+                ? html`
+                    <div class="template-section" style="margin-bottom: 24px;">
+                      <div class="template-header">
+                        <div class="switch-container">
+                          <label class="switch-label"
+                            >${localize(
+                              'editor.dropdown.unified_template_section.title',
+                              lang,
+                              'Unified Template'
+                            )}</label
+                          >
+                          <label class="switch">
+                            <input
+                              type="checkbox"
+                              .checked=${dropdownModule.unified_template_mode || false}
+                              @change=${(e: Event) => {
+                                const checked = (e.target as HTMLInputElement).checked;
+                                updateModule({ unified_template_mode: checked });
+                              }}
+                            />
+                            <span class="slider round"></span>
+                          </label>
+                        </div>
+                        <div class="template-description">
+                          ${localize(
+                            'editor.dropdown.unified_template_section.desc',
+                            lang,
+                            'Use a single Jinja2 template to generate all dropdown options with icons, labels, and colors. Return a JSON array of option objects. When enabled, manual options are replaced by template-generated options.'
+                          )}
+                        </div>
+                      </div>
+
+                      ${dropdownModule.unified_template_mode
+                        ? html`
+                            <div class="template-content">
+                              <ultra-template-editor
+                                .hass=${hass}
+                                .value=${dropdownModule.unified_template || ''}
+                                .placeholder=${'[\n  {"label": "Heating", "icon": "mdi:fire", "icon_color": "#FF5722"},\n  {"label": "Cooling", "icon": "mdi:snowflake", "icon_color": "#2196F3"},\n  {"label": "Auto", "icon": "mdi:autorenew", "icon_color": "#4CAF50"}\n]'}
+                                .minHeight=${200}
+                                .maxHeight=${500}
+                                @value-changed=${(e: CustomEvent) => {
+                                  updateModule({ unified_template: e.detail.value });
+                                }}
+                              ></ultra-template-editor>
+                              <div class="template-help">
+                                <p><strong>Template must return a JSON array of options:</strong></p>
+                                <code
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px; margin-top: 8px;"
+                                >
+                                  [<br />
+                                  &nbsp;&nbsp;{"label": "Option 1", "icon": "mdi:home", "icon_color": "blue"},<br />
+                                  &nbsp;&nbsp;{"label": "Option 2", "icon": "mdi:car", "icon_color": "red"},<br />
+                                  &nbsp;&nbsp;{"label": "Option 3", "icon": "mdi:star"}<br />
+                                  ]
+                                </code>
+                                <p style="margin-top: 12px;"><strong>Example - Ecobee Climate Modes (with actions):</strong></p>
+                                <code
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px; margin-top: 8px;"
+                                >
+                                  {% set modes = state_attr('climate.ecobee', 'hvac_modes') | default(['off', 'heat', 'cool', 'auto', 'heat_cool']) %}<br />
+                                  [<br />
+                                  {% for mode in modes %}<br />
+                                  &nbsp;&nbsp;{<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"label": "{% if mode == 'heat' %}Heating{% elif mode == 'cool' %}Cooling{% elif mode == 'auto' %}Auto{% elif mode == 'heat_cool' %}Heat/Cool{% else %}Off{% endif %}",<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"icon": "{% if mode == 'heat' %}mdi:fire{% elif mode == 'cool' %}mdi:snowflake{% elif mode == 'auto' %}mdi:autorenew{% elif mode == 'heat_cool' %}mdi:thermostat{% else %}mdi:thermostat-off{% endif %}",<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"icon_color": "{% if mode == 'heat' %}#FF5722{% elif mode == 'cool' %}#2196F3{% elif mode == 'auto' %}#4CAF50{% elif mode == 'heat_cool' %}#FF9800{% else %}#9E9E9E{% endif %}",<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"mode": "{{ mode }}"<br />
+                                  &nbsp;&nbsp;}{% if not loop.last %},{% endif %}<br />
+                                  {% endfor %}<br />
+                                  ]
+                                </code>
+                                <p style="margin-top: 12px;">
+                                  <strong>Important:</strong> To enable actions (clicking options to change HVAC mode), you must:
+                                </p>
+                                <ul style="margin-top: 8px; padding-left: 20px;">
+                                  <li>Include a <code>"mode"</code> field in each option with the actual HVAC mode value (e.g., "heat", "cool", "auto")</li>
+                                  <li>Set a <code>source_entity</code> in the Entity Source Configuration section (even if Source Mode is Manual)</li>
+                                  <li>When an option is clicked, it will automatically call <code>climate.set_hvac_mode</code> service</li>
+                                </ul>
+                                <p style="margin-top: 12px;">
+                                  <strong>Note:</strong> When Unified Template is enabled, manually configured options are ignored. The template dynamically generates all options with their icons, labels, and colors. The selected option's display automatically uses the properties from the template-generated options.
+                                </p>
+                              </div>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  `
+                : ''}
 
               <!-- Dropdown Options -->
               <div class="settings-section">
@@ -1270,16 +1373,22 @@ export class UltraDropdownModule extends BaseUltraModule {
     }
 
     if (!isEntityMode && (!dropdownModule.options || dropdownModule.options.length === 0)) {
-      return this.renderGradientErrorState(
-        'Add Options',
-        'Configure dropdown options in the General tab',
-        'mdi:format-list-bulleted'
-      );
+      // Check if unified template is enabled
+      if (!dropdownModule.unified_template_mode || !dropdownModule.unified_template) {
+        return this.renderGradientErrorState(
+          'Add Options',
+          'Configure dropdown options in the General tab or enable Unified Template',
+          'mdi:format-list-bulleted'
+        );
+      }
     }
 
     // Determine if we're in entity source mode
     const isEntityModeValid =
       dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
+
+    // Check if unified template is enabled
+    const isUnifiedTemplateMode = dropdownModule.unified_template_mode && dropdownModule.unified_template;
 
     // Get options based on mode
     let availableOptions: Array<{
@@ -1287,6 +1396,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       icon?: string;
       icon_color?: string;
       use_state_color?: boolean;
+      mode?: string; // Store mode/value for action mapping
     }> = [];
     let currentSelectedLabel: string | undefined;
 
@@ -1305,6 +1415,117 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       // In entity mode, always show current state (no placeholder mode)
       currentSelectedLabel = entityState;
+    } else if (isUnifiedTemplateMode) {
+      // Unified template mode: get options and display properties from template
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      const templateHash = this._hashString(dropdownModule.unified_template!);
+      const templateKey = `unified_dropdown_${dropdownModule.id}_${templateHash}`;
+
+      if (!hass.__uvc_template_strings) {
+        hass.__uvc_template_strings = {};
+      }
+
+      if (
+        this._templateService &&
+        !this._templateService.hasTemplateSubscription(templateKey)
+      ) {
+        // Subscribe to template for updates
+        this._templateService.subscribeToTemplate(
+          dropdownModule.unified_template!,
+          templateKey,
+          () => {
+            if (typeof window !== 'undefined') {
+              if (!window._ultraCardUpdateTimer) {
+                window._ultraCardUpdateTimer = setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  window._ultraCardUpdateTimer = null;
+                }, 50);
+              }
+            }
+          }
+        );
+        
+        // Try initial evaluation via API for immediate result
+        if (hass.callApi) {
+          hass.callApi<string>('POST', 'template', {
+            template: dropdownModule.unified_template!,
+          }).then((result) => {
+            if (!hass.__uvc_template_strings) {
+              hass.__uvc_template_strings = {};
+            }
+            hass.__uvc_template_strings[templateKey] = result;
+            // Trigger update
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
+          }).catch((error) => {
+            console.error('Error evaluating template initially:', error);
+          });
+        }
+      }
+
+      const unifiedTemplateResult = hass?.__uvc_template_strings?.[templateKey];
+      if (unifiedTemplateResult) {
+        try {
+          const resultStr = String(unifiedTemplateResult).trim();
+          let parsedData: any = null;
+
+          // Try to parse as JSON
+          if (resultStr.startsWith('{') && resultStr.endsWith('}')) {
+            // Object format: { "options": [...], "selected": {...} }
+            parsedData = JSON.parse(resultStr);
+          } else if (resultStr.startsWith('[') && resultStr.endsWith(']')) {
+            // Array format: just options array
+            parsedData = { options: JSON.parse(resultStr) };
+          } else {
+            // Simple string array (comma/newline separated)
+            const simpleOptions = resultStr.split(/[,\n]/).map(s => s.trim()).filter(s => s);
+            parsedData = { options: simpleOptions.map(label => ({ label })) };
+          }
+
+          if (parsedData && parsedData.options && Array.isArray(parsedData.options)) {
+            availableOptions = parsedData.options.map((opt: any, index: number) => ({
+              label: String(opt.label || opt.name || `Option ${index + 1}`),
+              icon: opt.icon ? String(opt.icon) : undefined,
+              icon_color: opt.icon_color ? String(opt.icon_color) : undefined,
+              use_state_color: opt.use_state_color || false,
+              // Store original mode/value for action mapping
+              mode: opt.mode || opt.value || opt.label,
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing unified template:', error);
+          console.error('Template result:', unifiedTemplateResult);
+          // Fallback to manual options
+          availableOptions = dropdownModule.options?.map(opt => ({
+            label: opt.label,
+            icon: opt.icon,
+            icon_color: opt.icon_color,
+            use_state_color: opt.use_state_color,
+          })) || [];
+        }
+      } else {
+        // Template not evaluated yet - try to evaluate synchronously as fallback
+        // This handles the case where template hasn't been subscribed yet
+        console.log('Template not evaluated yet, using manual options as fallback');
+        availableOptions = dropdownModule.options?.map(opt => ({
+          label: opt.label,
+          icon: opt.icon,
+          icon_color: opt.icon_color,
+          use_state_color: opt.use_state_color,
+        })) || [];
+      }
+
+      // Handle selection based on tracking mode
+      if (dropdownModule.track_state) {
+        const moduleId = dropdownModule.id;
+        const storedSelection =
+          this.currentSelection.get(moduleId) || dropdownModule.current_selection;
+        currentSelectedLabel = storedSelection;
+      }
     } else {
       // Manual mode: use configured options
       availableOptions = dropdownModule.options.map(opt => ({
@@ -1345,6 +1566,14 @@ export class UltraDropdownModule extends BaseUltraModule {
     const hoverEffect = (dropdownModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    // Evaluate unified template for selected option display (if not using unified template for options)
+    let displayIcon: string | undefined = undefined;
+    let displayLabel: string | undefined = undefined;
+    let displayIconColor: string | undefined = undefined;
+    
+    // If using unified template mode, display properties come from the selected option
+    // No need for separate display template since unified template handles everything
+
     return html`
       <div
         class="dropdown-module-container ${hoverEffectClass}"
@@ -1368,17 +1597,27 @@ export class UltraDropdownModule extends BaseUltraModule {
                 <div style="display: flex; align-items: center; gap: 8px;">
                   ${currentSelectedOption
                     ? html`
-                        ${currentSelectedOption.icon
-                          ? html`<ha-icon
-                              icon="${currentSelectedOption.icon}"
-                              style="color: ${this.getOptionIconColor(
-                                currentSelectedOption,
-                                hass,
-                                dropdownModule
-                              )};"
-                            ></ha-icon>`
-                          : ''}
-                        <span>${currentSelectedOption.label}</span>
+                        ${(() => {
+                          // Use template icon if available, otherwise fall back to option icon
+                          const iconToUse = displayIcon || currentSelectedOption.icon;
+                          // Use template label if available, otherwise fall back to option label
+                          const labelToUse = displayLabel || currentSelectedOption.label;
+                          // Use template icon color if available, otherwise use option icon color
+                          const iconColorToUse = displayIconColor || this.getOptionIconColor(
+                            currentSelectedOption,
+                            hass,
+                            dropdownModule
+                          );
+                          return html`
+                            ${iconToUse
+                              ? html`<ha-icon
+                                  icon="${iconToUse}"
+                                  style="color: ${iconColorToUse};"
+                                ></ha-icon>`
+                              : ''}
+                            <span>${labelToUse}</span>
+                          `;
+                        })()}
                       `
                     : html`<span style="color: var(--secondary-text-color);"
                         >${placeholderText}</span
@@ -1500,6 +1739,27 @@ export class UltraDropdownModule extends BaseUltraModule {
                               (e.currentTarget as HTMLElement) || undefined,
                               config
                             );
+                          } else if (isUnifiedTemplateMode && option.mode) {
+                            // Template-generated option - try to execute climate service call if source_entity is set
+                            // This allows template options to work with climate entities
+                            const sourceEntity = dropdownModule.source_entity;
+                            if (sourceEntity && sourceEntity.startsWith('climate.')) {
+                              this.selectOption(option.label, dropdownModule);
+                              hass.callService('climate', 'set_hvac_mode', {
+                                entity_id: sourceEntity,
+                                hvac_mode: option.mode,
+                              }).then(() => {
+                                console.log(`Set ${sourceEntity} to ${option.mode}`);
+                              }).catch((error) => {
+                                console.error('Failed to set HVAC mode:', error);
+                              });
+                            } else {
+                              // No action configured for template option
+                              this.selectOption(option.label, dropdownModule);
+                            }
+                          } else {
+                            // No action found, just track selection
+                            this.selectOption(option.label, dropdownModule);
                           }
                         }
 
@@ -1817,6 +2077,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     const { module: dropdownModule, hass, config } = context;
     const isEntityMode = dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
+    const isUnifiedTemplateMode = dropdownModule.unified_template_mode && dropdownModule.unified_template;
 
     // Get all option elements in the portaled dropdown
     const optionElements = portaledDropdown.querySelectorAll('.dropdown-option');
@@ -1836,6 +2097,78 @@ export class UltraDropdownModule extends BaseUltraModule {
           if (optionValue) {
             console.log('Entity option clicked:', optionValue);
             this.updateEntitySelection(dropdownModule, optionValue, hass);
+            this.closeDropdown(undefined, instanceId);
+          }
+        });
+
+        // Hover effects
+        newOptionEl.addEventListener('mouseenter', () => {
+          newOptionEl.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
+        });
+        newOptionEl.addEventListener('mouseleave', () => {
+          newOptionEl.style.backgroundColor = 'transparent';
+        });
+      });
+    } else if (isUnifiedTemplateMode) {
+      // Unified template mode: get options from template
+      const templateHash = this._hashString(dropdownModule.unified_template!);
+      const templateKey = `unified_dropdown_${dropdownModule.id}_${templateHash}`;
+      const unifiedTemplateResult = hass?.__uvc_template_strings?.[templateKey];
+      
+      let templateOptions: Array<{ label: string; mode?: string }> = [];
+      if (unifiedTemplateResult) {
+        try {
+          const resultStr = String(unifiedTemplateResult).trim();
+          let parsedData: any = null;
+          
+          if (resultStr.startsWith('{') && resultStr.endsWith('}')) {
+            parsedData = JSON.parse(resultStr);
+          } else if (resultStr.startsWith('[') && resultStr.endsWith(']')) {
+            parsedData = { options: JSON.parse(resultStr) };
+          }
+          
+          if (parsedData && parsedData.options && Array.isArray(parsedData.options)) {
+            templateOptions = parsedData.options.map((opt: any) => ({
+              label: String(opt.label || opt.name || 'Option'),
+              mode: opt.mode || opt.value,
+            }));
+          }
+        } catch (error) {
+          console.error('Error parsing template in portaled handler:', error);
+        }
+      }
+
+      optionElements.forEach((optionEl, index) => {
+        const newOptionEl = optionEl.cloneNode(true) as HTMLElement;
+        optionEl.replaceWith(newOptionEl);
+        
+        const templateOption = templateOptions[index];
+        
+        newOptionEl.addEventListener('click', e => {
+          e.stopPropagation();
+          if (templateOption) {
+            console.log('Template option clicked:', templateOption.label);
+            
+            // Track state if enabled
+            if (dropdownModule.track_state) {
+              this.currentSelection.set(instanceId, templateOption.label);
+            }
+            
+            this.selectOption(templateOption.label, dropdownModule);
+            
+            // Execute action if mode is set and source_entity is a climate entity
+            const sourceEntity = dropdownModule.source_entity;
+            if (templateOption.mode && sourceEntity && sourceEntity.startsWith('climate.')) {
+              hass.callService('climate', 'set_hvac_mode', {
+                entity_id: sourceEntity,
+                hvac_mode: templateOption.mode,
+              }).then(() => {
+                console.log(`Set ${sourceEntity} to ${templateOption.mode}`);
+              }).catch((error) => {
+                console.error('Failed to set HVAC mode:', error);
+              });
+            }
+            
             this.closeDropdown(undefined, instanceId);
           }
         });
@@ -1970,6 +2303,17 @@ export class UltraDropdownModule extends BaseUltraModule {
     return Object.entries(styles)
       .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
       .join('; ');
+  }
+
+  // Simple string hash function for template cache keys
+  private _hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      const chr = str.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {
