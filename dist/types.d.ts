@@ -145,8 +145,8 @@ export interface SeparatorModule extends BaseModule {
     separator_style?: 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank';
     orientation?: 'horizontal' | 'vertical';
     thickness?: number;
-    width_percent?: number;
-    height_px?: number;
+    width_percent?: number | string;
+    height_px?: number | string;
     color?: string;
     show_title?: boolean;
     title?: string;

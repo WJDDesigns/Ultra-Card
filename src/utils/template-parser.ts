@@ -23,6 +23,23 @@ export interface UnifiedTemplateResult {
   value?: number | string;
   label?: string;
 
+  // Display properties (graphs module)
+  colors?: string[]; // Array of colors for per-entity coloring
+  global_color?: string; // Single color applied to all entities
+  fill_area?: boolean; // Control line chart area fill
+  pie_fill?: number | string; // Control pie/donut slice fill percentage
+
+  // Display properties (spinbox module)
+  button_background_color?: string;
+  button_text_color?: string;
+  value_color?: string;
+
+  // Display properties (camera module)
+  entity?: string; // Camera entity ID
+  visible?: boolean; // Visibility control
+  overlay_text?: string; // Overlay text to display
+  overlay_color?: string; // Overlay text color
+
   // Error information
   _error?: string;
   _isString?: boolean; // True if result was a simple string (not JSON)
@@ -63,6 +80,37 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     // Bar module properties
     if (templateResult.value !== undefined) result.value = templateResult.value;
     if (templateResult.label !== undefined) result.label = String(templateResult.label);
+
+    // Graphs module properties
+    if (templateResult.colors !== undefined && Array.isArray(templateResult.colors)) {
+      result.colors = templateResult.colors.map(c => String(c));
+    }
+    if (templateResult.global_color !== undefined)
+      result.global_color = String(templateResult.global_color);
+    if (templateResult.fill_area !== undefined)
+      result.fill_area = Boolean(templateResult.fill_area);
+    if (templateResult.pie_fill !== undefined) {
+      const pieFill = typeof templateResult.pie_fill === 'number' 
+        ? templateResult.pie_fill 
+        : parseFloat(String(templateResult.pie_fill));
+      if (!isNaN(pieFill)) result.pie_fill = pieFill;
+    }
+
+    // Spinbox module properties
+    if (templateResult.button_background_color !== undefined)
+      result.button_background_color = String(templateResult.button_background_color);
+    if (templateResult.button_text_color !== undefined)
+      result.button_text_color = String(templateResult.button_text_color);
+    if (templateResult.value_color !== undefined)
+      result.value_color = String(templateResult.value_color);
+
+    // Camera module properties
+    if (templateResult.entity !== undefined) result.entity = String(templateResult.entity);
+    if (templateResult.visible !== undefined) result.visible = Boolean(templateResult.visible);
+    if (templateResult.overlay_text !== undefined)
+      result.overlay_text = String(templateResult.overlay_text);
+    if (templateResult.overlay_color !== undefined)
+      result.overlay_color = String(templateResult.overlay_color);
 
     return result;
   }
@@ -106,6 +154,37 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       // Bar module properties
       if (parsed.value !== undefined) result.value = parsed.value;
       if (parsed.label !== undefined) result.label = String(parsed.label);
+
+      // Graphs module properties
+      if (parsed.colors !== undefined && Array.isArray(parsed.colors)) {
+        result.colors = parsed.colors.map(c => String(c));
+      }
+      if (parsed.global_color !== undefined)
+        result.global_color = String(parsed.global_color);
+      if (parsed.fill_area !== undefined)
+        result.fill_area = Boolean(parsed.fill_area);
+      if (parsed.pie_fill !== undefined) {
+        const pieFill = typeof parsed.pie_fill === 'number' 
+          ? parsed.pie_fill 
+          : parseFloat(String(parsed.pie_fill));
+        if (!isNaN(pieFill)) result.pie_fill = pieFill;
+      }
+
+      // Spinbox module properties
+      if (parsed.button_background_color !== undefined)
+        result.button_background_color = String(parsed.button_background_color);
+      if (parsed.button_text_color !== undefined)
+        result.button_text_color = String(parsed.button_text_color);
+      if (parsed.value_color !== undefined)
+        result.value_color = String(parsed.value_color);
+
+      // Camera module properties
+      if (parsed.entity !== undefined) result.entity = String(parsed.entity);
+      if (parsed.visible !== undefined) result.visible = Boolean(parsed.visible);
+      if (parsed.overlay_text !== undefined)
+        result.overlay_text = String(parsed.overlay_text);
+      if (parsed.overlay_color !== undefined)
+        result.overlay_color = String(parsed.overlay_color);
 
       return result;
     } catch (error) {

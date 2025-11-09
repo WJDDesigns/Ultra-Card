@@ -659,6 +659,8 @@ export class UltraCard extends LitElement {
   private _currentScale: number = 1;
   private _lastMeasuredWidth: number = 0;
   private _lastContentWidth: number = 0;
+  private _lastContentWidthCheck: number = 0;
+  private _lastScaleTime: number = 0;
   private _visibilityChangeHandler?: () => void;
   private _windowResizeHandler?: () => void;
   private _isScalingInProgress: boolean = false;
@@ -696,6 +698,15 @@ export class UltraCard extends LitElement {
       return;
     }
 
+    // Cooldown check: prevent immediate re-triggering after scaling is applied
+    if (
+      this._lastScaleTime > 0 &&
+      Date.now() - this._lastScaleTime < 300 &&
+      this._currentScale < 1
+    ) {
+      return;
+    }
+
     if (this._isScalingInProgress) {
       // Avoid overlapping scale calculations that can compound the scale
       return;
@@ -730,20 +741,29 @@ export class UltraCard extends LitElement {
       const measuredAvailableWidth = this.offsetWidth || availableWidth;
       const contentWidth = container.scrollWidth;
 
+      // Increased threshold from 4px to 8px for content width changes
+      // Add stability check: compare with previous check to avoid fluctuations
+      const contentChanged =
+        forcedCheck ||
+        (Math.abs(contentWidth - previousContentWidth) >= 8 &&
+          Math.abs(contentWidth - this._lastContentWidthCheck) >= 8);
       const widthChanged =
         forcedCheck || Math.abs(measuredAvailableWidth - previousMeasuredWidth) >= 4;
-      const contentChanged = forcedCheck || Math.abs(contentWidth - previousContentWidth) >= 4;
       const shouldRecalculate = widthChanged || contentChanged || wasScaledDown;
 
       this._lastMeasuredWidth = measuredAvailableWidth;
       this._lastContentWidth = contentWidth;
+      this._lastContentWidthCheck = contentWidth;
 
       if (!shouldRecalculate) {
+        // Reconnect observer after a delay to prevent immediate re-triggering
         if (this._resizeObserver && this._isScalingEnabled()) {
-          requestAnimationFrame(() => {
-            this._resizeObserver?.observe(this);
+          setTimeout(() => {
+            if (this._resizeObserver && this._isScalingEnabled()) {
+              this._resizeObserver.observe(this);
+            }
             this._isScalingInProgress = false;
-          });
+          }, 100);
         } else {
           this._isScalingInProgress = false;
         }
@@ -770,19 +790,24 @@ export class UltraCard extends LitElement {
         container.style.transform = `scale(${finalScale})`;
         container.style.transformOrigin = 'top left';
         container.style.width = `${100 / finalScale}%`;
+        // Update scale time when scaling is actually applied
+        this._lastScaleTime = Date.now();
       } else {
         container.style.transform = '';
         container.style.width = '';
         container.style.transformOrigin = '';
+        // Reset scale time when scale returns to 1
+        this._lastScaleTime = 0;
       }
 
+      // Extend observer disconnect: reconnect after delay to prevent immediate re-triggering
       if (this._resizeObserver && this._isScalingEnabled()) {
-        requestAnimationFrame(() => {
+        setTimeout(() => {
           if (this._resizeObserver && this._isScalingEnabled()) {
             this._resizeObserver.observe(this);
           }
           this._isScalingInProgress = false;
-        });
+        }, 100);
       } else {
         this._isScalingInProgress = false;
       }
@@ -1719,7 +1744,12 @@ export class UltraCard extends LitElement {
       // Margin (override default marginBottom if design margin is set)
       // If full_width is false and no explicit margins are set, center the row with auto margins
       margin:
-        row.full_width === false && !design.margin_top && !design.margin_bottom && !design.margin_left && !design.margin_right && !row.margin
+        row.full_width === false &&
+        !design.margin_top &&
+        !design.margin_bottom &&
+        !design.margin_left &&
+        !design.margin_right &&
+        !row.margin
           ? '0 auto' // Center horizontally when not full width
           : design.margin_top || design.margin_bottom || design.margin_left || design.margin_right
             ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '0'} ${design.margin_left || '0'}`
@@ -1741,10 +1771,13 @@ export class UltraCard extends LitElement {
       left: design.left || 'auto',
       right: design.right || 'auto',
       zIndex: design.z_index || 'auto',
-      // Size - respect row width settings unless design width is explicitly set
-      width: design.width || (row.full_width === false 
-        ? `${row.width_percent !== undefined ? row.width_percent : 100}%`
-        : '100%'),
+      // Size - respect row width settings only if user explicitly controls it
+      // If design.width is set, use it. Otherwise, only set width if full_width is false (user control)
+      width:
+        design.width ||
+        (row.full_width === false && row.width_percent !== undefined
+          ? `${row.width_percent}%`
+          : undefined),
       height: design.height || 'auto',
       maxWidth: design.max_width || 'none',
       maxHeight: design.max_height || 'none',
@@ -1807,8 +1840,8 @@ export class UltraCard extends LitElement {
     const design = column.design || {};
 
     // When using space-between, space-around, or justify, switch to horizontal layout
-    const useHorizontalLayout = 
-      column.horizontal_alignment === 'space-between' || 
+    const useHorizontalLayout =
+      column.horizontal_alignment === 'space-between' ||
       column.horizontal_alignment === 'space-around' ||
       column.horizontal_alignment === 'justify';
 
@@ -1900,8 +1933,8 @@ export class UltraCard extends LitElement {
       left: design.left || 'auto',
       right: design.right || 'auto',
       zIndex: design.z_index || 'auto',
-      // Size
-      width: design.width || '100%',
+      // Size - only set width if user explicitly controls it, otherwise let grid handle sizing
+      width: design.width || undefined,
       height: design.height || 'auto',
       maxWidth: design.max_width || 'none',
       maxHeight: design.max_height || 'none',

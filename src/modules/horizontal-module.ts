@@ -30,8 +30,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return {
       id: id || this.generateId('horizontal'),
       type: 'horizontal',
-      alignment: 'center', // Default horizontal alignment to center
-      vertical_alignment: 'center', // Default vertical alignment to center
+      alignment: undefined, // No default - let flexbox work naturally
+      vertical_alignment: undefined, // No default - let flexbox work naturally
       gap: 0.7,
       wrap: false,
       modules: [],
@@ -98,7 +98,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
               ],
               onChange: (e: CustomEvent) => {
                 const next = e.detail.value.alignment;
-                const prev = horizontalModule.alignment || 'center';
+                const prev = horizontalModule.alignment;
                 if (next === prev) return;
 
                 updateModule(e.detail.value);
@@ -278,85 +278,20 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     // Container styles for positioning and effects
     const gapValue = horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7;
-    // Prefer centered horizontal alignment by default
-    const horizontalAlign =
-      horizontalModule.alignment !== undefined && horizontalModule.alignment !== null
-        ? horizontalModule.alignment
-        : 'center';
+    // Only use alignment if user explicitly sets it - let flexbox work naturally
+    const horizontalAlign = horizontalModule.alignment;
 
-    // Smart default width: fit-content for content-based alignments (wraps to content), 100% for distribution-based (needs full width)
-    const width = ((effective as any).width !== undefined && (effective as any).width !== null && (effective as any).width !== '') 
-      ? (effective as any).width 
-      : (horizontalAlign === 'justify' || horizontalAlign === 'space-between' || horizontalAlign === 'space-around' 
-        ? '100%' 
-        : 'fit-content');
+    // Width: only set if user explicitly controls it, otherwise let flexbox handle sizing naturally
+    // Default behavior: fill container (100% width) like WPBakery columns
+    const width =
+      (effective as any).width !== undefined &&
+      (effective as any).width !== null &&
+      (effective as any).width !== ''
+        ? (effective as any).width
+        : undefined; // No default - let flexbox handle it naturally
 
-    // Determine if height is fit-content (when height is not explicitly set or is auto)
-    const height = (effective as any).height || undefined;
-    const isHeightFitContent = !height || height === 'auto' || height === 'fit-content';
-
-    // Get vertical alignment for margin calculation
-    const verticalAlign = horizontalModule.vertical_alignment || 'center';
-
-    // Calculate margins with auto-positioning based on alignment
-    const baseMargin = this.getMarginCSS(effective);
-    // Parse margin string: "top right bottom left" or "0" if no margins set
-    let marginTop = '0';
-    let marginRight = '0';
-    let marginBottom = '0';
-    let marginLeft = '0';
-    
-    if (baseMargin && baseMargin !== '0') {
-      const marginParts = baseMargin.split(' ');
-      marginTop = marginParts[0] || '0';
-      marginRight = marginParts[1] || '0';
-      marginBottom = marginParts[2] || '0';
-      marginLeft = marginParts[3] || '0';
-    }
-
-    // Check if user explicitly set margins (check both margin object and individual properties)
-    const hasExplicitMarginTop = (effective as any).margin?.top !== undefined || (effective as any).margin_top !== undefined;
-    const hasExplicitMarginRight = (effective as any).margin?.right !== undefined || (effective as any).margin_right !== undefined;
-    const hasExplicitMarginBottom = (effective as any).margin?.bottom !== undefined || (effective as any).margin_bottom !== undefined;
-    const hasExplicitMarginLeft = (effective as any).margin?.left !== undefined || (effective as any).margin_left !== undefined;
-
-    // Apply horizontal auto margins based on alignment when width is fit-content
-    if (width === 'fit-content' && !hasExplicitMarginLeft && !hasExplicitMarginRight) {
-      if (horizontalAlign === 'left') {
-        marginLeft = '0';
-        marginRight = 'auto';
-      } else if (horizontalAlign === 'right') {
-        marginLeft = 'auto';
-        marginRight = '0';
-      } else if (horizontalAlign === 'center') {
-        marginLeft = 'auto';
-        marginRight = 'auto';
-      }
-      // For justify/space-between/space-around, no auto margins (needs full width, so width won't be fit-content anyway)
-    }
-
-    // Apply vertical auto margins based on vertical_alignment when height is fit-content
-    if (isHeightFitContent && !hasExplicitMarginTop && !hasExplicitMarginBottom) {
-      if (verticalAlign === 'top') {
-        marginTop = '0';
-        marginBottom = 'auto';
-      } else if (verticalAlign === 'bottom') {
-        marginTop = 'auto';
-        marginBottom = '0';
-      } else if (verticalAlign === 'center') {
-        marginTop = 'auto';
-        marginBottom = 'auto';
-      }
-      // For stretch/baseline, no auto margins (needs full height)
-    }
-
-    // Build final margin string
-    const finalMargin = `${marginTop} ${marginRight} ${marginBottom} ${marginLeft}`;
-
-    // When width is fit-content, apply margin to wrapper for positioning
-    // When width is 100%, margin stays on inner content for spacing
-    const wrapperMargin = width === 'fit-content' ? finalMargin : undefined;
-    const contentMargin = width === 'fit-content' ? undefined : finalMargin;
+    // Calculate margins - only use user-set margins, no auto-positioning logic
+    const contentMargin = this.getMarginCSS(effective);
 
     const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
@@ -372,7 +307,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
       position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
       zIndex: (effective as any).z_index || 'auto',
       // Respect sizing controls from design/global design
-      // Smart default: fit-content for content-based alignments (wraps to content), 100% for distribution-based (needs full width)
+      // Only set width if user explicitly controls it, otherwise let flexbox handle sizing
       width: width,
       height: (effective as any).height || undefined,
       maxWidth: (effective as any).max_width || undefined,
@@ -384,14 +319,16 @@ export class UltraHorizontalModule extends BaseUltraModule {
       display: 'flex',
       // Always use row direction for horizontal layout
       flexDirection: 'row',
-      // Use horizontal alignment for main axis (justify-content)
-      justifyContent: this.getJustifyContent(horizontalAlign || 'center'),
+      // Only apply justify-content if user explicitly sets alignment
+      justifyContent: horizontalAlign ? this.getJustifyContent(horizontalAlign) : undefined,
       // Only use gap for positive values, use negative margins for negative values
       gap: gapValue >= 0 ? `${gapValue}rem` : '0',
       // Enable wrapping when wrap option is true
       flexWrap: horizontalModule.wrap ? 'wrap' : 'nowrap',
-      // Use vertical alignment for cross-axis (align-items)
-      alignItems: this.getAlignItems(horizontalModule.vertical_alignment || 'center'),
+      // Only apply align-items if user explicitly sets vertical alignment
+      alignItems: horizontalModule.vertical_alignment
+        ? this.getAlignItems(horizontalModule.vertical_alignment)
+        : undefined,
       // width is set above via design props with sensible default
       // Allow fully collapsed layouts when designers set 0 padding/margin
       // Only set min-height if explicitly specified by user, otherwise let content determine height
@@ -402,8 +339,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
-    // Only add margin to containerStyles if contentMargin is defined
-    if (contentMargin !== undefined) {
+    // Only add margin to containerStyles if user explicitly set it
+    if (contentMargin !== undefined && contentMargin !== '0') {
       containerStyles.margin = contentMargin;
     }
 
@@ -501,7 +438,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
       <style>
         ${this.getStyles()}
       </style>
-      <div class="horizontal-module-preview" style="width: ${containerStyles.width === 'fit-content' ? 'fit-content' : '100%'}; ${wrapperMargin ? `margin: ${wrapperMargin};` : ''}">
+      <div
+        class="horizontal-module-preview"
+        style="${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
+      >
         <div
           class="horizontal-preview-content ${hoverEffectClass}"
           style="${this.styleObjectToCss(
@@ -534,44 +474,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
                   const isNegativeGap = gapValue < 0;
 
-                  // In horizontal layouts we want bars and horizontal separators to take remaining width while
-                  // icons and other modules keep their natural width. If alignment is
-                  // 'justify' then allow all children to grow evenly.
-                  const childType = (childModule as any)?.type;
-                  const isBar = childType === 'bar';
-                  const isHorizontalSeparator =
-                    childType === 'separator' &&
-                    ((childModule as any)?.orientation === 'horizontal' ||
-                      !(childModule as any)?.orientation);
-                  const isExternalCard = childType === 'external_card';
-                  const isLayoutChild =
-                    childType === 'horizontal' ||
-                    childType === 'vertical' ||
-                    childType === 'slider';
-                  const allowGrowForAll = horizontalModule.alignment === 'justify';
-                  const shouldGrow =
-                    isBar ||
-                    isHorizontalSeparator ||
-                    isExternalCard ||
-                    allowGrowForAll ||
-                    isLayoutChild;
-                  const flexGrow = shouldGrow ? 1 : 0;
-                  const flexShrink = shouldGrow ? 1 : 0;
-                  const flexBasis = shouldGrow ? '0' : 'content';
-                  // Ensure bars and separators remain visible
-                  const minWidth = isBar ? '80px' : isHorizontalSeparator ? '20px' : '0';
-                  const alignSelf = 'auto';
+                  // Only apply flex-grow when user explicitly sets 'justify' alignment
+                  const shouldGrow = horizontalModule.alignment === 'justify';
 
-                  // Build style string - external cards don't get explicit width
+                  // Build style string - let flexbox handle sizing naturally
                   const baseStyles = `
                     overflow: visible;
-                    flex-grow: ${flexGrow};
-                    flex-shrink: ${flexShrink};
-                    flex-basis: ${flexBasis};
-                    min-width: ${minWidth};
-                    ${!isExternalCard ? `width: auto;` : ''}
-                    ${isExternalCard || isLayoutChild ? `max-width: 100%;` : ''}
-                    align-self: ${alignSelf};
+                    ${shouldGrow ? `flex-grow: 1; flex-basis: 0;` : ''}
                     box-sizing: border-box;
                     margin: ${childMargin};
                   `;
@@ -1097,7 +1006,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return `
       /* Horizontal Module Styles */
       .horizontal-module-preview {
-        width: 100%;
+        /* Let flexbox handle width naturally - no forced width */
         /* No forced min-height - let content and user design properties control height */
       }
 
@@ -1167,36 +1076,48 @@ export class UltraHorizontalModule extends BaseUltraModule {
         font-style: italic;
       }
 
-      /* Ensure module defaults play nicely in a horizontal row */
+      /* Icon modules - let them size naturally, only prevent overflow */
       .child-module-preview .icon-module-preview {
-        /* Icon modules should size to content in rows */
-        width: auto !important;
-        max-width: 100% !important;
+        max-width: 100%;
       }
 
       .child-module-preview .icon-module-container {
-        /* Override any inline width from icon module when inside horizontal rows */
-        width: auto !important;
-        max-width: 100% !important;
-        flex: 0 0 auto !important;
+        /* Let flexbox handle sizing naturally */
+        max-width: 100%;
       }
 
       .child-module-preview .bar-module-preview {
-        /* Bars should expand to available space in rows */
-        width: 100% !important;
-        max-width: 100% !important;
+        /* Bars expand via flex-grow, only prevent overflow */
+        max-width: 100%;
       }
 
-      /* When wrapping is enabled, allow items to maintain their natural size */
+      /* When wrapping is enabled, allow items to shrink naturally */
+      /* flex-shrink: 1 is already the default, so we don't need to set it */
       .horizontal-preview-content[data-wrap="true"] .child-module-preview {
-        flex-shrink: 1;
-        min-width: 0;
+        min-width: 0; /* Allow text truncation */
       }
 
-      /* When wrapping is disabled, compress items to fit in one line */
+      /* When wrapping is disabled, items can shrink to fit */
+      /* flex-shrink: 1 is already the default, so we don't need to set it */
       .horizontal-preview-content:not([data-wrap="true"]) .child-module-preview {
-        flex-shrink: 1;
-        min-width: 0;
+        min-width: 0; /* Allow text truncation */
+      }
+
+      /* CRITICAL: Minimal constraints for nested layout modules - prevent overflow only */
+      /* Like WPBakery, we only use max-width: 100% to prevent overflow, let flexbox handle sizing */
+      .child-module-preview .horizontal-module-preview,
+      .child-module-preview .vertical-module-preview,
+      .child-module-preview .slider-module {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Ensure images and media elements don't overflow (like WPBakery does) */
+      .child-module-preview img,
+      .child-module-preview .image-module-container,
+      .child-module-preview .image-module-preview {
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       /* Standard field styling */

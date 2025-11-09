@@ -278,20 +278,20 @@ export class UltraSeparatorModule extends BaseUltraModule {
                       <div class="field-container" style="margin-bottom: 24px;">
                         <div class="field-title">
                           ${separatorModule.orientation === 'vertical'
-                            ? localize('editor.separator.height', lang, 'Height (px)')
-                            : localize('editor.separator.width', lang, 'Width (%)')}
+                            ? localize('editor.separator.height', lang, 'Height')
+                            : localize('editor.separator.width', lang, 'Width')}
                         </div>
                         <div class="field-description">
                           ${separatorModule.orientation === 'vertical'
                             ? localize(
                                 'editor.separator.height_desc',
                                 lang,
-                                'Height of the separator in pixels.'
+                                'Height of the separator. Use pixels (e.g., "300px") or percentage (e.g., "50%").'
                               )
                             : localize(
                                 'editor.separator.width_desc',
                                 lang,
-                                'Width of the separator as percentage of container.'
+                                'Width of the separator. Use percentage (e.g., "100%") or pixels (e.g., "200px").'
                               )}
                         </div>
                         <div
@@ -301,45 +301,32 @@ export class UltraSeparatorModule extends BaseUltraModule {
                           ${separatorModule.orientation === 'vertical'
                             ? html`
                                 <input
-                                  type="range"
-                                  class="gap-slider"
-                                  min="50"
-                                  max="1000"
-                                  step="10"
-                                  .value="${separatorModule.height_px || 300}"
-                                  @input=${(e: Event) => {
-                                    const target = e.target as HTMLInputElement;
-                                    const value = parseFloat(target.value);
-                                    updateModule({ height_px: value });
-                                  }}
-                                />
-                                <input
-                                  type="number"
+                                  type="text"
                                   class="gap-input"
-                                  min="50"
-                                  max="1000"
-                                  step="10"
-                                  .value="${separatorModule.height_px || 300}"
+                                  .value="${typeof separatorModule.height_px === 'string'
+                                    ? separatorModule.height_px
+                                    : separatorModule.height_px
+                                      ? `${separatorModule.height_px}px`
+                                      : '300px'}"
+                                  placeholder="300px or 50%"
                                   @input=${(e: Event) => {
                                     const target = e.target as HTMLInputElement;
-                                    const value = parseFloat(target.value);
-                                    if (!isNaN(value)) {
+                                    const value = target.value.trim();
+                                    if (value === '') {
+                                      updateModule({ height_px: undefined });
+                                      return;
+                                    }
+                                    // Store as string if it has a unit, otherwise as number
+                                    if (value.endsWith('%') || value.endsWith('px')) {
                                       updateModule({ height_px: value });
+                                    } else {
+                                      const num = parseFloat(value);
+                                      if (!isNaN(num)) {
+                                        updateModule({ height_px: num });
+                                      }
                                     }
                                   }}
-                                  @keydown=${(e: KeyboardEvent) => {
-                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                      e.preventDefault();
-                                      const target = e.target as HTMLInputElement;
-                                      const currentValue = parseFloat(target.value) || 300;
-                                      const increment = e.key === 'ArrowUp' ? 10 : -10;
-                                      const newValue = Math.max(
-                                        50,
-                                        Math.min(1000, currentValue + increment)
-                                      );
-                                      updateModule({ height_px: newValue });
-                                    }
-                                  }}
+                                  style="flex: 1; min-width: 0;"
                                 />
                                 <button
                                   class="reset-btn"
@@ -348,64 +335,84 @@ export class UltraSeparatorModule extends BaseUltraModule {
                                     'editor.fields.reset_default_value',
                                     lang,
                                     'Reset to default ({value})'
-                                  ).replace('{value}', '300')}
+                                  ).replace('{value}', '300px')}
                                 >
                                   <ha-icon icon="mdi:refresh"></ha-icon>
                                 </button>
                               `
                             : html`
-                                <input
-                                  type="range"
-                                  class="gap-slider"
-                                  min="10"
-                                  max="100"
-                                  step="5"
-                                  .value="${separatorModule.width_percent || 100}"
-                                  @input=${(e: Event) => {
-                                    const target = e.target as HTMLInputElement;
-                                    const value = parseFloat(target.value);
-                                    updateModule({ width_percent: value });
-                                  }}
-                                />
-                                <input
-                                  type="number"
-                                  class="gap-input"
-                                  min="10"
-                                  max="100"
-                                  step="5"
-                                  .value="${separatorModule.width_percent || 100}"
-                                  @input=${(e: Event) => {
-                                    const target = e.target as HTMLInputElement;
-                                    const value = parseFloat(target.value);
-                                    if (!isNaN(value)) {
-                                      updateModule({ width_percent: value });
-                                    }
-                                  }}
-                                  @keydown=${(e: KeyboardEvent) => {
-                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                                      e.preventDefault();
-                                      const target = e.target as HTMLInputElement;
-                                      const currentValue = parseFloat(target.value) || 100;
-                                      const increment = e.key === 'ArrowUp' ? 5 : -5;
-                                      const newValue = Math.max(
-                                        10,
-                                        Math.min(100, currentValue + increment)
-                                      );
-                                      updateModule({ width_percent: newValue });
-                                    }
-                                  }}
-                                />
-                                <button
-                                  class="reset-btn"
-                                  @click=${() => updateModule({ width_percent: 100 })}
-                                  title=${localize(
-                                    'editor.fields.reset_default_value',
-                                    lang,
-                                    'Reset to default ({value})'
-                                  ).replace('{value}', '100')}
-                                >
-                                  <ha-icon icon="mdi:refresh"></ha-icon>
-                                </button>
+                                ${(() => {
+                                  const currentValue = separatorModule.width_percent;
+                                  const isString = typeof currentValue === 'string';
+                                  const isPercent = isString && currentValue.endsWith('%');
+                                  const numericValue = isString
+                                    ? isPercent
+                                      ? parseFloat(currentValue)
+                                      : null
+                                    : typeof currentValue === 'number'
+                                      ? currentValue
+                                      : 100;
+                                  const showSlider = !isString || isPercent;
+
+                                  return html`
+                                    ${showSlider
+                                      ? html`
+                                          <input
+                                            type="range"
+                                            class="gap-slider"
+                                            min="10"
+                                            max="100"
+                                            step="5"
+                                            .value="${numericValue || 100}"
+                                            @input=${(e: Event) => {
+                                              const target = e.target as HTMLInputElement;
+                                              const value = parseFloat(target.value);
+                                              updateModule({ width_percent: value });
+                                            }}
+                                          />
+                                        `
+                                      : html``}
+                                    <input
+                                      type="text"
+                                      class="gap-input"
+                                      .value="${isString
+                                        ? currentValue
+                                        : currentValue
+                                          ? `${currentValue}%`
+                                          : '100%'}"
+                                      placeholder="100% or 200px"
+                                      @input=${(e: Event) => {
+                                        const target = e.target as HTMLInputElement;
+                                        const value = target.value.trim();
+                                        if (value === '') {
+                                          updateModule({ width_percent: undefined });
+                                          return;
+                                        }
+                                        // Store as string if it has a unit, otherwise as number
+                                        if (value.endsWith('%') || value.endsWith('px')) {
+                                          updateModule({ width_percent: value });
+                                        } else {
+                                          const num = parseFloat(value);
+                                          if (!isNaN(num)) {
+                                            updateModule({ width_percent: num });
+                                          }
+                                        }
+                                      }}
+                                      style="flex: 1; min-width: 0;"
+                                    />
+                                    <button
+                                      class="reset-btn"
+                                      @click=${() => updateModule({ width_percent: 100 })}
+                                      title=${localize(
+                                        'editor.fields.reset_default_value',
+                                        lang,
+                                        'Reset to default ({value})'
+                                      ).replace('{value}', '100%')}
+                                    >
+                                      <ha-icon icon="mdi:refresh"></ha-icon>
+                                    </button>
+                                  `;
+                                })()}
                               `}
                         </div>
                       </div>
@@ -815,6 +822,16 @@ export class UltraSeparatorModule extends BaseUltraModule {
     const moduleWithDesign = separatorModule as any;
     const designProperties = (separatorModule as any).design || {};
 
+    // Check if horizontal separator should grow to fill space (like WPBakery's flex: 1 1 auto)
+    const isHorizontal = separatorModule.orientation !== 'vertical';
+    const widthValue = this.parseSizeValue(separatorModule.width_percent, 100, 0, true);
+    const numericWidth = this.extractNumericValue(separatorModule.width_percent);
+    const shouldGrow =
+      isHorizontal &&
+      ((widthValue.endsWith('%') && numericWidth >= 100) ||
+        (typeof separatorModule.width_percent === 'number' &&
+          separatorModule.width_percent >= 100));
+
     // Container styles for design system (design overrides module props)
     const containerStyles = {
       // Only apply padding if explicitly set by user
@@ -866,12 +883,17 @@ export class UltraSeparatorModule extends BaseUltraModule {
       left: designProperties.left || moduleWithDesign.left || 'auto',
       right: designProperties.right || moduleWithDesign.right || 'auto',
       zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
-      width: designProperties.width || moduleWithDesign.width || '100%',
+      width:
+        designProperties.width ||
+        moduleWithDesign.width ||
+        (separatorModule.orientation === 'horizontal'
+          ? this.parseSizeValue(separatorModule.width_percent, 100, 0, true)
+          : '100%'),
       height:
         designProperties.height ||
         moduleWithDesign.height ||
         (separatorModule.orientation === 'vertical'
-          ? `${separatorModule.height_px || 300}px`
+          ? this.parseSizeValue(separatorModule.height_px, 0, 300, false)
           : 'auto'),
       maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
       maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
@@ -880,7 +902,15 @@ export class UltraSeparatorModule extends BaseUltraModule {
         designProperties.min_height ||
         moduleWithDesign.min_height ||
         (separatorModule.orientation === 'vertical'
-          ? `${Math.min(separatorModule.height_px || 300, 50)}px`
+          ? (() => {
+              const heightValue = this.parseSizeValue(separatorModule.height_px, 0, 300, false);
+              const numericHeight = this.extractNumericValue(separatorModule.height_px);
+              // For min-height, use a reasonable minimum (50px or 10% of the height, whichever is smaller)
+              if (heightValue.endsWith('%')) {
+                return '10px'; // Use fixed minimum for percentage heights
+              }
+              return `${Math.min(numericHeight || 300, 50)}px`;
+            })()
           : '10px'),
       overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
@@ -893,6 +923,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
             ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
             : 'none',
       boxSizing: 'border-box',
+      // Like WPBakery's flex: 1 1 auto - separator grows to fill available space when width >= 100%
+      // Use flex-basis: 0 to ignore width and grow from zero (width acts as max-width constraint)
+      ...(shouldGrow ? { flexGrow: '1', flexShrink: '1', flexBasis: '0' } : {}),
     } as Record<string, string>;
 
     if (separatorModule.separator_style === 'blank') {
@@ -902,8 +935,8 @@ export class UltraSeparatorModule extends BaseUltraModule {
           <div
             class="separator-preview blank-separator"
             style="${isVertical
-              ? `width: ${separatorModule.thickness || 1}px; height: ${separatorModule.height_px || 300}px; display: block; margin: 0 auto;`
-              : `height: ${separatorModule.thickness || 1}px; width: 100%;`}"
+              ? `width: ${separatorModule.thickness || 1}px; height: ${this.parseSizeValue(separatorModule.height_px, 0, 300, false)}; display: block; margin: 0 auto;`
+              : `height: ${separatorModule.thickness || 1}px; width: ${this.parseSizeValue(separatorModule.width_percent, 100, 0, true)};`}"
           ></div>
         </div>
       `;
@@ -1016,7 +1049,14 @@ export class UltraSeparatorModule extends BaseUltraModule {
       >
         <div
           class="separator-preview ${separatorModule.orientation === 'vertical' ? 'vertical' : ''}"
-          style="width: 100%; text-align: center;"
+          style="${(() => {
+            const widthValue = this.parseSizeValue(separatorModule.width_percent, 100, 0, true);
+            const numericWidth = this.extractNumericValue(separatorModule.width_percent);
+            const isFullWidth =
+              separatorModule.orientation === 'horizontal' &&
+              (widthValue.endsWith('%') ? numericWidth >= 100 : false);
+            return `width: 100%; ${isFullWidth ? 'text-align: left;' : 'text-align: center;'}`;
+          })()}"
         >
           ${separatorModule.show_title && separatorModule.title
             ? html`
@@ -1090,18 +1130,34 @@ export class UltraSeparatorModule extends BaseUltraModule {
     }
 
     if (isVertical) {
-      if (
-        separatorModule.height_px &&
-        (separatorModule.height_px < 50 || separatorModule.height_px > 1000)
-      ) {
-        errors.push('Height must be between 50 and 1000 pixels');
+      const heightValue = this.extractNumericValue(separatorModule.height_px);
+      if (heightValue > 0) {
+        // Validate numeric range (allow 0 for auto/default)
+        if (heightValue < 0 || heightValue > 1000) {
+          errors.push('Height must be between 0 and 1000 (pixels or percentage)');
+        }
       }
     } else {
-      if (
-        separatorModule.width_percent &&
-        (separatorModule.width_percent < 1 || separatorModule.width_percent > 100)
-      ) {
-        errors.push('Width must be between 1 and 100 percent');
+      const widthValue = this.extractNumericValue(separatorModule.width_percent);
+      if (widthValue > 0) {
+        // For percentage values, validate 1-100 range
+        if (
+          typeof separatorModule.width_percent === 'string' &&
+          separatorModule.width_percent.endsWith('%')
+        ) {
+          if (widthValue < 1 || widthValue > 100) {
+            errors.push('Width percentage must be between 1% and 100%');
+          }
+        } else if (typeof separatorModule.width_percent === 'number') {
+          // Legacy numeric values are treated as percentages
+          if (widthValue < 1 || widthValue > 100) {
+            errors.push('Width must be between 1 and 100 percent');
+          }
+        }
+        // Pixel values don't have strict range limits, just validate they're positive
+        if (widthValue < 0) {
+          errors.push('Width must be a positive value');
+        }
       }
     }
 
@@ -1323,16 +1379,15 @@ export class UltraSeparatorModule extends BaseUltraModule {
       }
 
       .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
-        padding: 4px 6px !important;
+        min-width: 80px;
+        max-width: 120px;
+        padding: 4px 8px !important;
         border: 1px solid var(--divider-color, #cccccc);
         border-radius: 4px;
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
         font-size: 13px;
-        text-align: center;
+        text-align: left;
         transition: all 0.2s ease;
         flex-shrink: 0;
         box-sizing: border-box;
@@ -1372,6 +1427,60 @@ export class UltraSeparatorModule extends BaseUltraModule {
     `;
   }
 
+  /**
+   * Parse width/height value that can be a number, percentage string, or pixel string
+   * Returns the CSS value string (e.g., "100%", "200px", "50%")
+   */
+  private parseSizeValue(
+    value: number | string | undefined,
+    defaultPercent: number,
+    defaultPx: number,
+    isPercentDefault: boolean
+  ): string {
+    if (value === undefined || value === null) {
+      return isPercentDefault ? `${defaultPercent}%` : `${defaultPx}px`;
+    }
+
+    // If it's already a number, convert to appropriate format
+    if (typeof value === 'number') {
+      return isPercentDefault ? `${value}%` : `${value}px`;
+    }
+
+    // If it's a string, check if it already has a unit
+    const str = String(value).trim();
+    if (str === '') {
+      return isPercentDefault ? `${defaultPercent}%` : `${defaultPx}px`;
+    }
+
+    // If it ends with % or px, use it as-is
+    if (str.endsWith('%') || str.endsWith('px')) {
+      return str;
+    }
+
+    // Otherwise, try to parse as number and add appropriate unit
+    const num = parseFloat(str);
+    if (!isNaN(num)) {
+      return isPercentDefault ? `${num}%` : `${num}px`;
+    }
+
+    // Fallback to default
+    return isPercentDefault ? `${defaultPercent}%` : `${defaultPx}px`;
+  }
+
+  /**
+   * Extract numeric value from size string for comparison/validation
+   */
+  private extractNumericValue(value: number | string | undefined): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const match = value.match(/^([\d.]+)/);
+      return match ? parseFloat(match[1]) : 0;
+    }
+    return 0;
+  }
+
   private getSeparatorStyles(separatorModule: SeparatorModule): string {
     const isVertical = separatorModule.orientation === 'vertical';
     const styles: Record<string, string> = {};
@@ -1386,13 +1495,27 @@ export class UltraSeparatorModule extends BaseUltraModule {
 
     if (isVertical) {
       styles.width = `${separatorModule.thickness || 1}px`;
-      styles.height = `${separatorModule.height_px || 300}px`;
+      styles.height = this.parseSizeValue(separatorModule.height_px, 0, 300, false);
       styles.margin = '0 auto';
       styles.display = 'block';
     } else {
-      styles.width = `${separatorModule.width_percent || 100}%`;
+      const widthValue = this.parseSizeValue(separatorModule.width_percent, 100, 0, true);
+      // For percentages >= 100%, cap the separator line at 100% of its container
+      // The container itself will grow via flex-grow: 1 to push items apart
+      const numericWidth = this.extractNumericValue(separatorModule.width_percent);
+      const isFullWidth = widthValue.endsWith('%') && numericWidth >= 100;
+
+      // The separator line should be 100% of its container when >= 100% is specified
+      // This allows the container to grow and push items apart
+      styles.width = isFullWidth ? '100%' : widthValue;
       styles.height = `${separatorModule.thickness || 1}px`;
-      styles.margin = '0 auto';
+
+      // Only center the separator if width is less than 100%
+      if (isFullWidth) {
+        styles.margin = '0';
+      } else {
+        styles.margin = '0 auto';
+      }
     }
 
     // Default to 'line' if style is not set to ensure preview visibility

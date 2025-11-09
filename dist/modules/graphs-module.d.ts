@@ -12,6 +12,7 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     private _historyError;
     private _historyLoading;
     private _deferredHistoryScheduled;
+    private _templateResults;
     private _getCacheStore;
     private _persistCacheStore;
     private _makeCacheKey;

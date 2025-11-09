@@ -1,5 +1,16 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta11
+
+### 🚀 Improvements
+
+- **Improved CSS standardized CSS** - Enhanced and standardized CSS across the card
+- **Added Template mode to Graphs Module** - Template mode support added to the Graphs module
+- **Spinbox Module** - New Spinbox module added
+- **Camera Module** - New Camera module added
+
+---
+
 ## Version 2.1.0-beta10
 
 ### 🚀 Improvements

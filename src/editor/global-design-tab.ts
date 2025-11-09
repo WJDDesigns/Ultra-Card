@@ -549,12 +549,6 @@ export class GlobalDesignTab extends LitElement {
   }
 
   private _resetSection(section: string): void {
-    console.log('🔄 [RESET SECTION]', {
-      section,
-      currentDesignProperties: { ...this.designProperties },
-      hasOnUpdate: !!this.onUpdate,
-    });
-
     // Create a reset object that explicitly removes properties
     const resetProperties: Record<string, undefined> = {};
 
@@ -645,37 +639,23 @@ export class GlobalDesignTab extends LitElement {
 
     // Update local state immediately so UI reflects the reset
     this.designProperties = { ...(this.designProperties || {}), ...resetProperties } as any;
-    console.log('🔄 [RESET SECTION] After local update', {
-      section,
-      resetProperties,
-      newDesignProperties: { ...this.designProperties },
-    });
     this.requestUpdate();
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
       try {
-        console.log('🔄 [RESET SECTION] Calling onUpdate callback', {
-          section,
-          resetProperties,
-        });
         this.onUpdate(resetProperties);
       } catch (error) {
         console.error(`🔄 GlobalDesignTab: Callback error for ${section}:`, error);
       }
     } else {
       // Dispatch event for event-listener based integrations
-      console.log('🔄 [RESET SECTION] Dispatching design-changed event', {
-        section,
-        resetProperties,
-      });
       const event = new CustomEvent('design-changed', {
         detail: resetProperties,
         bubbles: true,
         composed: true,
       });
-      const dispatched = this.dispatchEvent(event);
-      console.log('🔄 [RESET SECTION] Event dispatched', { dispatched });
+      this.dispatchEvent(event);
     }
 
     // Force component re-render to update UI indicators after a small delay

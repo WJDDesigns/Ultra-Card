@@ -739,7 +739,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 >${localize(
                   'editor.info.unified_template_section.title',
                   lang,
-                  'Smart Display Template'
+                  'Template Mode'
                 )}</label
               >
               <label class="switch">

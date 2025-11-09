@@ -61,8 +61,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
       display_conditions: [],
       // Template support
       template_mode: false,
-      unified_template_mode: false,
-      unified_template: '',
       template: '',
     };
   }
@@ -706,50 +704,94 @@ export class UltraSpinboxModule extends BaseUltraModule {
   ): TemplateResult {
     const spinboxModule = module as SpinboxModule;
 
-    // Get current value (from entity, template, or default)
-    let currentValue = spinboxModule.value ?? 50;
-    let entityDomain = '';
+    // Template mode (if enabled)
+    let templateValue: number | undefined;
+    let templateButtonBackgroundColor: string | undefined;
+    let templateButtonTextColor: string | undefined;
+    let templateValueColor: string | undefined;
 
     if (spinboxModule.template_mode && spinboxModule.template) {
-      // Initialize template service
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       }
 
-      // Ensure template string cache exists on hass
       if (hass) {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
         const templateHash = this._hashString(spinboxModule.template);
-        const templateKey = `spinbox_value_${spinboxModule.id}_${templateHash}`;
+        const templateKey = `spinbox_${spinboxModule.id}_${templateHash}`;
 
-        // Subscribe if needed
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(spinboxModule.template, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
-              }
-            }
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          const context = buildEntityContext(spinboxModule.entity || '', hass, {
+            value: spinboxModule.value,
+            min_value: spinboxModule.min_value,
+            max_value: spinboxModule.max_value,
           });
+
+          this._templateService.subscribeToTemplate(
+            spinboxModule.template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent('ultra-card-template-update', {
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
         }
 
-        // Use latest rendered string if available
-        const rendered = hass.__uvc_template_strings?.[templateKey];
-        if (rendered !== undefined) {
-          const parsed = parseFloat(String(rendered));
-          if (!isNaN(parsed)) {
-            currentValue = parsed;
+        const templateResult = hass.__uvc_template_strings?.[templateKey];
+        if (templateResult && String(templateResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(templateResult);
+          if (!hasTemplateError(parsed)) {
+            // Extract value
+            if (parsed.value !== undefined) {
+              const num =
+                typeof parsed.value === 'number'
+                  ? parsed.value
+                  : parseFloat(String(parsed.value));
+              if (!isNaN(num)) {
+                templateValue = num;
+              }
+            }
+
+            // Extract colors
+            if (parsed.button_background_color) {
+              templateButtonBackgroundColor = parsed.button_background_color;
+            }
+            if (parsed.button_text_color) {
+              templateButtonTextColor = parsed.button_text_color;
+            }
+            if (parsed.value_color) {
+              templateValueColor = parsed.value_color;
+            }
           }
         }
       }
-    } else if (spinboxModule.entity && hass) {
-      // Get value from entity
+    }
+
+    // Get current value (from template, entity, or default)
+    let currentValue = templateValue !== undefined 
+      ? templateValue 
+      : spinboxModule.value ?? 50;
+    let entityDomain = '';
+
+    if (templateValue === undefined && spinboxModule.entity && hass) {
+      // Get value from entity (only if template didn't provide value)
       const entityState = hass.states[spinboxModule.entity];
       entityDomain = spinboxModule.entity.split('.')[0];
 
@@ -789,13 +831,17 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const moduleWithDesign = spinboxModule as any;
     const designProperties = (spinboxModule as any).design || {};
 
-    // Button styling
+    // Button styling - apply template colors if provided
     const buttonBackground =
+      templateButtonBackgroundColor ||
       designProperties.button_background_color ||
       spinboxModule.button_background_color ||
       'var(--primary-color)';
     const buttonTextColor =
-      designProperties.button_text_color || spinboxModule.button_text_color || 'white';
+      templateButtonTextColor ||
+      designProperties.button_text_color ||
+      spinboxModule.button_text_color ||
+      'white';
 
     const styleClass = spinboxModule.button_style || 'flat';
     const buttonSize = spinboxModule.button_size ?? 40;
@@ -842,9 +888,12 @@ export class UltraSpinboxModule extends BaseUltraModule {
 
     const buttonStyle = `${buttonBaseStyle} ${styleOverrides[styleClass] || styleOverrides.flat}`;
 
-    // Value display styling
+    // Value display styling - apply template color if provided
     const valueColor =
-      designProperties.value_color || spinboxModule.value_color || 'var(--primary-text-color)';
+      templateValueColor ||
+      designProperties.value_color ||
+      spinboxModule.value_color ||
+      'var(--primary-text-color)';
     const valueFontSize = designProperties.value_font_size || spinboxModule.value_font_size || 18;
     const valueStyle = `
       color: ${valueColor};

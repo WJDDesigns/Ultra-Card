@@ -1658,7 +1658,7 @@ export class UltraIconModule extends BaseUltraModule {
                       >${localize(
                         'editor.icon.unified_template_section.title',
                         lang,
-                        'Smart Display Template'
+                        'Template Mode'
                       )}</label
                     >
                     <label class="switch">

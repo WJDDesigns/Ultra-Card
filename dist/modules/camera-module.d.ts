@@ -5,6 +5,7 @@ import { CardModule, CameraModule, UltraCardConfig } from '../types';
 import '../components/ultra-template-editor';
 export declare class UltraCameraModule extends BaseUltraModule {
     private _templateInputDebounce;
+    private _templateService?;
     private _lastRenderedEntity;
     private _renderDebounce;
     private _webrtcUpdateTimer;
@@ -50,6 +51,7 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private getFullscreenIconPositionStyles;
     private getAdjustedPositionForCollision;
     private getCameraNamePositionStyles;
+    private _hashString;
     private hasActiveLink;
     private refreshCamera;
     private getCameraImageUrl;

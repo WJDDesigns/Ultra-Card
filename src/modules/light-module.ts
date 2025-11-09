@@ -54,6 +54,9 @@ export interface LightPreset {
   button_style?: 'filled' | 'outlined' | 'text'; // Button visual style for this preset
   show_label?: boolean; // Show preset name for this preset
   border_radius?: number; // Button border radius (0-50)
+  // Color control toggles
+  enable_color?: boolean; // Controls whether color values (RGB/HS/XY) are sent (default: true)
+  enable_color_temp?: boolean; // Controls whether color_temp (MIRED) is sent (default: true)
 }
 
 // Color conversion utilities
@@ -282,7 +285,9 @@ export class UltraLightModule extends BaseUltraModule {
           button_style: 'filled',
           show_label: true,
           border_radius: 8,
-        },
+          enable_color: true, // Enable color by default
+          enable_color_temp: true, // Enable color temperature by default
+        } as LightPreset,
       ],
       layout: 'buttons', // buttons, grid
       button_alignment: 'center', // center, left, right, space-between, space-around, space-evenly
@@ -490,10 +495,36 @@ export class UltraLightModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="general-tab">
+        <!-- Preset Configuration -->
+        <div class="presets-configuration">
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            Light Presets
+          </div>
+          <div class="field-description" style="margin-bottom: 16px;">
+            Configure light presets with specific colors, brightness, and effects. Each preset can
+            control different entities.
+          </div>
+
+          ${(lightModule.presets || []).map((preset, index) =>
+            this.renderPresetEditor(preset, index, lightModule, hass, updateModule, config)
+          )}
+
+          <button
+            class="add-preset-btn"
+            @click=${() => this.addPreset(lightModule, updateModule)}
+            style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
+          >
+            + Add New Preset
+          </button>
+        </div>
+
         <!-- Layout Configuration -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px; margin-top: 32px;"
         >
           <div
             class="section-title"
@@ -501,98 +532,74 @@ export class UltraLightModule extends BaseUltraModule {
           >
             Layout Configuration
           </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
+          <div class="field-description" style="margin-bottom: 16px;">
             Configure how preset buttons are arranged and displayed
           </div>
 
           <!-- Layout Style -->
-          <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Layout Style</div>
-            <div class="field-description">Choose the overall arrangement style for preset buttons</div>
-            ${this.renderUcForm(
-              hass,
-              { layout: lightModule.layout || 'buttons' },
-              [
-                this.selectField('layout', [
-                  { value: 'buttons', label: 'Flexible Buttons' },
-                  { value: 'grid', label: 'Grid Layout' },
-                ]),
-              ],
-              (e: CustomEvent) => {
-                const next = e.detail.value.layout;
-                if (next === lightModule.layout) return;
-                updateModule({ layout: next });
-              },
-              false
-            )}
-          </div>
+          ${this.renderFieldSection(
+            'Layout Style',
+            'Choose the overall arrangement style for preset buttons',
+            hass,
+            { layout: lightModule.layout || 'buttons' },
+            [
+              this.selectField('layout', [
+                { value: 'buttons', label: 'Flexible Buttons' },
+                { value: 'grid', label: 'Grid Layout' },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.layout;
+              if (next === lightModule.layout) return;
+              updateModule({ layout: next });
+            }
+          )}
 
-            <!-- Button Alignment -->
-            <div class="field-container" style="margin-bottom: 16px;">
-              <div class="field-title">Button Alignment</div>
-              <div class="field-description">Choose how buttons are aligned within the container</div>
-              ${this.renderUcForm(
-                hass,
-                { button_alignment: lightModule.button_alignment || 'center' },
-                [
-                  this.selectField('button_alignment', [
-                    { value: 'left', label: 'Left' },
-                    { value: 'center', label: 'Center' },
-                    { value: 'right', label: 'Right' },
-                    { value: 'space-between', label: 'Space Between' },
-                    { value: 'space-around', label: 'Space Around' },
-                    { value: 'space-evenly', label: 'Space Evenly' },
-                  ]),
-                ],
-                (e: CustomEvent) => {
-                  const next = e.detail.value.button_alignment;
-                  if (next === lightModule.button_alignment) return;
-                  updateModule({ button_alignment: next });
-                },
-                false
-              )}
-            </div>
+          <!-- Button Alignment -->
+          ${this.renderFieldSection(
+            'Button Alignment',
+            'Choose how buttons are aligned within the container',
+            hass,
+            { button_alignment: lightModule.button_alignment || 'center' },
+            [
+              this.selectField('button_alignment', [
+                { value: 'left', label: 'Left' },
+                { value: 'center', label: 'Center' },
+                { value: 'right', label: 'Right' },
+                { value: 'space-between', label: 'Space Between' },
+                { value: 'space-around', label: 'Space Around' },
+                { value: 'space-evenly', label: 'Space Evenly' },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.button_alignment;
+              if (next === lightModule.button_alignment) return;
+              updateModule({ button_alignment: next });
+            }
+          )}
           </div>
         </div>
 
         <!-- Allow Wrapping Toggle -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-        >
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 1;">
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                Allow Button Wrapping
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                Allow buttons to wrap to the next line when they exceed the container width
-              </div>
-            </div>
-            <div style="margin-left: 16px;">
-              <ha-switch
-                .checked=${lightModule.allow_wrapping || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ allow_wrapping: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
-        </div>
+        ${this.renderSettingsSection(
+          'Button Wrapping',
+          'Control whether buttons wrap to the next line',
+          [
+            {
+              title: 'Allow Button Wrapping',
+              description: 'Allow buttons to wrap to the next line when they exceed the container width',
+              hass,
+              data: { allow_wrapping: lightModule.allow_wrapping || false },
+              schema: [this.booleanField('allow_wrapping')],
+              onChange: (e: CustomEvent) => updateModule({ allow_wrapping: e.detail.value.allow_wrapping }),
+            },
+          ]
+        )}
 
         <!-- Gap Configuration -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -601,23 +608,10 @@ export class UltraLightModule extends BaseUltraModule {
             Gap Configuration
           </div>
 
-          <div style="margin-bottom: 24px;">
-            <div
-              class="field-title"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-            >
-              Gap Between Buttons
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-            >
-              Set the spacing between preset buttons (in rem units)
-            </div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Gap Between Buttons</div>
+            <div class="field-description">Set the spacing between preset buttons (in rem units)</div>
+            <div class="gap-control-container">
               <input
                 type="range"
                 class="gap-slider"
@@ -634,7 +628,6 @@ export class UltraLightModule extends BaseUltraModule {
               <input
                 type="number"
                 class="gap-input"
-                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
                 min="0"
                 max="5"
                 step="0.1"
@@ -662,7 +655,6 @@ export class UltraLightModule extends BaseUltraModule {
                 class="reset-btn"
                 @click=${() => updateModule({ button_gap: 0.8 })}
                 title="Reset to default (0.8)"
-                style="width: 36px; height: 36px; padding: 0; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
               >
                 <ha-icon icon="mdi:refresh"></ha-icon>
               </button>
@@ -682,50 +674,31 @@ export class UltraLightModule extends BaseUltraModule {
                   >
                     Grid Settings
                   </div>
-                  <div
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-                  >
+                  <div class="field-description" style="margin-bottom: 16px;">
                     Configure grid layout options
                   </div>
 
-                  <div style="margin-bottom: 20px;">
-                    <div
-                      class="field-title"
-                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                    >
-                      Columns
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
-                    >
-                      Number of columns in grid layout
-                    </div>
-                    <div class="field-container" style="margin-bottom: 16px;">
-                      <div class="field-title">Columns</div>
-                      <div class="field-description">Number of columns in grid layout</div>
-                      ${this.renderUcForm(
-                        hass,
-                        { columns: lightModule.columns || 3 },
-                        [
-                          this.selectField('columns', [
-                            { value: '1', label: '1 Column' },
-                            { value: '2', label: '2 Columns' },
-                            { value: '3', label: '3 Columns' },
-                            { value: '4', label: '4 Columns' },
-                            { value: '5', label: '5 Columns' },
-                            { value: '6', label: '6 Columns' },
-                          ]),
-                        ],
-                        (e: CustomEvent) => {
-                          const next = Number(e.detail.value.columns);
-                          if (isNaN(next) || next === lightModule.columns) return;
-                          updateModule({ columns: next });
-                        },
-                        false
-                      )}
-                    </div>
-                  </div>
+                  ${this.renderFieldSection(
+                    'Columns',
+                    'Number of columns in grid layout',
+                    hass,
+                    { columns: lightModule.columns || 3 },
+                    [
+                      this.selectField('columns', [
+                        { value: '1', label: '1 Column' },
+                        { value: '2', label: '2 Columns' },
+                        { value: '3', label: '3 Columns' },
+                        { value: '4', label: '4 Columns' },
+                        { value: '5', label: '5 Columns' },
+                        { value: '6', label: '6 Columns' },
+                      ]),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = Number(e.detail.value.columns);
+                      if (isNaN(next) || next === lightModule.columns) return;
+                      updateModule({ columns: next });
+                    }
+                  )}
                 </div>
               `
             : ''
@@ -742,27 +715,22 @@ export class UltraLightModule extends BaseUltraModule {
           >
             Global Settings
           </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
+          <div class="field-description" style="margin-bottom: 16px;">
             Settings that apply to all presets
           </div>
 
-          <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Default Transition Time</div>
-            <div class="field-description">Default transition time for all presets (can be overridden per preset)</div>
-            ${this.renderUcForm(
-              hass,
-              { default_transition_time: lightModule.default_transition_time ?? 0.5 },
-              [this.numberField('default_transition_time', 0, 10, 0.1)],
-              (e: CustomEvent) => {
-                const next = Number(e.detail.value.default_transition_time);
-                if (isNaN(next) || next === lightModule.default_transition_time) return;
-                updateModule({ default_transition_time: next });
-              },
-              false
-            )}
-          </div>
+          ${this.renderFieldSection(
+            'Default Transition Time',
+            'Default transition time for all presets (can be overridden per preset)',
+            hass,
+            { default_transition_time: lightModule.default_transition_time ?? 0.5 },
+            [this.numberField('default_transition_time', 0, 10, 0.1)],
+            (e: CustomEvent) => {
+              const next = Number(e.detail.value.default_transition_time);
+              if (isNaN(next) || next === lightModule.default_transition_time) return;
+              updateModule({ default_transition_time: next });
+            }
+          )}
           </div>
         </div>
 
@@ -774,9 +742,7 @@ export class UltraLightModule extends BaseUltraModule {
           >
             Light Presets
           </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
+          <div class="field-description" style="margin-bottom: 16px;">
             Configure light presets with specific colors, brightness, and effects. Each preset can
             control different entities.
           </div>
@@ -1060,7 +1026,7 @@ export class UltraLightModule extends BaseUltraModule {
         <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
           Preset Name
         </div>
-        <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;">
+        <div class="field-description" style="margin-bottom: 12px;">
           Display name for this preset
         </div>
         <ha-textfield
@@ -1108,7 +1074,7 @@ export class UltraLightModule extends BaseUltraModule {
         <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
           Preset Icon
         </div>
-        <div class="field-description" style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;">
+        <div class="field-description" style="margin-bottom: 12px;">
           Optional icon for this preset (e.g., mdi:lightbulb)
         </div>
         ${this.renderUcForm(
@@ -1169,6 +1135,8 @@ export class UltraLightModule extends BaseUltraModule {
                     .min_mireds=${153}
                     .max_mireds=${500}
                     .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
+                    .enable_color=${preset.enable_color ?? true}
+                    .enable_color_temp=${preset.enable_color_temp ?? true}
                     @color-changed=${(e: CustomEvent) => {
                       const detail = e.detail;
                       const updates: Partial<LightPreset> = {};
@@ -1211,6 +1179,12 @@ export class UltraLightModule extends BaseUltraModule {
                       }
 
                       updatePreset(updates);
+                    }}
+                    @enable-color-changed=${(e: CustomEvent) => {
+                      updatePreset({ enable_color: e.detail.value });
+                    }}
+                    @enable-color-temp-changed=${(e: CustomEvent) => {
+                      updatePreset({ enable_color_temp: e.detail.value });
                     }}
                     @test-preset=${() => {
                       this.applyPreset(preset, lightModule, hass, config);
@@ -1758,6 +1732,8 @@ export class UltraLightModule extends BaseUltraModule {
       button_style: 'filled',
       show_label: true,
       border_radius: 8,
+      enable_color: true, // Enable color by default
+      enable_color_temp: true, // Enable color temperature by default
     };
 
     // Add to expanded presets so new presets start expanded
@@ -2015,12 +1991,15 @@ export class UltraLightModule extends BaseUltraModule {
       // IMPORTANT: Home Assistant does NOT allow multiple color descriptors in one service call,
       // even if the device supports both (like RGBWW lights). Send them sequentially instead.
       
-      // Detect which descriptor types are present
+      // Detect which descriptor types are present (respect toggle states)
+      const enableColor = preset.enable_color ?? true;
+      const enableColorTemp = preset.enable_color_temp ?? true;
       const hasColorRgb =
-        preset.rgb_color !== undefined ||
-        preset.hs_color !== undefined ||
-        preset.xy_color !== undefined;
-      const hasColorTemp = preset.color_temp !== undefined;
+        enableColor &&
+        (preset.rgb_color !== undefined ||
+          preset.hs_color !== undefined ||
+          preset.xy_color !== undefined);
+      const hasColorTemp = enableColorTemp && preset.color_temp !== undefined;
       const hasWhite = preset.white !== undefined;
       const hasRgbw = preset.rgbw_color !== undefined;
       const hasRgbww = preset.rgbww_color !== undefined;
@@ -2036,12 +2015,20 @@ export class UltraLightModule extends BaseUltraModule {
         
         // First call: Set color (RGB/HS/XY) - priority: RGB > HS > XY
         const colorServiceData: any = { ...serviceData };
-        if (preset.rgb_color !== undefined) {
-          colorServiceData.rgb_color = preset.rgb_color;
-        } else if (preset.hs_color !== undefined) {
-          colorServiceData.hs_color = preset.hs_color;
-        } else if (preset.xy_color !== undefined) {
-          colorServiceData.xy_color = preset.xy_color;
+        if (enableColor) {
+          if (preset.rgb_color !== undefined) {
+            colorServiceData.rgb_color = preset.rgb_color;
+          } else if (preset.hs_color !== undefined) {
+            colorServiceData.hs_color = preset.hs_color;
+          } else if (preset.xy_color !== undefined) {
+            colorServiceData.xy_color = preset.xy_color;
+          } else {
+            // Color enabled but no color set - use white
+            colorServiceData.rgb_color = [255, 255, 255];
+          }
+        } else {
+          // Color disabled - force white RGB
+          colorServiceData.rgb_color = [255, 255, 255];
         }
         // Ensure NO color_temp in the first call
         delete colorServiceData.color_temp;
@@ -2055,7 +2042,9 @@ export class UltraLightModule extends BaseUltraModule {
 
         // Second call: Set color temperature
         const tempServiceData: any = { ...serviceData };
-        tempServiceData.color_temp = preset.color_temp;
+        if (enableColorTemp) {
+          tempServiceData.color_temp = preset.color_temp;
+        }
         // Ensure NO color descriptors in the second call
         delete tempServiceData.rgb_color;
         delete tempServiceData.hs_color;
@@ -2068,12 +2057,18 @@ export class UltraLightModule extends BaseUltraModule {
           tempServiceData.effect = 'Solid'; // Clear effects for WLED devices
         }
 
-        // Send both calls sequentially
+        // Send both calls sequentially (only if enabled)
         const serviceName = action === 'toggle' ? 'turn_on' : 'turn_on';
-        await this.callLightService(serviceName, entityId, colorServiceData, hass);
-        // Small delay to ensure first call completes before second
-        await new Promise(resolve => setTimeout(resolve, 100));
-        await this.callLightService(serviceName, entityId, tempServiceData, hass);
+        if (enableColor) {
+          await this.callLightService(serviceName, entityId, colorServiceData, hass);
+        }
+        if (enableColorTemp) {
+          // Small delay to ensure first call completes before second
+          if (enableColor) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          await this.callLightService(serviceName, entityId, tempServiceData, hass);
+        }
         continue; // Skip the normal single-call logic below
       }
 
@@ -2158,26 +2153,26 @@ export class UltraLightModule extends BaseUltraModule {
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
-      } else if (preset.color_temp !== undefined && !hasColorRgb) {
-        // Color temperature mode only (when no color is set)
+      } else if (preset.color_temp !== undefined && !hasColorRgb && enableColorTemp) {
+        // Color temperature mode only (when no color is set and enabled)
         serviceData.color_temp = preset.color_temp;
-      } else if (isWLED && preset.rgb_color !== undefined) {
+      } else if (isWLED && preset.rgb_color !== undefined && enableColor) {
         // For WLED devices, prioritize RGB color mode and clear effects
         serviceData.rgb_color = preset.rgb_color;
         serviceData.effect = 'Solid'; // Explicitly set to Solid effect to clear any active effects
-      } else if (preset.hs_color !== undefined) {
+      } else if (preset.hs_color !== undefined && enableColor) {
         // HS color mode (preferred for Home Assistant)
         serviceData.hs_color = preset.hs_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.xy_color !== undefined) {
+      } else if (preset.xy_color !== undefined && enableColor) {
         // XY color mode
         serviceData.xy_color = preset.xy_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.rgb_color !== undefined) {
+      } else if (preset.rgb_color !== undefined && enableColor) {
         // RGB color mode - fallback for non-WLED devices
         serviceData.rgb_color = preset.rgb_color;
         if (isWLED) {
@@ -2695,17 +2690,21 @@ export class UltraLightModule extends BaseUltraModule {
 
     // Only require light settings for turn_on and toggle actions
     if (action !== 'turn_off') {
-      // Allow both color and temp for RGBWW lights - no mutual exclusivity check needed
-      if (
-        !preset.brightness &&
-        !preset.rgb_color &&
-        !preset.hs_color &&
-        !preset.xy_color &&
-        !preset.color_temp &&
-        !preset.effect
-      ) {
+      const enableColor = preset.enable_color ?? true;
+      const enableColorTemp = preset.enable_color_temp ?? true;
+      const hasBrightness = preset.brightness !== undefined;
+      const hasEffect = preset.effect && preset.effect.trim() !== '';
+      const hasColor =
+        enableColor &&
+        (preset.rgb_color !== undefined ||
+          preset.hs_color !== undefined ||
+          preset.xy_color !== undefined);
+      const hasColorTemp = enableColorTemp && preset.color_temp !== undefined;
+
+      // At least one toggle must be ON, or brightness/effect must be set
+      if (!enableColor && !enableColorTemp && !hasBrightness && !hasEffect) {
         errors.push(
-          'At least one light setting (brightness, color, or effect) must be configured for turn_on/toggle actions'
+          'At least one of the following must be enabled: Color, Color Temperature, Brightness, or Effect'
         );
       }
     }

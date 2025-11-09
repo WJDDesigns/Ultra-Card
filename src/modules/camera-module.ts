@@ -12,10 +12,14 @@ import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { TemplateService } from '../services/template-service';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-template-editor';
 
 export class UltraCameraModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
+  private _templateService?: TemplateService;
   private _lastRenderedEntity: string | null = null;
   private _renderDebounce: any = null;
   private _webrtcUpdateTimer: any = null;
@@ -89,8 +93,6 @@ export class UltraCameraModule extends BaseUltraModule {
 
       // Template support
       template_mode: false,
-      unified_template_mode: false,
-      unified_template: '',
       template: '',
 
       // Global design defaults for camera module - responsive by default
@@ -1387,63 +1389,88 @@ export class UltraCameraModule extends BaseUltraModule {
     // Extract design properties from global design tab
     const designProperties = moduleWithDesign.design || {};
 
-    // Get camera entity - evaluate template first to check if it changed
-    let cameraEntity = cameraModule.entity;
+    // Template mode (if enabled)
+    let templateEntity: string | undefined;
+    let templateVisible: boolean | undefined;
+    let templateOverlayText: string | undefined;
+    let templateOverlayColor: string | undefined;
 
-    // Debug logging removed in production builds
-
-    // Handle template mode - evaluate to get the actual entity
     if (cameraModule.template_mode && cameraModule.template) {
-      try {
-        // Simple template evaluation for common patterns
-        let evaluatedTemplate = cameraModule.template;
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
 
-        // Replace state() function calls
-        const stateMatches = evaluatedTemplate.match(/states\(['"]([^'"]+)['"]\)/g);
-        if (stateMatches) {
-          stateMatches.forEach(match => {
-            const entityId = match.match(/states\(['"]([^'"]+)['"]\)/)[1];
-            const entity = hass?.states[entityId];
-            const value = entity ? entity.state : 'unknown';
-            evaluatedTemplate = evaluatedTemplate.replace(match, `'${value}'`);
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(cameraModule.template);
+        const templateKey = `camera_${cameraModule.id}_${templateHash}`;
+
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          const context = buildEntityContext(cameraModule.entity || '', hass, {
+            camera_name: cameraModule.camera_name,
+            live_view: cameraModule.live_view,
           });
+
+          this._templateService.subscribeToTemplate(
+            cameraModule.template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent('ultra-card-template-update', {
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
         }
 
-        // Replace is_state() function calls
-        const isStateMatches = evaluatedTemplate.match(
-          /is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/g
-        );
-        if (isStateMatches) {
-          isStateMatches.forEach(match => {
-            const [, entityId, expectedState] = match.match(
-              /is_state\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)/
-            );
-            const entity = hass?.states[entityId];
-            const isMatch = entity && entity.state === expectedState;
-            evaluatedTemplate = evaluatedTemplate.replace(match, isMatch ? 'True' : 'False');
-          });
-        }
+        const templateResult = hass.__uvc_template_strings?.[templateKey];
+        if (templateResult && String(templateResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(templateResult);
+          if (!hasTemplateError(parsed)) {
+            // Extract entity
+            if (parsed.entity) {
+              templateEntity = parsed.entity;
+            }
 
-        // Simple if-else evaluation for the format: entity_id if condition else fallback
-        const ifElseMatch = evaluatedTemplate.match(
-          /['"]([^'"]+)['"] if (.+?) else ['"]([^'"]+)['"]/
-        );
-        if (ifElseMatch) {
-          const [, trueEntity, condition, falseEntity] = ifElseMatch;
-          const conditionResult = condition.includes('True');
-          cameraEntity = conditionResult ? trueEntity : falseEntity;
-        } else {
-          // If no if-else pattern, try to extract entity directly
-          const entityMatch = evaluatedTemplate.match(/['"]([^'"]+)['"]/);
-          if (entityMatch) {
-            cameraEntity = entityMatch[1];
+            // Extract visibility
+            if (parsed.visible !== undefined) {
+              templateVisible = parsed.visible;
+            }
+
+            // Extract overlay properties
+            if (parsed.overlay_text) {
+              templateOverlayText = parsed.overlay_text;
+            }
+            if (parsed.overlay_color) {
+              templateOverlayColor = parsed.overlay_color;
+            }
           }
         }
-      } catch (error) {
-        console.error('Template evaluation error:', error);
-        cameraEntity = cameraModule.entity; // Fallback to original entity
       }
     }
+
+    // Handle visibility - if template says not visible, return empty
+    if (templateVisible === false) {
+      return html``;
+    }
+
+    // Get camera entity - use template entity if provided, otherwise use module entity
+    let cameraEntity = templateEntity || cameraModule.entity;
 
     const desiredLive = cameraModule.live_view !== false;
 
@@ -1487,8 +1514,9 @@ export class UltraCameraModule extends BaseUltraModule {
     // Store the stable key for this module
     this._cameraStableKeys.set(cameraModule.id, stableKey);
 
-    // Get camera name
+    // Get camera name - use template overlay text if provided
     const cameraName =
+      templateOverlayText ||
       cameraModule.camera_name ||
       (entity ? entity.attributes.friendly_name || entity.entity_id : 'Camera');
 
@@ -1594,7 +1622,8 @@ export class UltraCameraModule extends BaseUltraModule {
     const namePositionStyles = this.getCameraNamePositionStyles(
       namePosition,
       moduleWithDesign,
-      designProperties
+      designProperties,
+      templateOverlayColor
     );
 
     // Camera content
@@ -3423,13 +3452,14 @@ export class UltraCameraModule extends BaseUltraModule {
   private getCameraNamePositionStyles(
     position: string,
     moduleWithDesign: any,
-    designProperties: any = {}
+    designProperties: any = {},
+    templateOverlayColor?: string
   ): Record<string, string> {
     const baseStyles = {
       position: 'absolute',
       padding: '6px 12px', // Fixed padding for camera name overlay
       background: 'rgba(0, 0, 0, 0.7)', // Fixed background for camera name overlay
-      color: designProperties.color || this.getTextColor(moduleWithDesign),
+      color: templateOverlayColor || designProperties.color || this.getTextColor(moduleWithDesign),
       fontSize: designProperties.font_size
         ? typeof designProperties.font_size === 'number'
           ? `${designProperties.font_size}px`
@@ -3488,6 +3518,17 @@ export class UltraCameraModule extends BaseUltraModule {
       default:
         return { ...baseStyles, top: '8px', left: '8px' };
     }
+  }
+
+  // Simple string hash function for template keys
+  private _hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      const chr = str.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
   }
 
   // Helper Methods

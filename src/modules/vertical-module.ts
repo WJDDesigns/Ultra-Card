@@ -260,7 +260,8 @@ export class UltraVerticalModule extends BaseUltraModule {
           ? `${gapValue}rem`
           : '0',
       alignItems: this.getAlignItems(verticalModule.horizontal_alignment || 'center'),
-      width: '100%',
+      // Only set width if user explicitly controls it, otherwise let flexbox handle sizing
+      width: (effective as any).width || undefined,
       // Allow fully collapsed layouts when designers set 0 padding/margin
       minHeight: '0',
     };
@@ -392,7 +393,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                   return html`
                     <div
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                      style="max-width: 100%; overflow: hidden; width: 100%; box-sizing: border-box; margin: ${childMargin}; display: flex; justify-content: center; align-items: center; ${isNegativeGap
+                      style="max-width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
                         ? 'padding: 0; border: none; background: transparent;'
                         : ''}"
                     >
@@ -887,7 +888,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     return `
       /* Vertical Module Styles */
       .vertical-module-preview {
-        width: 100%;
+        /* Let flexbox handle width naturally - no forced width */
         min-height: 60px;
       }
 
@@ -904,7 +905,9 @@ export class UltraVerticalModule extends BaseUltraModule {
         border-radius: 4px;
         padding: 0;
         transition: all 0.2s ease;
-        width: 100%;
+        /* Let flexbox handle width naturally - only constrain to prevent overflow */
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .child-module-preview.negative-gap {

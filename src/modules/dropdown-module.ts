@@ -482,7 +482,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                             >${localize(
                               'editor.dropdown.unified_template_section.title',
                               lang,
-                              'Unified Template'
+                              'Template Mode'
                             )}</label
                           >
                           <label class="switch">

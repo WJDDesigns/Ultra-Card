@@ -281,8 +281,8 @@ export interface SeparatorModule extends BaseModule {
   separator_style?: 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank';
   orientation?: 'horizontal' | 'vertical';
   thickness?: number;
-  width_percent?: number;
-  height_px?: number; // For vertical separators
+  width_percent?: number | string; // Percentage (e.g., "100%") or pixels (e.g., "200px")
+  height_px?: number | string; // Pixels (e.g., "300px") or percentage (e.g., "50%")
   color?: string;
   show_title?: boolean;
   title?: string;

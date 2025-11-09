@@ -2713,12 +2713,6 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateLayoutChildModule(updates: Partial<CardModule>): void {
-    console.log('💾 [UPDATE LAYOUT CHILD MODULE] Called', {
-      updates,
-      selectedLayoutChild: this._selectedLayoutChild,
-      selectedNestedChildIndex: this._selectedNestedChildIndex,
-    });
-
     if (!this._selectedLayoutChild) {
       return;
     }
@@ -2770,27 +2764,18 @@ export class LayoutTab extends LitElement {
         const incomingDesign = (updates as any).design || {};
         const existingDesign = (updatedModule.design || {}) as Record<string, any>;
         const mergedDesign: Record<string, any> = { ...existingDesign };
-        console.log('💾 [UPDATE LAYOUT CHILD MODULE] Merging design object', {
-          incomingDesign,
-          existingDesign,
-          beforeMerge: { ...mergedDesign },
-        });
         for (const [dKey, dVal] of Object.entries(incomingDesign)) {
           if (dVal === undefined) {
             delete mergedDesign[dKey];
-            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Deleting design.${dKey}`);
           } else {
             mergedDesign[dKey] = dVal;
-            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Setting design.${dKey} =`, dVal);
           }
         }
         // If design object is empty after deletions, remove it entirely
         if (Object.keys(mergedDesign).length === 0) {
           delete updatedModule.design;
-          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Design object empty, deleting it');
         } else {
           updatedModule.design = mergedDesign;
-          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Final merged design', mergedDesign);
         }
       }
 
@@ -2836,27 +2821,18 @@ export class LayoutTab extends LitElement {
         const incomingDesign = (updates as any).design || {};
         const existingDesign = (updatedModule.design || {}) as Record<string, any>;
         const mergedDesign: Record<string, any> = { ...existingDesign };
-        console.log('💾 [UPDATE LAYOUT CHILD MODULE] Merging design object', {
-          incomingDesign,
-          existingDesign,
-          beforeMerge: { ...mergedDesign },
-        });
         for (const [dKey, dVal] of Object.entries(incomingDesign)) {
           if (dVal === undefined) {
             delete mergedDesign[dKey];
-            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Deleting design.${dKey}`);
           } else {
             mergedDesign[dKey] = dVal;
-            console.log(`💾 [UPDATE LAYOUT CHILD MODULE] Setting design.${dKey} =`, dVal);
           }
         }
         // If design object is empty after deletions, remove it entirely
         if (Object.keys(mergedDesign).length === 0) {
           delete updatedModule.design;
-          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Design object empty, deleting it');
         } else {
           updatedModule.design = mergedDesign;
-          console.log('💾 [UPDATE LAYOUT CHILD MODULE] Final merged design', mergedDesign);
         }
       }
 
@@ -2890,13 +2866,6 @@ export class LayoutTab extends LitElement {
       layoutModule.modules[childIndex] = updatedModule;
     }
 
-    console.log('💾 [UPDATE LAYOUT CHILD MODULE] Final updated module', {
-      updatedModule: JSON.parse(JSON.stringify(updatedModule)),
-      moduleId: (updatedModule as any).id,
-      design: (updatedModule as any).design,
-      padding: (updatedModule as any).padding,
-      margin: (updatedModule as any).margin,
-    });
     this._updateLayout(newLayout);
   }
 
@@ -2937,14 +2906,6 @@ export class LayoutTab extends LitElement {
   }
 
   private _updateModuleDesign(updates: Partial<DesignProperties>): void {
-    console.log('🔧 [UPDATE MODULE DESIGN] Called', {
-      updates,
-      isChildEdit: !this._selectedModule && !!this._selectedLayoutChild,
-      selectedModule: this._selectedModule,
-      selectedLayoutChild: this._selectedLayoutChild,
-      selectedNestedChildIndex: this._selectedNestedChildIndex,
-    });
-
     // Support both direct module edits and child-module edits inside layout containers
     const isChildEdit = !this._selectedModule && !!this._selectedLayoutChild;
     if (!this._selectedModule && !this._selectedLayoutChild) {
@@ -5478,10 +5439,28 @@ export class LayoutTab extends LitElement {
     targetLayoutModule.modules.push(draggedModule);
 
     // Remove the module from its original location
-    const sourceRow = layout.rows[this._draggedItem.rowIndex];
-    if (sourceRow && sourceRow.columns[this._draggedItem.columnIndex!]) {
-      const sourceColumn = sourceRow.columns[this._draggedItem.columnIndex!];
-      sourceColumn.modules.splice(this._draggedItem.moduleIndex!, 1);
+    // FIX: Handle removal from nested layout modules correctly
+    if (this._draggedItem.layoutChildIndex !== undefined) {
+      // Module is nested inside a layout module - remove from the correct nested location
+      const sourceRow = layout.rows[this._draggedItem.rowIndex];
+      if (sourceRow && sourceRow.columns[this._draggedItem.columnIndex!]) {
+        const sourceColumn = sourceRow.columns[this._draggedItem.columnIndex!];
+        const sourceLayoutModule = sourceColumn.modules[this._draggedItem.moduleIndex!] as any;
+        if (
+          sourceLayoutModule &&
+          this._isLayoutModule(sourceLayoutModule.type) &&
+          Array.isArray(sourceLayoutModule.modules)
+        ) {
+          sourceLayoutModule.modules.splice(this._draggedItem.layoutChildIndex!, 1);
+        }
+      }
+    } else {
+      // Module is in a regular column - remove from column modules array
+      const sourceRow = layout.rows[this._draggedItem.rowIndex];
+      if (sourceRow && sourceRow.columns[this._draggedItem.columnIndex!]) {
+        const sourceColumn = sourceRow.columns[this._draggedItem.columnIndex!];
+        sourceColumn.modules.splice(this._draggedItem.moduleIndex!, 1);
+      }
     }
 
     // Update the layout
@@ -5981,14 +5960,6 @@ export class LayoutTab extends LitElement {
         }
 
         if (moduleRef) {
-          this._relocateLayoutModule(
-            newLayout,
-            this._draggedItem,
-            { rowIndex, columnIndex, moduleIndex, type: 'layout' },
-            moduleRef,
-            removedFromParent,
-            'after'
-          );
           this._relocateLayoutModule(
             newLayout,
             this._draggedItem,
@@ -7502,25 +7473,11 @@ export class LayoutTab extends LitElement {
     // Use the main _updateModuleDesign method which has all the complex logic
     // for handling margin/padding/border objects and property conversions
     const updateChildModuleDesign = (updates: Partial<DesignProperties>) => {
-      console.log('🎨 [DESIGN TAB] updateChildModuleDesign called', {
-        updates,
-        moduleId: (module as any).id,
-        moduleType: module.type,
-        currentModule: JSON.parse(JSON.stringify(module)),
-      });
       this._updateModuleDesign(updates);
     };
 
     // Create a custom design properties object for the child module
     // IMPORTANT: Check design object FIRST, then top-level properties for consistent priority
-    console.log('🎨 [DESIGN TAB] Reading initial design properties', {
-      moduleId: (module as any).id,
-      moduleType: module.type,
-      design: (module as any).design,
-      padding: (module as any).padding,
-      margin: (module as any).margin,
-      border: (module as any).border,
-    });
     const designProperties = {
       color: (module as any).design?.color || (module as any).color,
       text_align: (module as any).design?.text_align || (module as any).text_align,
@@ -7687,18 +7644,6 @@ export class LayoutTab extends LitElement {
       animation_timing:
         (module as any).design?.animation_timing || (module as any).animation_timing,
     };
-
-    console.log('🎨 [DESIGN TAB] Final design properties', {
-      moduleId: (module as any).id,
-      padding_top: designProperties.padding_top,
-      padding_right: designProperties.padding_right,
-      padding_bottom: designProperties.padding_bottom,
-      padding_left: designProperties.padding_left,
-      margin_top: designProperties.margin_top,
-      margin_right: designProperties.margin_right,
-      margin_bottom: designProperties.margin_bottom,
-      margin_left: designProperties.margin_left,
-    });
 
     const result = html`
       <ultra-global-design-tab

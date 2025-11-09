@@ -14,6 +14,15 @@ export declare class UltraSeparatorModule extends BaseUltraModule {
         errors: string[];
     };
     getStyles(): string;
+    /**
+     * Parse width/height value that can be a number, percentage string, or pixel string
+     * Returns the CSS value string (e.g., "100%", "200px", "50%")
+     */
+    private parseSizeValue;
+    /**
+     * Extract numeric value from size string for comparison/validation
+     */
+    private extractNumericValue;
     private getSeparatorStyles;
     private getSeparatorLineStyles;
     private getTitleContainerStyles;

@@ -1761,7 +1761,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const color = this.getColorAtValue(gaugeModule, clampedPercentage);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <!-- Background arc -->
       <path
@@ -1787,20 +1787,23 @@ export class UltraGaugeModule extends BaseUltraModule {
               true // Use rounded ends for Modern gauge
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness}"
-                stroke-linecap="round"
-                style="transition: stroke-dashoffset ${
+            ? this.renderGradientValueArc(
+                gaugeModule,
+                valueArc,
+                thickness,
+                clampedPercentage,
+                'round',
+                `transition: stroke-dashoffset ${
                   gaugeModule.animation_enabled !== false
                     ? gaugeModule.animation_duration || '1000ms'
                     : '0ms'
-                } ${gaugeModule.animation_easing || 'ease-out'};"
-              />
-            `
+                } ${gaugeModule.animation_easing || 'ease-out'};`,
+                backgroundArc,
+                centerX,
+                centerY,
+                startAngle,
+                valueAngle
+              )
             : svg`
               <path
                 d="${valueArc}"
@@ -1872,7 +1875,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const color = this.getColorAtValue(gaugeModule, clampedPercentage);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <!-- Background arc -->
       <path
@@ -1897,15 +1900,19 @@ export class UltraGaugeModule extends BaseUltraModule {
               value
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness}"
-                stroke-linecap="butt"
-              />
-            `
+            ? this.renderGradientValueArc(
+                gaugeModule,
+                valueArc,
+                thickness,
+                clampedPercentage,
+                'butt',
+                undefined,
+                backgroundArc,
+                centerX,
+                centerY,
+                startAngle,
+                valueAngle
+              )
             : svg`
               <path
                 d="${valueArc}"
@@ -1972,7 +1979,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const color = this.getColorAtValue(gaugeModule, clampedPercentage);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle)}
       
       <!-- Background arc -->
       <path
@@ -1997,15 +2004,19 @@ export class UltraGaugeModule extends BaseUltraModule {
               value
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness}"
-                stroke-linecap="butt"
-              />
-            `
+            ? this.renderGradientValueArc(
+                gaugeModule,
+                valueArc,
+                thickness,
+                clampedPercentage,
+                'butt',
+                undefined,
+                backgroundArc,
+                centerX,
+                centerY,
+                startAngle,
+                valueAngle
+              )
             : svg`
               <path
                 d="${valueArc}"
@@ -2067,7 +2078,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const color = this.getColorAtValue(gaugeModule, clampedPercentage);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <!-- Background arc -->
       <path
@@ -2092,15 +2103,19 @@ export class UltraGaugeModule extends BaseUltraModule {
               value
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness}"
-                stroke-linecap="butt"
-              />
-            `
+            ? this.renderGradientValueArc(
+                gaugeModule,
+                valueArc,
+                thickness,
+                clampedPercentage,
+                'butt',
+                undefined,
+                backgroundArc,
+                centerX,
+                centerY,
+                startAngle,
+                valueAngle
+              )
             : svg`
               <path
                 d="${valueArc}"
@@ -2162,7 +2177,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const color = this.getColorAtValue(gaugeModule, clampedPercentage);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <!-- Background circle -->
       <circle
@@ -2188,15 +2203,19 @@ export class UltraGaugeModule extends BaseUltraModule {
               value
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness}"
-                stroke-linecap="butt"
-              />
-            `
+            ? this.renderGradientValueArc(
+                gaugeModule,
+                valueArc,
+                thickness,
+                clampedPercentage,
+                'butt',
+                undefined,
+                backgroundArc,
+                centerX,
+                centerY,
+                startAngle,
+                valueAngle
+              )
             : svg`
               <path
                 d="${valueArc}"
@@ -2380,7 +2399,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const color = this.getColorAtValue(gaugeModule, clampedPercentage);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <circle
         cx="${centerX}"
@@ -2403,20 +2422,26 @@ export class UltraGaugeModule extends BaseUltraModule {
               true
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-            <circle
-              cx="${centerX}"
-              cy="${centerY}"
-              r="${radius}"
-              fill="none"
-              stroke="url(#gradient-${gaugeModule.id})"
-              stroke-width="${thickness}"
-              stroke-linecap="round"
-              stroke-dasharray="${circumference}"
-              stroke-dashoffset="${circumference - valueLength}"
-              transform="rotate(-90 ${centerX} ${centerY})"
-            />
-          `
+            ? (() => {
+                const gradientMode = gaugeModule.gradient_display_mode || 'full';
+                const strokeColor = gradientMode === 'value-based' 
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  : `url(#gradient-${gaugeModule.id})`;
+                return svg`
+                  <circle
+                    cx="${centerX}"
+                    cy="${centerY}"
+                    r="${radius}"
+                    fill="none"
+                    stroke="${strokeColor}"
+                    stroke-width="${thickness}"
+                    stroke-linecap="round"
+                    stroke-dasharray="${circumference}"
+                    stroke-dashoffset="${circumference - valueLength}"
+                    transform="rotate(-90 ${centerX} ${centerY})"
+                  />
+                `;
+              })()
             : svg`
             <circle
               cx="${centerX}"
@@ -2477,7 +2502,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, outerRadius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <defs>
         <filter id="inset-shadow-${gaugeModule.id}" x="-50%" y="-50%" width="200%" height="200%">
@@ -2548,26 +2573,32 @@ export class UltraGaugeModule extends BaseUltraModule {
               )}
             `
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <!-- Outer value arc -->
-              <path
-                d="${outerValueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness / 2}"
-                stroke-linecap="butt"
-              />
-              
-              <!-- Inner value arc -->
-              <path
-                d="${innerValueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness / 2}"
-                stroke-linecap="butt"
-                opacity="0.8"
-              />
-            `
+            ? (() => {
+                const gradientMode = gaugeModule.gradient_display_mode || 'full';
+                const strokeColor = gradientMode === 'value-based' 
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  : `url(#gradient-${gaugeModule.id})`;
+                return svg`
+                  <!-- Outer value arc -->
+                  <path
+                    d="${outerValueArc}"
+                    fill="none"
+                    stroke="${strokeColor}"
+                    stroke-width="${thickness / 2}"
+                    stroke-linecap="butt"
+                  />
+                  
+                  <!-- Inner value arc -->
+                  <path
+                    d="${innerValueArc}"
+                    fill="none"
+                    stroke="${strokeColor}"
+                    stroke-width="${thickness / 2}"
+                    stroke-linecap="butt"
+                    opacity="0.8"
+                  />
+                `;
+              })()
             : svg`
               <!-- Outer value arc -->
               <path
@@ -2646,7 +2677,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <defs>
         <linearGradient id="3d-gradient-${gaugeModule.id}" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -2719,23 +2750,29 @@ export class UltraGaugeModule extends BaseUltraModule {
               value
             )
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness + 2}"
-                stroke-linecap="butt"
-                filter="url(#3d-shadow-${gaugeModule.id})"
-              />
-              <path
-                d="${valueArc}"
-                fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
-                stroke-width="${thickness}"
-                stroke-linecap="butt"
-              />
-            `
+            ? (() => {
+                const gradientMode = gaugeModule.gradient_display_mode || 'full';
+                const strokeColor = gradientMode === 'value-based' 
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  : `url(#gradient-${gaugeModule.id})`;
+                return svg`
+                  <path
+                    d="${valueArc}"
+                    fill="none"
+                    stroke="${strokeColor}"
+                    stroke-width="${thickness + 2}"
+                    stroke-linecap="butt"
+                    filter="url(#3d-shadow-${gaugeModule.id})"
+                  />
+                  <path
+                    d="${valueArc}"
+                    fill="none"
+                    stroke="${strokeColor}"
+                    stroke-width="${thickness}"
+                    stroke-linecap="butt"
+                  />
+                `;
+              })()
             : svg`
               <path
                 d="${valueArc}"
@@ -2845,7 +2882,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const glowColor = getGlowColor();
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <defs>
         <filter id="neon-glow-${gaugeModule.id}" x="-50%" y="-50%" width="200%" height="200%">
@@ -2929,12 +2966,17 @@ export class UltraGaugeModule extends BaseUltraModule {
               )}
             `
           : gaugeModule.gauge_color_mode === 'gradient'
-            ? svg`
+            ? (() => {
+                const gradientMode = gaugeModule.gradient_display_mode || 'full';
+                const strokeColor = gradientMode === 'value-based' 
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  : `url(#gradient-${gaugeModule.id})`;
+                return svg`
               <!-- Subtle glow behind entire arc -->
               <path
                 d="${valueArc}"
                 fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
+                stroke="${glowColor}"
                 stroke-width="${thickness * 1.5}"
                 stroke-linecap="butt"
                 opacity="0.3"
@@ -2945,7 +2987,7 @@ export class UltraGaugeModule extends BaseUltraModule {
               <path
                 d="${valueArc}"
                 fill="none"
-                stroke="url(#gradient-${gaugeModule.id})"
+                stroke="${strokeColor}"
                 stroke-width="${thickness}"
                 stroke-linecap="butt"
                 style="transition: stroke-dashoffset ${
@@ -2965,7 +3007,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 value,
                 glowColor
               )}
-            `
+            `;
+              })()
             : svg`
               <!-- Subtle glow behind entire arc -->
               <path
@@ -3122,7 +3165,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
       
       <!-- Digital blocks -->
       ${blocks}
@@ -3727,7 +3770,16 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderGradientDefs(gaugeModule: GaugeModule): TemplateResult {
+  private renderGradientDefs(
+    gaugeModule: GaugeModule,
+    centerX?: number,
+    centerY?: number,
+    radius?: number,
+    startAngle?: number,
+    endAngle?: number,
+    valueAngle?: number,
+    clampedPercentage?: number
+  ): TemplateResult {
     if (
       gaugeModule.gauge_color_mode !== 'gradient' ||
       !gaugeModule.gradient_stops ||
@@ -3740,6 +3792,71 @@ export class UltraGaugeModule extends BaseUltraModule {
     const sortedStops = [...gaugeModule.gradient_stops].sort((a, b) => a.position - b.position);
     const gradientId = `gradient-${gaugeModule.id}`;
 
+    // If geometry is provided, create gradient that follows the arc
+    if (
+      centerX !== undefined &&
+      centerY !== undefined &&
+      radius !== undefined &&
+      startAngle !== undefined &&
+      endAngle !== undefined
+    ) {
+      let gradientStartAngle = startAngle;
+      let gradientEndAngle = endAngle;
+      let stopsToUse = sortedStops;
+
+      // Handle different display modes
+      if (displayMode === 'cropped' && valueAngle !== undefined && clampedPercentage !== undefined) {
+        // Cropped mode: gradient only up to current value
+        gradientEndAngle = valueAngle;
+        
+        // Normalize stops to 0-100% range for the cropped section
+        const croppedStops = sortedStops.filter(stop => stop.position <= clampedPercentage);
+        
+        // Always include the color at the exact percentage
+        const colorAtPercentage = this.getColorAtValue(gaugeModule, clampedPercentage);
+        if (!croppedStops.some(stop => stop.position === clampedPercentage)) {
+          croppedStops.push({
+            id: `cropped_${clampedPercentage}`,
+            position: clampedPercentage,
+            color: colorAtPercentage,
+          });
+        }
+        
+        // Normalize positions to 0-100% range
+        stopsToUse = croppedStops.map(stop => ({
+          ...stop,
+          position: clampedPercentage > 0 ? (stop.position / clampedPercentage) * 100 : 0,
+        })).sort((a, b) => a.position - b.position);
+      } else if (displayMode === 'value-based') {
+        // Value-based mode: return empty defs (will use solid color instead)
+        return svg``;
+      }
+
+      // Calculate start and end points of the gradient arc
+      const startPoint = this.polarToCartesian(centerX, centerY, radius, gradientStartAngle);
+      const endPoint = this.polarToCartesian(centerX, centerY, radius, gradientEndAngle);
+
+      return svg`
+        <defs>
+          <linearGradient
+            id="${gradientId}"
+            x1="${startPoint.x}"
+            y1="${startPoint.y}"
+            x2="${endPoint.x}"
+            y2="${endPoint.y}"
+            gradientUnits="userSpaceOnUse"
+          >
+            ${stopsToUse.map(
+              stop => svg`
+              <stop offset="${stop.position}%" stop-color="${stop.color}" />
+            `
+            )}
+          </linearGradient>
+        </defs>
+      `;
+    }
+
+    // Fallback to horizontal gradient for backward compatibility
     return svg`
       <defs>
         <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -3750,6 +3867,56 @@ export class UltraGaugeModule extends BaseUltraModule {
           )}
         </linearGradient>
       </defs>
+    `;
+  }
+
+  private renderGradientValueArc(
+    gaugeModule: GaugeModule,
+    valueArc: string,
+    thickness: number,
+    clampedPercentage: number,
+    strokeLinecap: string = 'butt',
+    additionalStyle?: string,
+    fullArc?: string,
+    centerX?: number,
+    centerY?: number,
+    startAngle?: number,
+    valueAngle?: number
+  ): TemplateResult {
+    if (gaugeModule.gauge_color_mode !== 'gradient') {
+      return svg``;
+    }
+    
+    const gradientMode = gaugeModule.gradient_display_mode || 'full';
+    
+    // For "full" mode, render the full arc with gradient visible (no clipping needed)
+    if (gradientMode === 'full') {
+      return svg`
+        <path
+          d="${valueArc}"
+          fill="none"
+          stroke="url(#gradient-${gaugeModule.id})"
+          stroke-width="${thickness}"
+          stroke-linecap="${strokeLinecap}"
+          ${additionalStyle ? `style="${additionalStyle}"` : ''}
+        />
+      `;
+    }
+    
+    // For "cropped" and "value-based" modes, use the value arc directly
+    const strokeColor = gradientMode === 'value-based' 
+      ? this.getColorAtValue(gaugeModule, clampedPercentage)
+      : `url(#gradient-${gaugeModule.id})`;
+    
+    return svg`
+      <path
+        d="${valueArc}"
+        fill="none"
+        stroke="${strokeColor}"
+        stroke-width="${thickness}"
+        stroke-linecap="${strokeLinecap}"
+        ${additionalStyle ? `style="${additionalStyle}"` : ''}
+      />
     `;
   }
 

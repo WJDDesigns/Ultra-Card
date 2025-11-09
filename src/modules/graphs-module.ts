@@ -3,7 +3,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '../types';
 import { TemplateService } from '../services/template-service';
-import { buildEntityContext } from '../utils/template-context';
+import { buildEntityContext, buildMultiEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
@@ -39,6 +39,9 @@ export class UltraGraphsModule extends BaseUltraModule {
   private _historyError: { [moduleId: string]: string | null } = {};
   private _historyLoading: { [moduleId: string]: boolean } = {};
   private _deferredHistoryScheduled: { [moduleId: string]: boolean } = {};
+
+  // Template result cache - per module instance
+  private _templateResults: { [moduleId: string]: any } = {};
 
   // Ultra-light cache (localStorage) for instantly restoring the last real
   // historical curve on reload (similar to mini-graph behavior)
@@ -192,8 +195,6 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       // Templates
       template_mode: false,
-      unified_template_mode: false,
-      unified_template: '',
       template: '',
 
       // Logic (visibility) defaults
@@ -1781,12 +1782,95 @@ export class UltraGraphsModule extends BaseUltraModule {
     const moduleWithDesign = graphsModule as any;
     const designProperties = (graphsModule as any).design || {};
 
-    // Apply template if enabled
+    // Template mode (if enabled)
+    let templateColors: string[] | undefined;
+    let templateGlobalColor: string | undefined;
+    let templateFillArea: boolean | undefined;
+    let templatePieFill: number | undefined;
+
     if (graphsModule.template_mode && graphsModule.template) {
-      if (!this._templateService) {
+      if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       }
-      // Template evaluation would be async, handle in chart rendering
+
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(graphsModule.template);
+        const templateKey = `graphs_${graphsModule.id}_${templateHash}`;
+
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          // Build context with primary entity or multi-entity context
+          const primaryEntity =
+            graphsModule.entities?.find(e => e.is_primary && e.entity)?.entity ||
+            graphsModule.entities?.find(e => e.entity)?.entity ||
+            '';
+          const entityIds = (graphsModule.entities || [])
+            .filter(e => (graphsModule.data_source === 'forecast' ? e.forecast_attribute : e.entity))
+            .map(e => (graphsModule.data_source === 'forecast' ? graphsModule.forecast_entity : e.entity) || '')
+            .filter(id => id);
+
+          const context = entityIds.length > 1
+            ? buildMultiEntityContext(entityIds, hass, graphsModule.entities)
+            : buildEntityContext(primaryEntity, hass, {
+              entities: graphsModule.entities,
+              chart_type: graphsModule.chart_type,
+            });
+
+          this._templateService.subscribeToTemplate(
+            graphsModule.template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent('ultra-card-template-update', {
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const templateResult = hass.__uvc_template_strings?.[templateKey];
+        if (templateResult && String(templateResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(templateResult);
+          if (!hasTemplateError(parsed)) {
+            // Store parsed results for use in rendering
+            this._templateResults[graphsModule.id] = parsed;
+
+            // Extract colors
+            if (parsed.colors && Array.isArray(parsed.colors)) {
+              templateColors = parsed.colors;
+            }
+            if (parsed.global_color) {
+              templateGlobalColor = parsed.global_color;
+            }
+
+            // Extract fill controls
+            if (parsed.fill_area !== undefined) {
+              templateFillArea = parsed.fill_area;
+            }
+            if (parsed.pie_fill !== undefined) {
+              templatePieFill =
+                typeof parsed.pie_fill === 'number'
+                  ? parsed.pie_fill
+                  : parseFloat(String(parsed.pie_fill));
+            }
+          }
+        }
+      }
     }
 
     // Trigger history data loading
@@ -1970,18 +2054,37 @@ export class UltraGraphsModule extends BaseUltraModule {
       typeof primaryValueRaw === 'number' ? primaryValueRaw : parseFloat(primaryValueRaw);
 
     // Generate simple preview chart (or use forecast data for legend)
-    let chartData = this._prepareSimpleChartData(graphsModule, hass);
+    // Pass template colors to chart data preparation
+    let chartData = this._prepareSimpleChartData(
+      graphsModule,
+      hass,
+      templateColors,
+      templateGlobalColor,
+      templateFillArea
+    );
 
     // In forecast mode, prepare chart data from stored forecast data for legend
     if (graphsModule.data_source === 'forecast' && this._historyData[graphsModule.id]) {
       const forecastData = this._historyData[graphsModule.id];
-      chartData = forecastData.datasets.map((dataset: any) => ({
-        name: dataset.name,
-        value: dataset.values[dataset.values.length - 1] || 0, // Use last value
-        color: dataset.color,
-        unit: dataset.unit,
-        entityId: dataset.entityId,
-      }));
+      chartData = forecastData.datasets.map((dataset: any, index: number) => {
+        // Apply template colors: per-entity > global > dataset color
+        let datasetColor: string;
+        if (templateColors && templateColors[index]) {
+          datasetColor = this._formatColor(templateColors[index]);
+        } else if (templateGlobalColor) {
+          datasetColor = this._formatColor(templateGlobalColor);
+        } else {
+          datasetColor = dataset.color;
+        }
+        
+        return {
+          name: dataset.name,
+          value: dataset.values[dataset.values.length - 1] || 0, // Use last value
+          color: datasetColor,
+          unit: dataset.unit,
+          entityId: dataset.entityId,
+        };
+      });
     }
 
     const headerPos = graphsModule.info_position || 'top_left';
@@ -2162,7 +2265,11 @@ export class UltraGraphsModule extends BaseUltraModule {
                     );
                   return parts.join('; ');
                 })(),
-                align
+                align,
+                templateColors,
+                templateGlobalColor,
+                templateFillArea,
+                templatePieFill
               )}
             </div>
           </div>
@@ -2241,7 +2348,13 @@ export class UltraGraphsModule extends BaseUltraModule {
         : content;
   }
 
-  private _prepareSimpleChartData(module: GraphsModule, hass: HomeAssistant): any[] {
+  private _prepareSimpleChartData(
+    module: GraphsModule,
+    hass: HomeAssistant,
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templateFillArea?: boolean
+  ): any[] {
     const data = [];
 
     for (let i = 0; i < module.entities.length; i++) {
@@ -2257,14 +2370,27 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       const numValue = parseFloat(value);
 
+      // Determine color: template colors (per-entity) > template global_color > entity config > default
+      let entityColor: string;
+      if (templateColors && templateColors[i]) {
+        entityColor = this._formatColor(templateColors[i]);
+      } else if (templateGlobalColor) {
+        entityColor = this._formatColor(templateGlobalColor);
+      } else {
+        entityColor = this._formatColor(entityConfig.color) || this._getDefaultColor(i);
+      }
+
+      // Determine fill area: template fill_area > entity config
+      const fillArea = templateFillArea !== undefined ? templateFillArea : entityConfig.fill_area === true;
+
       data.push({
         name: entityConfig.name || entityState.attributes.friendly_name || entityConfig.entity,
         value: isNaN(numValue) ? 0 : numValue,
-        color: this._formatColor(entityConfig.color) || this._getDefaultColor(i),
+        color: entityColor,
         unit: entityState.attributes.unit_of_measurement || '',
         lineWidth: entityConfig.line_width ?? 2,
         showPoints: entityConfig.show_points !== false,
-        fillArea: entityConfig.fill_area === true,
+        fillArea: fillArea,
         lineStyle: entityConfig.line_style || 'solid',
         entityId: entityConfig.entity,
       });
@@ -2314,7 +2440,11 @@ export class UltraGraphsModule extends BaseUltraModule {
     data: any[],
     hass: HomeAssistant,
     textStyle?: string,
-    align?: 'left' | 'center' | 'right'
+    align?: 'left' | 'center' | 'right',
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templateFillArea?: boolean,
+    templatePieFill?: number
   ): TemplateResult {
     // In forecast mode, data comes from _historyData, not from _prepareSimpleChartData
     // So we skip the empty data check for forecast mode
@@ -2330,15 +2460,15 @@ export class UltraGraphsModule extends BaseUltraModule {
         : parseInt(String(module.chart_height)) || 345) - 80;
 
     if (['pie', 'donut'].includes(module.chart_type)) {
-      return this._renderPieChart(module, data, chartHeight, textStyle, hass, align);
+      return this._renderPieChart(module, data, chartHeight, textStyle, hass, align, templateColors, templateGlobalColor, templatePieFill);
     }
 
     if (['line', 'area'].includes(module.chart_type)) {
-      return this._renderLineChart(module, data, chartHeight, hass);
+      return this._renderLineChart(module, data, chartHeight, hass, templateColors, templateGlobalColor, templateFillArea);
     }
 
     // Default to bar chart for other types
-    return this._renderBarChart(module, data, chartHeight, textStyle, hass);
+    return this._renderBarChart(module, data, chartHeight, textStyle, hass, templateColors, templateGlobalColor);
   }
 
   private _renderPieChart(
@@ -2347,9 +2477,26 @@ export class UltraGraphsModule extends BaseUltraModule {
     chartHeight: number,
     textStyle?: string,
     hass?: HomeAssistant,
-    align?: 'left' | 'center' | 'right'
+    align?: 'left' | 'center' | 'right',
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templatePieFill?: number
   ): TemplateResult {
-    const total = data.reduce((sum, d) => sum + d.value, 0);
+    // Apply template pie_fill if provided - adjust total for slice sizing
+    let adjustedTotal = data.reduce((sum, d) => sum + d.value, 0);
+    let adjustedData = data;
+    
+    if (templatePieFill !== undefined && !isNaN(templatePieFill)) {
+      // If pie_fill is provided, scale values proportionally
+      const fillPercent = Math.max(0, Math.min(100, templatePieFill)) / 100;
+      adjustedData = data.map(d => ({
+        ...d,
+        value: d.value * fillPercent,
+      }));
+      adjustedTotal = adjustedData.reduce((sum, d) => sum + d.value, 0);
+    }
+
+    const total = adjustedTotal;
     const diameter = Math.max(120, Math.min(chartHeight, 260));
     const radius = diameter / 2;
     const isDonut = module.chart_type === 'donut';
@@ -2387,17 +2534,26 @@ export class UltraGraphsModule extends BaseUltraModule {
       return `M${sxOuter},${syOuter} A${rOuter},${rOuter} 0 ${largeArc} 1 ${exOuter},${eyOuter} L${sxInner},${syInner} A${rInner},${rInner} 0 ${largeArc} 0 ${exInner},${eyInner} Z`;
     };
 
-    // Compute segments (no trimming). Gaps will be drawn as uniform separators.
+    // Compute segments - apply template colors if provided
     let cumulative = 0;
-    const segments = data.map(d => {
+    const segments = adjustedData.map((d, index) => {
       const startDeg = total > 0 ? (cumulative / total) * 360 : 0;
       const sweepDeg = total > 0 ? (d.value / total) * 360 : 0;
       const endDeg = startDeg + sweepDeg;
       cumulative += d.value;
+      
+      // Apply template colors: per-entity > global > data color
+      let segmentColor = d.color;
+      if (templateColors && templateColors[index]) {
+        segmentColor = this._formatColor(templateColors[index]);
+      } else if (templateGlobalColor) {
+        segmentColor = this._formatColor(templateGlobalColor);
+      }
+      
       return {
         startDeg: startDeg,
         endDeg: endDeg,
-        color: d.color,
+        color: segmentColor,
         name: d.name,
         value: d.value,
         unit: d.unit,
@@ -2524,7 +2680,10 @@ export class UltraGraphsModule extends BaseUltraModule {
     module: GraphsModule,
     data: any[],
     chartHeight: number,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templateFillArea?: boolean
   ): TemplateResult {
     // Check if we have real history data stored on module
     const historyData = this._historyData[module.id];
@@ -2565,15 +2724,31 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
 
     // Always apply latest visual properties (color, width, style, points, fill)
-    // so style changes are instant even when values come from cache/fast-path.
+    // Apply template colors if provided: per-entity > global > entity config > default
     datasets = datasets.map((dataset, i) => {
       const cfg = module.entities?.[i];
+      
+      // Determine color: template colors (per-entity) > template global_color > entity config > dataset color > default
+      let datasetColor: string;
+      if (templateColors && templateColors[i]) {
+        datasetColor = this._formatColor(templateColors[i]);
+      } else if (templateGlobalColor) {
+        datasetColor = this._formatColor(templateGlobalColor);
+      } else {
+        datasetColor = this._formatColor(cfg?.color) || dataset.color || this._getDefaultColor(i);
+      }
+      
+      // Determine fill area: template fill_area > entity config > dataset fillArea
+      const fillArea = templateFillArea !== undefined 
+        ? templateFillArea 
+        : (cfg?.fill_area === true || dataset.fillArea);
+      
       return {
         ...dataset,
-        color: this._formatColor(cfg?.color) || dataset.color || this._getDefaultColor(i),
+        color: datasetColor,
         lineWidth: cfg?.line_width ?? dataset.lineWidth ?? 2,
         showPoints: cfg?.show_points !== false,
-        fillArea: cfg?.fill_area === true,
+        fillArea: fillArea,
         lineStyle: cfg?.line_style || dataset.lineStyle || 'solid',
       };
     });
@@ -2918,7 +3093,9 @@ export class UltraGraphsModule extends BaseUltraModule {
     data: any[],
     chartHeight: number,
     textStyle?: string,
-    hass?: HomeAssistant
+    hass?: HomeAssistant,
+    templateColors?: string[],
+    templateGlobalColor?: string
   ): TemplateResult {
     const historyData = this._historyData[module.id];
     let timePoints: string[] = [];
@@ -2933,13 +3110,25 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     if (historyData && Array.isArray(historyData.timePoints) && historyData.timePoints.length) {
       timePoints = historyData.timePoints;
-      datasets = (historyData.datasets || []).map((dataset: any, index: number) => ({
-        name: dataset.name,
-        color: this._formatColor(dataset.color) || this._getDefaultColor(index),
-        values: Array.isArray(dataset.values) ? dataset.values : [],
-        unit: dataset.unit,
-        entityId: dataset.entityId,
-      }));
+      datasets = (historyData.datasets || []).map((dataset: any, index: number) => {
+        // Apply template colors: per-entity > global > dataset color > default
+        let datasetColor: string;
+        if (templateColors && templateColors[index]) {
+          datasetColor = this._formatColor(templateColors[index]);
+        } else if (templateGlobalColor) {
+          datasetColor = this._formatColor(templateGlobalColor);
+        } else {
+          datasetColor = this._formatColor(dataset.color) || this._getDefaultColor(index);
+        }
+        
+        return {
+          name: dataset.name,
+          color: datasetColor,
+          values: Array.isArray(dataset.values) ? dataset.values : [],
+          unit: dataset.unit,
+          entityId: dataset.entityId,
+        };
+      });
     }
 
     if (timePoints.length === 0 || datasets.length === 0) {
@@ -2950,13 +3139,24 @@ export class UltraGraphsModule extends BaseUltraModule {
           const fallback = data[index];
           const value = fallback ? fallback.value : 0;
           const values = new Array(timePoints.length).fill(value);
+          
+          // Apply template colors: per-entity > global > entity config > default
+          let datasetColor: string;
+          if (templateColors && templateColors[index]) {
+            datasetColor = this._formatColor(templateColors[index]);
+          } else if (templateGlobalColor) {
+            datasetColor = this._formatColor(templateGlobalColor);
+          } else {
+            datasetColor = this._formatColor(entityConfig.color) || this._getDefaultColor(index);
+          }
+          
           return {
             name:
               entityConfig.name ||
               fallback?.name ||
               entityConfig.entity ||
               this._getForecastAttributeLabel(entityConfig.forecast_attribute || ''),
-            color: this._formatColor(entityConfig.color) || this._getDefaultColor(index),
+            color: datasetColor,
             values,
             unit: fallback?.unit,
             entityId: fallback?.entityId || entityConfig.entity || module.forecast_entity,
