@@ -21,6 +21,8 @@ export declare class UltraHorizontalModule extends BaseUltraModule {
     };
     private styleObjectToCss;
     private camelToKebab;
+    private childShouldFillAvailableSpace;
+    private normalizeSizeValue;
     private addPixelUnit;
     private getPaddingCSS;
     private getMarginCSS;

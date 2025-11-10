@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta12
+
+### 🐛 Bug Fixes
+
+- **Fixed separator css to make sure it creates space in different alignment settings** - Resolved separator spacing issues across various alignment configurations
+
+---
+
 ## Version 2.1.0-beta11
 
 ### 🚀 Improvements

@@ -475,12 +475,20 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   const isNegativeGap = gapValue < 0;
 
                   // Only apply flex-grow when user explicitly sets 'justify' alignment
-                  const shouldGrow = horizontalModule.alignment === 'justify';
+                  const layoutShouldGrow = horizontalModule.alignment === 'justify';
+                  const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
+
+                  const flexSegments = [
+                    layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
+                    childShouldGrow
+                      ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                      : '',
+                  ].filter(Boolean);
 
                   // Build style string - let flexbox handle sizing naturally
                   const baseStyles = `
                     overflow: visible;
-                    ${shouldGrow ? `flex-grow: 1; flex-basis: 0;` : ''}
+                    ${flexSegments.join(' ')}
                     box-sizing: border-box;
                     margin: ${childMargin};
                   `;
@@ -858,14 +866,92 @@ export class UltraHorizontalModule extends BaseUltraModule {
   }
 
   // Helper methods for style conversion and design properties
-  private styleObjectToCss(styles: Record<string, string>): string {
+  private styleObjectToCss(styles: Record<string, string | undefined>): string {
     return Object.entries(styles)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
       .join('; ');
   }
 
   private camelToKebab(str: string): string {
     return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+  }
+
+  private childShouldFillAvailableSpace(childModule: CardModule): boolean {
+    if (childModule.type !== 'separator') {
+      return false;
+    }
+
+    const separator = childModule as any;
+    const orientation = separator.orientation || 'horizontal';
+
+    if (orientation === 'vertical') {
+      return false;
+    }
+
+    const sizeCandidates = [
+      separator.width_percent,
+      separator.width,
+      separator?.design?.width,
+      separator?.design?.width_percent,
+    ];
+
+    for (const candidate of sizeCandidates) {
+      if (candidate === undefined || candidate === null || candidate === '') {
+        continue;
+      }
+
+      const normalized = this.normalizeSizeValue(candidate);
+
+      if (!normalized) {
+        continue;
+      }
+
+      if (normalized.unit === '%') {
+        if (normalized.value >= 100) {
+          return true;
+        }
+      } else if (normalized.unit === 'px') {
+        // Explicit pixel width - treat as fixed-sized spacer
+        return false;
+      }
+    }
+
+    // Default separator width is 100%, so grow when no explicit width is provided
+    const hasExplicitWidth =
+      separator.width_percent !== undefined ||
+      separator.width !== undefined ||
+      (separator.design &&
+        (separator.design.width !== undefined || separator.design.width_percent !== undefined));
+
+    return !hasExplicitWidth;
+  }
+
+  private normalizeSizeValue(
+    value: string | number
+  ): { value: number; unit: '%' | 'px' } | null {
+    if (typeof value === 'number') {
+      return { value, unit: '%' };
+    }
+
+    const str = String(value).trim();
+
+    if (!str) {
+      return null;
+    }
+
+    if (str.endsWith('%')) {
+      const numeric = parseFloat(str.slice(0, -1));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
+    }
+
+    if (str.endsWith('px')) {
+      const numeric = parseFloat(str.slice(0, -2));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: 'px' };
+    }
+
+    const numeric = parseFloat(str);
+    return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
   }
 
   private addPixelUnit(value: string | undefined): string | undefined {

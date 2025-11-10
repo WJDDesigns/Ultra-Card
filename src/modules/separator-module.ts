@@ -833,7 +833,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
           separatorModule.width_percent >= 100));
 
     // Container styles for design system (design overrides module props)
-    const containerStyles = {
+    const containerStyles: Record<string, string | undefined> = {
       // Only apply padding if explicitly set by user
       padding:
         designProperties.padding_top ||
@@ -897,7 +897,10 @@ export class UltraSeparatorModule extends BaseUltraModule {
           : 'auto'),
       maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
       maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
-      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      // Like WPBakery's min-width: 10% - ensures separator is always visible when growing
+      minWidth: shouldGrow
+        ? '10%'
+        : designProperties.min_width || moduleWithDesign.min_width || 'auto',
       minHeight:
         designProperties.min_height ||
         moduleWithDesign.min_height ||
@@ -924,14 +927,18 @@ export class UltraSeparatorModule extends BaseUltraModule {
             : 'none',
       boxSizing: 'border-box',
       // Like WPBakery's flex: 1 1 auto - separator grows to fill available space when width >= 100%
-      // Use flex-basis: 0 to ignore width and grow from zero (width acts as max-width constraint)
-      ...(shouldGrow ? { flexGrow: '1', flexShrink: '1', flexBasis: '0' } : {}),
-    } as Record<string, string>;
+      // Use flex-basis: auto to respect width as starting point, then grow to fill space
+      ...(shouldGrow ? { flexGrow: '1', flexShrink: '1', flexBasis: 'auto' } : {}),
+    };
 
     if (separatorModule.separator_style === 'blank') {
       const isVertical = separatorModule.orientation === 'vertical';
       return html`
-        <div class="separator-module-container" style="${this.styleObjectToCss(containerStyles)}">
+        <div
+          class="separator-module-container"
+          data-layout-grow="${shouldGrow ? 'true' : 'false'}"
+          style="${this.styleObjectToCss(containerStyles)}"
+        >
           <div
             class="separator-preview blank-separator"
             style="${isVertical
@@ -1037,6 +1044,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
     return html`
       <div
         class="separator-module-container"
+        data-layout-grow="${shouldGrow ? 'true' : 'false'}"
         style="${this.styleObjectToCss(containerStyles)}; cursor: ${(separatorModule.tap_action &&
           separatorModule.tap_action.action !== 'nothing') ||
         (separatorModule.hold_action && separatorModule.hold_action.action !== 'nothing') ||
@@ -1875,8 +1883,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
     return 'none';
   }
 
-  private styleObjectToCss(styleObj: Record<string, string>): string {
+  private styleObjectToCss(styleObj: Record<string, string | undefined>): string {
     return Object.entries(styleObj)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => {
         // Convert camelCase to kebab-case
         const kebabKey = key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
