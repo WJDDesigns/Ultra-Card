@@ -21,6 +21,7 @@ export declare class UltraBarModule extends BaseUltraModule {
         errors: string[];
     };
     getStyles(): string;
+    private normalizeSizeValue;
     private styleObjectToCss;
     private camelToKebab;
     private getBackgroundImageCSS;

@@ -478,10 +478,23 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   const layoutShouldGrow = horizontalModule.alignment === 'justify';
                   const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
 
+                  // Get preferred width for modules (bars, separators, etc.)
+                  // getChildPreferredWidth handles the logic:
+                  // - Bars < 100%: returns preferred width (fixed sizing)
+                  // - Bars >= 100%: returns null (allows grow flex)
+                  // - Other modules: applies similar logic
+                  const childPreferredWidth =
+                    !layoutShouldGrow && !childShouldGrow
+                      ? this.getChildPreferredWidth(childModule)
+                      : null;
+
                   const flexSegments = [
                     layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
                     childShouldGrow
                       ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                      : '',
+                    !layoutShouldGrow && !childShouldGrow && childPreferredWidth
+                      ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
                       : '',
                   ].filter(Boolean);
 
@@ -499,6 +512,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   return html`
                     <div
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                      data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
                       style="${baseStyles} ${negativeGapStyles}"
                     >
                       ${this._renderChildModulePreview(
@@ -878,53 +892,205 @@ export class UltraHorizontalModule extends BaseUltraModule {
   }
 
   private childShouldFillAvailableSpace(childModule: CardModule): boolean {
-    if (childModule.type !== 'separator') {
-      return false;
-    }
+    if (childModule.type === 'separator') {
+      const separator = childModule as any;
+      const orientation = separator.orientation || 'horizontal';
 
-    const separator = childModule as any;
-    const orientation = separator.orientation || 'horizontal';
-
-    if (orientation === 'vertical') {
-      return false;
-    }
-
-    const sizeCandidates = [
-      separator.width_percent,
-      separator.width,
-      separator?.design?.width,
-      separator?.design?.width_percent,
-    ];
-
-    for (const candidate of sizeCandidates) {
-      if (candidate === undefined || candidate === null || candidate === '') {
-        continue;
-      }
-
-      const normalized = this.normalizeSizeValue(candidate);
-
-      if (!normalized) {
-        continue;
-      }
-
-      if (normalized.unit === '%') {
-        if (normalized.value >= 100) {
-          return true;
-        }
-      } else if (normalized.unit === 'px') {
-        // Explicit pixel width - treat as fixed-sized spacer
+      if (orientation === 'vertical') {
         return false;
       }
+
+      const sizeCandidates = [
+        separator.width_percent,
+        separator.width,
+        separator?.design?.width,
+        separator?.design?.width_percent,
+      ];
+
+      for (const candidate of sizeCandidates) {
+        if (candidate === undefined || candidate === null || candidate === '') {
+          continue;
+        }
+
+        const normalized = this.normalizeSizeValue(candidate);
+
+        if (!normalized) {
+          continue;
+        }
+
+        if (normalized.unit === '%') {
+          if (normalized.value >= 100) {
+            return true;
+          }
+        } else if (normalized.unit === 'px') {
+          // Explicit pixel width - treat as fixed-sized spacer
+          return false;
+        }
+      }
+
+      // Default separator width is 100%, so grow when no explicit width is provided
+      const hasExplicitWidth =
+        separator.width_percent !== undefined ||
+        separator.width !== undefined ||
+        (separator.design &&
+          (separator.design.width !== undefined || separator.design.width_percent !== undefined));
+
+      return !hasExplicitWidth;
     }
 
-    // Default separator width is 100%, so grow when no explicit width is provided
-    const hasExplicitWidth =
-      separator.width_percent !== undefined ||
-      separator.width !== undefined ||
-      (separator.design &&
-        (separator.design.width !== undefined || separator.design.width_percent !== undefined));
+    if (childModule.type === 'bar') {
+      const bar = childModule as any;
 
-    return !hasExplicitWidth;
+      const widthCandidates = [
+        bar?.design?.width,
+        bar?.design?.width_percent,
+        bar?.width,
+        bar?.width_percent,
+      ];
+      const explicitWidthValue = widthCandidates.find(
+        candidate =>
+          candidate !== undefined &&
+          candidate !== null &&
+          String(candidate).trim() !== ''
+      );
+
+      if (explicitWidthValue !== undefined && explicitWidthValue !== null) {
+        const normalizedExplicit = this.normalizeSizeValue(explicitWidthValue);
+
+        if (normalizedExplicit) {
+          if (normalizedExplicit.unit === '%' && normalizedExplicit.value >= 100) {
+            const maxWidthCandidate = bar?.design?.max_width ?? bar?.max_width;
+            const normalizedMaxWidth =
+              maxWidthCandidate !== undefined &&
+              maxWidthCandidate !== null &&
+              String(maxWidthCandidate).trim() !== ''
+                ? this.normalizeSizeValue(maxWidthCandidate)
+                : null;
+
+            if (!normalizedMaxWidth) {
+              return true;
+            }
+
+            if (normalizedMaxWidth.unit === '%' && normalizedMaxWidth.value >= 100) {
+              return true;
+            }
+
+            return false;
+          }
+
+          return false;
+        }
+      }
+
+      const normalizedBarWidth = this.normalizeSizeValue(
+        bar.bar_width !== undefined && bar.bar_width !== null ? bar.bar_width : 100
+      );
+
+      if (!normalizedBarWidth) {
+        return true;
+      }
+
+      if (normalizedBarWidth.unit === '%' && normalizedBarWidth.value >= 100) {
+        const maxWidthCandidate = bar?.design?.max_width ?? bar?.max_width;
+        const normalizedMaxWidth =
+          maxWidthCandidate !== undefined &&
+          maxWidthCandidate !== null &&
+          String(maxWidthCandidate).trim() !== ''
+            ? this.normalizeSizeValue(maxWidthCandidate)
+            : null;
+
+        if (!normalizedMaxWidth) {
+          return true;
+        }
+
+        if (normalizedMaxWidth.unit === '%' && normalizedMaxWidth.value >= 100) {
+          return true;
+        }
+
+        return false;
+      }
+
+      return false;
+    }
+
+    return false;
+  }
+
+  private getChildPreferredWidth(childModule: CardModule): string | null {
+    if (childModule.type === 'bar') {
+      const bar = childModule as any;
+
+      const widthCandidates = [
+        bar?.design?.width,
+        bar?.design?.width_percent,
+        bar?.width,
+        bar?.width_percent,
+      ];
+
+      for (const candidate of widthCandidates) {
+        if (candidate === undefined || candidate === null || String(candidate).trim() === '') {
+          continue;
+        }
+
+        const normalized = this.normalizeSizeValue(candidate);
+        if (!normalized) {
+          continue;
+        }
+
+        if (normalized.unit === '%' && normalized.value < 100) {
+          const clamped = Math.max(1, Math.min(100, normalized.value));
+          return `${clamped}%`;
+        }
+
+        if (normalized.unit === 'px') {
+          return `${Math.max(0, normalized.value)}px`;
+        }
+      }
+
+      const normalizedBarWidth = this.normalizeSizeValue(bar.bar_width ?? 100);
+      if (normalizedBarWidth) {
+        if (normalizedBarWidth.unit === '%' && normalizedBarWidth.value < 100) {
+          const clamped = Math.max(1, Math.min(100, normalizedBarWidth.value));
+          return `${clamped}%`;
+        }
+
+        if (normalizedBarWidth.unit === 'px') {
+          return `${Math.max(0, normalizedBarWidth.value)}px`;
+        }
+      }
+    }
+
+    if (childModule.type === 'separator') {
+      const separator = childModule as any;
+
+      // Check design width first
+      const widthCandidates = [
+        separator?.design?.width,
+        separator?.width_percent,
+      ];
+
+      for (const candidate of widthCandidates) {
+        if (candidate === undefined || candidate === null || String(candidate).trim() === '') {
+          continue;
+        }
+
+        const normalized = this.normalizeSizeValue(candidate);
+        if (!normalized) {
+          continue;
+        }
+
+        if (normalized.unit === '%' && normalized.value < 100) {
+          const clamped = Math.max(1, Math.min(100, normalized.value));
+          return `${clamped}%`;
+        }
+
+        if (normalized.unit === 'px') {
+          return `${Math.max(0, normalized.value)}px`;
+        }
+      }
+    }
+
+    return null;
   }
 
   private normalizeSizeValue(

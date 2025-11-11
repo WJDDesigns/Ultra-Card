@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta13
+
+### 🚀 Improvements
+
+- **Improved css handling of bar modules and separator modules to allow for space constraints** - Enhanced CSS handling for bar and separator modules to better accommodate space constraints
+
+---
+
 ## Version 2.1.0-beta12
 
 ### 🐛 Bug Fixes

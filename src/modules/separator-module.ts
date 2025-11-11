@@ -1057,14 +1057,7 @@ export class UltraSeparatorModule extends BaseUltraModule {
       >
         <div
           class="separator-preview ${separatorModule.orientation === 'vertical' ? 'vertical' : ''}"
-          style="${(() => {
-            const widthValue = this.parseSizeValue(separatorModule.width_percent, 100, 0, true);
-            const numericWidth = this.extractNumericValue(separatorModule.width_percent);
-            const isFullWidth =
-              separatorModule.orientation === 'horizontal' &&
-              (widthValue.endsWith('%') ? numericWidth >= 100 : false);
-            return `width: 100%; ${isFullWidth ? 'text-align: left;' : 'text-align: center;'}`;
-          })()}"
+          style="width: 100%; text-align: left;"
         >
           ${separatorModule.show_title && separatorModule.title
             ? html`
@@ -1507,23 +1500,11 @@ export class UltraSeparatorModule extends BaseUltraModule {
       styles.margin = '0 auto';
       styles.display = 'block';
     } else {
-      const widthValue = this.parseSizeValue(separatorModule.width_percent, 100, 0, true);
-      // For percentages >= 100%, cap the separator line at 100% of its container
-      // The container itself will grow via flex-grow: 1 to push items apart
-      const numericWidth = this.extractNumericValue(separatorModule.width_percent);
-      const isFullWidth = widthValue.endsWith('%') && numericWidth >= 100;
-
-      // The separator line should be 100% of its container when >= 100% is specified
-      // This allows the container to grow and push items apart
-      styles.width = isFullWidth ? '100%' : widthValue;
+      // Horizontal separator - always use 100% width
+      // The parent container will handle the actual width constraint via flex
+      styles.width = '100%';
       styles.height = `${separatorModule.thickness || 1}px`;
-
-      // Only center the separator if width is less than 100%
-      if (isFullWidth) {
-        styles.margin = '0';
-      } else {
-        styles.margin = '0 auto';
-      }
+      styles.margin = '0';
     }
 
     // Default to 'line' if style is not set to ensure preview visibility

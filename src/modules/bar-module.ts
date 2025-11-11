@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { ref, createRef, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, BarModule, UltraCardConfig } from '../types';
@@ -4305,6 +4306,78 @@ export class UltraBarModule extends BaseUltraModule {
       }
     }
 
+    let normalizedWidthValue = Number(barModule.bar_width ?? 100);
+    if (Number.isNaN(normalizedWidthValue)) {
+      const normalizedBarWidth = this.normalizeSizeValue(barModule.bar_width ?? 100);
+      if (normalizedBarWidth && normalizedBarWidth.unit === '%') {
+        normalizedWidthValue = normalizedBarWidth.value;
+      } else {
+        normalizedWidthValue = 100;
+      }
+    }
+    const normalizedWidth = Math.max(1, Math.min(100, normalizedWidthValue));
+    const normalizedBarWidthForGrow = this.normalizeSizeValue(
+      barModule.bar_width !== undefined && barModule.bar_width !== null ? barModule.bar_width : 100
+    );
+
+    const explicitWidthValue =
+      designProperties.width !== undefined &&
+      designProperties.width !== null &&
+      String(designProperties.width).trim() !== ''
+        ? designProperties.width
+        : moduleWithDesign.width;
+    const normalizedExplicitWidth =
+      explicitWidthValue !== undefined &&
+      explicitWidthValue !== null &&
+      String(explicitWidthValue).trim() !== ''
+        ? this.normalizeSizeValue(explicitWidthValue)
+        : null;
+
+    let shouldGrow = false;
+    if (normalizedExplicitWidth) {
+      shouldGrow = normalizedExplicitWidth.unit === '%' && normalizedExplicitWidth.value >= 100;
+    } else if (normalizedBarWidthForGrow) {
+      shouldGrow = normalizedBarWidthForGrow.unit === '%' && normalizedBarWidthForGrow.value >= 100;
+    } else {
+      shouldGrow = true;
+    }
+
+    const maxWidthCandidate =
+      designProperties.max_width !== undefined &&
+      designProperties.max_width !== null &&
+      String(designProperties.max_width).trim() !== ''
+        ? designProperties.max_width
+        : moduleWithDesign.max_width;
+    const normalizedMaxWidth =
+      maxWidthCandidate !== undefined &&
+      maxWidthCandidate !== null &&
+      String(maxWidthCandidate).trim() !== ''
+        ? this.normalizeSizeValue(maxWidthCandidate)
+        : null;
+
+    if (shouldGrow && normalizedMaxWidth) {
+      if (normalizedMaxWidth.unit === '%') {
+        shouldGrow = normalizedMaxWidth.value >= 100;
+      } else {
+        shouldGrow = false;
+      }
+    }
+
+    // Use the actual bar_width setting from the module
+    const barWidth = `${normalizedWidth}%`;
+    let barContainerAlignment = 'flex-start';
+    switch (barModule.bar_alignment) {
+      case 'left':
+        barContainerAlignment = 'flex-start';
+        break;
+      case 'center':
+        barContainerAlignment = 'center';
+        break;
+      case 'right':
+        barContainerAlignment = 'flex-end';
+        break;
+    }
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -4354,7 +4427,8 @@ export class UltraBarModule extends BaseUltraModule {
       height: designProperties.height || moduleWithDesign.height || totalContainerHeightPx,
       maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
       maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
-      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      minWidth:
+        designProperties.min_width || moduleWithDesign.min_width || (shouldGrow ? '0' : 'auto'),
       minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
       overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
       boxSizing: 'border-box',
@@ -4394,23 +4468,6 @@ export class UltraBarModule extends BaseUltraModule {
             ? `${moduleWithDesign.text_shadow_h || '0'} ${moduleWithDesign.text_shadow_v || '0'} ${moduleWithDesign.text_shadow_blur || '0'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,0.25)'}`
             : 'none',
     };
-
-    // Calculate bar container alignment and width
-    const normalizedWidth = Math.max(1, Math.min(100, Number(barModule.bar_width || 100)));
-    // Use the actual bar_width setting from the module
-    const barWidth = `${normalizedWidth}%`;
-    let barContainerAlignment = 'flex-start';
-    switch (barModule.bar_alignment) {
-      case 'left':
-        barContainerAlignment = 'flex-start';
-        break;
-      case 'center':
-        barContainerAlignment = 'center';
-        break;
-      case 'right':
-        barContainerAlignment = 'flex-end';
-        break;
-    }
 
     // Gesture handling variables
     let clickTimeout: any = null;
@@ -4504,18 +4561,43 @@ export class UltraBarModule extends BaseUltraModule {
       <style>
         ${this.getStyles()}
       </style>
-      <div class="bar-module-preview" style=${this.styleObjectToCss(containerStyles)}>
+      <div
+        class="bar-module-preview"
+        data-layout-grow="${shouldGrow ? 'true' : 'false'}"
+        style=${this.styleObjectToCss(containerStyles)}
+        ${ref((el?: Element) => {
+          if (!el) return;
+          
+          // After render, check if parent wrapper has flex constraint
+          // If constrained, ensure bar uses 100% to fill the constrained wrapper
+          setTimeout(() => {
+            const parent = el.parentElement;
+            const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
+            
+            if (isFlexConstrained) {
+              const barContainer = el.querySelector('.bar-container') as HTMLElement;
+              if (barContainer) {
+                // Parent wrapper has fixed width constraint (e.g., 80%)
+                // Set bar to 100% to fill that constrained space
+                barContainer.style.width = '100%';
+              }
+            }
+          }, 0);
+        })}
+      >
         <!-- Bar Container -->
-        <div style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0; overflow: visible;">
+        <div 
+          class="bar-flex-wrapper"
+          style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0; overflow: visible;">
           <div
             class="bar-container ${hoverEffectClass}"
             style="
-            ${normalizedWidth < 100 ? `width: ${barWidth};` : ''}
+            width: ${shouldGrow ? '100%' : barWidth};
             max-width: 100%;
-            flex: ${normalizedWidth < 100 ? '0 0 auto' : '1 1 0'};
+            flex: ${shouldGrow ? '1 1 0' : '0 0 auto'};
             height: ${barHeight}; 
             background: ${trackBackground};
-            ${normalizedWidth < 100 ? 'min-width: 80px;' : 'min-width: 0;'}
+            ${shouldGrow ? 'min-width: 0;' : 'min-width: 80px;'}
             border-radius: ${borderRadius}px;
             overflow: 'visible';
             position: relative;
@@ -5204,6 +5286,12 @@ export class UltraBarModule extends BaseUltraModule {
         min-width: 80px; /* keep a visible track inside flex rows */
         position: relative;
         z-index: 0; /* Establish stacking context */
+      }
+      
+      /* When parent wrapper is flex-constrained, bar flex wrapper should be auto width */
+      /* so justify-content: center/flex-end can position the bar correctly */
+      [data-flex-constrained="true"] .bar-module-preview .bar-flex-wrapper {
+        width: auto !important;
       }
       
       .bar-container {
@@ -6092,9 +6180,35 @@ export class UltraBarModule extends BaseUltraModule {
     `;
   }
 
+  private normalizeSizeValue(value: string | number): { value: number; unit: '%' | 'px' } | null {
+    if (typeof value === 'number') {
+      return { value, unit: '%' };
+    }
+
+    const str = String(value).trim();
+
+    if (!str) {
+      return null;
+    }
+
+    if (str.endsWith('%')) {
+      const numeric = parseFloat(str.slice(0, -1));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
+    }
+
+    if (str.endsWith('px')) {
+      const numeric = parseFloat(str.slice(0, -2));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: 'px' };
+    }
+
+    const numeric = parseFloat(str);
+    return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
+  }
+
   // Helper method to convert style object to CSS string
-  private styleObjectToCss(styles: Record<string, string | number>): string {
+  private styleObjectToCss(styles: Record<string, string | number | undefined>): string {
     return Object.entries(styles)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
       .join('; ');
   }
