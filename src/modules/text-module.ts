@@ -574,7 +574,9 @@ export class UltraTextModule extends BaseUltraModule {
       lineHeight: designProperties.line_height || moduleWithDesign.line_height || 'inherit',
       letterSpacing:
         designProperties.letter_spacing || moduleWithDesign.letter_spacing || 'inherit',
-      whiteSpace: designProperties.white_space || moduleWithDesign.white_space || 'inherit',
+      ...(designProperties.white_space !== undefined || moduleWithDesign.white_space !== undefined
+        ? { whiteSpace: designProperties.white_space || moduleWithDesign.white_space || 'normal' }
+        : {}),
       margin: '0',
 
       display: 'flex',

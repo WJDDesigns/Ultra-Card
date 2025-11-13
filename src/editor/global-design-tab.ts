@@ -564,6 +564,7 @@ export class GlobalDesignTab extends LitElement {
         resetProperties.font_weight = undefined;
         resetProperties.text_transform = undefined;
         resetProperties.font_style = undefined;
+        resetProperties.white_space = undefined;
         break;
       case 'background':
         resetProperties.background_color = undefined;
@@ -722,6 +723,7 @@ export class GlobalDesignTab extends LitElement {
       font_weight: undefined,
       text_transform: undefined,
       font_style: undefined,
+      white_space: undefined,
       // Background properties
       background_color: undefined,
       background_image: undefined,
@@ -1300,134 +1302,199 @@ export class GlobalDesignTab extends LitElement {
 
             <div class="property-group">
               <label>${localize('editor.design.font', lang, 'Font')}:</label>
-              <select
-                .value=${this.designProperties.font_family || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('font_family', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="Arial, sans-serif">Arial</option>
-                <option value="Helvetica, sans-serif">Helvetica</option>
-                <option value="Times New Roman, serif">Times New Roman</option>
-                <option value="Georgia, serif">Georgia</option>
-                <option value="Verdana, sans-serif">Verdana</option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.font_family || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('font_family', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="Helvetica, sans-serif">Helvetica</option>
+                  <option value="Times New Roman, serif">Times New Roman</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="Verdana, sans-serif">Verdana</option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_family', '')}
+                  title="${localize(
+                    'editor.design.reset_font',
+                    lang,
+                    'Reset font to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.font_weight', lang, 'Font Weight')}:</label>
-              <select
-                .value=${this.designProperties.font_weight || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="100">
-                  ${localize('editor.design.weight_thin', lang, '100 - Thin')}
-                </option>
-                <option value="300">
-                  ${localize('editor.design.weight_light', lang, '300 - Light')}
-                </option>
-                <option value="400">
-                  ${localize('editor.design.weight_normal', lang, '400 - Normal')}
-                </option>
-                <option value="500">
-                  ${localize('editor.design.weight_medium', lang, '500 - Medium')}
-                </option>
-                <option value="600">
-                  ${localize('editor.design.weight_semi_bold', lang, '600 - Semi Bold')}
-                </option>
-                <option value="700">
-                  ${localize('editor.design.weight_bold', lang, '700 - Bold')}
-                </option>
-                <option value="900">
-                  ${localize('editor.design.weight_black', lang, '900 - Black')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.font_weight || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="100">
+                    ${localize('editor.design.weight_thin', lang, '100 - Thin')}
+                  </option>
+                  <option value="300">
+                    ${localize('editor.design.weight_light', lang, '300 - Light')}
+                  </option>
+                  <option value="400">
+                    ${localize('editor.design.weight_normal', lang, '400 - Normal')}
+                  </option>
+                  <option value="500">
+                    ${localize('editor.design.weight_medium', lang, '500 - Medium')}
+                  </option>
+                  <option value="600">
+                    ${localize('editor.design.weight_semi_bold', lang, '600 - Semi Bold')}
+                  </option>
+                  <option value="700">
+                    ${localize('editor.design.weight_bold', lang, '700 - Bold')}
+                  </option>
+                  <option value="900">
+                    ${localize('editor.design.weight_black', lang, '900 - Black')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_weight', '')}
+                  title="${localize(
+                    'editor.design.reset_font_weight',
+                    lang,
+                    'Reset font weight to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.text_transform', lang, 'Text Transform')}:</label>
-              <select
-                .value=${this.designProperties.text_transform || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="none">
-                  ${localize('editor.design.transform_none', lang, 'None')}
-                </option>
-                <option value="uppercase">
-                  ${localize('editor.design.transform_uppercase', lang, 'UPPERCASE')}
-                </option>
-                <option value="lowercase">
-                  ${localize('editor.design.transform_lowercase', lang, 'lowercase')}
-                </option>
-                <option value="capitalize">
-                  ${localize('editor.design.transform_capitalize', lang, 'Capitalize')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.text_transform || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="none">
+                    ${localize('editor.design.transform_none', lang, 'None')}
+                  </option>
+                  <option value="uppercase">
+                    ${localize('editor.design.transform_uppercase', lang, 'UPPERCASE')}
+                  </option>
+                  <option value="lowercase">
+                    ${localize('editor.design.transform_lowercase', lang, 'lowercase')}
+                  </option>
+                  <option value="capitalize">
+                    ${localize('editor.design.transform_capitalize', lang, 'Capitalize')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('text_transform', '')}
+                  title="${localize(
+                    'editor.design.reset_text_transform',
+                    lang,
+                    'Reset text transform to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.font_style', lang, 'Font Style')}:</label>
-              <select
-                .value=${this.designProperties.font_style || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="normal">
-                  ${localize('editor.design.style_normal', lang, 'Normal')}
-                </option>
-                <option value="italic">
-                  ${localize('editor.design.style_italic', lang, 'Italic')}
-                </option>
-                <option value="oblique">
-                  ${localize('editor.design.style_oblique', lang, 'Oblique')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.font_style || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="normal">
+                    ${localize('editor.design.style_normal', lang, 'Normal')}
+                  </option>
+                  <option value="italic">
+                    ${localize('editor.design.style_italic', lang, 'Italic')}
+                  </option>
+                  <option value="oblique">
+                    ${localize('editor.design.style_oblique', lang, 'Oblique')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_style', '')}
+                  title="${localize(
+                    'editor.design.reset_font_style',
+                    lang,
+                    'Reset font style to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.white_space', lang, 'White Space')}:</label>
-              <select
-                .value=${this.designProperties.white_space || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('white_space', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="normal">
-                  ${localize('editor.design.white_space_normal', lang, 'Normal')}
-                </option>
-                <option value="nowrap">
-                  ${localize('editor.design.white_space_nowrap', lang, 'No Wrap')}
-                </option>
-                <option value="pre">
-                  ${localize('editor.design.white_space_pre', lang, 'Pre')}
-                </option>
-                <option value="pre-wrap">
-                  ${localize('editor.design.white_space_pre_wrap', lang, 'Pre Wrap')}
-                </option>
-                <option value="pre-line">
-                  ${localize('editor.design.white_space_pre_line', lang, 'Pre Line')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.white_space || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('white_space', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="normal">
+                    ${localize('editor.design.white_space_normal', lang, 'Normal')}
+                  </option>
+                  <option value="nowrap">
+                    ${localize('editor.design.white_space_nowrap', lang, 'No Wrap')}
+                  </option>
+                  <option value="pre">
+                    ${localize('editor.design.white_space_pre', lang, 'Pre')}
+                  </option>
+                  <option value="pre-wrap">
+                    ${localize('editor.design.white_space_pre_wrap', lang, 'Pre Wrap')}
+                  </option>
+                  <option value="pre-line">
+                    ${localize('editor.design.white_space_pre_line', lang, 'Pre Line')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('white_space', '')}
+                  title="${localize(
+                    'editor.design.reset_white_space',
+                    lang,
+                    'Reset white space to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
           `,
           'text'
@@ -4457,7 +4524,8 @@ export class GlobalDesignTab extends LitElement {
         width: 100%;
       }
 
-      .input-with-reset .property-input {
+      .input-with-reset .property-input,
+      .input-with-reset .property-select {
         flex: 1;
       }
 

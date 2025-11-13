@@ -1233,7 +1233,12 @@
       "white_space_nowrap": "No Wrap",
       "white_space_pre": "Pre",
       "white_space_pre_wrap": "Pre Wrap",
-      "white_space_pre_line": "Pre Line"
+      "white_space_pre_line": "Pre Line",
+      "reset_font": "Reset font to default",
+      "reset_font_weight": "Reset font weight to default",
+      "reset_text_transform": "Reset text transform to default",
+      "reset_font_style": "Reset font style to default",
+      "reset_white_space": "Reset white space to default"
     },
     "modules": {
       "text": "Tekst module",

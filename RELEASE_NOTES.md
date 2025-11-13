@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta17
+
+### 🚀 Improvements
+
+- **Improved word wrap and added separate reset values to text items in design tab** - Enhanced word wrap functionality and added individual reset controls for text items in the design tab
+
+---
+
 ## Version 2.1.0-beta16
 
 ### 🚀 Improvements
