@@ -2517,6 +2517,9 @@ export class UltraIconModule extends BaseUltraModule {
 
               const isActive = this._evaluateIconState(icon, hass);
 
+              // Store template results in local variables (icons may be read-only)
+              let templateContainerBgColor: string | undefined;
+
               // Determine what to show based on state
               const shouldShowIcon = isActive
                 ? icon.show_icon_when_active !== false
@@ -2601,6 +2604,9 @@ export class UltraIconModule extends BaseUltraModule {
                     }
                     if (parsed.state_color) {
                       (icon as any)._template_state_color = parsed.state_color;
+                    }
+                    if (parsed.container_background_color) {
+                      templateContainerBgColor = parsed.container_background_color;
                     }
                   }
                 }
@@ -2900,16 +2906,21 @@ export class UltraIconModule extends BaseUltraModule {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: icon.vertical_alignment || 'center',
-                // No default padding so zero layouts are possible
-                padding: '0',
+                // Apply padding from design properties if set, otherwise use 0
+                padding:
+                  designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
+                    ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
+                    : '0',
                 borderRadius:
-                  icon.container_background_shape === 'circle'
-                    ? '50%'
-                    : icon.container_background_shape === 'rounded'
-                      ? '8px'
-                      : icon.container_background_shape === 'square'
-                        ? '0'
-                        : '0',
+                  designProperties.border_radius
+                    ? this.addPixelUnit(designProperties.border_radius) || '0'
+                    : icon.container_background_shape === 'circle'
+                      ? '50%'
+                      : icon.container_background_shape === 'rounded'
+                        ? '8px'
+                        : icon.container_background_shape === 'square'
+                          ? '0'
+                          : '0',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 width: icon.container_width ? `${icon.container_width}%` : 'auto',
@@ -2919,9 +2930,14 @@ export class UltraIconModule extends BaseUltraModule {
                 icon.container_background_shape && icon.container_background_shape !== 'none';
 
               if (hasContainerBackground) {
+                // Priority: template result > configured container_background_color > default
+                const containerBgColor =
+                  templateContainerBgColor ||
+                  icon.container_background_color ||
+                  '#808080';
                 const { styles: backgroundStyles } = computeBackgroundStyles({
-                  color: icon.container_background_color || '#808080',
-                  fallback: icon.container_background_color || '#808080',
+                  color: containerBgColor,
+                  fallback: containerBgColor,
                   image: this.getBackgroundImageCSS(icon, hass),
                   imageSize: (icon as any).background_size || 'cover',
                   imagePosition: icon.background_position || 'center',
@@ -2929,8 +2945,18 @@ export class UltraIconModule extends BaseUltraModule {
                 });
                 Object.assign(containerStyles, backgroundStyles);
               } else {
-                containerStyles.background = 'transparent';
-                containerStyles.backgroundColor = 'transparent';
+                // Even if container_background_shape is 'none', check for template background color
+                if (templateContainerBgColor) {
+                  containerStyles.backgroundColor = templateContainerBgColor;
+                  containerStyles.background = templateContainerBgColor;
+                  // Apply border-radius from design properties when template background is used
+                  if (designProperties.border_radius) {
+                    containerStyles.borderRadius = this.addPixelUnit(designProperties.border_radius) || '0';
+                  }
+                } else {
+                  containerStyles.background = 'transparent';
+                  containerStyles.backgroundColor = 'transparent';
+                }
               }
 
               // Gesture detection variables (using closure to maintain state per icon)
@@ -3513,6 +3539,9 @@ export class UltraIconModule extends BaseUltraModule {
     const entityState = hass?.states[icon.entity];
     const currentState = entityState?.state || 'unknown';
 
+    // Store template results in local variables (icons may be read-only)
+    let templateContainerBgColor: string | undefined;
+
     // Use exact same logic as main card - determine what to show based on state
     const shouldShowIcon = isActiveState
       ? icon.show_icon_when_active !== false
@@ -3587,6 +3616,9 @@ export class UltraIconModule extends BaseUltraModule {
           }
           if (parsed.state_color) {
             (icon as any)._template_state_color = parsed.state_color;
+          }
+          if (parsed.container_background_color) {
+            templateContainerBgColor = parsed.container_background_color;
           }
         }
       }
@@ -3840,15 +3872,21 @@ export class UltraIconModule extends BaseUltraModule {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: icon.vertical_alignment || 'center',
-      padding: '0',
+      // Apply padding from design properties if set, otherwise use 0
+      padding:
+        designProperties?.padding_top || designProperties?.padding_bottom || designProperties?.padding_left || designProperties?.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
+          : '0',
       borderRadius:
-        icon.container_background_shape === 'circle'
-          ? '50%'
-          : icon.container_background_shape === 'rounded'
-            ? '8px'
-            : icon.container_background_shape === 'square'
-              ? '0'
-              : '8px',
+        designProperties?.border_radius
+          ? this.addPixelUnit(designProperties.border_radius) || '0'
+          : icon.container_background_shape === 'circle'
+            ? '50%'
+            : icon.container_background_shape === 'rounded'
+              ? '8px'
+              : icon.container_background_shape === 'square'
+                ? '0'
+                : '8px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       width: icon.container_width ? `${icon.container_width}%` : 'auto',
@@ -3859,9 +3897,14 @@ export class UltraIconModule extends BaseUltraModule {
       icon.container_background_shape && icon.container_background_shape !== 'none';
 
     if (hasContainerBackground) {
+      // Priority: template result > configured container_background_color > default
+      const containerBgColor =
+        templateContainerBgColor ||
+        icon.container_background_color ||
+        '#808080';
       const { styles: backgroundStyles } = computeBackgroundStyles({
-        color: icon.container_background_color || '#808080',
-        fallback: icon.container_background_color || '#808080',
+        color: containerBgColor,
+        fallback: containerBgColor,
         image: this.getBackgroundImageCSS(icon, hass),
         imageSize: (icon as any).background_size || 'cover',
         imagePosition: icon.background_position || 'center',
@@ -3869,8 +3912,18 @@ export class UltraIconModule extends BaseUltraModule {
       });
       Object.assign(containerStyles, backgroundStyles);
     } else {
-      containerStyles.background = 'transparent';
-      containerStyles.backgroundColor = 'transparent';
+      // Even if container_background_shape is 'none', check for template background color
+      if (templateContainerBgColor) {
+        containerStyles.backgroundColor = templateContainerBgColor;
+        containerStyles.background = templateContainerBgColor;
+        // Apply border-radius from design properties when template background is used
+        if (designProperties?.border_radius) {
+          containerStyles.borderRadius = this.addPixelUnit(designProperties.border_radius) || '0';
+        }
+      } else {
+        containerStyles.background = 'transparent';
+        containerStyles.backgroundColor = 'transparent';
+      }
     }
 
     // Use actual spacing values for true-to-life preview
@@ -4080,6 +4133,53 @@ export class UltraIconModule extends BaseUltraModule {
           // Force the active state based on the forceActive parameter
           const isActive = forceActive;
 
+          // Store template results in local variables (icons may be read-only)
+          let templateContainerBgColor: string | undefined;
+
+          // PRIORITY 1: Evaluate unified template if enabled (needed for container_background_color)
+          if (icon.unified_template_mode && icon.unified_template) {
+            if (!this._templateService && hass) {
+              this._templateService = new TemplateService(hass);
+            }
+
+            const templateHash = this._hashString(icon.unified_template);
+            const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+            if (!hass.__uvc_template_strings) {
+              hass.__uvc_template_strings = {};
+            }
+
+            if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+              const context = this._getEntityContext(icon, hass);
+              this._templateService.subscribeToTemplate(
+                icon.unified_template,
+                templateKey,
+                () => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  }
+                },
+                context
+              );
+            }
+
+            const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+            if (unifiedResult && String(unifiedResult).trim() !== '') {
+              const parsed = parseUnifiedTemplate(unifiedResult);
+              if (!hasTemplateError(parsed)) {
+                if (parsed.icon) (icon as any)._template_icon = parsed.icon;
+                if (parsed.icon_color) (icon as any)._template_icon_color = parsed.icon_color;
+                if (parsed.name) (icon as any)._template_name = parsed.name;
+                if (parsed.state_text !== undefined) (icon as any)._template_state_text = parsed.state_text;
+                if (parsed.name_color) (icon as any)._template_name_color = parsed.name_color;
+                if (parsed.state_color) (icon as any)._template_state_color = parsed.state_color;
+                if (parsed.container_background_color) {
+                  templateContainerBgColor = parsed.container_background_color;
+                }
+              }
+            }
+          }
+
           // Determine what to show based on forced state
           const shouldShowIcon = isActive
             ? icon.show_icon_when_active !== false
@@ -4254,9 +4354,14 @@ export class UltraIconModule extends BaseUltraModule {
             icon.container_background_shape && icon.container_background_shape !== 'none';
 
           if (hasContainerBackground) {
+            // Priority: template result > configured container_background_color > default
+            const containerBgColor =
+              templateContainerBgColor ||
+              icon.container_background_color ||
+              '#808080';
             const { styles: backgroundStyles } = computeBackgroundStyles({
-              color: icon.container_background_color || '#808080',
-              fallback: icon.container_background_color || '#808080',
+              color: containerBgColor,
+              fallback: containerBgColor,
               image: this.getBackgroundImageCSS(icon, hass),
               imageSize: (icon as any).background_size || 'cover',
               imagePosition: icon.background_position || 'center',
@@ -4264,8 +4369,14 @@ export class UltraIconModule extends BaseUltraModule {
             });
             Object.assign(containerStyles, backgroundStyles);
           } else {
-            containerStyles.background = 'transparent';
-            containerStyles.backgroundColor = 'transparent';
+            // Even if container_background_shape is 'none', check for template background color
+            if (templateContainerBgColor) {
+              containerStyles.backgroundColor = templateContainerBgColor;
+              containerStyles.background = templateContainerBgColor;
+            } else {
+              containerStyles.background = 'transparent';
+              containerStyles.backgroundColor = 'transparent';
+            }
           }
 
           // Use actual spacing values for true-to-life preview
@@ -6385,27 +6496,6 @@ export class UltraIconModule extends BaseUltraModule {
       .join('; ');
   }
 
-  // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(value)) {
-      return `${value}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return value;
-  }
-
   private _renderSizeControl(
     iconModule: IconModule,
     index: number,
@@ -6893,6 +6983,61 @@ export class UltraIconModule extends BaseUltraModule {
     };
 
     attemptInjection();
+  }
+
+  /**
+   * Helper method to add pixel unit if needed
+   * Handles edge cases like "20x" -> "20px" and validates unit strings
+   * Supports both string and number types for flexibility
+   */
+  private addPixelUnit(value: string | number | undefined): string | undefined {
+    if (!value && value !== 0) return value as string | undefined;
+    
+    // Convert number to string
+    const valueStr = String(value);
+    
+    // Handle special CSS values
+    if (valueStr === 'auto' || valueStr === 'none' || valueStr === 'inherit' || valueStr === 'initial' || valueStr === 'unset') {
+      return valueStr;
+    }
+    
+    // Normalize "x" to "px" (common typo when users can't type "px")
+    if (valueStr.endsWith('x') && !valueStr.endsWith('px')) {
+      const normalized = valueStr.replace(/x$/, 'px');
+      return normalized;
+    }
+    
+    // Check if value already has valid CSS units
+    if (
+      valueStr.includes('px') ||
+      valueStr.includes('%') ||
+      valueStr.includes('em') ||
+      valueStr.includes('rem') ||
+      valueStr.includes('vh') ||
+      valueStr.includes('vw') ||
+      valueStr.includes('ch') ||
+      valueStr.includes('ex') ||
+      valueStr.includes('vmin') ||
+      valueStr.includes('vmax')
+    ) {
+      return valueStr;
+    }
+    
+    // If value is just a number (with optional decimal), add px
+    if (/^\d+(\.\d+)?$/.test(valueStr)) {
+      return `${valueStr}px`;
+    }
+    
+    // If value is multiple numbers separated by spaces, add px to each
+    if (/^[\d\.\s]+$/.test(valueStr)) {
+      return valueStr
+        .split(' ')
+        .map(v => (v.trim() && /^\d+(\.\d+)?$/.test(v.trim()) ? `${v.trim()}px` : v.trim()))
+        .join(' ');
+    }
+    
+    // Otherwise return as-is (might be a CSS variable, calc(), etc.)
+    return valueStr;
   }
 
   /**

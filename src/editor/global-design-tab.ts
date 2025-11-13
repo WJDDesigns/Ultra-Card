@@ -16,6 +16,7 @@ export interface DesignProperties {
   font_weight?: string;
   text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   font_style?: 'normal' | 'italic' | 'oblique';
+  white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
   background_color?: string;
   background_image?: string;
   background_image_type?: 'none' | 'upload' | 'entity' | 'url';
@@ -1399,6 +1400,35 @@ export class GlobalDesignTab extends LitElement {
                 </option>
               </select>
             </div>
+
+            <div class="property-group">
+              <label>${localize('editor.design.white_space', lang, 'White Space')}:</label>
+              <select
+                .value=${this.designProperties.white_space || ''}
+                @change=${(e: Event) =>
+                  this._updateProperty('white_space', (e.target as HTMLSelectElement).value)}
+                class="property-select"
+              >
+                <option value="">
+                  ${localize('editor.design.default_option', lang, '– Default –')}
+                </option>
+                <option value="normal">
+                  ${localize('editor.design.white_space_normal', lang, 'Normal')}
+                </option>
+                <option value="nowrap">
+                  ${localize('editor.design.white_space_nowrap', lang, 'No Wrap')}
+                </option>
+                <option value="pre">
+                  ${localize('editor.design.white_space_pre', lang, 'Pre')}
+                </option>
+                <option value="pre-wrap">
+                  ${localize('editor.design.white_space_pre_wrap', lang, 'Pre Wrap')}
+                </option>
+                <option value="pre-line">
+                  ${localize('editor.design.white_space_pre_line', lang, 'Pre Line')}
+                </option>
+              </select>
+            </div>
           `,
           'text'
         )}
@@ -2149,23 +2179,10 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.border_radius || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('border_radius', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
+                  @input=${this._createRobustInputHandler(
+                    'border_radius',
+                    (value: string) => this._updateProperty('border_radius', value)
+                  )}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(
                       e,
@@ -2174,6 +2191,10 @@ export class GlobalDesignTab extends LitElement {
                     )}
                   placeholder="5px, 50%, 0.3em, 12px 0"
                   class="property-input"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
                 <button
                   class="reset-btn"

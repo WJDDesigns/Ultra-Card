@@ -8,6 +8,7 @@ import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { TemplateService } from '../services/template-service';
 
 export class UltraGaugeModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -22,7 +23,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     tags: ['gauge', 'sensor', 'value', 'indicator', 'speedometer', 'meter'],
   };
 
-  private _templateService?: any;
+  private _templateService?: TemplateService;
 
   createDefault(id?: string, hass?: HomeAssistant): GaugeModule {
     const suitableEntity = this.findSuitableSensor(hass);
@@ -1584,8 +1585,17 @@ export class UltraGaugeModule extends BaseUltraModule {
   ): TemplateResult {
     const gaugeModule = module as GaugeModule;
 
+    // Update template service if hass changed
+    if (this._templateService && hass) {
+      this._templateService.updateHass(hass);
+    }
+
     // GRACEFUL RENDERING: Check for incomplete configuration
-    if (!gaugeModule.entity || gaugeModule.entity.trim() === '') {
+    // For template mode, allow rendering even without entity
+    if (
+      gaugeModule.value_type !== 'template' &&
+      (!gaugeModule.entity || gaugeModule.entity.trim() === '')
+    ) {
       return this.renderGradientErrorState(
         'Select Entity',
         'Choose an entity in the General tab',
@@ -1674,8 +1684,51 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     if (valueType === 'template' && gaugeModule.value_template) {
-      // Template evaluation would go here
-      // For now, return a default value
+      // Initialize template service if needed
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      if (hass) {
+        // Ensure template string cache exists on hass
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+
+        // Create unique template key using hash
+        const templateHash = this._hashString(gaugeModule.value_template);
+        const templateKey = `gauge_value_${gaugeModule.id}_${templateHash}`;
+
+        // Subscribe to template if not already subscribed
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          this._templateService.subscribeToTemplate(
+            gaugeModule.value_template,
+            templateKey,
+            () => {
+              // Trigger update when template result changes
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            }
+          );
+        }
+
+        // Get rendered template result
+        const rendered = hass.__uvc_template_strings?.[templateKey];
+        if (rendered !== undefined && String(rendered).trim() !== '') {
+          const num = parseFloat(String(rendered));
+          if (!isNaN(num)) {
+            return num;
+          }
+        }
+      }
+
+      // Return default if template not yet evaluated or invalid
       return gaugeModule.min_value || 0;
     }
 
@@ -4214,5 +4267,15 @@ export class UltraGaugeModule extends BaseUltraModule {
         cursor: pointer;
       }
     `;
+  }
+
+  private _hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+      const chr = str.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
   }
 }

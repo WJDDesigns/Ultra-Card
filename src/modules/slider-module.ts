@@ -1084,7 +1084,11 @@ export class UltraSliderModule extends BaseUltraModule {
         let retryCount = 0;
 
         const attemptInit = () => {
-          const paginationEl = element.querySelector('.swiper-pagination');
+          const containerElement = element.closest('.ultra-slider-container') as HTMLElement | null;
+          const paginationSelector = `.swiper-pagination[data-slider-id="${sliderId}"]`;
+          const scrollbarSelector = `.swiper-scrollbar[data-slider-id="${sliderId}"]`;
+          const paginationEl = containerElement?.querySelector(paginationSelector) as HTMLElement | null;
+          const scrollbarEl = containerElement?.querySelector(scrollbarSelector) as HTMLElement | null;
           const nextEl = element.querySelector('.swiper-button-next');
           const prevEl = element.querySelector('.swiper-button-prev');
           const slideCount = element.querySelectorAll('.swiper-slide').length;
@@ -1092,7 +1096,6 @@ export class UltraSliderModule extends BaseUltraModule {
           // CRITICAL: Check if container has dimensions before initializing
           // Get the ACTUAL container element (the .swiper element, not the .ultra-slider-container)
           const swiperElement = element;
-          const containerElement = (element.parentElement as HTMLElement)?.closest('.ultra-slider-container') as HTMLElement;
           
           // For Live Preview, ensure we're measuring the correct container
           let containerWidth = swiperElement.offsetWidth;
@@ -1161,13 +1164,16 @@ export class UltraSliderModule extends BaseUltraModule {
           }
 
           try {
-            const swiperOptions = this.mapConfigToSwiper(sliderModule, pages.length);
+            const swiperOptions = this.mapConfigToSwiper(
+              sliderModule,
+              pages.length,
+              sliderId
+            );
 
             // Override element references for Shadow DOM
             if (swiperOptions.pagination && paginationEl) {
               swiperOptions.pagination.el = paginationEl;
             }
-            const scrollbarEl = element.querySelector('.swiper-scrollbar');
             if (swiperOptions.scrollbar && scrollbarEl) {
               swiperOptions.scrollbar.el = scrollbarEl;
             }
@@ -1343,7 +1349,9 @@ export class UltraSliderModule extends BaseUltraModule {
               
               const totalSlides = swiper.slides.length;
               const currentIndex = swiper.activeIndex;
-              const paginationEl = element.querySelector('.swiper-pagination') as HTMLElement;
+              const paginationEl = containerElement?.querySelector(
+                paginationSelector
+              ) as HTMLElement | null;
               if (!paginationEl) return;
 
               const bullets = Array.from(paginationEl.querySelectorAll('.swiper-pagination-bullet')) as HTMLElement[];
@@ -1878,6 +1886,42 @@ export class UltraSliderModule extends BaseUltraModule {
     const isVertical = sliderModule.slider_direction === 'vertical';
     const defaultHeight = sliderModule.slider_height || 400;
 
+    const paginationOverlay = sliderModule.pagination_overlay ?? false;
+    const paginationPosition =
+      sliderModule.pagination_position || (isVertical ? 'right' : 'bottom');
+    const paginationStyle = sliderModule.pagination_style || 'dots';
+    const isNumbersPagination = paginationStyle === 'numbers';
+    const isScrollbarPagination = paginationStyle === 'scrollbar';
+    const paginationOutside =
+      sliderModule.show_pagination && !paginationOverlay && !isVertical;
+    const paginationRowSpacing = paginationOutside
+      ? isNumbersPagination || isScrollbarPagination
+        ? 32
+        : 16
+      : 0;
+    const bottomPaginationMargin =
+      paginationOutside && isNumbersPagination ? 80 : 0;
+    const paginationZIndex = paginationOverlay ? 20 : 0;
+    const getPaginationRowTemplate = () =>
+      html`
+        <div
+          class="slider-pagination-row"
+          data-slider-id="${sliderId}"
+          data-position="${paginationPosition}"
+        >
+          ${isScrollbarPagination
+            ? html`
+                <div class="swiper-scrollbar" data-slider-id="${sliderId}"></div>
+              `
+            : html`
+                <div
+                  class="swiper-pagination pagination-${paginationPosition}"
+                  data-slider-id="${sliderId}"
+                ></div>
+              `}
+        </div>
+      `;
+
     // Detect if effect requires fixed height for proper display
     const transitionEffect = sliderModule.transition_effect || 'slide';
     const requiresFixedHeight = ['fade', 'flip', 'cube', 'coverflow'].includes(
@@ -1943,12 +1987,13 @@ export class UltraSliderModule extends BaseUltraModule {
           /* Add padding for pagination when overlay is disabled (only applies when auto_height is true) */
           ${!isVertical &&
         sliderModule.show_pagination &&
-        sliderModule.pagination_style !== 'scrollbar' &&
         (sliderModule.auto_height ?? true) &&
-        !(sliderModule.pagination_overlay ?? false)
+        !paginationOverlay &&
+        !isNumbersPagination &&
+        !isScrollbarPagination
           ? `
-            ${sliderModule.pagination_position === 'top' ? 'padding-top: 32px;' : ''}
-            ${sliderModule.pagination_position === 'bottom' || !sliderModule.pagination_position ? 'padding-bottom: 32px;' : ''}
+            ${paginationPosition === 'top' ? 'padding-top: 32px;' : ''}
+            ${paginationPosition === 'bottom' ? 'padding-bottom: 32px;' : ''}
           `
           : ''}
           ${isVertical &&
@@ -1957,8 +2002,8 @@ export class UltraSliderModule extends BaseUltraModule {
         (sliderModule.auto_height ?? true) &&
         !(sliderModule.pagination_overlay ?? false)
           ? `
-            ${sliderModule.pagination_position === 'left' ? 'padding-left: 32px;' : ''}
-            ${sliderModule.pagination_position === 'right' || (!sliderModule.pagination_position && sliderModule.slider_direction === 'vertical') ? 'padding-right: 32px;' : ''}
+            ${paginationPosition === 'left' ? 'padding-left: 32px;' : ''}
+            ${paginationPosition === 'right' ? 'padding-right: 32px;' : ''}
           `
           : ''}
         }
@@ -2287,13 +2332,13 @@ export class UltraSliderModule extends BaseUltraModule {
         /* Custom pagination styling */
         .ultra-slider-container .swiper-pagination {
           position: ${isVertical ||
-        (sliderModule.pagination_overlay ?? false) ||
+        paginationOverlay ||
         !(sliderModule.auto_height ?? true)
           ? 'absolute'
           : 'relative'};
-          z-index: 10;
+          z-index: ${paginationZIndex};
           pointer-events: all;
-          ${isVertical && (sliderModule.pagination_position === 'left' || sliderModule.pagination_position === 'right')
+          ${isVertical && (paginationPosition === 'left' || paginationPosition === 'right')
             ? '' /* Left/right pagination styles handled separately below */
             : isVertical
               ? `
@@ -2304,25 +2349,63 @@ export class UltraSliderModule extends BaseUltraModule {
                 height: auto;
                 flex-direction: column;
               `
-              : (sliderModule.pagination_overlay ?? false) || !(sliderModule.auto_height ?? true)
+              : paginationOverlay || !(sliderModule.auto_height ?? true)
                 ? `
                 bottom: 10px;
                 left: 50%;
                 transform: translateX(-50%);
                 width: auto;
                 height: auto;
-                z-index: 20;
                 pointer-events: all;
               `
                 : `
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                margin-top: 10px;
               `}
         }
+        ${paginationOutside
+          ? `
+        .ultra-slider-container .slider-pagination-row {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          gap: 8px;
+        }
+        .ultra-slider-container .slider-pagination-row[data-position='bottom'] {
+          margin-top: ${bottomPaginationMargin}px;
+        }
+        .ultra-slider-container .slider-pagination-row[data-position='top'] {
+          margin-bottom: ${paginationRowSpacing}px;
+        }
+        .ultra-slider-container .slider-pagination-row .swiper-pagination,
+        .ultra-slider-container .slider-pagination-row .swiper-scrollbar {
+          position: relative !important;
+          transform: none !important;
+          left: auto !important;
+          right: auto !important;
+          top: auto !important;
+          bottom: auto !important;
+          width: 100%;
+          margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .ultra-slider-container .slider-pagination-row .swiper-scrollbar {
+          height: 8px;
+          background: ${sliderModule.pagination_color || 'rgba(0, 0, 0, 0.1)'};
+          border-radius: 4px;
+        }
+        .ultra-slider-container .slider-pagination-row .swiper-scrollbar .swiper-scrollbar-drag {
+          background: ${sliderModule.pagination_active_color || 'var(--primary-color)'};
+          border-radius: 4px;
+        }
+        `
+          : ''}
         /* Ensure pagination is visible when positioned on left/right (vertical sliders only) */
-        ${isVertical && (sliderModule.pagination_position === 'left' || sliderModule.pagination_position === 'right')
+        ${isVertical && (paginationPosition === 'left' || paginationPosition === 'right')
           ? `
         /* Remove wrapper margin - padding handles spacing */
         `
@@ -2518,11 +2601,11 @@ export class UltraSliderModule extends BaseUltraModule {
         /* Custom pagination styling */
         .ultra-slider-container .swiper-pagination {
           position: ${isVertical ||
-        (sliderModule.pagination_overlay ?? false) ||
+        paginationOverlay ||
         !(sliderModule.auto_height ?? true)
           ? 'absolute'
           : 'relative'};
-          z-index: 10;
+          z-index: ${paginationZIndex};
           pointer-events: all;
           ${isVertical
           ? `
@@ -2533,21 +2616,20 @@ export class UltraSliderModule extends BaseUltraModule {
             height: auto;
             flex-direction: column;
           `
-          : (sliderModule.pagination_overlay ?? false) || !(sliderModule.auto_height ?? true)
+          : paginationOverlay || !(sliderModule.auto_height ?? true)
             ? `
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
             width: auto;
             height: auto;
-            z-index: 20;
+            z-index: ${paginationZIndex};
             pointer-events: all;
           `
             : `
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 10px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
           `}
         }
         /* Pagination position overrides - must come after base styles */
@@ -2576,7 +2658,7 @@ export class UltraSliderModule extends BaseUltraModule {
           display: flex !important;
           flex-direction: row !important;
           align-items: center !important;
-          z-index: 10 !important;
+          z-index: ${paginationZIndex} !important;
           padding-left: 10px;
         }
         .ultra-slider-container .swiper-pagination.pagination-left .swiper-pagination-bullet {
@@ -2599,7 +2681,7 @@ export class UltraSliderModule extends BaseUltraModule {
           display: flex !important;
           flex-direction: row !important;
           align-items: center !important;
-          z-index: 10 !important;
+          z-index: ${paginationZIndex} !important;
           padding-right: 10px;
         }
         .ultra-slider-container .swiper-pagination.pagination-right .swiper-pagination-bullet {
@@ -2618,6 +2700,7 @@ export class UltraSliderModule extends BaseUltraModule {
           right: auto !important;
           transform: translateX(-50%) !important;
           position: absolute !important;
+          z-index: ${paginationZIndex} !important;
           ${isVertical ? 'left: auto !important; right: 10px !important; top: auto !important; bottom: 0 !important; transform: translateY(0) !important;' : ''}
         }
         /* Scrollbar styling */
@@ -2639,7 +2722,7 @@ export class UltraSliderModule extends BaseUltraModule {
           `}
           background: ${sliderModule.pagination_color || 'rgba(0, 0, 0, 0.1)'};
           border-radius: 4px;
-          z-index: 10;
+          z-index: ${paginationZIndex};
         }
         .ultra-slider-container .swiper-scrollbar-drag {
           background: ${sliderModule.pagination_active_color || 'var(--primary-color)'};
@@ -2670,6 +2753,7 @@ export class UltraSliderModule extends BaseUltraModule {
       </style>
 
       <div class="ultra-slider-container uc-module-container" data-slider-id="${sliderId}">
+        ${paginationOutside && paginationPosition === 'top' ? getPaginationRowTemplate() : ''}
         <div
           class="swiper ${uniqueClass}"
           data-preview-context="${previewContext || 'dashboard'}"
@@ -2830,14 +2914,21 @@ export class UltraSliderModule extends BaseUltraModule {
             )}
           </div>
 
-          ${sliderModule.show_pagination && sliderModule.pagination_style === 'scrollbar'
-            ? html`<div class="swiper-scrollbar"></div>`
-            : sliderModule.show_pagination
-              ? html`<div
-                  class="swiper-pagination pagination-${sliderModule.pagination_position ||
-                  'bottom'}"
-                ></div>`
-              : ''}
+          ${sliderModule.show_pagination && (paginationOverlay || isVertical)
+            ? isScrollbarPagination
+              ? html`
+                  <div
+                    class="swiper-scrollbar"
+                    data-slider-id="${sliderId}"
+                  ></div>
+                `
+              : html`
+                  <div
+                    class="swiper-pagination pagination-${paginationPosition}"
+                    data-slider-id="${sliderId}"
+                  ></div>
+                `
+            : ''}
           ${sliderModule.show_arrows
             ? html`
                 <div class="swiper-button-prev">
@@ -2875,12 +2966,17 @@ export class UltraSliderModule extends BaseUltraModule {
               `
             : ''}
         </div>
+        ${paginationOutside && paginationPosition !== 'top' ? getPaginationRowTemplate() : ''}
       </div>
     `;
   }
 
   // Map Ultra Card slider configuration to Swiper options
-  private mapConfigToSwiper(sliderModule: SliderModule, pageCount: number): any {
+  private mapConfigToSwiper(
+    sliderModule: SliderModule,
+    pageCount: number,
+    sliderId: string
+  ): any {
     // Determine slides per view - use user setting, but default to 1 for pagebreak-based sliders
     const slidesPerView = sliderModule.slides_per_view || 1;
     const spaceBetween = sliderModule.space_between ?? (sliderModule.gap || 0);
@@ -2987,17 +3083,19 @@ export class UltraSliderModule extends BaseUltraModule {
     let scrollbarOptions: any = false;
 
     if (sliderModule.show_pagination) {
+      const paginationSelector = `.swiper-pagination[data-slider-id="${sliderId}"]`;
+      const scrollbarSelector = `.swiper-scrollbar[data-slider-id="${sliderId}"]`;
       const style = sliderModule.pagination_style || 'dots';
 
       // Handle scrollbar separately (it's not pagination)
       if (style === 'scrollbar') {
         scrollbarOptions = {
-          el: '.swiper-scrollbar',
+          el: scrollbarSelector,
           draggable: true,
         };
       } else {
         paginationOptions = {
-          el: '.swiper-pagination',
+          el: paginationSelector,
           clickable: true,
         };
 

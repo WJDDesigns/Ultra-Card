@@ -11,6 +11,7 @@ export interface DesignProperties {
     font_weight?: string;
     text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
     font_style?: 'normal' | 'italic' | 'oblique';
+    white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
     background_color?: string;
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';

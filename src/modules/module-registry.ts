@@ -24,6 +24,7 @@ import { UltraAnimatedWeatherModule } from './animated-weather-module';
 import { UltraAnimatedForecastModule } from './animated-forecast-module';
 import { UltraExternalCardModule } from './external-card-module';
 import { UltraVideoBgModule } from './video-bg-module';
+import { UltraClimateModule } from './climate-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -73,6 +74,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraExternalCardModule());
     // Register video background module (Pro feature)
     this.registerModule(new UltraVideoBgModule());
+    // Register climate module (Pro feature)
+    this.registerModule(new UltraClimateModule());
   }
 
   // Register a new module (for core modules or third-party modules)

@@ -1227,7 +1227,13 @@
       "position_absolute": "Absolute",
       "position_fixed": "Fixed",
       "position_sticky": "Sticky",
-      "background_filter": "Background Filter"
+      "background_filter": "Background Filter",
+      "white_space": "White Space",
+      "white_space_normal": "Normal",
+      "white_space_nowrap": "No Wrap",
+      "white_space_pre": "Pre",
+      "white_space_pre_wrap": "Pre Wrap",
+      "white_space_pre_line": "Pre Line"
     },
     "modules": {
       "text": "Moduł tekstu",

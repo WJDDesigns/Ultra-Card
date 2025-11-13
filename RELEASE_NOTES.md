@@ -1,5 +1,17 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta14
+
+### 🚀 Improvements
+
+- **Added new Climate Module for pro members** - New Climate Module added for Ultra Card Pro members
+- **Added white space to design tab** - White space controls added to design tab (works with some modules)
+- **Adjusted z-index and spacing** - Improved z-index handling and spacing adjustments across modules
+- **Improved template mode in some modules** - Enhanced template mode functionality in various modules
+- **Added background templating to icon and info module** - Background templating support added to icon and info modules
+
+---
+
 ## Version 2.1.0-beta13
 
 ### 🚀 Improvements

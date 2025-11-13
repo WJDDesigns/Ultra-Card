@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'map';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'map';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -1748,7 +1748,7 @@ export interface VideoBackgroundModule extends BaseModule {
     rules?: VideoBackgroundRule[];
     global_card_transparency: GlobalCardTransparency;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -1775,6 +1775,7 @@ export interface SharedDesignProperties {
     font_weight?: string;
     text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
     font_style?: 'normal' | 'italic' | 'oblique';
+    white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
     background_color?: string;
     background_image?: string;
     background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
@@ -1985,4 +1986,63 @@ export interface EditorTarget extends EventTarget {
     checked?: boolean;
     configValue?: string;
     configAttribute?: string;
+}
+export interface ClimateModule extends BaseModule {
+    type: 'climate';
+    entity: string;
+    name?: string;
+    show_current_temp?: boolean;
+    show_target_temp?: boolean;
+    show_humidity?: boolean;
+    show_mode_switcher?: boolean;
+    show_power_button?: boolean;
+    show_fan_controls?: boolean;
+    show_preset_modes?: boolean;
+    show_equipment_status?: boolean;
+    show_temp_controls?: boolean;
+    show_dial?: boolean;
+    enable_dial_interaction?: boolean;
+    info_position?: 'top' | 'bottom';
+    dial_size?: number;
+    dial_color_heating?: string;
+    dial_color_cooling?: string;
+    dial_color_idle?: string;
+    dial_color_off?: string;
+    dynamic_colors?: boolean;
+    temp_step_override?: number;
+    temperature_unit?: 'auto' | 'fahrenheit' | 'celsius';
+    temp_control_size?: number;
+    fan_layout?: 'chips' | 'dropdown';
+    preset_layout?: 'chips' | 'dropdown';
+    humidity_icon?: string;
+    current_temp_color?: string;
+    target_temp_color?: string;
+    mode_text_color?: string;
+    humidity_color?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
 }

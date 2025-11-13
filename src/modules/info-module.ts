@@ -2177,6 +2177,10 @@ export class UltraInfoModule extends BaseUltraModule {
                     if (parsed.state_color) {
                       (entity as any)._template_state_color = parsed.state_color;
                     }
+                    if (parsed.container_background_color) {
+                      (entity as any)._template_container_background_color =
+                        parsed.container_background_color;
+                    }
                   }
                 }
               }
@@ -2448,6 +2452,15 @@ export class UltraInfoModule extends BaseUltraModule {
                     -webkit-user-select: none;
                     -moz-user-select: none;
                     -ms-user-select: none;
+                    ${(entity as any)._template_container_background_color
+                      ? `background-color: ${(entity as any)._template_container_background_color};`
+                      : ''}
+                    ${designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
+                      ? `padding: ${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'};`
+                      : ''}
+                    ${designProperties.border_radius
+                      ? `border-radius: ${this.addPixelUnit(designProperties.border_radius) || '0px'};`
+                      : ''}
                   "
                     @click=${(e: Event) => this.handleClick(e, infoModule, hass)}
                     @dblclick=${(e: Event) => this.handleDoubleClick(e, infoModule, hass)}
@@ -2479,6 +2492,15 @@ export class UltraInfoModule extends BaseUltraModule {
                         ? 'flex-end'
                         : 'center'};
                     gap: ${iconGap}px;
+                    ${(entity as any)._template_container_background_color
+                      ? `background-color: ${(entity as any)._template_container_background_color};`
+                      : ''}
+                    ${designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
+                      ? `padding: ${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'};`
+                      : ''}
+                    ${designProperties.border_radius
+                      ? `border-radius: ${this.addPixelUnit(designProperties.border_radius) || '0px'};`
+                      : ''}
                   "
                   >
                     ${iconPosition === 'left' || iconPosition === 'top'
@@ -3372,24 +3394,27 @@ export class UltraInfoModule extends BaseUltraModule {
   }
 
   // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
+  private addPixelUnit(value: string | number | undefined): string | undefined {
+    if (!value && value !== 0) return value as string | undefined;
+
+    // Convert number to string
+    const valueStr = String(value);
 
     // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(value)) {
-      return `${value}px`;
+    if (/^\d+$/.test(valueStr)) {
+      return `${valueStr}px`;
     }
 
     // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(value)) {
-      return value
+    if (/^[\d\s]+$/.test(valueStr)) {
+      return valueStr
         .split(' ')
         .map(v => (v.trim() ? `${v}px` : v))
         .join(' ');
     }
 
     // Otherwise return as-is (already has units like px, em, %, etc.)
-    return value;
+    return valueStr;
   }
 
   private _hashString(str: string): number {

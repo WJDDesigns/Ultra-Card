@@ -72,10 +72,12 @@ Return JSON to control multiple properties:
 ### Icon Module
 - `icon` - Icon name (e.g., `"mdi:fire"`)
 - `icon_color` - CSS color (e.g., `"#FF0000"`, `"red"`, `"rgb(255,0,0)"`)
+- `container_background_color` - Container background color (e.g., `"#FF0000"`, `"red"`, `"rgba(255,0,0,0.5)"`)
 
 ### Info Module
 - `icon` - Icon name
 - `icon_color` - Icon color
+- `container_background_color` - Entity container background color
 
 ### Text Module
 - `content` - Text content
@@ -153,6 +155,19 @@ Return JSON to control multiple properties:
   }
 {% endif %}
 ```
+
+### Example 7: Battery with Background Highlight
+
+```jinja2
+{% set level = state | int %}
+{
+  "icon": "mdi:battery-{{ (level / 10) | round(0) * 10 }}",
+  "icon_color": "{% if level <= 20 %}#FF0000{% elif level <= 50 %}#FF8800{% else %}#00CC00{% endif %}",
+  "container_background_color": "{% if level <= 20 %}rgba(255,0,0,0.2){% elif level <= 50 %}rgba(255,136,0,0.15){% else %}transparent{% endif %}"
+}
+```
+
+This example shows how to highlight items needing attention - low battery items get a red background tint, medium battery gets orange, and good battery has no background.
 
 ## Active/Inactive State Control
 

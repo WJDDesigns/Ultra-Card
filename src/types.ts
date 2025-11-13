@@ -97,6 +97,7 @@ export interface BaseModule {
     | 'pagebreak'
     | 'button'
     | 'markdown'
+    | 'climate'
     | 'camera'
     | 'graphs'
     | 'dropdown'
@@ -1413,7 +1414,16 @@ export interface SliderModule extends BaseModule {
 
   // Pagination Configuration
   show_pagination?: boolean;
-  pagination_style?: 'dots' | 'dots-and-dash' | 'dash-lines' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar' | 'scrollbar' | 'dynamic';
+  pagination_style?:
+    | 'dots'
+    | 'dots-and-dash'
+    | 'dash-lines'
+    | 'numbers'
+    | 'thumbnails'
+    | 'fraction'
+    | 'progressbar'
+    | 'scrollbar'
+    | 'dynamic';
   pagination_position?: 'top' | 'bottom' | 'left' | 'right';
   pagination_color?: string;
   pagination_active_color?: string;
@@ -3203,6 +3213,7 @@ export type CardModule =
   | GraphsModule
   | DropdownModule
   | LightModule
+  | ClimateModule
   | MapModule
   | AnimatedClockModule
   | AnimatedWeatherModule
@@ -3258,6 +3269,7 @@ export interface SharedDesignProperties {
   font_weight?: string;
   text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   font_style?: 'normal' | 'italic' | 'oblique';
+  white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
   // Background properties
   background_color?: string;
   background_image?: string;
@@ -3393,7 +3405,14 @@ export interface CardColumn {
   name?: string;
   modules: CardModule[];
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-  horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch' | 'space-between' | 'space-around' | 'justify';
+  horizontal_alignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'stretch'
+    | 'space-between'
+    | 'space-around'
+    | 'justify';
   background_color?: string;
   padding?: number;
   margin?: number;
@@ -3604,4 +3623,107 @@ export interface EditorTarget extends EventTarget {
   checked?: boolean;
   configValue?: string;
   configAttribute?: string;
+}
+
+// Climate Module
+export interface ClimateModule extends BaseModule {
+  type: 'climate';
+  entity: string;
+  name?: string;
+
+  // Display toggles
+  show_current_temp?: boolean;
+  show_target_temp?: boolean;
+  show_humidity?: boolean;
+  show_mode_switcher?: boolean;
+  show_power_button?: boolean;
+  show_fan_controls?: boolean;
+  show_preset_modes?: boolean;
+  show_equipment_status?: boolean;
+  show_temp_controls?: boolean;
+  show_dial?: boolean;
+  enable_dial_interaction?: boolean;
+
+  // Layout / info placement
+  info_position?: 'top' | 'bottom';
+
+  // Dial configuration
+  dial_size?: number;
+  dial_color_heating?: string;
+  dial_color_cooling?: string;
+  dial_color_idle?: string;
+  dial_color_off?: string;
+
+  // Dynamic colors (auto-set based on HVAC action)
+  dynamic_colors?: boolean; // Enable automatic color changes based on heating/cooling
+
+  // Temperature adjustment
+  temp_step_override?: number;
+  temperature_unit?: 'auto' | 'fahrenheit' | 'celsius';
+  temp_control_size?: number; // Size of +/- buttons in pixels (24-60)
+
+  // Control layout
+  fan_layout?: 'chips' | 'dropdown';
+  preset_layout?: 'chips' | 'dropdown';
+
+  // Visual customization
+  humidity_icon?: string;
+  current_temp_color?: string;
+  target_temp_color?: string;
+  mode_text_color?: string;
+  humidity_color?: string;
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+
+  // Hover configuration (reuse standard flag)
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
 }

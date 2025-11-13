@@ -2957,6 +2957,7 @@ export class LayoutTab extends LitElement {
     if (updates.hasOwnProperty('text_transform'))
       moduleUpdates.text_transform = updates.text_transform;
     if (updates.hasOwnProperty('font_style')) moduleUpdates.font_style = updates.font_style;
+    if (updates.hasOwnProperty('white_space')) moduleUpdates.white_space = updates.white_space;
     if (updates.hasOwnProperty('background_color')) {
       const currentModule = this._getModuleForDesignUpdate();
       if (!moduleUpdates.design) moduleUpdates.design = { ...(currentModule?.design || {}) };
@@ -7488,6 +7489,7 @@ export class LayoutTab extends LitElement {
       font_weight: (module as any).design?.font_weight || (module as any).font_weight,
       text_transform: (module as any).design?.text_transform || (module as any).text_transform,
       font_style: (module as any).design?.font_style || (module as any).font_style,
+      white_space: (module as any).design?.white_space || (module as any).white_space,
       background_color:
         (module as any).design?.background_color || (module as any).background_color,
       background_image:
@@ -8252,8 +8254,99 @@ export class LayoutTab extends LitElement {
               : ''}
           </div>
         </div>
+
+        <!-- Column Vertical Alignment Section -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize(
+              'editor.layout.column_vertical_alignment',
+              this.hass?.locale?.language || 'en',
+              'Column Vertical Alignment'
+            )}
+          </div>
+          <div class="field-container">
+            <div class="field-description">
+              ${localize(
+                'editor.layout.column_vertical_alignment_desc',
+                this.hass?.locale?.language || 'en',
+                'Set the vertical alignment for all columns in this row. This controls how content is aligned vertically within each column.'
+              )}
+            </div>
+            <select
+              .value=${this._getColumnVerticalAlignment(row) || 'center'}
+              @change=${(e: Event) => {
+                const value = (e.target as HTMLSelectElement).value as 'top' | 'center' | 'bottom' | 'stretch';
+                this._updateAllColumnsVerticalAlignment(row, value);
+              }}
+              style="width: 100%; padding: 8px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
+            >
+              <option value="top">
+                ${localize('editor.layout.alignment_top', this.hass?.locale?.language || 'en', 'Top')}
+              </option>
+              <option value="center">
+                ${localize(
+                  'editor.layout.alignment_center',
+                  this.hass?.locale?.language || 'en',
+                  'Center'
+                )}
+              </option>
+              <option value="bottom">
+                ${localize(
+                  'editor.layout.alignment_bottom',
+                  this.hass?.locale?.language || 'en',
+                  'Bottom'
+                )}
+              </option>
+              <option value="stretch">
+                ${localize(
+                  'editor.layout.alignment_stretch',
+                  this.hass?.locale?.language || 'en',
+                  'Stretch'
+                )}
+              </option>
+            </select>
+          </div>
+        </div>
       </div>
     `;
+  }
+
+  /**
+   * Get the column vertical alignment value for display in row settings
+   * Returns the first column's alignment if all columns have the same, otherwise returns undefined
+   */
+  private _getColumnVerticalAlignment(row: CardRow): 'top' | 'center' | 'bottom' | 'stretch' | undefined {
+    if (!row.columns || row.columns.length === 0) return undefined;
+    
+    const firstAlignment = row.columns[0].vertical_alignment;
+    if (!firstAlignment) return undefined;
+    
+    // Check if all columns have the same alignment
+    const allSame = row.columns.every(col => col.vertical_alignment === firstAlignment);
+    return allSame ? firstAlignment : undefined;
+  }
+
+  /**
+   * Update vertical alignment for all columns in a row
+   */
+  private _updateAllColumnsVerticalAlignment(
+    row: CardRow,
+    alignment: 'top' | 'center' | 'bottom' | 'stretch'
+  ): void {
+    if (this._selectedRowForSettings === -1) return;
+    
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const targetRow = newLayout.rows[this._selectedRowForSettings];
+    
+    // Update all columns in the row
+    if (targetRow.columns) {
+      targetRow.columns.forEach((column: CardColumn) => {
+        column.vertical_alignment = alignment;
+      });
+    }
+    
+    this._updateLayout(newLayout);
   }
 
   private _renderRowActionsTab(row: CardRow): TemplateResult {
@@ -9493,6 +9586,7 @@ export class LayoutTab extends LitElement {
         return undefined;
       })(),
       font_style: (module as any).design?.font_style || (module as any).font_style,
+      white_space: (module as any).design?.white_space || (module as any).white_space,
       // Use design-scoped background color only so default top-level values
       // don't mark Background as edited on brand-new modules
       background_color: (module as any).design?.background_color,

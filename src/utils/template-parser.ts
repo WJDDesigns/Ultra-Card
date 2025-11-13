@@ -8,6 +8,7 @@ export interface UnifiedTemplateResult {
   // Display properties (icon module)
   icon?: string;
   icon_color?: string;
+  container_background_color?: string; // Container background color for icon and info modules
 
   // Display properties (general)
   name?: string;
@@ -65,6 +66,8 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     if (templateResult.icon !== undefined) result.icon = String(templateResult.icon);
     if (templateResult.icon_color !== undefined)
       result.icon_color = String(templateResult.icon_color);
+    if (templateResult.container_background_color !== undefined)
+      result.container_background_color = String(templateResult.container_background_color);
     if (templateResult.name !== undefined) result.name = String(templateResult.name);
     if (templateResult.name_color !== undefined)
       result.name_color = String(templateResult.name_color);
@@ -142,6 +145,8 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       // Icon module properties
       if (parsed.icon !== undefined) result.icon = String(parsed.icon);
       if (parsed.icon_color !== undefined) result.icon_color = String(parsed.icon_color);
+      if (parsed.container_background_color !== undefined)
+        result.container_background_color = String(parsed.container_background_color);
       if (parsed.name !== undefined) result.name = String(parsed.name);
       if (parsed.name_color !== undefined) result.name_color = String(parsed.name_color);
       if (parsed.state_text !== undefined) result.state_text = String(parsed.state_text);

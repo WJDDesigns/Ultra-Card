@@ -60,7 +60,6 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _debouncedUpdateIconWithLockSync;
     private getBackgroundImageCSS;
     private styleObjectToCss;
-    private addPixelUnit;
     private _renderSizeControl;
     private _renderFieldWithLock;
     private _renderSizeControlWithLock;
@@ -68,6 +67,12 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _getInlineAnimation;
     private _applyAnimationDirectly;
     private _injectKeyframesForAllSplitPreviewIcons;
+    /**
+     * Helper method to add pixel unit if needed
+     * Handles edge cases like "20x" -> "20px" and validates unit strings
+     * Supports both string and number types for flexibility
+     */
+    private addPixelUnit;
     /**
      * Format entity state value with units if show_units is enabled
      */

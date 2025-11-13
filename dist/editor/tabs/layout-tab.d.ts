@@ -257,6 +257,15 @@ export declare class LayoutTab extends LitElement {
     private _renderRowSettings;
     private _renderColumnSettings;
     private _renderRowGeneralTab;
+    /**
+     * Get the column vertical alignment value for display in row settings
+     * Returns the first column's alignment if all columns have the same, otherwise returns undefined
+     */
+    private _getColumnVerticalAlignment;
+    /**
+     * Update vertical alignment for all columns in a row
+     */
+    private _updateAllColumnsVerticalAlignment;
     private _renderRowActionsTab;
     private _renderRowLogicTab;
     private _renderRowDesignTab;
