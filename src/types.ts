@@ -847,10 +847,14 @@ export interface GaugeModule extends BaseModule {
     | 'circle'
     | 'highlight'
     | 'cap'
+    | 'icon'
     | 'custom';
   pointer_color?: string;
   pointer_length?: number; // Percentage of gauge radius (1-100)
   pointer_width?: number; // Width in pixels
+  pointer_icon?: string; // Icon name (e.g., 'mdi:gauge') for icon pointer style
+  pointer_icon_color?: string; // Color for icon pointer style
+  pointer_icon_size?: number; // Size of icon in pixels for icon pointer style
 
   // Color Configuration
   gauge_color_mode?: 'solid' | 'gradient' | 'segments';

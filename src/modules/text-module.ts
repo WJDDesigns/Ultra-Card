@@ -398,16 +398,27 @@ export class UltraTextModule extends BaseUltraModule {
                       'Template to render the text using Jinja2 syntax'
                     )}
                   </div>
-                  <ultra-template-editor
-                    .hass=${hass}
-                    .value=${textModule.template || ''}
-                    .placeholder=${"{{ states('sensor.example') }}"}
-                    .minHeight=${100}
-                    .maxHeight=${300}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ template: e.detail.value });
+                  <div
+                    @mousedown=${(e: Event) => {
+                      // Only stop propagation for drag operations, not clicks on the editor
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                        e.stopPropagation();
+                      }
                     }}
-                  ></ultra-template-editor>
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${textModule.template || ''}
+                      .placeholder=${"{{ states('sensor.example') }}"}
+                      .minHeight=${100}
+                      .maxHeight=${300}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ template: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                  </div>
                 </div>
 
                 <div class="template-examples">

@@ -6,9 +6,12 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { FormUtils } from '../utils/form-utils';
 import '../components/ultra-color-picker';
 import '../components/uc-gradient-editor';
+import '../components/ultra-template-editor';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import { buildEntityContext } from '../utils/template-context';
 
 export class UltraGaugeModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -49,7 +52,10 @@ export class UltraGaugeModule extends BaseUltraModule {
       pointer_style: 'needle',
       pointer_color: 'var(--primary-color)',
       pointer_length: 80,
-      pointer_width: 4,
+      pointer_width: 6,
+      pointer_icon: 'mdi:gauge',
+      pointer_icon_color: '#FFFFFF',
+      pointer_icon_size: 24,
 
       // Color Configuration
       gauge_color_mode: 'gradient',
@@ -117,6 +123,10 @@ export class UltraGaugeModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
+
+      // Unified template system
+      unified_template_mode: false,
+      unified_template: '',
     };
   }
 
@@ -171,6 +181,9 @@ export class UltraGaugeModule extends BaseUltraModule {
           border-radius: 8px;
           padding: 16px;
           margin-bottom: 32px;
+        }
+        .settings-section label {
+          width: auto;
         }
         .section-title {
           font-size: 18px;
@@ -275,6 +288,39 @@ export class UltraGaugeModule extends BaseUltraModule {
           gap: 8px;
           margin-bottom: 8px;
         }
+        .template-section {
+          background: var(--card-background-color);
+          border-radius: 8px;
+          padding: 16px;
+          border: 1px solid var(--divider-color);
+          margin-bottom: 32px;
+        }
+        .template-content {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .template-help {
+          font-size: 12px;
+          color: var(--secondary-text-color);
+          margin-top: 12px;
+          padding: 12px;
+          background: rgba(var(--rgb-primary-color), 0.05);
+          border-radius: 4px;
+        }
+        .template-help p {
+          margin: 8px 0;
+        }
+        .template-help ul {
+          margin: 8px 0 8px 20px;
+        }
+        .template-help code {
+          background: var(--code-editor-background-color, #1e1e1e);
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-family: monospace;
+          font-size: 11px;
+        }
       </style>
 
       ${this.renderBasicConfiguration(gaugeModule, hass, updateModule)}
@@ -360,14 +406,43 @@ export class UltraGaugeModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const valueType = gaugeModule.value_type || 'entity';
+    let unifiedTemplateEnabled = gaugeModule.unified_template_mode || false;
+
+    // Auto-migrate: If legacy template exists but unified template mode is off, enable it and migrate
+    if (
+      !unifiedTemplateEnabled &&
+      gaugeModule.value_template &&
+      gaugeModule.value_template.trim() !== '' &&
+      !gaugeModule.unified_template
+    ) {
+      // Auto-migrate on render
+      const updates: Partial<GaugeModule> = {
+        unified_template_mode: true,
+        unified_template: gaugeModule.value_template,
+        value_type: 'entity',
+        value_template: '',
+      };
+      updateModule(updates);
+      unifiedTemplateEnabled = true;
+    }
 
     return html`
       <div class="settings-section">
         <div class="section-title">VALUE CONFIGURATION</div>
 
-        <div class="field-group" style="margin-bottom: 24px;">
-          <div class="field-title">Value Source</div>
-          <div class="field-description">How to calculate the gauge value.</div>
+        <!-- Value Source -->
+        <div class="field-group" style="margin-bottom: 24px; ${unifiedTemplateEnabled ? 'opacity: 0.5; pointer-events: none;' : ''}">
+          <div class="field-title">
+            Value Source
+            ${unifiedTemplateEnabled
+              ? html`<span style="font-size: 12px; color: var(--secondary-text-color); margin-left: 8px; font-weight: normal;">(Disabled - Template Mode Active)</span>`
+              : ''}
+          </div>
+          <div class="field-description">
+            ${unifiedTemplateEnabled
+              ? 'Value Source options are disabled when Template Mode is active. Use the template editor below to control the gauge value.'
+              : 'How to calculate the gauge value.'}
+          </div>
           ${this.renderUcForm(
             hass,
             { value_type: valueType },
@@ -375,7 +450,6 @@ export class UltraGaugeModule extends BaseUltraModule {
               this.selectField('value_type', [
                 { value: 'entity', label: 'Entity State' },
                 { value: 'attribute', label: 'Entity Attribute' },
-                { value: 'template', label: 'Template' },
               ]),
             ],
             (e: CustomEvent) => {
@@ -387,7 +461,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             false
           )}
         </div>
-        ${valueType === 'attribute'
+        ${valueType === 'attribute' && !unifiedTemplateEnabled
           ? html`
               <div class="conditional-fields-group">
                 ${FormUtils.renderField(
@@ -411,36 +485,95 @@ export class UltraGaugeModule extends BaseUltraModule {
               </div>
             `
           : ''}
-        ${valueType === 'template'
-          ? html`
-              <div class="conditional-fields-group">
-                ${FormUtils.renderField(
-                  'Value Template',
-                  'Jinja2 template to calculate the gauge value. Should return a numeric value.',
-                  hass,
-                  { value_template: gaugeModule.value_template || '' },
-                  [FormUtils.createSchemaItem('value_template', { text: { multiline: true } })],
-                  (e: CustomEvent) =>
-                    updateModule({ value_template: e.detail.value.value_template })
-                )}
 
-                <div
-                  class="template-examples"
-                  style="margin-top: 12px; padding: 12px; background: var(--code-editor-background-color, #1e1e1e); border-radius: 4px;"
+        <!-- Template Mode Section -->
+        <div class="template-section" style="margin-bottom: 24px; margin-top: 24px;">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;"
+          >
+            <div class="field-title" style="margin: 0;">Template Mode</div>
+            <ha-switch
+              .checked=${unifiedTemplateEnabled}
+              @change=${(e: Event) => {
+                const checked = (e.target as HTMLInputElement).checked;
+                const updates: Partial<GaugeModule> = { unified_template_mode: checked };
+                
+                // Migrate existing value_template to unified_template if enabling Template Mode
+                if (checked && gaugeModule.value_template && !gaugeModule.unified_template) {
+                  updates.unified_template = gaugeModule.value_template;
+                  // Clear legacy template mode
+                  updates.value_type = 'entity';
+                  updates.value_template = '';
+                }
+                
+                updateModule(updates);
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }}
+            ></ha-switch>
+          </div>
+          <div class="field-description" style="margin-bottom: 16px;">
+            Use Jinja2 templates for dynamic value and color control.
+          </div>
+
+          ${unifiedTemplateEnabled
+            ? html`
+                <div 
+                  class="template-content"
+                  @mousedown=${(e: Event) => {
+                    // Only stop propagation for drag operations, not clicks on the editor
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                      e.stopPropagation();
+                    }
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
                 >
-                  <div style="font-size: 12px; color: #9cdcfe; margin-bottom: 8px;">Examples:</div>
-                  <div
-                    style="font-family: monospace; font-size: 11px; color: #d4d4d4; margin-bottom: 4px;"
-                  >
-                    {{ states('sensor.battery') | float }}
-                  </div>
-                  <div style="font-family: monospace; font-size: 11px; color: #d4d4d4;">
-                    {{ state_attr('climate.home', 'current_temperature') | float }}
+                  <ultra-template-editor
+                    .hass=${hass}
+                    .value=${gaugeModule.unified_template || ''}
+                    .placeholder=${'{% set temp = state | float %}\n{\n  "value": {{ temp }},\n  "gauge_color": "{% if temp > 25 %}#FF4444{% elif temp > 20 %}#FF8800{% else %}#00CC00{% endif %}"\n}'}
+                    .minHeight=${200}
+                    .maxHeight=${500}
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ unified_template: e.detail.value });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                  ></ultra-template-editor>
+                  <div class="template-help">
+                    <p><strong>Return simple number for value-only:</strong></p>
+                    <ul>
+                      <li><code>{{ states('sensor.temperature') | float }}</code> → Changes gauge value only</li>
+                    </ul>
+                    <p><strong>Return JSON for multiple properties:</strong></p>
+                    <ul>
+                      <li><code>{ "value": 75, "gauge_color": "#FF0000" }</code></li>
+                      <li>Available properties: <code>value</code> (number), <code>gauge_color</code> (CSS color)</li>
+                    </ul>
+                    <p><strong>Entity context variables (no need to hardcode entity ID):</strong></p>
+                    <ul>
+                      <li><code>entity</code> → Entity ID (${gaugeModule.entity || 'N/A'})</li>
+                      <li><code>state</code> → Current state value</li>
+                      <li><code>name</code> → Entity name</li>
+                      <li><code>attributes</code> → All entity attributes</li>
+                      <li><code>unit</code> → Unit of measurement</li>
+                      <li><code>domain</code> → Entity domain (e.g., 'sensor', 'input_number')</li>
+                      <li><code>device_class</code> → Device class</li>
+                    </ul>
+                    <p><strong>Example - Dynamic color based on temperature:</strong></p>
+                    <code
+                      style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px;"
+                    >
+                      {% set temp = state | float %}<br />
+                      {<br />
+                      &nbsp;&nbsp;"value": {{ temp }},<br />
+                      &nbsp;&nbsp;"gauge_color": "{% if temp > 25 %}#FF4444{% elif temp > 20 %}#FF8800{% else %}#00CC00{% endif %}"<br />
+                      }
+                    </code>
                   </div>
                 </div>
-              </div>
-            `
-          : ''}
+              `
+            : ''}
+        </div>
       </div>
     `;
   }
@@ -547,7 +680,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const pointerStyle = gaugeModule.pointer_style || 'needle';
-    const showLengthWidth = !['highlight', 'cap'].includes(pointerStyle);
+    const showLengthWidth = !['highlight', 'cap', 'icon'].includes(pointerStyle);
 
     if (!showLengthWidth) return html``;
 
@@ -630,6 +763,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                         { value: 'circle', label: 'Circle' },
                         { value: 'highlight', label: 'Track Highlight' },
                         { value: 'cap', label: 'Track Cap' },
+                        { value: 'icon', label: 'Icon' },
                       ]),
                     ],
                     (e: CustomEvent) => {
@@ -643,18 +777,67 @@ export class UltraGaugeModule extends BaseUltraModule {
                   )}
                 </div>
 
-                <div class="field-container" style="margin-bottom: 24px;">
-                  <div class="field-title">Pointer Color</div>
-                  <div class="field-description">Color of the pointer.</div>
-                  <ultra-color-picker
-                    style="width: 100%;"
-                    .value=${gaugeModule.pointer_color || ''}
-                    .defaultValue=${'var(--primary-color)'}
-                    .hass=${hass}
-                    @value-changed=${(e: CustomEvent) =>
-                      updateModule({ pointer_color: e.detail.value })}
-                  ></ultra-color-picker>
-                </div>
+                ${gaugeModule.pointer_style === 'icon'
+                  ? html`
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">Pointer Icon</div>
+                        <div class="field-description">Select an icon to display as the pointer.</div>
+                        ${FormUtils.renderField(
+                          '',
+                          '',
+                          hass,
+                          { pointer_icon: gaugeModule.pointer_icon || 'mdi:gauge' },
+                          [FormUtils.createSchemaItem('pointer_icon', { icon: {} })],
+                          (e: CustomEvent) =>
+                            updateModule({ pointer_icon: e.detail.value.pointer_icon })
+                        )}
+                      </div>
+
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">Icon Color</div>
+                        <div class="field-description">Color of the icon pointer.</div>
+                        <ultra-color-picker
+                          style="width: 100%;"
+                          .value=${gaugeModule.pointer_icon_color || ''}
+                          .defaultValue=${'#FFFFFF'}
+                          .hass=${hass}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ pointer_icon_color: e.detail.value })}
+                        ></ultra-color-picker>
+                      </div>
+
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">Icon Size</div>
+                        <div class="field-description">Size of the icon in pixels (8-48).</div>
+                        ${FormUtils.renderCleanForm(
+                          hass,
+                          { pointer_icon_size: gaugeModule.pointer_icon_size ?? 24 },
+                          [
+                            FormUtils.createSchemaItem('pointer_icon_size', {
+                              number: { mode: 'box', min: 8, max: 48, step: 1 },
+                            }),
+                          ],
+                          (e: CustomEvent) => {
+                            const value = e.detail.value.pointer_icon_size;
+                            updateModule({ pointer_icon_size: value === '' ? undefined : Number(value) });
+                          }
+                        )}
+                      </div>
+                    `
+                  : html`
+                      <div class="field-container" style="margin-bottom: 24px;">
+                        <div class="field-title">Pointer Color</div>
+                        <div class="field-description">Color of the pointer.</div>
+                        <ultra-color-picker
+                          style="width: 100%;"
+                          .value=${gaugeModule.pointer_color || ''}
+                          .defaultValue=${'var(--primary-color)'}
+                          .hass=${hass}
+                          @value-changed=${(e: CustomEvent) =>
+                            updateModule({ pointer_color: e.detail.value })}
+                        ></ultra-color-picker>
+                      </div>
+                    `}
 
                 ${this.renderPointerSizeFields(gaugeModule, hass, updateModule)}
               </div>
@@ -670,10 +853,24 @@ export class UltraGaugeModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     const colorMode = gaugeModule.gauge_color_mode || 'gradient';
+    const unifiedTemplateEnabled = gaugeModule.unified_template_mode || false;
 
     return html`
       <div class="settings-section">
         <div class="section-title">COLOR CONFIGURATION</div>
+
+        ${unifiedTemplateEnabled
+          ? html`
+              <div style="padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; border-left: 4px solid var(--primary-color); margin-bottom: 16px;">
+                <div style="font-size: 12px; color: var(--primary-color); font-weight: 600; margin-bottom: 4px;">
+                  Template Mode Active
+                </div>
+                <div style="font-size: 11px; color: var(--secondary-text-color);">
+                  Color settings below are used as fallback. Template Mode (in Value Configuration) can override colors via <code>gauge_color</code> property.
+                </div>
+              </div>
+            `
+          : ''}
 
         <div class="field-group" style="margin-bottom: 24px;">
           <div class="field-title">Color Mode</div>
@@ -1591,8 +1788,9 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     // GRACEFUL RENDERING: Check for incomplete configuration
-    // For template mode, allow rendering even without entity
+    // For template mode or unified template mode, allow rendering even without entity
     if (
+      !gaugeModule.unified_template_mode &&
       gaugeModule.value_type !== 'template' &&
       (!gaugeModule.entity || gaugeModule.entity.trim() === '')
     ) {
@@ -1664,6 +1862,53 @@ export class UltraGaugeModule extends BaseUltraModule {
   }
 
   private calculateGaugeValue(gaugeModule: GaugeModule, hass: HomeAssistant): number {
+    // PRIORITY 1: Unified template (if enabled)
+    if (gaugeModule.unified_template_mode && gaugeModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (hass) {
+        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+        const templateHash = this._hashString(gaugeModule.unified_template);
+        const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;
+
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext(gaugeModule.entity || '', hass, {
+            entity: gaugeModule.entity,
+          });
+          this._templateService.subscribeToTemplate(
+            gaugeModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.value !== undefined) {
+              const num =
+                typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
+              if (!isNaN(num)) {
+                return num;
+              }
+            }
+          }
+        }
+      }
+    }
+
     const valueType = gaugeModule.value_type || 'entity';
 
     if (valueType === 'entity') {
@@ -1763,34 +2008,38 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     switch (style) {
       case 'speedometer':
-        return this.renderSpeedometerGauge(gaugeModule, value);
+        return this.renderSpeedometerGauge(gaugeModule, value, hass);
       case 'arc':
-        return this.renderArcGauge(gaugeModule, value);
+        return this.renderArcGauge(gaugeModule, value, hass);
       case 'radial':
-        return this.renderRadialGauge(gaugeModule, value);
+        return this.renderRadialGauge(gaugeModule, value, hass);
       case 'lines':
-        return this.renderLinesGauge(gaugeModule, value);
+        return this.renderLinesGauge(gaugeModule, value, hass);
       case 'block':
-        return this.renderBlockGauge(gaugeModule, value);
+        return this.renderBlockGauge(gaugeModule, value, hass);
       case 'minimal':
-        return this.renderMinimalGauge(gaugeModule, value);
+        return this.renderMinimalGauge(gaugeModule, value, hass);
       case 'inset':
-        return this.renderInsetGauge(gaugeModule, value);
+        return this.renderInsetGauge(gaugeModule, value, hass);
       case '3d':
-        return this.render3DGauge(gaugeModule, value);
+        return this.render3DGauge(gaugeModule, value, hass);
       case 'neon':
-        return this.renderNeonGauge(gaugeModule, value);
+        return this.renderNeonGauge(gaugeModule, value, hass);
       case 'digital':
-        return this.renderDigitalGauge(gaugeModule, value);
+        return this.renderDigitalGauge(gaugeModule, value, hass);
       case 'basic':
-        return this.renderBasicGauge(gaugeModule, value);
+        return this.renderBasicGauge(gaugeModule, value, hass);
       case 'modern':
       default:
-        return this.renderModernGauge(gaugeModule, value);
+        return this.renderModernGauge(gaugeModule, value, hass);
     }
   }
 
-  private renderModernGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderModernGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -1811,10 +2060,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <!-- Background arc -->
       <path
@@ -1855,7 +2104,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 centerX,
                 centerY,
                 startAngle,
-                valueAngle
+                valueAngle,
+                hass
               )
             : svg`
               <path
@@ -1904,7 +2154,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderBasicGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderBasicGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -1925,10 +2179,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <!-- Background arc -->
       <path
@@ -1964,7 +2218,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 centerX,
                 centerY,
                 startAngle,
-                valueAngle
+                valueAngle,
+                hass
               )
             : svg`
               <path
@@ -2008,7 +2263,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderSpeedometerGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderSpeedometerGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -2029,10 +2288,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, undefined, undefined, hass)}
       
       <!-- Background arc -->
       <path
@@ -2068,7 +2327,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 centerX,
                 centerY,
                 startAngle,
-                valueAngle
+                valueAngle,
+                hass
               )
             : svg`
               <path
@@ -2107,7 +2367,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderArcGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderArcGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -2128,10 +2392,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <!-- Background arc -->
       <path
@@ -2167,7 +2431,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 centerX,
                 centerY,
                 startAngle,
-                valueAngle
+                valueAngle,
+                hass
               )
             : svg`
               <path
@@ -2206,7 +2471,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderRadialGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderRadialGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -2227,10 +2496,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <!-- Background circle -->
       <circle
@@ -2267,7 +2536,8 @@ export class UltraGaugeModule extends BaseUltraModule {
                 centerX,
                 centerY,
                 startAngle,
-                valueAngle
+                valueAngle,
+                hass
               )
             : svg`
               <path
@@ -2288,7 +2558,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderLinesGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderLinesGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const centerX = size / 2;
     const centerY = size / 2;
@@ -2313,12 +2587,12 @@ export class UltraGaugeModule extends BaseUltraModule {
       let color: string;
       if (gaugeModule.gauge_color_mode === 'segments') {
         // For segments mode, always show the segment color regardless of current value
-        color = this.getColorAtValue(gaugeModule, linePercentage);
+        color = this.getColorAtValue(gaugeModule, linePercentage, hass);
       } else {
         // For gradient/solid modes, only show active lines
         const isActive = linePercentage <= clampedPercentage;
         if (isActive) {
-          color = this.getColorAtValue(gaugeModule, linePercentage);
+          color = this.getColorAtValue(gaugeModule, linePercentage, hass);
         } else {
           color = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
         }
@@ -2359,7 +2633,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderBlockGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderBlockGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const centerX = size / 2;
     const centerY = size / 2;
@@ -2389,12 +2667,12 @@ export class UltraGaugeModule extends BaseUltraModule {
       let color: string;
       if (gaugeModule.gauge_color_mode === 'segments') {
         // For segments mode, always show the segment color regardless of current value
-        color = this.getColorAtValue(gaugeModule, blockEndPercentage);
+        color = this.getColorAtValue(gaugeModule, blockEndPercentage, hass);
       } else {
         // For gradient/solid modes, light up blocks if the pointer is within or past the block
         const isActive = clampedPercentage >= blockStartPercentage;
         if (isActive) {
-          color = this.getColorAtValue(gaugeModule, blockEndPercentage);
+          color = this.getColorAtValue(gaugeModule, blockEndPercentage, hass);
         } else {
           color = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
         }
@@ -2429,7 +2707,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderMinimalGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderMinimalGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 8;
     const centerX = size / 2;
@@ -2449,10 +2731,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const circumference = 2 * Math.PI * radius;
     const valueLength = (clampedPercentage / 100) * circumference;
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <circle
         cx="${centerX}"
@@ -2478,7 +2760,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             ? (() => {
                 const gradientMode = gaugeModule.gradient_display_mode || 'full';
                 const strokeColor = gradientMode === 'value-based' 
-                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage, hass)
                   : `url(#gradient-${gaugeModule.id})`;
                 return svg`
                   <circle
@@ -2513,7 +2795,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderInsetGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderInsetGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -2551,7 +2837,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const outerValueArc = this.describeArc(centerX, centerY, outerRadius, startAngle, valueAngle);
     const innerValueArc = this.describeArc(centerX, centerY, innerRadius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
     const backgroundColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
 
     return svg`
@@ -2629,7 +2915,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             ? (() => {
                 const gradientMode = gaugeModule.gradient_display_mode || 'full';
                 const strokeColor = gradientMode === 'value-based' 
-                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage, hass)
                   : `url(#gradient-${gaugeModule.id})`;
                 return svg`
                   <!-- Outer value arc -->
@@ -2705,7 +2991,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private render3DGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private render3DGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -2726,11 +3016,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
     const backgroundColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <defs>
         <linearGradient id="3d-gradient-${gaugeModule.id}" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -2806,7 +3096,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             ? (() => {
                 const gradientMode = gaugeModule.gradient_display_mode || 'full';
                 const strokeColor = gradientMode === 'value-based' 
-                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage, hass)
                   : `url(#gradient-${gaugeModule.id})`;
                 return svg`
                   <path
@@ -2876,7 +3166,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderNeonGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderNeonGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const thickness = gaugeModule.gauge_thickness || 15;
     const centerX = size / 2;
@@ -2897,7 +3191,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const backgroundArc = this.describeArc(centerX, centerY, radius, startAngle, endAngle);
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
-    const color = this.getColorAtValue(gaugeModule, clampedPercentage);
+    const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
     const backgroundColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
 
     // Get glow color - use the color at the end of the fill (like bar module)
@@ -2913,7 +3207,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         if (gradientMode === 'value-based' || gradientMode === 'cropped') {
           // For value-based and cropped modes, use the color at the current percentage
-          return this.getColorAtValue(gaugeModule, clampedPercentage);
+          return this.getColorAtValue(gaugeModule, clampedPercentage, hass);
         } else {
           // For full mode, use the last color (rightmost/last color)
           const sortedStops = [...gaugeModule.gradient_stops].sort(
@@ -2925,7 +3219,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         }
       } else if (colorMode === 'segments' && gaugeModule.segments) {
         // For segments, use the color at the current percentage
-        return this.getColorAtValue(gaugeModule, clampedPercentage);
+        return this.getColorAtValue(gaugeModule, clampedPercentage, hass);
       }
 
       // Use the solid gauge color
@@ -2935,7 +3229,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     const glowColor = getGlowColor();
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <defs>
         <filter id="neon-glow-${gaugeModule.id}" x="-50%" y="-50%" width="200%" height="200%">
@@ -3022,7 +3316,7 @@ export class UltraGaugeModule extends BaseUltraModule {
             ? (() => {
                 const gradientMode = gaugeModule.gradient_display_mode || 'full';
                 const strokeColor = gradientMode === 'value-based' 
-                  ? this.getColorAtValue(gaugeModule, clampedPercentage)
+                  ? this.getColorAtValue(gaugeModule, clampedPercentage, hass)
                   : `url(#gradient-${gaugeModule.id})`;
                 return svg`
               <!-- Subtle glow behind entire arc -->
@@ -3132,7 +3426,11 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private renderDigitalGauge(gaugeModule: GaugeModule, value: number): TemplateResult {
+  private renderDigitalGauge(
+    gaugeModule: GaugeModule,
+    value: number,
+    hass?: HomeAssistant
+  ): TemplateResult {
     const size = gaugeModule.gauge_size || 200;
     const centerX = size / 2;
     const centerY = size / 2; // Center properly for horizontal semi-circle
@@ -3193,12 +3491,12 @@ export class UltraGaugeModule extends BaseUltraModule {
       let blockColor: string;
       if (gaugeModule.gauge_color_mode === 'segments') {
         // For segments mode, always show the segment color regardless of current value
-        blockColor = this.getColorAtValue(gaugeModule, blockEndPercentage);
+        blockColor = this.getColorAtValue(gaugeModule, blockEndPercentage, hass);
       } else {
         // For gradient/solid modes, light up blocks if the pointer is within or past the block
         const isActive = clampedPercentage >= blockStartPercentage;
         if (isActive) {
-          blockColor = this.getColorAtValue(gaugeModule, blockEndPercentage);
+          blockColor = this.getColorAtValue(gaugeModule, blockEndPercentage, hass);
         } else {
           blockColor = gaugeModule.gauge_background_color || 'var(--disabled-text-color)';
         }
@@ -3218,7 +3516,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     return svg`
-      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage)}
+      ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <!-- Digital blocks -->
       ${blocks}
@@ -3426,6 +3724,63 @@ export class UltraGaugeModule extends BaseUltraModule {
       `;
     }
 
+    if (pointerStyle === 'icon') {
+      // Icon pointer - render icon on the gauge track (like cap style)
+      const iconName = gaugeModule.pointer_icon || 'mdi:gauge';
+      const iconColor = gaugeModule.pointer_icon_color || '#FFFFFF';
+      const iconSize = gaugeModule.pointer_icon_size || 24; // Use dedicated icon size field
+
+      // Calculate icon position on the gauge track (using radius, not pointerLength)
+      const iconPoint = this.polarToCartesian(centerX, centerY, radius, angle);
+
+      // Use foreignObject to embed HTML icon (ha-icon) in SVG
+      // Position the icon centered on the gauge track point
+      // Use --mdc-icon-size CSS variable for proper icon sizing
+      // Add padding to foreignObject to prevent clipping
+      const padding = 4; // Padding to prevent clipping
+      const totalSize = iconSize + padding * 2;
+      
+      return svg`
+        <foreignObject
+          x="${iconPoint.x - totalSize / 2}"
+          y="${iconPoint.y - totalSize / 2}"
+          width="${totalSize}"
+          height="${totalSize}"
+          style="overflow: visible;"
+        >
+          <div style="
+            width: ${totalSize}px;
+            height: ${totalSize}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+            box-sizing: border-box;
+            position: relative;
+          ">
+            <ha-icon
+              icon="${iconName}"
+              style="
+                --mdc-icon-size: ${iconSize}px;
+                width: ${iconSize}px;
+                height: ${iconSize}px;
+                color: ${iconColor};
+                display: block;
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                line-height: 1;
+              "
+            ></ha-icon>
+          </div>
+        </foreignObject>
+      `;
+    }
+
     // Default: line pointer
     return svg`
       <line
@@ -3479,7 +3834,31 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
-  private getColorAtValue(gaugeModule: GaugeModule, percentage: number): string {
+  private getColorAtValue(
+    gaugeModule: GaugeModule,
+    percentage: number,
+    hass?: HomeAssistant
+  ): string {
+    // PRIORITY 1: Unified template color (if enabled)
+    if (gaugeModule.unified_template_mode && gaugeModule.unified_template && hass) {
+      if (!this._templateService) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+      const templateHash = this._hashString(gaugeModule.unified_template);
+      const templateKey = `unified_gauge_${gaugeModule.id}_${templateHash}`;
+
+      const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+      if (unifiedResult && String(unifiedResult).trim() !== '') {
+        const parsed = parseUnifiedTemplate(unifiedResult);
+        if (!hasTemplateError(parsed)) {
+          if (parsed.gauge_color) {
+            return parsed.gauge_color;
+          }
+        }
+      }
+    }
+
     const colorMode = gaugeModule.gauge_color_mode || 'gradient';
 
     if (colorMode === 'solid') {
@@ -3831,7 +4210,8 @@ export class UltraGaugeModule extends BaseUltraModule {
     startAngle?: number,
     endAngle?: number,
     valueAngle?: number,
-    clampedPercentage?: number
+    clampedPercentage?: number,
+    hass?: HomeAssistant
   ): TemplateResult {
     if (
       gaugeModule.gauge_color_mode !== 'gradient' ||
@@ -3866,7 +4246,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         const croppedStops = sortedStops.filter(stop => stop.position <= clampedPercentage);
         
         // Always include the color at the exact percentage
-        const colorAtPercentage = this.getColorAtValue(gaugeModule, clampedPercentage);
+        const colorAtPercentage = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
         if (!croppedStops.some(stop => stop.position === clampedPercentage)) {
           croppedStops.push({
             id: `cropped_${clampedPercentage}`,
@@ -3934,7 +4314,8 @@ export class UltraGaugeModule extends BaseUltraModule {
     centerX?: number,
     centerY?: number,
     startAngle?: number,
-    valueAngle?: number
+    valueAngle?: number,
+    hass?: HomeAssistant
   ): TemplateResult {
     if (gaugeModule.gauge_color_mode !== 'gradient') {
       return svg``;
@@ -3958,7 +4339,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     
     // For "cropped" and "value-based" modes, use the value arc directly
     const strokeColor = gradientMode === 'value-based' 
-      ? this.getColorAtValue(gaugeModule, clampedPercentage)
+      ? this.getColorAtValue(gaugeModule, clampedPercentage, hass)
       : `url(#gradient-${gaugeModule.id})`;
     
     return svg`

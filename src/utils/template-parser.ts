@@ -24,6 +24,9 @@ export interface UnifiedTemplateResult {
   value?: number | string;
   label?: string;
 
+  // Display properties (gauge module)
+  gauge_color?: string; // Gauge color (overrides color_mode when set)
+
   // Display properties (graphs module)
   colors?: string[]; // Array of colors for per-entity coloring
   global_color?: string; // Single color applied to all entities
@@ -83,6 +86,10 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     // Bar module properties
     if (templateResult.value !== undefined) result.value = templateResult.value;
     if (templateResult.label !== undefined) result.label = String(templateResult.label);
+
+    // Gauge module properties
+    if (templateResult.gauge_color !== undefined)
+      result.gauge_color = String(templateResult.gauge_color);
 
     // Graphs module properties
     if (templateResult.colors !== undefined && Array.isArray(templateResult.colors)) {
@@ -159,6 +166,10 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
       // Bar module properties
       if (parsed.value !== undefined) result.value = parsed.value;
       if (parsed.label !== undefined) result.label = String(parsed.label);
+
+      // Gauge module properties
+      if (parsed.gauge_color !== undefined)
+        result.gauge_color = String(parsed.gauge_color);
 
       // Graphs module properties
       if (parsed.colors !== undefined && Array.isArray(parsed.colors)) {

@@ -1260,16 +1260,27 @@ export class UltraCameraModule extends BaseUltraModule {
                       'Template to dynamically set the camera entity using Jinja2 syntax'
                     )}
                   </div>
-                  <ultra-template-editor
-                    .hass=${hass}
-                    .value=${cameraModule.template || ''}
-                    .placeholder=${"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}"}
-                    .minHeight=${100}
-                    .maxHeight=${300}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ template: e.detail.value });
+                  <div
+                    @mousedown=${(e: Event) => {
+                      // Only stop propagation for drag operations, not clicks on the editor
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                        e.stopPropagation();
+                      }
                     }}
-                  ></ultra-template-editor>
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${cameraModule.template || ''}
+                      .placeholder=${"{{ 'camera.outdoor' if is_state('weather.home', 'sunny') else 'camera.indoor' }}"}
+                      .minHeight=${100}
+                      .maxHeight=${300}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ template: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                  </div>
                 </div>
 
                 <div class="template-examples">

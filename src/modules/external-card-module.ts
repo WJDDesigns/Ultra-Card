@@ -573,7 +573,18 @@ export class UltraExternalCardModule extends BaseUltraModule {
             Edit the card's configuration directly in YAML format. Changes are applied
             automatically.
           </div>
-          <div class="yaml-editor-container" style="width: 100%; display: block;">
+          <div 
+            class="yaml-editor-container" 
+            style="width: 100%; display: block;"
+            @mousedown=${(e: Event) => {
+              // Only stop propagation for drag operations, not clicks on the editor
+              const target = e.target as HTMLElement;
+              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                e.stopPropagation();
+              }
+            }}
+            @dragstart=${(e: Event) => e.stopPropagation()}
+          >
             <ultra-template-editor
               .hass=${hass}
               .value=${yamlString}

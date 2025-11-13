@@ -154,16 +154,27 @@ All standard markdown features are automatically enabled!`,
                 'Enter your markdown content with full formatting support'
               )}
             </div>
-            <ultra-template-editor
-              .hass=${hass}
-              .value=${markdownModule.markdown_content || ''}
-              .placeholder=${'# Welcome\n\nEnter your **markdown** content here with full formatting support...\n\n- Lists\n- **Bold** and *italic*\n- Tables, code blocks, and more!'}
-              .minHeight=${200}
-              .maxHeight=${400}
-              @value-changed=${(e: CustomEvent) => {
-                updateModule({ markdown_content: e.detail.value });
+            <div
+              @mousedown=${(e: Event) => {
+                // Only stop propagation for drag operations, not clicks on the editor
+                const target = e.target as HTMLElement;
+                if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                  e.stopPropagation();
+                }
               }}
-            ></ultra-template-editor>
+              @dragstart=${(e: Event) => e.stopPropagation()}
+            >
+              <ultra-template-editor
+                .hass=${hass}
+                .value=${markdownModule.markdown_content || ''}
+                .placeholder=${'# Welcome\n\nEnter your **markdown** content here with full formatting support...\n\n- Lists\n- **Bold** and *italic*\n- Tables, code blocks, and more!'}
+                .minHeight=${200}
+                .maxHeight=${400}
+                @value-changed=${(e: CustomEvent) => {
+                  updateModule({ markdown_content: e.detail.value });
+                }}
+              ></ultra-template-editor>
+            </div>
           </div>
         </div>
 
@@ -267,16 +278,27 @@ All standard markdown features are automatically enabled!`,
                       'Enter markdown content with Jinja2 templates that will be processed dynamically'
                     )}
                   </div>
-                  <ultra-template-editor
-                    .hass=${hass}
-                    .value=${markdownModule.template || markdownModule.markdown_content || ''}
-                    .placeholder=${"# Welcome Home\n\nToday is **{{ now().strftime('%A, %B %d') }}**\n\nCurrent temperature: {{ states('sensor.temperature') }}°F"}
-                    .minHeight=${200}
-                    .maxHeight=${400}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ template: e.detail.value });
+                  <div
+                    @mousedown=${(e: Event) => {
+                      // Only stop propagation for drag operations, not clicks on the editor
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                        e.stopPropagation();
+                      }
                     }}
-                  ></ultra-template-editor>
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${markdownModule.template || markdownModule.markdown_content || ''}
+                      .placeholder=${"# Welcome Home\n\nToday is **{{ now().strftime('%A, %B %d') }}**\n\nCurrent temperature: {{ states('sensor.temperature') }}°F"}
+                      .minHeight=${200}
+                      .maxHeight=${400}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ template: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                  </div>
                 </div>
 
                 <div class="template-examples">

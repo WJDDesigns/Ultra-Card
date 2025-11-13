@@ -2259,15 +2259,26 @@ export class UltraBarModule extends BaseUltraModule {
                               'Template to format the right-side value using Jinja2 syntax'
                             )}
                           </div>
-                          <ultra-template-editor
-                            .hass=${hass}
-                            .value=${barModule.right_template || ''}
-                            .placeholder=${"{{ states('sensor.example') }}"}
-                            .minHeight=${100}
-                            .maxHeight=${300}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateModule({ right_template: e.detail.value })}
-                          ></ultra-template-editor>
+                          <div
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
+                            <ultra-template-editor
+                              .hass=${hass}
+                              .value=${barModule.right_template || ''}
+                              .placeholder=${"{{ states('sensor.example') }}"}
+                              .minHeight=${100}
+                              .maxHeight=${300}
+                              @value-changed=${(e: CustomEvent) =>
+                                updateModule({ right_template: e.detail.value })}
+                            ></ultra-template-editor>
+                          </div>
                         </div>
                       `
                     : ''}

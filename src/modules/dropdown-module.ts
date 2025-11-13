@@ -508,7 +508,17 @@ export class UltraDropdownModule extends BaseUltraModule {
 
                       ${dropdownModule.unified_template_mode
                         ? html`
-                            <div class="template-content">
+                            <div 
+                              class="template-content"
+                              @mousedown=${(e: Event) => {
+                                // Only stop propagation for drag operations, not clicks on the editor
+                                const target = e.target as HTMLElement;
+                                if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                  e.stopPropagation();
+                                }
+                              }}
+                              @dragstart=${(e: Event) => e.stopPropagation()}
+                            >
                               <ultra-template-editor
                                 .hass=${hass}
                                 .value=${dropdownModule.unified_template || ''}

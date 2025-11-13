@@ -455,6 +455,30 @@ export class UltraTemplateEditor extends LitElement {
         class="editor-container"
         @keydown=${this._handleKeyDown}
         @keypress=${this._handleKeyPress}
+        @click=${(e: MouseEvent) => {
+          // Focus CodeMirror when clicking anywhere in the editor container
+          // This ensures clicks work even if they don't hit the exact CodeMirror content area
+          if (this._editor) {
+            // Small delay to let CodeMirror handle the click first, then ensure focus
+            requestAnimationFrame(() => {
+              if (this._editor && !this._editor.hasFocus) {
+                this._editor.focus();
+              }
+            });
+          }
+        }}
+        @mousedown=${(e: MouseEvent) => {
+          // Focus CodeMirror on mousedown to ensure cursor positioning works
+          // This is critical for clicks that don't directly hit the CodeMirror content
+          if (this._editor) {
+            // Let the event propagate to CodeMirror first, then focus
+            setTimeout(() => {
+              if (this._editor && !this._editor.hasFocus) {
+                this._editor.focus();
+              }
+            }, 0);
+          }
+        }}
       ></div>
     `;
   }

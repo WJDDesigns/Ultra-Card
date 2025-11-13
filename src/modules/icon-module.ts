@@ -1725,7 +1725,17 @@ export class UltraIconModule extends BaseUltraModule {
                         </div>
                       </div>
 
-                      <div class="template-content">
+                      <div 
+                        class="template-content"
+                        @mousedown=${(e: Event) => {
+                          // Only stop propagation for drag operations, not clicks on the editor
+                          const target = e.target as HTMLElement;
+                          if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                            e.stopPropagation();
+                          }
+                        }}
+                        @dragstart=${(e: Event) => e.stopPropagation()}
+                      >
                         <ultra-template-editor
                           .hass=${hass}
                           .value=${icon.unified_template || ''}
@@ -1859,7 +1869,17 @@ export class UltraIconModule extends BaseUltraModule {
 
                     ${icon.template_mode
                       ? html`
-                          <div class="template-content">
+                          <div 
+                            class="template-content"
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
                             <ultra-template-editor
                               .hass=${hass}
                               .value=${icon.template || ''}
@@ -1952,7 +1972,17 @@ export class UltraIconModule extends BaseUltraModule {
 
                     ${icon.dynamic_color_template_mode
                       ? html`
-                          <div class="template-content">
+                          <div 
+                            class="template-content"
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
                             <ultra-template-editor
                               .hass=${hass}
                               .value=${icon.dynamic_color_template || ''}
@@ -2034,7 +2064,17 @@ export class UltraIconModule extends BaseUltraModule {
 
                     ${icon.dynamic_icon_template_mode
                       ? html`
-                          <div class="template-content">
+                          <div 
+                            class="template-content"
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
                             <ultra-template-editor
                               .hass=${hass}
                               .value=${icon.dynamic_icon_template || ''}
@@ -4878,6 +4918,8 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     // PRIORITY 2: Check legacy template_mode (deprecated)
+    // IMPORTANT: If active_state is explicitly configured, prioritize entity state check over template result
+    // Templates should only affect display, not active state evaluation when active_state is set
     if (icon.template_mode && icon.template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
@@ -4922,8 +4964,16 @@ export class UltraIconModule extends BaseUltraModule {
             // Template returned actual entity state - use normal entity evaluation
             // Fall through to normal evaluation below
           } else {
-            // Template returned custom text - this means active condition was met
-            return true;
+            // Template returned custom text
+            // If active_state is explicitly configured, prioritize entity state check over template result
+            // This ensures animations work correctly when active_state is set
+            if (icon.active_state || icon.inactive_state) {
+              // Fall through to normal entity state evaluation below
+              // Template is only for display, not for determining active state
+            } else {
+              // No active_state configured - template result indicates active condition was met
+              return true;
+            }
           }
         } else {
           // Template returned empty - inactive

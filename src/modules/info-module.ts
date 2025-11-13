@@ -770,7 +770,17 @@ export class UltraInfoModule extends BaseUltraModule {
 
           ${entity.unified_template_mode
             ? html`
-                <div class="template-content">
+                <div 
+                  class="template-content"
+                  @mousedown=${(e: Event) => {
+                    // Only stop propagation for drag operations, not clicks on the editor
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                      e.stopPropagation();
+                    }
+                  }}
+                  @dragstart=${(e: Event) => e.stopPropagation()}
+                >
                   <ultra-template-editor
                     .hass=${hass}
                     .value=${entity.unified_template || ''}
@@ -875,7 +885,12 @@ export class UltraInfoModule extends BaseUltraModule {
 
               ${entity.template_mode
                 ? html`
-                    <div class="template-content">
+                    <div 
+                      class="template-content"
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      @click=${(e: Event) => e.stopPropagation()}
+                      @dragstart=${(e: Event) => e.stopPropagation()}
+                    >
                       <ultra-template-editor
                         .hass=${hass}
                         .value=${entity.template || ''}
@@ -968,7 +983,12 @@ export class UltraInfoModule extends BaseUltraModule {
 
               ${entity.dynamic_icon_template_mode
                 ? html`
-                    <div class="template-content">
+                    <div 
+                      class="template-content"
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      @click=${(e: Event) => e.stopPropagation()}
+                      @dragstart=${(e: Event) => e.stopPropagation()}
+                    >
                       <ultra-template-editor
                         .hass=${hass}
                         .value=${entity.dynamic_icon_template || ''}
@@ -1047,7 +1067,12 @@ export class UltraInfoModule extends BaseUltraModule {
 
               ${entity.dynamic_color_template_mode
                 ? html`
-                    <div class="template-content">
+                    <div 
+                      class="template-content"
+                      @mousedown=${(e: Event) => e.stopPropagation()}
+                      @click=${(e: Event) => e.stopPropagation()}
+                      @dragstart=${(e: Event) => e.stopPropagation()}
+                    >
                       <ultra-template-editor
                         .hass=${hass}
                         .value=${entity.dynamic_color_template || ''}

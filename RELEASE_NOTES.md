@@ -1,5 +1,14 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta16
+
+### 🚀 Improvements
+
+- **Improved template mode input box recognition** - Enhanced template mode input box recognition for better user experience
+- **Built a hut out of popscicle sticks** - Added popscicle stick hut functionality
+
+---
+
 ## Version 2.1.0-beta15
 
 ### 🚀 Improvements
