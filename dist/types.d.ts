@@ -477,10 +477,13 @@ export interface GaugeModule extends BaseModule {
     gauge_size?: number;
     gauge_thickness?: number;
     pointer_enabled?: boolean;
-    pointer_style?: 'triangle' | 'line' | 'needle' | 'arrow' | 'circle' | 'highlight' | 'cap' | 'custom';
+    pointer_style?: 'triangle' | 'line' | 'needle' | 'arrow' | 'circle' | 'highlight' | 'cap' | 'icon' | 'custom';
     pointer_color?: string;
     pointer_length?: number;
     pointer_width?: number;
+    pointer_icon?: string;
+    pointer_icon_color?: string;
+    pointer_icon_size?: number;
     gauge_color_mode?: 'solid' | 'gradient' | 'segments';
     gauge_color?: string;
     gauge_background_color?: string;

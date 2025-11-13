@@ -1,5 +1,17 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta15
+
+### 🚀 Improvements
+
+- **Added color templating and value templating to Gauge Module** - Gauge Module now supports dynamic color and value templating for enhanced customization
+
+### 🐛 Bug Fixes
+
+- **Fixed issue where icon templates were conflicting with animations** - Resolved conflicts between icon templates and animation systems
+
+---
+
 ## Version 2.1.0-beta14
 
 ### 🚀 Improvements
