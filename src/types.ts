@@ -1232,6 +1232,7 @@ export interface IconModule extends BaseModule {
   vertical_alignment?: 'top' | 'center' | 'bottom';
   columns?: number;
   gap?: number;
+  allow_wrap?: boolean; // Allow grid items to wrap to new rows
   // Global action configuration (for the module container)
   tap_action?: {
     action:
@@ -2544,6 +2545,11 @@ export interface DropdownModule extends BaseModule {
   current_selection?: string; // Tracks the currently selected option label
   track_state?: boolean; // Whether to track and display current selection
 
+  // Closed Dropdown Title Configuration
+  closed_title_mode?: 'last_chosen' | 'entity_state' | 'custom' | 'first_option'; // How to display closed dropdown title
+  closed_title_entity?: string; // Entity to use for entity_state mode
+  closed_title_custom?: string; // Custom text for custom mode
+
   // Dynamic templates
   unified_template_mode?: boolean;
   unified_template?: string;
@@ -3069,6 +3075,7 @@ export interface AnimatedForecastModule extends BaseModule {
   // Configuration
   forecast_days?: number; // Number of forecast days (default: 5, range: 3-7)
   temperature_unit?: 'F' | 'C'; // Temperature unit (default: F)
+  allow_wrap?: boolean; // Allow forecast days to wrap to new rows
 
   // Styling - Text Sizes
   forecast_day_size?: number; // Forecast day name size (default: 14)

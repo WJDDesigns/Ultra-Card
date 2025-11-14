@@ -10,6 +10,9 @@ export class LogicService {
   private hass: HomeAssistant | null = null;
   private templateService: TemplateService | null = null;
   // Removed API fallback tracking - relying entirely on WebSocket subscriptions
+  // Track logged entity errors to prevent console flooding
+  private loggedEntityErrors: Set<string> = new Set();
+  private loggedAttributeErrors: Set<string> = new Set();
 
   private constructor() {}
 
@@ -30,6 +33,9 @@ export class LogicService {
     if (hass) {
       this.templateService = new TemplateService(hass);
     }
+    // Note: We do NOT clear logged errors here because setHass is called frequently
+    // on every hass state update. Clearing would reset throttling and cause console flooding.
+    // Errors are only cleared on cleanup() when the service is fully reset.
   }
 
   /**
@@ -41,6 +47,9 @@ export class LogicService {
       this.templateService = null;
     }
     this.hass = null;
+    // Clear logged errors on cleanup
+    this.loggedEntityErrors.clear();
+    this.loggedAttributeErrors.clear();
   }
 
   /**
@@ -201,7 +210,11 @@ export class LogicService {
 
     const entity = this.hass.states[condition.entity];
     if (!entity) {
-      console.warn(`[LogicService] Entity not found: ${condition.entity}`);
+      // Only log each entity error once to prevent console flooding
+      if (!this.loggedEntityErrors.has(condition.entity)) {
+        console.warn(`[LogicService] Entity not found: ${condition.entity}`);
+        this.loggedEntityErrors.add(condition.entity);
+      }
       return true; // Show by default if entity not found
     }
 
@@ -254,15 +267,24 @@ export class LogicService {
 
     const entity = this.hass.states[condition.entity];
     if (!entity) {
-      console.warn(`[LogicService] Entity not found: ${condition.entity}`);
+      // Only log each entity error once to prevent console flooding
+      if (!this.loggedEntityErrors.has(condition.entity)) {
+        console.warn(`[LogicService] Entity not found: ${condition.entity}`);
+        this.loggedEntityErrors.add(condition.entity);
+      }
       return true; // Show by default if entity not found
     }
 
     const attributeValue = entity.attributes[condition.attribute];
     if (attributeValue === undefined) {
-      console.warn(
-        `[LogicService] Attribute '${condition.attribute}' not found on entity '${condition.entity}'`
-      );
+      // Only log each attribute error once to prevent console flooding
+      const attributeKey = `${condition.entity}.${condition.attribute}`;
+      if (!this.loggedAttributeErrors.has(attributeKey)) {
+        console.warn(
+          `[LogicService] Attribute '${condition.attribute}' not found on entity '${condition.entity}'`
+        );
+        this.loggedAttributeErrors.add(attributeKey);
+      }
       return true; // Show by default if attribute not found
     }
 

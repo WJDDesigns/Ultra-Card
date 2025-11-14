@@ -313,6 +313,7 @@ export class UltraIconModule extends BaseUltraModule {
       // vertical_alignment: undefined, // No default alignment to allow Global Design tab control
       columns: 3,
       gap: 16,
+      allow_wrap: true, // Allow grid items to wrap to new rows
       // Global action configuration (for the module container) - smart default based on entity type
       tap_action: undefined,
       hold_action: undefined,
@@ -2547,6 +2548,7 @@ export class UltraIconModule extends BaseUltraModule {
               iconModule.columns || 3,
               validIcons.length
             )}, 1fr);
+            grid-auto-flow: ${iconModule.allow_wrap === false ? 'column' : 'row'};
             gap: ${iconModule.gap || 16}px;
             justify-content: ${iconModule.alignment || 'center'};
           "
@@ -4163,6 +4165,7 @@ export class UltraIconModule extends BaseUltraModule {
           Math.max(1, Math.floor((iconModule.columns || 3) / 2)),
           iconModule.icons.length
         )}, 1fr);
+          grid-auto-flow: ${iconModule.allow_wrap === false ? 'column' : 'row'};
           gap: ${iconModule.gap || 16}px;
           justify-content: ${iconModule.alignment || 'center'};
         "

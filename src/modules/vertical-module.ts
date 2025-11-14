@@ -623,6 +623,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     if (layoutDesign.letter_spacing) mergedModule.letter_spacing = layoutDesign.letter_spacing;
     if (layoutDesign.text_transform) mergedModule.text_transform = layoutDesign.text_transform;
     if (layoutDesign.font_style) mergedModule.font_style = layoutDesign.font_style;
+    if (layoutDesign.white_space) mergedModule.white_space = layoutDesign.white_space;
 
     // Do NOT propagate container background styling to children.
     // Backgrounds belong to the container surface; passing them down causes

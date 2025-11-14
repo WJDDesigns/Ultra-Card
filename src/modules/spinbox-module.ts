@@ -1119,14 +1119,30 @@ export class UltraSpinboxModule extends BaseUltraModule {
       <style>
         .spinbox-button {
           flex-shrink: 0;
+          touch-action: manipulation;
         }
         .spinbox-button:disabled {
           opacity: 0.4;
           cursor: not-allowed;
         }
-        .spinbox-button:not(:disabled):hover {
+        /* Hover effects only on devices that support hover */
+        @media (hover: hover) {
+          .spinbox-button:not(:disabled):hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+        /* Active state for touch feedback on mobile */
+        .spinbox-button:not(:disabled):active {
           opacity: 0.8;
           transform: scale(1.05);
+        }
+        /* Ensure hover state is cleared on touch devices */
+        @media (hover: none) {
+          .spinbox-button:not(:disabled):hover {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
       </style>
       <div class="spinbox-module-container" style=${this.styleObjectToCss(containerStyles)}>

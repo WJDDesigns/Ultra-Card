@@ -2291,6 +2291,7 @@ export class UltraLightModule extends BaseUltraModule {
       containerLayoutStyles = `
         display: grid;
         grid-template-columns: repeat(${columns}, 1fr);
+        grid-auto-flow: ${allowWrapping === false ? 'column' : 'row'};
         gap: ${buttonGap}rem;
       `;
     } else {

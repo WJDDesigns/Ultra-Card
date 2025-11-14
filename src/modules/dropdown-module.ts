@@ -38,6 +38,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     { module: DropdownModule; hass: HomeAssistant; config?: UltraCardConfig }
   > = new Map(); // Store module contexts for event handling
   private _templateService?: TemplateService;
+  private chevronClickHandling: Set<string> = new Set(); // Track modules currently handling chevron clicks
 
   // Trigger preview update for reactive UI
 
@@ -71,6 +72,9 @@ export class UltraDropdownModule extends BaseUltraModule {
       entity_option_customization: {}, // Empty customization by default
       current_selection: 'Turn On Lights', // Default to first option
       track_state: true, // Enable state tracking by default
+      closed_title_mode: 'last_chosen', // Default to showing last chosen option
+      closed_title_entity: undefined,
+      closed_title_custom: '',
       unified_template_mode: false,
       unified_template: '',
       // label removed
@@ -101,6 +105,28 @@ export class UltraDropdownModule extends BaseUltraModule {
     }
 
     return [];
+  }
+
+  // Helper method to format option labels as friendly names
+  private formatOptionLabel(optionValue: string, entityState: any, hass: HomeAssistant): string {
+    // Try Home Assistant's formatEntityState if available
+    if (entityState && (hass as any).formatEntityState) {
+      try {
+        // Create a temporary state object with the option value
+        const tempState = { ...entityState, state: optionValue };
+        const formatted = (hass as any).formatEntityState(tempState, optionValue);
+        if (formatted && formatted !== optionValue) {
+          return formatted;
+        }
+      } catch (e) {
+        // Fall through to manual formatting
+      }
+    }
+    
+    // Manual formatting: capitalize words and replace underscores
+    return optionValue
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
   }
 
   // Helper method to get current state from entity
@@ -402,6 +428,151 @@ export class UltraDropdownModule extends BaseUltraModule {
                   ></ha-switch>
                 </div>
 
+                <!-- Closed Dropdown Title Configuration -->
+                <div style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.dropdown.closed_title_mode.title', lang, 'Closed Dropdown Title'),
+                    localize(
+                      'editor.dropdown.closed_title_mode.desc',
+                      lang,
+                      'Choose what the dropdown displays when closed.'
+                    ),
+                    hass,
+                    { closed_title_mode: dropdownModule.closed_title_mode || 'last_chosen' },
+                    [
+                      this.selectField('closed_title_mode', [
+                        {
+                          value: 'last_chosen',
+                          label: localize('editor.dropdown.closed_title_mode.last_chosen', lang, 'Last Chosen'),
+                        },
+                        {
+                          value: 'entity_state',
+                          label: localize('editor.dropdown.closed_title_mode.entity_state', lang, 'Entity State'),
+                        },
+                        {
+                          value: 'custom',
+                          label: localize('editor.dropdown.closed_title_mode.custom', lang, 'Custom'),
+                        },
+                        {
+                          value: 'first_option',
+                          label: localize('editor.dropdown.closed_title_mode.first_option', lang, 'First Option'),
+                        },
+                      ]),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = e.detail.value.closed_title_mode;
+                      const prev = dropdownModule.closed_title_mode || 'last_chosen';
+                      if (next === prev) return;
+                      updateModule({ closed_title_mode: next });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+
+                <!-- Conditional fields based on closed_title_mode -->
+                ${dropdownModule.closed_title_mode === 'entity_state'
+                  ? html`
+                      <div style="margin-bottom: 16px;">
+                        ${this.renderConditionalFieldsGroup(
+                          localize(
+                            'editor.dropdown.closed_title_entity_config',
+                            lang,
+                            'Entity State Configuration'
+                          ),
+                          html`
+                            ${this.renderFieldSection(
+                              localize('editor.dropdown.closed_title_entity.title', lang, 'Entity'),
+                              localize(
+                                'editor.dropdown.closed_title_entity.desc',
+                                lang,
+                                'Entity whose state will be displayed when dropdown is closed.'
+                              ),
+                              hass,
+                              { closed_title_entity: dropdownModule.closed_title_entity || '' },
+                              [this.entityField('closed_title_entity')],
+                              (e: CustomEvent) => {
+                                const next = e.detail.value.closed_title_entity;
+                                const prev = dropdownModule.closed_title_entity || '';
+                                if (next === prev) return;
+                                updateModule({ closed_title_entity: next });
+                                setTimeout(() => this.triggerPreviewUpdate(), 50);
+                              }
+                            )}
+                          `
+                        )}
+                      </div>
+                    `
+                  : ''}
+                ${dropdownModule.closed_title_mode === 'custom'
+                  ? html`
+                      <div style="margin-bottom: 16px;">
+                        ${this.renderConditionalFieldsGroup(
+                          localize(
+                            'editor.dropdown.closed_title_custom_config',
+                            lang,
+                            'Custom Text Configuration'
+                          ),
+                          html`
+                            <div class="field-group">
+                              <div
+                                class="field-title"
+                                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+                              >
+                                ${localize('editor.dropdown.closed_title_custom.title', lang, 'Custom Text')}
+                              </div>
+                              <div
+                                class="field-description"
+                                style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+                              >
+                                ${localize(
+                                  'editor.dropdown.closed_title_custom.desc',
+                                  lang,
+                                  'Custom text to display when dropdown is closed.'
+                                )}
+                              </div>
+                              <ha-textfield
+                                .value=${dropdownModule.closed_title_custom || ''}
+                                placeholder="Please select..."
+                                @input=${(e: Event) => {
+                                  const target = e.target as any;
+                                  const input = target.shadowRoot?.querySelector('input') || target;
+                                  const value = target.value;
+                                  const cursorPosition = input.selectionStart;
+                                  const cursorEnd = input.selectionEnd;
+
+                                  updateModule({ closed_title_custom: value });
+
+                                  requestAnimationFrame(() => {
+                                    if (input && typeof cursorPosition === 'number') {
+                                      target.value = value;
+                                      input.value = value;
+                                      input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                                    }
+                                  });
+                                  setTimeout(() => {
+                                    if (input && typeof cursorPosition === 'number') {
+                                      target.value = value;
+                                      input.value = value;
+                                      input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                                    }
+                                  }, 0);
+                                  setTimeout(() => {
+                                    if (input && typeof cursorPosition === 'number') {
+                                      target.value = value;
+                                      input.value = value;
+                                      input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                                    }
+                                  }, 10);
+                                }}
+                                style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+                              ></ha-textfield>
+                            </div>
+                          `
+                        )}
+                      </div>
+                    `
+                  : ''}
+
                 <!-- Placeholder (only show when track_state is disabled) -->
                 ${!dropdownModule.track_state
                   ? html`
@@ -567,6 +738,28 @@ export class UltraDropdownModule extends BaseUltraModule {
                                 <p style="margin-top: 12px;">
                                   <strong>Note:</strong> When Unified Template is enabled, manually configured options are ignored. The template dynamically generates all options with their icons, labels, and colors. The selected option's display automatically uses the properties from the template-generated options.
                                 </p>
+                                <p style="margin-top: 12px;">
+                                  <strong>Optional Display Key:</strong> You can include a <code>"display"</code> key in your template result to customize what shows when the dropdown is closed. The template's <code>"display"</code> key takes priority over the "Closed Dropdown Title" configuration setting.
+                                </p>
+                                <p style="margin-top: 12px;"><strong>Example with display key:</strong></p>
+                                <code
+                                  style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px; margin-top: 8px;"
+                                >
+                                  {% set mode = states("climate.ecobee") %}<br />
+                                  {% set modes = state_attr('climate.ecobee', 'hvac_modes') | default(['off', 'heat', 'cool', 'auto', 'heat_cool']) %}<br />
+                                  {<br />
+                                  &nbsp;&nbsp;"options": [<br />
+                                  {% for m in modes %}<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;{"label": "{% if m == 'heat' %}Heating{% elif m == 'cool' %}Cooling{% elif m == 'auto' %}Auto{% else %}Off{% endif %}", "icon": "mdi:fire", "mode": "{{ m }}"}{% if not loop.last %},{% endif %}<br />
+                                  {% endfor %}<br />
+                                  &nbsp;&nbsp;],<br />
+                                  &nbsp;&nbsp;"display": {<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"label": "{% if mode == 'heat' %}🔥 Heating{% elif mode == 'cool' %}❄️ Cooling{% elif mode == 'auto' %}🔄 Auto{% else %}Off{% endif %}",<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"icon": "{% if mode == 'heat' %}mdi:fire{% elif mode == 'cool' %}mdi:snowflake{% elif mode == 'auto' %}mdi:autorenew{% else %}mdi:thermostat-off{% endif %}",<br />
+                                  &nbsp;&nbsp;&nbsp;&nbsp;"icon_color": "{% if mode == 'heat' %}#FF5722{% elif mode == 'cool' %}#2196F3{% elif mode == 'auto' %}#4CAF50{% else %}#9E9E9E{% endif %}"<br />
+                                  &nbsp;&nbsp;}<br />
+                                  }
+                                </code>
                               </div>
                             </div>
                           `
@@ -1409,22 +1602,30 @@ export class UltraDropdownModule extends BaseUltraModule {
       mode?: string; // Store mode/value for action mapping
     }> = [];
     let currentSelectedLabel: string | undefined;
+    
+    // Display properties from unified template (if display key is present)
+    let displayIcon: string | undefined = undefined;
+    let displayLabel: string | undefined = undefined;
+    let displayIconColor: string | undefined = undefined;
 
     if (isEntityModeValid) {
       // Entity source mode: get options from entity
       const entityOptions = this.getOptionsFromEntity(dropdownModule, hass);
       const entityState = this.getCurrentStateFromEntity(dropdownModule, hass);
+      const entityStateObj = hass.states[dropdownModule.source_entity!];
 
       availableOptions = entityOptions.map(opt => ({
-        label: opt,
-        // Apply customization if it exists
+        label: this.formatOptionLabel(opt, entityStateObj, hass), // Use formatted friendly name for display
+        value: opt, // Keep original value for service calls
+        // Apply customization if it exists (using original value as key)
         icon: dropdownModule.entity_option_customization?.[opt]?.icon,
         icon_color: dropdownModule.entity_option_customization?.[opt]?.icon_color,
         use_state_color: dropdownModule.entity_option_customization?.[opt]?.use_state_color,
       }));
 
       // In entity mode, always show current state (no placeholder mode)
-      currentSelectedLabel = entityState;
+      // Format the state for display
+      currentSelectedLabel = this.formatOptionLabel(entityState, entityStateObj, hass);
     } else if (isUnifiedTemplateMode) {
       // Unified template mode: get options and display properties from template
       if (!this._templateService && hass) {
@@ -1485,7 +1686,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
           // Try to parse as JSON
           if (resultStr.startsWith('{') && resultStr.endsWith('}')) {
-            // Object format: { "options": [...], "selected": {...} }
+            // Object format: { "options": [...], "display": {...} }
             parsedData = JSON.parse(resultStr);
           } else if (resultStr.startsWith('[') && resultStr.endsWith(']')) {
             // Array format: just options array
@@ -1505,6 +1706,13 @@ export class UltraDropdownModule extends BaseUltraModule {
               // Store original mode/value for action mapping
               mode: opt.mode || opt.value || opt.label,
             }));
+          }
+          
+          // Extract display properties if display key exists (moved to after parsing)
+          if (parsedData && parsedData.display) {
+            displayLabel = parsedData.display.label || parsedData.display.name || '';
+            displayIcon = parsedData.display.icon;
+            displayIconColor = parsedData.display.icon_color;
           }
         } catch (error) {
           console.error('Error parsing unified template:', error);
@@ -1576,13 +1784,87 @@ export class UltraDropdownModule extends BaseUltraModule {
     const hoverEffect = (dropdownModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
-    // Evaluate unified template for selected option display (if not using unified template for options)
-    let displayIcon: string | undefined = undefined;
-    let displayLabel: string | undefined = undefined;
-    let displayIconColor: string | undefined = undefined;
-    
-    // If using unified template mode, display properties come from the selected option
-    // No need for separate display template since unified template handles everything
+    // Determine closed dropdown title based on closed_title_mode
+    // Priority: Template display key > closed_title_mode settings
+    let closedTitleLabel: string | undefined = undefined;
+    let closedTitleIcon: string | undefined = undefined;
+    let closedTitleIconColor: string | undefined = undefined;
+
+    // Only evaluate closed_title_mode if template display is not present
+    if (displayLabel === undefined || displayLabel === '') {
+      const titleMode = dropdownModule.closed_title_mode || 'last_chosen';
+      
+      switch (titleMode) {
+        case 'last_chosen':
+          // Try localStorage first, then in-memory, then config, then first option
+          const storedSelection = this.getStoredSelection(dropdownModule.id);
+          const memorySelection = this.currentSelection.get(dropdownModule.id);
+          const configSelection = dropdownModule.current_selection;
+          
+          // Load from localStorage if available and not already in memory
+          if (storedSelection && !memorySelection) {
+            this.currentSelection.set(dropdownModule.id, storedSelection);
+          }
+          
+          const lastChosenLabel = storedSelection || memorySelection || configSelection;
+          
+          if (lastChosenLabel) {
+            // Try to find by label first (for formatted labels), then by value
+            let lastChosenOption = availableOptions.find(opt => opt.label === lastChosenLabel);
+            if (!lastChosenOption && isEntityModeValid) {
+              // If not found by label, try finding by original value (for entity mode)
+              lastChosenOption = availableOptions.find(opt => (opt as any).value === lastChosenLabel);
+            }
+            if (lastChosenOption) {
+              closedTitleLabel = lastChosenOption.label;
+              closedTitleIcon = lastChosenOption.icon;
+              closedTitleIconColor = lastChosenOption.icon_color;
+            }
+          }
+          
+          // Fallback to first option if nothing found
+          if (!closedTitleLabel && availableOptions.length > 0) {
+            closedTitleLabel = availableOptions[0].label;
+            closedTitleIcon = availableOptions[0].icon;
+            closedTitleIconColor = availableOptions[0].icon_color;
+          }
+          break;
+
+        case 'entity_state':
+          if (dropdownModule.closed_title_entity && hass) {
+            const entityState = hass.states[dropdownModule.closed_title_entity];
+            if (entityState) {
+              // Use friendly name if available, otherwise formatted state
+              const friendlyName = entityState.attributes?.friendly_name;
+              const state = entityState.state;
+              
+              // Format state nicely (capitalize, replace underscores)
+              const formattedState = state.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              
+              closedTitleLabel = friendlyName ? `${friendlyName}: ${formattedState}` : formattedState;
+            } else {
+              closedTitleLabel = 'Entity not found';
+            }
+          } else {
+            closedTitleLabel = 'No entity selected';
+          }
+          break;
+
+        case 'custom':
+          closedTitleLabel = dropdownModule.closed_title_custom || 'Please select...';
+          break;
+
+        case 'first_option':
+          if (availableOptions.length > 0) {
+            closedTitleLabel = availableOptions[0].label;
+            closedTitleIcon = availableOptions[0].icon;
+            closedTitleIconColor = availableOptions[0].icon_color;
+          } else {
+            closedTitleLabel = 'No options';
+          }
+          break;
+      }
+    }
 
     return html`
       <div
@@ -1600,48 +1882,154 @@ export class UltraDropdownModule extends BaseUltraModule {
                 class="dropdown-selected"
                 style="${dropdownStyles} display: flex; align-items: center; justify-content: space-between;"
                 @click=${(e: Event) => {
+                  // Don't toggle if clicking on the chevron container (it has its own handler)
+                  const target = e.target as HTMLElement;
+                  const composedPath = e.composedPath();
+                  const isChevronClick = composedPath.some(
+                    (el: any) => el?.classList?.contains?.('dropdown-chevron-container') || el?.classList?.contains?.('dropdown-chevron')
+                  ) || target.classList.contains('dropdown-chevron-container') || target.closest('.dropdown-chevron-container');
+                  
+                  if (isChevronClick) {
+                    return;
+                  }
+                  
+                  const moduleId = dropdownModule.id;
+                  
+                  // Get current state and calculate new state
+                  const currentState = this.dropdownOpenStates.get(moduleId) || false;
+                  const newState = !currentState;
+                  
+                  // Update chevron rotation INSTANTLY
+                  const selectedElement = e.currentTarget as HTMLElement;
+                  const chevron = selectedElement.querySelector('.dropdown-chevron') as HTMLElement;
+                  if (chevron) {
+                    // Update immediately with no transition delay
+                    chevron.style.transition = 'none';
+                    chevron.style.transform = newState ? 'rotate(180deg)' : 'rotate(0deg)';
+                    // Re-enable transition after the instant update
+                    requestAnimationFrame(() => {
+                      chevron.style.transition = 'transform 0.2s ease';
+                    });
+                  }
+                  
                   console.log('Dropdown clicked');
-                  this.toggleDropdown(e, dropdownModule.id);
+                  this.toggleDropdown(e, moduleId);
                 }}
               >
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  ${currentSelectedOption
-                    ? html`
-                        ${(() => {
-                          // Use template icon if available, otherwise fall back to option icon
-                          const iconToUse = displayIcon || currentSelectedOption.icon;
-                          // Use template label if available, otherwise fall back to option label
-                          const labelToUse = displayLabel || currentSelectedOption.label;
-                          // Use template icon color if available, otherwise use option icon color
-                          const iconColorToUse = displayIconColor || this.getOptionIconColor(
-                            currentSelectedOption,
-                            hass,
-                            dropdownModule
-                          );
-                          return html`
-                            ${iconToUse
-                              ? html`<ha-icon
-                                  icon="${iconToUse}"
-                                  style="color: ${iconColorToUse};"
-                                ></ha-icon>`
-                              : ''}
-                            <span>${labelToUse}</span>
-                          `;
-                        })()}
-                      `
-                    : html`<span style="color: var(--secondary-text-color);"
-                        >${placeholderText}</span
-                      >`}
+                  ${(() => {
+                    // Priority 1: Template display key (highest priority)
+                    if (displayLabel !== undefined && displayLabel !== '') {
+                      const iconToUse = displayIcon;
+                      const labelToUse = displayLabel;
+                      const iconColorToUse = displayIconColor || 'var(--primary-color)';
+                      return html`
+                        ${iconToUse
+                          ? html`<ha-icon
+                              icon="${iconToUse}"
+                              style="color: ${iconColorToUse};"
+                            ></ha-icon>`
+                          : ''}
+                        <span>${labelToUse}</span>
+                      `;
+                    }
+                    
+                    // Priority 2: closed_title_mode settings
+                    if (closedTitleLabel !== undefined) {
+                      const iconToUse = closedTitleIcon;
+                      const labelToUse = closedTitleLabel;
+                      const iconColorToUse = closedTitleIconColor || 'var(--primary-color)';
+                      return html`
+                        ${iconToUse
+                          ? html`<ha-icon
+                              icon="${iconToUse}"
+                              style="color: ${iconColorToUse};"
+                            ></ha-icon>`
+                          : ''}
+                        <span>${labelToUse}</span>
+                      `;
+                    }
+                    
+                    // Priority 3: Placeholder (when track_state is disabled)
+                    if (showPlaceholder) {
+                      return html`<span style="color: var(--secondary-text-color);"
+                          >${placeholderText}</span
+                        >`;
+                    }
+                    
+                    // Fallback: Show first option or "No options"
+                    if (availableOptions.length > 0) {
+                      const fallbackOption = availableOptions[0];
+                      return html`
+                        ${fallbackOption.icon
+                          ? html`<ha-icon
+                              icon="${fallbackOption.icon}"
+                              style="color: ${this.getOptionIconColor(fallbackOption, hass, dropdownModule)};"
+                            ></ha-icon>`
+                          : ''}
+                        <span>${fallbackOption.label}</span>
+                      `;
+                    }
+                    
+                    return html`<span style="color: var(--secondary-text-color);">No options</span>`;
+                  })()}
                 </div>
-                <ha-icon
-                  icon="mdi:chevron-down"
-                  style="color: var(--secondary-text-color);"
-                ></ha-icon>
+                <div
+                  class="dropdown-chevron-container"
+                  style="display: flex; align-items: center; cursor: pointer; padding: 4px; margin: -4px;"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    
+                    const moduleId = dropdownModule.id;
+                    
+                    // Prevent double-handling
+                    if (this.chevronClickHandling.has(moduleId)) {
+                      console.log('Chevron click already being handled for', moduleId);
+                      return;
+                    }
+                    
+                    this.chevronClickHandling.add(moduleId);
+                    
+                    // Get current state and calculate new state
+                    const currentState = this.dropdownOpenStates.get(moduleId) || false;
+                    const newState = !currentState;
+                    
+                    // Update chevron rotation INSTANTLY using direct DOM access from event
+                    const chevronContainer = e.currentTarget as HTMLElement;
+                    const chevron = chevronContainer.querySelector('.dropdown-chevron') as HTMLElement;
+                    if (chevron) {
+                      // Update immediately with no transition delay
+                      chevron.style.transition = 'none';
+                      chevron.style.transform = newState ? 'rotate(180deg)' : 'rotate(0deg)';
+                      // Re-enable transition after the instant update
+                      requestAnimationFrame(() => {
+                        chevron.style.transition = 'transform 0.2s ease';
+                      });
+                    }
+                    
+                    // Now toggle the dropdown
+                    console.log('Chevron clicked, toggling dropdown for', moduleId);
+                    this.toggleDropdown(e, moduleId);
+                    
+                    // Clear the flag after a short delay
+                    setTimeout(() => {
+                      this.chevronClickHandling.delete(moduleId);
+                    }, 100);
+                  }}
+                >
+                  <ha-icon
+                    class="dropdown-chevron"
+                    icon="mdi:chevron-down"
+                    style="color: var(--secondary-text-color); transition: transform 0.2s ease; transform: ${this.dropdownOpenStates.get(dropdownModule.id) ? 'rotate(180deg)' : 'rotate(0deg)'}; pointer-events: none;"
+                  ></ha-icon>
+                </div>
               </div>
 
               <div
                 class="dropdown-options"
-                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001 !important; display: none; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001 !important; display: none; pointer-events: none; visibility: hidden; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
               >
@@ -1674,7 +2062,11 @@ export class UltraDropdownModule extends BaseUltraModule {
                         // Update selection and execute action
                         if (isEntityMode) {
                           // Entity mode: call service to update entity
-                          this.updateEntitySelection(dropdownModule, option.label, hass);
+                          // Use original value if available, otherwise use label
+                          const optionValue = (option as any).value || option.label;
+                          this.updateEntitySelection(dropdownModule, optionValue, hass);
+                          // Also persist for last_chosen mode if enabled (use formatted label for display)
+                          this.selectOption(option.label, dropdownModule);
                         } else {
                           // Manual mode: track state and execute action
                           if (dropdownModule.track_state) {
@@ -1686,6 +2078,8 @@ export class UltraDropdownModule extends BaseUltraModule {
                               'to:',
                               option.label
                             );
+                            // Persist to localStorage
+                            this.selectOption(option.label, dropdownModule);
 
                             // Update the displayed selection immediately
                             const clickedElement = e.target as HTMLElement;
@@ -1969,25 +2363,52 @@ export class UltraDropdownModule extends BaseUltraModule {
           // Re-attach event handlers to the cloned dropdown's options
           this.attachPortaledDropdownHandlers(portaledDropdown, instanceId);
 
+          // Smart positioning - drop up if not enough space below
+          const viewportHeight = window.innerHeight;
+          const spaceBelow = viewportHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          const dropdownMaxHeight = 200; // Match max-height from inline styles
+          
+          // Calculate if we should drop up or down
+          const shouldDropUp = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+          
           // Position portaled dropdown using fixed positioning
           portaledDropdown.style.position = 'fixed';
-          portaledDropdown.style.top = `${rect.bottom}px`;
           portaledDropdown.style.left = `${rect.left}px`;
           portaledDropdown.style.width = `${rect.width}px`;
           portaledDropdown.style.right = 'auto';
+          
+          if (shouldDropUp) {
+            // Drop up - position above the trigger
+            portaledDropdown.style.bottom = `${viewportHeight - rect.top}px`;
+            portaledDropdown.style.top = 'auto';
+          } else {
+            // Drop down - position below the trigger (default)
+            portaledDropdown.style.top = `${rect.bottom}px`;
+            portaledDropdown.style.bottom = 'auto';
+          }
+          
           portaledDropdown.style.display = 'block';
+          portaledDropdown.style.pointerEvents = 'auto';
+          portaledDropdown.style.visibility = 'visible';
           portaledDropdown.style.zIndex = '10001';
 
           // Hide the original dropdown
           dropdownElement.style.display = 'none';
+          dropdownElement.style.pointerEvents = 'none';
+          dropdownElement.style.visibility = 'hidden';
 
           // Set up click-outside handler
           this.setupClickOutsideHandler(portaledDropdown, selectedElement, instanceId);
 
           console.log('Dropdown opened at position:', {
-            top: rect.bottom,
+            direction: shouldDropUp ? 'up' : 'down',
+            top: shouldDropUp ? 'auto' : rect.bottom,
+            bottom: shouldDropUp ? viewportHeight - rect.top : 'auto',
             left: rect.left,
             width: rect.width,
+            spaceBelow,
+            spaceAbove,
             portaled: true,
             instanceId,
           });
@@ -1995,14 +2416,20 @@ export class UltraDropdownModule extends BaseUltraModule {
           // Fallback if selectedElement not found
           console.warn('selectedElement not found, using fallback positioning');
           dropdownElement.style.display = 'block';
+          dropdownElement.style.pointerEvents = 'auto';
+          dropdownElement.style.visibility = 'visible';
         }
       } else {
         // Hide portaled dropdown
         const portaledDropdown = this.portaledDropdowns.get(instanceId);
         if (portaledDropdown) {
           portaledDropdown.style.display = 'none';
+          portaledDropdown.style.pointerEvents = 'none';
+          portaledDropdown.style.visibility = 'hidden';
         }
         dropdownElement.style.display = 'none';
+        dropdownElement.style.pointerEvents = 'none';
+        dropdownElement.style.visibility = 'hidden';
         this.removeClickOutsideHandler();
       }
       console.log('Dropdown toggled:', newState ? 'open' : 'closed');
@@ -2027,10 +2454,15 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Update state for this specific instance
     this.dropdownOpenStates.set(instanceId, false);
 
+    // Update chevron rotation instantly
+    this.updateChevronRotationInstant(instanceId, false);
+
     // Hide the portaled dropdown
     const portaledDropdown = this.portaledDropdowns.get(instanceId);
     if (portaledDropdown) {
       portaledDropdown.style.display = 'none';
+      portaledDropdown.style.pointerEvents = 'none';
+      portaledDropdown.style.visibility = 'hidden';
       console.log(`Portaled dropdown ${instanceId} closed`);
     }
 
@@ -2047,13 +2479,19 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     this.clickOutsideHandler = (e: Event) => {
       const target = e.target as HTMLElement;
+      const composedPath = e.composedPath();
 
-      // Don't close if clicking inside portaled dropdown or on the selected element
+      // Don't close if clicking inside portaled dropdown, on the selected element, or on the chevron container
+      const isChevronClick = composedPath.some(
+        (el: any) => el?.classList?.contains?.('dropdown-chevron-container') || el?.classList?.contains?.('dropdown-chevron')
+      ) || target.classList.contains('dropdown-chevron-container') || target.closest('.dropdown-chevron-container');
+
       if (
         portaledDropdown.contains(target) ||
         selectedElement.contains(target) ||
         target === portaledDropdown ||
-        target === selectedElement
+        target === selectedElement ||
+        isChevronClick
       ) {
         return;
       }
@@ -2061,7 +2499,13 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Close the dropdown
       console.log('Click outside detected, closing dropdown');
       this.dropdownOpenStates.set(moduleId, false);
+      
+      // Update chevron rotation instantly
+      this.updateChevronRotationInstant(moduleId, false);
+      
       portaledDropdown.style.display = 'none';
+      portaledDropdown.style.pointerEvents = 'none';
+      portaledDropdown.style.visibility = 'hidden';
       this.removeClickOutsideHandler();
     };
 
@@ -2075,6 +2519,50 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (this.clickOutsideHandler) {
       document.removeEventListener('click', this.clickOutsideHandler, true);
       this.clickOutsideHandler = null;
+    }
+  }
+
+  private updateChevronRotation(moduleId: string, isOpen: boolean): void {
+    // Find the chevron icon for this module instance
+    const moduleContainer = document.querySelector(
+      `.dropdown-module-container[data-module-id="${moduleId}"]`
+    ) as HTMLElement;
+    
+    if (moduleContainer) {
+      const chevron = moduleContainer.querySelector('.dropdown-chevron') as HTMLElement;
+      if (chevron) {
+        chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        console.log('Updated chevron rotation for', moduleId, 'isOpen:', isOpen);
+      } else {
+        console.warn('Chevron not found for module', moduleId);
+      }
+    } else {
+      console.warn('Module container not found for', moduleId);
+    }
+  }
+
+  private updateChevronRotationInstant(moduleId: string, isOpen: boolean): void {
+    // Find the chevron icon for this module instance
+    const moduleContainer = document.querySelector(
+      `.dropdown-module-container[data-module-id="${moduleId}"]`
+    ) as HTMLElement;
+    
+    if (moduleContainer) {
+      const chevron = moduleContainer.querySelector('.dropdown-chevron') as HTMLElement;
+      if (chevron) {
+        // Update immediately with no transition delay
+        chevron.style.transition = 'none';
+        chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        // Re-enable transition after the instant update
+        requestAnimationFrame(() => {
+          chevron.style.transition = 'transform 0.2s ease';
+        });
+        console.log('Updated chevron rotation INSTANTLY for', moduleId, 'isOpen:', isOpen);
+      } else {
+        console.warn('Chevron not found for module', moduleId);
+      }
+    } else {
+      console.warn('Module container not found for', moduleId);
     }
   }
 
@@ -2106,7 +2594,12 @@ export class UltraDropdownModule extends BaseUltraModule {
           const optionValue = entityOptions[index];
           if (optionValue) {
             console.log('Entity option clicked:', optionValue);
+            // Format the label for display/storage
+            const entityStateObj = hass.states[dropdownModule.source_entity];
+            const formattedLabel = this.formatOptionLabel(optionValue, entityStateObj, hass);
             this.updateEntitySelection(dropdownModule, optionValue, hass);
+            // Persist formatted label for last_chosen mode (for display)
+            this.selectOption(formattedLabel, dropdownModule);
             this.closeDropdown(undefined, instanceId);
           }
         });
@@ -2164,6 +2657,7 @@ export class UltraDropdownModule extends BaseUltraModule {
               this.currentSelection.set(instanceId, templateOption.label);
             }
             
+            // Always call selectOption to handle localStorage persistence
             this.selectOption(templateOption.label, dropdownModule);
             
             // Execute action if mode is set and source_entity is a climate entity
@@ -2229,7 +2723,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             this.currentSelection.set(instanceId, option.label);
           }
 
-          // Execute the option's action
+          // Always call selectOption to handle localStorage persistence
           this.selectOption(option.label, dropdownModule);
           this.executeOptionAction(option, hass, newOptionEl, config);
           this.closeDropdown(undefined, instanceId);
@@ -2246,6 +2740,24 @@ export class UltraDropdownModule extends BaseUltraModule {
     }
   }
 
+  // localStorage helper methods for selection persistence
+  private getStoredSelection(moduleId: string): string | null {
+    try {
+      return localStorage.getItem(`ultra_card_dropdown_selection_${moduleId}`);
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return null;
+    }
+  }
+
+  private setStoredSelection(moduleId: string, value: string): void {
+    try {
+      localStorage.setItem(`ultra_card_dropdown_selection_${moduleId}`, value);
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
+  }
+
   private selectOption(value: string, module: DropdownModule): void {
     // Update the current selection if state tracking is enabled
     if (module.track_state && value) {
@@ -2255,6 +2767,11 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       // In a real implementation, this would update the module config:
       // updateModule({ current_selection: value });
+    }
+    
+    // Persist to localStorage if closed_title_mode is last_chosen
+    if (module.closed_title_mode === 'last_chosen' || !module.closed_title_mode) {
+      this.setStoredSelection(module.id, value);
     }
   }
 
@@ -2391,7 +2908,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         width: 100%;
         box-sizing: border-box;
         position: relative;
-        pointer-events: auto;
+        pointer-events: none;
         isolation: isolate;
         overflow: visible !important;
       }
@@ -2400,6 +2917,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         width: 100%;
         position: relative;
         overflow: visible !important;
+        pointer-events: none;
       }
 
       /* label styles removed */
@@ -2419,11 +2937,13 @@ export class UltraDropdownModule extends BaseUltraModule {
         width: inherit;
         height: inherit;
         overflow: visible !important;
+        pointer-events: none;
       }
 
       .dropdown-selected {
         cursor: pointer;
         user-select: none;
+        pointer-events: auto;
         /* Allow all design properties to be inherited */
         font-family: inherit;
         font-size: inherit;
@@ -2445,6 +2965,26 @@ export class UltraDropdownModule extends BaseUltraModule {
         background: rgba(var(--rgb-primary-color), 0.05) !important;
       }
 
+      .dropdown-selected * {
+        pointer-events: none;
+      }
+
+      .dropdown-chevron-container {
+        cursor: pointer;
+        pointer-events: auto;
+        flex-shrink: 0;
+        user-select: none;
+      }
+
+      .dropdown-chevron-container * {
+        pointer-events: none;
+      }
+
+      .dropdown-chevron {
+        pointer-events: none;
+        flex-shrink: 0;
+      }
+
       .dropdown-options {
         position: fixed !important;
         z-index: 10001 !important;
@@ -2455,6 +2995,13 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-family: inherit;
         font-size: inherit;
         font-weight: inherit;
+        pointer-events: none !important;
+        visibility: hidden !important;
+      }
+
+      .dropdown-options[style*="display: block"] {
+        pointer-events: auto !important;
+        visibility: visible !important;
       }
 
       .dropdown-option {
@@ -2473,27 +3020,16 @@ export class UltraDropdownModule extends BaseUltraModule {
         border-bottom: none !important;
       }
 
-      /* Prevent event bubbling from dropdown container */
-      .dropdown-module-container * {
+      /* Enable pointer events only on interactive elements */
+      .dropdown-module-container .dropdown-selected,
+      .dropdown-module-container .dropdown-chevron-container,
+      .dropdown-module-container .dropdown-option {
         pointer-events: auto;
       }
 
-      /* Capture all events within dropdown container */
-      .dropdown-module-container {
-        position: relative;
-        z-index: 1;
-      }
 
-      .dropdown-module-container::before {
-        content: '';
-        position: absolute;
-        top: -10px;
-        left: -10px;
-        right: -10px;
-        bottom: -10px;
-        pointer-events: auto;
-        z-index: -1;
-      }
+      /* Remove the ::before pseudo-element that was blocking clicks */
+      /* This was extending beyond the container and intercepting pointer events */
 
       /* Let HA handle dropdown positioning naturally */
 

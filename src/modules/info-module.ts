@@ -96,7 +96,7 @@ export class UltraInfoModule extends BaseUltraModule {
       // vertical_alignment: undefined, // No default alignment to allow Global Design tab control
       columns: 1,
       gap: 12,
-      allow_wrap: true,
+      allow_wrap: true, // Allow grid items to wrap to new rows
       // Global action configuration - smart default based on entity type
       tap_action: undefined,
       hold_action: { action: 'nothing' },
@@ -1453,6 +1453,40 @@ export class UltraInfoModule extends BaseUltraModule {
             ${localize('editor.info.layout_section.title', lang, 'Layout & Positioning')}
           </div>
 
+          <!-- Allow Wrap Toggle -->
+          <div class="field-group" style="margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="flex: 1;">
+                <div
+                  class="field-title"
+                  style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                >
+                  ${localize('editor.info.allow_wrap', lang, 'Allow Wrapping')}
+                </div>
+                <div
+                  class="field-description"
+                  style="font-size: 13px !important; font-weight: 400 !important; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
+                >
+                  ${localize(
+                    'editor.info.allow_wrap_desc',
+                    lang,
+                    'Allow grid items to wrap to new rows when they exceed the container width'
+                  )}
+                </div>
+              </div>
+              <div style="margin-left: 16px;">
+                <ha-switch
+                  .checked=${infoModule.allow_wrap !== false}
+                  @change=${(e: Event) => {
+                    const target = e.target as any;
+                    updateModule({ allow_wrap: target.checked });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }}
+                ></ha-switch>
+              </div>
+            </div>
+          </div>
+
           <!-- Icon Position -->
           <div class="field-group" style="margin-bottom: 24px;">
             <div
@@ -1773,6 +1807,7 @@ export class UltraInfoModule extends BaseUltraModule {
       line_height: (infoModule as any).line_height || designFromDesignObject.line_height,
       letter_spacing: (infoModule as any).letter_spacing || designFromDesignObject.letter_spacing,
       text_align: (infoModule as any).text_align || designFromDesignObject.text_align,
+      white_space: (infoModule as any).white_space || designFromDesignObject.white_space,
       text_shadow_h: (infoModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
       text_shadow_v: (infoModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
       text_shadow_blur:
@@ -2034,6 +2069,7 @@ export class UltraInfoModule extends BaseUltraModule {
             style="
             display: grid;
             grid-template-columns: repeat(${infoModule.columns || 1}, 1fr);
+            grid-auto-flow: ${infoModule.allow_wrap === false ? 'column' : 'row'};
             gap: ${infoModule.gap || 12}px;
             justify-content: ${gridAlignment === 'left'
               ? 'start'
@@ -2401,7 +2437,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     letter-spacing: ${designProperties.letter_spacing || 'inherit'};
                     text-align: ${getNameAlignment(entity)};
                     text-shadow: ${getTextShadow()};
-                    ${nameValueLayout === 'horizontal' ? 'white-space: nowrap;' : ''}
+                    white-space: ${designProperties.white_space || 'normal'};
                     width: 100%;
                   "
                         >
@@ -2436,6 +2472,7 @@ export class UltraInfoModule extends BaseUltraModule {
                         text-align: ${getStateAlignment(entity)};
                         text-shadow: ${getTextShadow()};
                         width: 100%;
+                        white-space: ${designProperties.white_space || 'normal'};
                       "
                         >
                           ${displayValue}

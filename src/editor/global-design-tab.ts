@@ -937,7 +937,8 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.font_family) ||
           hasValue(props.font_weight) ||
           hasValue(props.text_transform) ||
-          hasValue(props.font_style)
+          hasValue(props.font_style) ||
+          hasValue(props.white_space)
         );
       case 'background':
         return !!(

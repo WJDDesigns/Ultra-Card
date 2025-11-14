@@ -64,34 +64,43 @@ export function migrateToUnified(config: any): MigrationResult {
   }
 
   const migratedFrom: string[] = [];
-  let unifiedTemplate = '';
+  const jsonParts: string[] = [];
   let ignoreEntityState = false;
 
-  // Priority 1: template_mode (affects both display AND state)
+  // Build JSON structure combining ALL templates
+  // template_mode affects state control, dynamic templates are always included
+
+  // Strategy: Always build a JSON object combining all templates
+  // Dynamic templates take priority for specific properties (icon, icon_color)
+  // template_mode (if string) is used as icon only if no dynamic_icon_template exists
+
+  // Handle template_mode (affects both display AND state)
   if (detection.hasTemplateMode) {
     migratedFrom.push('template_mode');
-    unifiedTemplate = config.template;
     ignoreEntityState = true; // Preserve old behavior (template controls state)
-  }
-  // Priority 2: Multiple dynamic templates (display only)
-  else if (detection.hasDynamicIconTemplate || detection.hasDynamicColorTemplate) {
-    // Build JSON structure combining templates as clean single-line format
-    const jsonParts: string[] = [];
 
-    if (detection.hasDynamicIconTemplate) {
-      migratedFrom.push('dynamic_icon_template');
-      jsonParts.push(`"icon": ${wrapTemplateInJinja(config.dynamic_icon_template)}`);
+    // Note: template_mode could return a string OR JSON, but we can't know at migration time
+    // For maximum compatibility, only use template_mode for icon if no dynamic_icon_template
+    if (!detection.hasDynamicIconTemplate) {
+      jsonParts.push(`"icon": ${wrapTemplateInJinja(config.template)}`);
     }
-
-    if (detection.hasDynamicColorTemplate) {
-      migratedFrom.push('dynamic_color_template');
-      jsonParts.push(`"icon_color": ${wrapTemplateInJinja(config.dynamic_color_template)}`);
-    }
-
-    // Use single-line format for cleaner output
-    unifiedTemplate = `{ ${jsonParts.join(', ')} }`;
-    ignoreEntityState = false; // Preserve display-only behavior
+    // If dynamic_icon_template exists, it takes priority and template_mode is ignored
+    // (This matches the legacy behavior where dynamic templates override template_mode for display)
   }
+
+  // Always include dynamic templates (they take priority for their specific properties)
+  if (detection.hasDynamicIconTemplate) {
+    migratedFrom.push('dynamic_icon_template');
+    jsonParts.push(`"icon": ${wrapTemplateInJinja(config.dynamic_icon_template)}`);
+  }
+
+  if (detection.hasDynamicColorTemplate) {
+    migratedFrom.push('dynamic_color_template');
+    jsonParts.push(`"icon_color": ${wrapTemplateInJinja(config.dynamic_color_template)}`);
+  }
+
+  // Build unified template from all parts
+  const unifiedTemplate = `{ ${jsonParts.join(', ')} }`;
 
   return {
     unified_template_mode: true,

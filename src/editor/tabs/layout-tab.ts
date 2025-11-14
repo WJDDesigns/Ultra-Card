@@ -274,6 +274,19 @@ export class LayoutTab extends LitElement {
 
     // Update hover styles with current configuration
     this._updateHoverEffectStyles();
+
+    // Detect Safari and add class for Safari-specific fixes
+    this._detectSafari();
+  }
+
+  /** Detect Safari browser and add class for Safari-specific CSS fixes */
+  private _detectSafari(): void {
+    const ua = navigator.userAgent;
+    // Safari detection: Safari includes "Safari" but Chrome also includes "Safari", so we check for Safari without Chrome
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    if (isSafari) {
+      this.classList.add('is-safari');
+    }
   }
 
   /** Determine if current device/viewport should be treated as mobile */
@@ -14131,7 +14144,8 @@ export class LayoutTab extends LitElement {
         overflow-y: auto; /* allow vertical scrolling when content exceeds height */
         max-height: inherit;
         padding: 0 24px 28px 24px; /* consistent horizontal padding, leave room for resize handle */
-        flex: 1; /* take up remaining space */
+        flex: 1 1 0; /* take up remaining space, allow shrinking, base size 0 */
+        min-height: 0; /* Critical for Safari: allow flex child to shrink below content size */
         border-radius: 0 0 8px 8px; /* maintain bottom border radius */
         /* Ensure content doesn't hide under header */
         position: relative;
@@ -14200,6 +14214,37 @@ export class LayoutTab extends LitElement {
         }
       }
 
+      /* Safari-specific fix: disable sticky positioning since it causes issues */
+      :host(.is-safari) .selector-content.draggable-popup {
+        /* Ensure flex container properly calculates available space */
+        min-height: 0;
+      }
+      
+      :host(.is-safari) .selector-body {
+        /* Force Safari to respect flex constraints */
+        min-height: 0;
+        max-height: 100%;
+      }
+      
+      :host(.is-safari) .selector-header-wrapper {
+        /* Disable sticky on Safari - use static positioning instead */
+        position: static !important; /* Override sticky to prevent Safari expansion issues */
+        height: auto;
+        max-height: 200px;
+        overflow-x: visible;
+        overflow-y: hidden;
+      }
+      
+      :host(.is-safari) .selector-header {
+        height: auto;
+        max-height: fit-content;
+      }
+      
+      :host(.is-safari) .module-selector-tabs {
+        height: auto;
+        max-height: 48px;
+      }
+
       .selector-header-wrapper {
         position: sticky; /* keep header and tabs visible while scrolling */
         top: 0;
@@ -14208,6 +14253,11 @@ export class LayoutTab extends LitElement {
         border-radius: 8px 8px 0 0; /* maintain top border radius */
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
         margin-bottom: 16px; /* Space between sticky header/tabs and content */
+        flex-shrink: 0; /* Prevent header from shrinking in flex layout */
+        height: auto; /* Use natural height */
+        max-height: 200px; /* Reasonable max height to prevent expansion (header ~60px + tabs ~48px + margin) */
+        overflow-x: visible; /* Allow tabs to scroll horizontally */
+        overflow-y: hidden; /* Prevent vertical expansion */
       }
 
       .selector-header {
@@ -14215,6 +14265,9 @@ export class LayoutTab extends LitElement {
         cursor: move;
         user-select: none;
         background: var(--card-background-color);
+        flex-shrink: 0; /* Prevent header from expanding */
+        min-height: fit-content; /* Use content height */
+        max-height: fit-content; /* Prevent expansion */
       }
 
       .selector-header-top {
@@ -14994,6 +15047,42 @@ export class LayoutTab extends LitElement {
 
       .selector-content.popup-dragging .resize-handle {
         pointer-events: none;
+      }
+
+      /* Prevent header expansion during drag/resize */
+      .selector-content.popup-dragging .selector-header-wrapper,
+      .selector-content.popup-resizing .selector-header-wrapper {
+        height: auto !important;
+        max-height: 200px !important;
+        flex-shrink: 0 !important;
+        overflow-y: hidden !important;
+        min-height: 0 !important;
+        /* Lock header size during drag to prevent Safari expansion */
+        position: relative !important; /* Override sticky during drag to prevent expansion */
+      }
+
+      .selector-content.popup-dragging .selector-header,
+      .selector-content.popup-resizing .selector-header {
+        height: auto !important;
+        max-height: fit-content !important;
+        flex-shrink: 0 !important;
+        min-height: 0 !important;
+      }
+
+      .selector-content.popup-dragging .module-selector-tabs,
+      .selector-content.popup-resizing .module-selector-tabs {
+        height: auto !important;
+        max-height: 48px !important;
+        flex-shrink: 0 !important;
+        min-height: 0 !important;
+      }
+
+      /* Ensure body doesn't cause header expansion during drag */
+      .selector-content.popup-dragging .selector-body,
+      .selector-content.popup-resizing .selector-body {
+        min-height: 0 !important;
+        flex: 1 1 0 !important;
+        overflow-y: auto !important;
       }
 
       /* Module Preview */
@@ -16833,6 +16922,9 @@ export class LayoutTab extends LitElement {
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE/Edge */
+        flex-shrink: 0; /* Prevent tabs from expanding */
+        min-height: fit-content; /* Use content height */
+        max-height: fit-content; /* Prevent expansion */
       }
 
       .module-selector-tabs::-webkit-scrollbar {

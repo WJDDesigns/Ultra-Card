@@ -438,6 +438,7 @@ All standard markdown features are automatically enabled!`,
       letter_spacing:
         (markdownModule as any).letter_spacing || designFromDesignObject.letter_spacing,
       text_align: (markdownModule as any).text_align || designFromDesignObject.text_align,
+      white_space: (markdownModule as any).white_space || designFromDesignObject.white_space,
       text_shadow_h: (markdownModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
       text_shadow_v: (markdownModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
       text_shadow_blur:
@@ -615,6 +616,10 @@ All standard markdown features are automatically enabled!`,
         designProperties.letter_spacing ||
         moduleWithDesign.letter_spacing ||
         markdownModule.letter_spacing ||
+        'normal',
+      whiteSpace:
+        designProperties.white_space ||
+        moduleWithDesign.white_space ||
         'normal',
       // Remove default padding - let CSS handle it
       padding: '0',

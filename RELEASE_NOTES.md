@@ -1,5 +1,19 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta20
+
+### 🐛 Bug Fixes
+
+- **Fix spinbox module hover button on mobile** - Fixed hover button behavior on mobile devices for spinbox module
+- **Fix modules that do not have an entity to add entity selection for action tab** - Added entity selection capability to action tab for modules without entities
+
+### 🚀 Improvements
+
+- **Improved template migration to unified template mode** - Enhanced template migration process for unified template mode
+- **Dropdown module improvements and features** - Various improvements and new features for dropdown module
+
+---
+
 ## Version 2.1.0-beta19
 
 ### 🚀 Improvements

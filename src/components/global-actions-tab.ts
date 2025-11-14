@@ -34,6 +34,91 @@ export interface ActionConfig {
 }
 
 export class GlobalActionsTab {
+  /**
+   * Check if a module has an entity (directly or through nested structures)
+   */
+  private static moduleHasEntity(module: CardModule): boolean {
+    // Check for direct entity field
+    if ((module as any).entity && typeof (module as any).entity === 'string') {
+      return true;
+    }
+
+    // Special handling for icon modules - check first icon's entity
+    if (module.type === 'icon') {
+      const iconModule = module as any;
+      if (iconModule.icons && iconModule.icons.length > 0 && iconModule.icons[0].entity) {
+        return true;
+      }
+    }
+
+    // Special handling for info modules - check first info entity's entity
+    if (module.type === 'info') {
+      const infoModule = module as any;
+      if (
+        infoModule.info_entities &&
+        infoModule.info_entities.length > 0 &&
+        infoModule.info_entities[0].entity
+      ) {
+        return true;
+      }
+    }
+
+    // Check for graphs module entities array
+    if (module.type === 'graphs') {
+      const graphsModule = module as any;
+      if (graphsModule.entities && Array.isArray(graphsModule.entities) && graphsModule.entities.length > 0) {
+        return true;
+      }
+    }
+
+    // Check for bar module entity
+    if (module.type === 'bar' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for camera module entity
+    if (module.type === 'camera' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for light module entity
+    if (module.type === 'light' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for climate module entity
+    if (module.type === 'climate' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for slider module entity
+    if (module.type === 'slider' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for button module entity
+    if (module.type === 'button' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for image module entity
+    if (module.type === 'image' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for map module entity
+    if (module.type === 'map' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for spinbox module entity (optional but still counts)
+    if (module.type === 'spinbox' && (module as any).entity) {
+      return true;
+    }
+
+    return false;
+  }
+
   static render(
     module: CardModule,
     hass: HomeAssistant,
@@ -70,6 +155,7 @@ export class GlobalActionsTab {
     };
 
     const lang = hass?.locale?.language || 'en';
+    const moduleHasEntity = this.moduleHasEntity(module);
     return html`
       <div class="global-actions-tab">
         <style>
@@ -220,7 +306,9 @@ export class GlobalActionsTab {
             ),
             currentActions.tap_action || { action: 'default' },
             hass,
-            action => updateModule({ tap_action: action } as any)
+            action => updateModule({ tap_action: action } as any),
+            module,
+            moduleHasEntity
           )}
           ${this.renderActionConfig(
             localize('editor.actions.hold_action', lang, 'Hold Action'),
@@ -231,7 +319,9 @@ export class GlobalActionsTab {
             ),
             currentActions.hold_action || { action: 'default' },
             hass,
-            action => updateModule({ hold_action: action } as any)
+            action => updateModule({ hold_action: action } as any),
+            module,
+            moduleHasEntity
           )}
           ${this.renderActionConfig(
             localize('editor.actions.double_tap_action', lang, 'Double Tap Action'),
@@ -242,7 +332,9 @@ export class GlobalActionsTab {
             ),
             currentActions.double_tap_action || { action: 'default' },
             hass,
-            action => updateModule({ double_tap_action: action } as any)
+            action => updateModule({ double_tap_action: action } as any),
+            module,
+            moduleHasEntity
           )}
         </div>
       </div>
@@ -254,7 +346,9 @@ export class GlobalActionsTab {
     description: string,
     action: ActionConfig,
     hass: HomeAssistant,
-    updateAction: (action: ActionConfig) => void
+    updateAction: (action: ActionConfig) => void,
+    module: CardModule,
+    moduleHasEntity: boolean
   ): TemplateResult {
     // Normalize legacy 'nothing' to 'default' for display to avoid blank entries
     const displayAction: ActionConfig =
@@ -318,7 +412,7 @@ export class GlobalActionsTab {
             ></ha-form>
           </div>
 
-          ${action?.action === 'more-info'
+          ${action?.action === 'more-info' && !moduleHasEntity
             ? html`
                 <div
                   class="conditional-fields-group"
@@ -342,6 +436,51 @@ export class GlobalActionsTab {
                       style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
                     >
                       Select which entity to show more information for
+                    </div>
+                    <ha-form
+                      .hass=${hass}
+                      .data=${{ entity: action.entity || '' }}
+                      .schema=${[
+                        {
+                          name: 'entity',
+                          label: 'Entity',
+                          selector: { entity: {} },
+                        },
+                      ]}
+                      .computeLabel=${this.computeLabel}
+                      @value-changed=${(e: CustomEvent) => {
+                        const entity = e.detail.value?.entity;
+                        updateAction({ ...action, entity });
+                      }}
+                    ></ha-form>
+                  </div>
+                </div>
+              `
+            : ''}
+          ${action?.action === 'toggle' && !moduleHasEntity
+            ? html`
+                <div
+                  class="conditional-fields-group"
+                  style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
+                >
+                  <div
+                    class="conditional-fields-header"
+                    style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
+                  >
+                    Toggle Configuration
+                  </div>
+                  <div class="conditional-fields-content" style="padding: 16px;">
+                    <div
+                      class="field-title"
+                      style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                    >
+                      Entity
+                    </div>
+                    <div
+                      class="field-description"
+                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+                    >
+                      Select which entity to toggle on/off
                     </div>
                     <ha-form
                       .hass=${hass}

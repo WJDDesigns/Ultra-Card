@@ -1349,6 +1349,9 @@ export interface DropdownModule extends BaseModule {
     }>;
     current_selection?: string;
     track_state?: boolean;
+    closed_title_mode?: 'last_chosen' | 'entity_state' | 'custom' | 'first_option';
+    closed_title_entity?: string;
+    closed_title_custom?: string;
     unified_template_mode?: boolean;
     unified_template?: string;
     tap_action?: {

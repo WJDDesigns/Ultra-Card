@@ -15,6 +15,91 @@ export class GlobalActionsTab extends LitElement {
 
   @state() private _config: any = {};
 
+  /**
+   * Check if a module has an entity (directly or through nested structures)
+   */
+  private _moduleHasEntity(module: CardModule): boolean {
+    // Check for direct entity field
+    if ((module as any).entity && typeof (module as any).entity === 'string') {
+      return true;
+    }
+
+    // Special handling for icon modules - check first icon's entity
+    if (module.type === 'icon') {
+      const iconModule = module as any;
+      if (iconModule.icons && iconModule.icons.length > 0 && iconModule.icons[0].entity) {
+        return true;
+      }
+    }
+
+    // Special handling for info modules - check first info entity's entity
+    if (module.type === 'info') {
+      const infoModule = module as any;
+      if (
+        infoModule.info_entities &&
+        infoModule.info_entities.length > 0 &&
+        infoModule.info_entities[0].entity
+      ) {
+        return true;
+      }
+    }
+
+    // Check for graphs module entities array
+    if (module.type === 'graphs') {
+      const graphsModule = module as any;
+      if (graphsModule.entities && Array.isArray(graphsModule.entities) && graphsModule.entities.length > 0) {
+        return true;
+      }
+    }
+
+    // Check for bar module entity
+    if (module.type === 'bar' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for camera module entity
+    if (module.type === 'camera' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for light module entity
+    if (module.type === 'light' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for climate module entity
+    if (module.type === 'climate' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for slider module entity
+    if (module.type === 'slider' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for button module entity
+    if (module.type === 'button' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for image module entity
+    if (module.type === 'image' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for map module entity
+    if (module.type === 'map' && (module as any).entity) {
+      return true;
+    }
+
+    // Check for spinbox module entity (optional but still counts)
+    if (module.type === 'spinbox' && (module as any).entity) {
+      return true;
+    }
+
+    return false;
+  }
+
   protected willUpdate(changedProps: PropertyValues) {
     if (changedProps.has('module')) {
       // Sync internal state when module changes
@@ -26,14 +111,7 @@ export class GlobalActionsTab extends LitElement {
     }
   }
 
-  private _valueChanged(ev: CustomEvent): void {
-    ev.stopPropagation();
-
-    // Direct passthrough like Mushroom - update internal state
-    this._config = { ...ev.detail.value };
-
-    // Process actions to add module entity if needed
-    const processAction = (action: any) => {
+  private _processAction(action: any): any {
       if (!action) return action;
 
       // Get the appropriate entity for this module
@@ -70,7 +148,19 @@ export class GlobalActionsTab extends LitElement {
       }
 
       return action;
-    };
+  }
+
+  private _valueChanged(ev: CustomEvent): void {
+    ev.stopPropagation();
+
+    // Direct passthrough like Mushroom - update internal state
+    this._config = { ...ev.detail.value };
+    
+    // Trigger update to show/hide entity selectors
+    this.requestUpdate();
+
+    // Process actions to add module entity if needed
+    const processAction = (action: any) => this._processAction(action);
 
     // Fire event for parent to handle
     this.dispatchEvent(
@@ -114,21 +204,10 @@ export class GlobalActionsTab extends LitElement {
     const localizedTitle =
       this.tabTitle || localize('editor.actions.title', lang, 'Actions Configuration');
 
-    // Create schema for all three actions (Mushroom pattern)
-    const schema = [
-      {
-        name: 'tap_action',
-        selector: { ui_action: {} },
-      },
-      {
-        name: 'hold_action',
-        selector: { ui_action: {} },
-      },
-      {
-        name: 'double_tap_action',
-        selector: { ui_action: {} },
-      },
-    ];
+    const moduleHasEntity = this._moduleHasEntity(this.module);
+    const tapAction = this._config.tap_action || {};
+    const holdAction = this._config.hold_action || {};
+    const doubleTapAction = this._config.double_tap_action || {};
 
     return html`
       <div class="actions-section">
@@ -146,18 +225,241 @@ export class GlobalActionsTab extends LitElement {
           </p>
         </div>
 
-        <ha-form
-          .hass=${this.hass}
-          .data=${this._config}
-          .schema=${schema}
-          .computeLabel=${(schema: any) =>
-            this.hass!.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`)}
-          @value-changed=${this._valueChanged}
-        ></ha-form>
+        <!-- Tap Action -->
+        <div style="margin-bottom: 24px;">
+          <ha-form
+            .hass=${this.hass}
+            .data=${{ tap_action: tapAction }}
+            .schema=${[
+              {
+                name: 'tap_action',
+                selector: { ui_action: {} },
+              },
+            ]}
+            .computeLabel=${(schema: any) =>
+              this.hass!.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`)}
+            @value-changed=${(e: CustomEvent) => {
+              const newAction = e.detail.value.tap_action;
+              this._config = { ...this._config, tap_action: newAction };
+              this.requestUpdate();
+              // Fire event for parent to handle
+              this.dispatchEvent(
+                new CustomEvent('module-changed', {
+                  detail: {
+                    updates: {
+                      tap_action: this._processAction(newAction),
+                    },
+                  },
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+              this._triggerPreviewUpdate();
+            }}
+          ></ha-form>
+          ${this._renderEntitySelectors('tap_action', tapAction, moduleHasEntity, lang)}
+        </div>
+
+        <!-- Hold Action -->
+        <div style="margin-bottom: 24px;">
+          <ha-form
+            .hass=${this.hass}
+            .data=${{ hold_action: holdAction }}
+            .schema=${[
+              {
+                name: 'hold_action',
+                selector: { ui_action: {} },
+              },
+            ]}
+            .computeLabel=${(schema: any) =>
+              this.hass!.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`)}
+            @value-changed=${(e: CustomEvent) => {
+              const newAction = e.detail.value.hold_action;
+              this._config = { ...this._config, hold_action: newAction };
+              this.requestUpdate();
+              // Fire event for parent to handle
+              this.dispatchEvent(
+                new CustomEvent('module-changed', {
+                  detail: {
+                    updates: {
+                      hold_action: this._processAction(newAction),
+                    },
+                  },
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+              this._triggerPreviewUpdate();
+            }}
+          ></ha-form>
+          ${this._renderEntitySelectors('hold_action', holdAction, moduleHasEntity, lang)}
+        </div>
+
+        <!-- Double Tap Action -->
+        <div style="margin-bottom: 24px;">
+          <ha-form
+            .hass=${this.hass}
+            .data=${{ double_tap_action: doubleTapAction }}
+            .schema=${[
+              {
+                name: 'double_tap_action',
+                selector: { ui_action: {} },
+              },
+            ]}
+            .computeLabel=${(schema: any) =>
+              this.hass!.localize(`ui.panel.lovelace.editor.card.generic.${schema.name}`)}
+            @value-changed=${(e: CustomEvent) => {
+              const newAction = e.detail.value.double_tap_action;
+              this._config = { ...this._config, double_tap_action: newAction };
+              this.requestUpdate();
+              // Fire event for parent to handle
+              this.dispatchEvent(
+                new CustomEvent('module-changed', {
+                  detail: {
+                    updates: {
+                      double_tap_action: this._processAction(newAction),
+                    },
+                  },
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+              this._triggerPreviewUpdate();
+            }}
+          ></ha-form>
+          ${this._renderEntitySelectors('double_tap_action', doubleTapAction, moduleHasEntity, lang)}
+        </div>
       </div>
 
       <!-- Hover Effects Section -->
       ${this._renderHoverEffectsSection()}
+    `;
+  }
+
+  private _renderEntitySelectors(
+    actionType: 'tap_action' | 'hold_action' | 'double_tap_action',
+    action: any,
+    moduleHasEntity: boolean,
+    lang: string
+  ): TemplateResult {
+    if (moduleHasEntity) {
+      return html``;
+    }
+
+    const actionLabel =
+      actionType === 'tap_action'
+        ? localize('editor.actions.tap_action', lang, 'Tap Action')
+        : actionType === 'hold_action'
+          ? localize('editor.actions.hold_action', lang, 'Hold Action')
+          : localize('editor.actions.double_tap_action', lang, 'Double Tap Action');
+
+    return html`
+      ${action?.action === 'more-info'
+        ? html`
+            <div
+              class="conditional-fields-group"
+              style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
+            >
+              <div
+                class="conditional-fields-header"
+                style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
+              >
+                ${actionLabel} - More Info Configuration
+              </div>
+              <div class="conditional-fields-content" style="padding: 16px;">
+                <div
+                  class="field-title"
+                  style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                >
+                  Entity
+                </div>
+                <div
+                  class="field-description"
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+                >
+                  Select which entity to show more information for
+                </div>
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{ entity: action.entity || '' }}
+                  .schema=${[
+                    {
+                      name: 'entity',
+                      label: 'Entity',
+                      selector: { entity: {} },
+                    },
+                  ]}
+                  @value-changed=${(e: CustomEvent) => {
+                    const entity = e.detail.value?.entity;
+                    const updatedAction = { ...action, entity };
+                    this._config = { ...this._config, [actionType]: updatedAction };
+                    this.requestUpdate();
+                    this.dispatchEvent(
+                      new CustomEvent('module-changed', {
+                        detail: { updates: { [actionType]: updatedAction } },
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                  }}
+                ></ha-form>
+              </div>
+            </div>
+          `
+        : ''}
+      ${action?.action === 'toggle'
+        ? html`
+            <div
+              class="conditional-fields-group"
+              style="margin-top: 16px; border-left: 4px solid var(--primary-color); background: rgba(var(--rgb-primary-color), 0.08); border-radius: 0 8px 8px 0; overflow: hidden;"
+            >
+              <div
+                class="conditional-fields-header"
+                style="background: rgba(var(--rgb-primary-color), 0.15); padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--primary-color); border-bottom: 1px solid rgba(var(--rgb-primary-color), 0.2); text-transform: uppercase; letter-spacing: 0.5px;"
+              >
+                ${actionLabel} - Toggle Configuration
+              </div>
+              <div class="conditional-fields-content" style="padding: 16px;">
+                <div
+                  class="field-title"
+                  style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
+                >
+                  Entity
+                </div>
+                <div
+                  class="field-description"
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+                >
+                  Select which entity to toggle on/off
+                </div>
+                <ha-form
+                  .hass=${this.hass}
+                  .data=${{ entity: action.entity || '' }}
+                  .schema=${[
+                    {
+                      name: 'entity',
+                      label: 'Entity',
+                      selector: { entity: {} },
+                    },
+                  ]}
+                  @value-changed=${(e: CustomEvent) => {
+                    const entity = e.detail.value?.entity;
+                    const updatedAction = { ...action, entity };
+                    this._config = { ...this._config, [actionType]: updatedAction };
+                    this.requestUpdate();
+                    this.dispatchEvent(
+                      new CustomEvent('module-changed', {
+                        detail: { updates: { [actionType]: updatedAction } },
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                  }}
+                ></ha-form>
+              </div>
+            </div>
+          `
+        : ''}
     `;
   }
 

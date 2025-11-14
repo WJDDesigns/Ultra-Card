@@ -7,10 +7,16 @@ export declare class GlobalActionsTab extends LitElement {
     module: CardModule;
     tabTitle?: string;
     private _config;
+    /**
+     * Check if a module has an entity (directly or through nested structures)
+     */
+    private _moduleHasEntity;
     protected willUpdate(changedProps: PropertyValues): void;
+    private _processAction;
     private _valueChanged;
     private _triggerPreviewUpdate;
     protected render(): TemplateResult<1>;
+    private _renderEntitySelectors;
     private _renderHoverEffectsSection;
     static get styles(): import("lit").CSSResult;
     static render<M extends CardModule>(module: M, hass: HomeAssistant, updateModule: (updates: Partial<M>) => void, title?: string): TemplateResult;

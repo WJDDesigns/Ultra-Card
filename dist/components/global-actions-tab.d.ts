@@ -19,6 +19,10 @@ export interface ActionConfig {
     [key: string]: any;
 }
 export declare class GlobalActionsTab {
+    /**
+     * Check if a module has an entity (directly or through nested structures)
+     */
+    private static moduleHasEntity;
     static render(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private static renderActionConfig;
     private static computeLabel;

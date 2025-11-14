@@ -33,6 +33,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
       // Configuration
       forecast_days: 5,
+      allow_wrap: true, // Allow forecast days to wrap to new rows
 
       // Styling - Text Sizes
       forecast_day_size: 14,
@@ -322,6 +323,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
             --forecast-temp-color: ${forecastTempColor};
             --forecast-background: ${forecastModule.forecast_background ||
         'rgba(var(--rgb-primary-text-color), 0.05)'};
+            --forecast-allow-wrap: ${forecastModule.allow_wrap === false ? 'column' : 'row'};
             overflow: visible;
             max-width: 100%;
             box-sizing: border-box;
@@ -532,6 +534,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       .weather-forecast {
         display: grid;
         grid-template-columns: repeat(var(--forecast-days, 5), 1fr);
+        grid-auto-flow: var(--forecast-allow-wrap, row);
         gap: 16px;
         padding: 20px 16px 16px 16px;
         background: var(--forecast-background);
