@@ -54,6 +54,8 @@ export declare class LayoutTab extends LitElement {
     private _shouldRestoreScroll;
     private _entityMappingOpen;
     connectedCallback(): void;
+    /** Detect Safari browser and add class for Safari-specific CSS fixes */
+    private _detectSafari;
     /** Determine if current device/viewport should be treated as mobile */
     private _isMobileDevice;
     private _handleWindowResize;

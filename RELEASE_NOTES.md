@@ -1,5 +1,17 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta19
+
+### 🚀 Improvements
+
+- **Improved dropdown module with automatic up/down detection, arrow click behavior and padding conflicts** - Enhanced dropdown module with better detection and interaction handling
+- **Improved popup header for safari based browsers** - Enhanced popup header compatibility for Safari browsers
+- **Improved whitespace for modules** - Better whitespace handling across modules
+- **Improved template mode field** - Enhanced template mode field functionality
+- **Reduce flooding of console warnings** - Reduced excessive console warning messages
+
+---
+
 ## Version 2.1.0-beta18
 
 ### 🐛 Bug Fixes
