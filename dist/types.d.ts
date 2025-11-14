@@ -701,6 +701,7 @@ export interface IconModule extends BaseModule {
     vertical_alignment?: 'top' | 'center' | 'bottom';
     columns?: number;
     gap?: number;
+    allow_wrap?: boolean;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1670,6 +1671,7 @@ export interface AnimatedForecastModule extends BaseModule {
     forecast_entity?: string;
     forecast_days?: number;
     temperature_unit?: 'F' | 'C';
+    allow_wrap?: boolean;
     forecast_day_size?: number;
     forecast_temp_size?: number;
     forecast_icon_size?: number;

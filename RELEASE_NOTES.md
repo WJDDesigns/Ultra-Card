@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta18
+
+### 🐛 Bug Fixes
+
+- **Possible fix for nowrap in modules** - Fixed potential issues with nowrap functionality in modules
+
+---
+
 ## Version 2.1.0-beta17
 
 ### 🚀 Improvements
