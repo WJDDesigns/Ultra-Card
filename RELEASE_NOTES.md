@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0-beta21
+
+### 🐛 Bug Fixes
+
+- **Possible fix to clipboard issue on some browsers** - Fixed clipboard functionality issues on certain browsers
+
+---
+
 ## Version 2.1.0-beta20
 
 ### 🐛 Bug Fixes

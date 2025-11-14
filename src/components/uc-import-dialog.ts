@@ -46,6 +46,7 @@ export class UcImportDialog extends LitElement {
               <textarea
                 .value=${this._importText}
                 @input=${this._handleTextInput}
+                @paste=${this._handlePaste}
                 placeholder="Paste your Ultra Card shortcode here: [ultra_card]...[/ultra_card]"
                 rows="6"
               ></textarea>
@@ -136,6 +137,52 @@ export class UcImportDialog extends LitElement {
 
     if (this._importText.trim()) {
       this._processImportText();
+    }
+  }
+
+  private async _handlePaste(e: ClipboardEvent): Promise<void> {
+    e.preventDefault();
+    
+    // Try to get full content from clipboard API instead of relying on browser paste
+    // This avoids truncation issues on Chromebooks and other browsers
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const clipboardText = await navigator.clipboard.readText();
+        if (clipboardText) {
+          const textarea = e.target as HTMLTextAreaElement;
+          textarea.value = clipboardText;
+          this._importText = clipboardText;
+          this._error = '';
+          this._previewData = null;
+          
+          if (this._importText.trim()) {
+            this._processImportText();
+          }
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to read from clipboard API during paste, falling back to default paste:', error);
+    }
+    
+    // Fallback to default paste behavior if clipboard API fails
+    const textarea = e.target as HTMLTextAreaElement;
+    const pastedText = e.clipboardData?.getData('text') || '';
+    if (pastedText) {
+      // Insert at cursor position
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const currentValue = textarea.value;
+      const newValue = currentValue.substring(0, start) + pastedText + currentValue.substring(end);
+      
+      textarea.value = newValue;
+      this._importText = newValue;
+      this._error = '';
+      this._previewData = null;
+      
+      if (this._importText.trim()) {
+        this._processImportText();
+      }
     }
   }
 
