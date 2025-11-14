@@ -1,5 +1,114 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.1.0
+
+## 🚀 Major Features
+
+### Unified Template System
+- **Revolutionary new template system** - Replaces multiple template boxes with one powerful unified template
+  - Control multiple properties from a single template (icon, color, name, state text, and their colors)
+  - Uses entity context variables (state, entity, attributes, name) for seamless entity remapping
+  - Returns JSON objects for multi-property control or simple strings for single properties
+  - Fully implemented in 5 core modules: Icon, Info, Text, Bar, and Markdown
+  - Basic structure added to Graphs, Spinbox, and Camera modules
+  - See UNIFIED_TEMPLATES.md for complete documentation and examples
+
+### New Modules
+- **Map Module** - Interactive map functionality for visualizing locations
+- **Climate Module** (Pro) - New Climate Module added for Ultra Card Pro members
+- **Slider Control Module** - Powerful new module for controlling numeric values with sliders, offering flexible configuration and real-time updates
+
+### Enhanced Module Features
+- **Gauge Module Enhancements**
+  - Added color templating and value templating support
+  - Added Icon Pointers for Gauge Module - Icons can now be used as pointers inside the track
+- **Template Mode Support**
+  - Added Template mode to Graphs Module
+  - Spinbox Module templating support
+  - Camera Module templating support
+  - Background templating added to icon and info modules
+
+## 🐛 Bug Fixes
+
+### Critical Fixes
+- **Fixed Migration Quote Bug** - Migration now properly wraps template code in quotes for valid JSON
+- **Fixed Migration Whitespace** - Normalized whitespace to prevent parsing errors from newlines and tabs
+- **Fixed Template Object Parsing** - Fixed critical bug where Home Assistant returned templates as objects instead of strings
+- **Fixed Template Boolean Parsing** - Templates are no longer incorrectly interpreted as boolean values
+
+### Module-Specific Fixes
+- **Fixed icon templates conflicting with animations** - Resolved conflicts between icon templates and animation systems
+- **Fixed separator CSS spacing** - Resolved separator spacing issues across various alignment configurations
+- **Fixed dropdown module issues in slider** - Resolved issues with dropdown module functionality when used within slider modules
+- **Fixed dropdown clipping** - Resolved issue where dropdowns in slider modules were being clipped by container boundaries
+- **Fixed slider update issues** - Resolved problems with slider module updates
+- **Fixed slider auto play** - Corrected auto play functionality in slider modules to work reliably
+- **Fixed light module issues** - Corrected various problems affecting the light module functionality
+- **Fixed light module color settings** - Corrected color setting functionality in the light module
+- **Fixed input limitation on light module** - Resolved input constraints in light module for XY and HS color modes
+- **Fixed spinbox module hover button on mobile** - Fixed hover button behavior on mobile devices for spinbox module
+- **Fixed nowrap in modules** - Fixed potential issues with nowrap functionality in modules
+
+### UI & Display Fixes
+- **Fixed gradient opacity issues in bar module**
+- **Fixed clock visibility on smaller displays**
+- **Fixed field cursor jump issues**
+- **Fixed video background bug**
+- **Fixed animation alignment issues**
+- **Fixed odd card panel heights** - Corrected card panel height issues across various viewport sizes
+- **Fixed color pick and button style issues** - Resolved color picker and button styling problems
+- **Fixed clipboard issue on some browsers** - Fixed clipboard functionality issues on certain browsers
+
+### Editor & Configuration Fixes
+- **Fixed modules without entities** - Added entity selection capability to action tab for modules without entities
+- **Improved module config error handling** - Enhanced error handling for module configuration issues
+
+## 🚀 Improvements
+
+### Template System
+- **Improved template migration to unified template mode** - Enhanced template migration process with cleaner output
+- **Improved template mode input box recognition** - Enhanced template mode input box recognition for better user experience
+- **Improved template mode field** - Enhanced template mode field functionality
+- **Improved template mode in some modules** - Enhanced template mode functionality in various modules
+- **Cleaner Migration Output** - Single-line JSON format for better readability and reliability
+
+### CSS & Layout Improvements
+- **Improved CSS standardized CSS** - Enhanced and standardized CSS across the card
+- **Improved CSS for nested layouts** - Enhanced CSS handling for nested layout structures
+- **Improved nested layout logic** - Enhanced nested layout system with automatic scaling and better layout handling for complex card structures
+- **Improved CSS handling of bar modules and separator modules** - Enhanced CSS handling to better accommodate space constraints
+- **Improved word wrap** - Enhanced word wrap functionality and added individual reset controls for text items in the design tab
+
+### Module Improvements
+- **Improved Slider Module based on swiper** - Enhanced slider module with better performance and features using Swiper library (Note: vertical slider is still not complete)
+- **Improved dropdown module** - Enhanced dropdown module with automatic up/down detection, arrow click behavior, and padding conflict resolution
+- **Improved whitespace for modules** - Better whitespace handling across modules
+- **Improved popup header for Safari browsers** - Enhanced popup header compatibility for Safari browsers
+- **Updated alignment options in info module** - Improved alignment options available in the info module
+- **Added alignments to column** - New alignment options for column modules
+
+### Design Tab Enhancements
+- **Added white space to design tab** - White space controls added to design tab (works with some modules)
+- **Added separate reset values to text items** - Individual reset controls for text items in the design tab
+- **Adjusted z-index and spacing** - Improved z-index handling and spacing adjustments across modules
+
+### Light Module Enhancements
+- **Enhanced light module** - New features and functionality added
+- **Improved light module navigation** - Enhanced navigation and user experience within the light module
+
+### Performance & Developer Experience
+- **Reduced flooding of console warnings** - Reduced excessive console warning messages
+- **Removed debug logging** - Cleaned up console output for production use
+- **Removed Smart Scaling** - Removed smart scaling feature as it wasn't working as expected
+
+---
+
+## 🙏 Special Thanks
+
+A huge thank you to the Ultra Card Discord community for their invaluable bug reports, feature requests, and continuous feedback that helped shape this release. Your contributions make Ultra Card better with every update!
+
+---
+
 ## Version 2.1.0-beta21
 
 ### 🐛 Bug Fixes
