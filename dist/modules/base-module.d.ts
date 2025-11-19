@@ -2,6 +2,7 @@ import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { TapActionConfig } from '../components/ultra-link';
 export interface ModuleMetadata {
     type: string;
     title: string;
@@ -41,6 +42,19 @@ export declare abstract class BaseUltraModule implements UltraModule {
         errors: string[];
     };
     protected generateId(prefix: string): string;
+    /**
+     * Centralized action handler for all modules
+     * This ensures confirmation dialogs work consistently across all modules
+     * Modules should use this method instead of calling UltraLinkComponent.handleAction directly
+     *
+     * @param action The action to execute
+     * @param hass Home Assistant instance
+     * @param element The element that triggered the action
+     * @param config Ultra Card config
+     * @param moduleEntity The module's entity (if any)
+     * @param module The module instance (required for confirmation dialogs)
+     */
+    handleModuleAction(action: TapActionConfig | undefined, hass: HomeAssistant, element?: HTMLElement, config?: UltraCardConfig, moduleEntity?: string, module?: CardModule): Promise<void>;
     protected renderFormField(label: string, input: TemplateResult, description?: string): TemplateResult;
     protected renderColorPicker(label: string, value: string, onChange: (color: string) => void, description?: string): TemplateResult;
     protected renderNumberInput(label: string, value: number, onChange: (value: number) => void, options?: {

@@ -1,5 +1,20 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta1
+
+### 🚀 New Features
+
+- **Added new Dynamic Weather Module** - New Dynamic Weather Module with enhanced weather visualization capabilities
+- **Added New Background Module** - New Background Module for advanced background customization
+
+### 🐛 Bug Fixes
+
+- **Possible Fix for Camera Module Audio** - Potential fix for audio issues in Camera Module
+- **Possible Fix for Dropdown Module duplicates causing conflicts** - Potential fix for duplicate dropdown modules causing conflicts
+- **Possible Fix for mobile buttons not deselecting after being pressed (spinbox module)** - Potential fix for mobile button deselection issues in Spinbox Module
+
+---
+
 ## Version 2.1.0
 
 ## 🚀 Major Features

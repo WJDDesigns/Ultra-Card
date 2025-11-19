@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'map';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -83,6 +83,7 @@ export interface BaseModule {
     animation_delay?: string;
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
     design?: SharedDesignProperties;
+    confirm_action?: boolean;
 }
 export interface TextModule extends BaseModule {
     type: 'text';
@@ -791,6 +792,85 @@ export interface VerticalModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+}
+export interface AccordionModule extends BaseModule {
+    type: 'accordion';
+    modules: CardModule[];
+    title_mode?: 'custom' | 'entity';
+    title_text?: string;
+    title_entity?: string;
+    show_entity_name?: boolean;
+    icon?: string;
+    header_alignment?: 'center' | 'apart';
+    icon_side?: 'left' | 'right';
+    default_open?: boolean;
+    open_mode?: 'always' | 'every' | 'any' | 'manual';
+    open_conditions?: DisplayCondition[];
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
+export interface PopupModule extends BaseModule {
+    type: 'popup';
+    modules: CardModule[];
+    show_title?: boolean;
+    title_mode?: 'custom' | 'entity';
+    title_text?: string;
+    title_entity?: string;
+    show_entity_name?: boolean;
+    trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic';
+    trigger_button_text?: string;
+    trigger_button_icon?: string;
+    trigger_image_type?: 'upload' | 'entity' | 'url';
+    trigger_image_url?: string;
+    trigger_image_entity?: string;
+    trigger_icon?: string;
+    trigger_alignment?: 'left' | 'center' | 'right';
+    trigger_button_full_width?: boolean;
+    trigger_image_full_width?: boolean;
+    layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
+    animation?: 'fade' | 'scale_up' | 'scale_down' | 'slide_top' | 'slide_left' | 'slide_right' | 'slide_bottom';
+    popup_width?: string;
+    popup_padding?: string;
+    popup_border_radius?: string;
+    close_button_position?: 'inside' | 'none';
+    close_button_color?: string;
+    close_button_size?: number;
+    close_button_icon?: string;
+    close_button_offset_x?: string;
+    close_button_offset_y?: string;
+    auto_close_timer_enabled?: boolean;
+    auto_close_timer_seconds?: number;
+    title_background_color?: string;
+    title_text_color?: string;
+    popup_background_color?: string;
+    popup_text_color?: string;
+    overlay_background?: string;
+    trigger_mode?: 'every' | 'any' | 'manual';
+    trigger_conditions?: DisplayCondition[];
+    auto_close?: boolean;
+    default_open?: boolean;
 }
 export interface PageBreakModule extends BaseModule {
     type: 'pagebreak';
@@ -1642,18 +1722,33 @@ export interface AnimatedWeatherModule extends BaseModule {
     location_override_mode?: 'text' | 'entity';
     location_name?: string;
     location_entity?: string;
+    left_column_order?: string[];
+    right_column_order?: string[];
     show_location?: boolean;
     show_condition?: boolean;
     show_custom_entity?: boolean;
+    show_precipitation?: boolean;
+    show_precipitation_probability?: boolean;
+    show_wind?: boolean;
+    show_pressure?: boolean;
+    show_visibility?: boolean;
     show_date?: boolean;
     show_temperature?: boolean;
     show_temp_range?: boolean;
     location_size?: number;
     condition_size?: number;
     custom_entity_size?: number;
+    precipitation_size?: number;
+    wind_size?: number;
+    pressure_size?: number;
+    visibility_size?: number;
     location_color?: string;
     condition_color?: string;
     custom_entity_color?: string;
+    precipitation_color?: string;
+    wind_color?: string;
+    pressure_color?: string;
+    visibility_color?: string;
     main_icon_size?: number;
     icon_style?: 'fill' | 'line';
     date_size?: number;
@@ -1756,7 +1851,36 @@ export interface VideoBackgroundModule extends BaseModule {
     rules?: VideoBackgroundRule[];
     global_card_transparency: GlobalCardTransparency;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule;
+export type WeatherEffectType = 'none' | 'rain' | 'rain_storm' | 'rain_drizzle' | 'hail' | 'acid_rain' | 'matrix_rain' | 'lightning' | 'snow_gentle' | 'snow_storm' | 'fog_light' | 'fog_dense' | 'sun_beams' | 'clouds' | 'wind';
+export interface DynamicWeatherModule extends BaseModule {
+    type: 'dynamic_weather';
+    enabled: boolean;
+    mode: 'automatic' | 'manual';
+    weather_entity?: string;
+    manual_effect?: WeatherEffectType;
+    position: 'foreground' | 'background';
+    opacity: number;
+    matrix_rain_color?: string;
+    enable_on_mobile: boolean;
+    respect_reduced_motion: boolean;
+    enable_snow_accumulation?: boolean;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export interface BackgroundModule extends BaseModule {
+    type: 'background';
+    background_type: 'none' | 'upload' | 'entity' | 'url';
+    background_image?: string;
+    background_image_entity?: string;
+    background_size?: 'cover' | 'contain' | 'fill' | 'auto';
+    background_position?: string;
+    background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+    apply_scope: 'current_view' | 'all_dashboard';
+    opacity: number;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

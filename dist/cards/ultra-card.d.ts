@@ -139,6 +139,22 @@ export declare class UltraCard extends LitElement {
      */
     private _unregisterVideoBgModules;
     /**
+     * Register all dynamic weather modules with the dynamic weather service
+     */
+    private _registerDynamicWeatherModules;
+    /**
+     * Unregister all dynamic weather modules from the dynamic weather service
+     */
+    private _unregisterDynamicWeatherModules;
+    /**
+     * Register all background modules with the background service
+     */
+    private _registerBackgroundModules;
+    /**
+     * Unregister all background modules from the background service
+     */
+    private _unregisterBackgroundModules;
+    /**
      * Inject a <style> block containing the combined styles from every registered
      * module into the card's shadow-root. This is required for features such as
      * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
