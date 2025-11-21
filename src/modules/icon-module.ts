@@ -3031,7 +3031,8 @@ export class UltraIconModule extends BaseUltraModule {
                       hass,
                       e.target as HTMLElement,
                       config,
-                      icon.entity
+                      icon.entity,
+                      iconModule
                     );
                   }, 500); // 500ms hold threshold
                 },
@@ -3073,7 +3074,8 @@ export class UltraIconModule extends BaseUltraModule {
                         hass,
                         e.target as HTMLElement,
                         config,
-                        icon.entity
+                        icon.entity,
+                        iconModule
                       );
                     }
                   } else {
@@ -3100,7 +3102,8 @@ export class UltraIconModule extends BaseUltraModule {
                         hass,
                         e.target as HTMLElement,
                         config,
-                        icon.entity
+                        icon.entity,
+                        iconModule
                       );
                     } else if (
                       iconModule.double_tap_action &&
@@ -3116,7 +3119,8 @@ export class UltraIconModule extends BaseUltraModule {
                             hass,
                             e.target as HTMLElement,
                             config,
-                            icon.entity
+                            icon.entity,
+                            iconModule
                           );
                         }
                         clickCount = 0;
@@ -3994,7 +3998,8 @@ export class UltraIconModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               undefined,
-              icon.entity
+              icon.entity,
+              iconModule
             );
           }
         }}

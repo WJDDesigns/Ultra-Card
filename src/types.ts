@@ -92,6 +92,8 @@ export interface BaseModule {
     | 'separator'
     | 'horizontal'
     | 'vertical'
+    | 'accordion'
+    | 'popup'
     | 'slider'
     | 'slider_control'
     | 'pagebreak'
@@ -109,6 +111,8 @@ export interface BaseModule {
     | 'animated_forecast'
     | 'external_card'
     | 'video_bg'
+    | 'dynamic_weather'
+    | 'background'
     | 'map';
   name?: string;
   // Display conditions - when to show/hide this module
@@ -187,6 +191,8 @@ export interface BaseModule {
     | 'cubic-bezier(0.25,0.1,0.25,1)';
   // New design properties with priority system
   design?: SharedDesignProperties;
+  // Action confirmation - when enabled, shows a confirmation dialog before executing actions
+  confirm_action?: boolean;
 }
 
 // Text Module
@@ -1406,6 +1412,141 @@ export interface VerticalModule extends BaseModule {
   };
 }
 
+// Accordion Layout Module
+export interface AccordionModule extends BaseModule {
+  type: 'accordion';
+  modules: CardModule[];
+  
+  // Header configuration
+  title_mode?: 'custom' | 'entity';
+  title_text?: string;
+  title_entity?: string;
+  show_entity_name?: boolean; // Show entity name when using entity title mode
+  icon?: string; // Main chevron/control icon (defaults to mdi:chevron-down)
+  header_alignment?: 'center' | 'apart'; // How title and icon are aligned
+  icon_side?: 'left' | 'right'; // Which side the icon appears on
+  
+  // State configuration
+  default_open?: boolean;
+  
+  // Open/Close Logic
+  open_mode?: 'always' | 'every' | 'any' | 'manual';
+  open_conditions?: DisplayCondition[];
+  
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+}
+
+// Popup Layout Module
+export interface PopupModule extends BaseModule {
+  type: 'popup';
+  modules: CardModule[];
+  
+  // Title configuration
+  show_title?: boolean;
+  title_mode?: 'custom' | 'entity';
+  title_text?: string;
+  title_entity?: string;
+  show_entity_name?: boolean;
+  
+  // Trigger configuration
+  trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic';
+  trigger_button_text?: string;
+  trigger_button_icon?: string;
+  trigger_image_type?: 'upload' | 'entity' | 'url';
+  trigger_image_url?: string;
+  trigger_image_entity?: string;
+  trigger_icon?: string;
+  
+  // Trigger styling
+  trigger_alignment?: 'left' | 'center' | 'right';
+  trigger_button_full_width?: boolean;
+  trigger_image_full_width?: boolean;
+  
+  // Layout settings
+  layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
+  animation?: 'fade' | 'scale_up' | 'scale_down' | 'slide_top' | 'slide_left' | 'slide_right' | 'slide_bottom';
+  
+  // Popup styling
+  popup_width?: string; // '600px', '100%', '14rem', '10vw'
+  popup_padding?: string; // '5%', '20px', '1rem', '2vw'
+  popup_border_radius?: string; // '5px', '50%', '0.3em', '12px 0'
+  
+  // Close button configuration
+  close_button_position?: 'inside' | 'none';
+  close_button_color?: string;
+  close_button_size?: number;
+  close_button_icon?: string;
+  close_button_offset_x?: string;
+  close_button_offset_y?: string;
+  
+  // Auto-close timer
+  auto_close_timer_enabled?: boolean;
+  auto_close_timer_seconds?: number;
+  
+  // Colors
+  title_background_color?: string;
+  title_text_color?: string;
+  popup_background_color?: string;
+  popup_text_color?: string;
+  overlay_background?: string;
+  
+  // Trigger Logic (for logic-based popup triggering)
+  trigger_mode?: 'every' | 'any' | 'manual';
+  trigger_conditions?: DisplayCondition[];
+  auto_close?: boolean; // For logic triggers: auto-hide when conditions become false
+  
+  // Default state
+  default_open?: boolean;
+}
+
 // Page Break Module (used in sliders to separate pages)
 export interface PageBreakModule extends BaseModule {
   type: 'pagebreak';
@@ -2192,8 +2333,16 @@ export interface CameraModule extends BaseModule {
 
   // Camera controls
   show_controls?: boolean;
+  
+  // Stream mode - controls how camera feed is displayed
+  view_mode?: 'auto' | 'live' | 'snapshot';
+  
+  // Snapshot refresh settings (only used when view_mode === 'snapshot')
+  refresh_interval?: number; // 1-300 seconds
+  
+  // Legacy properties (deprecated, migrated to view_mode)
   auto_refresh?: boolean;
-  refresh_interval?: number;
+  live_view?: boolean;
 
   // Image quality
   image_quality?: 'high' | 'medium' | 'low';
@@ -2201,8 +2350,7 @@ export interface CameraModule extends BaseModule {
   // Rotation
   rotation?: number;
 
-  // Live view (streaming)
-  live_view?: boolean;
+  // Audio settings (only used when view_mode === 'live' or auto upgrades to live)
   audio_enabled?: boolean;
 
   // Error handling
@@ -2553,6 +2701,11 @@ export interface DropdownModule extends BaseModule {
   // Dynamic templates
   unified_template_mode?: boolean;
   unified_template?: string;
+
+  // Control icon customization
+  control_icon?: string;
+  control_alignment?: 'center' | 'apart';
+  control_icon_side?: 'left' | 'right';
 
   // Visual Configuration (label removed)
 
@@ -3020,10 +3173,19 @@ export interface AnimatedWeatherModule extends BaseModule {
   location_name?: string; // Text override for location name
   location_entity?: string; // Entity to use for location (e.g., tracker)
 
+  // Column Order Configuration (for drag-and-drop editor)
+  left_column_order?: string[]; // Custom order of items in left column
+  right_column_order?: string[]; // Custom order of items in right column
+
   // Left Column Display Toggles
   show_location?: boolean; // Show location name (default: true)
   show_condition?: boolean; // Show weather condition (default: true)
   show_custom_entity?: boolean; // Show custom entity (default: true if entity set)
+  show_precipitation?: boolean; // Show precipitation amount (default: false)
+  show_precipitation_probability?: boolean; // Show precipitation probability (default: false)
+  show_wind?: boolean; // Show wind speed and direction (default: false)
+  show_pressure?: boolean; // Show air pressure (default: false)
+  show_visibility?: boolean; // Show visibility (default: false)
 
   // Right Column Display Toggles
   show_date?: boolean; // Show date (default: true)
@@ -3034,11 +3196,19 @@ export interface AnimatedWeatherModule extends BaseModule {
   location_size?: number; // Location text size (default: 16)
   condition_size?: number; // Weather condition size (default: 24)
   custom_entity_size?: number; // Custom entity size (default: 18)
+  precipitation_size?: number; // Precipitation text size (default: 14)
+  wind_size?: number; // Wind text size (default: 14)
+  pressure_size?: number; // Pressure text size (default: 14)
+  visibility_size?: number; // Visibility text size (default: 14)
 
   // Left Column - Colors
   location_color?: string; // Location text color (default: primary-text-color)
   condition_color?: string; // Condition text color (default: primary-text-color)
   custom_entity_color?: string; // Custom entity color (default: primary-text-color)
+  precipitation_color?: string; // Precipitation text color (default: primary-text-color)
+  wind_color?: string; // Wind text color (default: primary-text-color)
+  pressure_color?: string; // Pressure text color (default: primary-text-color)
+  visibility_color?: string; // Visibility text color (default: primary-text-color)
 
   // Center Column - Icon Styling
   main_icon_size?: number; // Main weather icon size (default: 120)
@@ -3203,6 +3373,73 @@ export interface VideoBackgroundModule extends BaseModule {
   global_card_transparency: GlobalCardTransparency;
 }
 
+// Weather Effect Types
+export type WeatherEffectType =
+  | 'none'
+  | 'rain'
+  | 'rain_storm'
+  | 'rain_drizzle'
+  | 'hail'
+  | 'acid_rain'
+  | 'matrix_rain'
+  | 'lightning'
+  | 'snow_gentle'
+  | 'snow_storm'
+  | 'fog_light'
+  | 'fog_dense'
+  | 'sun_beams'
+  | 'clouds'
+  | 'wind';
+
+// Dynamic Weather Module (PRO)
+export interface DynamicWeatherModule extends BaseModule {
+  type: 'dynamic_weather';
+
+  // Core Settings
+  enabled: boolean;
+  mode: 'automatic' | 'manual'; // automatic uses weather entity, manual uses dropdown
+  weather_entity?: string; // For automatic mode
+  manual_effect?: WeatherEffectType; // For manual mode
+
+  // Display Settings
+  position: 'foreground' | 'background';
+  opacity: number; // 0-100
+
+  // Effect-specific Settings
+  matrix_rain_color?: string; // Custom color for matrix rain effect
+
+  // Mobile Settings
+  enable_on_mobile: boolean;
+  respect_reduced_motion: boolean;
+  enable_snow_accumulation?: boolean;
+
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Background Module - Apply custom backgrounds to dashboard view
+export interface BackgroundModule extends BaseModule {
+  type: 'background';
+  
+  // Background source
+  background_type: 'none' | 'upload' | 'entity' | 'url';
+  background_image?: string; // For upload/url types
+  background_image_entity?: string; // For entity type
+  
+  // Background display settings
+  background_size?: 'cover' | 'contain' | 'fill' | 'auto';
+  background_position?: string; // e.g., 'center', 'top left', 'bottom right'
+  background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+  
+  // Opacity
+  opacity: number; // 0-100
+  
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -3214,6 +3451,8 @@ export type CardModule =
   | IconModule
   | HorizontalModule
   | VerticalModule
+  | AccordionModule
+  | PopupModule
   | SliderModule
   | SliderControlModule
   | PageBreakModule
@@ -3230,7 +3469,9 @@ export type CardModule =
   | AnimatedWeatherModule
   | AnimatedForecastModule
   | ExternalCardModule
-  | VideoBackgroundModule;
+  | VideoBackgroundModule
+  | DynamicWeatherModule
+  | BackgroundModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

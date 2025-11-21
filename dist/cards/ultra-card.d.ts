@@ -44,6 +44,9 @@ export declare class UltraCard extends LitElement {
      * NOTE: We do NOT check hass.editMode because that's true for the entire dashboard when editing.
      */
     private _detectEditorPreviewContext;
+    private _syncConfigMetadata;
+    private _applyInstanceIdToDataset;
+    private _generatePreviewInstanceId;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): UltraCardConfig;
     protected render(): TemplateResult;

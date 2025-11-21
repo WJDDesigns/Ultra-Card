@@ -30,7 +30,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return {
       id: id || this.generateId('horizontal'),
       type: 'horizontal',
-      alignment: undefined, // No default - let flexbox work naturally
+      alignment: 'center', // Default to center alignment for better UX
       vertical_alignment: undefined, // No default - let flexbox work naturally
       gap: 0.7,
       wrap: false,
@@ -364,7 +364,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
             horizontalModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (horizontalModule as any).entity,
+            horizontalModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -404,7 +406,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
             horizontalModule.double_tap_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (horizontalModule as any).entity,
+            horizontalModule
           );
         }
       } else {
@@ -423,7 +427,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (horizontalModule as any).entity
+              (horizontalModule as any).entity,
+              horizontalModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows
@@ -843,14 +848,14 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
     if (horizontalModule.modules && horizontalModule.modules.length > 0) {
       for (const childModule of horizontalModule.modules) {
-        // Allow both horizontal and vertical modules at level 1
-        if (childModule.type === 'horizontal' || childModule.type === 'vertical') {
+        // Allow horizontal, vertical, and accordion modules at level 1
+        if (childModule.type === 'horizontal' || childModule.type === 'vertical' || childModule.type === 'accordion') {
           const layoutChild = childModule as HorizontalModule | VerticalModule;
 
           // Check level 2 nesting - allow layout modules but prevent level 3
           if (layoutChild.modules && layoutChild.modules.length > 0) {
             for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical') {
+              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical' || nestedModule.type === 'accordion') {
                 const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
 
                 // Check level 3 nesting - prevent any layout modules at this level
@@ -858,7 +863,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   for (const deepNestedModule of deepLayoutModule.modules) {
                     if (
                       deepNestedModule.type === 'horizontal' ||
-                      deepNestedModule.type === 'vertical'
+                      deepNestedModule.type === 'vertical' ||
+                      deepNestedModule.type === 'accordion'
                     ) {
                       errors.push(
                         'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'

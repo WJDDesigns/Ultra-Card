@@ -1,5 +1,21 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta2
+
+### 🚀 Improvements
+
+- **Camera module parity with HA** - Updated camera module layout and controls to mirror native Home Assistant behavior, including a new playback mode selector.
+- **Dropdown header customization** - Added configurable icon and title controls so dropdown headers can better reflect their context.
+- **Removed legacy background module** - Eliminated the all-in-one background module to avoid conflicts with core Home Assistant view behavior.
+- **Improved dropdown synchronization** - Tightened dropdown syncing logic to ensure selections remain aligned across editor previews and rendered cards.
+
+### 🐛 Bug Fixes
+
+- **Dynamic Weather module instance handling** - Resolved an issue where dynamic weather changes were not scoped per module instance.
+- **Camera audio reliability** - Fixed lingering audio playback problems inside the camera module.
+
+---
+
 ## Version 2.2.0-beta1
 
 ### 🚀 New Features

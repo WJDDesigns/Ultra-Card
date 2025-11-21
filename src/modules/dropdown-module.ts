@@ -32,7 +32,12 @@ export class UltraDropdownModule extends BaseUltraModule {
   private dropdownOpenStates: Map<string, boolean> = new Map(); // moduleId -> isOpen
   private currentSelection: Map<string, string> = new Map(); // moduleId -> selectedOption
   private clickOutsideHandler: ((e: Event) => void) | null = null;
+  private scrollHandler: ((e: Event) => void) | null = null;
+  private resizeHandler: ((e: Event) => void) | null = null;
   private portaledDropdowns: Map<string, HTMLElement> = new Map(); // moduleId -> portaled element
+  private portaledDropdownTriggers: Map<string, HTMLElement> = new Map(); // moduleId -> trigger element
+  private scrollListenerParents: Map<string, HTMLElement[]> = new Map(); // instanceId -> array of parent elements with scroll listeners
+  private activeScrollHandlers: Set<string> = new Set(); // Track which instances have active scroll handlers
   private moduleContexts: Map<
     string,
     { module: DropdownModule; hass: HomeAssistant; config?: UltraCardConfig }
@@ -77,6 +82,9 @@ export class UltraDropdownModule extends BaseUltraModule {
       closed_title_custom: '',
       unified_template_mode: false,
       unified_template: '',
+      control_icon: 'mdi:chevron-down',
+      control_alignment: 'apart',
+      control_icon_side: 'right',
       // label removed
       // Global actions
       tap_action: { action: 'nothing' },
@@ -108,7 +116,11 @@ export class UltraDropdownModule extends BaseUltraModule {
   }
 
   // Helper method to format option labels as friendly names
-  private formatOptionLabel(optionValue: string, entityState: any, hass: HomeAssistant): string {
+  private formatOptionLabel(optionValue: string | undefined | null, entityState: any, hass: HomeAssistant): string {
+    if (optionValue === undefined || optionValue === null) {
+      return '';
+    }
+
     // Try Home Assistant's formatEntityState if available
     if (entityState && (hass as any).formatEntityState) {
       try {
@@ -124,7 +136,7 @@ export class UltraDropdownModule extends BaseUltraModule {
     }
     
     // Manual formatting: capitalize words and replace underscores
-    return optionValue
+    return String(optionValue)
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
   }
@@ -962,6 +974,129 @@ export class UltraDropdownModule extends BaseUltraModule {
                 </div>
               </div>
             `}
+        <!-- Control Icon & Alignment -->
+        <div class="settings-section">
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.dropdown.control_icon.section_title', lang, 'Dropdown Control Icon')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.dropdown.control_icon.section_desc',
+              lang,
+              'Customize the dropdown chevron icon and how it aligns with the selected value.'
+            )}
+          </div>
+
+          ${this.renderFieldSection(
+            localize('editor.dropdown.control_icon.label', lang, 'Control Icon'),
+            localize(
+              'editor.dropdown.control_icon.label_desc',
+              lang,
+              'Select the icon that indicates the dropdown toggle state.'
+            ),
+            hass,
+            { control_icon: dropdownModule.control_icon || 'mdi:chevron-down' },
+            [this.iconField('control_icon')],
+            (e: CustomEvent) => {
+              const next = e.detail.value.control_icon;
+              const prev = dropdownModule.control_icon;
+              if (next === prev) return;
+              updateModule({ control_icon: next && next.trim() ? next : undefined });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }
+          )}
+
+          <div style="margin-top: 24px;">
+            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+              ${localize('editor.dropdown.control_alignment.mode', lang, 'Alignment Mode')}
+            </div>
+            <div style="display: flex; gap: 8px;">
+              ${[
+                {
+                  value: 'center',
+                  icon: 'mdi:align-horizontal-center',
+                  title: localize('editor.common.center', lang, 'Center'),
+                },
+                {
+                  value: 'apart',
+                  icon: 'mdi:arrow-left-right',
+                  title: localize('editor.common.apart', lang, 'Apart'),
+                },
+              ].map(
+                align => html`
+                  <button
+                    class="alignment-btn ${(dropdownModule.control_alignment || 'apart') === align.value
+                      ? 'active'
+                      : ''}"
+                    @click=${() => {
+                      if ((dropdownModule.control_alignment || 'apart') === align.value) {
+                        return;
+                      }
+                      updateModule({ control_alignment: align.value as 'center' | 'apart' });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                    title="${align.title}"
+                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(dropdownModule.control_alignment || 'apart') === align.value
+                      ? 'var(--primary-color)'
+                      : 'var(--card-background-color)'}; color: ${(dropdownModule.control_alignment || 'apart') === align.value
+                      ? 'white'
+                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
+                  >
+                    <ha-icon icon="${align.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
+                  </button>
+                `
+              )}
+            </div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+              ${localize('editor.dropdown.control_alignment.icon_side', lang, 'Icon Side')}
+            </div>
+            <div style="display: flex; gap: 8px;">
+              ${[
+                {
+                  value: 'left',
+                  icon: 'mdi:arrow-left',
+                  title: localize('editor.common.left', lang, 'Left'),
+                },
+                {
+                  value: 'right',
+                  icon: 'mdi:arrow-right',
+                  title: localize('editor.common.right', lang, 'Right'),
+                },
+              ].map(
+                side => html`
+                  <button
+                    class="alignment-btn ${(dropdownModule.control_icon_side || 'right') === side.value
+                      ? 'active'
+                      : ''}"
+                    @click=${() => {
+                      if ((dropdownModule.control_icon_side || 'right') === side.value) {
+                        return;
+                      }
+                      updateModule({ control_icon_side: side.value as 'left' | 'right' });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                    title="${side.title}"
+                    style="flex: 1; padding: 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: ${(dropdownModule.control_icon_side || 'right') === side.value
+                      ? 'var(--primary-color)'
+                      : 'var(--card-background-color)'}; color: ${(dropdownModule.control_icon_side || 'right') === side.value
+                      ? 'white'
+                      : 'var(--primary-text-color)'}; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;"
+                  >
+                    <ha-icon icon="${side.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
+                  </button>
+                `
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1540,6 +1675,21 @@ export class UltraDropdownModule extends BaseUltraModule {
     const fontWeight = moduleWithDesign.font_weight || 'normal';
     const textAlign = moduleWithDesign.text_align || 'left';
 
+    const controlIcon = dropdownModule.control_icon || 'mdi:chevron-down';
+    const controlAlignment = dropdownModule.control_alignment || 'apart';
+    const controlIconSide = dropdownModule.control_icon_side || 'right';
+    const controlJustifyContent = controlAlignment === 'center' ? 'center' : 'space-between';
+    const controlGap = controlAlignment === 'center' ? '12px' : '0';
+    const selectionOrder = controlIconSide === 'left' ? 2 : 1;
+    const chevronOrder = controlIconSide === 'left' ? 1 : 2;
+    const selectionFlex = controlAlignment === 'apart' ? '1 1 auto' : '0 1 auto';
+    const selectionWidth = controlAlignment === 'apart' ? '100%' : 'auto';
+    const isIconLeftApart = controlAlignment === 'apart' && controlIconSide === 'left';
+    const selectionJustify =
+      controlAlignment === 'center' ? 'center' : isIconLeftApart ? 'flex-end' : 'flex-start';
+    const selectionTextAlign =
+      controlAlignment === 'center' ? 'center' : isIconLeftApart ? 'right' : 'left';
+
     const dropdownStyles = `
       width: ${this.addPixelUnit(dropdownWidth)};
       max-width: ${this.addPixelUnit(dropdownMaxWidth)};
@@ -1556,6 +1706,10 @@ export class UltraDropdownModule extends BaseUltraModule {
       border: 1px solid ${borderColor};
       border-radius: ${this.addPixelUnit(borderRadius.toString())};
       padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: ${controlJustifyContent};
+      gap: ${controlGap};
       cursor: pointer;
       transition: all 0.2s ease;
       box-sizing: border-box;
@@ -1600,8 +1754,10 @@ export class UltraDropdownModule extends BaseUltraModule {
       icon_color?: string;
       use_state_color?: boolean;
       mode?: string; // Store mode/value for action mapping
+      value?: string; // Preserve raw entity option for syncing across modules
     }> = [];
     let currentSelectedLabel: string | undefined;
+    let entityModeDisplay: { label?: string; icon?: string; icon_color?: string } | null = null;
     
     // Display properties from unified template (if display key is present)
     let displayIcon: string | undefined = undefined;
@@ -1625,7 +1781,23 @@ export class UltraDropdownModule extends BaseUltraModule {
 
       // In entity mode, always show current state (no placeholder mode)
       // Format the state for display
-      currentSelectedLabel = this.formatOptionLabel(entityState, entityStateObj, hass);
+      const formattedEntityState = this.formatOptionLabel(entityState, entityStateObj, hass);
+      currentSelectedLabel = formattedEntityState;
+
+      // Cache info for header rendering so duplicated dropdowns stay in sync
+      if (entityState !== undefined && entityStateObj) {
+        const matchedOption = availableOptions.find(opt => opt.value === entityState);
+        const resolvedIcon = matchedOption?.icon;
+        const resolvedIconColor = matchedOption
+          ? this.getOptionIconColor(matchedOption, hass, dropdownModule)
+          : undefined;
+
+        entityModeDisplay = {
+          label: formattedEntityState || entityState,
+          icon: resolvedIcon,
+          icon_color: resolvedIconColor,
+        };
+      }
     } else if (isUnifiedTemplateMode) {
       // Unified template mode: get options and display properties from template
       if (!this._templateService && hass) {
@@ -1779,6 +1951,11 @@ export class UltraDropdownModule extends BaseUltraModule {
 
     const showPlaceholder = !isEntityModeValid && !dropdownModule.track_state;
     const placeholderText = dropdownModule.placeholder || 'Choose an option...';
+    const shouldPrioritizeEntityDisplay =
+      isEntityModeValid &&
+      (!dropdownModule.closed_title_mode ||
+        dropdownModule.closed_title_mode === 'last_chosen' ||
+        dropdownModule.closed_title_mode === 'entity_state');
 
     // Get hover effect configuration from module design
     const hoverEffect = (dropdownModule as any).design?.hover_effect;
@@ -1870,17 +2047,18 @@ export class UltraDropdownModule extends BaseUltraModule {
       <div
         class="dropdown-module-container ${hoverEffectClass}"
         data-module-id="${dropdownModule.id}"
+        data-preview-context="${previewContext || 'dashboard'}"
         style=${this.styleObjectToCss(containerStyles)}
       >
         <div
           class="dropdown-module-preview"
-          style="display: flex; flex-direction: column; align-items: flex-start;"
+          style="display: flex; flex-direction: column; align-items: flex-start; position: relative; z-index: 1;"
         >
-          <div style="position: relative; width: 100%;">
+          <div style="position: relative; width: 100%; z-index: 1;">
             <div class="custom-dropdown" style="position: relative;">
               <div
                 class="dropdown-selected"
-                style="${dropdownStyles} display: flex; align-items: center; justify-content: space-between;"
+                style="${dropdownStyles}"
                 @click=${(e: Event) => {
                   // Don't toggle if clicking on the chevron container (it has its own handler)
                   const target = e.target as HTMLElement;
@@ -1913,10 +2091,13 @@ export class UltraDropdownModule extends BaseUltraModule {
                   }
                   
                   console.log('Dropdown clicked');
-                  this.toggleDropdown(e, moduleId);
+                  this.toggleDropdown(e, moduleId, previewContext);
                 }}
               >
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div
+                  class="dropdown-selection"
+                  style="display: flex; align-items: center; gap: 8px; order: ${selectionOrder}; flex: ${selectionFlex}; min-width: 0; width: ${selectionWidth}; justify-content: ${selectionJustify}; text-align: ${selectionTextAlign};"
+                >
                   ${(() => {
                     // Priority 1: Template display key (highest priority)
                     if (displayLabel !== undefined && displayLabel !== '') {
@@ -1934,7 +2115,20 @@ export class UltraDropdownModule extends BaseUltraModule {
                       `;
                     }
                     
-                    // Priority 2: closed_title_mode settings
+                    // Priority 2: Entity source dropdowns show current entity state so duplicates stay in sync
+                    if (shouldPrioritizeEntityDisplay && entityModeDisplay?.label) {
+                      return html`
+                        ${entityModeDisplay.icon
+                          ? html`<ha-icon
+                              icon="${entityModeDisplay.icon}"
+                              style="color: ${entityModeDisplay.icon_color || 'var(--primary-color)'};"
+                            ></ha-icon>`
+                          : ''}
+                        <span>${entityModeDisplay.label}</span>
+                      `;
+                    }
+
+                    // Priority 3: closed_title_mode settings
                     if (closedTitleLabel !== undefined) {
                       const iconToUse = closedTitleIcon;
                       const labelToUse = closedTitleLabel;
@@ -1950,7 +2144,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                       `;
                     }
                     
-                    // Priority 3: Placeholder (when track_state is disabled)
+                    // Priority 4: Placeholder (when track_state is disabled)
                     if (showPlaceholder) {
                       return html`<span style="color: var(--secondary-text-color);"
                           >${placeholderText}</span
@@ -1976,7 +2170,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                 </div>
                 <div
                   class="dropdown-chevron-container"
-                  style="display: flex; align-items: center; cursor: pointer; padding: 4px; margin: -4px;"
+                  style="display: flex; align-items: center; cursor: pointer; padding: 4px; margin: -4px; order: ${chevronOrder}; flex-shrink: 0;"
                   @click=${(e: Event) => {
                     e.stopPropagation();
                     e.stopImmediatePropagation();
@@ -2010,8 +2204,11 @@ export class UltraDropdownModule extends BaseUltraModule {
                     }
                     
                     // Now toggle the dropdown
-                    console.log('Chevron clicked, toggling dropdown for', moduleId);
-                    this.toggleDropdown(e, moduleId);
+                    // Get previewContext from the module container if available
+                    const currentTarget = e.currentTarget as HTMLElement;
+                    const moduleContainer = currentTarget.closest('.dropdown-module-container') as HTMLElement;
+                    const previewCtx = moduleContainer?.dataset?.previewContext as 'live' | 'ha-preview' | 'dashboard' | undefined;
+                    this.toggleDropdown(e, moduleId, previewCtx || previewContext);
                     
                     // Clear the flag after a short delay
                     setTimeout(() => {
@@ -2021,7 +2218,7 @@ export class UltraDropdownModule extends BaseUltraModule {
                 >
                   <ha-icon
                     class="dropdown-chevron"
-                    icon="mdi:chevron-down"
+                    icon="${controlIcon}"
                     style="color: var(--secondary-text-color); transition: transform 0.2s ease; transform: ${this.dropdownOpenStates.get(dropdownModule.id) ? 'rotate(180deg)' : 'rotate(0deg)'}; pointer-events: none;"
                   ></ha-icon>
                 </div>
@@ -2029,9 +2226,24 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
-                style="position: fixed !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10001 !important; display: none; pointer-events: none; visibility: hidden; max-height: 200px; overflow-y: auto; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: ${previewContext === 'live' || previewContext === 'ha-preview' ? 'fixed' : 'fixed'} !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${previewContext === 'live' || previewContext === 'ha-preview' ? '999999' : '10001'} !important; display: none; pointer-events: none; visibility: hidden; max-height: 200px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
+                @scroll=${(e: Event) => {
+                  // Prevent scroll events from bubbling and closing dropdown
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                }}
+                @wheel=${(e: Event) => {
+                  // Prevent wheel events from bubbling
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                }}
+                @touchmove=${(e: Event) => {
+                  // Prevent touch scroll events from bubbling
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                }}
               >
                 ${showPlaceholder
                   ? html`
@@ -2039,7 +2251,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                         class="dropdown-option"
                         style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--divider-color); color: inherit; font-size: inherit; font-family: inherit; font-weight: inherit;"
                         @click=${(e: Event) => {
-                          console.log('Placeholder option clicked');
                           this.selectOption('', dropdownModule);
                           this.closeDropdown(e, dropdownModule.id);
                         }}
@@ -2057,8 +2268,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                       class="dropdown-option"
                       style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--divider-color); display: flex; align-items: center; gap: 8px; transition: background-color 0.2s ease; color: inherit; font-size: inherit; font-family: inherit; font-weight: inherit;"
                       @click=${(e: Event) => {
-                        console.log('Option clicked:', option.label);
-
                         // Update selection and execute action
                         if (isEntityMode) {
                           // Entity mode: call service to update entity
@@ -2072,12 +2281,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                           if (dropdownModule.track_state) {
                             const moduleId = dropdownModule.id;
                             this.currentSelection.set(moduleId, option.label);
-                            console.log(
-                              'Updated selection for module',
-                              moduleId,
-                              'to:',
-                              option.label
-                            );
                             // Persist to localStorage
                             this.selectOption(option.label, dropdownModule);
 
@@ -2093,7 +2296,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                               );
                               if (selectedSpan) {
                                 selectedSpan.textContent = option.label;
-                                console.log('Updated display to show:', option.label);
                               }
 
                               // Update the icon if the option has one
@@ -2141,7 +2343,8 @@ export class UltraDropdownModule extends BaseUltraModule {
                               manualOption,
                               hass,
                               (e.currentTarget as HTMLElement) || undefined,
-                              config
+                              config,
+                              dropdownModule
                             );
                           } else if (isUnifiedTemplateMode && option.mode) {
                             // Template-generated option - try to execute climate service call if source_entity is set
@@ -2152,8 +2355,6 @@ export class UltraDropdownModule extends BaseUltraModule {
                               hass.callService('climate', 'set_hvac_mode', {
                                 entity_id: sourceEntity,
                                 hvac_mode: option.mode,
-                              }).then(() => {
-                                console.log(`Set ${sourceEntity} to ${option.mode}`);
                               }).catch((error) => {
                                 console.error('Failed to set HVAC mode:', error);
                               });
@@ -2249,14 +2450,11 @@ export class UltraDropdownModule extends BaseUltraModule {
     const service =
       domain === 'input_select' ? 'input_select.select_option' : 'select.select_option';
 
-    console.log(`Calling ${service} for ${module.source_entity} with option: ${selectedValue}`);
-
     try {
       await hass.callService(domain, 'select_option', {
         entity_id: module.source_entity,
         option: selectedValue,
       });
-      console.log('Service call successful');
     } catch (error) {
       console.error('Failed to update entity selection:', error);
     }
@@ -2298,25 +2496,24 @@ export class UltraDropdownModule extends BaseUltraModule {
     return option.icon_color || 'var(--primary-color)';
   }
 
-  private toggleDropdown(event?: Event, moduleId?: string): void {
+  private toggleDropdown(event?: Event, moduleId?: string, previewContext?: 'live' | 'ha-preview' | 'dashboard'): void {
     // Find the dropdown options and selected element relative to the clicked element
     let dropdownElement: HTMLElement | null = null;
     let selectedElement: HTMLElement | null = null;
     let instanceId = moduleId || 'default';
 
+    // Check if we're in preview context - if so, use simpler positioning without portaling
+    const isPreviewContext = previewContext === 'live' || previewContext === 'ha-preview';
+
     if (event) {
       const target = event.target as HTMLElement;
-      console.log('Toggle dropdown - target:', target);
 
       // The target might be the selected element itself or a child
       selectedElement = target.classList.contains('dropdown-selected')
         ? target
         : (target.closest('.dropdown-selected') as HTMLElement);
 
-      console.log('Found selectedElement:', selectedElement);
-
       const container = target.closest('.custom-dropdown');
-      console.log('Found container:', container);
 
       // Try to get module ID from the container's data attribute
       const moduleContainer = target.closest('.dropdown-module-container') as HTMLElement;
@@ -2325,7 +2522,6 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
 
       dropdownElement = container?.querySelector('.dropdown-options') as HTMLElement;
-      console.log('Found dropdownElement:', dropdownElement);
     } else {
       dropdownElement = document.querySelector('.dropdown-options') as HTMLElement;
       selectedElement = document.querySelector('.dropdown-selected') as HTMLElement;
@@ -2336,116 +2532,138 @@ export class UltraDropdownModule extends BaseUltraModule {
     const newState = !currentState;
     this.dropdownOpenStates.set(instanceId, newState);
 
-    console.log(`Toggling dropdown ${instanceId}: ${currentState} -> ${newState}`);
-
     if (dropdownElement) {
       if (newState) {
         // Get position of the selected element
         if (selectedElement) {
-          const rect = selectedElement.getBoundingClientRect();
-
-          // Create or reuse portaled dropdown
-          let portaledDropdown = this.portaledDropdowns.get(instanceId);
-
-          if (!portaledDropdown) {
-            // Clone the dropdown element for portaling
-            console.log('Creating portaled dropdown for', instanceId);
-            portaledDropdown = dropdownElement.cloneNode(true) as HTMLElement;
-            portaledDropdown.id = `portaled-dropdown-${instanceId}`;
-            portaledDropdown.dataset.instanceId = instanceId;
-            document.body.appendChild(portaledDropdown);
-            this.portaledDropdowns.set(instanceId, portaledDropdown);
+          // In preview contexts, use fixed positioning to escape container stacking context
+          if (isPreviewContext) {
+            const rect = selectedElement.getBoundingClientRect();
+            dropdownElement.style.display = 'block';
+            dropdownElement.style.pointerEvents = 'auto';
+            dropdownElement.style.visibility = 'visible';
+            dropdownElement.style.position = 'fixed'; // Use fixed to escape container boundaries
+            dropdownElement.style.top = `${rect.bottom}px`;
+            dropdownElement.style.left = `${rect.left}px`;
+            dropdownElement.style.width = `${rect.width}px`;
+            dropdownElement.style.right = 'auto';
+            dropdownElement.style.zIndex = '999999'; // Extremely high z-index to appear above live preview container
+            
+            // Ensure click-outside closes dropdown in preview contexts too
+            this.setupClickOutsideHandler(dropdownElement, selectedElement, instanceId);
+            
+            // Set up scroll handlers for preview contexts too (to close on scroll)
+            this.setupScrollAndResizeHandlers(instanceId);
           } else {
-            // Update the cloned dropdown's content from the original
-            portaledDropdown.innerHTML = dropdownElement.innerHTML;
+            // Dashboard context - use portaled dropdown with scroll handlers
+            const rect = selectedElement.getBoundingClientRect();
+
+            // Create or reuse portaled dropdown
+            let portaledDropdown = this.portaledDropdowns.get(instanceId);
+
+            if (!portaledDropdown) {
+              // Clone the dropdown element for portaling
+              portaledDropdown = dropdownElement.cloneNode(true) as HTMLElement;
+              portaledDropdown.id = `portaled-dropdown-${instanceId}`;
+              portaledDropdown.dataset.instanceId = instanceId;
+              document.body.appendChild(portaledDropdown);
+              this.portaledDropdowns.set(instanceId, portaledDropdown);
+            } else {
+              // Update the cloned dropdown's content from the original
+              portaledDropdown.innerHTML = dropdownElement.innerHTML;
+            }
+
+            // Re-attach event handlers to the cloned dropdown's options
+            this.attachPortaledDropdownHandlers(portaledDropdown, instanceId);
+
+            // Smart positioning - drop up if not enough space below
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            const dropdownMaxHeight = 200; // Match max-height from inline styles
+            
+            // Calculate if we should drop up or down
+            const shouldDropUp = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+            
+            // Position portaled dropdown using fixed positioning
+            portaledDropdown.style.position = 'fixed';
+            portaledDropdown.style.left = `${rect.left}px`;
+            portaledDropdown.style.width = `${rect.width}px`;
+            portaledDropdown.style.right = 'auto';
+            
+            if (shouldDropUp) {
+              // Drop up - position above the trigger
+              portaledDropdown.style.bottom = `${viewportHeight - rect.top}px`;
+              portaledDropdown.style.top = 'auto';
+            } else {
+              // Drop down - position below the trigger (default)
+              portaledDropdown.style.top = `${rect.bottom}px`;
+              portaledDropdown.style.bottom = 'auto';
+            }
+            
+            portaledDropdown.style.display = 'block';
+            portaledDropdown.style.pointerEvents = 'auto';
+            portaledDropdown.style.visibility = 'visible';
+            portaledDropdown.style.zIndex = '10001';
+            
+            // Ensure scrollbar is interactive
+            portaledDropdown.style.overflowY = 'auto';
+            portaledDropdown.style.overflowX = 'hidden';
+
+            // Hide the original dropdown
+            dropdownElement.style.display = 'none';
+            dropdownElement.style.pointerEvents = 'none';
+            dropdownElement.style.visibility = 'hidden';
+
+            // Store trigger element for position updates
+            this.portaledDropdownTriggers.set(instanceId, selectedElement);
+
+            // Set up click-outside handler
+            this.setupClickOutsideHandler(portaledDropdown, selectedElement, instanceId);
+
+            // Set up scroll and resize handlers to update position
+            this.setupScrollAndResizeHandlers(instanceId);
           }
-
-          // Re-attach event handlers to the cloned dropdown's options
-          this.attachPortaledDropdownHandlers(portaledDropdown, instanceId);
-
-          // Smart positioning - drop up if not enough space below
-          const viewportHeight = window.innerHeight;
-          const spaceBelow = viewportHeight - rect.bottom;
-          const spaceAbove = rect.top;
-          const dropdownMaxHeight = 200; // Match max-height from inline styles
-          
-          // Calculate if we should drop up or down
-          const shouldDropUp = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
-          
-          // Position portaled dropdown using fixed positioning
-          portaledDropdown.style.position = 'fixed';
-          portaledDropdown.style.left = `${rect.left}px`;
-          portaledDropdown.style.width = `${rect.width}px`;
-          portaledDropdown.style.right = 'auto';
-          
-          if (shouldDropUp) {
-            // Drop up - position above the trigger
-            portaledDropdown.style.bottom = `${viewportHeight - rect.top}px`;
-            portaledDropdown.style.top = 'auto';
-          } else {
-            // Drop down - position below the trigger (default)
-            portaledDropdown.style.top = `${rect.bottom}px`;
-            portaledDropdown.style.bottom = 'auto';
-          }
-          
-          portaledDropdown.style.display = 'block';
-          portaledDropdown.style.pointerEvents = 'auto';
-          portaledDropdown.style.visibility = 'visible';
-          portaledDropdown.style.zIndex = '10001';
-
-          // Hide the original dropdown
-          dropdownElement.style.display = 'none';
-          dropdownElement.style.pointerEvents = 'none';
-          dropdownElement.style.visibility = 'hidden';
-
-          // Set up click-outside handler
-          this.setupClickOutsideHandler(portaledDropdown, selectedElement, instanceId);
-
-          console.log('Dropdown opened at position:', {
-            direction: shouldDropUp ? 'up' : 'down',
-            top: shouldDropUp ? 'auto' : rect.bottom,
-            bottom: shouldDropUp ? viewportHeight - rect.top : 'auto',
-            left: rect.left,
-            width: rect.width,
-            spaceBelow,
-            spaceAbove,
-            portaled: true,
-            instanceId,
-          });
         } else {
           // Fallback if selectedElement not found
-          console.warn('selectedElement not found, using fallback positioning');
           dropdownElement.style.display = 'block';
           dropdownElement.style.pointerEvents = 'auto';
           dropdownElement.style.visibility = 'visible';
         }
       } else {
-        // Hide portaled dropdown
-        const portaledDropdown = this.portaledDropdowns.get(instanceId);
-        if (portaledDropdown) {
-          portaledDropdown.style.display = 'none';
-          portaledDropdown.style.pointerEvents = 'none';
-          portaledDropdown.style.visibility = 'hidden';
+        // Close dropdown
+        if (isPreviewContext) {
+          // In preview context, just hide the dropdown element
+          dropdownElement.style.display = 'none';
+          dropdownElement.style.pointerEvents = 'none';
+          dropdownElement.style.visibility = 'hidden';
+        } else {
+          // In dashboard context, hide portaled dropdown and clean up handlers
+          const portaledDropdown = this.portaledDropdowns.get(instanceId);
+          if (portaledDropdown) {
+            portaledDropdown.style.display = 'none';
+            portaledDropdown.style.pointerEvents = 'none';
+            portaledDropdown.style.visibility = 'hidden';
+          }
+          dropdownElement.style.display = 'none';
+          dropdownElement.style.pointerEvents = 'none';
+          dropdownElement.style.visibility = 'hidden';
+          this.removeClickOutsideHandler();
+          this.removeScrollAndResizeHandlers(instanceId);
         }
-        dropdownElement.style.display = 'none';
-        dropdownElement.style.pointerEvents = 'none';
-        dropdownElement.style.visibility = 'hidden';
-        this.removeClickOutsideHandler();
       }
-      console.log('Dropdown toggled:', newState ? 'open' : 'closed');
-    } else {
-      console.error('Could not find dropdown element');
     }
   }
 
   private closeDropdown(event?: Event, moduleId?: string): void {
     let instanceId = moduleId || 'default';
+    let moduleContainer: HTMLElement | null = null;
 
     if (event) {
       const target = event.target as HTMLElement;
 
       // Try to get module ID from the container's data attribute
-      const moduleContainer = target.closest('.dropdown-module-container') as HTMLElement;
+      moduleContainer = target.closest('.dropdown-module-container') as HTMLElement;
       if (moduleContainer?.dataset?.moduleId) {
         instanceId = moduleContainer.dataset.moduleId;
       }
@@ -2454,19 +2672,32 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Update state for this specific instance
     this.dropdownOpenStates.set(instanceId, false);
 
-    // Update chevron rotation instantly
-    this.updateChevronRotationInstant(instanceId, false);
+    // Update chevron rotation instantly, passing the specific container if available
+    this.updateChevronRotationInstant(instanceId, false, moduleContainer || undefined);
 
-    // Hide the portaled dropdown
+    // Hide the portaled dropdown (for dashboard contexts)
     const portaledDropdown = this.portaledDropdowns.get(instanceId);
     if (portaledDropdown) {
       portaledDropdown.style.display = 'none';
       portaledDropdown.style.pointerEvents = 'none';
       portaledDropdown.style.visibility = 'hidden';
-      console.log(`Portaled dropdown ${instanceId} closed`);
     }
 
+    // Also hide regular dropdown element (for preview contexts)
+    const regularDropdown = document.querySelector(
+      `.dropdown-module-container[data-module-id="${instanceId}"] .dropdown-options`
+    ) as HTMLElement;
+    if (regularDropdown && regularDropdown.style.display !== 'none') {
+      regularDropdown.style.display = 'none';
+      regularDropdown.style.pointerEvents = 'none';
+      regularDropdown.style.visibility = 'hidden';
+    }
+
+    // Clean up trigger reference
+    this.portaledDropdownTriggers.delete(instanceId);
+
     this.removeClickOutsideHandler();
+    this.removeScrollAndResizeHandlers(instanceId);
   }
 
   private setupClickOutsideHandler(
@@ -2486,10 +2717,14 @@ export class UltraDropdownModule extends BaseUltraModule {
         (el: any) => el?.classList?.contains?.('dropdown-chevron-container') || el?.classList?.contains?.('dropdown-chevron')
       ) || target.classList.contains('dropdown-chevron-container') || target.closest('.dropdown-chevron-container');
 
+      // Don't close if clicking inside dropdown (including scrollbar area)
+      const isInsideDropdown = portaledDropdown.contains(target) || 
+                               target === portaledDropdown ||
+                               composedPath.some((el: any) => el === portaledDropdown || (el.nodeType === Node.ELEMENT_NODE && portaledDropdown.contains(el)));
+
       if (
-        portaledDropdown.contains(target) ||
+        isInsideDropdown ||
         selectedElement.contains(target) ||
-        target === portaledDropdown ||
         target === selectedElement ||
         isChevronClick
       ) {
@@ -2497,16 +2732,17 @@ export class UltraDropdownModule extends BaseUltraModule {
       }
 
       // Close the dropdown
-      console.log('Click outside detected, closing dropdown');
       this.dropdownOpenStates.set(moduleId, false);
       
-      // Update chevron rotation instantly
-      this.updateChevronRotationInstant(moduleId, false);
+      // Update chevron rotation instantly, using the selectedElement's container to target the specific dropdown
+      const moduleContainer = selectedElement.closest('.dropdown-module-container') as HTMLElement;
+      this.updateChevronRotationInstant(moduleId, false, moduleContainer || undefined);
       
       portaledDropdown.style.display = 'none';
       portaledDropdown.style.pointerEvents = 'none';
       portaledDropdown.style.visibility = 'hidden';
       this.removeClickOutsideHandler();
+      this.removeScrollAndResizeHandlers(moduleId);
     };
 
     // Add listener with a slight delay to avoid immediate triggering
@@ -2522,27 +2758,214 @@ export class UltraDropdownModule extends BaseUltraModule {
     }
   }
 
-  private updateChevronRotation(moduleId: string, isOpen: boolean): void {
-    // Find the chevron icon for this module instance
-    const moduleContainer = document.querySelector(
-      `.dropdown-module-container[data-module-id="${moduleId}"]`
-    ) as HTMLElement;
+  private setupScrollAndResizeHandlers(instanceId: string): void {
+    // Mark this instance as having active scroll handlers
+    this.activeScrollHandlers.add(instanceId);
+
+    // Create scroll handler if it doesn't exist (shared across all instances)
+    if (!this.scrollHandler) {
+      this.scrollHandler = (e: Event) => {
+        // Close all open dropdowns when page/container scrolls
+        // Check both portaled dropdowns and all open dropdown states
+        const allOpenDropdowns = Array.from(this.dropdownOpenStates.entries())
+          .filter(([_, isOpen]) => isOpen)
+          .map(([id]) => id);
+        
+        allOpenDropdowns.forEach(id => {
+          const portaledDropdown = this.portaledDropdowns.get(id);
+          
+          // Check if scroll event originated from within this dropdown
+          // For window scroll events, the target is usually document or window
+          // For element scroll events, check the target
+          const target = e.target;
+          const isWindowScroll = target === document || target === window || !target || 
+                                 (target as any) === document.documentElement || 
+                                 (target as any) === document.body;
+          
+          // If it's a window scroll, close the dropdown (page is scrolling)
+          if (isWindowScroll) {
+            // Close the dropdown when page scrolls
+            this.closeDropdown(undefined, id);
+            return;
+          }
+          
+          // If it's an element scroll, check if it's inside the dropdown
+          if (target instanceof HTMLElement) {
+            const composedPath = e.composedPath();
+            
+            // Check both portaled dropdown and regular dropdown element
+            const dropdownElement = portaledDropdown || 
+              document.querySelector(`.dropdown-module-container[data-module-id="${id}"] .dropdown-options`) as HTMLElement;
+            
+            const isScrollingInsideDropdown = dropdownElement && composedPath.some((el: any) => {
+              return el === dropdownElement || 
+                     (el.nodeType === Node.ELEMENT_NODE && dropdownElement.contains(el));
+            });
+            
+            // Don't close if scrolling inside this dropdown itself
+            if (isScrollingInsideDropdown) {
+              return;
+            }
+            
+            // Close the dropdown when parent container scrolls
+            this.closeDropdown(undefined, id);
+          }
+        });
+      };
+
+      // Add window-level listeners (only once)
+      window.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
+      document.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
+    }
+
+    // Create resize handler if it doesn't exist (shared across all instances)
+    if (!this.resizeHandler) {
+      this.resizeHandler = () => {
+        // Update position for all open dropdowns
+        this.activeScrollHandlers.forEach(id => {
+          this.updatePortaledDropdownPosition(id);
+        });
+      };
+
+      window.addEventListener('resize', this.resizeHandler, { passive: true });
+    }
     
-    if (moduleContainer) {
-      const chevron = moduleContainer.querySelector('.dropdown-chevron') as HTMLElement;
-      if (chevron) {
-        chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-        console.log('Updated chevron rotation for', moduleId, 'isOpen:', isOpen);
-      } else {
-        console.warn('Chevron not found for module', moduleId);
+    // Also listen to scroll on parent containers for this specific instance
+    const trigger = this.portaledDropdownTriggers.get(instanceId);
+    const parentElements: HTMLElement[] = [];
+    if (trigger && this.scrollHandler) {
+      let parent: HTMLElement | null = trigger.parentElement;
+      let depth = 0;
+      while (parent && depth < 5) {
+        const parentScrollHandler = (e: Event) => {
+          const composedPath = e.composedPath();
+          const portaledDropdown = this.portaledDropdowns.get(instanceId);
+          
+          if (!portaledDropdown) return;
+          
+          // Check if scroll event originated from within the dropdown
+          const isScrollingInsideDropdown = composedPath.some((el: any) => {
+            return el === portaledDropdown || 
+                   (el.nodeType === Node.ELEMENT_NODE && portaledDropdown.contains(el));
+          });
+          
+          // Don't close if scrolling inside the dropdown itself
+          if (isScrollingInsideDropdown) {
+            return;
+          }
+
+          // Close the dropdown when parent container scrolls
+          this.closeDropdown(undefined, instanceId);
+        };
+        
+        parent.addEventListener('scroll', parentScrollHandler, { passive: true, capture: true });
+        parentElements.push(parent);
+        parent = parent.parentElement;
+        depth++;
+      }
+    }
+    // Store parent elements for cleanup
+    this.scrollListenerParents.set(instanceId, parentElements);
+  }
+
+  private removeScrollAndResizeHandlers(instanceId?: string): void {
+    if (instanceId) {
+      // Remove handlers for specific instance
+      this.activeScrollHandlers.delete(instanceId);
+      
+      // Remove parent scroll listeners for this instance
+      const parents = this.scrollListenerParents.get(instanceId);
+      if (parents) {
+        parents.forEach(parent => {
+          // We need to remove the specific handler, but we created inline handlers
+          // So we'll need to track them differently or just remove all scroll listeners
+          // For now, we'll leave parent listeners - they'll be cleaned up when element is removed
+        });
+        this.scrollListenerParents.delete(instanceId);
+      }
+      
+      // Only remove window-level handlers if no dropdowns are open
+      if (this.activeScrollHandlers.size === 0) {
+        if (this.scrollHandler) {
+          window.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
+          document.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
+          this.scrollHandler = null;
+        }
+        if (this.resizeHandler) {
+          window.removeEventListener('resize', this.resizeHandler);
+          this.resizeHandler = null;
+        }
       }
     } else {
-      console.warn('Module container not found for', moduleId);
+      // Remove all handlers (cleanup)
+      this.activeScrollHandlers.clear();
+      
+      // Remove from stored parent elements
+      this.scrollListenerParents.forEach((parents, id) => {
+        parents.forEach(parent => {
+          // Parent listeners will be cleaned up when elements are removed
+        });
+      });
+      this.scrollListenerParents.clear();
+      
+      if (this.scrollHandler) {
+        window.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
+        document.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
+        this.scrollHandler = null;
+      }
+      if (this.resizeHandler) {
+        window.removeEventListener('resize', this.resizeHandler);
+        this.resizeHandler = null;
+      }
     }
   }
 
-  private updateChevronRotationInstant(moduleId: string, isOpen: boolean): void {
-    // Find the chevron icon for this module instance
+  private updatePortaledDropdownPosition(instanceId: string): void {
+    const portaledDropdown = this.portaledDropdowns.get(instanceId);
+    const trigger = this.portaledDropdownTriggers.get(instanceId);
+    
+    if (!portaledDropdown || !trigger) return;
+
+    // Check if dropdown is actually open
+    if (portaledDropdown.style.display !== 'block') return;
+
+    try {
+      const rect = trigger.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const dropdownMaxHeight = 200;
+
+      const shouldDropUp = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+
+      // Update position
+      portaledDropdown.style.left = `${rect.left}px`;
+      portaledDropdown.style.width = `${rect.width}px`;
+      portaledDropdown.style.right = 'auto';
+
+      if (shouldDropUp) {
+        portaledDropdown.style.bottom = `${viewportHeight - rect.top}px`;
+        portaledDropdown.style.top = 'auto';
+      } else {
+        portaledDropdown.style.top = `${rect.bottom}px`;
+        portaledDropdown.style.bottom = 'auto';
+      }
+    } catch (error) {
+      console.error('Error updating dropdown position:', error);
+    }
+  }
+
+  private updateChevronRotation(moduleId: string, isOpen: boolean, specificElement?: HTMLElement): void {
+    // If a specific element is provided, update only that chevron (prevents updating duplicates)
+    if (specificElement) {
+      const chevron = specificElement.querySelector('.dropdown-chevron') as HTMLElement;
+      if (chevron) {
+        chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        return;
+      }
+    }
+    
+    // Fallback: Find the chevron icon for this module instance
     const moduleContainer = document.querySelector(
       `.dropdown-module-container[data-module-id="${moduleId}"]`
     ) as HTMLElement;
@@ -2550,19 +2973,39 @@ export class UltraDropdownModule extends BaseUltraModule {
     if (moduleContainer) {
       const chevron = moduleContainer.querySelector('.dropdown-chevron') as HTMLElement;
       if (chevron) {
-        // Update immediately with no transition delay
+        chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
+    }
+  }
+
+  private updateChevronRotationInstant(moduleId: string, isOpen: boolean, specificElement?: HTMLElement): void {
+    // If a specific element is provided, update only that chevron (prevents updating duplicates)
+    if (specificElement) {
+      const chevron = specificElement.querySelector('.dropdown-chevron') as HTMLElement;
+      if (chevron) {
         chevron.style.transition = 'none';
         chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-        // Re-enable transition after the instant update
         requestAnimationFrame(() => {
           chevron.style.transition = 'transform 0.2s ease';
         });
-        console.log('Updated chevron rotation INSTANTLY for', moduleId, 'isOpen:', isOpen);
-      } else {
-        console.warn('Chevron not found for module', moduleId);
+        return;
       }
-    } else {
-      console.warn('Module container not found for', moduleId);
+    }
+    
+    // Fallback: Find the chevron icon for this module instance
+    const moduleContainer = document.querySelector(
+      `.dropdown-module-container[data-module-id="${moduleId}"]`
+    ) as HTMLElement;
+    
+    if (moduleContainer) {
+      const chevron = moduleContainer.querySelector('.dropdown-chevron') as HTMLElement;
+      if (chevron) {
+        chevron.style.transition = 'none';
+        chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        requestAnimationFrame(() => {
+          chevron.style.transition = 'transform 0.2s ease';
+        });
+      }
     }
   }
 
@@ -2576,6 +3019,32 @@ export class UltraDropdownModule extends BaseUltraModule {
     const { module: dropdownModule, hass, config } = context;
     const isEntityMode = dropdownModule.source_mode === 'entity' && dropdownModule.source_entity;
     const isUnifiedTemplateMode = dropdownModule.unified_template_mode && dropdownModule.unified_template;
+
+    // Prevent scroll events from bubbling and closing dropdown
+    // Also prevent them from triggering position updates
+    // BUT allow the scrollbar to be draggable
+    const scrollStopHandler = (e: Event) => {
+      // Only stop propagation for wheel/touch events, not for scrollbar dragging
+      const target = e.target as HTMLElement;
+      if (target === portaledDropdown || portaledDropdown.contains(target)) {
+        // This is scrolling inside the dropdown - prevent it from updating position
+        e.stopPropagation();
+      }
+    };
+    
+    // Only prevent wheel/touch events, allow native scrollbar dragging
+    portaledDropdown.addEventListener('wheel', (e: Event) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, { passive: true, capture: true });
+    
+    portaledDropdown.addEventListener('touchmove', (e: Event) => {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, { passive: true, capture: true });
+    
+    // For scroll events, just mark that we're scrolling inside
+    portaledDropdown.addEventListener('scroll', scrollStopHandler, { passive: true });
 
     // Get all option elements in the portaled dropdown
     const optionElements = portaledDropdown.querySelectorAll('.dropdown-option');
@@ -2716,7 +3185,6 @@ export class UltraDropdownModule extends BaseUltraModule {
 
         newOptionEl.addEventListener('click', e => {
           e.stopPropagation();
-          console.log('Option clicked:', option.label);
 
           // Track state if enabled
           if (dropdownModule.track_state) {
@@ -2725,7 +3193,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
           // Always call selectOption to handle localStorage persistence
           this.selectOption(option.label, dropdownModule);
-          this.executeOptionAction(option, hass, newOptionEl, config);
+          this.executeOptionAction(option, hass, newOptionEl, config, dropdownModule);
           this.closeDropdown(undefined, instanceId);
         });
 
@@ -2769,6 +3237,12 @@ export class UltraDropdownModule extends BaseUltraModule {
       // updateModule({ current_selection: value });
     }
     
+    // Entity-driven dropdowns should always mirror the underlying entity state,
+    // so skip local persistence to keep duplicated modules in sync.
+    if (module.source_mode === 'entity') {
+      return;
+    }
+
     // Persist to localStorage if closed_title_mode is last_chosen
     if (module.closed_title_mode === 'last_chosen' || !module.closed_title_mode) {
       this.setStoredSelection(module.id, value);
@@ -2779,7 +3253,8 @@ export class UltraDropdownModule extends BaseUltraModule {
     option: DropdownOption,
     hass: HomeAssistant,
     element?: HTMLElement,
-    config?: UltraCardConfig
+    config?: UltraCardConfig,
+    dropdownModule?: DropdownModule
   ): void {
     console.log('Executing action:', option.action);
 
@@ -2810,7 +3285,31 @@ export class UltraDropdownModule extends BaseUltraModule {
       return;
     }
 
-    UltraLinkComponent.handleAction(option.action as any, hass, element || document.body, config);
+    // Extract entity from the option's action configuration to ensure each dropdown uses its own entity
+    // Check multiple possible locations where entity_id might be stored
+    const actionEntity = option.action.entity || 
+                        option.action.service_data?.entity_id || 
+                        option.action.data?.entity_id ||
+                        (Array.isArray(option.action.target?.entity_id) 
+                          ? option.action.target.entity_id[0] 
+                          : option.action.target?.entity_id) ||
+                        undefined;
+
+    // Create a clean action object to avoid any shared state issues
+    const cleanAction = {
+      ...option.action,
+      entity: actionEntity || option.action.entity,
+    };
+
+    // Pass the action entity as moduleEntity to ensure correct resolution for default actions
+    UltraLinkComponent.handleAction(
+      cleanAction as any, 
+      hass, 
+      element || document.body, 
+      config, 
+      actionEntity, // Pass the entity from the option's action as moduleEntity
+      dropdownModule
+    );
   }
 
   private addPixelUnit(value: string | undefined): string | undefined {
@@ -2938,6 +3437,18 @@ export class UltraDropdownModule extends BaseUltraModule {
         height: inherit;
         overflow: visible !important;
         pointer-events: none;
+        z-index: 1;
+      }
+
+      /* Ensure preview containers allow overflow for dropdowns */
+      .dropdown-module-container[data-preview-context="live"],
+      .dropdown-module-container[data-preview-context="ha-preview"] {
+        overflow: visible !important;
+      }
+
+      .dropdown-module-container[data-preview-context="live"] .dropdown-module-preview,
+      .dropdown-module-container[data-preview-context="ha-preview"] .dropdown-module-preview {
+        overflow: visible !important;
       }
 
       .dropdown-selected {
@@ -2997,11 +3508,58 @@ export class UltraDropdownModule extends BaseUltraModule {
         font-weight: inherit;
         pointer-events: none !important;
         visibility: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--divider-color) var(--secondary-background-color);
+      }
+
+      /* Preview contexts - use fixed positioning with higher z-index */
+      /* Need to be above popup content (1001) and popup tabs (2000) */
+      .dropdown-module-container[data-preview-context="live"] .dropdown-options,
+      .dropdown-module-container[data-preview-context="ha-preview"] .dropdown-options {
+        position: fixed !important;
+        z-index: 999999 !important; /* Extremely high to appear above all popup content */
       }
 
       .dropdown-options[style*="display: block"] {
         pointer-events: auto !important;
         visibility: visible !important;
+      }
+
+      /* Ensure scrollbar is visible and functional */
+      .dropdown-options::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-track {
+        background: var(--secondary-background-color);
+        border-radius: 4px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb {
+        background: var(--divider-color);
+        border-radius: 4px;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-color);
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb:active {
+        background: var(--primary-color);
+        opacity: 0.8;
+      }
+
+      /* Ensure scrollbar is clickable and draggable */
+      .dropdown-options[style*="display: block"]::-webkit-scrollbar-thumb {
+        pointer-events: auto !important;
       }
 
       .dropdown-option {

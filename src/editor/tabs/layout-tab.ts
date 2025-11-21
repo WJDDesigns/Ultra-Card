@@ -1294,14 +1294,16 @@ export class LayoutTab extends LitElement {
 
     const columnToCopy = row.columns[columnIndex];
 
-    // Deep clone the column with new ID and module IDs
+    // Deep clone the column with new ID
     const duplicatedColumn: CardColumn = {
       ...JSON.parse(JSON.stringify(columnToCopy)),
       id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      modules: columnToCopy.modules.map((module, moduleIdx) => ({
-        ...JSON.parse(JSON.stringify(module)),
-        id: `${module.type}-${Date.now()}-${moduleIdx}-${Math.random().toString(36).substr(2, 9)}`,
-      })),
+      modules: columnToCopy.modules.map((module) => {
+        const clonedModule = JSON.parse(JSON.stringify(module));
+        // Generate new IDs for the module and all nested content
+        this._regenerateModuleIds(clonedModule);
+        return clonedModule;
+      }),
     };
 
     // Calculate new column count after duplicating
@@ -2551,11 +2553,11 @@ export class LayoutTab extends LitElement {
 
     const moduleToCopy = column.modules[moduleIndex];
 
-    // Deep clone the module with new ID
-    const duplicatedModule: CardModule = {
-      ...JSON.parse(JSON.stringify(moduleToCopy)),
-      id: `${moduleToCopy.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    };
+    // Deep clone the module
+    const duplicatedModule: CardModule = JSON.parse(JSON.stringify(moduleToCopy));
+
+    // Generate new IDs for the duplicated module and all nested content
+    this._regenerateModuleIds(duplicatedModule);
 
     // Invalidate external card cache if duplicating an external card
     const isExternalCard = moduleToCopy && moduleToCopy.type === 'external_card';
@@ -4600,10 +4602,12 @@ export class LayoutTab extends LitElement {
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
 
-    // Check if this child module is itself a layout module (horizontal, vertical, or slider)
+    // Check if this child module is itself a layout module (horizontal, vertical, accordion, popup, or slider)
     const isNestedLayoutModule =
       childModule.type === 'horizontal' ||
       childModule.type === 'vertical' ||
+      childModule.type === 'accordion' ||
+      childModule.type === 'popup' ||
       childModule.type === 'slider';
 
     if (isNestedLayoutModule) {
@@ -4763,10 +4767,12 @@ export class LayoutTab extends LitElement {
     childIndex?: number
   ): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
-    const nestedLayout = layoutModule as any; // HorizontalModule, VerticalModule, or SliderModule
+    const nestedLayout = layoutModule as any; // HorizontalModule, VerticalModule, AccordionModule, PopupModule, or SliderModule
     const hasChildren = nestedLayout.modules && nestedLayout.modules.length > 0;
     const isHorizontal = layoutModule.type === 'horizontal';
     const isVertical = layoutModule.type === 'vertical';
+    const isAccordion = layoutModule.type === 'accordion';
+    const isPopup = layoutModule.type === 'popup';
     const isSlider = layoutModule.type === 'slider';
 
     // Get module metadata
@@ -4784,6 +4790,10 @@ export class LayoutTab extends LitElement {
       layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
     } else if (isVertical) {
       layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isAccordion) {
+      layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
+    } else if (isPopup) {
+      layoutTitle = localize('editor.layout.popup_module', lang, 'Popup');
     } else if (isSlider) {
       layoutTitle = localize('editor.layout.slider_module', lang, 'Slider Module');
     }
@@ -5164,6 +5174,8 @@ export class LayoutTab extends LitElement {
     const isNestedLayoutModule =
       childModule.type === 'horizontal' ||
       childModule.type === 'vertical' ||
+      childModule.type === 'accordion' ||
+      childModule.type === 'popup' ||
       childModule.type === 'slider';
 
     if (isNestedLayoutModule) {
@@ -6326,7 +6338,7 @@ export class LayoutTab extends LitElement {
     module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // If this is a layout module, regenerate IDs for all nested modules
-    if ((module.type === 'horizontal' || module.type === 'vertical') && module.modules) {
+    if ((module.type === 'horizontal' || module.type === 'vertical' || module.type === 'accordion' || module.type === 'popup') && module.modules) {
       module.modules.forEach((childModule: any) => {
         this._regenerateModuleIds(childModule); // Recursive for nested layouts
       });
@@ -6342,6 +6354,24 @@ export class LayoutTab extends LitElement {
     if (module.type === 'icon' && module.icons) {
       module.icons.forEach((icon: any) => {
         icon.id = `icon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      });
+    }
+
+    // Handle dropdown modules with options
+    if (module.type === 'dropdown' && module.options && Array.isArray(module.options)) {
+      module.options.forEach((option: any) => {
+        if (option.id) {
+          option.id = `dropdown-option-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      });
+    }
+
+    // Handle slider control modules with bars
+    if (module.type === 'slider_control' && module.bars && Array.isArray(module.bars)) {
+      module.bars.forEach((bar: any) => {
+        if (bar.id) {
+          bar.id = `slider-bar-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
       });
     }
   }
@@ -11334,6 +11364,7 @@ export class LayoutTab extends LitElement {
         parentModule &&
         (parentModule.type === 'horizontal' ||
           parentModule.type === 'vertical' ||
+          parentModule.type === 'accordion' ||
           parentModule.type === 'slider')
       ) {
         const layoutParent = parentModule as any;
@@ -11341,7 +11372,7 @@ export class LayoutTab extends LitElement {
           // Check if any existing children are layout modules (indicating we're at max depth)
           const hasLayoutChildren = layoutParent.modules.some(
             (child: any) =>
-              child.type === 'horizontal' || child.type === 'vertical' || child.type === 'slider'
+              child.type === 'horizontal' || child.type === 'vertical' || child.type === 'accordion' || child.type === 'popup' || child.type === 'slider'
           );
           if (hasLayoutChildren && nestingDepth >= 2) {
             nestingDepth = 3; // Would exceed maximum depth
@@ -11401,7 +11432,7 @@ export class LayoutTab extends LitElement {
                     <p class="category-description">
                       ${isAddingToLayoutModule
                         ? nestingDepth < 2
-                          ? `Add horizontal or vertical layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
+                          ? `Add layout modules (${2 - nestingDepth} more level${2 - nestingDepth !== 1 ? 's' : ''} allowed)`
                           : 'Maximum nesting depth reached - only content modules allowed'
                         : 'Create containers to organize your modules'}
                     </p>
@@ -13132,7 +13163,7 @@ export class LayoutTab extends LitElement {
   }
 
   private _isLayoutModule(moduleType: string): boolean {
-    const layoutModuleTypes = ['horizontal', 'vertical', 'slider'];
+    const layoutModuleTypes = ['horizontal', 'vertical', 'accordion', 'popup', 'slider'];
     return layoutModuleTypes.includes(moduleType);
   }
 
@@ -13383,7 +13414,7 @@ export class LayoutTab extends LitElement {
         font-weight: 500;
         border-bottom: 2px solid var(--primary-color);
         position: relative;
-        z-index: ${Z_INDEX.CARD_BACKGROUND};
+        z-index: 0;
         border-radius: 8px 8px 0px 0px;
       }
 
@@ -13691,6 +13722,7 @@ export class LayoutTab extends LitElement {
         justify-content: space-between;
         align-items: center;
         font-size: 14px;
+        z-index: 0;
         font-weight: 500;
         padding: 8px 12px;
         background: var(--accent-color, var(--orange-color, #ff9800));
@@ -13858,7 +13890,7 @@ export class LayoutTab extends LitElement {
         word-break: break-word;
         pointer-events: auto;
         position: relative;
-        z-index: ${Z_INDEX.MODULE_CONTENT};
+        z-index: 0;
 
         /* Ensure content doesn't interfere with hover actions positioning */
         contain: layout style;
@@ -16530,14 +16562,17 @@ export class LayoutTab extends LitElement {
 
       .row-header {
         position: relative;
+        z-index: 0;
       }
 
       .column-header {
         position: relative;
+        z-index: 0;
       }
 
       .module-content {
         position: relative;
+        z-index: 0;
       }
 
       /* Visual feedback during drag */

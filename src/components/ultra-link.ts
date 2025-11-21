@@ -1,7 +1,8 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
 import { localize } from '../localize/localize';
-import { UltraCardConfig } from '../types';
+import { UltraCardConfig, CardModule } from '../types';
+import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
 
 export interface UltraLinkConfig {
   tap_action?: TapActionConfig;
@@ -689,13 +690,14 @@ export class UltraLinkComponent {
     }
   }
 
-  static handleAction(
+  static async handleAction(
     action: TapActionConfig | undefined,
     hass: HomeAssistant,
     element?: HTMLElement,
     config?: UltraCardConfig,
-    moduleEntity?: string
-  ): void {
+    moduleEntity?: string,
+    module?: CardModule
+  ): Promise<void> {
     // If action is undefined or missing, or explicitly set to 'default', use smart resolution
     let resolvedAction: TapActionConfig;
 
@@ -710,11 +712,32 @@ export class UltraLinkComponent {
       resolvedAction = action;
     }
 
+    // Skip confirmation and execution for 'nothing' actions
+    if (resolvedAction.action === 'nothing') {
+      return;
+    }
+
+    // Check if confirmation is required
+    const confirmAction = module?.confirm_action === true;
+    
+    if (confirmAction) {
+      // Set hass for the confirmation service
+      ucActionConfirmationService.setHass(hass);
+      
+      // Show confirmation dialog BEFORE executing the action
+      // This will block execution until user confirms or cancels
+      const confirmed = await ucActionConfirmationService.showConfirmation(resolvedAction);
+      
+      // If user cancelled, don't execute the action
+      if (!confirmed) {
+        return;
+      }
+    }
+
     // Trigger haptic feedback if enabled (default: true)
     const hapticEnabled = config?.haptic_feedback !== false;
     if (
       hapticEnabled &&
-      resolvedAction.action !== 'nothing' &&
       resolvedAction.action !== 'default'
     ) {
       // Use appropriate haptic type based on action following HA guidelines
@@ -858,9 +881,8 @@ export class UltraLinkComponent {
         element?.dispatchEvent(assistEvent);
         break;
 
-      case 'nothing':
       default:
-        // Do nothing
+        // Do nothing (including 'nothing' action which is already handled above)
         break;
     }
   }

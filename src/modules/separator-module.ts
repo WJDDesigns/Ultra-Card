@@ -973,7 +973,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
             separatorModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (separatorModule as any).entity,
+            separatorModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -1015,7 +1017,9 @@ export class UltraSeparatorModule extends BaseUltraModule {
             separatorModule.double_tap_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (separatorModule as any).entity,
+            separatorModule
           );
         }
       } else {
@@ -1034,7 +1038,8 @@ export class UltraSeparatorModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (separatorModule as any).entity
+              (separatorModule as any).entity,
+              separatorModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows

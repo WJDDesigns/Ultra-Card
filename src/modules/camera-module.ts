@@ -17,6 +17,15 @@ import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-template-editor';
 
+const CAMERA_PLAYER_SELECTORS = new Set([
+  'ha-web-rtc-player',
+  'ha-hls-player',
+  'ha-camera-stream',
+  'ha-camera-websocket',
+  'ha-camera-player',
+  'ha-camera-viewer',
+]);
+
 export class UltraCameraModule extends BaseUltraModule {
   private _templateInputDebounce: any = null;
   private _templateService?: TemplateService;
@@ -28,6 +37,10 @@ export class UltraCameraModule extends BaseUltraModule {
   private _lastAppliedLive?: boolean;
   private _huiImageRef: Ref<any> = createRef();
   private _cameraStableKeys: Map<string, string> = new Map(); // Store stable keys by module ID
+  private _audioOverrides: Map<string, boolean> = new Map();
+  private _lastAudioStates: Map<string, boolean> = new Map();
+  private _audioObservers: Map<string, { observer: MutationObserver; target: Node }> = new Map();
+  private _snapshotRefreshTimers: Map<string, any> = new Map();
 
   metadata: ModuleMetadata = {
     type: 'camera',
@@ -71,10 +84,14 @@ export class UltraCameraModule extends BaseUltraModule {
 
       // Camera controls
       show_controls: false,
-      live_view: true,
-      auto_refresh: true,
-      refresh_interval: 30,
-      audio_enabled: false,
+      
+      // Stream mode - controls camera feed behavior:
+      // 'auto': HA default - lightweight snapshots with tap-to-live upgrade (low data usage)
+      // 'live': Always streaming live feed (high data usage, real-time)
+      // 'snapshot': Manual refresh only at specified interval (lowest data usage)
+      view_mode: 'auto',
+      refresh_interval: 10, // Seconds between refreshes (only used in 'snapshot' mode, range: 1-300)
+      audio_enabled: false, // Only applies in 'live' mode
 
       // Image quality
       image_quality: 'high',
@@ -319,22 +336,52 @@ export class UltraCameraModule extends BaseUltraModule {
             ${localize('editor.camera.display.title', lang, 'Display Settings')}
           </div>
 
+          <!-- Stream Mode Selector -->
           <div style="margin-bottom: 16px;">
             ${this.renderFieldSection(
-              localize('editor.camera.live_view.title', lang, 'Live View'),
+              localize('editor.camera.view_mode.title', lang, 'Stream Mode'),
               localize(
-                'editor.camera.live_view.desc',
+                'editor.camera.view_mode.desc',
                 lang,
-                'Enable to show live camera stream (requires stream integration). When disabled, shows still image snapshots.'
+                'Control how the camera feed is displayed. Auto: snapshot with tap-to-live (like HA default). Live: always streaming. Snapshot: manual refresh only.'
               ),
               hass,
-              { live_view: cameraModule.live_view !== false },
-              [this.booleanField('live_view')],
-              (e: CustomEvent) => updateModule(e.detail.value)
+              { view_mode: cameraModule.view_mode || 'auto' },
+              [
+                this.selectField('view_mode', [
+                  {
+                    value: 'auto',
+                    label: localize(
+                      'editor.camera.view_mode.options.auto',
+                      lang,
+                      'Auto (HA Default)'
+                    ),
+                  },
+                  {
+                    value: 'live',
+                    label: localize('editor.camera.view_mode.options.live', lang, 'Always Live'),
+                  },
+                  {
+                    value: 'snapshot',
+                    label: localize(
+                      'editor.camera.view_mode.options.snapshot',
+                      lang,
+                      'Snapshot Only'
+                    ),
+                  },
+                ]),
+              ],
+              (e: CustomEvent) => {
+                const next = e.detail.value.view_mode;
+                const prev = cameraModule.view_mode || 'auto';
+                if (next === prev) return;
+                updateModule(e.detail.value);
+              }
             )}
           </div>
 
-          ${cameraModule.live_view !== false
+          <!-- Audio Enable (only for Live mode) -->
+          ${(cameraModule.view_mode || 'auto') === 'live'
             ? html`
                 <div style="margin-bottom: 16px;">
                   ${this.renderFieldSection(
@@ -342,7 +389,7 @@ export class UltraCameraModule extends BaseUltraModule {
                     localize(
                       'editor.camera.audio_enabled.desc',
                       lang,
-                      'Enable audio for live camera streams. Audio is only available when Live View is enabled.'
+                      'Enable audio for live camera streams. Audio is only available in Live mode.'
                     ),
                     hass,
                     { audio_enabled: cameraModule.audio_enabled === true },
@@ -352,59 +399,41 @@ export class UltraCameraModule extends BaseUltraModule {
                 </div>
               `
             : ''}
-          ${cameraModule.live_view === false
+
+          <!-- Refresh Interval (only for Snapshot mode) -->
+          ${(cameraModule.view_mode || 'auto') === 'snapshot'
             ? html`
                 <div style="margin-top: 24px;">
                   ${this.renderConditionalFieldsGroup(
                     localize(
-                      'editor.camera.auto_refresh.section_title',
+                      'editor.camera.snapshot_refresh.section_title',
                       lang,
-                      'Auto Refresh Settings'
+                      'Snapshot Refresh Settings'
                     ),
                     html`
-                      <div style="margin-bottom: 16px;">
-                        ${FormUtils.renderField(
-                          localize('editor.camera.auto_refresh.title', lang, 'Auto Refresh'),
-                          localize(
-                            'editor.camera.auto_refresh.desc',
-                            lang,
-                            'Automatically refresh the camera image at regular intervals'
-                          ),
-                          hass,
-                          { auto_refresh: cameraModule.auto_refresh !== false },
-                          [FormUtils.createSchemaItem('auto_refresh', { boolean: {} })],
-                          (e: CustomEvent) =>
-                            updateModule({ auto_refresh: e.detail.value.auto_refresh })
-                        )}
-                      </div>
-
-                      ${cameraModule.auto_refresh !== false
-                        ? html`
-                            ${FormUtils.renderField(
-                              localize(
-                                'editor.camera.refresh_interval.title',
-                                lang,
-                                'Refresh Interval (seconds)'
-                              ),
-                              localize(
-                                'editor.camera.refresh_interval.desc',
-                                lang,
-                                'How often to refresh the camera image automatically.'
-                              ),
-                              hass,
-                              { refresh_interval: cameraModule.refresh_interval || 30 },
-                              [
-                                FormUtils.createSchemaItem('refresh_interval', {
-                                  number: { min: 5, max: 300, mode: 'box' },
-                                }),
-                              ],
-                              (e: CustomEvent) =>
-                                updateModule({
-                                  refresh_interval: e.detail.value.refresh_interval,
-                                })
-                            )}
-                          `
-                        : ''}
+                      ${FormUtils.renderField(
+                        localize(
+                          'editor.camera.refresh_interval.title',
+                          lang,
+                          'Refresh Interval (seconds)'
+                        ),
+                        localize(
+                          'editor.camera.refresh_interval.desc',
+                          lang,
+                          'How often to refresh the camera snapshot automatically. Range: 1-300 seconds.'
+                        ),
+                        hass,
+                        { refresh_interval: cameraModule.refresh_interval || 10 },
+                        [
+                          FormUtils.createSchemaItem('refresh_interval', {
+                            number: { min: 1, max: 300, mode: 'box' },
+                          }),
+                        ],
+                        (e: CustomEvent) =>
+                          updateModule({
+                            refresh_interval: e.detail.value.refresh_interval,
+                          })
+                      )}
                     `
                   )}
                 </div>
@@ -1373,6 +1402,7 @@ export class UltraCameraModule extends BaseUltraModule {
   ): TemplateResult {
     const cameraModule = module as CameraModule;
     const moduleWithDesign = cameraModule as any;
+    const lang = hass.locale?.language || 'en';
 
     // GRACEFUL RENDERING: Check for incomplete configuration
     if (
@@ -1483,27 +1513,37 @@ export class UltraCameraModule extends BaseUltraModule {
     // Get camera entity - use template entity if provided, otherwise use module entity
     let cameraEntity = templateEntity || cameraModule.entity;
 
-    const desiredLive = cameraModule.live_view !== false;
+    // Determine camera view mode based on view_mode setting
+    const viewMode = cameraModule.view_mode || 'auto';
+    let desiredCameraView: 'auto' | 'live';
+    
+    if (viewMode === 'live') {
+      // Always live streaming
+      desiredCameraView = 'live';
+    } else {
+      // 'auto' or 'snapshot' both use 'auto' for hui-image (snapshot with tap-to-live capability)
+      desiredCameraView = 'auto';
+    }
 
     // When editor is open, keep live but serialize updates to avoid overlapping negotiations
     // We render using last applied props and schedule a debounced apply for desired props
     if ((this as any)._isEditorOpen()) {
       const effectiveEntity = this._lastAppliedEntity ?? cameraEntity;
-      const effectiveLive = this._lastAppliedLive ?? desiredLive;
+      const effectiveCameraView = this._lastAppliedLive ?? (desiredCameraView === 'live');
       // Schedule an atomic update to desired props (200ms debounce)
       if (cameraEntity) {
-        (this as any)._scheduleCameraUpdate(cameraEntity, desiredLive, cameraModule, hass);
+        (this as any)._scheduleCameraUpdate(cameraEntity, desiredCameraView === 'live', cameraModule, hass);
       }
       cameraEntity = effectiveEntity || '';
-      // Note: We will pass desiredLive to hui-image below via effectiveLive
+      // Note: We will pass desired camera view to hui-image below via effectiveCameraView
       // but we also record it to avoid churn
-      this._lastAppliedLive = effectiveLive;
+      this._lastAppliedLive = effectiveCameraView;
     } else {
       // Outside editor: apply immediately
       // Validate the entity before applying to avoid renegotiation on bad values
       const isValid = cameraEntity ? (this as any)._isValidCameraEntity(hass, cameraEntity) : false;
       this._lastAppliedEntity = isValid ? cameraEntity : this._lastAppliedEntity;
-      this._lastAppliedLive = desiredLive;
+      this._lastAppliedLive = desiredCameraView === 'live';
     }
 
     const entity = cameraEntity ? hass.states[cameraEntity] : null;
@@ -1512,15 +1552,18 @@ export class UltraCameraModule extends BaseUltraModule {
     // CRITICAL FIX: Prevent WebRTC re-initialization when template is being edited
     // Only re-render camera if the evaluated entity actually changed
     // Store stable keys in instance Map to avoid "object is not extensible" errors
+    // Include audio_enabled in key to ensure audio updates trigger re-render when needed
+    const audioEnabled = this._isAudioActive(cameraModule);
     let stableKey: string;
     if (cameraModule.template_mode && cameraEntity === this._lastRenderedEntity && cameraEntity) {
       // Same entity - use stable key to prevent Lit from recreating hui-image
       // This prevents WebRTC SDP errors during template editing
-      stableKey = `camera_${cameraModule.id}_${cameraEntity}`;
+      // But include audio state to allow audio changes to update
+      stableKey = `camera_${cameraModule.id}_${cameraEntity}_audio_${audioEnabled}`;
     } else {
       // Entity changed - allow re-render and update cache
       this._lastRenderedEntity = cameraEntity;
-      stableKey = `camera_${cameraModule.id}_${cameraEntity || 'none'}_${Date.now()}`;
+      stableKey = `camera_${cameraModule.id}_${cameraEntity || 'none'}_audio_${audioEnabled}_${Date.now()}`;
     }
     // Store the stable key for this module
     this._cameraStableKeys.set(cameraModule.id, stableKey);
@@ -1638,13 +1681,44 @@ export class UltraCameraModule extends BaseUltraModule {
     );
 
     // Camera content
+    const isDashboardView = previewContext === 'dashboard';
+    const isLiveMode = (cameraModule.view_mode || 'auto') === 'live';
+    
+    const handleUserInteraction = (event: Event) => {
+      // Only handle audio in live mode
+      if (!isLiveMode) {
+        return;
+      }
+      
+      const isAudioActive = this._isAudioActive(cameraModule, isDashboardView);
+      if (!isAudioActive) {
+        return;
+      }
+
+      const container =
+        (event.currentTarget as HTMLElement) ||
+        (event.target as HTMLElement).closest('.camera-image-container');
+      const huiImage = container?.querySelector('hui-image') as any;
+
+      if (huiImage) {
+        this._ensureAudioState(huiImage, cameraModule, isAudioActive);
+      }
+    };
+
+    const audioActive = isLiveMode ? this._isAudioActive(cameraModule, isDashboardView) : false;
+
     const cameraContent = html`
       <div
         class="camera-module-container"
         data-uc-camera-id="${cameraModule.id}"
         style=${this.styleObjectToCss(containerStyles)}
       >
-        <div class="camera-image-container" style=${this.styleObjectToCss(containerImageStyles)}>
+        <div
+          class="camera-image-container"
+          style=${this.styleObjectToCss(containerImageStyles)}
+          @click=${handleUserInteraction}
+          @touchstart=${handleUserInteraction}
+        >
           ${!cameraEntity
             ? html`
                 <div
@@ -1706,7 +1780,7 @@ export class UltraCameraModule extends BaseUltraModule {
                     .hass=${hass}
                     .cameraImage=${cameraEntity}
                     .cameraView=${this._lastAppliedLive ? 'live' : 'auto'}
-                    .muted=${cameraModule.audio_enabled !== true}
+                    .muted=${!audioActive}
                     style=${this.styleObjectToCss(imageStyles)}
                     class="camera-image"
                     @error=${() => {}}
@@ -1733,6 +1807,19 @@ export class UltraCameraModule extends BaseUltraModule {
                             container
                           );
                         }, 100);
+                      }
+                      
+                      // Ensure audio is properly enabled/disabled on the video element (only in live mode)
+                      if (isLiveMode) {
+                        this._ensureAudioState(e.target as any, cameraModule, audioActive);
+                      }
+                      
+                      // Setup snapshot refresh timer for snapshot mode
+                      if ((cameraModule.view_mode || 'auto') === 'snapshot') {
+                        this._setupSnapshotRefresh(cameraModule, cameraEntity || '', hass);
+                      } else {
+                        // Clear any existing timer when not in snapshot mode
+                        this._clearSnapshotRefresh(cameraModule.id);
                       }
                     }}
                   ></hui-image>
@@ -1812,6 +1899,19 @@ export class UltraCameraModule extends BaseUltraModule {
                       `
                     : ''}
                 `}
+          ${isLiveMode && cameraModule.audio_enabled === true
+            ? html`
+                <button
+                  class="camera-audio-toggle ${audioActive ? 'active' : 'muted'}"
+                  title=${audioActive
+                    ? localize('editor.camera.audio_toggle.mute', lang, 'Mute camera audio')
+                    : localize('editor.camera.audio_toggle.unmute', lang, 'Unmute camera audio')}
+                  @click=${(e: Event) => this._toggleDashboardAudio(e, cameraModule)}
+                >
+                  <ha-icon icon=${audioActive ? 'mdi:volume-high' : 'mdi:volume-mute'}></ha-icon>
+                </button>
+              `
+            : ''}
         </div>
       </div>
     `;
@@ -1820,7 +1920,6 @@ export class UltraCameraModule extends BaseUltraModule {
     const hoverEffect = (cameraModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
-    // Handle link actions
     return this.hasActiveLink(cameraModule)
       ? html`<div
           class="camera-module-clickable ${hoverEffectClass}"
@@ -1857,10 +1956,11 @@ export class UltraCameraModule extends BaseUltraModule {
     // LENIENT VALIDATION: Allow empty entity/template - UI will show placeholder
     // Only validate for truly breaking errors
 
-    // Refresh interval validation (truly breaking if out of range)
-    if (cameraModule.auto_refresh !== false && cameraModule.refresh_interval) {
-      if (cameraModule.refresh_interval < 5 || cameraModule.refresh_interval > 300) {
-        errors.push('Refresh interval must be between 5 and 300 seconds');
+    // Refresh interval validation (only applies to 'snapshot' mode)
+    // Auto and Live modes don't use manual refresh intervals
+    if (cameraModule.view_mode === 'snapshot' && cameraModule.refresh_interval) {
+      if (cameraModule.refresh_interval < 1 || cameraModule.refresh_interval > 300) {
+        errors.push('Refresh interval must be between 1 and 300 seconds for snapshot mode');
       }
     }
 
@@ -1984,14 +2084,16 @@ export class UltraCameraModule extends BaseUltraModule {
         module.tap_action.action === 'default'
           ? { action: 'more-info', entity: module.entity }
           : module.tap_action;
-      UltraLinkComponent.handleAction(action as any, hass, event.target as HTMLElement, config);
+      UltraLinkComponent.handleAction(action as any, hass, event.target as HTMLElement, config, module.entity, module);
     } else if (module.entity) {
       // Default action for cameras: show more-info
       UltraLinkComponent.handleAction(
         { action: 'more-info', entity: module.entity } as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        module.entity,
+        module
       );
     }
   }
@@ -2007,7 +2109,9 @@ export class UltraCameraModule extends BaseUltraModule {
         module.hold_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        module.entity,
+        module
       );
     }
   }
@@ -2023,7 +2127,9 @@ export class UltraCameraModule extends BaseUltraModule {
         module.double_tap_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        module.entity,
+        module
       );
     }
   }
@@ -2249,6 +2355,8 @@ export class UltraCameraModule extends BaseUltraModule {
 
       if (modal && cameraContainer) {
         const hass = (document.querySelector('home-assistant') as any)?.hass;
+        const isLiveMode = (module.view_mode || 'auto') === 'live';
+        const fullscreenAudioActive = isLiveMode ? this._isAudioActive(module) : false;
 
         if (hass) {
           // Create hui-image element
@@ -2257,8 +2365,19 @@ export class UltraCameraModule extends BaseUltraModule {
           huiImage.setAttribute('data-camera-fullscreen', cameraEntity || '');
           (huiImage as any).hass = hass;
           (huiImage as any).cameraImage = cameraEntity;
-          (huiImage as any).cameraView = module.live_view ? 'live' : 'auto';
-          (huiImage as any).muted = module.audio_enabled !== true;
+          // Fullscreen always upgrades to live for best quality
+          (huiImage as any).cameraView = 'live';
+          (huiImage as any).muted = !fullscreenAudioActive;
+          
+          // Ensure audio state is applied after element is added to DOM
+          huiImage.addEventListener('load', () => {
+            (this as any)._ensureAudioState(huiImage, module, fullscreenAudioActive);
+          });
+          
+          // Also try after a delay to catch video element creation
+          setTimeout(() => {
+            (this as any)._ensureAudioState(huiImage, module, fullscreenAudioActive);
+          }, 200);
 
           huiImage.style.cssText = `
             width: 100vw !important;
@@ -2955,7 +3074,18 @@ export class UltraCameraModule extends BaseUltraModule {
         (cameraImg as any).hass = hass;
         (cameraImg as any).cameraImage = cameraEntity;
         (cameraImg as any).cameraView = module.live_view ? 'live' : 'auto';
-        (cameraImg as any).muted = module.audio_enabled !== true;
+        const fullscreenAudioActive = this._isAudioActive(module);
+        (cameraImg as any).muted = !fullscreenAudioActive;
+        
+        // Ensure audio state is applied after element is added to DOM
+        cameraImg.addEventListener('load', () => {
+          (this as any)._ensureAudioState(cameraImg, module, fullscreenAudioActive);
+        });
+        
+        // Also try after a delay to catch video element creation
+        setTimeout(() => {
+          (this as any)._ensureAudioState(cameraImg, module, fullscreenAudioActive);
+        }, 200);
 
         cameraImg.style.cssText = `
           width: 100%;
@@ -3553,6 +3683,227 @@ export class UltraCameraModule extends BaseUltraModule {
     return hasTapAction || hasHoldAction || hasDoubleAction || hasFullscreenTap || !!module.entity; // Default tap for camera
   }
 
+  private _isAudioActive(cameraModule: CameraModule, isDashboardView = false): boolean {
+    if (this._audioOverrides.has(cameraModule.id)) {
+      return this._audioOverrides.get(cameraModule.id)!;
+    }
+    if (isDashboardView) {
+      return false;
+    }
+    return cameraModule.audio_enabled === true;
+  }
+
+  private _toggleDashboardAudio(event: Event, cameraModule: CameraModule): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Only allow audio toggle in live mode
+    if ((cameraModule.view_mode || 'auto') !== 'live') {
+      return;
+    }
+
+    const current = this._isAudioActive(cameraModule, true);
+    const next = !current;
+    const base = cameraModule.audio_enabled === true;
+
+    if (next === base) {
+      this._audioOverrides.delete(cameraModule.id);
+    } else {
+      this._audioOverrides.set(cameraModule.id, next);
+    }
+
+    const container =
+      (event.currentTarget as HTMLElement)?.closest('.camera-image-container') ||
+      (event.target as HTMLElement).closest('.camera-image-container');
+    const huiImage = container?.querySelector('hui-image') as any;
+
+    if (huiImage) {
+      this._ensureAudioState(huiImage, cameraModule, next);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('ultra-card-template-update', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            timestamp: Date.now(),
+            source: 'camera-audio-toggle',
+            moduleId: cameraModule.id,
+          },
+        })
+      );
+    }
+  }
+
+  // Ensure audio state is correctly applied to video element inside hui-image
+  private _ensureAudioState(
+    huiImage: any,
+    cameraModule: CameraModule,
+    forcedState?: boolean
+  ): void {
+    if (!huiImage || cameraModule.live_view === false) return;
+
+    const audioEnabled =
+      forcedState !== undefined ? forcedState : this._isAudioActive(cameraModule);
+
+    this._lastAudioStates.set(cameraModule.id, audioEnabled);
+
+    if (huiImage.muted !== undefined) {
+      huiImage.muted = !audioEnabled;
+    }
+
+    this._applyAudioState(huiImage, audioEnabled);
+    this._watchAudioTargets(huiImage, cameraModule);
+  }
+
+  private _applyAudioState(huiImage: any, audioEnabled: boolean): void {
+    const players: HTMLElement[] = [];
+
+    const findVideoElement = (): HTMLVideoElement | null => {
+      players.length = 0;
+      const visited = new Set<Node>();
+      const stack: Array<Element | ShadowRoot> = [];
+
+      const pushNode = (node?: Element | ShadowRoot | null) => {
+        if (!node || visited.has(node)) return;
+        visited.add(node);
+        stack.push(node);
+      };
+
+      pushNode(huiImage.shadowRoot || null);
+      pushNode(huiImage);
+
+      while (stack.length) {
+        const node = stack.pop();
+        if (!node) continue;
+
+        if (node instanceof HTMLElement) {
+          const tagName = node.tagName.toLowerCase();
+          if (CAMERA_PLAYER_SELECTORS.has(tagName)) {
+            players.push(node);
+          }
+        }
+
+        if (node instanceof HTMLVideoElement) {
+          return node;
+        }
+
+        const childElements =
+          node instanceof ShadowRoot
+            ? Array.from(node.children)
+            : node instanceof Element
+              ? Array.from(node.children)
+              : [];
+
+        for (const child of childElements) {
+          if (child instanceof HTMLVideoElement) {
+            return child;
+          }
+          const childWithShadow = child as HTMLElement & { shadowRoot?: ShadowRoot };
+          if (childWithShadow.shadowRoot) {
+            pushNode(childWithShadow.shadowRoot);
+          }
+          pushNode(child);
+        }
+      }
+
+      // Fallback: if component exposes internal video reference
+      const fallbackVideo = (huiImage as any).video;
+      if (fallbackVideo instanceof HTMLVideoElement) {
+        return fallbackVideo;
+      }
+
+      return null;
+    };
+
+    const attempts = [0, 150, 400, 1000, 2000];
+    attempts.forEach(delay => {
+      setTimeout(() => {
+        const video = findVideoElement();
+        if (!video && players.length === 0) {
+          return;
+        }
+
+        const applyVideoState = (targetVideo: HTMLVideoElement) => {
+          targetVideo.muted = !audioEnabled;
+          targetVideo.volume = audioEnabled ? 1 : 0;
+          targetVideo.playsInline = true;
+
+          if (audioEnabled && targetVideo.paused && !targetVideo.muted) {
+            targetVideo.play().catch(() => {});
+          }
+        };
+
+        if (video) {
+          applyVideoState(video);
+        }
+
+        players.forEach(player => {
+          try {
+            if ('muted' in player) {
+              (player as any).muted = !audioEnabled;
+            }
+            if ('volume' in player) {
+              (player as any).volume = audioEnabled ? 1 : 0;
+            }
+            if ('playsInline' in player) {
+              (player as any).playsInline = true;
+            }
+            player.toggleAttribute?.('muted', !audioEnabled);
+
+            // Some HA players expose video element via property
+            if ((player as any).video instanceof HTMLVideoElement) {
+              applyVideoState((player as any).video);
+            }
+
+            if (
+              audioEnabled &&
+              typeof (player as any).play === 'function' &&
+              typeof (player as any).paused === 'boolean'
+            ) {
+              const playerAny = player as any;
+              if (playerAny.paused) {
+                playerAny.play().catch(() => {
+                  // Ignore autoplay blocks at player level; video fallback handles logging
+                });
+              }
+            }
+          } catch (playerError) {
+            // Silently ignore player update issues to avoid noisy logs
+          }
+        });
+      }, delay);
+    });
+  }
+
+  private _watchAudioTargets(huiImage: any, cameraModule: CameraModule): void {
+    if (!huiImage) return;
+
+    const key = cameraModule.id;
+    const targetNode = huiImage.shadowRoot || huiImage;
+    if (!targetNode) {
+      return;
+    }
+
+    const existing = this._audioObservers.get(key);
+    if (existing?.target === targetNode) {
+      return;
+    }
+
+    existing?.observer.disconnect();
+
+    const observer = new MutationObserver(() => {
+      const storedState = this._lastAudioStates.get(cameraModule.id);
+      const audioEnabled =
+        storedState !== undefined ? storedState : this._isAudioActive(cameraModule);
+      this._applyAudioState(huiImage, audioEnabled);
+    });
+
+    observer.observe(targetNode, { childList: true, subtree: true });
+    this._audioObservers.set(key, { observer, target: targetNode });
+  }
+
   private refreshCamera(entity: string, hass: HomeAssistant): void {
     // Try to refresh the hui-image component
     const huiImageElements = document.querySelectorAll(`hui-image[class*="camera-image"]`);
@@ -3563,6 +3914,28 @@ export class UltraCameraModule extends BaseUltraModule {
         element.requestUpdate();
       }
     });
+  }
+
+  private _setupSnapshotRefresh(cameraModule: CameraModule, entity: string, hass: HomeAssistant): void {
+    // Clear any existing timer first
+    this._clearSnapshotRefresh(cameraModule.id);
+    
+    const interval = (cameraModule.refresh_interval || 10) * 1000; // Convert to milliseconds
+    
+    // Setup recurring refresh timer
+    const timerId = setInterval(() => {
+      this.refreshCamera(entity, hass);
+    }, interval);
+    
+    this._snapshotRefreshTimers.set(cameraModule.id, timerId);
+  }
+
+  private _clearSnapshotRefresh(moduleId: string): void {
+    const existingTimer = this._snapshotRefreshTimers.get(moduleId);
+    if (existingTimer) {
+      clearInterval(existingTimer);
+      this._snapshotRefreshTimers.delete(moduleId);
+    }
   }
 
   private getCameraImageUrl(entity: string, hass: HomeAssistant, quality?: string): string {
@@ -4053,6 +4426,40 @@ export class UltraCameraModule extends BaseUltraModule {
         height: 100%;
         transition: all 0.3s ease;
       }
+
+      .camera-audio-toggle {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border: none;
+        background: none;
+        color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 12;
+        padding: 0;
+        transition: color 0.2s ease, transform 0.2s ease;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+      }
+
+      .camera-audio-toggle ha-icon {
+        pointer-events: none;
+        font-size: 20px;
+      }
+
+      .camera-audio-toggle:hover {
+        color: rgba(255, 255, 255, 0.95);
+        transform: scale(1.05);
+      }
+
+      .camera-audio-toggle.active,
+      .camera-audio-toggle.muted {
+        color: rgba(255, 255, 255, 0.9);
+      }
       
       .camera-unavailable {
         display: flex;
@@ -4416,8 +4823,15 @@ export class UltraCameraModule extends BaseUltraModule {
           node.cameraView = 'auto';
         }
         node.cameraImage = pending.entity;
+        // Update muted property based on audio_enabled setting
+        const audioEnabled = this._isAudioActive(cameraModule);
+        node.muted = !audioEnabled;
         queueMicrotask(() => {
           node.cameraView = pending.live ? 'live' : 'auto';
+          // Ensure muted property is set correctly after cameraView update
+          node.muted = !audioEnabled;
+          // Also ensure audio state on video element
+          (this as any)._ensureAudioState(node, cameraModule, audioEnabled);
         });
 
         this._lastAppliedEntity = pending.entity;

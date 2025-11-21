@@ -11,6 +11,8 @@ import { UltraSpinboxModule } from './spinbox-module';
 import { UltraMarkdownModule } from './markdown-module';
 import { UltraHorizontalModule } from './horizontal-module';
 import { UltraVerticalModule } from './vertical-module';
+import { UltraAccordionModule } from './accordion-module';
+import { UltraPopupModule } from './popup-module';
 import { UltraSliderModule } from './slider-module';
 import { UltraSliderControlModule } from './slider-control-module';
 import { UltraPageBreakModule } from './pagebreak-module';
@@ -25,6 +27,8 @@ import { UltraAnimatedForecastModule } from './animated-forecast-module';
 import { UltraExternalCardModule } from './external-card-module';
 import { UltraVideoBgModule } from './video-bg-module';
 import { UltraClimateModule } from './climate-module';
+import { UltraDynamicWeatherModule } from './dynamic-weather-module';
+import { UltraBackgroundModule } from './background-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -59,6 +63,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraMarkdownModule());
     this.registerModule(new UltraHorizontalModule());
     this.registerModule(new UltraVerticalModule());
+    this.registerModule(new UltraAccordionModule());
+    this.registerModule(new UltraPopupModule());
     this.registerModule(new UltraSliderModule());
     this.registerModule(new UltraSliderControlModule());
     this.registerModule(new UltraPageBreakModule());
@@ -76,6 +82,10 @@ export class ModuleRegistry {
     this.registerModule(new UltraVideoBgModule());
     // Register climate module (Pro feature)
     this.registerModule(new UltraClimateModule());
+    // Register dynamic weather module (Pro feature)
+    this.registerModule(new UltraDynamicWeatherModule());
+    // Register background module
+    this.registerModule(new UltraBackgroundModule());
   }
 
   // Register a new module (for core modules or third-party modules)

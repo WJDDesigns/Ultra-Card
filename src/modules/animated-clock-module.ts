@@ -261,7 +261,9 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
             (clockModule.hold_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (clockModule as any).entity,
+            clockModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -298,7 +300,9 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
             (clockModule.double_tap_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (clockModule as any).entity,
+            clockModule
           );
         }
       } else {
@@ -316,7 +320,9 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
               (clockModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (clockModule as any).entity,
+              clockModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows

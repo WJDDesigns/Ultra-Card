@@ -107,6 +107,7 @@ export class GlobalActionsTab extends LitElement {
         tap_action: (this.module as any).tap_action,
         hold_action: (this.module as any).hold_action,
         double_tap_action: (this.module as any).double_tap_action,
+        confirm_action: (this.module as any).confirm_action || false,
       };
     }
   }
@@ -328,6 +329,41 @@ export class GlobalActionsTab extends LitElement {
             }}
           ></ha-form>
           ${this._renderEntitySelectors('double_tap_action', doubleTapAction, moduleHasEntity, lang)}
+        </div>
+
+        <!-- Action Confirmation Toggle -->
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+          ${UcFormUtils.renderFieldSection(
+            localize('editor.actions.confirm_action', lang, 'Confirm Action'),
+            localize(
+              'editor.actions.confirm_action_desc',
+              lang,
+              'When enabled, a confirmation dialog will appear before executing any action (tap, hold, or double tap).'
+            ),
+            this.hass,
+            { confirm_action: (this.module as any).confirm_action || false },
+            [
+              {
+                name: 'confirm_action',
+                selector: { boolean: {} },
+              },
+            ],
+            (e: CustomEvent) => {
+              const confirmAction = e.detail.value?.confirm_action || false;
+              this._config = { ...this._config, confirm_action: confirmAction };
+              this.requestUpdate();
+              this.dispatchEvent(
+                new CustomEvent('module-changed', {
+                  detail: {
+                    updates: { confirm_action: confirmAction },
+                  },
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+              this._triggerPreviewUpdate();
+            }
+          )}
         </div>
       </div>
 

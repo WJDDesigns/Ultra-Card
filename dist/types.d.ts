@@ -1249,11 +1249,12 @@ export interface CameraModule extends BaseModule {
     crop_right?: number;
     crop_bottom?: number;
     show_controls?: boolean;
-    auto_refresh?: boolean;
+    view_mode?: 'auto' | 'live' | 'snapshot';
     refresh_interval?: number;
+    auto_refresh?: boolean;
+    live_view?: boolean;
     image_quality?: 'high' | 'medium' | 'low';
     rotation?: number;
-    live_view?: boolean;
     audio_enabled?: boolean;
     show_unavailable?: boolean;
     fallback_image?: string;
@@ -1434,6 +1435,9 @@ export interface DropdownModule extends BaseModule {
     closed_title_custom?: string;
     unified_template_mode?: boolean;
     unified_template?: string;
+    control_icon?: string;
+    control_alignment?: 'center' | 'apart';
+    control_icon_side?: 'left' | 'right';
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1875,7 +1879,6 @@ export interface BackgroundModule extends BaseModule {
     background_size?: 'cover' | 'contain' | 'fill' | 'auto';
     background_position?: string;
     background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
-    apply_scope: 'current_view' | 'all_dashboard';
     opacity: number;
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];

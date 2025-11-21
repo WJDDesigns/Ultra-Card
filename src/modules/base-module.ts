@@ -5,6 +5,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -155,6 +156,37 @@ export abstract class BaseUltraModule implements UltraModule {
   // Helper method to generate unique IDs
   protected generateId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Centralized action handler for all modules
+   * This ensures confirmation dialogs work consistently across all modules
+   * Modules should use this method instead of calling UltraLinkComponent.handleAction directly
+   * 
+   * @param action The action to execute
+   * @param hass Home Assistant instance
+   * @param element The element that triggered the action
+   * @param config Ultra Card config
+   * @param moduleEntity The module's entity (if any)
+   * @param module The module instance (required for confirmation dialogs)
+   */
+  async handleModuleAction(
+    action: TapActionConfig | undefined,
+    hass: HomeAssistant,
+    element?: HTMLElement,
+    config?: UltraCardConfig,
+    moduleEntity?: string,
+    module?: CardModule
+  ): Promise<void> {
+    // Always pass the module to ensure confirmation dialogs work
+    await UltraLinkComponent.handleAction(
+      action,
+      hass,
+      element,
+      config,
+      moduleEntity,
+      module
+    );
   }
 
   // Helper method to render form fields
@@ -407,7 +439,6 @@ export abstract class BaseUltraModule implements UltraModule {
   protected renderConditionalFieldsGroup(header: string, content: TemplateResult): TemplateResult {
     return html`
       <div class="conditional-fields-group">
-        <div class="conditional-fields-header">${header}</div>
         <div class="conditional-fields-content">${content}</div>
       </div>
     `;

@@ -954,20 +954,40 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const handleIncrement = (e: Event) => {
       e.stopPropagation();
       e.preventDefault();
+      const target = e.target as HTMLElement;
+      const button = target.closest('.spinbox-button') as HTMLButtonElement;
+      
       if (spinboxModule.entity && hass) {
         // Call service to update entity
         const newValue = Math.min(spinboxModule.max_value, currentValue + spinboxModule.step);
         this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+      }
+      
+      // Blur button to remove focus state on mobile - use setTimeout to ensure it happens after event propagation
+      if (button) {
+        setTimeout(() => {
+          button.blur();
+        }, 100);
       }
     };
 
     const handleDecrement = (e: Event) => {
       e.stopPropagation();
       e.preventDefault();
+      const target = e.target as HTMLElement;
+      const button = target.closest('.spinbox-button') as HTMLButtonElement;
+      
       if (spinboxModule.entity && hass) {
         // Call service to update entity
         const newValue = Math.max(spinboxModule.min_value, currentValue - spinboxModule.step);
         this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+      }
+      
+      // Blur button to remove focus state on mobile - use setTimeout to ensure it happens after event propagation
+      if (button) {
+        setTimeout(() => {
+          button.blur();
+        }, 100);
       }
     };
 
@@ -998,6 +1018,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
         class="spinbox-button decrement ${hoverEffectClass}"
         style="${buttonStyle}"
         @click=${handleDecrement}
+        @touchend=${handleDecrement}
         ?disabled=${currentValue <= spinboxModule.min_value}
       >
         <ha-icon icon="${spinboxModule.decrement_icon || 'mdi:minus'}"></ha-icon>
@@ -1009,6 +1030,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
         class="spinbox-button increment ${hoverEffectClass}"
         style="${buttonStyle}"
         @click=${handleIncrement}
+        @touchend=${handleIncrement}
         ?disabled=${currentValue >= spinboxModule.max_value}
       >
         <ha-icon icon="${spinboxModule.increment_icon || 'mdi:plus'}"></ha-icon>
@@ -1120,6 +1142,10 @@ export class UltraSpinboxModule extends BaseUltraModule {
         .spinbox-button {
           flex-shrink: 0;
           touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+          -webkit-user-select: none;
+          user-select: none;
+          outline: none;
         }
         .spinbox-button:disabled {
           opacity: 0.4;
@@ -1137,11 +1163,38 @@ export class UltraSpinboxModule extends BaseUltraModule {
           opacity: 0.8;
           transform: scale(1.05);
         }
-        /* Ensure hover state is cleared on touch devices */
+        /* Aggressively remove focus state on mobile/touch devices */
         @media (hover: none) {
+          .spinbox-button:not(:disabled):focus {
+            outline: none !important;
+            opacity: 1 !important;
+            transform: scale(1) !important;
+          }
+          .spinbox-button:not(:disabled):focus:active {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+          /* Ensure hover state is cleared on touch devices */
           .spinbox-button:not(:disabled):hover {
             opacity: 1;
             transform: scale(1);
+          }
+        }
+        /* Clear focus state after touch ends - global rule */
+        .spinbox-button:not(:disabled):focus:not(:active) {
+          opacity: 1 !important;
+          transform: scale(1) !important;
+        }
+        /* Prevent sticky focus on touch end */
+        .spinbox-button:focus-visible {
+          outline: none;
+        }
+        /* Ensure no visual changes on focus for touch devices */
+        @media (pointer: coarse) {
+          .spinbox-button:focus {
+            outline: none !important;
+            opacity: 1 !important;
+            transform: scale(1) !important;
           }
         }
       </style>

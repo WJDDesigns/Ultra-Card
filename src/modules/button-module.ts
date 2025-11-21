@@ -758,7 +758,9 @@ export class UltraButtonModule extends BaseUltraModule {
             buttonModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (buttonModule as any).entity,
+            buttonModule
           );
         }
       }, 500);
@@ -795,7 +797,8 @@ export class UltraButtonModule extends BaseUltraModule {
             hass,
             e.target as HTMLElement,
             config,
-            (buttonModule as any).entity
+            (buttonModule as any).entity,
+            buttonModule
           );
         }
       } else {
@@ -811,7 +814,8 @@ export class UltraButtonModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (buttonModule as any).entity
+              (buttonModule as any).entity,
+              buttonModule
             );
           } else if (buttonModule.action) {
             linkService.setHass(hass);

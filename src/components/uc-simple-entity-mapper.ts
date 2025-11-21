@@ -20,7 +20,6 @@ export class UcSimpleEntityMapper {
   private onCancelCallback?: () => void;
 
   constructor() {
-    console.log('🎯 Simple Entity Mapper initialized');
   }
 
   public show(

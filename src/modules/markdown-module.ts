@@ -844,7 +844,9 @@ All standard markdown features are automatically enabled!`,
             markdownModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (markdownModule as any).entity,
+            markdownModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -887,7 +889,8 @@ All standard markdown features are automatically enabled!`,
             hass,
             e.target as HTMLElement,
             config,
-            (markdownModule as any).entity
+            (markdownModule as any).entity,
+            markdownModule
           );
         }
       } else {
@@ -906,7 +909,8 @@ All standard markdown features are automatically enabled!`,
               hass,
               e.target as HTMLElement,
               config,
-              (markdownModule as any).entity
+              (markdownModule as any).entity,
+              markdownModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows

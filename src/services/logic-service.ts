@@ -210,11 +210,8 @@ export class LogicService {
 
     const entity = this.hass.states[condition.entity];
     if (!entity) {
-      // Only log each entity error once to prevent console flooding
-      if (!this.loggedEntityErrors.has(condition.entity)) {
-        console.warn(`[LogicService] Entity not found: ${condition.entity}`);
-        this.loggedEntityErrors.add(condition.entity);
-      }
+      // Track logged errors to prevent console flooding
+      this.loggedEntityErrors.add(condition.entity);
       return true; // Show by default if entity not found
     }
 
@@ -267,11 +264,8 @@ export class LogicService {
 
     const entity = this.hass.states[condition.entity];
     if (!entity) {
-      // Only log each entity error once to prevent console flooding
-      if (!this.loggedEntityErrors.has(condition.entity)) {
-        console.warn(`[LogicService] Entity not found: ${condition.entity}`);
-        this.loggedEntityErrors.add(condition.entity);
-      }
+      // Track logged errors to prevent console flooding
+      this.loggedEntityErrors.add(condition.entity);
       return true; // Show by default if entity not found
     }
 

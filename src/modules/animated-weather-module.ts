@@ -1,4 +1,4 @@
-import { TemplateResult, html } from 'lit';
+import { TemplateResult, html, nothing } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedWeatherModule, UltraCardConfig } from '../types';
@@ -6,6 +6,7 @@ import '../components/ultra-color-picker';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedWeatherModuleEditor } from './animated-weather-module-editor';
+import { formatEntityState } from '../utils/number-format';
 
 export class UltraAnimatedWeatherModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -53,6 +54,11 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       show_location: true,
       show_condition: true,
       show_custom_entity: true,
+      show_precipitation: false,
+      show_precipitation_probability: false,
+      show_wind: false,
+      show_pressure: false,
+      show_visibility: false,
 
       // Right Column Display Toggles
       show_date: true,
@@ -63,11 +69,19 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       location_size: 16,
       condition_size: 24,
       custom_entity_size: 18,
+      precipitation_size: 14,
+      wind_size: 14,
+      pressure_size: 14,
+      visibility_size: 14,
 
       // Left Column - Colors
       location_color: 'var(--primary-text-color)',
       condition_color: 'var(--primary-text-color)',
       custom_entity_color: 'var(--primary-text-color)',
+      precipitation_color: 'var(--primary-text-color)',
+      wind_color: 'var(--primary-text-color)',
+      pressure_color: 'var(--primary-text-color)',
+      visibility_color: 'var(--primary-text-color)',
 
       // Center Column - Icon Styling
       main_icon_size: 120,
@@ -106,6 +120,49 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     const weatherEntities = Object.keys(hass.states).filter(id => id.startsWith('weather.'));
 
     return weatherEntities.length > 0 ? weatherEntities[0] : '';
+  }
+
+  /**
+   * Get default column order for backwards compatibility
+   * Returns order arrays based on current visibility toggles and entity availability
+   */
+  private _getDefaultColumnOrder(
+    module: AnimatedWeatherModule,
+    hass?: HomeAssistant
+  ): { left: string[]; right: string[] } {
+    // Check entity availability
+    const weatherEntity = module.weather_entity ? hass?.states[module.weather_entity] : null;
+    const hasPrecipitation =
+      weatherEntity?.attributes?.precipitation !== undefined &&
+      weatherEntity?.attributes?.precipitation !== null;
+    const hasPrecipitationProbability =
+      weatherEntity?.attributes?.precipitation_probability !== undefined &&
+      weatherEntity?.attributes?.precipitation_probability !== null;
+    const hasWind =
+      weatherEntity?.attributes?.wind_speed !== undefined ||
+      weatherEntity?.attributes?.wind_bearing !== undefined;
+    const hasPressure =
+      weatherEntity?.attributes?.pressure !== undefined &&
+      weatherEntity?.attributes?.pressure !== null;
+    const hasVisibility =
+      weatherEntity?.attributes?.visibility !== undefined &&
+      weatherEntity?.attributes?.visibility !== null;
+
+    // Left column default order (only include items that exist in entity)
+    const leftItems: string[] = [];
+    leftItems.push('location');
+    leftItems.push('condition');
+    if (module.custom_entity) leftItems.push('custom_entity');
+    if (hasPrecipitation) leftItems.push('precipitation');
+    if (hasPrecipitationProbability) leftItems.push('precipitation_probability');
+    if (hasWind) leftItems.push('wind');
+    if (hasPressure) leftItems.push('pressure');
+    if (hasVisibility) leftItems.push('visibility');
+
+    // Right column default order
+    const rightItems: string[] = ['date', 'temperature', 'temp_range'];
+
+    return { left: leftItems, right: rightItems };
   }
 
   renderGeneralTab(
@@ -254,7 +311,9 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
             (weatherModule.hold_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (weatherModule as any).entity,
+            weatherModule
           );
         }
       }, 500);
@@ -290,7 +349,9 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
             (weatherModule.double_tap_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (weatherModule as any).entity,
+            weatherModule
           );
         }
       } else {
@@ -305,7 +366,9 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
               (weatherModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (weatherModule as any).entity,
+              weatherModule
             );
           }
         }, 300);
@@ -397,6 +460,10 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
             --location-size: ${weatherModule.location_size || 16}px;
             --condition-size: ${weatherModule.condition_size || 24}px;
             --custom-entity-size: ${weatherModule.custom_entity_size || 18}px;
+            --precipitation-size: ${weatherModule.precipitation_size || 14}px;
+            --wind-size: ${weatherModule.wind_size || 14}px;
+            --pressure-size: ${weatherModule.pressure_size || 14}px;
+            --visibility-size: ${weatherModule.visibility_size || 14}px;
             --date-size: ${weatherModule.date_size || 16}px;
             --temperature-size: ${weatherModule.temperature_size || 64}px;
             --temp-range-size: ${weatherModule.temp_range_size || 18}px;
@@ -404,6 +471,10 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
             --location-color: ${locationColor};
             --condition-color: ${conditionColor};
             --custom-entity-color: ${customEntityColor};
+            --precipitation-color: ${globalTextColor || weatherModule.precipitation_color || 'var(--primary-text-color)'};
+            --wind-color: ${globalTextColor || weatherModule.wind_color || 'var(--primary-text-color)'};
+            --pressure-color: ${globalTextColor || weatherModule.pressure_color || 'var(--primary-text-color)'};
+            --visibility-color: ${globalTextColor || weatherModule.visibility_color || 'var(--primary-text-color)'};
             --date-color: ${dateColor};
             --temperature-color: ${temperatureColor};
             --temp-range-color: ${tempRangeColor};
@@ -416,35 +487,16 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
           ${showLeft
             ? html`
                 <div class="weather-info-left">
-                  ${weatherModule.show_location !== false
-                    ? html`
-                        <div class="weather-location">
-                          <ha-icon icon="mdi:map-marker"></ha-icon>
-                          ${weatherData.location}
-                        </div>
-                      `
-                    : ''}
-                  ${weatherModule.show_condition !== false
-                    ? html`
-                        <div class="weather-condition">
-                          ${this._formatCondition(weatherData.condition)}
-                        </div>
-                      `
-                    : ''}
-                  ${weatherModule.show_custom_entity !== false &&
-                  weatherModule.custom_entity &&
-                  hass.states[weatherModule.custom_entity]
-                    ? html`
-                        <div class="weather-custom-entity">
-                          ${weatherModule.custom_entity_name ||
-                          hass.states[weatherModule.custom_entity].attributes.friendly_name ||
-                          weatherModule.custom_entity}:
-                          ${hass.states[weatherModule.custom_entity].state}${hass.states[
-                            weatherModule.custom_entity
-                          ].attributes.unit_of_measurement || ''}
-                        </div>
-                      `
-                    : ''}
+                  ${this._renderColumnItems(
+                    'left',
+                    weatherModule,
+                    hass,
+                    weatherData,
+                    dateStr,
+                    temp,
+                    highTemp,
+                    lowTemp
+                  )}
                 </div>
               `
             : ''}
@@ -455,7 +507,9 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
                 <div class="weather-icon-center">
                   <img
                     src="${this._getWeatherIcon(weatherData.condition, iconStyle)}"
-                    alt="${this._formatCondition(weatherData.condition)}"
+                    alt="${weatherModule.weather_entity && weatherData.weatherEntity
+                      ? formatEntityState(hass, weatherModule.weather_entity)
+                      : this._formatCondition(weatherData.condition)}"
                     class="meteocon-icon large"
                   />
                 </div>
@@ -466,21 +520,155 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
           ${showRight
             ? html`
                 <div class="weather-info-right">
-                  ${weatherModule.show_date !== false
-                    ? html` <div class="weather-date">${dateStr}</div> `
-                    : ''}
-                  ${weatherModule.show_temperature !== false
-                    ? html` <div class="weather-temp">${temp}°</div> `
-                    : ''}
-                  ${weatherModule.show_temp_range !== false
-                    ? html` <div class="weather-temp-range">${highTemp}° / ${lowTemp}°</div> `
-                    : ''}
+                  ${this._renderColumnItems(
+                    'right',
+                    weatherModule,
+                    hass,
+                    weatherData,
+                    dateStr,
+                    temp,
+                    highTemp,
+                    lowTemp
+                  )}
                 </div>
               `
             : ''}
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Render column items based on order array
+   */
+  private _renderColumnItems(
+    column: 'left' | 'right',
+    weatherModule: AnimatedWeatherModule,
+    hass: HomeAssistant,
+    weatherData: any,
+    dateStr: string,
+    temp: number,
+    highTemp: number,
+    lowTemp: number
+  ): TemplateResult[] {
+    // Get order for this column
+    const defaultOrder = this._getDefaultColumnOrder(weatherModule, hass);
+    const order =
+      column === 'left'
+        ? weatherModule.left_column_order || defaultOrder.left
+        : weatherModule.right_column_order || defaultOrder.right;
+
+    // Map item IDs to their render functions
+    const itemRenderers: Record<string, () => TemplateResult | typeof nothing> = {
+      location: () =>
+        weatherModule.show_location !== false
+          ? html`
+              <div class="weather-location">
+                <ha-icon icon="mdi:map-marker"></ha-icon>
+                ${weatherData.location}
+              </div>
+            `
+          : nothing,
+      condition: () =>
+        weatherModule.show_condition !== false
+          ? html`
+              <div class="weather-condition">
+                ${weatherModule.weather_entity && weatherData.weatherEntity
+                  ? formatEntityState(hass, weatherModule.weather_entity)
+                  : this._formatCondition(weatherData.condition)}
+              </div>
+            `
+          : nothing,
+      custom_entity: () =>
+        weatherModule.show_custom_entity !== false &&
+        weatherModule.custom_entity &&
+        hass.states[weatherModule.custom_entity]
+          ? html`
+              <div class="weather-custom-entity">
+                ${weatherModule.custom_entity_name ||
+                hass.states[weatherModule.custom_entity].attributes.friendly_name ||
+                weatherModule.custom_entity}:
+                ${hass.states[weatherModule.custom_entity].state}${hass.states[
+                  weatherModule.custom_entity
+                ].attributes.unit_of_measurement || ''}
+              </div>
+            `
+          : nothing,
+      precipitation: () =>
+        weatherModule.show_precipitation !== false &&
+        weatherData.precipitation !== undefined &&
+        weatherData.precipitation !== null
+          ? html`
+              <div class="weather-precipitation">
+                <ha-icon icon="mdi:weather-pouring"></ha-icon>
+                ${this._formatPrecipitation(weatherData.precipitation, weatherData.weatherEntity)}
+              </div>
+            `
+          : nothing,
+      precipitation_probability: () =>
+        weatherModule.show_precipitation_probability !== false &&
+        weatherData.precipitationProbability !== undefined &&
+        weatherData.precipitationProbability !== null
+          ? html`
+              <div class="weather-precipitation-probability">
+                <ha-icon icon="mdi:weather-rainy"></ha-icon>
+                ${this._formatPrecipitationProbability(weatherData.precipitationProbability)}
+              </div>
+            `
+          : nothing,
+      wind: () =>
+        weatherModule.show_wind !== false &&
+        (weatherData.windSpeed !== undefined || weatherData.windBearing !== undefined)
+          ? html`
+              <div class="weather-wind">
+                <ha-icon icon="mdi:weather-windy"></ha-icon>
+                ${this._formatWind(
+                  weatherData.windSpeed,
+                  weatherData.windBearing,
+                  weatherData.weatherEntity
+                )}
+              </div>
+            `
+          : nothing,
+      pressure: () =>
+        weatherModule.show_pressure !== false &&
+        weatherData.pressure !== undefined &&
+        weatherData.pressure !== null
+          ? html`
+              <div class="weather-pressure">
+                <ha-icon icon="mdi:gauge"></ha-icon>
+                ${this._formatPressure(weatherData.pressure, weatherData.weatherEntity)}
+              </div>
+            `
+          : nothing,
+      visibility: () =>
+        weatherModule.show_visibility !== false &&
+        weatherData.visibility !== undefined &&
+        weatherData.visibility !== null
+          ? html`
+              <div class="weather-visibility">
+                <ha-icon icon="mdi:eye"></ha-icon>
+                ${this._formatVisibility(weatherData.visibility, weatherData.weatherEntity)}
+              </div>
+            `
+          : nothing,
+      date: () =>
+        weatherModule.show_date !== false ? html` <div class="weather-date">${dateStr}</div> ` : nothing,
+      temperature: () =>
+        weatherModule.show_temperature !== false
+          ? html` <div class="weather-temp">${temp}°</div> `
+          : nothing,
+      temp_range: () =>
+        weatherModule.show_temp_range !== false
+          ? html` <div class="weather-temp-range">${highTemp}° / ${lowTemp}°</div> `
+          : nothing,
+    };
+
+    // Render items in order
+    return order
+      .filter(itemId => itemRenderers[itemId]) // Only render items that exist
+      .map(itemId => itemRenderers[itemId]())
+      .filter(result => result !== nothing); // Filter out 'nothing' results
   }
 
   /**
@@ -579,6 +767,12 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       forecast: forecast,
       humidity: weatherEntity?.attributes?.humidity,
       windSpeed: weatherEntity?.attributes?.wind_speed,
+      windBearing: weatherEntity?.attributes?.wind_bearing,
+      precipitation: weatherEntity?.attributes?.precipitation,
+      precipitationProbability: weatherEntity?.attributes?.precipitation_probability,
+      pressure: weatherEntity?.attributes?.pressure,
+      visibility: weatherEntity?.attributes?.visibility,
+      weatherEntity: weatherEntity, // Keep reference for formatting
     };
   }
 
@@ -615,13 +809,79 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   }
 
   /**
-   * Format condition string for display
+   * Format condition string for display (fallback when entity not available)
    */
   private _formatCondition(condition: string): string {
     return condition
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  }
+
+  /**
+   * Format precipitation amount with unit
+   */
+  private _formatPrecipitation(
+    precipitation: number | undefined,
+    weatherEntity: any
+  ): string {
+    if (precipitation === undefined || precipitation === null) return '';
+    const unit = weatherEntity?.attributes?.precipitation_unit || 'mm';
+    return `${precipitation.toFixed(1)} ${unit}`;
+  }
+
+  /**
+   * Format precipitation probability as percentage
+   */
+  private _formatPrecipitationProbability(probability: number | undefined): string {
+    if (probability === undefined || probability === null) return '';
+    return `${Math.round(probability)}%`;
+  }
+
+  /**
+   * Format wind speed and direction
+   */
+  private _formatWind(
+    windSpeed: number | undefined,
+    windBearing: number | undefined,
+    weatherEntity: any
+  ): string {
+    const parts: string[] = [];
+    if (windSpeed !== undefined && windSpeed !== null) {
+      const unit = weatherEntity?.attributes?.wind_speed_unit || 'km/h';
+      parts.push(`${windSpeed.toFixed(1)} ${unit}`);
+    }
+    if (windBearing !== undefined && windBearing !== null) {
+      parts.push(this._formatWindBearing(windBearing));
+    }
+    return parts.join(' ');
+  }
+
+  /**
+   * Convert wind bearing degrees to cardinal direction
+   */
+  private _formatWindBearing(bearing: number): string {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const index = Math.round(bearing / 22.5) % 16;
+    return directions[index];
+  }
+
+  /**
+   * Format pressure with unit
+   */
+  private _formatPressure(pressure: number | undefined, weatherEntity: any): string {
+    if (pressure === undefined || pressure === null) return '';
+    const unit = weatherEntity?.attributes?.pressure_unit || 'hPa';
+    return `${Math.round(pressure)} ${unit}`;
+  }
+
+  /**
+   * Format visibility with unit
+   */
+  private _formatVisibility(visibility: number | undefined, weatherEntity: any): string {
+    if (visibility === undefined || visibility === null) return '';
+    const unit = weatherEntity?.attributes?.visibility_unit || 'km';
+    return `${visibility.toFixed(1)} ${unit}`;
   }
 
   getStyles(): string {
@@ -696,6 +956,60 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         margin: 0;
         padding: 0;
         line-height: 1.2;
+      }
+
+      .weather-precipitation,
+      .weather-precipitation-probability,
+      .weather-wind,
+      .weather-pressure,
+      .weather-visibility {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: var(--precipitation-size);
+        font-weight: 500;
+        color: var(--precipitation-color);
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        margin: 0;
+        padding: 0;
+        line-height: 1.2;
+      }
+
+      .weather-precipitation ha-icon,
+      .weather-precipitation-probability ha-icon,
+      .weather-wind ha-icon,
+      .weather-pressure ha-icon,
+      .weather-visibility ha-icon {
+        --mdc-icon-size: calc(var(--precipitation-size) + 2px);
+        flex-shrink: 0;
+      }
+
+      .weather-wind {
+        font-size: var(--wind-size);
+        color: var(--wind-color);
+      }
+
+      .weather-wind ha-icon {
+        --mdc-icon-size: calc(var(--wind-size) + 2px);
+      }
+
+      .weather-pressure {
+        font-size: var(--pressure-size);
+        color: var(--pressure-color);
+      }
+
+      .weather-pressure ha-icon {
+        --mdc-icon-size: calc(var(--pressure-size) + 2px);
+      }
+
+      .weather-visibility {
+        font-size: var(--visibility-size);
+        color: var(--visibility-color);
+      }
+
+      .weather-visibility ha-icon {
+        --mdc-icon-size: calc(var(--visibility-size) + 2px);
       }
 
       /* Center Column - Weather Icon */

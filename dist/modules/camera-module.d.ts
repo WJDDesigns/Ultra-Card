@@ -14,6 +14,10 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private _lastAppliedLive?;
     private _huiImageRef;
     private _cameraStableKeys;
+    private _audioOverrides;
+    private _lastAudioStates;
+    private _audioObservers;
+    private _snapshotRefreshTimers;
     metadata: ModuleMetadata;
     private clickTimeout;
     private holdTimeout;
@@ -53,7 +57,14 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private getCameraNamePositionStyles;
     private _hashString;
     private hasActiveLink;
+    private _isAudioActive;
+    private _toggleDashboardAudio;
+    private _ensureAudioState;
+    private _applyAudioState;
+    private _watchAudioTargets;
     private refreshCamera;
+    private _setupSnapshotRefresh;
+    private _clearSnapshotRefresh;
     private getCameraImageUrl;
     private getCameraImageBlob;
     private getCameraImageViaWebSocket;

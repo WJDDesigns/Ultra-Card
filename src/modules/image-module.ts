@@ -1100,7 +1100,7 @@ export class UltraImageModule extends BaseUltraModule {
         isHolding = true;
         const holdAction = (imageModule.hold_action as any) || ({ action: 'nothing' } as any);
         if (holdAction && holdAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement, config);
+          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
         }
       }, 500);
     };
@@ -1126,7 +1126,7 @@ export class UltraImageModule extends BaseUltraModule {
         clickCount = 0;
         const dblAction = (imageModule.double_tap_action as any) || ({ action: 'nothing' } as any);
         if (dblAction && dblAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement, config);
+          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
         }
       } else {
         // Possible single tap; wait to confirm not a double
@@ -1136,7 +1136,7 @@ export class UltraImageModule extends BaseUltraModule {
           clickCount = 0;
           const tapAction = (imageModule.tap_action as any) || ({ action: 'nothing' } as any);
           if (tapAction && tapAction.action !== 'nothing') {
-            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement, config);
+            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
           }
         }, 300);
       }

@@ -4500,7 +4500,9 @@ export class UltraBarModule extends BaseUltraModule {
             barModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (barModule as any).entity,
+            barModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -4538,7 +4540,8 @@ export class UltraBarModule extends BaseUltraModule {
             hass,
             e.target as HTMLElement,
             config,
-            (barModule as any).entity
+            (barModule as any).entity,
+            barModule
           );
         }
       } else {
@@ -4557,7 +4560,8 @@ export class UltraBarModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (barModule as any).entity
+              (barModule as any).entity,
+              barModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows

@@ -19,6 +19,8 @@ import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
 import { ucVideoBgService } from '../services/uc-video-bg-service';
+import { ucDynamicWeatherService } from '../services/uc-dynamic-weather-service';
+import { ucBackgroundService } from '../services/uc-background-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { dbg3p } from '../utils/uc-debug';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
@@ -91,8 +93,18 @@ export class UltraCard extends LitElement {
     // Apply global transparency if already set
     this._applyGlobalTransparency();
 
-    // Ensure a stable per-card instance id across remounts, unique per dashboard + slot index
-    if (!this._instanceId) {
+    // Refresh preview detection once we're in the DOM
+    const previewContext = this._detectEditorPreviewContext();
+    if (previewContext !== this._isEditorPreviewCard) {
+      this._isEditorPreviewCard = previewContext;
+    }
+
+    // Ensure a stable per-card instance id across remounts
+    if (this._isEditorPreviewCard) {
+      if (!this._instanceId || !this._instanceId.startsWith('uc-preview-')) {
+        this._instanceId = this._generatePreviewInstanceId();
+      }
+    } else if (!this._instanceId || this._instanceId.startsWith('uc-preview-')) {
       const dashboardId = getCurrentDashboardId();
       const cards = Array.from(document.querySelectorAll('ultra-card')) as Element[];
       const index = Math.max(0, cards.indexOf(this));
@@ -108,11 +120,10 @@ export class UltraCard extends LitElement {
         } catch {}
       }
       this._instanceId = id;
-      try {
-        (this as any).dataset = (this as any).dataset || {};
-        (this as any).dataset.ucInstanceId = this._instanceId;
-      } catch {}
     }
+
+    this._applyInstanceIdToDataset();
+    this._syncConfigMetadata();
 
     // Subscribe to third-party limit service changes to re-render immediately
     try {
@@ -230,6 +241,10 @@ export class UltraCard extends LitElement {
 
     // Register video background modules with the service
     this._registerVideoBgModules();
+
+    // Register dynamic weather modules with the service
+    this._registerDynamicWeatherModules();
+    this._registerBackgroundModules();
   }
 
   disconnectedCallback(): void {
@@ -305,6 +320,12 @@ export class UltraCard extends LitElement {
 
     // Unregister video background modules
     this._unregisterVideoBgModules();
+
+    // Unregister dynamic weather modules
+    this._unregisterDynamicWeatherModules();
+
+    // Unregister background modules so per-view backgrounds are cleaned up
+    this._unregisterBackgroundModules();
   }
 
   /**
@@ -449,10 +470,14 @@ export class UltraCard extends LitElement {
         Object.defineProperty(this.config, '__ucInstanceId', {
           value: cardInstanceId,
           enumerable: false,
+          configurable: true,
+          writable: true,
         });
         Object.defineProperty(this.config, '__ucIsEditorPreview', {
           value: this._isEditorPreviewCard,
           enumerable: false,
+          configurable: true,
+          writable: true,
         });
       } catch {}
 
@@ -493,6 +518,41 @@ export class UltraCard extends LitElement {
       }
     } catch {}
     return false;
+  }
+
+  private _syncConfigMetadata(): void {
+    if (!this.config) return;
+    try {
+      Object.defineProperty(this.config, '__ucInstanceId', {
+        value: this._instanceId,
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      });
+      Object.defineProperty(this.config, '__ucIsEditorPreview', {
+        value: this._isEditorPreviewCard,
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      });
+    } catch {
+      try {
+        (this.config as any).__ucInstanceId = this._instanceId;
+        (this.config as any).__ucIsEditorPreview = this._isEditorPreviewCard;
+      } catch {}
+    }
+  }
+
+  private _applyInstanceIdToDataset(): void {
+    if (!this._instanceId) return;
+    try {
+      (this as any).dataset = (this as any).dataset || {};
+      (this as any).dataset.ucInstanceId = this._instanceId;
+    } catch {}
+  }
+
+  private _generatePreviewInstanceId(): string {
+    return `uc-preview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
   // Tell Home Assistant this card has a visual editor
@@ -562,7 +622,7 @@ export class UltraCard extends LitElement {
       `;
     }
 
-    // Check if card only contains video_bg modules (which should be invisible on dashboard)
+    // Check if card only contains video_bg, dynamic_weather or popup modules
     const allModules: CardModule[] = [];
     this.config.layout.rows.forEach(row => {
       row.columns?.forEach(column => {
@@ -572,15 +632,48 @@ export class UltraCard extends LitElement {
       });
     });
 
-    const onlyVideoBgModules =
-      allModules.length > 0 && allModules.every(m => m.type === 'video_bg');
+    // Modules that render view-wide effects or are invisible on the dashboard
+    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background'];
+    const onlyInvisibleModules =
+      allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
+
+    const onlyPopupModules =
+      allModules.length > 0 && allModules.every(m => m.type === 'popup');
 
     // Check if we're in the card editor (not just dashboard edit mode)
     const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
 
-    // If only video_bg modules and NOT in card editor, don't render the card container (invisible)
-    if (onlyVideoBgModules && !isInCardEditor) {
+    // Check if the dashboard itself is in edit mode
+    const isDashboardEditMode = (() => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('edit') === '1';
+      } catch {
+        return false;
+      }
+    })();
+
+    // If only invisible modules (video_bg, dynamic_weather) and NOT in card editor AND NOT in dashboard edit mode, don't render anything
+    if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
       return html``;
+    }
+
+    // If only popup modules and NOT in card editor, render without card-container wrapper
+    // Popups need to render their triggers, but still need the card background styling
+    if (onlyPopupModules && !isInCardEditor) {
+      return html`
+        <div style="${cardStyle}">
+          ${this.config.layout.rows.map(row => this._renderRow(row))}
+        </div>
+      `;
+    }
+
+    // Register weather modules after render to catch immediate changes
+    // Use requestAnimationFrame to avoid performance issues
+    if (this.config && this.hass && this._instanceId) {
+      requestAnimationFrame(() => {
+        this._registerDynamicWeatherModules();
+      });
     }
 
     return html`
@@ -599,6 +692,18 @@ export class UltraCard extends LitElement {
 
       // Re-register video background modules when config changes
       this._registerVideoBgModules();
+
+    // Re-register dynamic weather modules when config changes
+    this._registerDynamicWeatherModules();
+
+    // Re-register background modules when config changes
+    this._registerBackgroundModules();
+    }
+
+    // Also re-register weather modules when hass changes (for automatic mode updates)
+    if (changedProperties.has('hass')) {
+      this._registerDynamicWeatherModules();
+      this._registerBackgroundModules();
     }
 
     // Only check scaling when config or hass changes (not on every render) and feature is enabled
@@ -825,7 +930,6 @@ export class UltraCard extends LitElement {
       const cardContainer = this.shadowRoot?.querySelector('.card-container') as HTMLElement;
 
       if (!cardContainer) {
-        console.log('Ultra Card: No card-container found to apply transparency');
         return;
       }
 
@@ -2153,6 +2257,97 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Register all dynamic weather modules with the dynamic weather service
+   */
+  private _registerDynamicWeatherModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    // Find all dynamic_weather modules in the configuration
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'dynamic_weather') {
+            ucDynamicWeatherService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any,
+              this._isEditorPreviewCard
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all dynamic weather modules from the dynamic weather service
+   */
+  private _unregisterDynamicWeatherModules(): void {
+    if (!this.config || !this._instanceId) return;
+
+    // Find all dynamic_weather modules and unregister them
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'dynamic_weather') {
+            ucDynamicWeatherService.unregisterModule(
+              this._instanceId!,
+              module.id,
+              this._isEditorPreviewCard
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Register all background modules with the background service
+   */
+  private _registerBackgroundModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    // Find all background modules in the configuration
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'background') {
+            ucBackgroundService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all background modules from the background service
+   */
+  private _unregisterBackgroundModules(): void {
+    if (!this.config || !this._instanceId) return;
+
+    // Find all background modules and unregister them
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'background') {
+            ucBackgroundService.unregisterModule(this._instanceId!, module.id);
+          }
+        });
+      });
+    });
+  }
+
+  /**
    * Inject a <style> block containing the combined styles from every registered
    * module into the card's shadow-root. This is required for features such as
    * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
@@ -3010,6 +3205,87 @@ export class UltraCard extends LitElement {
           transform: rotate(200deg);
           opacity: 0;
         }
+      }
+
+      /* Popup Module Styles */
+      .ultra-popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 8000;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+
+      /* Ensure popup appears above HA edit outlines in preview contexts */
+      ha-preview .ultra-popup-overlay,
+      .live-preview .ultra-popup-overlay,
+      [data-preview-context="ha-preview"] .ultra-popup-overlay,
+      [data-preview-context="live"] .ultra-popup-overlay {
+        z-index: 2147483647 !important;
+      }
+
+      .ultra-popup-container {
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .ultra-popup-close-button {
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        user-select: none;
+      }
+
+      .ultra-popup-close-button:hover {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+
+      /* Popup Layout Variations */
+      .ultra-popup-layout-full_screen {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+      }
+
+      .ultra-popup-layout-left_panel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        max-height: 100vh;
+      }
+
+      .ultra-popup-layout-right_panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100vh;
+        max-height: 100vh;
+      }
+
+      .ultra-popup-layout-top_panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        max-width: 100vw;
+      }
+
+      .ultra-popup-layout-bottom_panel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        max-width: 100vw;
       }
 
       /* Container queries for responsive behavior in sections view */

@@ -184,7 +184,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
             (forecastModule.hold_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (forecastModule as any).entity,
+            forecastModule
           );
         }
       }, 500);
@@ -220,7 +222,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
             (forecastModule.double_tap_action as any) || ({ action: 'default' } as any),
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (forecastModule as any).entity,
+            forecastModule
           );
         }
       } else {
@@ -235,7 +239,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
               (forecastModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
-              config
+              config,
+              (forecastModule as any).entity,
+              forecastModule
             );
           }
         }, 300);

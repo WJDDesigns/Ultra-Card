@@ -422,7 +422,6 @@ export class DirectoriesProPresetsAPI {
         } catch (retryError) {
           // If still failing after clearing all preset cache, localStorage is likely full from other data
           // Disable localStorage caching for this session and rely on memory cache only
-          console.info('localStorage is full. Using memory cache only. Preset loading will continue to work normally.');
           this.localStorageDisabled = true;
           
           // Clear all preset cache entries one more time to free up what we can

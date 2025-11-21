@@ -1048,7 +1048,9 @@ export class UltraTextModule extends BaseUltraModule {
         textModule.tap_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (textModule as any).entity,
+        textModule
       );
     }
   }
@@ -1068,7 +1070,9 @@ export class UltraTextModule extends BaseUltraModule {
         textModule.double_tap_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (textModule as any).entity,
+        textModule
       );
     }
   }
@@ -1088,7 +1092,9 @@ export class UltraTextModule extends BaseUltraModule {
         textModule.hold_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (textModule as any).entity,
+        textModule
       );
     }
   }

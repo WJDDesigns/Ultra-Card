@@ -102,7 +102,9 @@
       "redo": "Redo",
       "redo_tooltip": "Redo last undone change (Ctrl+Y)",
       "pin_preview": "Pin preview (keep in view)",
-      "unpin_preview": "Unpin preview (scroll with content)"
+      "unpin_preview": "Unpin preview (scroll with content)",
+      "accordion_module": "Accordion",
+      "popup_module": "Popup"
     },
     "about": {
       "developed_by": "Ontwikkeld door",
@@ -1278,7 +1280,10 @@
       "space_between": "Ruimte tussen",
       "state": "Status",
       "stretch": "Uitrekken",
-      "top": "Boven"
+      "top": "Boven",
+      "custom_text": "Custom Text",
+      "entity_state": "Entity State",
+      "apart": "Apart"
     },
     "horizontal": {
       "alignment": {
@@ -1878,6 +1883,178 @@
       "summary": "{mapped} mapped, {unmapped} unmapped of {total} total",
       "suggestions": "Suggestions",
       "no_entities": "No entities found"
+    },
+    "popup": {
+      "trigger": {
+        "section_title": "Trigger Configuration",
+        "section_desc": "Configure how the popup is triggered to open",
+        "type": "Trigger Type",
+        "type_desc": "Choose how the popup will be opened",
+        "button": "Button",
+        "image": "Image",
+        "icon": "Trigger Icon",
+        "page_load": "Page Load",
+        "logic": "Logic Conditions",
+        "button_config": "Button Configuration",
+        "button_text": "Button Text",
+        "button_text_desc": "Text to display on the trigger button",
+        "button_icon": "Button Icon",
+        "button_icon_desc": "Icon to display on the trigger button",
+        "image_config": "Image Configuration",
+        "image_url": "Image URL",
+        "image_url_desc": "URL of the image to use as the trigger",
+        "icon_config": "Icon Configuration",
+        "icon_desc": "Icon to display as the trigger",
+        "logic_config": "Logic Configuration",
+        "button_full_width": "Full Width",
+        "button_full_width_desc": "Make the button span the full width of the container",
+        "image_full_width": "Full Width",
+        "image_full_width_desc": "Make the image span the full width of the container",
+        "alignment_section": "Trigger Alignment",
+        "alignment_desc": "Choose how the trigger element is aligned",
+        "alignment": "Alignment",
+        "alignment_help": "Align the trigger element to the left, center, or right",
+        "image_type": "Image Type",
+        "image_type_desc": "Choose how to provide the image for the trigger",
+        "no_image": "No image configured"
+      },
+      "title": {
+        "section_title": "Title Configuration",
+        "section_desc": "Configure whether to show a title bar in the popup",
+        "show": "Show Title",
+        "show_desc": "Display a title bar at the top of the popup",
+        "configuration": "Title Configuration",
+        "mode": "Title Mode",
+        "mode_desc": "Choose whether to use custom text or entity state as title",
+        "text": "Title Text",
+        "text_desc": "Enter the custom text to display in the popup title",
+        "entity": "Title Entity",
+        "entity_desc": "Select an entity whose state will be used as the title",
+        "show_entity_name": "Show Entity Name",
+        "show_entity_name_desc": "Display the entity friendly name before the state value"
+      },
+      "layout": {
+        "section_title": "Layout Settings",
+        "section_desc": "Configure how the popup is displayed on screen",
+        "type": "Layout",
+        "type_desc": "Choose the layout style for the popup",
+        "default": "Default",
+        "full_screen": "Full Screen",
+        "left_panel": "Left Panel",
+        "right_panel": "Right Panel",
+        "top_panel": "Top Panel",
+        "bottom_panel": "Bottom Panel"
+      },
+      "animation": {
+        "type": "Animation",
+        "type_desc": "Choose the animation style when the popup opens",
+        "fade": "Fade",
+        "scale_up": "Scale Up",
+        "scale_down": "Scale Down",
+        "slide_top": "Slide from Top",
+        "slide_left": "Slide from Left",
+        "slide_right": "Slide from Right",
+        "slide_bottom": "Slide from Bottom"
+      },
+      "popup_width": "Popup Width",
+      "popup_width_desc": "Width of the popup (e.g., 600px, 100%, 14rem, 10vw)",
+      "popup_padding": "Popup Padding",
+      "popup_padding_desc": "Padding inside the popup (e.g., 5%, 20px, 1rem, 2vw)",
+      "popup_border_radius": "Popup Border Radius",
+      "popup_border_radius_desc": "Border radius of the popup (e.g., 5px, 50%, 0.3em, 12px 0)",
+      "close_button": {
+        "section_title": "Close Button",
+        "section_desc": "Configure the close button position and behavior",
+        "position": "Close Button Position",
+        "position_desc": "Choose where the close button appears",
+        "outside": "Outside the Popup",
+        "inside": "Inside the Popup",
+        "none": "None"
+      },
+      "state": {
+        "section_title": "Default State",
+        "section_desc": "Configure whether this popup starts open or closed when the card loads",
+        "default_open": "Open by Default",
+        "default_open_desc": "When enabled, the popup will be open when the card initially loads"
+      },
+      "trigger_logic": {
+        "section_title": "Trigger Logic",
+        "section_desc": "Control when this popup automatically opens based on conditions",
+        "mode_title": "Popup State Control",
+        "mode_desc": "Choose how the popup state is controlled",
+        "mode_manual": "Manual",
+        "mode_always": "Always Open",
+        "mode_every": "Open if EVERY condition is met",
+        "mode_any": "Open if ANY condition is met",
+        "auto_close": "Auto Close",
+        "auto_close_desc": "Automatically close popup when conditions become false",
+        "conditions": "Conditions",
+        "add_condition": "Add Condition",
+        "no_conditions": "No conditions added yet. Click \"Add Condition\" to get started.",
+        "always_note": "Popup will always remain open. Users can still manually close it, but it will reopen automatically.",
+        "manual_note": "Popup state is controlled manually by user interaction. Set Default State above to choose initial state.",
+        "custom_name": "Custom Name",
+        "custom_name_desc": "Optional: Give this condition a custom name",
+        "condition_type": "Condition Type",
+        "type_entity_state": "Entity State",
+        "type_entity_attribute": "Entity Attribute",
+        "type_time": "Time Range",
+        "type_template": "Template",
+        "entity": "Entity",
+        "operator": "Operator",
+        "value": "Value",
+        "attribute": "Attribute",
+        "time_from": "From",
+        "time_to": "To",
+        "template": "Template",
+        "template_desc": "Jinja2 template that should evaluate to true/false to open the popup"
+      },
+      "design": {
+        "trigger_button": "Trigger Button Styling",
+        "trigger_button_desc": "Customize the appearance of the trigger button",
+        "title": "Title Styling",
+        "title_desc": "Customize the appearance of the popup title bar",
+        "title_bg": "Title Background",
+        "title_text": "Title Text",
+        "content": "Popup Content Styling",
+        "content_desc": "Customize the appearance of the popup content area",
+        "popup_bg": "Popup Background",
+        "popup_text": "Popup Text",
+        "overlay": "Background Overlay",
+        "overlay_desc": "Customize the backdrop behind the popup",
+        "overlay_bg": "Background Overlay",
+        "close_button": "Close Button Styling",
+        "close_button_desc": "Customize the appearance of the close button",
+        "close_button_color": "Close Button",
+        "close_button_size": "Close Button Size",
+        "close_button_size_desc": "Size of the close button icon (in pixels)",
+        "close_button_icon": "Close Button Icon",
+        "close_button_icon_desc": "Icon to display on the close button",
+        "close_button_offset_x": "Horizontal Offset",
+        "close_button_offset_x_desc": "Horizontal position adjustment (e.g., 10px, 1rem)",
+        "close_button_offset_y": "Vertical Offset",
+        "close_button_offset_y_desc": "Vertical position adjustment (e.g., 10px, 1rem)",
+        "general_title": "General Trigger Design"
+      },
+      "preview": {
+        "no_modules": "No modules added. Add modules to this popup in the Layout tab."
+      },
+      "auto_close_timer": {
+        "section_title": "Auto-Close Timer",
+        "section_desc": "Configure automatic popup closing after a specified time",
+        "enabled": "Enable Auto-Close Timer",
+        "enabled_desc": "Automatically close the popup after a specified time",
+        "configuration": "Timer Configuration",
+        "seconds": "Close After (Seconds)",
+        "seconds_desc": "Number of seconds before the popup automatically closes"
+      },
+      "edit_page_notice": {
+        "title": "Preview Only",
+        "message": "This popup module will not appear on your dashboard, only in your edit screen. Popups triggered by logic conditions, page load, or auto-close timers are disabled during editing."
+      },
+      "edit_overlay": {
+        "message": "Edit this module to see preview"
+      }
     }
   }
 }

@@ -24,6 +24,7 @@ export * from './animated-clock-module';
 export * from './animated-weather-module';
 export * from './animated-forecast-module';
 export * from './external-card-module';
+export * from './background-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

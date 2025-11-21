@@ -4503,7 +4503,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         hass,
         event.target as HTMLElement,
         config,
-        (module as any).entity
+        (module as any).entity,
+        module
       );
     }
   }
@@ -4520,7 +4521,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         hass,
         event.target as HTMLElement,
         config,
-        (module as any).entity
+        (module as any).entity,
+        module
       );
     }
   }
@@ -4537,7 +4539,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         hass,
         event.target as HTMLElement,
         config,
-        (module as any).entity
+        (module as any).entity,
+        module
       );
     }
   }

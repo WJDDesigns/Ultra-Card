@@ -2524,13 +2524,13 @@ export class UltraInfoModule extends BaseUltraModule {
                       ? `border-radius: ${this.addPixelUnit(designProperties.border_radius) || '0px'};`
                       : ''}
                   "
-                    @click=${(e: Event) => this.handleClick(e, infoModule, hass)}
-                    @dblclick=${(e: Event) => this.handleDoubleClick(e, infoModule, hass)}
-                    @mousedown=${(e: Event) => this.handleMouseDown(e, infoModule, hass)}
+                    @click=${(e: Event) => this.handleClick(e, infoModule, hass, config)}
+                    @dblclick=${(e: Event) => this.handleDoubleClick(e, infoModule, hass, config)}
+                    @mousedown=${(e: Event) => this.handleMouseDown(e, infoModule, hass, config)}
                     @mouseup=${(e: Event) => this.handleMouseUp(e, infoModule, hass)}
                     @mouseleave=${(e: Event) => this.handleMouseLeave(e, infoModule, hass)}
-                    @touchstart=${(e: Event) => this.handleTouchStart(e, infoModule, hass)}
-                    @touchend=${(e: Event) => this.handleTouchEnd(e, infoModule, hass)}
+                    @touchstart=${(e: Event) => this.handleTouchStart(e, infoModule, hass, config)}
+                    @touchend=${(e: Event) => this.handleTouchEnd(e, infoModule, hass, config)}
                   >
                     ${iconPosition === 'left' || iconPosition === 'top'
                       ? html`${iconElement}${contentElement}`
@@ -3138,7 +3138,12 @@ export class UltraInfoModule extends BaseUltraModule {
     this.startHold(event, infoModule, hass, config);
   }
 
-  private handleTouchEnd(event: Event, infoModule: InfoModule, hass: HomeAssistant): void {
+  private handleTouchEnd(
+    event: Event,
+    infoModule: InfoModule,
+    hass: HomeAssistant,
+    config?: UltraCardConfig
+  ): void {
     this.endHold(event, infoModule, hass);
   }
 
@@ -3163,57 +3168,60 @@ export class UltraInfoModule extends BaseUltraModule {
     this.isHolding = false;
   }
 
-  private handleTapAction(
+  private async handleTapAction(
     event: Event,
     infoModule: InfoModule,
     hass: HomeAssistant,
     config?: UltraCardConfig
-  ): void {
+  ): Promise<void> {
     // Don't trigger tap action if we're in the middle of a hold
     if (this.isHolding) return;
 
     // Execute on Default (undefined) or any action except 'nothing'
     if (!infoModule.tap_action || infoModule.tap_action.action !== 'nothing') {
-      UltraLinkComponent.handleAction(
+      await UltraLinkComponent.handleAction(
         (infoModule.tap_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
         config,
-        (infoModule as any).entity
+        (infoModule as any).entity,
+        infoModule
       );
     }
   }
 
-  private handleDoubleAction(
+  private async handleDoubleAction(
     event: Event,
     infoModule: InfoModule,
     hass: HomeAssistant,
     config?: UltraCardConfig
-  ): void {
+  ): Promise<void> {
     if (!infoModule.double_tap_action || infoModule.double_tap_action.action !== 'nothing') {
-      UltraLinkComponent.handleAction(
+      await UltraLinkComponent.handleAction(
         (infoModule.double_tap_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
         config,
-        (infoModule as any).entity
+        (infoModule as any).entity,
+        infoModule
       );
     }
   }
 
-  private handleHoldAction(
+  private async handleHoldAction(
     event: Event,
     infoModule: InfoModule,
     hass: HomeAssistant,
     config?: UltraCardConfig
-  ): void {
+  ): Promise<void> {
     if (!infoModule.hold_action || infoModule.hold_action.action !== 'nothing') {
-      UltraLinkComponent.handleAction(
+      await UltraLinkComponent.handleAction(
         (infoModule.hold_action as any) || ({ action: 'default' } as any),
         hass,
         event.target as HTMLElement,
         config,
-        (infoModule as any).entity
+        (infoModule as any).entity,
+        infoModule
       );
     }
   }
