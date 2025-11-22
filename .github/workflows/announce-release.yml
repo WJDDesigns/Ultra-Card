@@ -35,10 +35,8 @@ jobs:
           echo "is_prerelease=$IS_PRE" >> $GITHUB_OUTPUT
           echo "version=$VERSION_NUM" >> $GITHUB_OUTPUT
 
-          # Handle multiline body content properly
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Base64 encode body to avoid shell expansion issues with backticks
+          echo "$BODY" | base64 -w 0 > body_b64.txt
 
       - name: Extract custom release notes
         id: custom_notes
@@ -84,22 +82,6 @@ jobs:
             NAME="Release $TAG"
           fi
 
-          if [ "${{ steps.custom_notes.outputs.has_custom }}" = "true" ]; then
-            # Read base64 from workspace file and decode to avoid shell expansion issues
-            if [ -f notes_b64.txt ]; then
-              DESCRIPTION=$(cat notes_b64.txt | base64 -d)
-              rm -f notes_b64.txt
-            else
-              DESCRIPTION="Release notes available"
-            fi
-          else
-            # For GitHub release body, use as-is (GitHub API already handles it)
-            DESCRIPTION="${{ steps.release_info.outputs.body }}"
-          fi
-
-          # Truncate description
-          DESCRIPTION=$(echo "$DESCRIPTION" | head -c 1900)
-
           # Set color based on release type
           if [ "$IS_PRE" = "true" ]; then
             COLOR=11141290
@@ -109,14 +91,33 @@ jobs:
             TYPE="Release"
           fi
 
-          # Create Discord payload
+          # Prepare description - read from file to avoid shell expansion issues
+          if [ "${{ steps.custom_notes.outputs.has_custom }}" = "true" ]; then
+            # Decode base64 and truncate, saving to file for jq to read
+            if [ -f notes_b64.txt ]; then
+              cat notes_b64.txt | base64 -d | head -c 1900 > description.txt
+              rm -f notes_b64.txt
+            else
+              echo "Release notes available" > description.txt
+            fi
+          else
+            # For GitHub release body, decode from base64 file
+            if [ -f body_b64.txt ]; then
+              cat body_b64.txt | base64 -d | head -c 1900 > description.txt
+              rm -f body_b64.txt
+            else
+              echo "Release notes available" > description.txt
+            fi
+          fi
+
+          # Create Discord payload - read description from file to avoid shell expansion
           PAYLOAD=$(jq -n \
             --arg title "$NAME" \
             --arg url "https://github.com/${{ github.repository }}/releases/tag/$TAG" \
-            --arg desc "$DESCRIPTION" \
             --arg tag "$TAG" \
             --arg type "$TYPE" \
             --argjson color $COLOR \
+            --rawfile desc description.txt \
             '{
               "username": "UpdateBot",
               "avatar_url": "https://raw.githubusercontent.com/${{ github.repository }}/main/Ultra.jpg",
@@ -133,6 +134,8 @@ jobs:
                 ]
               }]
             }')
+          
+          rm -f description.txt
 
           # Send to Discord
           curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK"
