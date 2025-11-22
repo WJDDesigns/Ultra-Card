@@ -440,9 +440,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const hoverEffect = (horizontalModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
-    // Extract custom targeting properties
-    const extraClass = (horizontalModule as any).design?.extra_class || '';
-    const elementId = (horizontalModule as any).design?.element_id || '';
+    // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (horizontalModule as any).design?.css_variable_prefix;
 
     // Apply CSS variables if prefix is provided (allows Shadow DOM override)
@@ -460,8 +458,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         style="${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
       >
         <div
-          class="horizontal-preview-content ${hoverEffectClass} ${extraClass}"
-          id="${elementId || ''}"
+          class="horizontal-preview-content ${hoverEffectClass}"
           style="${this.styleObjectToCss(
             containerStyles
           )}; cursor: ${(horizontalModule.tap_action &&

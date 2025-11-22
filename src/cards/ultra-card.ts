@@ -1214,14 +1214,9 @@ export class UltraCard extends LitElement {
       row.design?.background_filter && row.design.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
-    // Extract custom targeting properties
-    const extraClass = row.design?.extra_class || '';
-    const elementId = row.design?.element_id || '';
-
     const rowContent = html`
       <div 
-        class="card-row ${hoverEffectClass} ${filterClass} ${extraClass}"
-        id=${elementId || nothing}
+        class="card-row ${hoverEffectClass} ${filterClass}"
         style=${rowStyles}
       >
         ${row.columns.map(column => this._renderColumn(column))}
@@ -1353,14 +1348,9 @@ export class UltraCard extends LitElement {
       column.design?.background_filter && column.design.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
-    // Extract custom targeting properties
-    const extraClass = column.design?.extra_class || '';
-    const elementId = column.design?.element_id || '';
-
     const columnContent = html`
       <div 
-        class="card-column ${hoverEffectClass} ${filterClass} ${extraClass}"
-        id=${elementId || nothing}
+        class="card-column ${hoverEffectClass} ${filterClass}"
         style=${columnStyles}
       >
         ${column.modules.map(module => this._renderModule(module))}
@@ -1556,9 +1546,7 @@ export class UltraCard extends LitElement {
       }
     );
 
-    // Extract custom targeting properties
-    const extraClass = (module as any).design?.extra_class || '';
-    const elementId = (module as any).design?.element_id || '';
+    // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (module as any).design?.css_variable_prefix;
 
     // Generate CSS variables for Shadow DOM styling
@@ -1570,8 +1558,7 @@ export class UltraCard extends LitElement {
     if (shouldShowProOverlay) {
       return html`
         <div
-          class="pro-module-locked ${extraClass}"
-          id=${elementId || nothing}
+          class="pro-module-locked"
           style=${cssVarStyles}
           @contextmenu=${(e: Event) => {
             e.preventDefault();
@@ -1607,7 +1594,7 @@ export class UltraCard extends LitElement {
     }
 
     // Return module content without forcing DOM replacement
-    return html`<div class="uc-module-wrap ${extraClass}" id=${elementId || nothing} style=${cssVarStyles}>${moduleContent}</div>`;
+    return html`<div class="uc-module-wrap" style=${cssVarStyles}>${moduleContent}</div>`;
   }
 
   private _parseAnimationDuration(duration: string): number {

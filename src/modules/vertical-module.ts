@@ -358,9 +358,7 @@ export class UltraVerticalModule extends BaseUltraModule {
       }
     };
 
-    // Extract custom targeting properties
-    const extraClass = (verticalModule as any).design?.extra_class || '';
-    const elementId = (verticalModule as any).design?.element_id || '';
+    // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (verticalModule as any).design?.css_variable_prefix;
 
     // Apply CSS variables if prefix is provided (allows Shadow DOM override)
@@ -372,8 +370,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     return html`
       <div class="vertical-module-preview">
         <div
-          class="vertical-preview-content ${extraClass}"
-          id="${elementId || ''}"
+          class="vertical-preview-content"
           style="${this.styleObjectToCss(containerStyles)}; cursor: ${(verticalModule.tap_action &&
             verticalModule.tap_action.action !== 'nothing') ||
           (verticalModule.hold_action && verticalModule.hold_action.action !== 'nothing') ||

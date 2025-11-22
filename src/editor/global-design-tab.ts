@@ -1133,11 +1133,7 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.animation_timing)
         );
       case 'custom_targeting':
-        return !!(
-          hasValue(props.extra_class) ||
-          hasValue(props.element_id) ||
-          hasValue(props.css_variable_prefix)
-        );
+        return !!hasValue(props.css_variable_prefix);
       default:
         return false;
     }
@@ -3445,48 +3441,6 @@ export class GlobalDesignTab extends LitElement {
         ${this._renderAccordion(
           localize('editor.design.custom_targeting_section', lang, 'Custom Targeting'),
           html`
-            <div class="property-group">
-              <label
-                >${localize('editor.design.extra_class', lang, 'Extra Class')}:</label
-              >
-              <input
-                type="text"
-                .value=${this.designProperties.extra_class || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('extra_class', (e.target as HTMLInputElement).value)}
-                placeholder="my-custom-class another-class"
-                class="property-input"
-              />
-              <div class="field-description">
-                ${localize(
-                  'editor.design.extra_class_desc',
-                  lang,
-                  'Add custom CSS class names (space-separated) to target this element with custom styles.'
-                )}
-              </div>
-            </div>
-
-            <div class="property-group">
-              <label
-                >${localize('editor.design.element_id', lang, 'Element ID')}:</label
-              >
-              <input
-                type="text"
-                .value=${this.designProperties.element_id || ''}
-                @input=${(e: Event) =>
-                  this._updateProperty('element_id', (e.target as HTMLInputElement).value)}
-                placeholder="my-unique-element-id"
-                class="property-input"
-              />
-              <div class="field-description">
-                ${localize(
-                  'editor.design.element_id_desc',
-                  lang,
-                  'Add a unique HTML ID to target this specific element with custom styles or scripts.'
-                )}
-              </div>
-            </div>
-
             <div class="property-group">
               <label
                 >${localize('editor.design.css_var_prefix', lang, 'CSS Variable Prefix')}:</label
