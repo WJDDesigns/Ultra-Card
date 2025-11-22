@@ -19,12 +19,12 @@ jobs:
             RELEASE_DATA=$(curl -s -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/releases" | jq '.[0]')
             TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
             NAME=$(echo "$RELEASE_DATA" | jq -r '.name // ""')
-            BODY=$(echo "$RELEASE_DATA" | jq -r '.body // ""')
+            BODY=$(echo "$RELEASE_DATA" | jq -r '.body // "" | @base64')
             IS_PRE=$(echo "$RELEASE_DATA" | jq -r '.prerelease')
           else
             TAG=$(jq -r '.release.tag_name' "$GITHUB_EVENT_PATH")
             NAME=$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")
-            BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
+            BODY=$(jq -r '.release.body // "" | @base64' "$GITHUB_EVENT_PATH")
             IS_PRE=$(jq -r '.release.prerelease' "$GITHUB_EVENT_PATH")
           fi
 
@@ -35,8 +35,8 @@ jobs:
           echo "is_prerelease=$IS_PRE" >> $GITHUB_OUTPUT
           echo "version=$VERSION_NUM" >> $GITHUB_OUTPUT
 
-          # Base64 encode body to avoid shell expansion issues with backticks
-          echo "$BODY" | base64 -w 0 > body_b64.txt
+          # BODY is already base64 encoded by jq, save directly to file
+          echo "$BODY" > body_b64.txt
 
       - name: Extract custom release notes
         id: custom_notes
