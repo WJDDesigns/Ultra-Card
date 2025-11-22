@@ -54,9 +54,9 @@ jobs:
             if [ -s temp_notes.txt ]; then
               echo "Found custom release notes"
               echo "has_custom=true" >> $GITHUB_OUTPUT
-              echo "NOTES<<EOF" >> $GITHUB_OUTPUT
-              cat temp_notes.txt >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
+              # Base64 encode to avoid shell expansion issues with backticks
+              NOTES_B64=$(cat temp_notes.txt | base64 -w 0)
+              echo "NOTES_B64=$NOTES_B64" >> $GITHUB_OUTPUT
             else
               echo "No custom notes found"
               echo "has_custom=false" >> $GITHUB_OUTPUT
@@ -86,8 +86,10 @@ jobs:
           fi
 
           if [ "${{ steps.custom_notes.outputs.has_custom }}" = "true" ]; then
-            DESCRIPTION="${{ steps.custom_notes.outputs.NOTES }}"
+            # Decode base64 to get the original content with backticks preserved
+            DESCRIPTION=$(echo "${{ steps.custom_notes.outputs.NOTES_B64 }}" | base64 -d)
           else
+            # For GitHub release body, use as-is (GitHub API already handles it)
             DESCRIPTION="${{ steps.release_info.outputs.body }}"
           fi
 
