@@ -9,7 +9,7 @@
 ### 🚀 Improvements
 
 - **Improved dropdown behavior** - Enhanced dropdown module to ensure only one dropdown can be open at a time across all instances, preventing UI conflicts and improving user experience.
-- **Improved CSS for Card Mod targeting** - Enhanced CSS variable generation system with better prefix support and more comprehensive variable coverage. All design properties now generate CSS custom properties (e.g., `--my-row-bg-color`, `--my-row-text-color`) that can be easily overridden using card-mod, making it easier to style Ultra Cards from external CSS.
+- **Improved CSS for Card Mod targeting** - Enhanced CSS variable generation system with better prefix support and more comprehensive variable coverage. All design properties now generate CSS custom properties (e.g., --my-row-bg-color, --my-row-text-color) that can be easily overridden using card-mod, making it easier to style Ultra Cards from external CSS.
 - **Exporting allows for glyphs** - Enhanced export functionality to properly preserve Unicode characters including empty character glyphs (zero-width spaces, non-breaking spaces, etc.) during clipboard and file export operations.
 
 ### 🐛 Bug Fixes
