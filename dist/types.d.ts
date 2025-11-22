@@ -1968,6 +1968,9 @@ export interface SharedDesignProperties {
     logic_attribute?: string;
     logic_operator?: '=' | '!=' | '>' | '>=' | '<' | '<=' | 'contains' | 'not_contains' | 'has_value' | 'no_value';
     logic_value?: string;
+    extra_class?: string;
+    element_id?: string;
+    css_variable_prefix?: string;
 }
 export interface CardColumn {
     id: string;

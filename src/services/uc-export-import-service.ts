@@ -113,7 +113,8 @@ class UcExportImportService {
 
       let jsonData: string;
       try {
-        jsonData = atob(encodedData);
+        // Use proper Unicode-aware decoding to preserve empty character glyphs
+        jsonData = this._decodeFromBase64(encodedData);
       } catch (decodeError) {
         throw new Error('Invalid base64 encoding in shortcode');
       }
@@ -257,11 +258,68 @@ class UcExportImportService {
   }
 
   /**
+   * Encode a Unicode string to base64, properly handling all Unicode characters
+   * including empty character glyphs (zero-width spaces, non-breaking spaces, etc.)
+   */
+  private _encodeToBase64(str: string): string {
+    try {
+      // Use TextEncoder to properly handle Unicode characters
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(str);
+      // Convert bytes to binary string for btoa
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    } catch (error) {
+      // Fallback: use encodeURIComponent if TextEncoder fails
+      console.warn('TextEncoder failed, using fallback encoding:', error);
+      return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      }));
+    }
+  }
+
+  /**
+   * Decode base64 string back to Unicode, properly handling all Unicode characters
+   */
+  private _decodeFromBase64(str: string): string {
+    try {
+      // Decode base64 to binary string
+      const binary = atob(str);
+      // Convert binary string to bytes
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      // Use TextDecoder to properly decode Unicode
+      const decoder = new TextDecoder();
+      return decoder.decode(bytes);
+    } catch (error) {
+      // Fallback: use decodeURIComponent if TextDecoder fails
+      console.warn('TextDecoder failed, using fallback decoding:', error);
+      try {
+        const binary = atob(str);
+        let result = '';
+        for (let i = 0; i < binary.length; i++) {
+          result += '%' + ('00' + binary.charCodeAt(i).toString(16)).slice(-2);
+        }
+        return decodeURIComponent(result);
+      } catch (fallbackError) {
+        throw new Error('Failed to decode base64 string');
+      }
+    }
+  }
+
+  /**
    * Generate Ultra Card shortcode format
    */
   private _generateShortcode(exportData: ExportData): string {
     const jsonString = JSON.stringify(exportData);
-    const encodedData = btoa(jsonString);
+    // Properly handle Unicode characters (including empty character glyphs)
+    // by encoding to UTF-8 before base64 encoding
+    const encodedData = this._encodeToBase64(jsonString);
     return `[ultra_card]${encodedData}[/ultra_card]`;
   }
 

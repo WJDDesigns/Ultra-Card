@@ -555,7 +555,9 @@ export class UltraTextModule extends BaseUltraModule {
         return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
-      color: displayColor || designProperties.color || moduleWithDesign.color || 'inherit',
+      // Color: prioritize design properties, then template color, then inherit (to allow parent CSS variables)
+      // Use 'inherit' when no explicit color is set, allowing parent row/column CSS variables to work
+      color: designProperties.color || displayColor || 'inherit',
       textAlign: chosenAlign,
       fontWeight: (() => {
         if (designProperties.font_weight) return designProperties.font_weight;

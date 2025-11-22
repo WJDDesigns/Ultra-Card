@@ -9,6 +9,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { generateCSSVariables } from '../utils/css-variable-utils';
 
 // Use the existing VerticalModule and HorizontalModule interfaces from types
 import { VerticalModule, HorizontalModule } from '../types';
@@ -357,10 +358,22 @@ export class UltraVerticalModule extends BaseUltraModule {
       }
     };
 
+    // Extract custom targeting properties
+    const extraClass = (verticalModule as any).design?.extra_class || '';
+    const elementId = (verticalModule as any).design?.element_id || '';
+    const cssVarPrefix = (verticalModule as any).design?.css_variable_prefix;
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (cssVarPrefix) {
+      const cssVars = generateCSSVariables(cssVarPrefix, (verticalModule as any).design);
+      Object.assign(containerStyles, cssVars);
+    }
+
     return html`
       <div class="vertical-module-preview">
         <div
-          class="vertical-preview-content"
+          class="vertical-preview-content ${extraClass}"
+          id="${elementId || ''}"
           style="${this.styleObjectToCss(containerStyles)}; cursor: ${(verticalModule.tap_action &&
             verticalModule.tap_action.action !== 'nothing') ||
           (verticalModule.hold_action && verticalModule.hold_action.action !== 'nothing') ||

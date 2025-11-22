@@ -6,6 +6,121 @@ import { uploadImage } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 
+// Web-safe fonts that don't require loading
+const WEB_SAFE_FONTS = [
+  { value: 'Arial, sans-serif', label: 'Arial', category: 'websafe' },
+  { value: 'Helvetica, sans-serif', label: 'Helvetica', category: 'websafe' },
+  { value: 'Times New Roman, serif', label: 'Times New Roman', category: 'websafe' },
+  { value: 'Georgia, serif', label: 'Georgia', category: 'websafe' },
+  { value: 'Verdana, sans-serif', label: 'Verdana', category: 'websafe' },
+  { value: 'Courier New, monospace', label: 'Courier New', category: 'websafe' },
+  { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS', category: 'websafe' },
+  { value: 'Impact, sans-serif', label: 'Impact', category: 'websafe' },
+  { value: 'Comic Sans MS, cursive', label: 'Comic Sans MS', category: 'websafe' },
+  { value: 'Palatino, serif', label: 'Palatino', category: 'websafe' },
+];
+
+// Popular Google Fonts (loaded dynamically from Google CDN)
+const GOOGLE_FONTS = [
+  { value: 'Roboto', label: 'Roboto', category: 'google' },
+  { value: 'Open Sans', label: 'Open Sans', category: 'google' },
+  { value: 'Lato', label: 'Lato', category: 'google' },
+  { value: 'Montserrat', label: 'Montserrat', category: 'google' },
+  { value: 'Oswald', label: 'Oswald', category: 'google' },
+  { value: 'Raleway', label: 'Raleway', category: 'google' },
+  { value: 'PT Sans', label: 'PT Sans', category: 'google' },
+  { value: 'Merriweather', label: 'Merriweather', category: 'google' },
+  { value: 'Ubuntu', label: 'Ubuntu', category: 'google' },
+  { value: 'Playfair Display', label: 'Playfair Display', category: 'google' },
+  { value: 'Poppins', label: 'Poppins', category: 'google' },
+  { value: 'Nunito', label: 'Nunito', category: 'google' },
+  { value: 'Rubik', label: 'Rubik', category: 'google' },
+  { value: 'Work Sans', label: 'Work Sans', category: 'google' },
+  { value: 'Inter', label: 'Inter', category: 'google' },
+  { value: 'Noto Sans', label: 'Noto Sans', category: 'google' },
+  { value: 'Fira Sans', label: 'Fira Sans', category: 'google' },
+  { value: 'Mukta', label: 'Mukta', category: 'google' },
+  { value: 'Quicksand', label: 'Quicksand', category: 'google' },
+  { value: 'Karla', label: 'Karla', category: 'google' },
+  { value: 'Barlow', label: 'Barlow', category: 'google' },
+  { value: 'Source Sans Pro', label: 'Source Sans Pro', category: 'google' },
+  { value: 'IBM Plex Sans', label: 'IBM Plex Sans', category: 'google' },
+  { value: 'DM Sans', label: 'DM Sans', category: 'google' },
+  { value: 'Titillium Web', label: 'Titillium Web', category: 'google' },
+  { value: 'Hind', label: 'Hind', category: 'google' },
+  { value: 'Oxygen', label: 'Oxygen', category: 'google' },
+  { value: 'Cabin', label: 'Cabin', category: 'google' },
+  { value: 'Bitter', label: 'Bitter', category: 'google' },
+  { value: 'Crimson Text', label: 'Crimson Text', category: 'google' },
+  { value: 'Libre Baskerville', label: 'Libre Baskerville', category: 'google' },
+  { value: 'Libre Franklin', label: 'Libre Franklin', category: 'google' },
+  { value: 'Noto Serif', label: 'Noto Serif', category: 'google' },
+  { value: 'Arvo', label: 'Arvo', category: 'google' },
+  { value: 'Josefin Sans', label: 'Josefin Sans', category: 'google' },
+  { value: 'Anton', label: 'Anton', category: 'google' },
+  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'google' },
+  { value: 'Dancing Script', label: 'Dancing Script', category: 'google' },
+  { value: 'Pacifico', label: 'Pacifico', category: 'google' },
+  { value: 'Lobster', label: 'Lobster', category: 'google' },
+  { value: 'Caveat', label: 'Caveat', category: 'google' },
+  { value: 'Shadows Into Light', label: 'Shadows Into Light', category: 'google' },
+  { value: 'Indie Flower', label: 'Indie Flower', category: 'google' },
+  { value: 'Cinzel', label: 'Cinzel', category: 'google' },
+  { value: 'EB Garamond', label: 'EB Garamond', category: 'google' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', category: 'google' },
+  { value: 'Abril Fatface', label: 'Abril Fatface', category: 'google' },
+  { value: 'Righteous', label: 'Righteous', category: 'google' },
+  { value: 'Satisfy', label: 'Satisfy', category: 'google' },
+  { value: 'Great Vibes', label: 'Great Vibes', category: 'google' },
+  { value: 'Permanent Marker', label: 'Permanent Marker', category: 'google' },
+  { value: 'Exo 2', label: 'Exo 2', category: 'google' },
+  { value: 'Roboto Condensed', label: 'Roboto Condensed', category: 'google' },
+  { value: 'Roboto Slab', label: 'Roboto Slab', category: 'google' },
+  { value: 'Roboto Mono', label: 'Roboto Mono', category: 'google' },
+  { value: 'PT Serif', label: 'PT Serif', category: 'google' },
+  { value: 'Slabo 27px', label: 'Slabo 27px', category: 'google' },
+  { value: 'Inconsolata', label: 'Inconsolata', category: 'google' },
+  { value: 'Source Code Pro', label: 'Source Code Pro', category: 'google' },
+  { value: 'Overpass', label: 'Overpass', category: 'google' },
+  { value: 'Alegreya', label: 'Alegreya', category: 'google' },
+  { value: 'Alegreya Sans', label: 'Alegreya Sans', category: 'google' },
+  { value: 'Zilla Slab', label: 'Zilla Slab', category: 'google' },
+  { value: 'Manrope', label: 'Manrope', category: 'google' },
+  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'google' },
+  { value: 'Heebo', label: 'Heebo', category: 'google' },
+  { value: 'Archivo', label: 'Archivo', category: 'google' },
+  { value: 'Archivo Narrow', label: 'Archivo Narrow', category: 'google' },
+  { value: 'Teko', label: 'Teko', category: 'google' },
+  { value: 'Yanone Kaffeesatz', label: 'Yanone Kaffeesatz', category: 'google' },
+  { value: 'Abel', label: 'Abel', category: 'google' },
+  { value: 'Asap', label: 'Asap', category: 'google' },
+  { value: 'Assistant', label: 'Assistant', category: 'google' },
+  { value: 'Comfortaa', label: 'Comfortaa', category: 'google' },
+  { value: 'Dosis', label: 'Dosis', category: 'google' },
+  { value: 'Fjalla One', label: 'Fjalla One', category: 'google' },
+  { value: 'Kanit', label: 'Kanit', category: 'google' },
+  { value: 'Prompt', label: 'Prompt', category: 'google' },
+  { value: 'Varela Round', label: 'Varela Round', category: 'google' },
+  { value: 'Maven Pro', label: 'Maven Pro', category: 'google' },
+  { value: 'Catamaran', label: 'Catamaran', category: 'google' },
+  { value: 'Signika', label: 'Signika', category: 'google' },
+  { value: 'ABeeZee', label: 'ABeeZee', category: 'google' },
+  { value: 'Exo', label: 'Exo', category: 'google' },
+  { value: 'Merriweather Sans', label: 'Merriweather Sans', category: 'google' },
+  { value: 'Archivo Black', label: 'Archivo Black', category: 'google' },
+  { value: 'Saira', label: 'Saira', category: 'google' },
+  { value: 'Red Hat Display', label: 'Red Hat Display', category: 'google' },
+  { value: 'Public Sans', label: 'Public Sans', category: 'google' },
+  { value: 'Spectral', label: 'Spectral', category: 'google' },
+  { value: 'Lora', label: 'Lora', category: 'google' },
+  { value: 'Noticia Text', label: 'Noticia Text', category: 'google' },
+  { value: 'Old Standard TT', label: 'Old Standard TT', category: 'google' },
+  { value: 'Cardo', label: 'Cardo', category: 'google' },
+  { value: 'Domine', label: 'Domine', category: 'google' },
+  { value: 'Crete Round', label: 'Crete Round', category: 'google' },
+  { value: 'Volkhov', label: 'Volkhov', category: 'google' },
+];
+
 export interface DesignProperties {
   color?: string;
   text_align?: 'left' | 'center' | 'right' | 'justify';
@@ -120,6 +235,9 @@ export interface DesignProperties {
     | 'ease-out'
     | 'ease-in-out'
     | 'cubic-bezier(0.25,0.1,0.25,1)';
+  extra_class?: string;
+  element_id?: string;
+  css_variable_prefix?: string;
 }
 
 @customElement('ultra-global-design-tab')
@@ -987,39 +1105,65 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.right) ||
           hasValue(props.z_index)
         );
-      case 'text-shadow':
+      case 'shadows':
         return !!(
           hasValue(props.text_shadow_h) ||
           hasValue(props.text_shadow_v) ||
           hasValue(props.text_shadow_blur) ||
-          hasValue(props.text_shadow_color)
-        );
-      case 'box-shadow':
-        return !!(
+          hasValue(props.text_shadow_color) ||
           hasValue(props.box_shadow_h) ||
           hasValue(props.box_shadow_v) ||
           hasValue(props.box_shadow_blur) ||
           hasValue(props.box_shadow_spread) ||
           hasValue(props.box_shadow_color)
         );
-      case 'overflow':
+      case 'effects':
         return !!(hasValue(props.overflow) || hasValue(props.clip_path));
       case 'animations':
         return !!(
-          (hasValue(props.animation_type) && props.animation_type !== 'none') ||
+          hasValue(props.animation_type) ||
           hasValue(props.animation_entity) ||
           hasValue(props.animation_trigger_type) ||
           hasValue(props.animation_attribute) ||
           hasValue(props.animation_state) ||
-          (hasValue(props.intro_animation) && props.intro_animation !== 'none') ||
-          (hasValue(props.outro_animation) && props.outro_animation !== 'none') ||
+          hasValue(props.intro_animation) ||
+          hasValue(props.outro_animation) ||
           hasValue(props.animation_duration) ||
           hasValue(props.animation_delay) ||
-          (hasValue(props.animation_timing) && props.animation_timing !== 'ease')
+          hasValue(props.animation_timing)
+        );
+      case 'custom_targeting':
+        return !!(
+          hasValue(props.extra_class) ||
+          hasValue(props.element_id) ||
+          hasValue(props.css_variable_prefix)
         );
       default:
         return false;
     }
+  }
+
+  private _loadGoogleFont(fontFamily?: string): void {
+    if (!fontFamily || fontFamily === '') {
+      return; // Don't load fonts for default/empty selection
+    }
+
+    // Check if it's a web-safe font (contains comma)
+    if (WEB_SAFE_FONTS.some(font => font.value === fontFamily)) {
+      return; // Don't load Google Fonts for web-safe fonts
+    }
+
+    // Check if font is already loaded
+    const existingLink = document.querySelector(`link[href*="${fontFamily.replace(/\s+/g, '+')}"]`);
+    if (existingLink) {
+      return;
+    }
+
+    // Create and append Google Fonts link
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, '+')}:wght@300;400;500;600;700&display=swap`;
+    document.head.appendChild(link);
   }
 
   private _renderAccordion(
@@ -1306,18 +1450,30 @@ export class GlobalDesignTab extends LitElement {
               <div class="input-with-reset">
                 <select
                   .value=${this.designProperties.font_family || ''}
-                  @change=${(e: Event) =>
-                    this._updateProperty('font_family', (e.target as HTMLSelectElement).value)}
+                  @change=${(e: Event) => {
+                    const value = (e.target as HTMLSelectElement).value;
+                    this._updateProperty('font_family', value);
+                    this._loadGoogleFont(value);
+                  }}
                   class="property-select"
                 >
                   <option value="">
                     ${localize('editor.design.default_option', lang, '– Default –')}
                   </option>
-                  <option value="Arial, sans-serif">Arial</option>
-                  <option value="Helvetica, sans-serif">Helvetica</option>
-                  <option value="Times New Roman, serif">Times New Roman</option>
-                  <option value="Georgia, serif">Georgia</option>
-                  <option value="Verdana, sans-serif">Verdana</option>
+                  <optgroup label="Web-safe Fonts">
+                    ${WEB_SAFE_FONTS.map(
+                      font => html`
+                        <option value="${font.value}">${font.label}</option>
+                      `
+                    )}
+                  </optgroup>
+                  <optgroup label="Google Fonts">
+                    ${GOOGLE_FONTS.map(
+                      font => html`
+                        <option value="${font.value}">${font.label}</option>
+                      `
+                    )}
+                  </optgroup>
                 </select>
                 <button
                   class="reset-btn"
@@ -1331,6 +1487,20 @@ export class GlobalDesignTab extends LitElement {
                   <ha-icon icon="mdi:refresh"></ha-icon>
                 </button>
               </div>
+              ${this.designProperties.font_family && GOOGLE_FONTS.some(font => font.value === this.designProperties.font_family)
+                ? html`
+                    <div class="google-fonts-info-box">
+                      <ha-icon icon="mdi:information-outline"></ha-icon>
+                      <span>
+                        ${localize(
+                          'editor.design.google_fonts_warning',
+                          lang,
+                          'Google Fonts load dynamically from Google\'s CDN and require an internet connection. They will not be available on local/offline installations.'
+                        )}
+                      </span>
+                    </div>
+                  `
+                : ''}
             </div>
 
             <div class="property-group">
@@ -3272,6 +3442,74 @@ export class GlobalDesignTab extends LitElement {
           `,
           'animations'
         )}
+        ${this._renderAccordion(
+          localize('editor.design.custom_targeting_section', lang, 'Custom Targeting'),
+          html`
+            <div class="property-group">
+              <label
+                >${localize('editor.design.extra_class', lang, 'Extra Class')}:</label
+              >
+              <input
+                type="text"
+                .value=${this.designProperties.extra_class || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('extra_class', (e.target as HTMLInputElement).value)}
+                placeholder="my-custom-class another-class"
+                class="property-input"
+              />
+              <div class="field-description">
+                ${localize(
+                  'editor.design.extra_class_desc',
+                  lang,
+                  'Add custom CSS class names (space-separated) to target this element with custom styles.'
+                )}
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize('editor.design.element_id', lang, 'Element ID')}:</label
+              >
+              <input
+                type="text"
+                .value=${this.designProperties.element_id || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('element_id', (e.target as HTMLInputElement).value)}
+                placeholder="my-unique-element-id"
+                class="property-input"
+              />
+              <div class="field-description">
+                ${localize(
+                  'editor.design.element_id_desc',
+                  lang,
+                  'Add a unique HTML ID to target this specific element with custom styles or scripts.'
+                )}
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label
+                >${localize('editor.design.css_var_prefix', lang, 'CSS Variable Prefix')}:</label
+              >
+              <input
+                type="text"
+                .value=${this.designProperties.css_variable_prefix || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('css_variable_prefix', (e.target as HTMLInputElement).value)}
+                placeholder="my-row"
+                class="property-input"
+              />
+              <div class="field-description">
+                ${localize(
+                  'editor.design.css_var_prefix_desc',
+                  lang,
+                  'Prefix for CSS variables (e.g., "my-row" creates --my-row-bg-color, --my-row-text-color). Override with card-mod: style: | :host { --my-row-bg-color: red; }'
+                )}
+              </div>
+            </div>
+          `,
+          'custom_targeting'
+        )}
       </div>
     `;
   }
@@ -3706,6 +3944,44 @@ export class GlobalDesignTab extends LitElement {
         .spacing-fields-desktop {
           grid-template-columns: 1fr 1fr;
           gap: 8px;
+        }
+      }
+
+      .google-fonts-info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 8px;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(var(--rgb-primary-color, 3, 169, 244), 0.1), rgba(var(--rgb-primary-color, 3, 169, 244), 0.05));
+        border-left: 3px solid var(--primary-color);
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        animation: fadeIn 0.3s ease-in-out;
+      }
+
+      .google-fonts-info-box ha-icon {
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 2px;
+        --mdc-icon-size: 20px;
+      }
+
+      .google-fonts-info-box span {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--primary-text-color);
+        opacity: 0.9;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
 

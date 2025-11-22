@@ -10,6 +10,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { generateCSSVariables } from '../utils/css-variable-utils';
 // Use the existing HorizontalModule and VerticalModule interfaces from types
 import { HorizontalModule, VerticalModule } from '../types';
 
@@ -439,6 +440,17 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const hoverEffect = (horizontalModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    // Extract custom targeting properties
+    const extraClass = (horizontalModule as any).design?.extra_class || '';
+    const elementId = (horizontalModule as any).design?.element_id || '';
+    const cssVarPrefix = (horizontalModule as any).design?.css_variable_prefix;
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (cssVarPrefix) {
+      const cssVars = generateCSSVariables(cssVarPrefix, (horizontalModule as any).design);
+      Object.assign(containerStyles, cssVars);
+    }
+
     return html`
       <style>
         ${this.getStyles()}
@@ -448,7 +460,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
         style="${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
       >
         <div
-          class="horizontal-preview-content ${hoverEffectClass}"
+          class="horizontal-preview-content ${hoverEffectClass} ${extraClass}"
+          id="${elementId || ''}"
           style="${this.styleObjectToCss(
             containerStyles
           )}; cursor: ${(horizontalModule.tap_action &&

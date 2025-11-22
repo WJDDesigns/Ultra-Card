@@ -1,5 +1,23 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta3
+
+### 🚀 New Features
+
+- **Google Font support** - Added comprehensive Google Fonts integration with 30+ popular font families. Fonts are dynamically loaded from Google CDN when selected, providing access to professional typography options throughout the card.
+
+### 🚀 Improvements
+
+- **Improved dropdown behavior** - Enhanced dropdown module to ensure only one dropdown can be open at a time across all instances, preventing UI conflicts and improving user experience.
+- **Improved CSS for Card Mod targeting** - Enhanced CSS variable generation system with better prefix support and more comprehensive variable coverage. All design properties now generate CSS custom properties (e.g., `--my-row-bg-color`, `--my-row-text-color`) that can be easily overridden using card-mod, making it easier to style Ultra Cards from external CSS.
+- **Exporting allows for glyphs** - Enhanced export functionality to properly preserve Unicode characters including empty character glyphs (zero-width spaces, non-breaking spaces, etc.) during clipboard and file export operations.
+
+### 🐛 Bug Fixes
+
+- **Fix transform origin issue in some cards** - Resolved transform origin problems that were causing incorrect scaling and rotation behavior in certain card configurations, particularly affecting cards with responsive scaling enabled.
+
+---
+
 ## Version 2.2.0-beta2
 
 ### 🚀 Improvements

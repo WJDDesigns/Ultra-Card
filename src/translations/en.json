@@ -1632,6 +1632,7 @@
       "reset_letter_spacing": "Reset letter spacing to default",
       "font": "Font",
       "reset_font": "Reset font to default",
+      "google_fonts_warning": "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations.",
       "font_weight": "Font Weight",
       "reset_font_weight": "Reset font weight to default",
       "text_transform": "Text Transform",

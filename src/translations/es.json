@@ -1320,7 +1320,8 @@
       "reset_font_weight": "Reset font weight to default",
       "reset_text_transform": "Reset text transform to default",
       "reset_font_style": "Reset font style to default",
-      "reset_white_space": "Reset white space to default"
+      "reset_white_space": "Reset white space to default",
+      "google_fonts_warning": "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations."
     },
     "modules": {
       "text": "Módulo de texto",

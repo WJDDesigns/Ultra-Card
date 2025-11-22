@@ -3649,6 +3649,10 @@ export interface SharedDesignProperties {
     | 'has_value'
     | 'no_value';
   logic_value?: string;
+  // Custom targeting properties
+  extra_class?: string;
+  element_id?: string;
+  css_variable_prefix?: string;
 }
 
 // Column interface that contains modules

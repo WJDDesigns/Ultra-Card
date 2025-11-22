@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -24,6 +24,7 @@ import { ucBackgroundService } from '../services/uc-background-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { dbg3p } from '../utils/uc-debug';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import { generateCSSVariables } from '../utils/css-variable-utils';
 import {
   ThirdPartyLimitService,
   computeCardInstanceId,
@@ -794,8 +795,8 @@ export class UltraCard extends LitElement {
   }
 
   private _isScalingEnabled(): boolean {
-    // Default ON for new/unspecified configs; allow opt-out by setting to false
-    return this.config?.responsive_scaling !== false;
+    // Responsive scaling is now opt-in; only run when explicitly enabled
+    return this.config?.responsive_scaling === true;
   }
 
   private _checkAndScaleContent() {
@@ -1213,8 +1214,16 @@ export class UltraCard extends LitElement {
       row.design?.background_filter && row.design.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
+    // Extract custom targeting properties
+    const extraClass = row.design?.extra_class || '';
+    const elementId = row.design?.element_id || '';
+
     const rowContent = html`
-      <div class="card-row ${hoverEffectClass} ${filterClass}" style=${rowStyles}>
+      <div 
+        class="card-row ${hoverEffectClass} ${filterClass} ${extraClass}"
+        id=${elementId || nothing}
+        style=${rowStyles}
+      >
         ${row.columns.map(column => this._renderColumn(column))}
       </div>
     `;
@@ -1344,8 +1353,16 @@ export class UltraCard extends LitElement {
       column.design?.background_filter && column.design.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
+    // Extract custom targeting properties
+    const extraClass = column.design?.extra_class || '';
+    const elementId = column.design?.element_id || '';
+
     const columnContent = html`
-      <div class="card-column ${hoverEffectClass} ${filterClass}" style=${columnStyles}>
+      <div 
+        class="card-column ${hoverEffectClass} ${filterClass} ${extraClass}"
+        id=${elementId || nothing}
+        style=${columnStyles}
+      >
         ${column.modules.map(module => this._renderModule(module))}
       </div>
     `;
@@ -1539,11 +1556,23 @@ export class UltraCard extends LitElement {
       }
     );
 
+    // Extract custom targeting properties
+    const extraClass = (module as any).design?.extra_class || '';
+    const elementId = (module as any).design?.element_id || '';
+    const cssVarPrefix = (module as any).design?.css_variable_prefix;
+
+    // Generate CSS variables for Shadow DOM styling
+    const cssVarStyles = cssVarPrefix 
+      ? this._styleObjectToCss(generateCSSVariables(cssVarPrefix, (module as any).design))
+      : '';
+
     // If this is a pro module and user doesn't have access, show overlay
     if (shouldShowProOverlay) {
       return html`
         <div
-          class="pro-module-locked"
+          class="pro-module-locked ${extraClass}"
+          id=${elementId || nothing}
+          style=${cssVarStyles}
           @contextmenu=${(e: Event) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1578,7 +1607,7 @@ export class UltraCard extends LitElement {
     }
 
     // Return module content without forcing DOM replacement
-    return html`<div class="uc-module-wrap">${moduleContent}</div>`;
+    return html`<div class="uc-module-wrap ${extraClass}" id=${elementId || nothing} style=${cssVarStyles}>${moduleContent}</div>`;
   }
 
   private _parseAnimationDuration(duration: string): number {
@@ -1928,6 +1957,12 @@ export class UltraCard extends LitElement {
       Object.assign(designStyles, backgroundStyles);
     }
 
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (design.css_variable_prefix) {
+      const cssVars = generateCSSVariables(design.css_variable_prefix, design);
+      Object.assign(designStyles, cssVars);
+    }
+
     // Filter out undefined values and combine styles
     const allStyles = { ...baseStyles, ...designStyles };
     const filteredStyles = Object.fromEntries(
@@ -2083,6 +2118,12 @@ export class UltraCard extends LitElement {
           design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       });
       Object.assign(designStyles, backgroundStyles);
+    }
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (design.css_variable_prefix) {
+      const cssVars = generateCSSVariables(design.css_variable_prefix, design);
+      Object.assign(designStyles, cssVars);
     }
 
     // Filter out undefined values and combine styles

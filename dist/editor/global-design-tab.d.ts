@@ -66,6 +66,9 @@ export interface DesignProperties {
     animation_duration?: string;
     animation_delay?: string;
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
+    extra_class?: string;
+    element_id?: string;
+    css_variable_prefix?: string;
 }
 export declare class GlobalDesignTab extends LitElement {
     hass: HomeAssistant;
@@ -103,6 +106,7 @@ export declare class GlobalDesignTab extends LitElement {
     private _getAttributeNameHint;
     private _getAttributeValueHint;
     private _hasModifiedProperties;
+    private _loadGoogleFont;
     private _renderAccordion;
     protected render(): TemplateResult;
     static get styles(): import("lit").CSSResult;

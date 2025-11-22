@@ -2530,6 +2530,17 @@ export class UltraDropdownModule extends BaseUltraModule {
     // Toggle state for this specific instance
     const currentState = this.dropdownOpenStates.get(instanceId) || false;
     const newState = !currentState;
+    
+    if (newState) {
+      // Close all other open dropdowns before opening this one
+      // This ensures only one dropdown is open at a time
+      this.dropdownOpenStates.forEach((isOpen, otherInstanceId) => {
+        if (isOpen && otherInstanceId !== instanceId) {
+          this.closeDropdown(undefined, otherInstanceId);
+        }
+      });
+    }
+    
     this.dropdownOpenStates.set(instanceId, newState);
 
     if (dropdownElement) {

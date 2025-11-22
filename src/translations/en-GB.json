@@ -1219,6 +1219,7 @@
       "letter_spacing_placeholder": "auto (default), 1px, -0.04em",
       "reset_letter_spacing": "Reset letter spacing to default",
       "font": "Font",
+      "google_fonts_warning": "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations.",
       "font_weight": "Font Weight",
       "text_transform": "Text Transform",
       "font_style": "Font Style",
