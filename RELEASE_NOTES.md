@@ -1,5 +1,26 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta4
+
+### 🚀 New Features
+
+- **Icon size to button module** - Added icon size configuration option to the button module for better control over icon display.
+
+### 🚀 Improvements
+
+- **Added distribution options in info module** - Enhanced info module with new distribution options for better layout control.
+- **Adjusted audio tweaks to camera module** - Improved audio handling and controls in the camera module.
+
+### 🐛 Bug Fixes
+
+- **Possible fix for mushroom template when adding as 3rd party module** - Potential fix for template handling issues when mushroom cards are added as 3rd party modules.
+- **Fix z-index issue in gauge modules and popups** - Resolved z-index conflicts in gauge modules and their popup dialogs.
+- **Possible fix for spinbox module keeping focus on mobile** - Potential fix for focus retention issues in spinbox module on mobile devices.
+- **Possible fix for dropdown not closing when swiping out on mobile** - Potential fix for dropdown menu behavior when swiping on mobile devices.
+- **Fixed z-index for climate module and popups** - Resolved z-index issues affecting climate module and its popup dialogs.
+
+---
+
 ## Version 2.2.0-beta3
 
 ### 🚀 New Features

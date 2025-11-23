@@ -516,6 +516,8 @@ export interface InfoEntityConfig {
   // Name/Value layout when icon is disabled
   name_value_layout?: 'vertical' | 'horizontal';
   name_value_gap?: number;
+  // Content distribution control
+  content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly';
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -2066,6 +2068,7 @@ export interface ButtonModule extends BaseModule {
   show_icon?: boolean;
   icon?: string;
   icon_position?: 'before' | 'after';
+  icon_size?: string | number;
   background_color?: string;
   text_color?: string;
   // Global action configuration

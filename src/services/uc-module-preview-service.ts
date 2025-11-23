@@ -74,11 +74,11 @@ class UcModulePreviewService {
         <div class="card-container" style="${cardStyle}">
           <div
             class="card-row"
-            style="display: grid; grid-template-columns: 1fr; gap: 16px; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
+            style="display: grid; grid-template-columns: 1fr; gap: 16px; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: auto; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
           >
             <div
               class="card-column"
-              style="display: flex; flex-direction: column; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
+              style="display: flex; flex-direction: column; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: auto; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
             >
               ${animationData.class
                 ? html`

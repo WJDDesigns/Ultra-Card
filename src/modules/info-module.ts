@@ -90,6 +90,8 @@ export class UltraInfoModule extends BaseUltraModule {
           // Name/Value layout when icon is disabled
           name_value_layout: 'vertical',
           name_value_gap: 2,
+          // Content distribution control
+          content_distribution: 'normal',
         },
       ],
       // alignment: undefined, // No default alignment to allow Global Design tab control
@@ -138,6 +140,7 @@ export class UltraInfoModule extends BaseUltraModule {
       state_alignment: entity.state_alignment || 'start',
       name_value_layout: entity.name_value_layout || 'vertical',
       name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
+      content_distribution: entity.content_distribution || 'normal',
     };
 
     return html`
@@ -1496,6 +1499,16 @@ export class UltraInfoModule extends BaseUltraModule {
               ${localize('editor.info.icon_position', lang, 'Icon Position')}
             </div>
             <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+            >
+              ${localize(
+                'editor.info.icon_position_desc',
+                lang,
+                'Position the icon relative to the content (left, top, right, or bottom)'
+              )}
+            </div>
+            <div
               class="control-button-group"
               style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;"
             >
@@ -1529,6 +1542,59 @@ export class UltraInfoModule extends BaseUltraModule {
             </div>
           </div>
 
+          <!-- Content Distribution -->
+          <div class="field-group" style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+            >
+              ${localize('editor.info.content_distribution', lang, 'Content Distribution')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+            >
+              ${localize(
+                'editor.info.content_distribution_desc',
+                lang,
+                'Control how icon and content are distributed along the main axis'
+              )}
+            </div>
+            <div
+              class="control-button-group"
+              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%;"
+            >
+              ${[
+                { value: 'normal', icon: 'mdi:format-align-left', label: 'Normal' },
+                { value: 'space-between', icon: 'mdi:arrow-left-right', label: 'Space Between' },
+                { value: 'space-around', icon: 'mdi:arrow-expand-horizontal', label: 'Space Around' },
+                { value: 'space-evenly', icon: 'mdi:arrow-expand-all', label: 'Space Evenly' },
+              ].map(
+                distribution => html`
+                  <button
+                    type="button"
+                    class="control-btn ${(entity.content_distribution || 'normal') ===
+                    distribution.value
+                      ? 'active'
+                      : ''}"
+                    @click=${() => {
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { content_distribution: distribution.value as any },
+                        updateModule
+                      );
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }}
+                    title="${distribution.label}"
+                  >
+                    <ha-icon icon="${distribution.icon}"></ha-icon>
+                  </button>
+                `
+              )}
+            </div>
+          </div>
+
           <!-- Overall Alignment and Name Alignment Side by Side -->
           <div
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; margin-bottom: 24px;"
@@ -1540,6 +1606,16 @@ export class UltraInfoModule extends BaseUltraModule {
                 style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
               >
                 ${localize('editor.info.overall_alignment', lang, 'Overall Alignment')}
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+              >
+                ${localize(
+                  'editor.info.overall_alignment_desc',
+                  lang,
+                  'Align the entire info item within its container'
+                )}
               </div>
               <div
                 class="control-button-group"
@@ -1582,6 +1658,16 @@ export class UltraInfoModule extends BaseUltraModule {
                 style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
               >
                 ${localize('editor.info.name_alignment', lang, 'Name Alignment')}
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+              >
+                ${localize(
+                  'editor.info.name_alignment_desc',
+                  lang,
+                  'Align the name text within its container'
+                )}
               </div>
               <div
                 class="control-button-group"
@@ -1630,6 +1716,16 @@ export class UltraInfoModule extends BaseUltraModule {
                 ${localize('editor.info.icon_alignment', lang, 'Icon Alignment')}
               </div>
               <div
+                class="field-description"
+                style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+              >
+                ${localize(
+                  'editor.info.icon_alignment_desc',
+                  lang,
+                  'Align the icon along the cross axis'
+                )}
+              </div>
+              <div
                 class="control-button-group"
                 style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"
               >
@@ -1669,6 +1765,16 @@ export class UltraInfoModule extends BaseUltraModule {
                 style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
               >
                 ${localize('editor.info.state_alignment', lang, 'State Alignment')}
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+              >
+                ${localize(
+                  'editor.info.state_alignment_desc',
+                  lang,
+                  'Align the state/value text within its container'
+                )}
               </div>
               <div
                 class="control-button-group"
@@ -2096,6 +2202,7 @@ export class UltraInfoModule extends BaseUltraModule {
                 state_alignment: entity.state_alignment || 'start',
                 name_value_layout: entity.name_value_layout || 'vertical',
                 name_value_gap: entity.name_value_gap !== undefined ? entity.name_value_gap : 2,
+                content_distribution: entity.content_distribution || 'normal',
               };
 
               const entityState = hass?.states[entity.entity];
@@ -2290,6 +2397,22 @@ export class UltraInfoModule extends BaseUltraModule {
               const stateAlignment = entity.state_alignment || 'start';
               const overallAlignment = entity.overall_alignment || 'center';
               const iconGap = entity.icon_gap || 8;
+              const contentDistribution = entity.content_distribution || 'normal';
+
+              // Calculate justify-content based on content_distribution and overall_alignment
+              const getJustifyContent = () => {
+                if (contentDistribution !== 'normal') {
+                  return contentDistribution;
+                }
+                // Fall back to overall_alignment logic
+                if (overallAlignment === 'left') return 'flex-start';
+                if (overallAlignment === 'right') return 'flex-end';
+                return 'center';
+              };
+              const justifyContent = getJustifyContent();
+              
+              // When using distribution modes, disable gap to let the distribution handle spacing
+              const effectiveGap = contentDistribution !== 'normal' ? 0 : iconGap;
 
               const iconElement =
                 entity.show_icon !== false
@@ -2410,6 +2533,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     : getFlexAlignment(entity)};
                   flex-direction: ${nameValueLayout === 'horizontal' ? 'row' : 'column'};
                   gap: ${nameValueGap}px;
+                  flex: ${contentDistribution !== 'normal' ? '0 0 auto' : '1'};
                 "
                 >
                   ${entity.show_name !== false
@@ -2495,6 +2619,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     class="info-entity-clickable position-${iconPosition} ${hoverEffectClass}"
                     style="
                     display: flex;
+                    width: 100%;
                     flex-direction: ${iconPosition === 'top' || iconPosition === 'bottom'
                       ? 'column'
                       : 'row'};
@@ -2503,12 +2628,8 @@ export class UltraInfoModule extends BaseUltraModule {
                       : iconAlignment === 'end'
                         ? 'flex-end'
                         : 'center'};
-                    justify-content: ${overallAlignment === 'left'
-                      ? 'flex-start'
-                      : overallAlignment === 'right'
-                        ? 'flex-end'
-                        : 'center'};
-                    gap: ${iconGap}px;
+                    justify-content: ${justifyContent};
+                    gap: ${effectiveGap}px;
                     cursor: pointer;
                     user-select: none;
                     -webkit-user-select: none;
@@ -2540,6 +2661,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     class="info-entity-item position-${iconPosition} ${hoverEffectClass}"
                     style="
                     display: flex;
+                    width: 100%;
                     flex-direction: ${iconPosition === 'top' || iconPosition === 'bottom'
                       ? 'column'
                       : 'row'};
@@ -2548,12 +2670,8 @@ export class UltraInfoModule extends BaseUltraModule {
                       : iconAlignment === 'end'
                         ? 'flex-end'
                         : 'center'};
-                    justify-content: ${overallAlignment === 'left'
-                      ? 'flex-start'
-                      : overallAlignment === 'right'
-                        ? 'flex-end'
-                        : 'center'};
-                    gap: ${iconGap}px;
+                    justify-content: ${justifyContent};
+                    gap: ${effectiveGap}px;
                     ${(entity as any)._template_container_background_color
                       ? `background-color: ${(entity as any)._template_container_background_color};`
                       : ''}
@@ -3278,6 +3396,8 @@ export class UltraInfoModule extends BaseUltraModule {
       // Name/Value layout when icon is disabled
       name_value_layout: 'vertical',
       name_value_gap: 2,
+      // Content distribution control
+      content_distribution: 'normal',
     };
 
     const updatedEntities = [...infoModule.info_entities, newEntity];

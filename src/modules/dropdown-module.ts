@@ -2827,6 +2827,10 @@ export class UltraDropdownModule extends BaseUltraModule {
       // Add window-level listeners (only once)
       window.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
       document.addEventListener('scroll', this.scrollHandler, { passive: true, capture: true });
+      
+      // Add touchmove listener for immediate mobile swipe detection
+      // This ensures the dropdown closes instantly when user swipes on mobile
+      document.addEventListener('touchmove', this.scrollHandler, { passive: true, capture: true });
     }
 
     // Create resize handler if it doesn't exist (shared across all instances)
@@ -2900,6 +2904,7 @@ export class UltraDropdownModule extends BaseUltraModule {
         if (this.scrollHandler) {
           window.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
           document.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
+          document.removeEventListener('touchmove', this.scrollHandler, { capture: true } as any);
           this.scrollHandler = null;
         }
         if (this.resizeHandler) {
@@ -2922,6 +2927,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       if (this.scrollHandler) {
         window.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
         document.removeEventListener('scroll', this.scrollHandler, { capture: true } as any);
+        document.removeEventListener('touchmove', this.scrollHandler, { capture: true } as any);
         this.scrollHandler = null;
       }
       if (this.resizeHandler) {

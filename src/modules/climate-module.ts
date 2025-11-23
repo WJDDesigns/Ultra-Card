@@ -1428,12 +1428,15 @@ export class UltraClimateModule extends BaseUltraModule {
         justify-content: center;
         width: var(--dial-size, 280px);
         height: var(--dial-size, 280px);
+        z-index: 1;
       }
  
       .climate-ha-slider {
         width: 100%;
         height: auto;
         display: block;
+        z-index: 1;
+        position: relative;
       }
 
       /* Dial Center Content */
@@ -1679,7 +1682,7 @@ export class UltraClimateModule extends BaseUltraModule {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        z-index: 1000;
+        z-index: 9999;
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -1745,7 +1748,7 @@ export class UltraClimateModule extends BaseUltraModule {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        z-index: 1000;
+        z-index: 9999;
         opacity: 0;
         visibility: hidden;
         pointer-events: none;

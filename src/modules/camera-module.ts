@@ -1705,6 +1705,7 @@ export class UltraCameraModule extends BaseUltraModule {
       }
     };
 
+    // Audio is active in live mode only (not auto mode in preview)
     const audioActive = isLiveMode ? this._isAudioActive(cameraModule, isDashboardView) : false;
 
     const cameraContent = html`
@@ -1899,19 +1900,6 @@ export class UltraCameraModule extends BaseUltraModule {
                       `
                     : ''}
                 `}
-          ${isLiveMode && cameraModule.audio_enabled === true
-            ? html`
-                <button
-                  class="camera-audio-toggle ${audioActive ? 'active' : 'muted'}"
-                  title=${audioActive
-                    ? localize('editor.camera.audio_toggle.mute', lang, 'Mute camera audio')
-                    : localize('editor.camera.audio_toggle.unmute', lang, 'Unmute camera audio')}
-                  @click=${(e: Event) => this._toggleDashboardAudio(e, cameraModule)}
-                >
-                  <ha-icon icon=${audioActive ? 'mdi:volume-high' : 'mdi:volume-mute'}></ha-icon>
-                </button>
-              `
-            : ''}
         </div>
       </div>
     `;
@@ -2356,7 +2344,8 @@ export class UltraCameraModule extends BaseUltraModule {
       if (modal && cameraContainer) {
         const hass = (document.querySelector('home-assistant') as any)?.hass;
         const isLiveMode = (module.view_mode || 'auto') === 'live';
-        const fullscreenAudioActive = isLiveMode ? this._isAudioActive(module) : false;
+        // In fullscreen, enable audio if audio_enabled is true (for both auto and live modes)
+        const fullscreenAudioActive = module.audio_enabled === true;
 
         if (hass) {
           // Create hui-image element
@@ -3074,7 +3063,8 @@ export class UltraCameraModule extends BaseUltraModule {
         (cameraImg as any).hass = hass;
         (cameraImg as any).cameraImage = cameraEntity;
         (cameraImg as any).cameraView = module.live_view ? 'live' : 'auto';
-        const fullscreenAudioActive = this._isAudioActive(module);
+        // In fullscreen, enable audio if audio_enabled is true (for both auto and live modes)
+        const fullscreenAudioActive = module.audio_enabled === true;
         (cameraImg as any).muted = !fullscreenAudioActive;
         
         // Ensure audio state is applied after element is added to DOM

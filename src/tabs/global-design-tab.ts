@@ -53,6 +53,26 @@ export class GlobalDesignTab {
         }
       }
 
+      // Mirror size properties to top-level for reactive updates
+      // This ensures modules that prioritize top-level properties get immediate updates
+      const sizeProperties = ['width', 'height', 'max_width', 'max_height', 'min_width', 'min_height'];
+      sizeProperties.forEach(prop => {
+        if (Object.prototype.hasOwnProperty.call(updates, prop)) {
+          const propValue = updates[prop];
+          if (
+            propValue === '' ||
+            propValue === undefined ||
+            propValue === null ||
+            (typeof propValue === 'string' && propValue.trim() === '')
+          ) {
+            (combined as any)[prop] = undefined;
+            delete (combined as any)[prop];
+          } else {
+            (combined as any)[prop] = propValue;
+          }
+        }
+      });
+
       // Debug logging for font_size updates
       if (updates.hasOwnProperty('font_size')) {
         console.log('🔧 GlobalDesignTab: Font size update', {

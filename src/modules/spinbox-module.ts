@@ -16,6 +16,7 @@ import { getImageUrl } from '../utils/image-upload';
 export class UltraSpinboxModule extends BaseUltraModule {
   private _templateService?: TemplateService;
   private _templateInputDebounce: any = null;
+  private _lastTouchTime: number = 0;
 
   metadata: ModuleMetadata = {
     type: 'spinbox',
@@ -953,7 +954,16 @@ export class UltraSpinboxModule extends BaseUltraModule {
     // Handle increment/decrement
     const handleIncrement = (e: Event) => {
       e.stopPropagation();
-      e.preventDefault();
+      
+      // Prevent double-firing on touch devices (touchend followed by synthetic click)
+      if (e.type === 'click' && e.timeStamp - (this._lastTouchTime || 0) < 500) {
+        return;
+      }
+      if (e.type === 'touchend') {
+        this._lastTouchTime = e.timeStamp;
+        e.preventDefault(); // Prevent synthetic click
+      }
+      
       const target = e.target as HTMLElement;
       const button = target.closest('.spinbox-button') as HTMLButtonElement;
       
@@ -963,17 +973,28 @@ export class UltraSpinboxModule extends BaseUltraModule {
         this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
       }
       
-      // Blur button to remove focus state on mobile - use setTimeout to ensure it happens after event propagation
+      // Blur immediately to remove focus state
       if (button) {
-        setTimeout(() => {
+        button.blur();
+        // Force blur again after a tiny delay to ensure it sticks
+        requestAnimationFrame(() => {
           button.blur();
-        }, 100);
+        });
       }
     };
 
     const handleDecrement = (e: Event) => {
       e.stopPropagation();
-      e.preventDefault();
+      
+      // Prevent double-firing on touch devices (touchend followed by synthetic click)
+      if (e.type === 'click' && e.timeStamp - (this._lastTouchTime || 0) < 500) {
+        return;
+      }
+      if (e.type === 'touchend') {
+        this._lastTouchTime = e.timeStamp;
+        e.preventDefault(); // Prevent synthetic click
+      }
+      
       const target = e.target as HTMLElement;
       const button = target.closest('.spinbox-button') as HTMLButtonElement;
       
@@ -983,11 +1004,13 @@ export class UltraSpinboxModule extends BaseUltraModule {
         this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
       }
       
-      // Blur button to remove focus state on mobile - use setTimeout to ensure it happens after event propagation
+      // Blur immediately to remove focus state
       if (button) {
-        setTimeout(() => {
+        button.blur();
+        // Force blur again after a tiny delay to ensure it sticks
+        requestAnimationFrame(() => {
           button.blur();
-        }, 100);
+        });
       }
     };
 

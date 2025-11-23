@@ -4557,7 +4557,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       styles.push(`top: ${topOffset + yOffset}px`);
       styles.push(`left: ${50 + xOffset}%`);
       styles.push('transform: translateX(-50%)');
-      styles.push('z-index: 10');
+      styles.push('z-index: 1');
     } else if (gaugeModule.value_position === 'bottom') {
       // Calculate bottom position based on gauge style
       let bottomOffset = 16;
@@ -4574,7 +4574,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       styles.push(`bottom: ${bottomOffset - yOffset}px`);
       styles.push(`left: ${50 + xOffset}%`);
       styles.push('transform: translateX(-50%)');
-      styles.push('z-index: 10');
+      styles.push('z-index: 1');
     }
 
     return styles.join('; ');

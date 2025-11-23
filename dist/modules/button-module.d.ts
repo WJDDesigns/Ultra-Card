@@ -22,4 +22,5 @@ export declare class UltraButtonModule extends BaseUltraModule {
     private addPixelUnit;
     private getBackgroundImageCSS;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    getStyles(): string;
 }

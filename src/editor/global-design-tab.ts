@@ -4786,6 +4786,18 @@ export class GlobalDesignTab extends LitElement {
       .reset-btn ha-icon {
         font-size: 16px;
       }
+
+      /* Field description styling */
+      .field-description {
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
+        border-left: 3px solid var(--primary-color, #03a9f4);
+        border-radius: 4px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--secondary-text-color);
+      }
     `;
   }
 

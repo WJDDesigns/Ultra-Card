@@ -307,6 +307,7 @@ export interface InfoEntityConfig {
     icon_gap?: number;
     name_value_layout?: 'vertical' | 'horizontal';
     name_value_gap?: number;
+    content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly';
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
@@ -1101,6 +1102,7 @@ export interface ButtonModule extends BaseModule {
     show_icon?: boolean;
     icon?: string;
     icon_position?: 'before' | 'after';
+    icon_size?: string | number;
     background_color?: string;
     text_color?: string;
     tap_action?: {

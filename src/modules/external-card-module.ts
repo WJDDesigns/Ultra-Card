@@ -446,6 +446,27 @@ export class UltraExternalCardModule extends BaseUltraModule {
           editorElementCache.set(cacheKey, editor);
           container.innerHTML = '';
           container.appendChild(editor);
+          
+          // CRITICAL FIX: Prevent keyboard and input events from bubbling to parent
+          // This isolates the embedded 3rd party editor from Ultra Card's event handlers
+          // Prevents issues where typing in embedded editors causes characters to be deleted
+          const stopEventBubbling = (e: Event) => {
+            e.stopPropagation();
+          };
+          
+          // Stop all keyboard events from bubbling
+          container.addEventListener('keydown', stopEventBubbling, true);
+          container.addEventListener('keyup', stopEventBubbling, true);
+          container.addEventListener('keypress', stopEventBubbling, true);
+          
+          // Stop all input events from bubbling
+          container.addEventListener('input', stopEventBubbling, true);
+          container.addEventListener('change', stopEventBubbling, true);
+          
+          // Stop focus events that might interfere
+          container.addEventListener('focus', stopEventBubbling, true);
+          container.addEventListener('blur', stopEventBubbling, true);
+          
         } catch (error) {
           console.error('Failed to create native editor:', error);
           editorElementCache.delete(cacheKey);
