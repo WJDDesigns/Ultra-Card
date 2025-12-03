@@ -501,6 +501,53 @@ All standard markdown features are automatically enabled!`,
         (markdownModule as any).box_shadow_color || designFromDesignObject.box_shadow_color,
     };
 
+    // Check if module has a template-based container background color (needs to be parsed from template strings)
+    // This needs to happen BEFORE containerStyles are built
+    let templateContainerBg = '';
+    if (markdownModule.unified_template_mode && markdownModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(markdownModule.unified_template);
+        const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
+
+        // Subscribe to template if not already subscribed (needed for template evaluation)
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            markdown_content: markdownModule.markdown_content,
+          });
+          this._templateService.subscribeToTemplate(
+            markdownModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+          }
+        }
+      }
+    }
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -526,11 +573,13 @@ All standard markdown features are automatically enabled!`,
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '0',
       background:
-        designProperties.background_color && designProperties.background_color !== 'transparent'
-          ? designProperties.background_color
-          : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
-            ? moduleWithDesign.background_color
-            : 'transparent',
+        templateContainerBg && templateContainerBg !== 'transparent'
+          ? templateContainerBg
+          : designProperties.background_color && designProperties.background_color !== 'transparent'
+            ? designProperties.background_color
+            : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
+              ? moduleWithDesign.background_color
+              : 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
         hass

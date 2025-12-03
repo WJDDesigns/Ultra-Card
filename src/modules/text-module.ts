@@ -555,9 +555,9 @@ export class UltraTextModule extends BaseUltraModule {
         return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
-      // Color: prioritize design properties, then template color, then inherit (to allow parent CSS variables)
+      // Color: prioritize design properties, then template color, then module color, then inherit (to allow parent CSS variables)
       // Use 'inherit' when no explicit color is set, allowing parent row/column CSS variables to work
-      color: designProperties.color || displayColor || 'inherit',
+      color: designProperties.color || displayColor || textModule.color || 'inherit',
       textAlign: chosenAlign,
       fontWeight: (() => {
         if (designProperties.font_weight) return designProperties.font_weight;
@@ -728,6 +728,55 @@ export class UltraTextModule extends BaseUltraModule {
         </div>`
       : content;
 
+    // Check if module has a template-based container background color (needs to be parsed from template strings)
+    // This needs to happen BEFORE containerStyles are built
+    let templateContainerBg = '';
+    if (textModule.unified_template_mode && textModule.unified_template) {
+      // Initialize template service if needed
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(textModule.unified_template);
+        const templateKey = `unified_text_${textModule.id}_${templateHash}`;
+
+        // Subscribe to template if not already subscribed (needed for template evaluation)
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            text: textModule.text,
+          });
+          this._templateService.subscribeToTemplate(
+            textModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+          }
+        }
+      }
+    }
+
     // Container styles for positioning - prioritize design properties, no hardcoded spacing
     const containerStyles = {
       // Only apply padding if explicitly set by user
@@ -791,7 +840,7 @@ export class UltraTextModule extends BaseUltraModule {
     };
 
     const { styles: backgroundStyles } = computeBackgroundStyles({
-      color: designProperties.background_color || moduleWithDesign.background_color,
+      color: templateContainerBg || designProperties.background_color || moduleWithDesign.background_color,
       fallback: moduleWithDesign.background_color || 'inherit',
       image: this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass),
       imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',

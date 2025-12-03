@@ -5,7 +5,10 @@ import { guard } from 'lit/directives/guard.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ExternalCardModule, UltraCardConfig, CardModule } from '../types';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { ucExternalCardsService } from '../services/uc-external-cards-service';
+import {
+  ucExternalCardsService,
+  normalizeNativeCardConfigType,
+} from '../services/uc-external-cards-service';
 import { externalCardContainerService } from '../services/external-card-container-service';
 import {
   ThirdPartyLimitService,
@@ -21,6 +24,12 @@ const updateDebounceTimers = new Map<string, number>();
 
 // Editor element cache to prevent unnecessary recreation and preserve UI state (scroll, focus, dropdowns)
 const editorElementCache = new Map<string, any>();
+
+// Guard to prevent re-entrancy in config-changed handler (prevents freeze loops)
+const configChangeGuard = new Map<string, boolean>();
+
+// Track last config sent to prevent duplicate updates
+const lastSentConfig = new Map<string, string>();
 
 /**
  * Strip card-mod properties from config before passing to editors
@@ -75,6 +84,10 @@ export function cleanupExternalCardCache(moduleId: string): void {
     }
   });
   keysToDelete.forEach(key => editorElementCache.delete(key));
+  
+  // Clear config change guards and tracking
+  configChangeGuard.delete(moduleId);
+  lastSentConfig.delete(moduleId);
 
   // NOTE: We do NOT destroy the container here!
   // The container is managed by a singleton service and persists across disconnects.
@@ -116,6 +129,35 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
     // Check if editor exists and is not HTMLUnknownElement
     return editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
+  }
+
+  /**
+   * Check if config has meaningfully changed
+   * This is more nuanced than JSON.stringify comparison to handle edge cases
+   * Specifically designed to catch Bubble Card entity selections that might be missed
+   */
+  private _hasConfigChanged(oldConfig: any, newConfig: any): boolean {
+    // Handle null/undefined cases
+    if (!oldConfig && !newConfig) return false;
+    if (!oldConfig || !newConfig) return true;
+    
+    // JSON comparison as first pass
+    const oldJson = JSON.stringify(oldConfig);
+    const newJson = JSON.stringify(newConfig);
+    
+    if (oldJson === newJson) return false;
+    
+    // For Bubble Card and other cards: specifically check entity field changes
+    // Different cards may use different field names for entities
+    if (oldConfig.entity !== newConfig.entity) return true;
+    if (oldConfig.entity_id !== newConfig.entity_id) return true;
+    
+    // Check for nested entity references (some cards nest config)
+    if (oldConfig.settings?.entity !== newConfig.settings?.entity) return true;
+    if (oldConfig.data?.entity !== newConfig.data?.entity) return true;
+    
+    // If we got here, configs are different (based on JSON comparison)
+    return true;
   }
 
   private _handleRefreshLock(
@@ -334,15 +376,83 @@ export class UltraExternalCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult | null {
-    // Check if this card has a native editor
-    if (!this.hasNativeEditor(module.card_type)) {
+    // For native HA cards (hui-*), always show General tab - their editors always exist
+    const isNativeCard = module.card_type && module.card_type.startsWith('hui-');
+    
+    // Check if this card has a native editor (skip check for native HA cards)
+    if (!isNativeCard && !this.hasNativeEditor(module.card_type)) {
       // No native editor - user should use YAML tab
       return null;
     }
 
     // Get card info and name - use fallback if card_type is not set
+    let cardName: string;
+    if (isNativeCard) {
+      // For native HA cards, try to get friendly name from module.name
+      cardName = module.name || module.card_type || 'Native HA Card';
+    } else {
     const cardInfo = module.card_type ? ucExternalCardsService.getCardInfo(module.card_type) : null;
-    const cardName = cardInfo?.name || module.card_type || 'External Card';
+      cardName = cardInfo?.name || module.card_type || 'External Card';
+    }
+
+    // Helper function to set properties on the editor
+    const setupEditorProperties = (editor: any, container: Element) => {
+      try {
+        const editorIsMounted = container.contains(editor);
+
+        // Provide necessary context to native editors (lovelace object)
+        // Native HA editors require this for navigation, view configuration, etc.
+        if ((hass as any).lovelace) {
+          (editor as any).lovelace = (hass as any).lovelace;
+        }
+
+        // Strip card-mod properties before passing to editor
+        // Card-mod is a runtime integration that editors don't understand
+        const editorConfig = stripCardModProperties(module.card_config || {});
+
+        if (
+          module.card_type &&
+          module.card_type.startsWith('hui-') &&
+          editorConfig &&
+          typeof editorConfig === 'object'
+        ) {
+          editorConfig.type = normalizeNativeCardConfigType(module.card_type);
+        }
+
+        const configChanged = JSON.stringify(editor.config || {}) !== JSON.stringify(editorConfig);
+
+        // Skip setConfig if guard is active (we're in the middle of handling a config change)
+        // This prevents triggering another config-changed event during re-render
+        const guardActive = configChangeGuard.get(module.id);
+        
+        // Always update config if editor was just remounted OR if config changed
+        // But NOT if the guard is active (prevents loop)
+        if (!guardActive && (!editorIsMounted || configChanged)) {
+          // Ensure hass is set BEFORE setConfig for native editors that might need it during initialization
+          // e.g. hui-entities-card-editor relies on hass for entity dropdowns
+          editor.hass = hass;
+
+          // Set guard temporarily while we update config to prevent re-entrancy
+          configChangeGuard.set(module.id, true);
+          
+          try {
+            if (typeof editor.setConfig === 'function') {
+              editor.setConfig(editorConfig);
+            } else {
+              editor.config = editorConfig;
+            }
+          } finally {
+            // Clear guard after a microtask to allow any synchronous config-changed to be ignored
+            setTimeout(() => configChangeGuard.set(module.id, false), 50);
+          }
+        }
+
+        // Always update hass as it contains entity states that may have changed
+        editor.hass = hass;
+      } catch (error) {
+        console.error('Failed to update cached editor:', error);
+      }
+    };
 
     // Ref callback to set up the native editor with caching to preserve UI state
     const setupEditor = (container: Element | undefined) => {
@@ -370,11 +480,13 @@ export class UltraExternalCardModule extends BaseUltraModule {
           }
         });
         keysToDelete.forEach(key => editorElementCache.delete(key));
+        
         try {
+          // Create editor element directly (works for both native and custom cards)
           editor = document.createElement(editorType) as any;
 
           // Check if editor is actually a custom element
-          if (editor instanceof HTMLUnknownElement) {
+          if (!editor || editor instanceof HTMLUnknownElement) {
             // Clear cache since this card type doesn't have an editor
             editorElementCache.delete(cacheKey);
             container.innerHTML = `
@@ -390,6 +502,14 @@ export class UltraExternalCardModule extends BaseUltraModule {
           // Set up config-changed listener (only once when editor is created)
           editor.addEventListener('config-changed', (e: CustomEvent) => {
             e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            // Guard against re-entrancy (prevents freeze loops)
+            if (configChangeGuard.get(module.id)) {
+              console.log('[UC External Card] Config change guard active, skipping');
+              return;
+            }
+            
             if (e.detail && e.detail.config) {
               // Preserve card-mod properties from original config
               // The editor doesn't know about card-mod, so we need to merge it back in
@@ -408,14 +528,29 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 ...e.detail.config,
                 ...originalCardMod,
               };
-
-              // Check if config actually changed by comparing with current module config
-              const newConfigKey = JSON.stringify(mergedConfig);
-              const currentConfigKey = JSON.stringify(module.card_config || {});
-
-              if (newConfigKey === currentConfigKey) {
-                return; // Ignore spurious config-changed events
+              
+              // Check against last sent config to prevent duplicate updates
+              const configKey = JSON.stringify(mergedConfig);
+              if (lastSentConfig.get(module.id) === configKey) {
+                console.log('[UC External Card] Duplicate config, skipping');
+                return;
               }
+
+              // Check if config meaningfully changed using improved detection
+              const configMeaningfullyChanged = this._hasConfigChanged(
+                module.card_config || {},
+                mergedConfig
+              );
+
+              if (!configMeaningfullyChanged) {
+                console.log('[UC External Card] Config unchanged, skipping update');
+                return;
+              }
+
+              console.log('[UC External Card] Config changed, updating module');
+              
+              // Track this config to prevent duplicates
+              lastSentConfig.set(module.id, configKey);
 
               // IMMEDIATE: Update the Live Preview card element directly (no waiting)
               // This ensures the Live Preview shows changes immediately
@@ -432,11 +567,19 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 clearTimeout(existingTimer);
               }
 
-              // Debounce the update to prevent rapid re-render loops
+              // Set guard before update to prevent re-entrancy and protect editor during typing
+              configChangeGuard.set(module.id, true);
+
+              // Longer debounce (600ms) to allow smooth typing without interruption
               const timer = window.setTimeout(() => {
                 updateModule({ card_config: { ...mergedConfig } });
                 updateDebounceTimers.delete(module.id);
-              }, 150); // 150ms debounce
+                
+                // Clear guard after re-render completes
+                setTimeout(() => {
+                  configChangeGuard.set(module.id, false);
+                }, 200);
+              }, 600);
 
               updateDebounceTimers.set(module.id, timer);
             }
@@ -454,18 +597,25 @@ export class UltraExternalCardModule extends BaseUltraModule {
             e.stopPropagation();
           };
           
-          // Stop all keyboard events from bubbling
-          container.addEventListener('keydown', stopEventBubbling, true);
-          container.addEventListener('keyup', stopEventBubbling, true);
-          container.addEventListener('keypress', stopEventBubbling, true);
+          // Stop all events from bubbling UP to Ultra Card handlers
+          // Use bubble phase (false) so events reach the editor elements first
+          container.addEventListener('keydown', stopEventBubbling, false);
+          container.addEventListener('keyup', stopEventBubbling, false);
+          container.addEventListener('keypress', stopEventBubbling, false);
+          container.addEventListener('input', stopEventBubbling, false);
+          container.addEventListener('change', stopEventBubbling, false);
+          container.addEventListener('focus', stopEventBubbling, false);
+          container.addEventListener('blur', stopEventBubbling, false);
           
-          // Stop all input events from bubbling
-          container.addEventListener('input', stopEventBubbling, true);
-          container.addEventListener('change', stopEventBubbling, true);
-          
-          // Stop focus events that might interfere
-          container.addEventListener('focus', stopEventBubbling, true);
-          container.addEventListener('blur', stopEventBubbling, true);
+          // CRITICAL: Stop click/mouse/pointer events in BUBBLE phase (not capture phase)
+          // Using bubble phase (false) allows events to reach dropdown elements first,
+          // then stops them from bubbling up to Ultra Card's handlers which can cause freezing.
+          // Capture phase (true) would block events before reaching the dropdowns.
+          container.addEventListener('click', stopEventBubbling, false);
+          container.addEventListener('mousedown', stopEventBubbling, false);
+          container.addEventListener('mouseup', stopEventBubbling, false);
+          container.addEventListener('pointerdown', stopEventBubbling, false);
+          container.addEventListener('pointerup', stopEventBubbling, false);
           
         } catch (error) {
           console.error('Failed to create native editor:', error);
@@ -485,32 +635,8 @@ export class UltraExternalCardModule extends BaseUltraModule {
         container.appendChild(editor);
       }
 
-      // Update properties on cached editor
-      // Always set config when editor is remounted (not in DOM) to ensure fresh state
-      // Only skip config update if editor is currently mounted and config hasn't changed
-      try {
-        const editorIsMounted = container.contains(editor);
-
-        // Strip card-mod properties before passing to editor
-        // Card-mod is a runtime integration that editors don't understand
-        const editorConfig = stripCardModProperties(module.card_config || {});
-
-        const configChanged = JSON.stringify(editor.config || {}) !== JSON.stringify(editorConfig);
-
-        // Always update config if editor was just remounted OR if config changed
-        if (!editorIsMounted || configChanged) {
-          if (typeof editor.setConfig === 'function') {
-            editor.setConfig(editorConfig);
-          } else {
-            editor.config = editorConfig;
-          }
-        }
-
-        // Always update hass as it contains entity states that may have changed
-        editor.hass = hass;
-      } catch (error) {
-        console.error('Failed to update cached editor:', error);
-      }
+      // Update properties on cached editor (for cached/remounted editors)
+      setupEditorProperties(editor, container);
     };
 
     return html`
@@ -1218,9 +1344,41 @@ export class UltraExternalCardModule extends BaseUltraModule {
         opacity: 0.9;
       }
 
+      /* General tab wrapper - must allow overflow for dropdown menus */
+      .external-card-general-tab {
+        width: 100%;
+        overflow: visible;
+        position: relative;
+      }
+      
+      .external-card-general-tab .settings-section {
+        overflow: visible;
+        position: relative;
+      }
+      
       /* Native editor container */
       .native-editor-container {
         min-height: 200px;
+        overflow: visible; /* Allow dropdown menus to render outside container */
+        position: relative;
+      }
+      
+      /* Ensure 3rd party card editor dropdowns render above other content */
+      .native-editor-container ha-select,
+      .native-editor-container mwc-select,
+      .native-editor-container ha-combo-box {
+        position: relative;
+        z-index: 100;
+      }
+      
+      /* Allow dropdown menus from embedded editors to render properly */
+      .native-editor-container ha-select::part(menu),
+      .native-editor-container mwc-select::part(menu),
+      .native-editor-container .mdc-menu-surface,
+      .native-editor-container mwc-menu-surface,
+      .native-editor-container mwc-menu {
+        z-index: 9999 !important;
+        position: fixed !important;
       }
 
       /* YAML tab styling */

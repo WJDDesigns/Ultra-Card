@@ -1,5 +1,29 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta5
+
+### 🚀 New Features
+
+- **Added support for native home assistant cards** - Native Home Assistant cards can now be integrated directly into Ultra Card layouts alongside 3rd party cards.
+- **New toggle module** - Added a new toggle module for quick on/off controls with customizable styling.
+- **New status module** - Added a new status module for displaying entity status information with enhanced visual feedback.
+
+### 🚀 Improvements
+
+- **Changed 3rd party tab to cards tab and merged native with 3rd party** - The 3rd party tab has been renamed to "Cards" tab and now includes both native Home Assistant cards and 3rd party cards in a unified interface.
+- **Improved 3rd party card stability** - Enhanced stability and reliability for 3rd party card integration with better error handling and caching.
+- **Improved popup display logic** - Enhanced popup rendering and positioning logic for better user experience across all modules.
+- **Improved iPad user interface issues** - Fixed various UI issues specific to iPad devices including touch interactions and layout rendering.
+- **Added min and max values in graphs** - Graph modules now support configurable min and max value ranges for better data visualization control.
+- **Added settable slider direction for slider module** - Slider module now supports configurable direction (horizontal/vertical) for flexible layout options.
+
+### 🐛 Bug Fixes
+
+- **Fixed border placement in modules as well as background color based on state** - Resolved border positioning issues and ensured background colors properly reflect entity states across all modules.
+- **Fixed text color issue on text module** - Resolved text color rendering issues in the text module to ensure proper color display.
+
+---
+
 ## Version 2.2.0-beta4
 
 ### 🚀 New Features

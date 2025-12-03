@@ -25,6 +25,8 @@ export * from './animated-weather-module';
 export * from './animated-forecast-module';
 export * from './external-card-module';
 export * from './background-module';
+export * from './status-summary-module';
+export * from './toggle-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

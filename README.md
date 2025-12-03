@@ -53,7 +53,7 @@ Cloud sync, automatic daily backups with 30-day retention, and smart restore fun
 - **📦 19+ Module Types** - Content display, interactive controls, layout systems, and Pro animated modules
 - **🔧 Conditional Logic** - Show/hide elements based on states, time, or Jinja2 templates
 - **🔗 Template Support** - Full Jinja2 template evaluation with CodeMirror editor
-- **🔌 3rd Party Card Integration (Pro)** - Embed any custom Home Assistant card
+- **🔌 Card Integration** - Native HA cards (unlimited) + 3rd party cards (5 free, unlimited Pro)
 - **🎭 Rich Animation System** - Animated icons, bars, hover effects, and smooth transitions
 
 ### Professional Design
@@ -70,7 +70,7 @@ Cloud sync, automatic daily backups with 30-day retention, and smart restore fun
 - **📸 Automatic Daily Backups** - 30-day retention protects your dashboard investment
 - **💾 Manual Snapshots** - Up to 30 named backups for critical configurations
 - **🔄 Smart Restore** - Intelligent backup matching by name or position
-- **🔌 Unlimited 3rd Party Cards** - Integrate your entire card ecosystem
+- **🔌 Native & 3rd Party Cards** - Native HA cards unlimited for all; unlimited custom cards with Pro
 
 ### Community-Driven
 
@@ -180,9 +180,15 @@ Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)*
 - 📅 **Animated Forecast** - Multi-day forecast with animated icons and detailed information
 - 🎬 **Video Background** - Stunning video backgrounds with glass blur effects
 
-### 3rd Party Card Integration 🔌
+### Card Integration 🔌
 
-**Embed ANY custom Home Assistant card** within Ultra Card's layout system:
+**Use native HA cards and embed custom cards** within Ultra Card's layout system:
+
+**Native Home Assistant Cards (Unlimited - All Users):**
+- Entities, Glance, Button, Picture, Markdown, Conditional, and all other native HA cards
+- No limits, always free
+
+**Community & 3rd Party Cards:**
 
 - **Bubble Card** - Modern bubble-style cards
 - **Mushroom Cards** - Minimalist card collection
@@ -191,8 +197,9 @@ Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)*
 - **Button Card** - Highly customizable buttons
 - **And hundreds more!**
 
-**Free Tier:** Up to 5 third-party cards per dashboard  
-**Pro Tier:** Unlimited third-party card integration
+**All Users:** Unlimited native Home Assistant cards  
+**Free Tier:** Up to 5 community/3rd-party cards per dashboard  
+**Pro Tier:** Unlimited community/3rd-party card integration
 
 ---
 
@@ -220,8 +227,9 @@ Create up to 30 named snapshots per card. Perfect for seasonal layouts, testing 
 - **Animated Weather** - Current weather with animated icons
 - **Animated Forecast** - Multi-day weather forecast with animations
 
-🔌 **Unlimited 3rd Party Cards**  
-Integrate your entire card ecosystem. Embed as many Bubble Cards, Mushroom Cards, ApexCharts, or any custom card as you need.
+🔌 **Native & 3rd Party Card Integration**  
+- **Native HA Cards (Unlimited)**: Use all native Home Assistant cards (entities, glance, button, etc.) without limits
+- **3rd Party Cards (Pro)**: Embed unlimited Bubble Cards, Mushroom Cards, ApexCharts, and any custom card with Ultra Card Pro
 
 ⚡ **Priority Support**  
 Get faster responses from the Ultra Card development team when you need help.
@@ -258,6 +266,7 @@ Enjoy cloud-powered features, exclusive modules, and peace of mind knowing your 
 | Animated Clock Module      |   ❌    |     ✅      |
 | Animated Weather Module    |   ❌    |     ✅      |
 | Animated Forecast Module   |   ❌    |     ✅      |
+| Native HA Cards            |   ✅ Unlimited   |  ✅ Unlimited   |
 | 3rd Party Card Integration | 5 cards |  Unlimited  |
 | Priority Support           |   ❌    |     ✅      |
 
@@ -333,9 +342,17 @@ Professional styling controls:
 
 ---
 
-## 3rd Party Card Integration (Pro)
+## Card Integration
 
-Ultra Card Pro breaks down the barriers between card ecosystems by allowing you to embed **any** custom Home Assistant card directly within your layouts.
+Ultra Card integrates seamlessly with both native Home Assistant cards and custom 3rd party cards.
+
+### Native HA Cards (Unlimited - All Users)
+
+All users can add unlimited native Home Assistant cards (entities, glance, button, picture, markdown, conditional, etc.) to their Ultra Card layouts. These cards use their native editors and work exactly as they do in standard Home Assistant dashboards.
+
+### 3rd Party Card Integration (5 Free, Unlimited Pro)
+
+Ultra Card breaks down the barriers between card ecosystems by allowing you to embed **any** custom Home Assistant card directly within your layouts.
 
 ### How It Works
 

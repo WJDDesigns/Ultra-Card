@@ -39,6 +39,10 @@ export class UltraButtonModule extends BaseUltraModule {
       icon_size: '24px',
       background_color: 'var(--primary-color)',
       text_color: 'white',
+      // Entity-based background color
+      use_entity_color: false,
+      background_color_entity: '',
+      background_state_colors: {},
       // Additional action configuration for future upgrade
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -315,16 +319,96 @@ export class UltraButtonModule extends BaseUltraModule {
         <div class="settings-section">
           <div class="section-title">${localize('editor.button.colors.title', lang, 'Colors')}</div>
 
-          <div class="color-controls">
-            <ultra-color-picker
-              .label=${localize('editor.button.colors.background', lang, 'Background Color')}
-              .value=${buttonModule.background_color || 'var(--primary-color)'}
-              .defaultValue=${'var(--primary-color)'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ background_color: e.detail.value })}
-            ></ultra-color-picker>
+          <!-- Entity-based Background Color Toggle -->
+          <div class="field-group" style="margin-top: 16px; margin-bottom: 16px;">
+            ${this.renderFieldSection(
+              localize('editor.button.use_entity_color', lang, 'Use Entity Color'),
+              localize(
+                'editor.button.use_entity_color_desc',
+                lang,
+                'Change button background color based on entity state'
+              ),
+              hass,
+              { use_entity_color: buttonModule.use_entity_color || false },
+              [this.booleanField('use_entity_color')],
+              (e: CustomEvent) => {
+                const enabled = e.detail.value.use_entity_color;
+                updateModule({
+                  use_entity_color: enabled,
+                  // Clear entity if disabling
+                  background_color_entity: enabled ? buttonModule.background_color_entity : '',
+                });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
+          </div>
 
+          ${buttonModule.use_entity_color
+            ? html`
+                <!-- Entity Picker -->
+                <div class="field-group" style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.button.background_color_entity', lang, 'Entity'),
+                    localize(
+                      'editor.button.background_color_entity_desc',
+                      lang,
+                      'Entity to watch for color changes'
+                    ),
+                    hass,
+                    { background_color_entity: buttonModule.background_color_entity || '' },
+                    [this.entityField('background_color_entity')],
+                    (e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+
+                <!-- State Colors Mapping -->
+                <div class="field-group" style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.button.state_colors', lang, 'State Colors')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.button.state_colors_desc',
+                      lang,
+                      'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.'
+                    )}
+                  </div>
+                  ${this.renderStateColorsEditor(
+                    buttonModule.background_state_colors || {},
+                    hass,
+                    lang,
+                    (stateColors: { [state: string]: string }) => {
+                      updateModule({ background_state_colors: stateColors });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+              `
+            : html`
+                <!-- Static Background Color -->
+                <div class="color-controls">
+                  <ultra-color-picker
+                    .label=${localize('editor.button.colors.background', lang, 'Background Color')}
+                    .value=${buttonModule.background_color || 'var(--primary-color)'}
+                    .defaultValue=${'var(--primary-color)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateModule({ background_color: e.detail.value })}
+                  ></ultra-color-picker>
+                </div>
+              `}
+
+          <!-- Text Color (always visible) -->
+          <div class="color-controls" style="margin-top: 16px;">
             <ultra-color-picker
               .label=${localize('editor.button.colors.text', lang, 'Text Color')}
               .value=${buttonModule.text_color || 'white'}
@@ -606,8 +690,37 @@ export class UltraButtonModule extends BaseUltraModule {
         : mirroredFontSize) || '14px';
     const fontSize = this.addPixelUnit(rawFontSize) || '14px';
 
-    const backgroundColor =
+    // Resolve background color - check entity-based color first if enabled
+    let backgroundColor =
       designProperties.background_color || buttonModule.background_color || 'var(--primary-color)';
+    
+    if (buttonModule.use_entity_color && buttonModule.background_color_entity && hass) {
+      const entityState = hass.states[buttonModule.background_color_entity];
+      if (entityState) {
+        // Check state colors mapping first
+        if (
+          buttonModule.background_state_colors &&
+          Object.keys(buttonModule.background_state_colors).length > 0
+        ) {
+          const stateColor = buttonModule.background_state_colors[entityState.state];
+          if (stateColor) {
+            backgroundColor = stateColor;
+          } else {
+            // Fallback to entity color extraction
+            const entityColor = this.getEntityStateColor(entityState);
+            if (entityColor) {
+              backgroundColor = entityColor;
+            }
+          }
+        } else {
+          // No state colors mapping, use entity color extraction
+          const entityColor = this.getEntityStateColor(entityState);
+          if (entityColor) {
+            backgroundColor = entityColor;
+          }
+        }
+      }
+    }
 
     const hasCustomTextColor =
       !!designProperties.color ||
@@ -1032,6 +1145,164 @@ export class UltraButtonModule extends BaseUltraModule {
 
   // Trigger preview update for reactive UI
 
+  // Render state colors editor
+  private renderStateColorsEditor(
+    stateColors: { [state: string]: string },
+    hass: HomeAssistant,
+    lang: string,
+    onUpdate: (stateColors: { [state: string]: string }) => void
+  ): TemplateResult {
+    return html`
+      <div class="state-color-editor">
+        ${Object.entries(stateColors).map(
+          ([state, color]) => html`
+            <div
+              class="state-color-row"
+              style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; overflow: hidden;"
+            >
+              <input
+                type="text"
+                class="state-color-input"
+                placeholder="State (e.g., on, off)"
+                .value=${state}
+                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
+                @input=${(e: Event) => {
+                  const newState = (e.target as HTMLInputElement).value;
+                  const updated = { ...stateColors };
+                  delete updated[state];
+                  if (newState.trim()) {
+                    updated[newState.trim()] = color;
+                  }
+                  onUpdate(updated);
+                }}
+              />
+              <div style="flex: 1; min-width: 0; overflow: hidden;">
+                <ultra-color-picker
+                  .label=${''}
+                  .value=${color}
+                  .defaultValue=${'gray'}
+                  .hass=${hass}
+                  style="width: 100%;"
+                  @value-changed=${(e: CustomEvent) => {
+                    const updated = { ...stateColors, [state]: e.detail.value };
+                    onUpdate(updated);
+                  }}
+                ></ultra-color-picker>
+              </div>
+              <ha-icon
+                icon="mdi:delete"
+                style="cursor: pointer; color: var(--error-color); margin-left: 8px; flex-shrink: 0;"
+                @click=${() => {
+                  const updated = { ...stateColors };
+                  delete updated[state];
+                  onUpdate(updated);
+                }}
+              ></ha-icon>
+            </div>
+          `
+        )}
+        <button
+          class="add-state-color-btn"
+          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+          @click=${() => {
+            const updated = { ...stateColors, new_state: 'gray' };
+            onUpdate(updated);
+          }}
+        >
+          <ha-icon icon="mdi:plus" style="margin-right: 4px;"></ha-icon>
+          ${localize('editor.button.add_state_color', lang, 'Add State Color')}
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Extract color from entity state attributes
+   */
+  private getEntityStateColor(entityState: any): string | null {
+    if (!entityState || !entityState.attributes) return null;
+
+    // Check for RGB color attributes (most common for lights)
+    if (entityState.attributes.rgb_color && Array.isArray(entityState.attributes.rgb_color)) {
+      return `rgb(${entityState.attributes.rgb_color.join(',')})`;
+    }
+
+    // Check for HS color attributes and convert to RGB
+    if (entityState.attributes.hs_color && Array.isArray(entityState.attributes.hs_color)) {
+      const [h, s] = entityState.attributes.hs_color;
+      const rgb = this.hsToRgb(h / 360, s / 100, 1);
+      return `rgb(${rgb.join(',')})`;
+    }
+
+    // Check for color name attribute
+    if (entityState.attributes.color_name) {
+      return entityState.attributes.color_name;
+    }
+
+    // Check for hex color attribute
+    if (entityState.attributes.color && typeof entityState.attributes.color === 'string') {
+      return entityState.attributes.color;
+    }
+
+    // For binary sensors or switches, use state-based colors
+    if (entityState.entity_id) {
+      const domain = entityState.entity_id.split('.')[0];
+      const state = entityState.state;
+      
+      switch (domain) {
+        case 'light':
+          return state === 'on' ? '#FFA500' : '#666666'; // Orange when on, gray when off
+        case 'switch':
+          return state === 'on' ? '#4CAF50' : '#666666'; // Green when on, gray when off
+        case 'binary_sensor':
+          return state === 'on' ? '#F44336' : '#4CAF50'; // Red when on, green when off
+        default:
+          return state === 'on' || state === 'open' || state === 'active'
+            ? 'var(--primary-color)'
+            : '#666666';
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert HSV to RGB
+   */
+  private hsToRgb(h: number, s: number, v: number): number[] {
+    let r: number, g: number, b: number;
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+
+    switch (i % 6) {
+      case 0:
+        (r = v), (g = t), (b = p);
+        break;
+      case 1:
+        (r = q), (g = v), (b = p);
+        break;
+      case 2:
+        (r = p), (g = v), (b = t);
+        break;
+      case 3:
+        (r = p), (g = q), (b = v);
+        break;
+      case 4:
+        (r = t), (g = p), (b = v);
+        break;
+      case 5:
+        (r = v), (g = p), (b = q);
+        break;
+      default:
+        (r = 0), (g = 0), (b = 0);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
+
   // Resolve background images from global design (upload/url/entity)
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
     const imageType = moduleWithDesign.background_image_type;
@@ -1087,6 +1358,22 @@ export class UltraButtonModule extends BaseUltraModule {
 
   getStyles(): string {
     return `
+      /* State color editor styles */
+      .state-color-editor {
+        width: 100%;
+      }
+
+      .state-color-row {
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .state-color-row ultra-color-picker {
+        min-width: 0;
+        flex: 1;
+      }
+
       /* Gap control styles for sliders */
       .gap-control-container {
         display: flex;

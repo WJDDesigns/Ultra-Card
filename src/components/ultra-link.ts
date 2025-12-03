@@ -855,7 +855,7 @@ export class UltraLinkComponent {
             }
 
             try {
-              hass.callService(domain, service, serviceData);
+              await hass.callService(domain, service, serviceData);
             } catch (error) {
               console.error(`❌ Ultra Card: Failed to execute service ${serviceToCall}:`, error);
             }

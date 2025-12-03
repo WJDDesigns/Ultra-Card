@@ -25,10 +25,13 @@ import { UltraAnimatedClockModule } from './animated-clock-module';
 import { UltraAnimatedWeatherModule } from './animated-weather-module';
 import { UltraAnimatedForecastModule } from './animated-forecast-module';
 import { UltraExternalCardModule } from './external-card-module';
+import { UltraNativeCardModule } from './native-card-module';
 import { UltraVideoBgModule } from './video-bg-module';
 import { UltraClimateModule } from './climate-module';
 import { UltraDynamicWeatherModule } from './dynamic-weather-module';
 import { UltraBackgroundModule } from './background-module';
+import { UltraStatusSummaryModule } from './status-summary-module';
+import { UltraToggleModule } from './toggle-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -78,6 +81,7 @@ export class ModuleRegistry {
     this.registerModule(new UltraAnimatedForecastModule());
     // Register external card module for handling existing cards, but hide from selector
     this.registerModule(new UltraExternalCardModule());
+    this.registerModule(new UltraNativeCardModule());
     // Register video background module (Pro feature)
     this.registerModule(new UltraVideoBgModule());
     // Register climate module (Pro feature)
@@ -86,6 +90,10 @@ export class ModuleRegistry {
     this.registerModule(new UltraDynamicWeatherModule());
     // Register background module
     this.registerModule(new UltraBackgroundModule());
+    // Register status summary module
+    this.registerModule(new UltraStatusSummaryModule());
+    // Register toggle module
+    this.registerModule(new UltraToggleModule());
   }
 
   // Register a new module (for core modules or third-party modules)

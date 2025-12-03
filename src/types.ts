@@ -110,10 +110,13 @@ export interface BaseModule {
     | 'animated_weather'
     | 'animated_forecast'
     | 'external_card'
+    | 'native_card'
     | 'video_bg'
     | 'dynamic_weather'
     | 'background'
-    | 'map';
+    | 'map'
+    | 'status_summary'
+    | 'toggle';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -1418,7 +1421,7 @@ export interface VerticalModule extends BaseModule {
 export interface AccordionModule extends BaseModule {
   type: 'accordion';
   modules: CardModule[];
-  
+
   // Header configuration
   title_mode?: 'custom' | 'entity';
   title_text?: string;
@@ -1427,14 +1430,14 @@ export interface AccordionModule extends BaseModule {
   icon?: string; // Main chevron/control icon (defaults to mdi:chevron-down)
   header_alignment?: 'center' | 'apart'; // How title and icon are aligned
   icon_side?: 'left' | 'right'; // Which side the icon appears on
-  
+
   // State configuration
   default_open?: boolean;
-  
+
   // Open/Close Logic
   open_mode?: 'always' | 'every' | 'any' | 'manual';
   open_conditions?: DisplayCondition[];
-  
+
   // Global action configuration
   tap_action?: {
     action:
@@ -1490,14 +1493,14 @@ export interface AccordionModule extends BaseModule {
 export interface PopupModule extends BaseModule {
   type: 'popup';
   modules: CardModule[];
-  
+
   // Title configuration
   show_title?: boolean;
   title_mode?: 'custom' | 'entity';
   title_text?: string;
   title_entity?: string;
   show_entity_name?: boolean;
-  
+
   // Trigger configuration
   trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic';
   trigger_button_text?: string;
@@ -1506,21 +1509,28 @@ export interface PopupModule extends BaseModule {
   trigger_image_url?: string;
   trigger_image_entity?: string;
   trigger_icon?: string;
-  
+
   // Trigger styling
   trigger_alignment?: 'left' | 'center' | 'right';
   trigger_button_full_width?: boolean;
   trigger_image_full_width?: boolean;
-  
+
   // Layout settings
   layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
-  animation?: 'fade' | 'scale_up' | 'scale_down' | 'slide_top' | 'slide_left' | 'slide_right' | 'slide_bottom';
-  
+  animation?:
+    | 'fade'
+    | 'scale_up'
+    | 'scale_down'
+    | 'slide_top'
+    | 'slide_left'
+    | 'slide_right'
+    | 'slide_bottom';
+
   // Popup styling
   popup_width?: string; // '600px', '100%', '14rem', '10vw'
   popup_padding?: string; // '5%', '20px', '1rem', '2vw'
   popup_border_radius?: string; // '5px', '50%', '0.3em', '12px 0'
-  
+
   // Close button configuration
   close_button_position?: 'inside' | 'none';
   close_button_color?: string;
@@ -1528,23 +1538,23 @@ export interface PopupModule extends BaseModule {
   close_button_icon?: string;
   close_button_offset_x?: string;
   close_button_offset_y?: string;
-  
+
   // Auto-close timer
   auto_close_timer_enabled?: boolean;
   auto_close_timer_seconds?: number;
-  
+
   // Colors
   title_background_color?: string;
   title_text_color?: string;
   popup_background_color?: string;
   popup_text_color?: string;
   overlay_background?: string;
-  
+
   // Trigger Logic (for logic-based popup triggering)
   trigger_mode?: 'every' | 'any' | 'manual';
   trigger_conditions?: DisplayCondition[];
   auto_close?: boolean; // For logic triggers: auto-hide when conditions become false
-  
+
   // Default state
   default_open?: boolean;
 }
@@ -1861,6 +1871,9 @@ export interface SliderBar {
   animate_on_change?: boolean;
   transition_duration?: number;
   haptic_feedback?: boolean;
+
+  // Direction control
+  invert_direction?: boolean; // Reverse min/max positions (useful for curtains)
 }
 
 export interface SliderControlModule extends BaseModule {
@@ -1979,6 +1992,9 @@ export interface SliderControlModule extends BaseModule {
   animate_on_change?: boolean;
   transition_duration?: number; // Renamed to avoid conflict with BaseModule's animation_duration
   haptic_feedback?: boolean;
+
+  // Direction control
+  invert_direction?: boolean; // Global default for slider direction inversion
 
   // Legacy support for backward compatibility
   entity?: string; // Deprecated - use bars array instead
@@ -2123,6 +2139,10 @@ export interface ButtonModule extends BaseModule {
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
+  // Entity-based background color
+  use_entity_color?: boolean;
+  background_color_entity?: string;
+  background_state_colors?: { [state: string]: string }; // e.g., { "on": "#4CAF50", "off": "#666666" }
 }
 
 // Spinbox Module (number input with +/- buttons)
@@ -2336,13 +2356,13 @@ export interface CameraModule extends BaseModule {
 
   // Camera controls
   show_controls?: boolean;
-  
+
   // Stream mode - controls how camera feed is displayed
   view_mode?: 'auto' | 'live' | 'snapshot';
-  
+
   // Snapshot refresh settings (only used when view_mode === 'snapshot')
   refresh_interval?: number; // 1-300 seconds
-  
+
   // Legacy properties (deprecated, migrated to view_mode)
   auto_refresh?: boolean;
   live_view?: boolean;
@@ -2495,6 +2515,7 @@ export interface GraphsModule extends BaseModule {
 
   // Scale options
   normalize_values?: boolean;
+  use_fixed_y_axis?: boolean;
   legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
 
   show_grid?: boolean;
@@ -3307,6 +3328,13 @@ export interface ExternalCardModule extends BaseModule {
   // Note: No tap_action/hold_action - external cards handle their own actions
 }
 
+export interface NativeCardModule extends BaseModule {
+  type: 'native_card';
+  card_type: string; // e.g., 'hui-entities-card', 'hui-area-card'
+  card_config: Record<string, any>; // The card's configuration with YAML type (e.g., {type: 'entities'})
+  // Note: Native HA cards are unlimited for all users
+}
+
 // Video Background Conditional Rule
 export interface VideoBackgroundRule {
   id: string;
@@ -3424,20 +3452,177 @@ export interface DynamicWeatherModule extends BaseModule {
 // Background Module - Apply custom backgrounds to dashboard view
 export interface BackgroundModule extends BaseModule {
   type: 'background';
-  
+
   // Background source
   background_type: 'none' | 'upload' | 'entity' | 'url';
   background_image?: string; // For upload/url types
   background_image_entity?: string; // For entity type
-  
+
   // Background display settings
   background_size?: 'cover' | 'contain' | 'fill' | 'auto';
   background_position?: string; // e.g., 'center', 'top left', 'bottom right'
   background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
-  
+
   // Opacity
   opacity: number; // 0-100
+
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Status Summary Entity Configuration
+export interface StatusSummaryEntity {
+  id: string;
+  entity: string;
+  label?: string; // Override display name
+  icon?: string; // Override icon
+  show_icon?: boolean; // Override global show_icon (undefined = use global)
+  show_state?: boolean; // Override global show_state (undefined = use global)
+  is_auto_generated?: boolean; // Flag to indicate this was auto-generated from filters
+
+  // Color coding rules
+  color_mode: 'state' | 'time' | 'custom' | 'none';
+
+  // State-based colors
+  state_colors?: {
+    [state: string]: string; // e.g., { "on": "yellow", "off": "gray" }
+  };
+
+  // Time-based colors (minutes since last change)
+  time_colors?: {
+    threshold: number; // minutes
+    color: string;
+  }[];
+
+  // Custom template for color
+  custom_color_template?: string;
+}
+
+// Status Summary Module - Display entity activity with timestamps and color coding
+export interface StatusSummaryModule extends BaseModule {
+  type: 'status_summary';
+
+  // Entity Management
+  entities: StatusSummaryEntity[];
+
+  // Auto-filtering
+  enable_auto_filter: boolean;
+  include_filters?: string[]; // Domains or partial names to include (e.g., ['binary_sensor', 'light', 'garage'])
+  exclude_filters?: string[]; // Domains or partial names to exclude (e.g., ['battery', 'update'])
+
+  // Time Filtering
+  max_time_since_change?: number; // In minutes, hide if older
+
+  // Display Options
+  title: string;
+  show_title: boolean;
+  show_last_change_header: boolean;
+  show_time_header: boolean;
+  sort_by: 'name' | 'last_change' | 'custom';
+  sort_direction: 'asc' | 'desc';
+  max_items_to_show?: number; // Maximum number of entities to display (0 = unlimited)
+
+  // Global display settings
+  global_show_icon: boolean; // Global setting for showing entity icons
+  global_show_state: boolean; // Global setting for showing entity states
+
+  // Layout
+  row_height: number;
+  row_gap: number;
+  max_entity_name_length: number; // Max characters for entity name display
+  show_separator_lines: boolean; // Show lines between entity rows
+
+  // Global color mode (applies to all entities unless overridden per-entity)
+  global_color_mode: 'state' | 'time' | 'custom' | 'none';
+
+  // Global state-based colors
+  global_state_colors?: {
+    [state: string]: string;
+  };
+
+  // Global time-based colors
+  global_time_colors?: {
+    threshold: number;
+    color: string;
+  }[];
+
+  // Global custom template
+  global_custom_color_template?: string;
+
+  // Default colors (when entity has no custom rules)
+  default_text_color: string;
+  default_icon_color: string;
+  header_text_color: string;
+  header_background_color: string;
+
+  // Template support for entire module
+  template_mode?: boolean;
+  template?: string;
+  unified_template_mode?: boolean;
+  unified_template?: string;
+
+  // Actions
+  tap_action?: any;
+  hold_action?: any;
+  double_tap_action?: any;
+
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Toggle Point Configuration
+export interface TogglePoint {
+  id: string;
+  label: string;
+  icon?: string;
   
+  // Action configuration (uses HA's native action system)
+  tap_action?: ModuleActionConfig;
+  
+  // Entity state matching (for auto-selection)
+  match_entity?: string;
+  match_state?: string | string[]; // Can match multiple states
+  
+  // Styling
+  background_color?: string;
+  text_color?: string;
+  active_background_color?: string;
+  active_text_color?: string;
+  border_color?: string;
+  active_border_color?: string;
+}
+
+// Toggle Module - Interactive toggles and multi-state switchers
+export interface ToggleModule extends BaseModule {
+  type: 'toggle';
+  // Toggle points
+  toggle_points: TogglePoint[];
+  // Visual style
+  visual_style: 'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
+  // Tracking
+  tracking_entity?: string; // Entity to watch for state changes
+  // Display
+  title?: string;
+  show_title?: boolean;
+  orientation?: 'horizontal' | 'vertical';
+  alignment?: 'left' | 'center' | 'right' | 'justify';
+  size?: 'compact' | 'normal' | 'large';
+  spacing?: number; // Gap between toggle points
+  // Icon settings
+  show_icons?: boolean;
+  icon_size?: string;
+  icon_position?: 'above' | 'left' | 'right' | 'below';
+  // Default colors
+  default_background_color?: string;
+  default_text_color?: string;
+  default_active_background_color?: string;
+  default_active_text_color?: string;
+  // Actions (for module-level tap, not toggle points)
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
   // Logic (visibility) defaults
   display_mode: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
@@ -3472,9 +3657,12 @@ export type CardModule =
   | AnimatedWeatherModule
   | AnimatedForecastModule
   | ExternalCardModule
+  | NativeCardModule
   | VideoBackgroundModule
   | DynamicWeatherModule
-  | BackgroundModule;
+  | BackgroundModule
+  | StatusSummaryModule
+  | ToggleModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {

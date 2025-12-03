@@ -1586,6 +1586,32 @@ export class UltraMapModule extends BaseUltraModule {
         .custom-marker-icon ha-icon {
           --mdi-icon-size: 24px;
         }
+        
+        /* Ensure map panes don't overlay HA UI elements */
+        .leaflet-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-map-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-tile-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-overlay-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-shadow-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-marker-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-tooltip-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-popup-pane {
+          z-index: 1 !important;
+        }
 
         /* Range control styles from Bar module */
         .number-range-control {

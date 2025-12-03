@@ -641,6 +641,13 @@ export class UltraCard extends LitElement {
     const onlyPopupModules =
       allModules.length > 0 && allModules.every(m => m.type === 'popup');
 
+    // Check if all popups have invisible triggers (logic or page_load)
+    const allPopupsInvisible = onlyPopupModules && allModules.every(m => {
+      const popup = m as any;
+      const triggerType = popup.trigger_type || 'button';
+      return triggerType === 'logic' || triggerType === 'page_load';
+    });
+
     // Check if we're in the card editor (not just dashboard edit mode)
     const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
 
@@ -659,7 +666,16 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
-    // If only popup modules and NOT in card editor, render without card-container wrapper
+    // If only popup modules with invisible triggers (logic/page_load) and NOT in card editor, render with display: contents (no visible container)
+    if (allPopupsInvisible && !isInCardEditor) {
+      return html`
+        <div style="display: contents;">
+          ${this.config.layout.rows.map(row => this._renderRow(row))}
+        </div>
+      `;
+    }
+
+    // If only popup modules with visible triggers and NOT in card editor, render without card-container wrapper
     // Popups need to render their triggers, but still need the card background styling
     if (onlyPopupModules && !isInCardEditor) {
       return html`

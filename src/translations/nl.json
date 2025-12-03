@@ -2008,7 +2008,12 @@
         "time_from": "From",
         "time_to": "To",
         "template": "Template",
-        "template_desc": "Jinja2 template that should evaluate to true/false to open the popup"
+        "template_desc": "Jinja2 template that should evaluate to true/false to open the popup",
+        "note_title": "Important Note",
+        "note_message": "These trigger conditions control <strong>when the popup opens</strong>. This is different from the Logic tab, which controls <strong>whether this module is visible</strong> on the card.",
+        "no_conditions_title": "No Conditions Configured",
+        "helper_tip": "To open a popup based on a helper, add an \"Entity State\" condition, select your helper entity, set operator to \"=\", and enter \"on\" as the value.",
+        "manual_mode_title": "Manual Mode"
       },
       "design": {
         "trigger_button": "Trigger Button Styling",

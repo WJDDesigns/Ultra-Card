@@ -164,6 +164,15 @@ export declare class LayoutTab extends LitElement {
      */
     private _handleRefresh3rdPartyTab;
     /**
+     * Handle refresh button click in Cards tab
+     */
+    private _handleRefreshCardsTab;
+    /**
+     * Add a native HA card from the Cards tab
+     * Creates a native_card module (not external_card)
+     */
+    private _addNativeCard;
+    /**
      * Open Ultra Card Pro purchase page
      */
     private _openProPage;
@@ -323,6 +332,10 @@ export declare class LayoutTab extends LitElement {
     private _renderPresetsTab;
     private _renderFavoritesTab;
     private _render3rdPartyTab;
+    /**
+     * Render the new Cards tab with both native and 3rd party cards
+     */
+    private _renderCardsTab;
     private _addCardFromTab;
     private _renderFavoriteDialog;
     private _renderImportDialog;

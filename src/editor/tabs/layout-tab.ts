@@ -34,7 +34,11 @@ import { ucExportImportService } from '../../services/uc-export-import-service';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
-import { ucExternalCardsService } from '../../services/uc-external-cards-service';
+import {
+  ucExternalCardsService,
+  normalizeNativeCardConfigType,
+} from '../../services/uc-external-cards-service';
+import { ucNativeCardsService } from '../../services/uc-native-cards-service';
 import {
   PresetDefinition,
   FavoriteRow,
@@ -54,6 +58,40 @@ const DEFAULT_FONTS = [{ value: 'default', label: '– Default –', category: '
 
 const TYPOGRAPHY_FONTS = [
   { value: 'Montserrat', label: 'Montserrat (used as default font)', category: 'typography' },
+];
+
+// Native Home Assistant cards (hui-* elements)
+const NATIVE_HA_CARDS = [
+  { type: 'hui-alarm-panel-card', name: 'Alarm Panel' },
+  { type: 'hui-area-card', name: 'Area' },
+  { type: 'hui-button-card', name: 'Button' },
+  { type: 'hui-calendar-card', name: 'Calendar' },
+  { type: 'hui-conditional-card', name: 'Conditional' },
+  { type: 'hui-entities-card', name: 'Entities' },
+  { type: 'hui-entity-card', name: 'Entity' },
+  { type: 'hui-entity-filter-card', name: 'Entity Filter' },
+  { type: 'hui-gauge-card', name: 'Gauge' },
+  { type: 'hui-glance-card', name: 'Glance' },
+  { type: 'hui-grid-card', name: 'Grid' },
+  { type: 'hui-heading-card', name: 'Heading' },
+  { type: 'hui-history-graph-card', name: 'History Graph' },
+  { type: 'hui-horizontal-stack-card', name: 'Horizontal Stack' },
+  { type: 'hui-humidifier-card', name: 'Humidifier' },
+  { type: 'hui-light-card', name: 'Light' },
+  { type: 'hui-map-card', name: 'Map' },
+  { type: 'hui-markdown-card', name: 'Markdown' },
+  { type: 'hui-media-control-card', name: 'Media Control' },
+  { type: 'hui-picture-card', name: 'Picture' },
+  { type: 'hui-picture-elements-card', name: 'Picture Elements' },
+  { type: 'hui-picture-entity-card', name: 'Picture Entity' },
+  { type: 'hui-picture-glance-card', name: 'Picture Glance' },
+  { type: 'hui-plant-status-card', name: 'Plant Status' },
+  { type: 'hui-sensor-card', name: 'Sensor' },
+  { type: 'hui-statistic-card', name: 'Statistic' },
+  { type: 'hui-statistics-graph-card', name: 'Statistics Graph' },
+  { type: 'hui-thermostat-card', name: 'Thermostat' },
+  { type: 'hui-vertical-stack-card', name: 'Vertical Stack' },
+  { type: 'hui-weather-forecast-card', name: 'Weather Forecast' },
 ];
 
 const WEB_SAFE_FONTS = [
@@ -163,7 +201,7 @@ export class LayoutTab extends LitElement {
   @state() private _globalExternalCardCount = 0;
 
   // New state properties for presets, favorites, and export/import
-  @state() private _activeModuleSelectorTab: 'modules' | '3rdparty' | 'presets' | 'favorites' =
+  @state() private _activeModuleSelectorTab: 'modules' | 'cards' | 'presets' | 'favorites' =
     'modules';
   @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
   @state() private _selectedPresetCategory: 'all' | 'badges' | 'layouts' | 'widgets' | 'custom' =
@@ -418,11 +456,20 @@ export class LayoutTab extends LitElement {
     this.requestUpdate();
   }
 
-  // Helper to get unique key for the selected module
+  // Helper to get unique key for the selected module (supports both main and child modules)
   private _getSelectedModuleKey(): string | null {
-    if (!this._selectedModule) return null;
+    // Check main module selection first
+    if (this._selectedModule) {
     const { rowIndex, columnIndex, moduleIndex } = this._selectedModule;
     return `${rowIndex}-${columnIndex}-${moduleIndex}`;
+    }
+    // Check child module selection (for layout modules like horizontal/vertical/slider)
+    if (this._selectedLayoutChild) {
+      const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
+        this._selectedLayoutChild;
+      return `child-${parentRowIndex}-${parentColumnIndex}-${parentModuleIndex}-${childIndex}`;
+    }
+    return null;
   }
 
   // Helper to check if current module preview is collapsed
@@ -2401,7 +2448,11 @@ export class LayoutTab extends LitElement {
       row.columns.forEach(column => {
         column.modules?.forEach(module => {
           if (module.type === 'external_card') {
+            // Don't count native HA cards (hui-* prefix) toward the limit
+            const cardType = (module as any).card_type || '';
+            if (!cardType.startsWith('hui-')) {
             count++;
+            }
           }
         });
       });
@@ -2422,6 +2473,7 @@ export class LayoutTab extends LitElement {
       let totalExternalCards = 0;
 
       // Count external_card modules in each Ultra Card instance
+      // Exclude native HA cards (hui-* prefix) from the count
       snapshot.cards.forEach(dashboardCard => {
         const config = dashboardCard.config;
 
@@ -2430,7 +2482,11 @@ export class LayoutTab extends LitElement {
             row.columns?.forEach(column => {
               column.modules?.forEach(module => {
                 if (module.type === 'external_card') {
+                  // Don't count native HA cards (hui-* prefix) toward the limit
+                  const cardType = (module as any).card_type || '';
+                  if (!cardType.startsWith('hui-')) {
                   totalExternalCards++;
+                  }
                 }
               });
             });
@@ -2517,6 +2573,82 @@ export class LayoutTab extends LitElement {
   private async _handleRefresh3rdPartyTab(): Promise<void> {
     await this._refreshGlobalExternalCardCount();
     this.requestUpdate();
+  }
+
+  /**
+   * Handle refresh button click in Cards tab
+   */
+  private async _handleRefreshCardsTab(): Promise<void> {
+    await this._refreshGlobalExternalCardCount();
+    this.requestUpdate();
+  }
+
+  /**
+   * Add a native HA card from the Cards tab
+   * Creates a native_card module (not external_card)
+   */
+  private async _addNativeCard(cardType: string): Promise<void> {
+    if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
+      console.error('[UC] No row or column selected');
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const row = layout.rows[this._selectedRowIndex];
+    const column = row.columns[this._selectedColumnIndex];
+
+    // Get card info
+    const cardInfo = ucNativeCardsService.getNativeCardInfo(cardType);
+    const cardName = cardInfo?.name || cardType;
+
+    // Create config type (e.g., 'hui-entities-card' -> 'entities')
+    const configType = ucNativeCardsService.elementNameToConfigType(cardType);
+
+    // Create native card module
+    const newModule = {
+      id: `native-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'native_card' as const,
+      name: cardName,
+      card_type: cardType, // Store full element name (hui-entities-card)
+      card_config: {
+        type: configType, // Store YAML type (entities)
+      },
+      display_conditions: [],
+    };
+
+    // Add to column
+    const newLayout = {
+      rows: layout.rows.map((r, rIndex) => {
+        if (rIndex === this._selectedRowIndex) {
+          return {
+            ...r,
+            columns: r.columns.map((c, cIndex) => {
+              if (cIndex === this._selectedColumnIndex) {
+                return {
+                  ...c,
+                  modules: [...(c.modules || []), newModule as any],
+                };
+              }
+              return c;
+            }),
+          };
+        }
+        return r;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+    this._showModuleSelector = false;
+
+    // Open module settings immediately
+    const moduleIndex = (column.modules || []).length;
+    this._selectedModule = {
+      rowIndex: this._selectedRowIndex,
+      columnIndex: this._selectedColumnIndex,
+      moduleIndex: moduleIndex,
+    };
+    this._showModuleSettings = true;
+    this._activeModuleTab = 'general';
   }
 
   /**
@@ -4190,12 +4322,30 @@ export class LayoutTab extends LitElement {
 
     return html`
       <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
-        <div class="preview-header">
+        <div
+          class="preview-header"
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            this._togglePreviewCollapsed(e);
+          }}
+          @touchend=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._togglePreviewCollapsed(e);
+          }}
+          style="cursor: pointer;"
+          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+        >
           <div style="display: flex; align-items: center; gap: 8px;">
             <ha-icon
               class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
               icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
               @click=${(e: Event) => {
+                e.stopPropagation();
+                this._togglePreviewPin();
+              }}
+              @touchend=${(e: Event) => {
+                e.preventDefault();
                 e.stopPropagation();
                 this._togglePreviewPin();
               }}
@@ -4207,11 +4357,7 @@ export class LayoutTab extends LitElement {
                   )
                 : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
             ></ha-icon>
-            <span
-              @click=${this._togglePreviewCollapsed}
-              style="cursor: pointer; flex: 1;"
-              title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
-            >
+            <span style="flex: 1;">
               ${localize('editor.layout.live_preview', lang, 'Live Preview')}
             </span>
           </div>
@@ -4220,8 +4366,6 @@ export class LayoutTab extends LitElement {
             icon="${this._isCurrentModulePreviewCollapsed()
               ? 'mdi:chevron-down'
               : 'mdi:chevron-up'}"
-            @click=${this._togglePreviewCollapsed}
-            title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
           ></ha-icon>
         </div>
         <div
@@ -6439,6 +6583,22 @@ export class LayoutTab extends LitElement {
   }
 
   private _getModuleSettingsTitle(module: CardModule, lang: string): string {
+    // For native cards, show the friendly card name
+    if (module.type === 'native_card') {
+      const moduleAny = module as any;
+      if (moduleAny.name) {
+        return moduleAny.name;
+      }
+      if (moduleAny.card_type) {
+        const cardInfo = ucNativeCardsService.getNativeCardInfo(moduleAny.card_type);
+        if (cardInfo) {
+          return cardInfo.name;
+        }
+        return moduleAny.card_type;
+      }
+      return 'Native HA Card';
+    }
+
     // For external cards, show the friendly card name
     if (module.type === 'external_card') {
       const moduleAny = module as any;
@@ -6465,7 +6625,7 @@ export class LayoutTab extends LitElement {
       return moduleAny.module_name;
     }
 
-    // For external cards, use the stored name or card type
+    // For external cards, use the stored name
     if (module.type === 'external_card' && module.name) {
       return module.name;
     }
@@ -6494,7 +6654,15 @@ export class LayoutTab extends LitElement {
       case 'graphs':
         return localize('editor.modules.graphs', lang, 'Graphs Module');
       case 'external_card':
-        return '3rd Party Card';
+        // Check if it's a native HA card (hui-* prefix)
+        if (moduleAny.card_type && moduleAny.card_type.startsWith('hui-')) {
+          const cardInfo = ucNativeCardsService.getNativeCardInfo(moduleAny.card_type);
+          return cardInfo?.name || moduleAny.name || 'Native HA Card';
+        }
+        return moduleAny.name || '3rd Party Card';
+      case 'native_card':
+        const nativeCardInfo = ucNativeCardsService.getNativeCardInfo(moduleAny.card_type);
+        return nativeCardInfo?.name || moduleAny.name || 'Native HA Card';
       default:
         return `${this._formatModuleTypeName(module.type)} Module`;
     }
@@ -6604,6 +6772,14 @@ export class LayoutTab extends LitElement {
           sepInfo.push(`${moduleAny.width_percent}% width`);
         if (sepInfo.length > 0) return sepInfo.join(' • ');
         return 'Visual separator';
+
+      case 'native_card':
+        // Show the card type for native cards
+        if (moduleAny.card_type) {
+          const nativeInfo = ucNativeCardsService.getNativeCardInfo(moduleAny.card_type);
+          return nativeInfo ? nativeInfo.description || `Native: ${nativeInfo.name}` : `Native: ${moduleAny.card_type}`;
+        }
+        return 'No card type configured';
 
       case 'external_card':
         // Show the card type for external cards
@@ -6791,6 +6967,10 @@ export class LayoutTab extends LitElement {
         <div
           class="preview-header"
           @click=${this._toggleRowColumnPreviewCollapsed}
+          @touchend=${(e: Event) => {
+            e.preventDefault();
+            this._toggleRowColumnPreviewCollapsed(e);
+          }}
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
@@ -6877,6 +7057,10 @@ export class LayoutTab extends LitElement {
         <div
           class="preview-header"
           @click=${this._toggleRowColumnPreviewCollapsed}
+          @touchend=${(e: Event) => {
+            e.preventDefault();
+            this._toggleRowColumnPreviewCollapsed(e);
+          }}
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
@@ -6934,7 +7118,8 @@ export class LayoutTab extends LitElement {
     // For external cards, check if card has editor and default tab accordingly
     if (module.type === 'external_card') {
       const externalModule = module as any;
-      const hasEditor = ucExternalCardsService.hasCardEditor(externalModule.card_type);
+      const isNativeCard = externalModule.card_type && externalModule.card_type.startsWith('hui-');
+      const hasEditor = isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
 
       // If no editor, hide General tab and default to YAML (only if not already on another valid tab)
       if (!hasEditor && this._activeModuleTab === 'general') {
@@ -7006,7 +7191,11 @@ export class LayoutTab extends LitElement {
 
             <div class="module-tabs">
               ${module.type === 'external_card'
-                ? ucExternalCardsService.hasCardEditor((module as any).card_type)
+                ? (() => {
+                    const externalModule = module as any;
+                    const isNativeCard = externalModule.card_type && externalModule.card_type.startsWith('hui-');
+                    const hasEditor = isNativeCard || ucExternalCardsService.hasCardEditor(externalModule.card_type);
+                    return hasEditor
                   ? html`
                       <button
                         class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
@@ -7015,7 +7204,8 @@ export class LayoutTab extends LitElement {
                         ${localize('editor.layout.general_tab', lang, 'General')}
                       </button>
                     `
-                  : ''
+                      : '';
+                  })()
                 : html`
                     <button
                       class="module-tab ${this._activeModuleTab === 'general' ? 'active' : ''}"
@@ -7262,7 +7452,16 @@ export class LayoutTab extends LitElement {
           <div class="module-preview">
             <div
               class="preview-header"
-              @click=${this._togglePreviewCollapsed}
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._togglePreviewCollapsed(e);
+              }}
+              @touchend=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this._togglePreviewCollapsed(e);
+              }}
+              style="cursor: pointer;"
               title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
             >
               <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
@@ -11254,11 +11453,11 @@ export class LayoutTab extends LitElement {
                 <span>Modules</span>
               </button>
               <button
-                class="tab-button ${this._activeModuleSelectorTab === '3rdparty' ? 'active' : ''}"
-                @click=${() => (this._activeModuleSelectorTab = '3rdparty')}
+                class="tab-button ${this._activeModuleSelectorTab === 'cards' ? 'active' : ''}"
+                @click=${() => (this._activeModuleSelectorTab = 'cards')}
               >
                 <ha-icon icon="mdi:card-multiple"></ha-icon>
-                <span>3rd Party</span>
+                <span>Cards</span>
               </button>
               <button
                 class="tab-button ${this._activeModuleSelectorTab === 'presets' ? 'active' : ''}"
@@ -11285,7 +11484,7 @@ export class LayoutTab extends LitElement {
             ${this._activeModuleSelectorTab === 'modules'
               ? this._renderModulesTab(allModules, isAddingToLayoutModule)
               : ''}
-            ${this._activeModuleSelectorTab === '3rdparty' ? this._render3rdPartyTab() : ''}
+            ${this._activeModuleSelectorTab === 'cards' ? this._renderCardsTab() : ''}
             ${this._activeModuleSelectorTab === 'presets' ? this._renderPresetsTab() : ''}
             ${this._activeModuleSelectorTab === 'favorites' ? this._renderFavoritesTab() : ''}
           </div>
@@ -12675,6 +12874,648 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  /**
+   * Render the new Cards tab with both native and 3rd party cards
+   */
+  private _renderCardsTab(): TemplateResult {
+    // Check Pro access (integration only)
+    const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
+    const isPro =
+      integrationUser?.subscription?.tier === 'pro' &&
+      integrationUser?.subscription?.status === 'active';
+
+    // Get native and 3rd party cards
+    const nativeCards = NATIVE_HA_CARDS;
+    const availableCards = ucExternalCardsService.getAvailableCards();
+    const popularCards = ucExternalCardsService.getPopularCards();
+    const lang = this.hass?.locale?.language || 'en';
+
+    // Refresh global count when tab is rendered
+    this._refreshGlobalExternalCardCount();
+
+    return html`
+      <div class="cards-tab-container">
+        <div class="cards-header">
+          <h4>Cards</h4>
+          <button class="refresh-btn" @click=${() => this._handleRefreshCardsTab()}>
+            <ha-icon icon="mdi:refresh"></ha-icon>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- SECTION 1: Native Home Assistant Cards (Unlimited) -->
+        <div class="cards-section native-section">
+          <div class="section-header">
+            <div class="section-title-row">
+              <ha-icon icon="mdi:home-assistant"></ha-icon>
+              <h5>Native Home Assistant</h5>
+            </div>
+            <div class="unlimited-badge">
+              <ha-icon icon="mdi:infinity"></ha-icon>
+              <span>Unlimited</span>
+            </div>
+          </div>
+
+          ${nativeCards.length > 0
+            ? html`
+                <div class="cards-grid">
+                  ${nativeCards.map(
+                    card => html`
+                      <div
+                        class="card-item native-card-item"
+                        @click=${async () => await this._addNativeCard(card.type)}
+                      >
+                        <div class="card-icon native-icon">
+                          <ha-icon icon="mdi:home-assistant"></ha-icon>
+                        </div>
+                        <div class="card-info">
+                          <div class="card-name">${card.name}</div>
+                          <div class="card-type">${card.type}</div>
+                        </div>
+                        <div class="card-add-hint">
+                          <ha-icon icon="mdi:plus-circle"></ha-icon>
+                        </div>
+                      </div>
+                    `
+                  )}
+                </div>
+              `
+            : html`
+                <div class="empty-state-mini">
+                  <ha-icon icon="mdi:information-outline"></ha-icon>
+                  <p>No native cards detected</p>
+                </div>
+              `}
+        </div>
+
+        <!-- SECTION 2: Community & 3rd Party Cards (Pro Gated) -->
+        <div class="cards-section thirdparty-section-wrapper">
+          <div class="section-header">
+            <div class="section-title-row">
+              <ha-icon icon="mdi:puzzle"></ha-icon>
+              <h5>Community & 3rd Party</h5>
+            </div>
+            ${!isPro
+              ? html`
+                  <div class="limit-badge">
+                    <ha-icon icon="mdi:information-outline"></ha-icon>
+                    <span
+                      >${Math.min(this._globalExternalCardCount, 5)} / 5 used</span
+                    >
+                  </div>
+                `
+              : html`
+                  <div class="pro-badge-mini">
+                    <ha-icon icon="mdi:crown"></ha-icon>
+                    <span>Unlimited</span>
+                  </div>
+                `}
+          </div>
+
+          ${!isPro
+            ? html`
+                <div class="upgrade-notice">
+                  <span>Want unlimited 3rd party cards?</span>
+                  <button class="get-pro-btn-mini" @click=${this._openProPage}>
+                    Get Pro
+                  </button>
+                </div>
+              `
+            : ''}
+
+          <div class="thirdparty-notebox">
+            <ha-icon icon="mdi:alert-circle"></ha-icon>
+            <div class="notebox-content">
+              <strong>Compatibility Notice:</strong>
+              <p>Some 3rd party cards may not work as intended. Please report any issues.</p>
+            </div>
+          </div>
+
+          ${availableCards.length > 0
+            ? html`
+                <div class="cards-grid">
+                  ${availableCards.map(
+                    card => html`
+                      <div
+                        class="card-item"
+                        @click=${async () => await this._addCardFromTab(card.type)}
+                      >
+                        <div class="card-icon">
+                          <ha-icon icon="mdi:card-bulleted"></ha-icon>
+                        </div>
+                        <div class="card-info">
+                          <div class="card-name">${card.name}</div>
+                          <div class="card-type">${card.type}</div>
+                          ${card.version
+                            ? html`<div class="card-version">v${card.version}</div>`
+                            : ''}
+                        </div>
+                        <div class="card-add-hint">
+                          <ha-icon icon="mdi:plus-circle"></ha-icon>
+                        </div>
+                      </div>
+                    `
+                  )}
+                </div>
+              `
+            : html`
+                <div class="empty-state-mini">
+                  <ha-icon icon="mdi:card-off"></ha-icon>
+                  <p>No 3rd party cards installed</p>
+                  <p class="empty-hint">Install custom cards via HACS</p>
+                </div>
+              `}
+
+          ${popularCards.length > 0
+            ? html`
+                <div class="popular-cards-section">
+                  <h6 class="subsection-title">
+                    ${availableCards.length > 0
+                      ? 'Popular Cards'
+                      : 'Popular Cards (Not Installed)'}
+                  </h6>
+                  <div class="popular-cards-list">
+                    ${popularCards.map(card => {
+                      const isInstalled = ucExternalCardsService.isCardAvailable(card.type);
+                      return html`
+                        <div class="popular-card ${isInstalled ? 'installed' : 'not-installed'}">
+                          <div class="popular-card-content">
+                            <ha-icon
+                              icon="${isInstalled ? 'mdi:check-circle' : 'mdi:information'}"
+                              class="status-icon"
+                            ></ha-icon>
+                            <div class="popular-card-info">
+                              <div class="popular-card-name">${card.name}</div>
+                              <div class="popular-card-desc">${card.description}</div>
+                            </div>
+                          </div>
+                          ${!isInstalled
+                            ? html`
+                                <a
+                                  href="${ucExternalCardsService.getHACSUrl(card.type) || '#'}"
+                                  target="_blank"
+                                  class="install-link"
+                                >
+                                  <ha-icon icon="mdi:open-in-new"></ha-icon>
+                                  View
+                                </a>
+                              `
+                            : html`<span class="installed-badge">Installed</span>`}
+                        </div>
+                      `;
+                    })}
+                  </div>
+                </div>
+              `
+            : ''}
+        </div>
+
+        <div class="cards-info">
+          <ha-icon icon="mdi:information"></ha-icon>
+          <div class="info-content">
+            <strong>How to use:</strong>
+            <p>
+              Click any card to add it to your selected column. Native HA cards and 3rd party
+              cards will use their native editors when available.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        .cards-tab-container {
+          padding: 20px;
+        }
+
+        .cards-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid var(--divider-color);
+        }
+
+        .cards-header h4 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .refresh-btn {
+          padding: 8px 16px;
+          background: var(--primary-color);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 500;
+          transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+          background: var(--primary-color-hover);
+        }
+
+        /* Section Styles */
+        .cards-section {
+          margin-bottom: 32px;
+          padding: 16px;
+          background: var(--card-background-color);
+          border: 1px solid var(--divider-color);
+          border-radius: 12px;
+        }
+
+        .native-section {
+          border-left: 4px solid var(--primary-color);
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--divider-color);
+        }
+
+        .section-title-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .section-title-row ha-icon {
+          color: var(--primary-color);
+          --mdc-icon-size: 20px;
+        }
+
+        .section-title-row h5 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--primary-text-color);
+        }
+
+        .unlimited-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: var(--success-color, #4caf50);
+          color: white;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .unlimited-badge ha-icon {
+          --mdc-icon-size: 18px;
+        }
+
+        .limit-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: var(--warning-color, #ff9800);
+          color: white;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .limit-badge ha-icon {
+          --mdc-icon-size: 18px;
+        }
+
+        .pro-badge-mini {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .pro-badge-mini ha-icon {
+          --mdc-icon-size: 18px;
+        }
+
+        .upgrade-notice {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          background: rgba(var(--rgb-primary-color), 0.1);
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-size: 14px;
+          gap: 12px;
+        }
+
+        .get-pro-btn-mini {
+          padding: 6px 16px;
+          background: var(--primary-color);
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .get-pro-btn-mini:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.3);
+        }
+
+        .thirdparty-notebox {
+          display: flex;
+          gap: 12px;
+          padding: 12px;
+          background: rgba(255, 152, 0, 0.1);
+          border: 1px solid rgba(255, 152, 0, 0.3);
+          border-radius: 8px;
+          margin-bottom: 16px;
+          align-items: flex-start;
+        }
+
+        .thirdparty-notebox ha-icon {
+          color: #ff9800;
+          --mdc-icon-size: 18px;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .notebox-content {
+          flex: 1;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .notebox-content strong {
+          display: block;
+          margin-bottom: 4px;
+          font-weight: 600;
+        }
+
+        .notebox-content p {
+          margin: 0;
+          opacity: 0.9;
+        }
+
+        .cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 12px;
+        }
+
+        .card-item {
+          padding: 14px;
+          background: var(--secondary-background-color);
+          border: 2px solid var(--divider-color);
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .card-item:hover {
+          border-color: var(--primary-color);
+          box-shadow: 0 4px 12px rgba(var(--rgb-primary-color), 0.2);
+          transform: translateY(-2px);
+        }
+
+        .native-card-item .card-icon {
+          background: rgba(var(--rgb-primary-color), 0.15);
+        }
+
+        .card-icon {
+          width: 38px;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(var(--rgb-primary-color), 0.1);
+          border-radius: 8px;
+          flex-shrink: 0;
+        }
+
+        .card-icon ha-icon {
+          --mdc-icon-size: 22px;
+          color: var(--primary-color);
+        }
+
+        .card-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .card-name {
+          font-weight: 600;
+          font-size: 14px;
+          margin-bottom: 3px;
+        }
+
+        .card-type {
+          font-size: 11px;
+          color: var(--secondary-text-color);
+          font-family: 'Courier New', monospace;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .card-version {
+          font-size: 10px;
+          color: var(--secondary-text-color);
+          margin-top: 2px;
+        }
+
+        .card-add-hint {
+          opacity: 0.4;
+          transition: opacity 0.2s;
+          color: var(--primary-color);
+        }
+
+        .card-add-hint ha-icon {
+          --mdc-icon-size: 22px;
+        }
+
+        .card-item:hover .card-add-hint {
+          opacity: 1;
+        }
+
+        .empty-state-mini {
+          padding: 32px 16px;
+          text-align: center;
+          color: var(--secondary-text-color);
+        }
+
+        .empty-state-mini ha-icon {
+          --mdc-icon-size: 48px;
+          opacity: 0.3;
+          margin-bottom: 12px;
+        }
+
+        .empty-state-mini p {
+          margin: 6px 0;
+          font-size: 14px;
+        }
+
+        .empty-hint {
+          font-size: 12px;
+          opacity: 0.7;
+        }
+
+        .popular-cards-section {
+          margin-top: 20px;
+          padding-top: 20px;
+          border-top: 1px solid var(--divider-color);
+        }
+
+        .subsection-title {
+          margin: 0 0 12px 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--secondary-text-color);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .popular-cards-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .popular-card {
+          padding: 10px;
+          background: var(--secondary-background-color);
+          border: 1px solid var(--divider-color);
+          border-radius: 6px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+        }
+
+        .popular-card.not-installed {
+          background: rgba(255, 152, 0, 0.05);
+          border-color: rgba(255, 152, 0, 0.2);
+        }
+
+        .popular-card-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
+        }
+
+        .status-icon {
+          --mdc-icon-size: 18px;
+          flex-shrink: 0;
+        }
+
+        .popular-card.installed .status-icon {
+          color: #4caf50;
+        }
+
+        .popular-card.not-installed .status-icon {
+          color: #ff9800;
+        }
+
+        .popular-card-info {
+          flex: 1;
+        }
+
+        .popular-card-name {
+          font-weight: 600;
+          margin-bottom: 2px;
+        }
+
+        .popular-card-desc {
+          font-size: 12px;
+          opacity: 0.8;
+        }
+
+        .install-link {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          background: var(--primary-color);
+          color: white;
+          border-radius: 4px;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .install-link:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        .installed-badge {
+          padding: 4px 10px;
+          background: var(--success-color, #4caf50);
+          color: white;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 500;
+        }
+
+        .cards-info {
+          display: flex;
+          gap: 12px;
+          padding: 12px;
+          background: rgba(var(--rgb-primary-color), 0.05);
+          border: 1px solid rgba(var(--rgb-primary-color), 0.2);
+          border-radius: 8px;
+          align-items: flex-start;
+          margin-top: 16px;
+        }
+
+        .cards-info ha-icon {
+          color: var(--primary-color);
+          --mdc-icon-size: 18px;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .info-content {
+          flex: 1;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .info-content strong {
+          display: block;
+          margin-bottom: 4px;
+          font-weight: 600;
+        }
+
+        .info-content p {
+          margin: 0;
+          opacity: 0.9;
+        }
+      </style>
+    `;
+  }
+
   private async _addCardFromTab(cardType: string): Promise<void> {
     // Check if a column is selected
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
@@ -12690,7 +13531,14 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Check Pro access and module limit (integration only)
+    // Route to appropriate handler based on card type
+    const isNativeCard = cardType.startsWith('hui-');
+    
+    try {
+      if (isNativeCard) {
+        await this._addNativeCard(cardType);
+      } else {
+        // For 3rd party cards, check Pro limits
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     const isPro =
       integrationUser?.subscription?.tier === 'pro' &&
@@ -12707,11 +13555,10 @@ export class LayoutTab extends LitElement {
       return;
     }
 
-    // Add the card with proper error handling
-    try {
       await this._add3rdPartyCard(cardType);
+      }
     } catch (error) {
-      console.error('[UC] Failed to add 3rd party card:', error);
+      console.error('[UC] Failed to add card:', error);
       this._showToast(`Failed to add card: ${error?.message || 'Unknown error'}`, 'error');
     }
   }
@@ -13061,13 +13908,17 @@ export class LayoutTab extends LitElement {
     }
   }
 
-  private async _add3rdPartyCard(cardType: string): Promise<void> {
+  private async _add3rdPartyCard(cardType: string, skipProCheck: boolean = false): Promise<void> {
     if (this._selectedRowIndex === -1 || this._selectedColumnIndex === -1) {
       console.error('No row or column selected');
       return;
     }
 
-    // Check Pro access (integration only)
+    // Check if this is a native HA card (hui-* prefix)
+    const isNativeCard = cardType.startsWith('hui-');
+
+    // Check Pro access (integration only) - skip for native cards
+    if (!skipProCheck && !isNativeCard) {
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     const isPro =
       integrationUser?.subscription?.tier === 'pro' &&
@@ -13084,6 +13935,7 @@ export class LayoutTab extends LitElement {
           'error'
         );
         return;
+        }
       }
     }
 
@@ -13091,24 +13943,41 @@ export class LayoutTab extends LitElement {
     const row = layout.rows[this._selectedRowIndex];
     const column = row.columns[this._selectedColumnIndex];
 
-    // Ensure card type has custom: prefix if needed
+    // Ensure card type has custom: prefix if needed (but not for hui- cards)
     let fullCardType = cardType;
     if (!cardType.startsWith('custom:') && !cardType.startsWith('hui-')) {
       fullCardType = `custom:${cardType}`;
     }
 
+    // Determine the YAML config type (hui-* cards use their short HA type)
+    const yamlConfigType = isNativeCard
+      ? normalizeNativeCardConfigType(cardType)
+      : fullCardType;
+
     // Get card info for better display name
+    let cardName: string;
+    if (isNativeCard) {
+      // For native cards, look up in NATIVE_HA_CARDS list
+      const nativeCard = NATIVE_HA_CARDS.find(c => c.type === cardType);
+      cardName = nativeCard ? nativeCard.name : cardType;
+    } else {
+      // For 3rd party cards, use the external cards service
     const cardInfo = ucExternalCardsService.getCardInfo(cardType);
-    const cardName = cardInfo ? cardInfo.name : cardType;
+      cardName = cardInfo ? cardInfo.name : cardType;
+    }
 
     // Create external card module with better default config
     const defaultConfig = await this._getDefaultCardConfig(cardType, fullCardType);
+    const normalizedConfig = {
+      ...defaultConfig,
+      type: yamlConfigType,
+    };
     const newModule = {
       id: `external-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'external_card' as const,
       name: cardName, // Use the card's friendly name
       card_type: cardType, // Store the original type (without custom: prefix)
-      card_config: defaultConfig,
+      card_config: normalizedConfig,
     };
 
     // Add to column
@@ -13156,7 +14025,8 @@ export class LayoutTab extends LitElement {
     const editorType = `${cardType}-editor`;
     const editorElement = customElements.get(editorType);
     const hasEditor =
-      editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement);
+      isNativeCard ||
+      (editorElement !== undefined && !(editorElement.prototype instanceof HTMLUnknownElement));
 
     // If no native editor, switch to YAML tab
     this._activeModuleTab = hasEditor ? 'general' : 'yaml';

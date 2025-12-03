@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, UltraCardConfig, PopupModule } from '../types';
@@ -1189,6 +1190,23 @@ export class UltraPopupModule extends BaseUltraModule {
             'Control when this popup automatically opens based on conditions.'
           )}
         </div>
+        <div
+          style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1); border-left: 3px solid var(--info-color, #03a9f4); border-radius: 4px; font-size: 13px; line-height: 1.5;"
+        >
+          <div style="font-weight: 600; margin-bottom: 4px; color: var(--info-color, #03a9f4);">
+            <ha-icon icon="mdi:information" style="--mdc-icon-size: 16px; vertical-align: middle;"></ha-icon>
+            ${localize('editor.popup.trigger_logic.note_title', lang, 'Important Note')}
+          </div>
+          <div style="color: var(--primary-text-color);">
+            ${unsafeHTML(
+              localize(
+                'editor.popup.trigger_logic.note_message',
+                lang,
+                'These trigger conditions control <strong>when the popup opens</strong>. This is different from the Logic tab, which controls <strong>whether this module is visible</strong> on the card.'
+              )
+            )}
+          </div>
+        </div>
 
         <!-- Trigger Mode Selection -->
         ${this.renderFieldSection(
@@ -1289,13 +1307,39 @@ export class UltraPopupModule extends BaseUltraModule {
                   ${conditions.length === 0
                     ? html`
                         <div
-                          style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic;"
+                          style="padding: 20px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border: 1px dashed var(--warning-color, #ff9800); border-radius: 8px;"
                         >
-                          ${localize(
-                            'editor.popup.trigger_logic.no_conditions',
-                            lang,
-                            'No conditions added yet. Click "Add Condition" to get started.'
-                          )}
+                          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <ha-icon
+                              icon="mdi:alert-circle-outline"
+                              style="--mdc-icon-size: 24px; color: var(--warning-color, #ff9800);"
+                            ></ha-icon>
+                            <span style="font-weight: 600; color: var(--primary-text-color);">
+                              ${localize(
+                                'editor.popup.trigger_logic.no_conditions_title',
+                                lang,
+                                'No Conditions Configured'
+                              )}
+                            </span>
+                          </div>
+                          <div style="color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 12px;">
+                            ${localize(
+                              'editor.popup.trigger_logic.no_conditions',
+                              lang,
+                              'Click "Add Condition" below to create your first trigger condition. The popup will remain closed until you add at least one condition.'
+                            )}
+                          </div>
+                          <div
+                            style="font-size: 12px; color: var(--secondary-text-color); font-style: italic; padding: 8px; background: rgba(0, 0, 0, 0.1); border-radius: 4px;"
+                          >
+                            <strong>Tip:</strong> ${unsafeHTML(
+                              localize(
+                                'editor.popup.trigger_logic.helper_tip',
+                                lang,
+                                'To open a popup based on a helper, add an <strong>Entity State</strong> condition, select your helper entity, set operator to <strong>=</strong>, and enter <strong>on</strong> as the value.'
+                              )
+                            )}
+                          </div>
                         </div>
                       `
                     : ''}
@@ -1307,13 +1351,23 @@ export class UltraPopupModule extends BaseUltraModule {
             `
           : html`
               <div
-                style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: 8px; text-align: center; color: var(--secondary-text-color); font-style: italic;"
+                style="margin-top: 16px; padding: 16px; background: rgba(var(--rgb-secondary-text-color), 0.05); border-radius: 8px; color: var(--secondary-text-color);"
               >
-                ${localize(
-                  'editor.popup.trigger_logic.manual_note',
-                  lang,
-                  'Popup state is controlled manually by user interaction. Set Default State above to choose initial state.'
-                )}
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <ha-icon icon="mdi:hand-pointing-right" style="--mdc-icon-size: 20px;"></ha-icon>
+                  <span style="font-weight: 600; color: var(--primary-text-color);">
+                    ${localize('editor.popup.trigger_logic.manual_mode_title', lang, 'Manual Mode')}
+                  </span>
+                </div>
+                <div style="line-height: 1.5;">
+                  ${unsafeHTML(
+                    localize(
+                      'editor.popup.trigger_logic.manual_note',
+                      lang,
+                      'Popup state is controlled manually by user interaction. Use the <strong>Default State</strong> setting in the <strong>General</strong> tab to choose whether the popup starts open or closed when the card loads.'
+                    )
+                  )}
+                </div>
               </div>
             `}
       </div>
@@ -1597,6 +1651,7 @@ export class UltraPopupModule extends BaseUltraModule {
 
   private popupStates = new Map<string, boolean>();
   private popupTimers = new Map<string, number>();
+  private lastLogicStates = new Map<string, boolean>(); // Track previous logic evaluation results
 
   /**
    * Render only the trigger element (used when popups are disabled on edit page)
@@ -1714,13 +1769,40 @@ export class UltraPopupModule extends BaseUltraModule {
       const triggerMode = popupModule.trigger_mode || 'manual';
 
       if (triggerMode === 'every' || triggerMode === 'any') {
-        // Use logic service to evaluate trigger conditions
-        logicService.setHass(hass);
-        const conditionsResult = logicService.evaluateDisplayConditions(
-          popupModule.trigger_conditions || [],
-          triggerMode
-        );
-        logicDeterminedState = conditionsResult;
+        // Don't auto-open if no conditions are configured yet
+        // This prevents blocking the editor when user first switches to logic mode
+        const conditions = popupModule.trigger_conditions || [];
+        
+        // Check if we have any CONFIGURED conditions (not just empty placeholders)
+        const hasConfiguredConditions = conditions.some((cond: any) => {
+          if (!cond || !cond.type) return false;
+          
+          switch (cond.type) {
+            case 'entity_state':
+              return cond.entity && cond.entity.trim() !== '';
+            case 'entity_attribute':
+              return cond.entity && cond.entity.trim() !== '' && cond.attribute && cond.attribute.trim() !== '';
+            case 'time':
+              return cond.time_from && cond.time_to;
+            case 'template':
+              return cond.template && cond.template.trim() !== '';
+            default:
+              return false;
+          }
+        });
+        
+        if (hasConfiguredConditions) {
+          // Use logic service to evaluate trigger conditions
+          logicService.setHass(hass);
+          const conditionsResult = logicService.evaluateDisplayConditions(
+            conditions,
+            triggerMode
+          );
+          logicDeterminedState = conditionsResult;
+        } else {
+          // No configured conditions yet - keep popup closed so user can configure
+          logicDeterminedState = false;
+        }
       }
     } else if (triggerType === 'page_load') {
       // Page load trigger: only open on initial load (when state doesn't exist yet)
@@ -1738,23 +1820,37 @@ export class UltraPopupModule extends BaseUltraModule {
         logicDeterminedState !== null ? logicDeterminedState : popupModule.default_open || false;
       this.popupStates.set(popupModule.id, initialState);
       
+      // Track initial logic state
+      if (logicDeterminedState !== null) {
+        this.lastLogicStates.set(popupModule.id, logicDeterminedState);
+      }
+      
       // Start auto-close timer if popup opens initially and timer is enabled
       if (initialState && popupModule.auto_close_timer_enabled) {
         this._startAutoCloseTimer(popupModule);
       }
     } else if (logicDeterminedState !== null && triggerType === 'logic' && popupModule.auto_close !== false) {
       // Only update state for logic triggers with auto_close enabled
-      // Page load triggers should not override user's manual close
-      const wasOpen = this.popupStates.get(popupModule.id) || false;
-      this.popupStates.set(popupModule.id, logicDeterminedState);
+      // Key fix: Only react to logic STATE CHANGES, not constant true/false values
+      const lastLogicState = this.lastLogicStates.get(popupModule.id);
+      const logicStateChanged = lastLogicState !== logicDeterminedState;
       
-      // Handle timer based on state change
-      if (!wasOpen && logicDeterminedState && popupModule.auto_close_timer_enabled) {
-        // Popup just opened - start timer
-        this._startAutoCloseTimer(popupModule);
-      } else if (wasOpen && !logicDeterminedState) {
-        // Popup just closed - clear timer
-        this._clearAutoCloseTimer(popupModule.id);
+      // Update tracked logic state
+      this.lastLogicStates.set(popupModule.id, logicDeterminedState);
+      
+      // Only update popup state if logic condition actually changed
+      if (logicStateChanged) {
+        const wasOpen = this.popupStates.get(popupModule.id) || false;
+        this.popupStates.set(popupModule.id, logicDeterminedState);
+        
+        // Handle timer based on state change
+        if (!wasOpen && logicDeterminedState && popupModule.auto_close_timer_enabled) {
+          // Popup just opened - start timer
+          this._startAutoCloseTimer(popupModule);
+        } else if (wasOpen && !logicDeterminedState) {
+          // Popup just closed - clear timer
+          this._clearAutoCloseTimer(popupModule.id);
+        }
       }
     }
 
@@ -1780,10 +1876,16 @@ export class UltraPopupModule extends BaseUltraModule {
     // Handle close
     const handleClose = (e: Event) => {
       e.stopPropagation();
+      
+      // Close the popup
       this.popupStates.set(popupModule.id, false);
       
       // Clear auto-close timer
       this._clearAutoCloseTimer(popupModule.id);
+      
+      // Note: We don't update lastLogicStates here
+      // This allows the popup to stay closed even if logic conditions are still true
+      // Popup will only reopen when conditions change from false -> true (rising edge)
       
       this.triggerPreviewUpdate(true);
     };
@@ -2168,6 +2270,20 @@ export class UltraPopupModule extends BaseUltraModule {
       `;
     }
     
+    // If there's no visible trigger (logic or page_load), wrap in a zero-height container
+    // so it doesn't take up any space on the dashboard
+    const hasVisibleTrigger = triggerType !== 'page_load' && triggerType !== 'logic';
+    
+    if (!hasVisibleTrigger) {
+      // No visible trigger - render as completely invisible (takes no space)
+      return html`
+        <div style="display: contents;">
+          ${renderPopupContent()}
+        </div>
+      `;
+    }
+    
+    // Has visible trigger - render normally
     return html`
       ${renderTrigger()} ${renderPopupContent()}
     `;

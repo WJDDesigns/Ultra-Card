@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -993,6 +993,7 @@ export interface SliderBar {
     animate_on_change?: boolean;
     transition_duration?: number;
     haptic_feedback?: boolean;
+    invert_direction?: boolean;
 }
 export interface SliderControlModule extends BaseModule {
     type: 'slider_control';
@@ -1056,6 +1057,7 @@ export interface SliderControlModule extends BaseModule {
     animate_on_change?: boolean;
     transition_duration?: number;
     haptic_feedback?: boolean;
+    invert_direction?: boolean;
     entity?: string;
     name?: string;
     attribute?: string;
@@ -1131,6 +1133,11 @@ export interface ButtonModule extends BaseModule {
     };
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+    use_entity_color?: boolean;
+    background_color_entity?: string;
+    background_state_colors?: {
+        [state: string]: string;
+    };
 }
 export interface SpinboxModule extends BaseModule {
     type: 'spinbox';
@@ -1325,6 +1332,7 @@ export interface GraphsModule extends BaseModule {
     chart_alignment?: 'left' | 'center' | 'right';
     show_legend?: boolean;
     normalize_values?: boolean;
+    use_fixed_y_axis?: boolean;
     legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
     show_grid?: boolean;
     show_grid_values?: boolean;
@@ -1816,6 +1824,11 @@ export interface ExternalCardModule extends BaseModule {
     card_type: string;
     card_config: Record<string, any>;
 }
+export interface NativeCardModule extends BaseModule {
+    type: 'native_card';
+    card_type: string;
+    card_config: Record<string, any>;
+}
 export interface VideoBackgroundRule {
     id: string;
     condition_type: 'entity_state' | 'entity_attribute' | 'template' | 'time';
@@ -1885,7 +1898,106 @@ export interface BackgroundModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule;
+export interface StatusSummaryEntity {
+    id: string;
+    entity: string;
+    label?: string;
+    icon?: string;
+    show_icon?: boolean;
+    show_state?: boolean;
+    is_auto_generated?: boolean;
+    color_mode: 'state' | 'time' | 'custom' | 'none';
+    state_colors?: {
+        [state: string]: string;
+    };
+    time_colors?: {
+        threshold: number;
+        color: string;
+    }[];
+    custom_color_template?: string;
+}
+export interface StatusSummaryModule extends BaseModule {
+    type: 'status_summary';
+    entities: StatusSummaryEntity[];
+    enable_auto_filter: boolean;
+    include_filters?: string[];
+    exclude_filters?: string[];
+    max_time_since_change?: number;
+    title: string;
+    show_title: boolean;
+    show_last_change_header: boolean;
+    show_time_header: boolean;
+    sort_by: 'name' | 'last_change' | 'custom';
+    sort_direction: 'asc' | 'desc';
+    max_items_to_show?: number;
+    global_show_icon: boolean;
+    global_show_state: boolean;
+    row_height: number;
+    row_gap: number;
+    max_entity_name_length: number;
+    show_separator_lines: boolean;
+    global_color_mode: 'state' | 'time' | 'custom' | 'none';
+    global_state_colors?: {
+        [state: string]: string;
+    };
+    global_time_colors?: {
+        threshold: number;
+        color: string;
+    }[];
+    global_custom_color_template?: string;
+    default_text_color: string;
+    default_icon_color: string;
+    header_text_color: string;
+    header_background_color: string;
+    template_mode?: boolean;
+    template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    tap_action?: any;
+    hold_action?: any;
+    double_tap_action?: any;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export interface TogglePoint {
+    id: string;
+    label: string;
+    icon?: string;
+    tap_action?: ModuleActionConfig;
+    match_entity?: string;
+    match_state?: string | string[];
+    background_color?: string;
+    text_color?: string;
+    active_background_color?: string;
+    active_text_color?: string;
+    border_color?: string;
+    active_border_color?: string;
+}
+export interface ToggleModule extends BaseModule {
+    type: 'toggle';
+    toggle_points: TogglePoint[];
+    visual_style: 'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
+    tracking_entity?: string;
+    title?: string;
+    show_title?: boolean;
+    orientation?: 'horizontal' | 'vertical';
+    alignment?: 'left' | 'center' | 'right' | 'justify';
+    size?: 'compact' | 'normal' | 'large';
+    spacing?: number;
+    show_icons?: boolean;
+    icon_size?: string;
+    icon_position?: 'above' | 'left' | 'right' | 'below';
+    default_background_color?: string;
+    default_text_color?: string;
+    default_active_background_color?: string;
+    default_active_text_color?: string;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

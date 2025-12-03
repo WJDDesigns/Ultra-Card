@@ -20,6 +20,15 @@ export declare class UltraButtonModule extends BaseUltraModule {
     private getFlexJustify;
     private resolveTextShadow;
     private addPixelUnit;
+    private renderStateColorsEditor;
+    /**
+     * Extract color from entity state attributes
+     */
+    private getEntityStateColor;
+    /**
+     * Convert HSV to RGB
+     */
+    private hsToRgb;
     private getBackgroundImageCSS;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     getStyles(): string;

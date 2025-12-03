@@ -109,6 +109,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
               outside_text_position: 'left',
               outside_name_position: 'top_left',
               outside_value_position: 'bottom_left',
+              // Direction control
+              invert_direction: false,
             });
 
             // Add RGB bar if supported
@@ -134,6 +136,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 outside_text_position: 'left',
                 outside_name_position: 'top_left',
                 outside_value_position: 'bottom_left',
+                // Direction control
+                invert_direction: false,
               });
             }
 
@@ -160,6 +164,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 outside_text_position: 'left',
                 outside_name_position: 'top_left',
                 outside_value_position: 'bottom_left',
+                // Direction control
+                invert_direction: false,
               });
             }
           }
@@ -183,6 +189,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
             outside_text_position: 'left',
             outside_name_position: 'top_left',
             outside_value_position: 'bottom_left',
+            // Direction control
+            invert_direction: false,
           });
         } else if (fan) {
           bars.push({
@@ -204,6 +212,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
             outside_text_position: 'left',
             outside_name_position: 'top_left',
             outside_value_position: 'bottom_left',
+            // Direction control
+            invert_direction: false,
           });
         } else if (inputNumber) {
           const entityState = homeAssistant.states[inputNumber];
@@ -226,6 +236,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
             outside_text_position: 'left',
             outside_name_position: 'top_left',
             outside_value_position: 'bottom_left',
+            // Direction control
+            invert_direction: false,
           });
         }
       }
@@ -303,6 +315,9 @@ export class UltraSliderControlModule extends BaseUltraModule {
       animate_on_change: true,
       transition_duration: 200,
       haptic_feedback: true,
+
+      // Direction control
+      invert_direction: false,
 
       // Actions
       tap_action: { action: 'nothing' },
@@ -517,6 +532,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
       icon_as_toggle: true,
       name_bold: true,
       auto_contrast: true,
+      // Direction control
+      invert_direction: false,
     };
   }
 
@@ -1615,6 +1632,32 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           </div>
                         `
                       : ''}
+
+                    <div
+                      style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px;"
+                    >
+                      <div>
+                        <div class="field-title">Invert Direction</div>
+                        <div class="field-description">
+                          Reverse min/max positions (useful for curtains)
+                        </div>
+                      </div>
+                      <ha-switch
+                        .checked=${bar.invert_direction ?? sliderControl.invert_direction ?? false}
+                        @change=${(e: Event) => {
+                          const target = e.target as any;
+                          const updatedBars = [...(sliderControl.bars || [])];
+                          const barIndex = updatedBars.findIndex(b => b.id === bar.id);
+                          if (barIndex !== -1) {
+                            updatedBars[barIndex] = {
+                              ...updatedBars[barIndex],
+                              invert_direction: target.checked,
+                            };
+                          }
+                          updateModule({ bars: updatedBars });
+                        }}
+                      ></ha-switch>
+                    </div>
                   </div>
 
                   ${bar.type !== 'rgb' && bar.type !== 'color_temp'
@@ -2483,6 +2526,10 @@ export class UltraSliderControlModule extends BaseUltraModule {
         ? (this.localSliderValues.get(sliderKey) ?? percentage)
         : percentage;
 
+      // Apply direction inversion if enabled
+      const shouldInvert = bar.invert_direction ?? sliderControl.invert_direction ?? false;
+      const visualPercentage = shouldInvert ? 100 - livePercentage : livePercentage;
+
       // Determine fill/gradient for this bar based on overrides and defaults
       const defaultFill = this._getBarGradient(bar, homeAssistant, orientation);
       const barFillOverride =
@@ -2521,7 +2568,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
       const gradientDir = isVertical ? '0deg' : '90deg';
       const overlayFillSnippet = isCustomGradientFill
         ? `background: ${gradient}; opacity: 1;`
-        : `background: linear-gradient(${gradientDir}, ${gradient} 0%, ${gradient} ${livePercentage}%, transparent ${livePercentage}%, transparent 100%); opacity: 0.8;`;
+        : `background: linear-gradient(${gradientDir}, ${gradient} 0%, ${gradient} ${visualPercentage}%, transparent ${visualPercentage}%, transparent 100%); opacity: 0.8;`;
       const resolvedOverlayNamePosition =
         bar.overlay_name_position || sliderControl.overlay_name_position || 'top';
       const resolvedOverlayValuePosition =
@@ -2555,7 +2602,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
         ? gradient
         : isCustomGradientFill
           ? trackColor
-          : `linear-gradient(${gradientDir}, ${gradient} 0%, ${gradient} ${livePercentage}%, ${trackColor} ${livePercentage}%, ${trackColor} 100%)`;
+          : `linear-gradient(${gradientDir}, ${gradient} 0%, ${gradient} ${visualPercentage}%, ${trackColor} ${visualPercentage}%, ${trackColor} 100%)`;
 
       let borderRadius = '10px';
       if (barSliderRadius === 'square') borderRadius = '0';
@@ -2630,9 +2677,12 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
       const handleSliderInput = (e: Event) => {
         const input = e.target as HTMLInputElement;
-        const newPercentage = parseFloat(input.value);
+        const visualInput = parseFloat(input.value);
+        
+        // Convert visual input back to actual percentage if inverted
+        const newPercentage = shouldInvert ? 100 - visualInput : visualInput;
 
-        // Store the local value during interaction
+        // Store the local value during interaction (store actual percentage, not visual)
         this.localSliderValues.set(sliderKey, newPercentage);
         this.localSliderValues = new Map(this.localSliderValues);
 
@@ -2804,8 +2854,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
                   top: 0;
                   left: 0;
                   ${isVertical
-                      ? `width: 100%; height: ${livePercentage}%;`
-                      : `height: 100%; width: ${livePercentage}%;`}
+                      ? `width: 100%; height: ${visualPercentage}%;`
+                      : `height: 100%; width: ${visualPercentage}%;`}
                   ${overlayContent}
                   border-radius: ${borderRadius};
                   pointer-events: none;
@@ -2829,7 +2879,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                 // Convert step to percentage scale
                 return range > 0 ? (step / range) * 100 : 1;
               })()}"
-              .value="${livePercentage}"
+              .value="${visualPercentage}"
               @input=${handleSliderInput}
               @mousedown=${handleSliderStart}
               @mouseup=${handleSliderEnd}
@@ -2871,8 +2921,8 @@ export class UltraSliderControlModule extends BaseUltraModule {
                       ? 'vertical-indicator'
                       : 'horizontal-indicator'}"
                     style="${isVertical
-                      ? `top: ${100 - livePercentage}%;`
-                      : `left: ${livePercentage}%`};"
+                      ? `top: ${100 - visualPercentage}%;`
+                      : `left: ${visualPercentage}%`};"
                   ></div>
                 `
               : ''}
@@ -2886,7 +2936,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
 
                         const useAutoContrast =
                           bar.auto_contrast ?? sliderControl.auto_contrast ?? true;
-                        const contrastColor = livePercentage > 50 ? '#000' : '#fff';
+                        const contrastColor = visualPercentage > 50 ? '#000' : '#fff';
                         const nameColor = useAutoContrast
                           ? contrastColor
                           : bar.name_color ||
@@ -3072,7 +3122,7 @@ export class UltraSliderControlModule extends BaseUltraModule {
                           const autoContrast =
                             bar.auto_contrast ?? sliderControl.auto_contrast ?? true;
                           const contrastColor = autoContrast
-                            ? livePercentage > 50
+                            ? visualPercentage > 50
                               ? '#000'
                               : '#fff'
                             : '';

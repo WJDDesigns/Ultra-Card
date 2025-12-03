@@ -9,6 +9,23 @@ import { CustomCard } from '../types';
 // Alias for consistency
 type CustomCardInfo = CustomCard;
 
+/**
+ * Convert a native HA element name (hui-*-card) to its YAML config type (e.g., calendar)
+ */
+export function normalizeNativeCardConfigType(cardType: string): string {
+  if (!cardType || !cardType.startsWith('hui-')) {
+    return cardType;
+  }
+
+  let normalized = cardType.substring(4); // remove hui-
+
+  if (normalized.endsWith('-card')) {
+    normalized = normalized.substring(0, normalized.length - 5);
+  }
+
+  return normalized;
+}
+
 class UcExternalCardsService {
   /**
    * Get all available custom cards registered in Home Assistant
@@ -203,6 +220,11 @@ class UcExternalCardsService {
    */
   hasCardEditor(cardType: string): boolean {
     if (!cardType) return false;
+
+    // Native HA cards (hui-*) always have editors - they just load lazily
+    if (cardType.startsWith('hui-')) {
+      return true;
+    }
 
     try {
       const editorType = `${cardType}-editor`;

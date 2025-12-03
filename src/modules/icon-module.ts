@@ -2422,6 +2422,61 @@ export class UltraIconModule extends BaseUltraModule {
       hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
     };
 
+    // Check if any icon has a template-based container background color (needs to be parsed from template strings)
+    // This needs to happen BEFORE containerStyles are built
+    let templateContainerBg = '';
+    const tempValidIcons = (iconModule.icons || []).filter(i => i.entity && i.entity.trim() !== '');
+    for (const icon of tempValidIcons) {
+      // Check if icon has unified template mode enabled
+      if (icon.unified_template_mode && icon.unified_template) {
+        // Initialize template service if needed
+        if (!this._templateService && hass) {
+          this._templateService = new TemplateService(hass);
+        }
+
+        const templateHash = this._hashString(icon.unified_template);
+        // Use the same key format as the render loop: unified_${entity}_${id}_${hash}
+        const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+
+        // Subscribe to template if not already subscribed (needed for template evaluation)
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          const context = this._getEntityContext(icon, hass);
+          this._templateService.subscribeToTemplate(
+            icon.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+            break; // Use first icon's template background
+          }
+        }
+      }
+    }
+
     // Container styles for design system - no hardcoded spacing, user controls all
     const containerStyles = {
       // Only apply padding if explicitly set by user
@@ -2449,7 +2504,10 @@ export class UltraIconModule extends BaseUltraModule {
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background:
-        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+        templateContainerBg ||
+        designProperties.background_color ||
+        moduleWithDesign.background_color ||
+        'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
         hass

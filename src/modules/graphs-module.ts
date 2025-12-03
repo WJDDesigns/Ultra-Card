@@ -188,6 +188,11 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Bar chart display limit
       bar_display_limit: 0, // 0 = unlimited
 
+      // Fixed Y-axis scale
+      use_fixed_y_axis: false,
+      y_axis_min: undefined,
+      y_axis_max: undefined,
+
       // Global link configuration (store undefined to show Default)
       tap_action: undefined,
       hold_action: undefined,
@@ -1231,6 +1236,209 @@ export class UltraGraphsModule extends BaseUltraModule {
                         lang,
                         'Useful when comparing entities with different units (e.g., % vs miles)'
                       )}
+                    </div>
+                  </div>
+                `
+              : ''}
+
+            <!-- Fixed Y-Axis Scale -->
+            ${['line', 'bar'].includes(graphsModule.chart_type)
+              ? html`
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                      <ha-switch
+                        .checked=${(graphsModule as any).use_fixed_y_axis || false}
+                        @change=${(e: Event) => {
+                          const checked = (e.target as any).checked;
+                          updateModule({ use_fixed_y_axis: checked } as any);
+                          // Clear cached data to force re-render with new scale
+                          delete this._historyData[graphsModule.id];
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
+                      ></ha-switch>
+                      <span style="font-size: 14px;"
+                        >${localize(
+                          'editor.graphs.display.use_fixed_y_axis',
+                          lang,
+                          'Use Fixed Y-Axis Scale'
+                        )}</span
+                      >
+                    </label>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; margin-left: 40px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.use_fixed_y_axis_desc',
+                        lang,
+                        'Set fixed min/max values instead of auto-scaling. Useful for consistent scales across multiple graphs or time periods.'
+                      )}
+                    </div>
+                  </div>
+                `
+              : ''}
+            ${(graphsModule as any).use_fixed_y_axis &&
+            ['line', 'bar'].includes(graphsModule.chart_type)
+              ? html`
+                  <div
+                    class="conditional-fields-group"
+                    style="padding: 16px; margin-top: 12px; margin-bottom: 16px;"
+                  >
+                    <!-- Min Value -->
+                    <div style="margin-bottom: 16px;">
+                      <label
+                        style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                      >
+                        ${localize('editor.graphs.display.y_axis_min', lang, 'Minimum Value')}
+                      </label>
+                      <div
+                        style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;"
+                      >
+                        <input
+                          type="number"
+                          step="any"
+                          .value=${String((graphsModule as any).y_axis_min ?? 0)}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const val = target.value === '' ? undefined : parseFloat(target.value);
+                            updateModule({ y_axis_min: val } as any);
+                            // Clear cached data to force re-render
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          placeholder="0"
+                          style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 6px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            font-size: 14px;
+                            transition: border-color 0.2s ease;
+                            box-sizing: border-box;
+                          "
+                        />
+                        <button
+                          @click=${() => {
+                            updateModule({ y_axis_min: 0 } as any);
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          title="${localize(
+                            'editor.fields.reset_default_value',
+                            lang,
+                            'Reset to default ({value})'
+                          ).replace('{value}', '0')}"
+                          style="
+                            width: 32px;
+                            height: 32px;
+                            padding: 0;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 4px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.2s ease;
+                            flex-shrink: 0;
+                          "
+                          @mouseenter=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--primary-color)';
+                            btn.style.color = 'var(--text-primary-color)';
+                            btn.style.borderColor = 'var(--primary-color)';
+                          }}
+                          @mouseleave=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--secondary-background-color)';
+                            btn.style.color = 'var(--primary-text-color)';
+                            btn.style.borderColor = 'var(--divider-color)';
+                          }}
+                        >
+                          <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Max Value -->
+                    <div>
+                      <label
+                        style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                      >
+                        ${localize('editor.graphs.display.y_axis_max', lang, 'Maximum Value')}
+                      </label>
+                      <div
+                        style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;"
+                      >
+                        <input
+                          type="number"
+                          step="any"
+                          .value=${String((graphsModule as any).y_axis_max ?? 100)}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const val = target.value === '' ? undefined : parseFloat(target.value);
+                            updateModule({ y_axis_max: val } as any);
+                            // Clear cached data to force re-render
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          placeholder="100"
+                          style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 6px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            font-size: 14px;
+                            transition: border-color 0.2s ease;
+                            box-sizing: border-box;
+                          "
+                        />
+                        <button
+                          @click=${() => {
+                            updateModule({ y_axis_max: 100 } as any);
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          title="${localize(
+                            'editor.fields.reset_default_value',
+                            lang,
+                            'Reset to default ({value})'
+                          ).replace('{value}', '100')}"
+                          style="
+                            width: 32px;
+                            height: 32px;
+                            padding: 0;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 4px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.2s ease;
+                            flex-shrink: 0;
+                          "
+                          @mouseenter=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--primary-color)';
+                            btn.style.color = 'var(--text-primary-color)';
+                            btn.style.borderColor = 'var(--primary-color)';
+                          }}
+                          @mouseleave=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--secondary-background-color)';
+                            btn.style.color = 'var(--primary-text-color)';
+                            btn.style.borderColor = 'var(--divider-color)';
+                          }}
+                        >
+                          <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 `
@@ -2771,8 +2979,24 @@ export class UltraGraphsModule extends BaseUltraModule {
       });
     }
 
-    const maxValue = Math.max(...normalizedDatasets.flatMap(d => d.values));
-    const minValue = Math.min(...normalizedDatasets.flatMap(d => d.values));
+    // Calculate min/max values - use fixed scale if enabled
+    let maxValue: number;
+    let minValue: number;
+    
+    if ((module as any).use_fixed_y_axis) {
+      // Use fixed values from configuration
+      minValue = (module as any).y_axis_min ?? 0;
+      maxValue = (module as any).y_axis_max ?? 100;
+      // Ensure max is greater than min
+      if (maxValue <= minValue) {
+        maxValue = minValue + 1;
+      }
+    } else {
+      // Auto-calculate from data (existing behavior)
+      maxValue = Math.max(...normalizedDatasets.flatMap(d => d.values));
+      minValue = Math.min(...normalizedDatasets.flatMap(d => d.values));
+    }
+    
     const valueRange = maxValue - minValue;
 
     const grid = module.show_grid !== false;
@@ -3183,8 +3407,25 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
 
     const allValues = normalizedDatasets.flatMap(d => d.values);
-    const maxValue = allValues.length ? Math.max(...allValues) : 0;
-    const minValue = allValues.length ? Math.min(...allValues) : 0;
+    
+    // Calculate min/max values - use fixed scale if enabled
+    let maxValue: number;
+    let minValue: number;
+    
+    if ((module as any).use_fixed_y_axis) {
+      // Use fixed values from configuration
+      minValue = (module as any).y_axis_min ?? 0;
+      maxValue = (module as any).y_axis_max ?? 100;
+      // Ensure max is greater than min
+      if (maxValue <= minValue) {
+        maxValue = minValue + 1;
+      }
+    } else {
+      // Auto-calculate from data (existing behavior)
+      maxValue = allValues.length ? Math.max(...allValues) : 0;
+      minValue = allValues.length ? Math.min(...allValues) : 0;
+    }
+    
     const valueRange = maxValue - minValue || 1;
 
     const labelArea = 28;

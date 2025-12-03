@@ -2104,8 +2104,42 @@ export class UltraInfoModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    const validEntities = (infoModule.info_entities || []).filter(
+      e => e.entity && e.entity.trim() !== ''
+    );
+    const incompleteEntities = (infoModule.info_entities || []).filter(
+      e => !e.entity || e.entity.trim() === ''
+    );
+
+    // Check if any entity has a template-based container background color (needs to be parsed from template strings)
+    let templateContainerBg = '';
+    for (const entity of validEntities) {
+      // Check if entity has unified template mode enabled
+      if (entity.unified_template_mode && entity.unified_template) {
+        // Initialize template service if needed
+        if (!this._templateService && hass) {
+          this._templateService = new TemplateService(hass);
+        }
+
+        const templateHash = this._hashString(entity.unified_template);
+        const templateKey = `unified_info_${entity.entity}_${validEntities.indexOf(entity)}_${templateHash}`;
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+            break; // Use first entity's template background
+          }
+        }
+      }
+    }
+
+    // Compute background styles with template background taking priority over design background
     const { styles: containerBackgroundStyles } = computeBackgroundStyles({
-      color: designProperties.background_color || moduleWithDesign.background_color,
+      color: templateContainerBg || designProperties.background_color || moduleWithDesign.background_color,
       fallback: moduleWithDesign.background_color || 'transparent',
       image: this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass),
       imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',
@@ -2115,14 +2149,6 @@ export class UltraInfoModule extends BaseUltraModule {
         designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
     });
     Object.assign(containerStyles, containerBackgroundStyles);
-
-    // GRACEFUL RENDERING: Check for incomplete configuration
-    const validEntities = (infoModule.info_entities || []).filter(
-      e => e.entity && e.entity.trim() !== ''
-    );
-    const incompleteEntities = (infoModule.info_entities || []).filter(
-      e => !e.entity || e.entity.trim() === ''
-    );
 
     // If no entities configured at all, show gradient error state
     if (!infoModule.info_entities || infoModule.info_entities.length === 0) {
@@ -2635,15 +2661,6 @@ export class UltraInfoModule extends BaseUltraModule {
                     -webkit-user-select: none;
                     -moz-user-select: none;
                     -ms-user-select: none;
-                    ${(entity as any)._template_container_background_color
-                      ? `background-color: ${(entity as any)._template_container_background_color};`
-                      : ''}
-                    ${designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
-                      ? `padding: ${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'};`
-                      : ''}
-                    ${designProperties.border_radius
-                      ? `border-radius: ${this.addPixelUnit(designProperties.border_radius) || '0px'};`
-                      : ''}
                   "
                     @click=${(e: Event) => this.handleClick(e, infoModule, hass, config)}
                     @dblclick=${(e: Event) => this.handleDoubleClick(e, infoModule, hass, config)}
@@ -2672,15 +2689,6 @@ export class UltraInfoModule extends BaseUltraModule {
                         : 'center'};
                     justify-content: ${justifyContent};
                     gap: ${effectiveGap}px;
-                    ${(entity as any)._template_container_background_color
-                      ? `background-color: ${(entity as any)._template_container_background_color};`
-                      : ''}
-                    ${designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
-                      ? `padding: ${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'};`
-                      : ''}
-                    ${designProperties.border_radius
-                      ? `border-radius: ${this.addPixelUnit(designProperties.border_radius) || '0px'};`
-                      : ''}
                   "
                   >
                     ${iconPosition === 'left' || iconPosition === 'top'

@@ -18,13 +18,10 @@ import {
   Keyboard,
   Mousewheel,
   EffectFade,
-  EffectCube,
-  EffectCoverflow,
-  EffectFlip,
   Scrollbar,
 } from 'swiper/modules';
 
-// Register Swiper modules globally
+// Register Swiper modules globally (only slide and fade effects supported)
 Swiper.use([
   Navigation,
   Pagination,
@@ -32,18 +29,12 @@ Swiper.use([
   Keyboard,
   Mousewheel,
   EffectFade,
-  EffectCube,
-  EffectCoverflow,
-  EffectFlip,
   Scrollbar,
 ]);
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
-import 'swiper/css/effect-cube';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/effect-flip';
 import 'swiper/css/scrollbar';
 
 // Swiper instance manager for slider instances
@@ -739,10 +730,6 @@ export class UltraSliderModule extends BaseUltraModule {
               this.selectField('transition_effect', [
                 { value: 'slide', label: 'Slide' },
                 { value: 'fade', label: 'Fade' },
-                { value: 'cube', label: 'Cube' },
-                { value: 'coverflow', label: 'Coverflow' },
-                { value: 'flip', label: 'Flip' },
-                { value: 'zoom', label: 'Zoom' },
               ]),
             ],
             (e: CustomEvent) =>
@@ -1517,35 +1504,12 @@ export class UltraSliderModule extends BaseUltraModule {
 
             // Track previous index to detect actual navigation
             let previousSlideIndex = swiper.activeIndex;
-            const transitionEffect = sliderModule.transition_effect || 'slide';
 
             // Dispatch custom event for compatibility
             swiper.on('slideChange', () => {
               // Only log if index actually changed (prevents logging during initialization loops)
               const actualIndexChanged = swiper.activeIndex !== previousSlideIndex;
               previousSlideIndex = swiper.activeIndex;
-
-              // Handle zoom effect via CSS transforms
-              if (transitionEffect === 'zoom' || transitionEffect === 'zoom-in' || transitionEffect === 'zoom-out') {
-                swiper.slides.forEach((slide: HTMLElement, index: number) => {
-                  const isActive = index === swiper.activeIndex;
-                  if (isActive) {
-                    // Zoom in active slide
-                    const scale = transitionEffect === 'zoom-out' ? 0.8 : transitionEffect === 'zoom-in' ? 1.2 : 1.1;
-                    slide.style.transform = `scale(${scale})`;
-                    slide.style.transition = 'transform 0.3s ease';
-                    slide.style.zIndex = '10';
-                  } else {
-                    // Reset other slides
-                    slide.style.transform = 'scale(1)';
-                    slide.style.transition = 'transform 0.3s ease';
-                    slide.style.zIndex = '1';
-                  }
-                });
-              }
-
-              if (actualIndexChanged) {
-              }
 
               // Update arrow visibility immediately
               if (!swiper.params.loop && !swiper.params.rewind) {
@@ -1560,13 +1524,8 @@ export class UltraSliderModule extends BaseUltraModule {
               // Update height immediately on slide change (with transitions disabled to avoid conflicts)
               // Skip auto-height updates for effects that require fixed height
               const transitionEffectForHeight = sliderModule.transition_effect || 'slide';
-              const effectsRequiringFixedHeight = [
-                'fade',
-                'flip',
-                'cube',
-                'coverflow',
-              ];
-              const requiresFixedHeight = effectsRequiringFixedHeight.includes(transitionEffectForHeight);
+              // Only fade requires fixed height (slide uses auto-height)
+              const requiresFixedHeight = transitionEffectForHeight === 'fade';
               if (
                 (sliderModule.auto_height ?? true) &&
                 !requiresFixedHeight &&
@@ -1619,6 +1578,10 @@ export class UltraSliderModule extends BaseUltraModule {
             const setInitialSlideHeight = () => {
               if (!swiper || swiper.destroyed) return;
 
+              // CRITICAL: Skip height modifications for fade effect (uses absolute positioning)
+              const currentEffect = sliderModule.transition_effect || 'slide';
+              const skipHeightModifications = currentEffect === 'fade';
+
               const activeSlide = swiper.slides[swiper.activeIndex];
               if (!activeSlide) return;
 
@@ -1631,7 +1594,8 @@ export class UltraSliderModule extends BaseUltraModule {
               const wrapper = swiper.wrapperEl;
               const swiperEl = swiper.el as HTMLElement;
 
-              if (sliderModule.auto_height ?? true) {
+              // Only apply auto-height logic for slide effect (not for fade, cube, flip, coverflow)
+              if ((sliderModule.auto_height ?? true) && !skipHeightModifications) {
                 if (wrapper) {
                   wrapper.style.height = `${contentHeight}px`;
                   // CRITICAL: Preserve Swiper's transform transition, don't override it
@@ -1658,13 +1622,15 @@ export class UltraSliderModule extends BaseUltraModule {
                 });
               } else if (
                 wrapper &&
-                !(sliderModule.auto_height ?? true) &&
+                (!(sliderModule.auto_height ?? true) || skipHeightModifications) &&
                 sliderModule.slider_height
               ) {
-                // Fixed height mode - ensure wrapper uses the configured height
-                wrapper.style.height = `${sliderModule.slider_height}px`;
+                // Fixed height mode OR effects that require fixed height
+                // Ensure wrapper and swiper use the configured height
+                const fixedHeight = sliderModule.slider_height || 300;
+                wrapper.style.height = `${fixedHeight}px`;
                 if (swiperEl) {
-                  swiperEl.style.height = `${sliderModule.slider_height}px`;
+                  swiperEl.style.height = `${fixedHeight}px`;
                 }
               }
 
@@ -1747,9 +1713,14 @@ export class UltraSliderModule extends BaseUltraModule {
 
             // Set up ResizeObserver to detect content changes and update height
             // Add debouncing to prevent constant updates
+            // CRITICAL: Skip for fade effect (uses absolute positioning)
+            const currentEffect = sliderModule.transition_effect || 'slide';
+            const skipResizeHeightUpdates = currentEffect === 'fade';
+            
             let resizeTimeout: number | null = null;
             const resizeObserver = new ResizeObserver(() => {
-              if (swiper && !swiper.destroyed && (sliderModule.auto_height ?? true)) {
+              // Skip height updates for effects that need fixed positioning
+              if (swiper && !swiper.destroyed && (sliderModule.auto_height ?? true) && !skipResizeHeightUpdates) {
                 // Clear existing timeout
                 if (resizeTimeout !== null) {
                   clearTimeout(resizeTimeout);
@@ -1924,10 +1895,8 @@ export class UltraSliderModule extends BaseUltraModule {
 
     // Detect if effect requires fixed height for proper display
     const transitionEffect = sliderModule.transition_effect || 'slide';
-    const requiresFixedHeight = ['fade', 'flip', 'cube', 'coverflow'].includes(
-      transitionEffect
-    );
-    const requiresAbsolutePositioning = false; // Let Swiper handle all positioning
+    // Only fade requires fixed height (slide uses auto-height)
+    const requiresFixedHeight = transitionEffect === 'fade';
 
     return html`
       <style>
@@ -1970,20 +1939,6 @@ export class UltraSliderModule extends BaseUltraModule {
           ${requiresFixedHeight && !isVertical
           ? `height: ${sliderModule.slider_height || defaultHeight}px !important;`
           : ''}
-          /* 3D effects need perspective and proper overflow */
-          ${['cube', 'flip'].includes(transitionEffect)
-          ? `
-            perspective: 1200px;
-            transform-style: preserve-3d;
-          `
-          : ''}
-          /* Coverflow needs extra padding for effect */
-          ${transitionEffect === 'coverflow'
-          ? `
-            padding: 50px 0;
-            overflow: hidden;
-          `
-          : ''}
           /* Add padding for pagination when overlay is disabled (only applies when auto_height is true) */
           ${!isVertical &&
         sliderModule.show_pagination &&
@@ -2008,9 +1963,12 @@ export class UltraSliderModule extends BaseUltraModule {
           : ''}
         }
         .ultra-slider-container .swiper-wrapper {
-          /* Swiper handles positioning - for slide effect, wrapper needs to be wider than container */
+          /* Swiper handles positioning - let Swiper control all transform/positioning */
           position: relative;
-          /* CRITICAL: Don't constrain wrapper width - Swiper needs to set it to total slide width */
+          z-index: 1;
+          box-sizing: border-box;
+          ${previewContext === 'live' ? 'min-height: 0;' : ''}
+          /* CRITICAL: Don't override Swiper's width/height for effects - Swiper handles internally */
           ${transitionEffect === 'slide' ||
         transitionEffect === 'slide-left' ||
         transitionEffect === 'slide-right'
@@ -2020,116 +1978,53 @@ export class UltraSliderModule extends BaseUltraModule {
           display: flex;
           flex-direction: ${isVertical ? 'column' : 'row'};
           flex-wrap: nowrap;
+          will-change: transform;
           /* CRITICAL: Let Swiper handle ALL transitions - don't set any transition properties */
-          /* Swiper will apply transition-duration, transition-timing-function, and transition-property inline */
-          `
-          : `
-          width: 100% !important;
-          max-width: 100% !important;
-          `}
-          /* CRITICAL: For horizontal sliders, Swiper will calculate wrapper width based on slides */
-          /* Don't constrain it - let Swiper set the width inline */
           ${isVertical 
             ? `height: ${(sliderModule.auto_height ?? true) ? 'auto' : '100%'};` 
-            : requiresFixedHeight 
-              ? `height: 100%;` 
-              : 'height: auto;'}
-          z-index: 1;
-          /* Swiper handles transitions via JavaScript - don't override with CSS */
-          box-sizing: border-box;
-          ${previewContext === 'live' ? 'min-height: 0;' : ''}
-          ${!(sliderModule.auto_height ?? true) && sliderModule.slider_height && !isVertical
-          ? `height: ${sliderModule.slider_height}px;`
-          : ''}
-          /* Critical for slide transitions - allow Swiper to transform */
-          ${transitionEffect === 'slide' ||
-        transitionEffect === 'slide-left' ||
-        transitionEffect === 'slide-right'
-          ? `
-          will-change: transform;
+            : (sliderModule.auto_height ?? true) ? 'height: auto;' : `height: ${sliderModule.slider_height || defaultHeight}px;`}
           `
-          : ''}
-          /* 3D effects need transform-style on wrapper */
-          ${['cube', 'flip'].includes(transitionEffect)
-          ? `
-            transform-style: preserve-3d;
-          `
-          : ''}
+          : `
+          /* CRITICAL: For fade - let Swiper fully control wrapper */
+          /* Swiper sets fade effect to use absolute positioning internally */
+          width: 100%;
+          height: 100%;
+          `}
         }
         .ultra-slider-container .swiper-slide {
-          /* Swiper handles slide positioning - use block layout for slide effect */
+          /* Swiper handles slide positioning - different handling per effect type */
+          box-sizing: border-box;
+          padding: 0;
+          ${previewContext === 'live' ? 'min-height: 0; overflow: hidden;' : ''}
+          
           ${transitionEffect === 'slide' ||
           transitionEffect === 'slide-left' ||
           transitionEffect === 'slide-right'
             ? `
+          /* SLIDE EFFECT: flexbox layout with transform transitions */
           display: block;
           flex-shrink: 0;
-          /* CRITICAL: Constrain slide width to container width, not wrapper width */
-          /* Swiper may set inline width, but max-width prevents overflow */
-          ${
-            !isVertical
+          ${!isVertical
               ? `
-            /* Default width - Swiper will override with inline style */
             width: 100%;
             min-width: 0;
-            /* CRITICAL: Force max-width to container width to prevent extreme widths */
             max-width: 100%;
-            /* CRITICAL: Use container width, not wrapper width, for max-width calculation */
-            box-sizing: border-box;
+            height: ${(sliderModule.auto_height ?? true) ? 'auto' : '100%'};
           `
               : `
-            width: 100% !important;
+            width: 100%;
             height: auto;
             min-height: 0;
-            max-height: none;
+            position: relative;
+          `}
+          overflow: ${(sliderModule.auto_height ?? true) ? 'visible' : 'hidden'};
           `
-          }
-          `
-            : ''}
-          /* For non-slide effects, use full width and ensure visibility */
-          ${transitionEffect !== 'slide' &&
-          transitionEffect !== 'slide-left' &&
-          transitionEffect !== 'slide-right'
-            ? `
-          width: 100% !important;
-          display: block !important;
-          `
-            : ''}
-          max-width: 100% !important;
-          height: ${isVertical 
-            ? 'auto !important' 
-            : requiresFixedHeight 
-              ? '100% !important' 
-              : 'auto'} !important;
-          min-height: ${isVertical ? '0' : requiresFixedHeight ? '100% !important' : '0'} !important;
-          /* Ensure vertical slides don't overlap */
-          ${isVertical ? 'position: relative;' : ''}
-          /* Use spaceBetween in Swiper config instead of padding for gap */
-          padding: 0;
-          box-sizing: border-box;
-          /* CRITICAL: Prevent slides from overflowing container */
-          overflow: ${isVertical ? 'hidden' : requiresFixedHeight ? 'hidden' : 'visible'};
-          ${previewContext === 'live' ? 'min-height: 0; max-width: 100% !important; overflow: hidden !important;' : ''}
-          /* Prevent remnants in 3D effects */
-          ${['cube', 'flip'].includes(transitionEffect)
-            ? `
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-          `
-            : ''}
-          /* Ensure fade effect slides are visible */
-          ${transitionEffect === 'fade'
-            ? `
-            opacity: 1;
-            visibility: visible;
-          `
-            : ''}
-          /* Zoom effect - scale on slide change */
-          ${transitionEffect === 'zoom' || transitionEffect === 'zoom-in' || transitionEffect === 'zoom-out'
-            ? `
-            transition: transform 0.3s ease, opacity 0.3s ease;
-          `
-            : ''}
+            : `
+          /* FADE EFFECT: Swiper uses absolute positioning for crossfade */
+          /* Don't override width/height - let Swiper control positioning */
+          width: 100%;
+          height: 100%;
+          `}
         }
         /* Ensure slide content displays properly */
         .ultra-slider-container .swiper-slide > .slide-content {
@@ -2735,18 +2630,35 @@ export class UltraSliderModule extends BaseUltraModule {
             height: 100%;
           `}
         }
-        /* Circle effect custom implementation */
-        ${sliderModule.transition_effect === 'circle'
+        /* ===== EFFECT-SPECIFIC CSS ===== */
+        /* FADE EFFECT: Swiper uses absolute positioning and opacity */
+        /* Note: Swiper adds .swiper-fade class to the .swiper element, not the container */
+        ${transitionEffect === 'fade'
           ? `
-        .ultra-slider-container .swiper-slide {
-          clip-path: circle(0% at 50% 50%);
-          opacity: 0;
-          transition: clip-path ${sliderModule.transition_speed || 300}ms ease-in-out,
-                      opacity ${sliderModule.transition_speed || 300}ms ease-in-out;
+        .ultra-slider-container .swiper.swiper-fade .swiper-wrapper {
+          position: relative;
+          width: 100%;
+          height: 100%;
         }
-        .ultra-slider-container .swiper-slide-active {
-          clip-path: circle(100% at 50% 50%);
-          opacity: 1;
+        .ultra-slider-container .swiper.swiper-fade .swiper-slide {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          opacity: 0 !important;
+          transition: opacity ${sliderModule.transition_speed || 300}ms ease !important;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .ultra-slider-container .swiper.swiper-fade .swiper-slide-active {
+          opacity: 1 !important;
+          pointer-events: auto;
+          z-index: 2;
+        }
+        /* Ensure slide content fills the slide for fade effect */
+        .ultra-slider-container .swiper.swiper-fade .slide-content {
+          height: 100%;
         }
         `
           : ''}
@@ -2987,96 +2899,31 @@ export class UltraSliderModule extends BaseUltraModule {
       direction = 'vertical';
     }
 
-    // Map transition effects with backward compatibility
-    let effect: 'slide' | 'fade' | 'cube' | 'coverflow' | 'flip' = 'slide';
+    // Map transition effects - only slide and fade are supported
+    let effect: 'slide' | 'fade' = 'slide';
     let effectOptions: any = {};
 
     const transitionEffect = sliderModule.transition_effect || 'slide';
 
-    // Effects that require slidesPerView=1 for proper operation
-    const effectsRequiringSingleSlide = ['cube', 'fade', 'flip'];
-
-    // Handle new standard effects
-    if (
-      transitionEffect === 'slide' ||
-      transitionEffect === 'slide-left' ||
-      transitionEffect === 'slide-right'
-    ) {
+    // Handle effects
+    if (transitionEffect === 'fade') {
+      effect = 'fade';
+      effectOptions = {
+        fadeEffect: {
+          crossFade: true,
+        },
+      };
+    } else {
+      // Default to slide for any other value (including legacy values)
       effect = 'slide';
-      // For legacy slide-left/slide-right, override direction if not explicitly set
-      if (transitionEffect === 'slide-left' && !sliderModule.slider_direction) {
-        direction = 'horizontal';
-      } else if (transitionEffect === 'slide-right' && !sliderModule.slider_direction) {
-        direction = 'horizontal';
-      }
-      // slider_direction setting takes precedence over legacy transition_effect
+      // slider_direction setting controls direction
       if (sliderModule.slider_direction === 'vertical') {
         direction = 'vertical';
       }
-    } else if (transitionEffect === 'fade') {
-      effect = 'fade';
-      effectOptions = {
-        fadeEffect: {
-          crossFade: true,
-        },
-      };
-    } else if (transitionEffect === 'cube') {
-      effect = 'cube';
-      effectOptions = {
-        cubeEffect: {
-          shadow: true,
-          slideShadows: true,
-          shadowOffset: 20,
-          shadowScale: 0.94,
-        },
-      };
-    } else if (transitionEffect === 'coverflow') {
-      effect = 'coverflow';
-      effectOptions = {
-        coverflowEffect: {
-          rotate: 50,
-          stretch: 0,
-          depth: 100,
-          modifier: 1,
-          slideShadows: true,
-        },
-      };
-    } else if (transitionEffect === 'flip') {
-      effect = 'flip';
-      effectOptions = {
-        flipEffect: {
-          slideShadows: true,
-          limitRotation: true,
-        },
-      };
-      // Flip effect needs horizontal direction to work correctly
-      direction = 'horizontal';
-    } else if (transitionEffect === 'zoom') {
-      // Zoom effect - use slide with zoom enabled (Swiper doesn't have separate zoom effect module)
-      effect = 'slide';
-      // Zoom will be handled via CSS transforms
-      effectOptions = {};
-    }
-    // Legacy compatibility - handle old transition effects
-    else if (transitionEffect === 'slide-top' || transitionEffect === 'slide-bottom') {
-      effect = 'slide';
-      direction = 'vertical';
-    } else if (transitionEffect === 'zoom-in' || transitionEffect === 'zoom-out') {
-      // Use slide effect with CSS zoom transforms
-      effect = 'slide';
-      effectOptions = {};
-    } else if (transitionEffect === 'circle') {
-      // Custom circle effect handled via CSS
-      effect = 'fade';
-      effectOptions = {
-        fadeEffect: {
-          crossFade: true,
-        },
-      };
     }
 
-    // Force slidesPerView=1 for effects that require it
-    const finalSlidesPerView = effectsRequiringSingleSlide.includes(effect) ? 1 : slidesPerView;
+    // Fade requires slidesPerView=1, slide can use any value
+    const finalSlidesPerView = effect === 'fade' ? 1 : slidesPerView;
 
     // Map pagination
     let paginationOptions: any = false;
@@ -3170,15 +3017,16 @@ export class UltraSliderModule extends BaseUltraModule {
 
     const enableLoop = sliderModule.loop ?? true;
 
-    // Effects don't work well with loop mode - disable loop for effects
-    // Only slide and coverflow can use loop mode
-    const effectsNotSupportingLoop = ['fade', 'cube', 'flip'];
-    const canUseLoop = !effectsNotSupportingLoop.includes(effect);
+    // Fade effect doesn't work well with loop mode (loop duplicates slides)
+    // Slide effect can use loop mode
+    const canUseLoop = effect === 'slide';
 
     // For loop mode to work with any slide count, we need at least 2 slides
-    // Swiper v12 has issues with loop for < 4 slides, but we'll handle this by
-    // ensuring slidesPerGroup is set correctly BEFORE loop validation
     const canEnableLoop = enableLoop && pageCount >= 2 && canUseLoop;
+
+    // Rewind is different from loop - it just jumps back to start without duplicating slides
+    // Rewind works fine with fade effect
+    const shouldUseRewind = !canEnableLoop && enableLoop;
 
     const transitionSpeed = sliderModule.transition_speed || 300;
 
@@ -3191,9 +3039,9 @@ export class UltraSliderModule extends BaseUltraModule {
       slidesPerGroup: 1, // CRITICAL: Must be set before loop check
       spaceBetween,
       loop: canEnableLoop,
-      // If loop doesn't work (< 4 slides), use rewind as fallback for continuous navigation
-      // But don't use rewind with effects that don't support loop
-      rewind: !canEnableLoop && enableLoop && canUseLoop,
+      // Rewind enables continuous navigation by jumping back to start/end
+      // This works with ALL effects including cube, flip, fade
+      rewind: shouldUseRewind,
       speed: transitionSpeed,
       pagination: paginationOptions,
       scrollbar: scrollbarOptions,
