@@ -169,6 +169,7 @@ Visit **[UltraCard.io](https://ultracard.io)** to unlock cloud sync, automated b
 
 - ↔️ **[Horizontal Layout](docs/modules/horizontal.md)** - Arrange modules horizontally
 - ↕️ **[Vertical Layout](docs/modules/vertical.md)** - Stack modules vertically
+- 📑 **Tabs Module** - Tabbed container with horizontal or vertical orientation for organizing modules into switchable sections
 - ➖ **[Separator Module](docs/modules/separator.md)** - Visual dividers with multiple styles
 
 ### Pro Animated Modules 🌟

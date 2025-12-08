@@ -39,6 +39,8 @@ export declare class LayoutTab extends LitElement {
     private _favoriteRowToSave;
     private _showImportDialog;
     private _openMoreMenuRowIndex;
+    private _hasModuleClipboard;
+    private _hasColumnClipboard;
     private _undoStack;
     private _redoStack;
     private _maxHistorySize;
@@ -142,6 +144,10 @@ export declare class LayoutTab extends LitElement {
     private _deleteFavorite;
     private _cloneRowWithNewIds;
     private _toggleMoreMenu;
+    private _copyModule;
+    private _pasteModule;
+    private _copyColumn;
+    private _pasteColumn;
     private _showToast;
     private _countExternalCardModules;
     /**
@@ -217,6 +223,95 @@ export declare class LayoutTab extends LitElement {
     private _getJustifyContent;
     private _renderLayoutChildModule;
     private _renderNestedLayoutModule;
+    /**
+     * Renders a Tabs layout module at the top level (in a column)
+     */
+    private _renderTabsLayoutModule;
+    /**
+     * Renders a Tabs layout module when nested inside another layout
+     */
+    private _renderNestedTabsLayoutModule;
+    /**
+     * Renders a single section of a Tabs module with its own drop zone
+     */
+    private _renderTabsSection;
+    /**
+     * Renders a child module inside a tabs section
+     */
+    private _renderTabsSectionChild;
+    /**
+     * Renders a nested layout module inside a tabs section (horizontal, vertical, slider, etc.)
+     */
+    private _renderTabsSectionNestedLayout;
+    /**
+     * Renders a child module inside a nested layout that's inside a tabs section
+     */
+    private _renderTabsSectionNestedLayoutChild;
+    /**
+     * Opens module selector for nested layout inside a tabs section
+     */
+    private _openTabsSectionNestedLayoutModuleSelector;
+    /**
+     * Opens settings for a child module inside a nested layout that's inside a tabs section
+     */
+    private _openTabsSectionNestedLayoutChildSettings;
+    private _tabsSectionNestedLayoutChildContext;
+    /**
+     * Updates a child module inside a nested layout that's inside a tabs section
+     */
+    private _updateTabsSectionNestedLayoutChild;
+    /**
+     * Duplicates a child module inside a nested layout that's inside a tabs section
+     */
+    private _duplicateTabsSectionNestedLayoutChild;
+    /**
+     * Deletes a child module inside a nested layout that's inside a tabs section
+     */
+    private _deleteTabsSectionNestedLayoutChild;
+    /**
+     * Opens the module selector for adding a module to a tabs section
+     */
+    private _openTabsSectionModuleSelector;
+    private _tabsSectionContext;
+    private _tabsSectionNestedLayoutContext;
+    /**
+     * Adds a module to a specific tabs section
+     */
+    private _addModuleToTabsSection;
+    /**
+     * Adds a module to a nested layout inside a tabs section
+     */
+    private _addModuleToTabsSectionNestedLayout;
+    /**
+     * Opens settings for a child module in a tabs section
+     * Uses a custom event to trigger the module popup in the parent editor
+     */
+    private _openTabsSectionChildSettings;
+    /**
+     * Updates a child module in a tabs section
+     */
+    private _updateTabsSectionChild;
+    private _tabsSectionChildContext;
+    /**
+     * Duplicates a child module in a tabs section
+     */
+    private _duplicateTabsSectionChild;
+    /**
+     * Copies a child module from a tabs section to clipboard
+     */
+    private _copyTabsSectionChild;
+    /**
+     * Deletes a child module from a tabs section
+     */
+    private _deleteTabsSectionChild;
+    /**
+     * Handles drag start for modules inside tabs sections
+     */
+    private _onTabsSectionChildDragStart;
+    /**
+     * Handles drop on a tabs section
+     */
+    private _handleTabsSectionDrop;
     private _renderNestedChildModule;
     private _onLayoutModuleDragOver;
     private _onLayoutModuleDragEnter;
@@ -238,6 +333,7 @@ export declare class LayoutTab extends LitElement {
     private _openNestedLayoutModuleSelector;
     private _openLayoutChildSettings;
     private _duplicateLayoutChildModule;
+    private _copyLayoutChildModule;
     private _duplicateNestedChildModule;
     private _deleteNestedChildModule;
     private _openNestedChildSettings;

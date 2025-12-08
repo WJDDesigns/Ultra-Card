@@ -46,6 +46,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       gauge_style: '3d',
       gauge_size: 200,
       gauge_thickness: 15,
+      flip_horizontal: false,
 
       // Pointer Configuration
       pointer_enabled: true,
@@ -621,6 +622,40 @@ export class UltraGaugeModule extends BaseUltraModule {
         </div>
 
         ${this.renderGaugeSizeFields(gaugeModule, hass, updateModule)}
+        ${this.renderFlipHorizontalOption(gaugeModule, hass, updateModule)}
+      </div>
+    `;
+  }
+
+  private renderFlipHorizontalOption(
+    gaugeModule: GaugeModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const gaugeStyle = gaugeModule.gauge_style || 'modern';
+    const showFlipOption = ['arc', 'speedometer'].includes(gaugeStyle);
+
+    if (!showFlipOption) return html``;
+
+    return html`
+      <div class="conditional-fields-group" style="margin-top: 16px;">
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"
+        >
+          <div>
+            <div class="field-title" style="margin: 0;">Flip Horizontal</div>
+            <div class="field-description" style="margin: 4px 0 0 0;">
+              Mirror the gauge so it fills from right to left.
+            </div>
+          </div>
+          <ha-switch
+            .checked=${gaugeModule.flip_horizontal || false}
+            @change=${(e: Event) => {
+              updateModule({ flip_horizontal: (e.target as HTMLInputElement).checked });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }}
+          ></ha-switch>
+        </div>
       </div>
     `;
   }
@@ -1816,7 +1851,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         <div
           class="uc-gauge-wrapper"
-          style="position: relative; display: inline-block; overflow: hidden;"
+          style="position: relative; display: inline-block; overflow: visible;"
         >
           ${gaugeModule.show_value && gaugeModule.value_position === 'top'
             ? html`
@@ -1827,10 +1862,10 @@ export class UltraGaugeModule extends BaseUltraModule {
             : ''}
           <svg
             class="uc-gauge-svg"
-            viewBox="0 0 ${gaugeModule.gauge_size} ${gaugeModule.gauge_size}"
-            width="${gaugeModule.gauge_size}"
-            height="${gaugeModule.gauge_size}"
-            style="overflow: hidden;"
+            viewBox="0 0 ${gaugeModule.gauge_size || 200} ${gaugeModule.gauge_size || 200}"
+            width="${gaugeModule.gauge_size || 200}"
+            height="${gaugeModule.gauge_size || 200}"
+            style="overflow: visible;"
           >
             ${this.renderGaugeByStyle(gaugeModule, value, hass)}
           </svg>
@@ -2289,8 +2324,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
     const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
+    const flipHorizontal = gaugeModule.flip_horizontal || false;
 
-    return svg`
+    // Graphical content (arcs, pointer) - will be wrapped in flip group if needed
+    const graphicalContent = svg`
       ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, undefined, undefined, hass)}
       
       <!-- Background arc -->
@@ -2343,7 +2380,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
       ${
         gaugeModule.show_ticks !== false
-          ? this.renderTickMarks(
+          ? this.renderTickMarksGraphics(
               gaugeModule,
               centerX,
               centerY,
@@ -2359,11 +2396,45 @@ export class UltraGaugeModule extends BaseUltraModule {
           ? this.renderPointer(gaugeModule, centerX, centerY, radius, valueAngle)
           : ''
       }
+    `;
+
+    // Text content (labels) - rendered outside flip group, with mirrored positions when flipped
+    const textContent = svg`
       ${
-        gaugeModule.show_min_max !== false && !gaugeModule.show_tick_labels
-          ? this.renderMinMaxLabels(gaugeModule, centerX, centerY, radius, startAngle, endAngle)
+        gaugeModule.show_ticks !== false && gaugeModule.show_tick_labels
+          ? this.renderTickLabels(
+              gaugeModule,
+              centerX,
+              centerY,
+              radius,
+              startAngle,
+              endAngle,
+              thickness,
+              flipHorizontal,
+              size
+            )
           : ''
       }
+      ${
+        gaugeModule.show_min_max !== false && !gaugeModule.show_tick_labels
+          ? this.renderMinMaxLabels(gaugeModule, centerX, centerY, radius, startAngle, endAngle, flipHorizontal, size)
+          : ''
+      }
+    `;
+
+    // Apply horizontal flip if enabled (only to graphical content)
+    if (flipHorizontal) {
+      return svg`
+        <g transform="scale(-1, 1) translate(-${size}, 0)">
+          ${graphicalContent}
+        </g>
+        ${textContent}
+      `;
+    }
+
+    return svg`
+      ${graphicalContent}
+      ${textContent}
     `;
   }
 
@@ -2393,8 +2464,10 @@ export class UltraGaugeModule extends BaseUltraModule {
     const valueArc = this.describeArc(centerX, centerY, radius, startAngle, valueAngle);
 
     const color = this.getColorAtValue(gaugeModule, clampedPercentage, hass);
+    const flipHorizontal = gaugeModule.flip_horizontal || false;
 
-    return svg`
+    // Graphical content (arcs, pointer) - will be wrapped in flip group if needed
+    const graphicalContent = svg`
       ${this.renderGradientDefs(gaugeModule, centerX, centerY, radius, startAngle, endAngle, valueAngle, clampedPercentage, hass)}
       
       <!-- Background arc -->
@@ -2447,7 +2520,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
       ${
         gaugeModule.show_ticks !== false
-          ? this.renderTickMarks(
+          ? this.renderTickMarksGraphics(
               gaugeModule,
               centerX,
               centerY,
@@ -2463,11 +2536,45 @@ export class UltraGaugeModule extends BaseUltraModule {
           ? this.renderPointer(gaugeModule, centerX, centerY, radius, valueAngle)
           : ''
       }
+    `;
+
+    // Text content (labels) - rendered outside flip group, with mirrored positions when flipped
+    const textContent = svg`
       ${
-        gaugeModule.show_min_max !== false && !gaugeModule.show_tick_labels
-          ? this.renderMinMaxLabels(gaugeModule, centerX, centerY, radius, startAngle, endAngle)
+        gaugeModule.show_ticks !== false && gaugeModule.show_tick_labels
+          ? this.renderTickLabels(
+              gaugeModule,
+              centerX,
+              centerY,
+              radius,
+              startAngle,
+              endAngle,
+              thickness,
+              flipHorizontal,
+              size
+            )
           : ''
       }
+      ${
+        gaugeModule.show_min_max !== false && !gaugeModule.show_tick_labels
+          ? this.renderMinMaxLabels(gaugeModule, centerX, centerY, radius, startAngle, endAngle, flipHorizontal, size)
+          : ''
+      }
+    `;
+
+    // Apply horizontal flip if enabled (only to graphical content)
+    if (flipHorizontal) {
+      return svg`
+        <g transform="scale(-1, 1) translate(-${size}, 0)">
+          ${graphicalContent}
+        </g>
+        ${textContent}
+      `;
+    }
+
+    return svg`
+      ${graphicalContent}
+      ${textContent}
     `;
   }
 
@@ -3544,6 +3651,102 @@ export class UltraGaugeModule extends BaseUltraModule {
     `;
   }
 
+  // Render only the tick mark lines (no labels) - used inside flip group
+  private renderTickMarksGraphics(
+    gaugeModule: GaugeModule,
+    centerX: number,
+    centerY: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+    thickness?: number
+  ): TemplateResult {
+    const tickCount = gaugeModule.tick_count || 10;
+    const angleRange = endAngle - startAngle;
+    const ticks = [];
+
+    for (let i = 0; i <= tickCount; i++) {
+      const angle = startAngle + (angleRange * i) / tickCount;
+      const t = thickness || gaugeModule.gauge_thickness || 15;
+      const innerRadius = radius - t / 2 + 2;
+      const outerRadius = radius + t / 2 - 2;
+
+      const startPoint = this.polarToCartesian(centerX, centerY, innerRadius, angle);
+      const endPoint = this.polarToCartesian(centerX, centerY, outerRadius, angle);
+
+      ticks.push(svg`
+        <line
+          x1="${startPoint.x}"
+          y1="${startPoint.y}"
+          x2="${endPoint.x}"
+          y2="${endPoint.y}"
+          stroke="${gaugeModule.tick_color || 'var(--divider-color)'}"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      `);
+    }
+
+    return svg`${ticks}`;
+  }
+
+  // Render tick labels - rendered outside flip group with mirrored positions when flipped
+  private renderTickLabels(
+    gaugeModule: GaugeModule,
+    centerX: number,
+    centerY: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+    thickness?: number,
+    flipHorizontal?: boolean,
+    size?: number
+  ): TemplateResult {
+    const tickCount = gaugeModule.tick_count || 10;
+    const angleRange = endAngle - startAngle;
+    const labels = [];
+    const gaugeSize = size || gaugeModule.gauge_size || 200;
+
+    for (let i = 0; i <= tickCount; i++) {
+      const angle = startAngle + (angleRange * i) / tickCount;
+      const t = thickness || gaugeModule.gauge_thickness || 15;
+      const outerRadius = radius + t / 2 - 2;
+      const labelRadius = outerRadius + 14;
+      
+      // When flipped, mirror the label position horizontally
+      let labelPoint;
+      if (flipHorizontal) {
+        // Calculate the mirrored position: mirror around the center X
+        const originalPoint = this.polarToCartesian(centerX, centerY, labelRadius, angle);
+        labelPoint = {
+          x: gaugeSize - originalPoint.x,
+          y: originalPoint.y
+        };
+      } else {
+        labelPoint = this.polarToCartesian(centerX, centerY, labelRadius, angle);
+      }
+
+      const minValue = gaugeModule.min_value || 0;
+      const maxValue = gaugeModule.max_value || 100;
+      const value = Math.round(minValue + ((maxValue - minValue) * i) / tickCount);
+      const fontSize = gaugeModule.tick_label_font_size || 10;
+
+      labels.push(
+        svg`<text 
+          x="${labelPoint.x}" 
+          y="${labelPoint.y}" 
+          fill="${gaugeModule.min_max_color || 'var(--secondary-text-color)'}" 
+          font-size="${fontSize}" 
+          text-anchor="middle" 
+          dominant-baseline="middle"
+        >${value}</text>`
+      );
+    }
+
+    return svg`${labels}`;
+  }
+
+  // Original renderTickMarks - for gauges that don't use the flip feature
   private renderTickMarks(
     gaugeModule: GaugeModule,
     centerX: number,
@@ -3560,8 +3763,8 @@ export class UltraGaugeModule extends BaseUltraModule {
     for (let i = 0; i <= tickCount; i++) {
       const angle = startAngle + (angleRange * i) / tickCount;
       const t = thickness || gaugeModule.gauge_thickness || 15;
-      const innerRadius = radius - t / 2 + 2; // Add 2px padding from inner edge
-      const outerRadius = radius + t / 2 - 2; // Add 2px padding from outer edge
+      const innerRadius = radius - t / 2 + 2;
+      const outerRadius = radius + t / 2 - 2;
 
       const startPoint = this.polarToCartesian(centerX, centerY, innerRadius, angle);
       const endPoint = this.polarToCartesian(centerX, centerY, outerRadius, angle);
@@ -3801,14 +4004,37 @@ export class UltraGaugeModule extends BaseUltraModule {
     centerY: number,
     radius: number,
     startAngle: number,
-    endAngle: number
+    endAngle: number,
+    flipHorizontal?: boolean,
+    size?: number
   ): TemplateResult {
     const labelRadius = radius + 20;
-    const minPoint = this.polarToCartesian(centerX, centerY, labelRadius, startAngle);
-    const maxPoint = this.polarToCartesian(centerX, centerY, labelRadius, endAngle);
+    const gaugeSize = size || gaugeModule.gauge_size || 200;
+    
+    // Calculate original positions
+    const originalMinPoint = this.polarToCartesian(centerX, centerY, labelRadius, startAngle);
+    const originalMaxPoint = this.polarToCartesian(centerX, centerY, labelRadius, endAngle);
 
     const fontSize = gaugeModule.min_max_font_size || 12;
     const color = gaugeModule.min_max_color || 'var(--secondary-text-color)';
+
+    // When flipped, mirror the label positions horizontally
+    // The min label should appear where max was, and vice versa (visually)
+    let minPoint, maxPoint;
+    if (flipHorizontal) {
+      // Mirror positions around the center X axis
+      minPoint = {
+        x: gaugeSize - originalMinPoint.x,
+        y: originalMinPoint.y
+      };
+      maxPoint = {
+        x: gaugeSize - originalMaxPoint.x,
+        y: originalMaxPoint.y
+      };
+    } else {
+      minPoint = originalMinPoint;
+      maxPoint = originalMaxPoint;
+    }
 
     return svg`
       <text
@@ -4465,6 +4691,19 @@ export class UltraGaugeModule extends BaseUltraModule {
     };
   }
 
+  private getGaugeViewBox(gaugeModule: GaugeModule): string {
+    const size = gaugeModule.gauge_size || 200;
+    const hasLabels = gaugeModule.show_min_max !== false || gaugeModule.show_tick_labels;
+    
+    // Add padding for labels that may extend beyond the gauge
+    if (hasLabels) {
+      const padding = 35; // Padding for labels
+      return `-${padding} -${padding} ${size + padding * 2} ${size + padding * 2}`;
+    }
+    
+    return `0 0 ${size} ${size}`;
+  }
+
   private getContainerStyles(gaugeModule: GaugeModule): string {
     const styles: string[] = [
       'display: flex',
@@ -4472,7 +4711,8 @@ export class UltraGaugeModule extends BaseUltraModule {
       'align-items: center',
       'justify-content: center',
       'width: 100%',
-      'overflow: hidden',
+      'overflow: visible',
+      'padding: 20px 0', // Add padding for labels that extend beyond the gauge
     ];
 
     return styles.join('; ');

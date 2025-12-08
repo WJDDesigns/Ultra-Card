@@ -1779,7 +1779,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                       />
                       <span
                         style="font-size: 13px; color: var(--secondary-text-color); min-width: 80px; text-align: right;"
-                        >${(graphsModule.bar_display_limit ?? 0 === 0)
+                        >${(graphsModule.bar_display_limit ?? 0) === 0
                           ? 'Unlimited'
                           : `${graphsModule.bar_display_limit ?? 0} bars`}</span
                       >

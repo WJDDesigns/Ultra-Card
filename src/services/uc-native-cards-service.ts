@@ -16,10 +16,12 @@ class UcNativeCardsService {
    */
   getAvailableNativeCards(): NativeCardInfo[] {
     return [
+      { type: 'hui-activity-card', name: 'Activity', description: 'Shows a list of events for entities' },
       { type: 'hui-alarm-panel-card', name: 'Alarm Panel', description: 'Control alarm panel entities' },
       { type: 'hui-area-card', name: 'Area', description: 'Display area information and controls' },
       { type: 'hui-button-card', name: 'Button', description: 'Simple button for entity control' },
       { type: 'hui-calendar-card', name: 'Calendar', description: 'Display calendar events' },
+      { type: 'hui-clock-card', name: 'Clock', description: 'Display a clock' },
       { type: 'hui-conditional-card', name: 'Conditional', description: 'Show cards based on conditions' },
       { type: 'hui-entities-card', name: 'Entities', description: 'List multiple entities' },
       { type: 'hui-entity-card', name: 'Entity', description: 'Display single entity' },
@@ -45,8 +47,10 @@ class UcNativeCardsService {
       { type: 'hui-statistics-graph-card', name: 'Statistics Graph', description: 'Display statistical graph' },
       { type: 'hui-thermostat-card', name: 'Thermostat', description: 'Control thermostat entities' },
       { type: 'hui-tile-card', name: 'Tile', description: 'Modern tile card for entities' },
+      { type: 'hui-todo-list-card', name: 'To-do List', description: 'Manage to-do list items' },
       { type: 'hui-vertical-stack-card', name: 'Vertical Stack', description: 'Stack cards vertically' },
       { type: 'hui-weather-forecast-card', name: 'Weather Forecast', description: 'Display weather forecast' },
+      { type: 'hui-webpage-card', name: 'Webpage', description: 'Embed a webpage' },
     ];
   }
 

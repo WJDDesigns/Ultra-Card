@@ -1029,6 +1029,51 @@ export class UltraExternalCardModule extends BaseUltraModule {
         }
       }
 
+      // ApexCharts requires special handling - it needs to reinitialize after DOM mount
+      // This handles the case where the card was created but needs to render properly on dashboard
+      const cardElementName = module.card_type.startsWith('custom:')
+        ? module.card_type.substring(7)
+        : module.card_type;
+
+      if (cardElementName.includes('apexcharts')) {
+        // Get the actual card element from the container
+        const cardEl = isolatedContainer.querySelector(cardElementName) as any;
+        if (cardEl) {
+          // Schedule multiple re-render attempts for ApexCharts
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 100);
+
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              // ApexCharts may need resize to properly calculate chart dimensions
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 300);
+
+          // Final attempt with longer delay for slow-loading charts
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 600);
+        }
+      }
+
       (containerDiv as any)._ucInitialized = containerId; // Mark as initialized
     };
 

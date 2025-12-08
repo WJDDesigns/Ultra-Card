@@ -59,6 +59,18 @@ class ExternalCardContainerService {
         try {
           // Set hass property directly - let cards decide if they need to update
           (containerInfo.cardElement as any).hass = hass;
+
+          // ApexCharts needs extra handling when reconnecting
+          const elementName = containerInfo.cardType.startsWith('custom:')
+            ? containerInfo.cardType.substring(7)
+            : containerInfo.cardType;
+
+          if (elementName.includes('apexcharts')) {
+            // Force a render update for ApexCharts
+            if (typeof (containerInfo.cardElement as any).requestUpdate === 'function') {
+              (containerInfo.cardElement as any).requestUpdate();
+            }
+          }
         } catch (error) {
           // Silent - card might not be ready yet
         }
@@ -89,6 +101,29 @@ class ExternalCardContainerService {
     } else {
       // Update config if changed
       this._updateConfig(containerInfo, config);
+
+      // For ApexCharts, trigger re-initialization when container is retrieved
+      // This handles the case where card was created in editor but needs to render on dashboard
+      const elementName = normalizedCardType.startsWith('custom:')
+        ? normalizedCardType.substring(7)
+        : normalizedCardType;
+
+      if (elementName.includes('apexcharts') && containerInfo.cardElement) {
+        // Schedule re-initialization after the container is mounted
+        setTimeout(() => {
+          if (containerInfo!.cardElement?.isConnected && this.currentHass) {
+            (containerInfo!.cardElement as any).hass = this.currentHass;
+
+            // Force re-render
+            if (typeof (containerInfo!.cardElement as any).requestUpdate === 'function') {
+              (containerInfo!.cardElement as any).requestUpdate();
+            }
+
+            // Dispatch resize to help chart calculate dimensions
+            window.dispatchEvent(new Event('resize'));
+          }
+        }, 150);
+      }
     }
 
     return containerInfo.container;
@@ -252,6 +287,50 @@ class ExternalCardContainerService {
               }
             }
           }, 300);
+        }
+
+        // ApexCharts cards need special handling - the chart library needs to initialize
+        // after the element is in the DOM and has dimensions
+        if (elementName.includes('apexcharts')) {
+          // First update to ensure card is ready
+          setTimeout(() => {
+            if (cardElement.isConnected && this.currentHass) {
+              (cardElement as any).hass = this.currentHass;
+
+              // Force re-render to trigger chart initialization
+              if (typeof (cardElement as any).requestUpdate === 'function') {
+                (cardElement as any).requestUpdate();
+              }
+
+              // Dispatch resize event to help chart calculate dimensions
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 100);
+
+          // Second update after chart has had time to initialize
+          setTimeout(() => {
+            if (cardElement.isConnected && this.currentHass) {
+              (cardElement as any).hass = this.currentHass;
+
+              // Force another re-render
+              if (typeof (cardElement as any).requestUpdate === 'function') {
+                (cardElement as any).requestUpdate();
+              }
+
+              // Some ApexCharts versions need a resize event to properly render
+              window.dispatchEvent(new Event('resize'));
+
+              // Try to trigger the chart's internal resize method if available
+              const apexChart = (cardElement as any)._chart || (cardElement as any).chart;
+              if (apexChart && typeof apexChart.updateOptions === 'function') {
+                try {
+                  apexChart.updateOptions({}, false, true);
+                } catch (e) {
+                  // Ignore - chart might not be ready
+                }
+              }
+            }
+          }, 500);
         }
       }
     };

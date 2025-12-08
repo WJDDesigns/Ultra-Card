@@ -65,38 +65,38 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
     // Sanitize and validate properties
     const result: UnifiedTemplateResult = {};
 
-    // Icon module properties
-    if (templateResult.icon !== undefined) result.icon = String(templateResult.icon);
+    // Icon module properties - trim all string values to handle whitespace from Jinja templates
+    if (templateResult.icon !== undefined) result.icon = String(templateResult.icon).trim();
     if (templateResult.icon_color !== undefined)
-      result.icon_color = String(templateResult.icon_color);
+      result.icon_color = String(templateResult.icon_color).trim();
     if (templateResult.container_background_color !== undefined)
-      result.container_background_color = String(templateResult.container_background_color);
-    if (templateResult.name !== undefined) result.name = String(templateResult.name);
+      result.container_background_color = String(templateResult.container_background_color).trim();
+    if (templateResult.name !== undefined) result.name = String(templateResult.name).trim();
     if (templateResult.name_color !== undefined)
-      result.name_color = String(templateResult.name_color);
+      result.name_color = String(templateResult.name_color).trim();
     if (templateResult.state_text !== undefined)
-      result.state_text = String(templateResult.state_text);
+      result.state_text = String(templateResult.state_text).trim();
     if (templateResult.state_color !== undefined)
-      result.state_color = String(templateResult.state_color);
+      result.state_color = String(templateResult.state_color).trim();
 
     // Text/content module properties
-    if (templateResult.content !== undefined) result.content = String(templateResult.content);
-    if (templateResult.color !== undefined) result.color = String(templateResult.color);
+    if (templateResult.content !== undefined) result.content = String(templateResult.content).trim();
+    if (templateResult.color !== undefined) result.color = String(templateResult.color).trim();
 
     // Bar module properties
     if (templateResult.value !== undefined) result.value = templateResult.value;
-    if (templateResult.label !== undefined) result.label = String(templateResult.label);
+    if (templateResult.label !== undefined) result.label = String(templateResult.label).trim();
 
     // Gauge module properties
     if (templateResult.gauge_color !== undefined)
-      result.gauge_color = String(templateResult.gauge_color);
+      result.gauge_color = String(templateResult.gauge_color).trim();
 
     // Graphs module properties
     if (templateResult.colors !== undefined && Array.isArray(templateResult.colors)) {
-      result.colors = templateResult.colors.map(c => String(c));
+      result.colors = templateResult.colors.map(c => String(c).trim());
     }
     if (templateResult.global_color !== undefined)
-      result.global_color = String(templateResult.global_color);
+      result.global_color = String(templateResult.global_color).trim();
     if (templateResult.fill_area !== undefined)
       result.fill_area = Boolean(templateResult.fill_area);
     if (templateResult.pie_fill !== undefined) {
@@ -108,19 +108,19 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
 
     // Spinbox module properties
     if (templateResult.button_background_color !== undefined)
-      result.button_background_color = String(templateResult.button_background_color);
+      result.button_background_color = String(templateResult.button_background_color).trim();
     if (templateResult.button_text_color !== undefined)
-      result.button_text_color = String(templateResult.button_text_color);
+      result.button_text_color = String(templateResult.button_text_color).trim();
     if (templateResult.value_color !== undefined)
-      result.value_color = String(templateResult.value_color);
+      result.value_color = String(templateResult.value_color).trim();
 
     // Camera module properties
-    if (templateResult.entity !== undefined) result.entity = String(templateResult.entity);
+    if (templateResult.entity !== undefined) result.entity = String(templateResult.entity).trim();
     if (templateResult.visible !== undefined) result.visible = Boolean(templateResult.visible);
     if (templateResult.overlay_text !== undefined)
-      result.overlay_text = String(templateResult.overlay_text);
+      result.overlay_text = String(templateResult.overlay_text).trim();
     if (templateResult.overlay_color !== undefined)
-      result.overlay_color = String(templateResult.overlay_color);
+      result.overlay_color = String(templateResult.overlay_color).trim();
 
     return result;
   }
@@ -146,37 +146,37 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
         };
       }
 
-      // Sanitize and validate properties
+      // Sanitize and validate properties - trim all string values to handle whitespace from Jinja templates
       const result: UnifiedTemplateResult = {};
 
       // Icon module properties
-      if (parsed.icon !== undefined) result.icon = String(parsed.icon);
-      if (parsed.icon_color !== undefined) result.icon_color = String(parsed.icon_color);
+      if (parsed.icon !== undefined) result.icon = String(parsed.icon).trim();
+      if (parsed.icon_color !== undefined) result.icon_color = String(parsed.icon_color).trim();
       if (parsed.container_background_color !== undefined)
-        result.container_background_color = String(parsed.container_background_color);
-      if (parsed.name !== undefined) result.name = String(parsed.name);
-      if (parsed.name_color !== undefined) result.name_color = String(parsed.name_color);
-      if (parsed.state_text !== undefined) result.state_text = String(parsed.state_text);
-      if (parsed.state_color !== undefined) result.state_color = String(parsed.state_color);
+        result.container_background_color = String(parsed.container_background_color).trim();
+      if (parsed.name !== undefined) result.name = String(parsed.name).trim();
+      if (parsed.name_color !== undefined) result.name_color = String(parsed.name_color).trim();
+      if (parsed.state_text !== undefined) result.state_text = String(parsed.state_text).trim();
+      if (parsed.state_color !== undefined) result.state_color = String(parsed.state_color).trim();
 
       // Text/content module properties
-      if (parsed.content !== undefined) result.content = String(parsed.content);
-      if (parsed.color !== undefined) result.color = String(parsed.color);
+      if (parsed.content !== undefined) result.content = String(parsed.content).trim();
+      if (parsed.color !== undefined) result.color = String(parsed.color).trim();
 
       // Bar module properties
       if (parsed.value !== undefined) result.value = parsed.value;
-      if (parsed.label !== undefined) result.label = String(parsed.label);
+      if (parsed.label !== undefined) result.label = String(parsed.label).trim();
 
       // Gauge module properties
       if (parsed.gauge_color !== undefined)
-        result.gauge_color = String(parsed.gauge_color);
+        result.gauge_color = String(parsed.gauge_color).trim();
 
       // Graphs module properties
       if (parsed.colors !== undefined && Array.isArray(parsed.colors)) {
-        result.colors = parsed.colors.map(c => String(c));
+        result.colors = parsed.colors.map(c => String(c).trim());
       }
       if (parsed.global_color !== undefined)
-        result.global_color = String(parsed.global_color);
+        result.global_color = String(parsed.global_color).trim();
       if (parsed.fill_area !== undefined)
         result.fill_area = Boolean(parsed.fill_area);
       if (parsed.pie_fill !== undefined) {
@@ -188,19 +188,19 @@ export function parseUnifiedTemplate(templateResult: any): UnifiedTemplateResult
 
       // Spinbox module properties
       if (parsed.button_background_color !== undefined)
-        result.button_background_color = String(parsed.button_background_color);
+        result.button_background_color = String(parsed.button_background_color).trim();
       if (parsed.button_text_color !== undefined)
-        result.button_text_color = String(parsed.button_text_color);
+        result.button_text_color = String(parsed.button_text_color).trim();
       if (parsed.value_color !== undefined)
-        result.value_color = String(parsed.value_color);
+        result.value_color = String(parsed.value_color).trim();
 
       // Camera module properties
-      if (parsed.entity !== undefined) result.entity = String(parsed.entity);
+      if (parsed.entity !== undefined) result.entity = String(parsed.entity).trim();
       if (parsed.visible !== undefined) result.visible = Boolean(parsed.visible);
       if (parsed.overlay_text !== undefined)
-        result.overlay_text = String(parsed.overlay_text);
+        result.overlay_text = String(parsed.overlay_text).trim();
       if (parsed.overlay_color !== undefined)
-        result.overlay_color = String(parsed.overlay_color);
+        result.overlay_color = String(parsed.overlay_color).trim();
 
       return result;
     } catch (error) {

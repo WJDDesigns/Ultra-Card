@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -478,6 +478,7 @@ export interface GaugeModule extends BaseModule {
     gauge_style?: 'basic' | 'speedometer' | 'block' | 'lines' | 'modern' | 'inset' | '3d' | 'neon' | 'digital' | 'minimal' | 'arc' | 'radial';
     gauge_size?: number;
     gauge_thickness?: number;
+    flip_horizontal?: boolean;
     pointer_enabled?: boolean;
     pointer_style?: 'triangle' | 'line' | 'needle' | 'arrow' | 'circle' | 'highlight' | 'cap' | 'icon' | 'custom';
     pointer_color?: string;
@@ -807,6 +808,69 @@ export interface AccordionModule extends BaseModule {
     default_open?: boolean;
     open_mode?: 'always' | 'every' | 'any' | 'manual';
     open_conditions?: DisplayCondition[];
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
+export interface TabSection {
+    id: string;
+    title: string;
+    icon?: string;
+    modules: CardModule[];
+}
+export interface TabsModule extends BaseModule {
+    type: 'tabs';
+    sections: TabSection[];
+    orientation?: 'horizontal' | 'vertical';
+    style?: 'default' | 'simple' | 'simple_2' | 'simple_3' | 'switch_1' | 'switch_2' | 'switch_3' | 'modern' | 'trendy';
+    alignment?: 'left' | 'center' | 'right' | 'stretch';
+    tab_position?: 'top' | 'bottom' | 'left' | 'right';
+    switch_on_hover?: boolean;
+    default_tab?: string;
+    font_size?: string;
+    font_weight?: string;
+    text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    tab_gap?: number;
+    tab_padding?: string;
+    active_tab_color?: string;
+    active_tab_background?: string;
+    active_tab_border_color?: string;
+    inactive_tab_color?: string;
+    inactive_tab_background?: string;
+    inactive_tab_border_color?: string;
+    hover_tab_color?: string;
+    hover_tab_background?: string;
+    tab_border_radius?: string;
+    tab_border_width?: number;
+    track_background?: string;
+    icon_color?: string;
+    content_background?: string;
+    content_padding?: string;
+    content_border_radius?: string;
+    content_border_color?: string;
+    content_border_width?: number;
+    transition_duration?: string;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1448,6 +1512,7 @@ export interface DropdownModule extends BaseModule {
     control_icon?: string;
     control_alignment?: 'center' | 'apart';
     control_icon_side?: 'left' | 'right';
+    visible_items?: number;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1997,7 +2062,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;

@@ -85,6 +85,7 @@ export class UltraDropdownModule extends BaseUltraModule {
       control_icon: 'mdi:chevron-down',
       control_alignment: 'apart',
       control_icon_side: 'right',
+      visible_items: 5, // Number of items visible before scrolling
       // label removed
       // Global actions
       tap_action: { action: 'nothing' },
@@ -1096,6 +1097,43 @@ export class UltraDropdownModule extends BaseUltraModule {
               )}
             </div>
           </div>
+
+          <!-- Visible Items Configuration -->
+          <div style="margin-top: 24px;">
+            <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+              ${localize('editor.dropdown.visible_items.title', lang, 'Visible Items')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+            >
+              ${localize(
+                'editor.dropdown.visible_items.desc',
+                lang,
+                'Number of items visible in the dropdown before scrolling (1-20).'
+              )}
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <ha-slider
+                .min=${1}
+                .max=${20}
+                .step=${1}
+                .value=${dropdownModule.visible_items ?? 5}
+                @change=${(e: Event) => {
+                  const target = e.target as any;
+                  const value = parseInt(target.value, 10);
+                  if (!isNaN(value) && value >= 1 && value <= 20) {
+                    updateModule({ visible_items: value });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+                style="flex: 1; --mdc-theme-primary: var(--primary-color);"
+              ></ha-slider>
+              <span style="min-width: 40px; text-align: center; font-weight: 600; color: var(--primary-color); font-size: 18px;">
+                ${dropdownModule.visible_items ?? 5}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -1690,6 +1728,11 @@ export class UltraDropdownModule extends BaseUltraModule {
     const selectionTextAlign =
       controlAlignment === 'center' ? 'center' : isIconLeftApart ? 'right' : 'left';
 
+    // Calculate dropdown options max-height based on visible_items (each item ~44px: 12px padding top + bottom + ~20px content)
+    const visibleItems = dropdownModule.visible_items ?? 5;
+    const itemHeight = 44; // Approximate height per option item in pixels
+    const optionsMaxHeight = visibleItems * itemHeight;
+
     const dropdownStyles = `
       width: ${this.addPixelUnit(dropdownWidth)};
       max-width: ${this.addPixelUnit(dropdownMaxWidth)};
@@ -2226,7 +2269,7 @@ export class UltraDropdownModule extends BaseUltraModule {
 
               <div
                 class="dropdown-options"
-                style="position: ${previewContext === 'live' || previewContext === 'ha-preview' ? 'fixed' : 'fixed'} !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${previewContext === 'live' || previewContext === 'ha-preview' ? '999999' : '10001'} !important; display: none; pointer-events: none; visibility: hidden; max-height: 200px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
+                style="position: ${previewContext === 'live' || previewContext === 'ha-preview' ? 'fixed' : 'fixed'} !important; top: auto; left: auto; right: auto; background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: ${previewContext === 'live' || previewContext === 'ha-preview' ? '999999' : '10001'} !important; display: none; pointer-events: none; visibility: hidden; max-height: ${optionsMaxHeight}px; overflow-y: auto; overflow-x: hidden; color: ${textColor}; font-size: ${this.addPixelUnit(
                   fontSize.toString()
                 )}; font-family: ${fontFamily}; font-weight: ${fontWeight};"
                 @scroll=${(e: Event) => {
@@ -2591,10 +2634,13 @@ export class UltraDropdownModule extends BaseUltraModule {
             const viewportHeight = window.innerHeight;
             const spaceBelow = viewportHeight - rect.bottom;
             const spaceAbove = rect.top;
-            const dropdownMaxHeight = 200; // Match max-height from inline styles
+            // Get module context for visible_items setting
+            const moduleContext = this.moduleContexts.get(instanceId);
+            const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;
+            const portaledDropdownMaxHeight = moduleVisibleItems * 44; // Match calculated max-height
             
             // Calculate if we should drop up or down
-            const shouldDropUp = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+            const shouldDropUp = spaceBelow < portaledDropdownMaxHeight && spaceAbove > spaceBelow;
             
             // Position portaled dropdown using fixed positioning
             portaledDropdown.style.position = 'fixed';
@@ -2616,6 +2662,7 @@ export class UltraDropdownModule extends BaseUltraModule {
             portaledDropdown.style.pointerEvents = 'auto';
             portaledDropdown.style.visibility = 'visible';
             portaledDropdown.style.zIndex = '10001';
+            portaledDropdown.style.maxHeight = `${portaledDropdownMaxHeight}px`;
             
             // Ensure scrollbar is interactive
             portaledDropdown.style.overflowY = 'auto';
@@ -2951,9 +2998,12 @@ export class UltraDropdownModule extends BaseUltraModule {
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
-      const dropdownMaxHeight = 200;
+      // Get module context for visible_items setting
+      const moduleContext = this.moduleContexts.get(instanceId);
+      const moduleVisibleItems = (moduleContext?.module as DropdownModule)?.visible_items ?? 5;
+      const positionDropdownMaxHeight = moduleVisibleItems * 44;
 
-      const shouldDropUp = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+      const shouldDropUp = spaceBelow < positionDropdownMaxHeight && spaceAbove > spaceBelow;
 
       // Update position
       portaledDropdown.style.left = `${rect.left}px`;

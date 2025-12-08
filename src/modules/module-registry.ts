@@ -32,6 +32,7 @@ import { UltraDynamicWeatherModule } from './dynamic-weather-module';
 import { UltraBackgroundModule } from './background-module';
 import { UltraStatusSummaryModule } from './status-summary-module';
 import { UltraToggleModule } from './toggle-module';
+import { UltraTabsModule } from './tabs-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -94,6 +95,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraStatusSummaryModule());
     // Register toggle module
     this.registerModule(new UltraToggleModule());
+    // Register tabs module
+    this.registerModule(new UltraTabsModule());
   }
 
   // Register a new module (for core modules or third-party modules)

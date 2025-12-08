@@ -168,7 +168,25 @@
       "pin_preview": "Pin preview (keep in view)",
       "unpin_preview": "Unpin preview (scroll with content)",
       "accordion_module": "Accordion",
-      "popup_module": "Popup"
+      "popup_module": "Popup",
+      "copy_module": "Copy Module",
+      "paste_module": "Paste",
+      "more_actions": "More Actions",
+      "module_copied": "Module copied to clipboard",
+      "module_pasted": "Module pasted successfully",
+      "module_copy_failed": "Failed to copy module",
+      "no_module_to_paste": "No module to paste",
+      "paste_failed": "Failed to paste module",
+      "add_module": "Add Module",
+      "add_module_auto_column": "Add Module (will create column automatically)",
+      "copy_column": "Copy Column",
+      "paste_column": "Paste Column",
+      "column_copied": "Column copied to clipboard",
+      "column_pasted": "Column pasted successfully",
+      "column_copy_failed": "Failed to copy column",
+      "no_column_to_paste": "No column to paste",
+      "column_paste_failed": "Failed to paste column",
+      "max_columns_reached": "Maximum 6 columns allowed"
     },
     "layout_logic": {
       "display_title": "Mostra questo elemento",
@@ -2060,6 +2078,94 @@
       },
       "edit_overlay": {
         "message": "Edit this module to see preview"
+      }
+    },
+    "tabs_module": {
+      "orientation": {
+        "title": "Tab Orientation",
+        "desc": "Choose how the tabs are arranged.",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical"
+      },
+      "style": {
+        "title": "Tab Style",
+        "desc": "Choose the visual style for the tabs.",
+        "type": "Style",
+        "switch": "Switch",
+        "classic": "Classic",
+        "pills": "Pills",
+        "underline": "Underline",
+        "minimal": "Minimal"
+      },
+      "alignment": {
+        "title": "Tab Alignment",
+        "desc": "Choose how tabs are aligned within their container.",
+        "position": "Position"
+      },
+      "behavior": {
+        "switch_on_hover": "Switch on Hover",
+        "switch_on_hover_desc": "Switch tabs when hovering over them instead of clicking."
+      },
+      "sections": {
+        "title": "Sections",
+        "desc": "Manage your tab sections. Drag to reorder, click to edit titles.",
+        "add": "Add Section",
+        "title_placeholder": "Section Title",
+        "is_default": "Default Tab",
+        "set_default": "Set as Default",
+        "duplicate": "Duplicate",
+        "delete": "Delete"
+      },
+      "typography": {
+        "title": "Typography",
+        "desc": "Configure the font settings for tab labels.",
+        "font_size": "Font Size",
+        "font_weight": "Font Weight",
+        "text_transform": "Text Transform"
+      },
+      "design": {
+        "active_title": "Active Tab Design",
+        "active_desc": "Customize the appearance of the currently selected tab.",
+        "active_text_color": "Text Color",
+        "active_bg_color": "Background Color",
+        "active_border_color": "Border Color",
+        "inactive_title": "Inactive Tab Design",
+        "inactive_desc": "Customize the appearance of tabs that are not selected.",
+        "inactive_text_color": "Text Color",
+        "inactive_bg_color": "Background Color",
+        "inactive_border_color": "Border Color",
+        "hover_title": "Hover State",
+        "hover_desc": "Customize the appearance when hovering over inactive tabs.",
+        "hover_text_color": "Text Color",
+        "hover_bg_color": "Background Color",
+        "tab_styling_title": "Tab Styling",
+        "tab_gap": "Gap Between Tabs",
+        "tab_gap_desc": "Space between individual tabs (in pixels).",
+        "tab_padding": "Tab Padding",
+        "tab_padding_desc": "Padding inside each tab (CSS value, e.g. \"10px 16px\").",
+        "tab_border_radius": "Tab Border Radius",
+        "tab_border_radius_desc": "Border radius for tabs (CSS value, e.g. \"8px\" or \"50%\").",
+        "tab_border_width": "Tab Border Width",
+        "tab_border_width_desc": "Border width for tabs (in pixels).",
+        "content_title": "Content Area Design",
+        "content_desc": "Customize the appearance of the content area below/beside the tabs.",
+        "content_bg_color": "Background Color",
+        "content_padding": "Content Padding",
+        "content_padding_desc": "Padding around the content area (CSS value).",
+        "content_border_radius": "Content Border Radius",
+        "content_border_radius_desc": "Border radius for content area (CSS value).",
+        "content_border_color": "Border Color",
+        "content_border_width": "Content Border Width",
+        "content_border_width_desc": "Border width for content area (in pixels).",
+        "animation_title": "Animation",
+        "transition_duration": "Transition Duration",
+        "transition_duration_desc": "How long tab transitions take (CSS value, e.g. \"0.2s\").",
+        "general_title": "General Container Design"
+      },
+      "preview": {
+        "no_sections": "No Sections",
+        "no_sections_desc": "Add sections in the General tab to get started.",
+        "no_modules": "No modules added. Add modules to this section in the Layout tab."
       }
     }
   }

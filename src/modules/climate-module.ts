@@ -114,14 +114,6 @@ export class UltraClimateModule extends BaseUltraModule {
           ],
           onChange: (e: CustomEvent) => updateModule({ entity: e.detail.value.entity }),
         },
-        {
-          title: 'Custom Name',
-          description: 'Optional custom name (leave empty to use entity name)',
-          hass,
-          data: { name: climateModule.name || '' },
-          schema: [this.textField('name')],
-          onChange: (e: CustomEvent) => updateModule({ name: e.detail.value.name }),
-        },
       ])}
 
       <!-- Dial & Temperature -->
@@ -699,7 +691,7 @@ export class UltraClimateModule extends BaseUltraModule {
       if (sliderDisabled) return;
       const nextValue = typeof event.detail.value === 'number' ? event.detail.value : undefined;
       this._liveTargetValue = nextValue;
-      this.triggerPreviewUpdate(true);
+      // Removed triggerPreviewUpdate - ha-control-circular-slider handles visual feedback during drag
     };
 
     const handleSliderValueChanged = async (event: CustomEvent<{ value?: number }>) => {
@@ -723,14 +715,14 @@ export class UltraClimateModule extends BaseUltraModule {
       if (!useRangeSlider || sliderDisabled) return;
       const nextValue = typeof event.detail.value === 'number' ? event.detail.value : undefined;
       this._liveTargetLow = nextValue;
-      this.triggerPreviewUpdate(true);
+      // Removed triggerPreviewUpdate - ha-control-circular-slider handles visual feedback during drag
     };
 
     const handleSliderHighChanging = (event: CustomEvent<{ value?: number }>) => {
       if (!useRangeSlider || sliderDisabled) return;
       const nextValue = typeof event.detail.value === 'number' ? event.detail.value : undefined;
       this._liveTargetHigh = nextValue;
-      this.triggerPreviewUpdate(true);
+      // Removed triggerPreviewUpdate - ha-control-circular-slider handles visual feedback during drag
     };
 
     const handleSliderLowChanged = async (event: CustomEvent<{ value?: number }>) => {
