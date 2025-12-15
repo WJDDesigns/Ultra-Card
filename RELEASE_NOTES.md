@@ -1,5 +1,20 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.0.0-beta7
+
+### 🚀 New Features
+
+- **New Pro Calendar Module** - Added a new calendar module for Ultra Card Pro members, providing integrated calendar functionality with customizable views and event display options.
+
+### 🐛 Bug Fixes
+
+- **Fixed Toggle Module Functionality Issue** - Resolved an issue where the toggle module was not properly responding to user interactions or updating entity states correctly.
+- **Fixed Info Module Templating Issue** - Corrected template evaluation problems in the info module that were causing incorrect or missing dynamic content display.
+- **Fixed Popup Modules Nesting Issue** - Resolved layout conflicts when popup modules were nested within other modules, ensuring proper rendering and z-index handling.
+- **Possible Fix for WebRTC Camera Card** - Potential fix for compatibility issues when using WebRTC camera cards as 3rd party card integrations within Ultra Card layouts.
+
+---
+
 ## Version 2.2.0-beta5
 
 ### 🚀 New Features
