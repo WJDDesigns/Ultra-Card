@@ -117,7 +117,8 @@ export interface BaseModule {
     | 'map'
     | 'status_summary'
     | 'toggle'
-    | 'tabs';
+    | 'tabs'
+    | 'calendar';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -3773,7 +3774,8 @@ export type CardModule =
   | BackgroundModule
   | StatusSummaryModule
   | ToggleModule
-  | TabsModule;
+  | TabsModule
+  | CalendarModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -4282,6 +4284,196 @@ export interface ClimateModule extends BaseModule {
   };
 
   // Hover configuration (reuse standard flag)
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// ========================================
+// CALENDAR MODULE TYPES (Pro Feature)
+// ========================================
+
+// Calendar view types
+export type CalendarViewType =
+  | 'compact_list'
+  | 'month'
+  | 'week'
+  | 'day'
+  | 'table'
+  | 'grid';
+
+// First day of week options
+export type FirstDayOfWeek = 'sunday' | 'monday' | 'saturday';
+
+// Week number format
+export type WeekNumberFormat = 'none' | 'iso' | 'us';
+
+// Calendar entity configuration
+export interface CalendarEntityConfig {
+  id: string;
+  entity: string;
+  name?: string;
+  color?: string;
+  visible?: boolean;
+}
+
+// Calendar event from Home Assistant
+export interface CalendarEventData {
+  uid?: string;
+  summary: string;
+  start: string | { dateTime?: string; date?: string };
+  end: string | { dateTime?: string; date?: string };
+  description?: string;
+  location?: string;
+  recurrence_id?: string;
+  rrule?: string;
+}
+
+// Processed calendar event with additional metadata
+export interface ProcessedCalendarEvent {
+  id: string;
+  calendarId: string;
+  calendarColor: string;
+  calendarName: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  start: Date;
+  end: Date;
+  isAllDay: boolean;
+  isMultiDay: boolean;
+  raw: CalendarEventData;
+}
+
+// Calendar module interface
+export interface CalendarModule extends BaseModule {
+  type: 'calendar';
+
+  // Calendar entities
+  calendars: CalendarEntityConfig[];
+
+  // View configuration
+  view_type: CalendarViewType;
+  days_to_show: number;
+  start_date?: string;
+
+  // Title configuration
+  title?: string;
+  show_title?: boolean;
+  title_font_size?: string;
+  title_color?: string;
+  show_title_separator?: boolean;
+  title_separator_color?: string;
+  title_separator_width?: string;
+
+  // View-specific options
+  // Compact list view
+  compact_events_to_show?: number;
+  compact_show_all_day_events?: boolean;
+  compact_hide_empty_days?: boolean;
+
+  // Month view
+  show_week_numbers?: WeekNumberFormat;
+  first_day_of_week?: FirstDayOfWeek;
+  month_show_event_count?: boolean;
+
+  // Week view
+  week_start_hour?: number;
+  week_end_hour?: number;
+  week_time_interval?: number;
+
+  // Day view
+  day_start_hour?: number;
+  day_end_hour?: number;
+  day_time_interval?: number;
+
+  // Table view
+  table_show_date_column?: boolean;
+  table_show_time_column?: boolean;
+  table_show_calendar_column?: boolean;
+  table_show_location_column?: boolean;
+  table_show_duration_column?: boolean;
+
+  // Grid view
+  grid_columns?: number;
+  grid_card_height?: string;
+
+  // Event display options
+  show_event_time?: boolean;
+  show_end_time?: boolean;
+  show_event_location?: boolean;
+  show_event_description?: boolean;
+  show_event_icon?: boolean;
+  time_24h?: boolean;
+  remove_location_country?: boolean;
+  max_event_title_length?: number;
+  show_past_events?: boolean;
+
+  // Date column styling
+  date_vertical_alignment?: 'top' | 'middle' | 'bottom';
+  weekday_font_size?: string;
+  weekday_color?: string;
+  day_font_size?: string;
+  day_color?: string;
+  show_month?: boolean;
+  month_font_size?: string;
+  month_color?: string;
+
+  // Event styling
+  event_font_size?: string;
+  event_color?: string;
+  time_font_size?: string;
+  time_color?: string;
+  time_icon_size?: string;
+  location_font_size?: string;
+  location_color?: string;
+  location_icon_size?: string;
+  description_font_size?: string;
+  description_color?: string;
+
+  // Background and accent styling
+  event_background_opacity?: number;
+  vertical_line_width?: string;
+  accent_color?: string;
+
+  // Layout and spacing
+  row_spacing?: string;
+  event_spacing?: string;
+  additional_card_spacing?: string;
+
+  // Separators
+  show_day_separator?: boolean;
+  day_separator_width?: string;
+  day_separator_color?: string;
+  show_week_separator?: boolean;
+  week_separator_width?: string;
+  week_separator_color?: string;
+  month_separator_width?: string;
+  month_separator_color?: string;
+
+  // Expand/collapse functionality
+  tap_action_expand?: boolean;
+
+  // Refresh interval (in minutes)
+  refresh_interval?: number;
+
+  // Event filtering
+  filter_keywords?: string[];
+  filter_mode?: 'include' | 'exclude';
+
+  // Language override
+  language?: string;
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  event_tap_action?: ModuleActionConfig;
+
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+
+  // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
 }

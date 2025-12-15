@@ -2295,20 +2295,15 @@ export class UltraInfoModule extends BaseUltraModule {
                 }
               }
 
-              // Override displayValue with template state_text if available
-              if ((entity as any)._template_state_text !== undefined) {
-                displayValue = (entity as any)._template_state_text;
-              }
-
               const hasCustomName =
                 originalEntity.name !== undefined &&
                 originalEntity.name !== null &&
                 String(originalEntity.name).trim() !== '';
-              const displayName =
-                (entity as any)._template_name ||
-                (hasCustomName
+              // Use 'let' so we can override with template values after template processing
+              let displayName =
+                hasCustomName
                   ? String(originalEntity.name)
-                  : entityState?.attributes?.friendly_name || entity.entity);
+                  : entityState?.attributes?.friendly_name || entity.entity;
               // Get base icon and color
               let displayIcon = entity.icon || entityState?.attributes?.icon || 'mdi:help-circle';
               let displayIconColor =
@@ -2415,6 +2410,14 @@ export class UltraInfoModule extends BaseUltraModule {
                 if (iconTemplateResult && String(iconTemplateResult).trim() !== '') {
                   displayIcon = String(iconTemplateResult);
                 }
+              }
+
+              // Override displayName and displayValue with template values AFTER template processing
+              if ((entity as any)._template_name !== undefined) {
+                displayName = (entity as any)._template_name;
+              }
+              if ((entity as any)._template_state_text !== undefined) {
+                displayValue = (entity as any)._template_state_text;
               }
 
               const iconPosition = entity.icon_position || 'left';

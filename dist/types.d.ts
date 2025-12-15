@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -2062,7 +2062,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -2360,6 +2360,133 @@ export interface ClimateModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+export type CalendarViewType = 'compact_list' | 'month' | 'week' | 'day' | 'table' | 'grid';
+export type FirstDayOfWeek = 'sunday' | 'monday' | 'saturday';
+export type WeekNumberFormat = 'none' | 'iso' | 'us';
+export interface CalendarEntityConfig {
+    id: string;
+    entity: string;
+    name?: string;
+    color?: string;
+    visible?: boolean;
+}
+export interface CalendarEventData {
+    uid?: string;
+    summary: string;
+    start: string | {
+        dateTime?: string;
+        date?: string;
+    };
+    end: string | {
+        dateTime?: string;
+        date?: string;
+    };
+    description?: string;
+    location?: string;
+    recurrence_id?: string;
+    rrule?: string;
+}
+export interface ProcessedCalendarEvent {
+    id: string;
+    calendarId: string;
+    calendarColor: string;
+    calendarName: string;
+    summary: string;
+    description?: string;
+    location?: string;
+    start: Date;
+    end: Date;
+    isAllDay: boolean;
+    isMultiDay: boolean;
+    raw: CalendarEventData;
+}
+export interface CalendarModule extends BaseModule {
+    type: 'calendar';
+    calendars: CalendarEntityConfig[];
+    view_type: CalendarViewType;
+    days_to_show: number;
+    start_date?: string;
+    title?: string;
+    show_title?: boolean;
+    title_font_size?: string;
+    title_color?: string;
+    show_title_separator?: boolean;
+    title_separator_color?: string;
+    title_separator_width?: string;
+    compact_events_to_show?: number;
+    compact_show_all_day_events?: boolean;
+    compact_hide_empty_days?: boolean;
+    show_week_numbers?: WeekNumberFormat;
+    first_day_of_week?: FirstDayOfWeek;
+    month_show_event_count?: boolean;
+    week_start_hour?: number;
+    week_end_hour?: number;
+    week_time_interval?: number;
+    day_start_hour?: number;
+    day_end_hour?: number;
+    day_time_interval?: number;
+    table_show_date_column?: boolean;
+    table_show_time_column?: boolean;
+    table_show_calendar_column?: boolean;
+    table_show_location_column?: boolean;
+    table_show_duration_column?: boolean;
+    grid_columns?: number;
+    grid_card_height?: string;
+    show_event_time?: boolean;
+    show_end_time?: boolean;
+    show_event_location?: boolean;
+    show_event_description?: boolean;
+    show_event_icon?: boolean;
+    time_24h?: boolean;
+    remove_location_country?: boolean;
+    max_event_title_length?: number;
+    show_past_events?: boolean;
+    date_vertical_alignment?: 'top' | 'middle' | 'bottom';
+    weekday_font_size?: string;
+    weekday_color?: string;
+    day_font_size?: string;
+    day_color?: string;
+    show_month?: boolean;
+    month_font_size?: string;
+    month_color?: string;
+    event_font_size?: string;
+    event_color?: string;
+    time_font_size?: string;
+    time_color?: string;
+    time_icon_size?: string;
+    location_font_size?: string;
+    location_color?: string;
+    location_icon_size?: string;
+    description_font_size?: string;
+    description_color?: string;
+    event_background_opacity?: number;
+    vertical_line_width?: string;
+    accent_color?: string;
+    row_spacing?: string;
+    event_spacing?: string;
+    additional_card_spacing?: string;
+    show_day_separator?: boolean;
+    day_separator_width?: string;
+    day_separator_color?: string;
+    show_week_separator?: boolean;
+    week_separator_width?: string;
+    week_separator_color?: string;
+    month_separator_width?: string;
+    month_separator_color?: string;
+    tap_action_expand?: boolean;
+    refresh_interval?: number;
+    filter_keywords?: string[];
+    filter_mode?: 'include' | 'exclude';
+    language?: string;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    event_tap_action?: ModuleActionConfig;
+    template_mode?: boolean;
+    template?: string;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }

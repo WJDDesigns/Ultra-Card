@@ -276,6 +276,25 @@ export class UltraVerticalModule extends BaseUltraModule {
 
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
+      // CRITICAL FIX: Don't handle events from nested module editor controls
+      // This prevents parent container gestures from interfering with nested module editing
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.layout-child-actions') ||
+        target.closest('.layout-child-drag-handle') ||
+        target.closest('.nested-layout-drag-handle') ||
+        target.closest('.layout-module-drag-handle') ||
+        target.closest('.layout-child-simplified-module') ||
+        target.closest('.nested-layout-module-container') ||
+        target.closest('.layout-module-container') ||
+        target.closest('.layout-module-actions') ||
+        target.closest('.module-settings-popup') ||
+        target.closest('.popup-content')
+      ) {
+        // This event is on a nested module's editor controls - don't handle it
+        return;
+      }
+
       e.preventDefault();
       isHolding = false;
 
@@ -296,6 +315,25 @@ export class UltraVerticalModule extends BaseUltraModule {
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      // CRITICAL FIX: Don't handle events from nested module editor controls
+      // This prevents parent container gestures from interfering with nested module editing
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.layout-child-actions') ||
+        target.closest('.layout-child-drag-handle') ||
+        target.closest('.nested-layout-drag-handle') ||
+        target.closest('.layout-module-drag-handle') ||
+        target.closest('.layout-child-simplified-module') ||
+        target.closest('.nested-layout-module-container') ||
+        target.closest('.layout-module-container') ||
+        target.closest('.layout-module-actions') ||
+        target.closest('.module-settings-popup') ||
+        target.closest('.popup-content')
+      ) {
+        // This event is on a nested module's editor controls - don't handle it
+        return;
+      }
+
       e.preventDefault();
       // Clear hold timer
       if (holdTimeout) {

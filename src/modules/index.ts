@@ -27,6 +27,8 @@ export * from './external-card-module';
 export * from './background-module';
 export * from './status-summary-module';
 export * from './toggle-module';
+export * from './calendar-module';
+export * from './calendar-module-views';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

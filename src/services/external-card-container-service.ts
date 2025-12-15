@@ -71,6 +71,14 @@ class ExternalCardContainerService {
               (containerInfo.cardElement as any).requestUpdate();
             }
           }
+
+          // WebRTC camera cards need refresh on hass updates
+          if (elementName.includes('webrtc-camera') || elementName.includes('webrtc')) {
+            // Trigger update after hass change
+            if (typeof (containerInfo.cardElement as any).requestUpdate === 'function') {
+              (containerInfo.cardElement as any).requestUpdate();
+            }
+          }
         } catch (error) {
           // Silent - card might not be ready yet
         }
@@ -331,6 +339,61 @@ class ExternalCardContainerService {
               }
             }
           }, 500);
+        }
+
+        // WebRTC camera cards need special handling for stream initialization
+        // These cards require multiple initialization attempts to establish WebRTC connections
+        if (elementName.includes('webrtc-camera') || elementName.includes('webrtc')) {
+          // First attempt - initial setup
+          setTimeout(() => {
+            if (cardElement.isConnected && this.currentHass) {
+              (cardElement as any).hass = this.currentHass;
+
+              // Force re-render to trigger stream initialization
+              if (typeof (cardElement as any).requestUpdate === 'function') {
+                (cardElement as any).requestUpdate();
+              }
+
+              // Dispatch resize event to help card detect dimensions
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 100);
+
+          // Second attempt - ensure stream starts
+          setTimeout(() => {
+            if (cardElement.isConnected && this.currentHass) {
+              (cardElement as any).hass = this.currentHass;
+
+              if (typeof (cardElement as any).requestUpdate === 'function') {
+                (cardElement as any).requestUpdate();
+              }
+
+              // Try to trigger internal refresh if card has the method
+              if (typeof (cardElement as any).refresh === 'function') {
+                (cardElement as any).refresh();
+              }
+
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 500);
+
+          // Third attempt - handle slow connections
+          setTimeout(() => {
+            if (cardElement.isConnected && this.currentHass) {
+              (cardElement as any).hass = this.currentHass;
+
+              if (typeof (cardElement as any).requestUpdate === 'function') {
+                (cardElement as any).requestUpdate();
+              }
+
+              // Some WebRTC cards need visibility change events
+              if (typeof (cardElement as any).updateComplete !== 'undefined') {
+                Promise.resolve((cardElement as any).updateComplete).then(() => {
+                  window.dispatchEvent(new Event('resize'));
+                });
+              }
+            }
+          }, 1000);
         }
       }
     };

@@ -22,6 +22,9 @@ export declare class LayoutTab extends LitElement {
     private _showColumnSettings;
     private _selectedColumnForSettings;
     private _activeColumnTab;
+    private _showTabsSectionChildSettings;
+    private _selectedTabsSectionChild;
+    private _activeTabsChildTab;
     private _showColumnLayoutSelector;
     private _selectedRowForLayout;
     private _collapsedPreviewModules;
@@ -77,8 +80,10 @@ export declare class LayoutTab extends LitElement {
     private _resolvePreviewBackgroundImageCSS;
     private _draggedItem;
     private _dropTarget;
+    private _intendedDragTarget;
     private _selectedLayoutModuleIndex;
     private _selectedNestedChildIndex;
+    private _selectedNestedNestedChildIndex;
     private _showLayoutChildSettings;
     private _selectedLayoutChild;
     private _popupDragState;
@@ -197,6 +202,7 @@ export declare class LayoutTab extends LitElement {
     private _closeModuleSettings;
     private _navigateToPro;
     private _closeLayoutChildSettings;
+    private _closeTabsSectionChildSettings;
     private _onDragStart;
     private _onDragEnd;
     private _onDragOver;
@@ -223,6 +229,10 @@ export declare class LayoutTab extends LitElement {
     private _getJustifyContent;
     private _renderLayoutChildModule;
     private _renderNestedLayoutModule;
+    /**
+     * Renders a deeply nested layout module (3rd level: e.g., popup inside horizontal inside slider)
+     */
+    private _renderDeepNestedLayoutModule;
     /**
      * Renders a Tabs layout module at the top level (in a column)
      */
@@ -255,11 +265,6 @@ export declare class LayoutTab extends LitElement {
      * Opens settings for a child module inside a nested layout that's inside a tabs section
      */
     private _openTabsSectionNestedLayoutChildSettings;
-    private _tabsSectionNestedLayoutChildContext;
-    /**
-     * Updates a child module inside a nested layout that's inside a tabs section
-     */
-    private _updateTabsSectionNestedLayoutChild;
     /**
      * Duplicates a child module inside a nested layout that's inside a tabs section
      */
@@ -291,19 +296,10 @@ export declare class LayoutTab extends LitElement {
      * Updates a child module in a tabs section
      */
     private _updateTabsSectionChild;
-    private _tabsSectionChildContext;
-    /**
-     * Duplicates a child module in a tabs section
-     */
-    private _duplicateTabsSectionChild;
     /**
      * Copies a child module from a tabs section to clipboard
      */
     private _copyTabsSectionChild;
-    /**
-     * Deletes a child module from a tabs section
-     */
-    private _deleteTabsSectionChild;
     /**
      * Handles drag start for modules inside tabs sections
      */
@@ -321,6 +317,11 @@ export declare class LayoutTab extends LitElement {
     private _onLayoutChildDragEnd;
     private _onNestedChildDragStart;
     private _onNestedChildDragEnd;
+    /**
+     * Handles drag start for deep nested layout modules (3rd level nesting)
+     * e.g., popup inside horizontal inside slider
+     */
+    private _onDeepNestedLayoutDragStart;
     private _onNestedChildDragOver;
     private _onNestedChildDragEnter;
     private _onNestedChildDragLeave;
@@ -331,6 +332,7 @@ export declare class LayoutTab extends LitElement {
     private _onLayoutAppendDrop;
     private _openLayoutModuleSelector;
     private _openNestedLayoutModuleSelector;
+    private _openDeepNestedLayoutModuleSelector;
     private _openLayoutChildSettings;
     private _duplicateLayoutChildModule;
     private _copyLayoutChildModule;
@@ -352,6 +354,18 @@ export declare class LayoutTab extends LitElement {
     private _getColumnPreviewAnimationData;
     private _renderRowPreview;
     private _renderColumnPreview;
+    private _renderTabsSectionChildSettings;
+    private _renderTabsSectionChildPreview;
+    private _renderTabsSectionChildGeneralTab;
+    private _renderTabsSectionChildYamlTab;
+    private _renderTabsSectionChildActionsTab;
+    private _renderTabsSectionChildOtherTab;
+    private _renderTabsSectionChildLogicTab;
+    private _renderTabsSectionChildDesignTab;
+    private _duplicateTabsSectionChild;
+    private _duplicateTabsSectionChildFromPopup;
+    private _deleteTabsSectionChild;
+    private _deleteTabsSectionChildFromPopup;
     private _renderModuleSettings;
     private _renderLayoutChildSettings;
     private _renderLayoutChildGeneralTab;
