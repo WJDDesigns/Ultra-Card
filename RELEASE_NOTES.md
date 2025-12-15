@@ -1,5 +1,13 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta8
+
+### 🔧 Maintenance
+
+- **Bumped for new version issues** - Version number correction and release asset fixes.
+
+---
+
 ## Version 2.0.0-beta7
 
 ### 🚀 New Features
