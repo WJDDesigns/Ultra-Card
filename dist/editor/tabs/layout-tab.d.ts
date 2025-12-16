@@ -258,6 +258,14 @@ export declare class LayoutTab extends LitElement {
      */
     private _renderTabsSectionNestedLayoutChild;
     /**
+     * Renders a deeply nested layout module (layout inside a layout inside a tabs section)
+     */
+    private _renderTabsSectionDeeplyNestedLayout;
+    /**
+     * Renders a child module inside a deeply nested layout (layout inside layout inside tabs)
+     */
+    private _renderTabsSectionDeeplyNestedLayoutChild;
+    /**
      * Opens module selector for nested layout inside a tabs section
      */
     private _openTabsSectionNestedLayoutModuleSelector;
@@ -279,6 +287,7 @@ export declare class LayoutTab extends LitElement {
     private _openTabsSectionModuleSelector;
     private _tabsSectionContext;
     private _tabsSectionNestedLayoutContext;
+    private _tabsSectionDeeplyNestedLayoutContext;
     /**
      * Adds a module to a specific tabs section
      */
@@ -287,6 +296,26 @@ export declare class LayoutTab extends LitElement {
      * Adds a module to a nested layout inside a tabs section
      */
     private _addModuleToTabsSectionNestedLayout;
+    /**
+     * Opens module selector for a deeply nested layout (layout inside layout inside tabs)
+     */
+    private _openTabsSectionDeeplyNestedLayoutModuleSelector;
+    /**
+     * Adds a module to a deeply nested layout (layout inside layout inside tabs)
+     */
+    private _addModuleToTabsSectionDeeplyNestedLayout;
+    /**
+     * Opens settings for a child module inside a deeply nested layout
+     */
+    private _openTabsSectionDeeplyNestedLayoutChildSettings;
+    /**
+     * Duplicates a child module inside a deeply nested layout
+     */
+    private _duplicateTabsSectionDeeplyNestedLayoutChild;
+    /**
+     * Deletes a child module from a deeply nested layout
+     */
+    private _deleteTabsSectionDeeplyNestedLayoutChild;
     /**
      * Opens settings for a child module in a tabs section
      * Uses a custom event to trigger the module popup in the parent editor

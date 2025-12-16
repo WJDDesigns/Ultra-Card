@@ -376,6 +376,35 @@ export class UltraExternalCardModule extends BaseUltraModule {
     config: UltraCardConfig,
     updateModule: (updates: Partial<ExternalCardModule>) => void
   ): TemplateResult | null {
+    // For Custom YAML Cards (empty card_type), show guidance to use YAML tab
+    if (!module.card_type) {
+      const isCustomYamlCard = module.name === 'Custom YAML Card';
+      return html`
+        ${this.injectUcFormStyles()}
+        <div class="external-card-general-tab">
+          <div class="settings-section" style="text-align: center; padding: 40px 20px;">
+            <ha-icon 
+              icon="${isCustomYamlCard ? 'mdi:code-braces' : 'mdi:information-outline'}" 
+              style="font-size: 48px; color: var(--primary-color); opacity: 0.7; margin-bottom: 16px;"
+            ></ha-icon>
+            <p style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px;">
+              ${isCustomYamlCard ? 'Paste Your Card Configuration' : 'No Card Type Set'}
+            </p>
+            <p style="font-size: 14px; color: var(--secondary-text-color); margin-bottom: 16px;">
+              ${isCustomYamlCard 
+                ? 'Use the YAML tab to paste any valid Lovelace card configuration.' 
+                : 'Switch to the YAML tab to configure the card type.'}
+            </p>
+            <div style="background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; padding: 16px; text-align: left; font-family: monospace; font-size: 13px; max-width: 320px; margin: 0 auto;">
+              <div style="color: var(--secondary-text-color); margin-bottom: 8px; font-family: inherit; font-size: 12px;">Example configuration:</div>
+              <div style="color: var(--primary-text-color);">type: custom:webrtc-camera</div>
+              <div style="color: var(--primary-text-color);">url: rtsp://user:pass@ip:554/stream</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     // For native HA cards (hui-*), always show General tab - their editors always exist
     const isNativeCard = module.card_type && module.card_type.startsWith('hui-');
     
@@ -695,7 +724,32 @@ export class UltraExternalCardModule extends BaseUltraModule {
     const handleYamlChange = (e: CustomEvent) => {
       try {
         const newConfig = yaml.load(e.detail.value) as any;
-        updateModule({ card_config: newConfig });
+        
+        // Extract card type from YAML if present and update card_type accordingly
+        // This enables the "Custom YAML Card" workflow where users paste complete configs
+        if (newConfig && typeof newConfig === 'object' && newConfig.type) {
+          let extractedCardType = newConfig.type;
+          
+          // Remove 'custom:' prefix for element name (e.g., 'custom:webrtc-camera' -> 'webrtc-camera')
+          if (typeof extractedCardType === 'string' && extractedCardType.startsWith('custom:')) {
+            extractedCardType = extractedCardType.substring(7);
+          }
+          
+          // Check if card_type changed (or was empty before)
+          if (module.card_type !== extractedCardType) {
+            console.log('[UC External Card] YAML type detected, updating card_type:', extractedCardType);
+            updateModule({ 
+              card_type: extractedCardType,
+              card_config: newConfig 
+            });
+          } else {
+            // Card type unchanged, just update config
+            updateModule({ card_config: newConfig });
+          }
+        } else {
+          // No type in config, just update card_config
+          updateModule({ card_config: newConfig });
+        }
       } catch (error) {
         console.error('Invalid YAML in editor:', error);
       }
@@ -735,7 +789,7 @@ export class UltraExternalCardModule extends BaseUltraModule {
             <ultra-template-editor
               .hass=${hass}
               .value=${yamlString}
-              .placeholder=${'type: custom:button-card\nentity: sensor.example\nname: Example Card'}
+              .placeholder=${"type: custom:webrtc-camera\nurl: rtsp://user:pass@192.168.1.100:554/stream\n\n# Or any other card:\ntype: custom:button-card\nentity: sensor.example\nname: Example Card"}
               .minHeight=${300}
               .maxHeight=${600}
               @value-changed=${handleYamlChange}
@@ -869,18 +923,30 @@ export class UltraExternalCardModule extends BaseUltraModule {
 
     // Check if card type is set
     if (!module.card_type) {
+      // Check if this is a Custom YAML Card (name indicates it was created via Custom YAML Card option)
+      const isCustomYamlCard = module.name === 'Custom YAML Card';
+      
       return html`
         <div class="external-card-module-container" style=${this.styleObjectToCss(containerStyles)}>
           <div class="external-card-placeholder">
             <div class="ultra-card-logo">
               <ha-icon
-                icon="mdi:card-multiple"
+                icon="${isCustomYamlCard ? 'mdi:code-braces' : 'mdi:card-multiple'}"
                 style="--mdc-icon-size: 48px; color: var(--primary-color);"
               ></ha-icon>
             </div>
-            <p class="card-title">Ultra Card</p>
-            <p class="subtitle">No 3rd party card selected</p>
-            <p class="instruction">Click edit to choose and configure a custom card</p>
+            <p class="card-title">${isCustomYamlCard ? 'Custom YAML Card' : 'Ultra Card'}</p>
+            <p class="subtitle">${isCustomYamlCard ? 'Paste your card configuration' : 'No 3rd party card selected'}</p>
+            <p class="instruction">${isCustomYamlCard 
+              ? 'Go to the YAML tab and paste any valid Lovelace card configuration' 
+              : 'Click edit to choose and configure a custom card'}</p>
+            ${isCustomYamlCard ? html`
+              <div style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-primary-color), 0.1); border-radius: 8px; font-size: 12px; font-family: monospace; text-align: left; max-width: 280px;">
+                <div style="color: var(--secondary-text-color); margin-bottom: 4px;">Example:</div>
+                <div style="color: var(--primary-text-color);">type: custom:webrtc-camera</div>
+                <div style="color: var(--primary-text-color);">url: rtsp://...</div>
+              </div>
+            ` : ''}
           </div>
         </div>
       `;

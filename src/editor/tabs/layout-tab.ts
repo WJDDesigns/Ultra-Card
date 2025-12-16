@@ -61,7 +61,11 @@ const TYPOGRAPHY_FONTS = [
 ];
 
 // Native Home Assistant cards (hui-* elements)
+// Special entry for Custom YAML Card - allows pasting any card YAML configuration
+const CUSTOM_YAML_CARD_TYPE = 'custom-yaml-card';
+
 const NATIVE_HA_CARDS = [
+  { type: CUSTOM_YAML_CARD_TYPE, name: 'Custom YAML Card', icon: 'mdi:code-braces', description: 'Paste any card configuration' },
   { type: 'hui-activity-card', name: 'Activity' },
   { type: 'hui-alarm-panel-card', name: 'Alarm Panel' },
   { type: 'hui-area-card', name: 'Area' },
@@ -190,6 +194,7 @@ export class LayoutTab extends LitElement {
     childIndex?: number; // For direct tabs section children
     layoutChildIndex?: number; // For nested layout children
     nestedChildIndex?: number; // For nested layout children
+    deepNestedChildIndex?: number; // For deeply nested layout children (3 levels deep)
     parentLayoutChildIndex?: number;
     isNested: boolean;
   } | null = null;
@@ -495,6 +500,26 @@ export class LayoutTab extends LitElement {
       const { parentRowIndex, parentColumnIndex, parentModuleIndex, childIndex } =
         this._selectedLayoutChild;
       return `child-${parentRowIndex}-${parentColumnIndex}-${parentModuleIndex}-${childIndex}`;
+    }
+    // Check tabs section child selection
+    if (this._selectedTabsSectionChild) {
+      const {
+        rowIndex,
+        columnIndex,
+        moduleIndex,
+        sectionIndex,
+        childIndex,
+        layoutChildIndex,
+        nestedChildIndex,
+        deepNestedChildIndex,
+      } = this._selectedTabsSectionChild;
+      if (deepNestedChildIndex !== undefined) {
+        return `tabs-deep-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${layoutChildIndex}-${nestedChildIndex}-${deepNestedChildIndex}`;
+      } else if (nestedChildIndex !== undefined) {
+        return `tabs-nested-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${layoutChildIndex}-${nestedChildIndex}`;
+      } else {
+        return `tabs-child-${rowIndex}-${columnIndex}-${moduleIndex}-${sectionIndex}-${childIndex}`;
+      }
     }
     return null;
   }
@@ -1607,6 +1632,13 @@ export class LayoutTab extends LitElement {
         }
       }
     } catch {}
+
+    // Check if adding to a deeply nested layout inside a tabs section
+    if (this._tabsSectionDeeplyNestedLayoutContext) {
+      this._addModuleToTabsSectionDeeplyNestedLayout(type);
+      this._showModuleSelector = false;
+      return;
+    }
 
     // Check if adding to a nested layout inside a tabs section
     if (this._tabsSectionNestedLayoutContext) {
@@ -2872,24 +2904,38 @@ export class LayoutTab extends LitElement {
     const row = layout.rows[this._selectedRowIndex];
     const column = row.columns[this._selectedColumnIndex];
 
-    // Get card info
-    const cardInfo = ucNativeCardsService.getNativeCardInfo(cardType);
-    const cardName = cardInfo?.name || cardType;
+    let newModule: any;
 
-    // Create config type (e.g., 'hui-entities-card' -> 'entities')
-    const configType = ucNativeCardsService.elementNameToConfigType(cardType);
+    // Handle Custom YAML Card specially - create an external_card module for YAML-based configuration
+    if (cardType === CUSTOM_YAML_CARD_TYPE) {
+      newModule = {
+        id: `external-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'external_card' as const,
+        name: 'Custom YAML Card',
+        card_type: '', // Will be set when user pastes YAML with type field
+        card_config: {},
+        display_conditions: [],
+      };
+    } else {
+      // Get card info for regular native cards
+      const cardInfo = ucNativeCardsService.getNativeCardInfo(cardType);
+      const cardName = cardInfo?.name || cardType;
 
-    // Create native card module
-    const newModule = {
-      id: `native-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type: 'native_card' as const,
-      name: cardName,
-      card_type: cardType, // Store full element name (hui-entities-card)
-      card_config: {
-        type: configType, // Store YAML type (entities)
-      },
-      display_conditions: [],
-    };
+      // Create config type (e.g., 'hui-entities-card' -> 'entities')
+      const configType = ucNativeCardsService.elementNameToConfigType(cardType);
+
+      // Create native card module
+      newModule = {
+        id: `native-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: 'native_card' as const,
+        name: cardName,
+        card_type: cardType, // Store full element name (hui-entities-card)
+        card_config: {
+          type: configType, // Store YAML type (entities)
+        },
+        display_conditions: [],
+      };
+    }
 
     // Add to column
     const newLayout = {
@@ -6841,6 +6887,30 @@ export class LayoutTab extends LitElement {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(childModule.type);
 
+    // Check if this child module is itself a layout module
+    const isChildLayoutModule =
+      childModule.type === 'horizontal' ||
+      childModule.type === 'vertical' ||
+      childModule.type === 'accordion' ||
+      childModule.type === 'popup' ||
+      childModule.type === 'slider' ||
+      childModule.type === 'tabs';
+
+    // If it's a layout module, render it as a deeply nested layout container
+    if (isChildLayoutModule) {
+      return this._renderTabsSectionDeeplyNestedLayout(
+        childModule,
+        rowIndex,
+        columnIndex,
+        moduleIndex,
+        sectionIndex,
+        layoutChildIndex,
+        nestedChildIndex,
+        parentLayoutChildIndex,
+        isNested
+      );
+    }
+
     const metadata = moduleHandler?.metadata || {
       icon: 'mdi:help-circle',
       title: 'Unknown',
@@ -6851,7 +6921,25 @@ export class LayoutTab extends LitElement {
     const moduleInfo = this._generateModuleInfo(childModule);
 
     return html`
-      <div class="layout-child-simplified-module">
+      <div
+        class="layout-child-simplified-module"
+        @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (!target.closest('.layout-child-actions') && !target.closest('.layout-child-drag-handle')) {
+            e.stopPropagation();
+            this._openTabsSectionNestedLayoutChildSettings(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              layoutChildIndex,
+              nestedChildIndex,
+              parentLayoutChildIndex,
+              isNested
+            );
+          }
+        }}
+      >
         <div class="layout-child-module-header">
           <div class="layout-child-drag-handle">
             <ha-icon icon="mdi:drag"></ha-icon>
@@ -6915,6 +7003,432 @@ export class LayoutTab extends LitElement {
                   sectionIndex,
                   layoutChildIndex,
                   nestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.delete_child_module', lang, 'Delete')}"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders a deeply nested layout module (layout inside a layout inside a tabs section)
+   */
+  private _renderTabsSectionDeeplyNestedLayout(
+    layoutModule: any,
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    layoutChildIndex?: number,
+    nestedChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(layoutModule.type);
+    const nestedModules = layoutModule.modules || [];
+    const hasChildren = nestedModules.length > 0;
+
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown Layout',
+      description: 'Unknown layout type',
+    };
+
+    // Get layout title based on type
+    let layoutTitle = metadata.title || 'Layout';
+    const isHorizontal = layoutModule.type === 'horizontal';
+    const isVertical = layoutModule.type === 'vertical';
+    const isAccordion = layoutModule.type === 'accordion';
+    const isPopup = layoutModule.type === 'popup';
+    const isSlider = layoutModule.type === 'slider';
+    const isTabs = layoutModule.type === 'tabs';
+
+    if (isHorizontal) {
+      layoutTitle = localize('editor.layout.horizontal_layout', lang, 'Horizontal Layout');
+    } else if (isVertical) {
+      layoutTitle = localize('editor.layout.vertical_layout', lang, 'Vertical Layout');
+    } else if (isAccordion) {
+      layoutTitle = localize('editor.layout.accordion_module', lang, 'Accordion');
+    } else if (isPopup) {
+      layoutTitle = localize('editor.layout.popup_module', lang, 'Popup');
+    } else if (isSlider) {
+      layoutTitle = localize('editor.layout.slider_module', lang, 'Slider Module');
+    } else if (isTabs) {
+      layoutTitle = localize('editor.layout.tabs_layout', lang, 'Tabs Layout');
+    }
+
+    // For tabs nested deeply, just show summary
+    if (isTabs) {
+      const sections = layoutModule.sections || [];
+      return html`
+        <div class="nested-layout-module-container layout-module-container" style="margin: 4px 0;">
+          <div class="nested-layout-module-header layout-module-header">
+            <div class="nested-layout-module-title layout-module-title">
+              <div class="nested-layout-drag-handle layout-module-drag-handle">
+                <ha-icon icon="mdi:drag"></ha-icon>
+              </div>
+              <ha-icon icon="${metadata.icon}"></ha-icon>
+              <span>${layoutTitle}</span>
+            </div>
+            <div class="nested-layout-module-actions layout-module-actions">
+              <button
+                class="layout-module-settings-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openTabsSectionNestedLayoutChildSettings(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    layoutChildIndex,
+                    nestedChildIndex,
+                    parentLayoutChildIndex,
+                    isNested
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                @dragstart=${(e: Event) => e.preventDefault()}
+                title="${localize('editor.layout.settings', lang, 'Settings')}"
+              >
+                <ha-icon icon="mdi:cog"></ha-icon>
+              </button>
+              <button
+                class="layout-module-duplicate-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._duplicateTabsSectionNestedLayoutChild(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    layoutChildIndex,
+                    nestedChildIndex,
+                    parentLayoutChildIndex,
+                    isNested
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                @dragstart=${(e: Event) => e.preventDefault()}
+                title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+              >
+                <ha-icon icon="mdi:content-copy"></ha-icon>
+              </button>
+              <button
+                class="layout-module-delete-btn"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._deleteTabsSectionNestedLayoutChild(
+                    rowIndex,
+                    columnIndex,
+                    moduleIndex,
+                    sectionIndex,
+                    layoutChildIndex,
+                    nestedChildIndex,
+                    parentLayoutChildIndex,
+                    isNested
+                  );
+                }}
+                @mousedown=${(e: Event) => e.stopPropagation()}
+                @dragstart=${(e: Event) => e.preventDefault()}
+                title="${localize('editor.layout.delete', lang, 'Delete')}"
+              >
+                <ha-icon icon="mdi:delete"></ha-icon>
+              </button>
+            </div>
+          </div>
+          <div class="nested-layout-module-content" style="padding: 8px;">
+            <div style="color: var(--secondary-text-color); font-size: 12px; text-align: center; padding: 8px;">
+              ${sections.length} section${sections.length !== 1 ? 's' : ''} - Edit in settings
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="nested-layout-module-container layout-module-container" style="margin: 4px 0;">
+        <div class="nested-layout-module-header layout-module-header">
+          <div class="nested-layout-module-title layout-module-title">
+            <div class="nested-layout-drag-handle layout-module-drag-handle">
+              <ha-icon icon="mdi:drag"></ha-icon>
+            </div>
+            <ha-icon icon="${metadata.icon}"></ha-icon>
+            <span>${layoutTitle}</span>
+          </div>
+          <div class="nested-layout-module-actions layout-module-actions">
+            <button
+              class="layout-module-add-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._openTabsSectionDeeplyNestedLayoutModuleSelector(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.add_module', lang, 'Add Module')}"
+            >
+              <ha-icon icon="mdi:plus"></ha-icon>
+            </button>
+            <button
+              class="layout-module-settings-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._openTabsSectionNestedLayoutChildSettings(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.settings', lang, 'Settings')}"
+            >
+              <ha-icon icon="mdi:cog"></ha-icon>
+            </button>
+            <button
+              class="layout-module-duplicate-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._duplicateTabsSectionNestedLayoutChild(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.duplicate', lang, 'Duplicate')}"
+            >
+              <ha-icon icon="mdi:content-copy"></ha-icon>
+            </button>
+            <button
+              class="layout-module-delete-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._deleteTabsSectionNestedLayoutChild(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.delete', lang, 'Delete')}"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+        <div class="nested-layout-module-content" style="padding: 8px;">
+          ${hasChildren
+            ? nestedModules.map(
+                (deepNestedChild: any, deepNestedChildIndex: number) => html`
+                  <div
+                    class="deeply-nested-layout-child-wrapper"
+                    style="margin-bottom: 4px;"
+                  >
+                    ${this._renderTabsSectionDeeplyNestedLayoutChild(
+                      deepNestedChild,
+                      rowIndex,
+                      columnIndex,
+                      moduleIndex,
+                      sectionIndex,
+                      layoutChildIndex,
+                      nestedChildIndex,
+                      deepNestedChildIndex,
+                      parentLayoutChildIndex,
+                      isNested
+                    )}
+                  </div>
+                `
+              )
+            : html`
+                <div
+                  class="deeply-nested-layout-empty"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._openTabsSectionDeeplyNestedLayoutModuleSelector(
+                      rowIndex,
+                      columnIndex,
+                      moduleIndex,
+                      sectionIndex,
+                      layoutChildIndex,
+                      nestedChildIndex,
+                      parentLayoutChildIndex,
+                      isNested
+                    );
+                  }}
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 12px;
+                    color: var(--secondary-text-color);
+                    font-size: 12px;
+                    cursor: pointer;
+                    border: 2px dashed var(--divider-color);
+                    border-radius: 4px;
+                  "
+                >
+                  <ha-icon icon="mdi:plus-circle" style="--mdc-icon-size: 16px;"></ha-icon>
+                  <span>${localize('editor.layout.drop_modules_here', lang, 'Drop modules here')}</span>
+                </div>
+              `}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders a child module inside a deeply nested layout (layout inside layout inside tabs)
+   */
+  private _renderTabsSectionDeeplyNestedLayoutChild(
+    childModule: any,
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    layoutChildIndex?: number,
+    nestedChildIndex?: number,
+    deepNestedChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(childModule.type);
+
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+      description: 'Unknown module type',
+    };
+
+    const moduleTitle = this._getModuleDisplayName(childModule);
+    const moduleInfo = this._generateModuleInfo(childModule);
+
+    return html`
+      <div
+        class="layout-child-simplified-module"
+        @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (!target.closest('.layout-child-actions') && !target.closest('.layout-child-drag-handle')) {
+            e.stopPropagation();
+            this._openTabsSectionDeeplyNestedLayoutChildSettings(
+              rowIndex,
+              columnIndex,
+              moduleIndex,
+              sectionIndex,
+              layoutChildIndex,
+              nestedChildIndex,
+              deepNestedChildIndex,
+              parentLayoutChildIndex,
+              isNested
+            );
+          }
+        }}
+      >
+        <div class="layout-child-module-header">
+          <div class="layout-child-drag-handle">
+            <ha-icon icon="mdi:drag"></ha-icon>
+          </div>
+          <ha-icon icon="${metadata.icon}" class="layout-child-icon"></ha-icon>
+          <div class="layout-child-content">
+            <div class="layout-child-title">${moduleTitle}</div>
+            <div class="layout-child-info">${moduleInfo}</div>
+          </div>
+          <div class="layout-child-actions">
+            <button
+              class="layout-child-action-btn edit-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._openTabsSectionDeeplyNestedLayoutChildSettings(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  deepNestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.edit_child_module', lang, 'Edit')}"
+            >
+              <ha-icon icon="mdi:pencil"></ha-icon>
+            </button>
+            <button
+              class="layout-child-action-btn duplicate-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._duplicateTabsSectionDeeplyNestedLayoutChild(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  deepNestedChildIndex,
+                  parentLayoutChildIndex,
+                  isNested
+                );
+              }}
+              @mousedown=${(e: Event) => e.stopPropagation()}
+              @dragstart=${(e: Event) => e.preventDefault()}
+              title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
+            >
+              <ha-icon icon="mdi:content-copy"></ha-icon>
+            </button>
+            <button
+              class="layout-child-action-btn delete-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._deleteTabsSectionDeeplyNestedLayoutChild(
+                  rowIndex,
+                  columnIndex,
+                  moduleIndex,
+                  sectionIndex,
+                  layoutChildIndex,
+                  nestedChildIndex,
+                  deepNestedChildIndex,
                   parentLayoutChildIndex,
                   isNested
                 );
@@ -7170,6 +7684,18 @@ export class LayoutTab extends LitElement {
     isNested: boolean;
   } | null = null;
 
+  // Context storage for deeply nested layout inside tabs section operations
+  private _tabsSectionDeeplyNestedLayoutContext: {
+    rowIndex?: number;
+    columnIndex?: number;
+    moduleIndex?: number;
+    sectionIndex?: number;
+    layoutChildIndex?: number;
+    nestedChildIndex?: number;
+    parentLayoutChildIndex?: number;
+    isNested: boolean;
+  } | null = null;
+
   /**
    * Adds a module to a specific tabs section
    */
@@ -7330,6 +7856,316 @@ export class LayoutTab extends LitElement {
   }
 
   /**
+   * Opens module selector for a deeply nested layout (layout inside layout inside tabs)
+   */
+  private _openTabsSectionDeeplyNestedLayoutModuleSelector(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    layoutChildIndex?: number,
+    nestedChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): void {
+    this._tabsSectionDeeplyNestedLayoutContext = {
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+      layoutChildIndex,
+      nestedChildIndex,
+      parentLayoutChildIndex,
+      isNested,
+    };
+    this._selectedRowIndex = rowIndex ?? -1;
+    this._selectedColumnIndex = columnIndex ?? -1;
+    this._showModuleSelector = true;
+  }
+
+  /**
+   * Adds a module to a deeply nested layout (layout inside layout inside tabs)
+   */
+  private _addModuleToTabsSectionDeeplyNestedLayout(moduleType: string): void {
+    if (!this._tabsSectionDeeplyNestedLayoutContext) return;
+
+    const {
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+      layoutChildIndex,
+      nestedChildIndex,
+      parentLayoutChildIndex,
+      isNested,
+    } = this._tabsSectionDeeplyNestedLayoutContext;
+
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      moduleIndex === undefined ||
+      sectionIndex === undefined ||
+      layoutChildIndex === undefined ||
+      nestedChildIndex === undefined
+    ) {
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    // Get the tabs module
+    let tabsModule: any;
+    if (isNested && parentLayoutChildIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      tabsModule = parentLayout.modules[parentLayoutChildIndex];
+    } else {
+      tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+    }
+
+    if (!tabsModule?.sections?.[sectionIndex]?.modules?.[layoutChildIndex]) {
+      return;
+    }
+
+    // Get the layout module inside the section
+    const layoutModule = tabsModule.sections[sectionIndex].modules[layoutChildIndex];
+    if (!layoutModule?.modules?.[nestedChildIndex]) {
+      return;
+    }
+
+    // Get the deeply nested layout module
+    const deeplyNestedLayout = layoutModule.modules[nestedChildIndex];
+    if (!deeplyNestedLayout) {
+      return;
+    }
+
+    // Create the new module
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(moduleType);
+    if (!moduleHandler) return;
+
+    const newModule = moduleHandler.createDefault(undefined, this.hass);
+
+    // Initialize modules array if needed
+    if (!deeplyNestedLayout.modules) {
+      deeplyNestedLayout.modules = [];
+    }
+
+    // Add the module
+    deeplyNestedLayout.modules.push(newModule);
+
+    // Update layout
+    this._updateLayout(newLayout);
+
+    // Clear context
+    this._tabsSectionDeeplyNestedLayoutContext = null;
+
+    // Open module settings
+    setTimeout(() => {
+      this._openTabsSectionDeeplyNestedLayoutChildSettings(
+        rowIndex,
+        columnIndex,
+        moduleIndex,
+        sectionIndex,
+        layoutChildIndex,
+        nestedChildIndex,
+        deeplyNestedLayout.modules.length - 1,
+        parentLayoutChildIndex,
+        isNested
+      );
+    }, 100);
+  }
+
+  /**
+   * Opens settings for a child module inside a deeply nested layout
+   */
+  private _openTabsSectionDeeplyNestedLayoutChildSettings(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    layoutChildIndex?: number,
+    nestedChildIndex?: number,
+    deepNestedChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): void {
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      moduleIndex === undefined ||
+      sectionIndex === undefined ||
+      layoutChildIndex === undefined ||
+      nestedChildIndex === undefined ||
+      deepNestedChildIndex === undefined
+    ) {
+      return;
+    }
+
+    const layout = this._ensureLayout();
+
+    // Get the tabs module
+    let tabsModule: any;
+    if (isNested && parentLayoutChildIndex !== undefined) {
+      const parentLayout = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex] as any;
+      tabsModule = parentLayout.modules[parentLayoutChildIndex];
+    } else {
+      tabsModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+    }
+
+    if (!tabsModule?.sections?.[sectionIndex]?.modules?.[layoutChildIndex]) {
+      return;
+    }
+
+    const layoutModule = tabsModule.sections[sectionIndex].modules[layoutChildIndex];
+    if (!layoutModule?.modules?.[nestedChildIndex]) {
+      return;
+    }
+
+    const deeplyNestedLayout = layoutModule.modules[nestedChildIndex];
+    if (!deeplyNestedLayout?.modules?.[deepNestedChildIndex]) {
+      return;
+    }
+
+    // Store context and show settings popup
+    this._selectedTabsSectionChild = {
+      rowIndex,
+      columnIndex,
+      moduleIndex,
+      sectionIndex,
+      layoutChildIndex,
+      nestedChildIndex,
+      deepNestedChildIndex,
+      parentLayoutChildIndex,
+      isNested,
+    };
+    this._showTabsSectionChildSettings = true;
+    this._activeTabsChildTab = 'general';
+    this.requestUpdate();
+  }
+
+  /**
+   * Duplicates a child module inside a deeply nested layout
+   */
+  private _duplicateTabsSectionDeeplyNestedLayoutChild(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    layoutChildIndex?: number,
+    nestedChildIndex?: number,
+    deepNestedChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): void {
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      moduleIndex === undefined ||
+      sectionIndex === undefined ||
+      layoutChildIndex === undefined ||
+      nestedChildIndex === undefined ||
+      deepNestedChildIndex === undefined
+    ) {
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    // Get the tabs module
+    let tabsModule: any;
+    if (isNested && parentLayoutChildIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      tabsModule = parentLayout.modules[parentLayoutChildIndex];
+    } else {
+      tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+    }
+
+    if (!tabsModule?.sections?.[sectionIndex]?.modules?.[layoutChildIndex]) {
+      return;
+    }
+
+    const layoutModule = tabsModule.sections[sectionIndex].modules[layoutChildIndex];
+    if (!layoutModule?.modules?.[nestedChildIndex]) {
+      return;
+    }
+
+    const deeplyNestedLayout = layoutModule.modules[nestedChildIndex];
+    if (!deeplyNestedLayout?.modules?.[deepNestedChildIndex]) {
+      return;
+    }
+
+    // Clone the module with new ID
+    const moduleToDuplicate = deeplyNestedLayout.modules[deepNestedChildIndex];
+    const duplicatedModule = JSON.parse(JSON.stringify(moduleToDuplicate));
+    duplicatedModule.id = `${moduleToDuplicate.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Insert after the original
+    deeplyNestedLayout.modules.splice(deepNestedChildIndex + 1, 0, duplicatedModule);
+
+    this._updateLayout(newLayout);
+  }
+
+  /**
+   * Deletes a child module from a deeply nested layout
+   */
+  private _deleteTabsSectionDeeplyNestedLayoutChild(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    layoutChildIndex?: number,
+    nestedChildIndex?: number,
+    deepNestedChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): void {
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      moduleIndex === undefined ||
+      sectionIndex === undefined ||
+      layoutChildIndex === undefined ||
+      nestedChildIndex === undefined ||
+      deepNestedChildIndex === undefined
+    ) {
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    // Get the tabs module
+    let tabsModule: any;
+    if (isNested && parentLayoutChildIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      tabsModule = parentLayout.modules[parentLayoutChildIndex];
+    } else {
+      tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+    }
+
+    if (!tabsModule?.sections?.[sectionIndex]?.modules?.[layoutChildIndex]) {
+      return;
+    }
+
+    const layoutModule = tabsModule.sections[sectionIndex].modules[layoutChildIndex];
+    if (!layoutModule?.modules?.[nestedChildIndex]) {
+      return;
+    }
+
+    const deeplyNestedLayout = layoutModule.modules[nestedChildIndex];
+    if (!deeplyNestedLayout?.modules?.[deepNestedChildIndex]) {
+      return;
+    }
+
+    // Remove the module
+    deeplyNestedLayout.modules.splice(deepNestedChildIndex, 1);
+
+    this._updateLayout(newLayout);
+  }
+
+  /**
    * Opens settings for a child module in a tabs section
    * Uses a custom event to trigger the module popup in the parent editor
    */
@@ -7399,6 +8235,7 @@ export class LayoutTab extends LitElement {
       childIndex,
       layoutChildIndex,
       nestedChildIndex,
+      deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
     } = this._selectedTabsSectionChild;
@@ -7425,9 +8262,18 @@ export class LayoutTab extends LitElement {
       tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
     }
 
-    // Handle both direct children and nested layout children
+    // Handle direct children, nested layout children, and deeply nested layout children
     let targetModule: any;
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+      // Deeply nested layout child (3 levels deep)
+      const section = tabsModule?.sections?.[sectionIndex];
+      const layoutModule = section?.modules?.[layoutChildIndex];
+      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+      if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) {
+        return;
+      }
+      targetModule = nestedLayoutModule.modules[deepNestedChildIndex];
+    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
       // Nested layout child
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -9628,6 +10474,7 @@ export class LayoutTab extends LitElement {
       childIndex,
       layoutChildIndex,
       nestedChildIndex,
+      deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
     } = this._selectedTabsSectionChild;
@@ -9643,9 +10490,15 @@ export class LayoutTab extends LitElement {
       tabsModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
     }
 
-    // Handle both direct children and nested layout children
+    // Handle direct children, nested layout children, and deeply nested layout children
     let module: any;
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+      // Deeply nested layout child (3 levels deep)
+      const section = tabsModule?.sections?.[sectionIndex];
+      const layoutModule = section?.modules?.[layoutChildIndex];
+      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+      module = nestedLayoutModule?.modules?.[deepNestedChildIndex];
+    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
       // Nested layout child
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -9832,6 +10685,7 @@ export class LayoutTab extends LitElement {
       childIndex,
       layoutChildIndex,
       nestedChildIndex,
+      deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
     } = this._selectedTabsSectionChild;
@@ -9847,9 +10701,15 @@ export class LayoutTab extends LitElement {
       tabsModule = layout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
     }
 
-    // Handle both direct children and nested layout children
+    // Handle direct children, nested layout children, and deeply nested layout children
     let module: any;
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+      // Deeply nested layout child (3 levels deep)
+      const section = tabsModule?.sections?.[sectionIndex];
+      const layoutModule = section?.modules?.[layoutChildIndex];
+      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+      module = nestedLayoutModule?.modules?.[deepNestedChildIndex];
+    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
       // Nested layout child
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -9862,14 +10722,66 @@ export class LayoutTab extends LitElement {
     if (!module) {
       return html``;
     }
-    const registry = getModuleRegistry();
-    const moduleHandler = registry.getModule(module.type);
 
-    if (!moduleHandler) return html``;
+    const lang = this.hass?.locale?.language || 'en';
+
+    // Use the same preview wrapper as regular modules for consistent styling
+    const previewContent = this._renderSingleModuleWithAnimation(module);
 
     return html`
-      <div class="module-preview-container">
-        ${moduleHandler.renderPreview(module, this.hass!, this.config, 'live')}
+      <div class="module-preview ${this._isPreviewPinned ? 'pinned' : ''}">
+        <div
+          class="preview-header"
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            this._togglePreviewCollapsed(e);
+          }}
+          @touchend=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this._togglePreviewCollapsed(e);
+          }}
+          style="cursor: pointer;"
+          title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
+        >
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <ha-icon
+              class="preview-pin-icon ${this._isPreviewPinned ? 'pinned' : ''}"
+              icon="${this._isPreviewPinned ? 'mdi:pin' : 'mdi:pin-outline'}"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._togglePreviewPin();
+              }}
+              @touchend=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this._togglePreviewPin();
+              }}
+              title="${this._isPreviewPinned
+                ? localize(
+                    'editor.layout.unpin_preview',
+                    lang,
+                    'Unpin preview (scroll with content)'
+                  )
+                : localize('editor.layout.pin_preview', lang, 'Pin preview (keep in view)')}"
+            ></ha-icon>
+            <span style="flex: 1;">
+              ${localize('editor.layout.live_preview', lang, 'Live Preview')}
+            </span>
+          </div>
+          <ha-icon
+            class="preview-caret"
+            icon="${this._isCurrentModulePreviewCollapsed()
+              ? 'mdi:chevron-down'
+              : 'mdi:chevron-up'}"
+          ></ha-icon>
+        </div>
+        <div
+          class="preview-content"
+          style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
+        >
+          ${previewContent}
+        </div>
       </div>
     `;
   }
@@ -10009,6 +10921,7 @@ export class LayoutTab extends LitElement {
       childIndex,
       layoutChildIndex,
       nestedChildIndex,
+      deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
     } = this._selectedTabsSectionChild;
@@ -10025,12 +10938,23 @@ export class LayoutTab extends LitElement {
       tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
     }
 
-    // Handle both direct children and nested layout children
+    // Handle direct children, nested layout children, and deeply nested layout children
     let originalModule: any;
     let targetArray: any[];
     let insertIndex: number;
 
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+      // Deeply nested layout child (3 levels deep)
+      const section = tabsModule?.sections?.[sectionIndex];
+      const layoutModule = section?.modules?.[layoutChildIndex];
+      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+      if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) {
+        return;
+      }
+      originalModule = nestedLayoutModule.modules[deepNestedChildIndex];
+      targetArray = nestedLayoutModule.modules;
+      insertIndex = deepNestedChildIndex + 1;
+    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
       // Nested layout child
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -10115,6 +11039,7 @@ export class LayoutTab extends LitElement {
       childIndex,
       layoutChildIndex,
       nestedChildIndex,
+      deepNestedChildIndex,
       parentLayoutChildIndex,
       isNested,
     } = this._selectedTabsSectionChild;
@@ -10131,8 +11056,17 @@ export class LayoutTab extends LitElement {
       tabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
     }
 
-    // Handle both direct children and nested layout children
-    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
+    // Handle direct children, nested layout children, and deeply nested layout children
+    if (layoutChildIndex !== undefined && nestedChildIndex !== undefined && deepNestedChildIndex !== undefined) {
+      // Deeply nested layout child (3 levels deep)
+      const section = tabsModule?.sections?.[sectionIndex];
+      const layoutModule = section?.modules?.[layoutChildIndex];
+      const nestedLayoutModule = layoutModule?.modules?.[nestedChildIndex];
+      if (!nestedLayoutModule?.modules?.[deepNestedChildIndex]) {
+        return;
+      }
+      nestedLayoutModule.modules.splice(deepNestedChildIndex, 1);
+    } else if (layoutChildIndex !== undefined && nestedChildIndex !== undefined) {
       // Nested layout child
       const section = tabsModule?.sections?.[sectionIndex];
       const layoutModule = section?.modules?.[layoutChildIndex];
@@ -16069,17 +17003,17 @@ export class LayoutTab extends LitElement {
             ? html`
                 <div class="cards-grid">
                   ${nativeCards.map(
-                    card => html`
+                    (card: { type: string; name: string; icon?: string; description?: string }) => html`
                       <div
-                        class="card-item native-card-item"
+                        class="card-item native-card-item ${card.type === CUSTOM_YAML_CARD_TYPE ? 'yaml-card-item' : ''}"
                         @click=${async () => await this._addNativeCard(card.type)}
                       >
-                        <div class="card-icon native-icon">
-                          <ha-icon icon="mdi:home-assistant"></ha-icon>
+                        <div class="card-icon ${card.type === CUSTOM_YAML_CARD_TYPE ? 'yaml-icon' : 'native-icon'}">
+                          <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
                         </div>
                         <div class="card-info">
                           <div class="card-name">${card.name}</div>
-                          <div class="card-type">${card.type}</div>
+                          <div class="card-type">${card.description || card.type}</div>
                         </div>
                         <div class="card-add-hint">
                           <ha-icon icon="mdi:plus-circle"></ha-icon>
@@ -16448,6 +17382,25 @@ export class LayoutTab extends LitElement {
 
         .native-card-item .card-icon {
           background: rgba(var(--rgb-primary-color), 0.15);
+        }
+
+        /* Custom YAML Card styling - stands out with a different color scheme */
+        .yaml-card-item {
+          border: 2px dashed var(--primary-color);
+          background: rgba(var(--rgb-primary-color), 0.05);
+        }
+
+        .yaml-card-item .card-icon {
+          background: var(--primary-color);
+        }
+
+        .yaml-card-item .card-icon ha-icon {
+          color: white;
+        }
+
+        .yaml-card-item:hover {
+          border-color: var(--primary-color);
+          border-style: solid;
         }
 
         .card-icon {
