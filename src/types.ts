@@ -518,7 +518,7 @@ export interface InfoEntityConfig {
   state_alignment?: 'start' | 'center' | 'end';
   overall_alignment?: 'left' | 'center' | 'right';
   icon_gap?: number;
-  // Name/Value layout when icon is disabled
+  // Name/Value layout direction (works with any icon position or when icon is disabled)
   name_value_layout?: 'vertical' | 'horizontal';
   name_value_gap?: number;
   // Content distribution control
@@ -612,6 +612,14 @@ export interface BarModule extends BaseModule {
 
   // Template mode
   percentage_template?: string;
+
+  // Manual Min/Max Range (overrides auto-detection)
+  percentage_min?: number;
+  percentage_max?: number;
+  percentage_min_template_mode?: boolean;
+  percentage_min_template?: string;
+  percentage_max_template_mode?: boolean;
+  percentage_max_template?: string;
 
   // Bar Appearance
   bar_direction?: 'left-to-right' | 'right-to-left';

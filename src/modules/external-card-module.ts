@@ -1140,6 +1140,111 @@ export class UltraExternalCardModule extends BaseUltraModule {
         }
       }
 
+      // WebRTC camera cards require special handling - stream needs to initialize after DOM mount
+      // This handles dashboard first load where card is created and immediately needs to start streaming
+      if (cardElementName.includes('webrtc-camera') || cardElementName.includes('webrtc')) {
+        // Get the actual card element - it's the first child of the isolated container
+        const cardEl = isolatedContainer.firstElementChild as any;
+        if (cardEl) {
+          
+          // Schedule multiple initialization attempts for WebRTC stream establishment
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              
+              // Wait a moment for hass to be processed
+              setTimeout(() => {
+                if (typeof cardEl.setConfig === 'function') {
+                  try {
+                    const config = {
+                      type: 'custom:webrtc-camera',
+                      ...(module.card_config || {})
+                    };
+                    cardEl.setConfig(config);
+                  } catch (e) {}
+                }
+                
+                if (typeof cardEl.play === 'function') {
+                  try {
+                    cardEl.play();
+                  } catch (e) {}
+                }
+              }, 50);
+              
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              
+              if (typeof cardEl.refresh === 'function') {
+                cardEl.refresh();
+              }
+              
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 200);
+
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              
+              if (typeof cardEl.play === 'function') {
+                try {
+                  cardEl.play();
+                } catch (e) {}
+              }
+              
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              if (typeof cardEl.refresh === 'function') {
+                cardEl.refresh();
+              }
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 500);
+
+          // Third attempt for slow WebRTC connections
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              
+              if (typeof cardEl.play === 'function') {
+                try {
+                  cardEl.play();
+                } catch (e) {}
+              }
+              
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              if (typeof cardEl.refresh === 'function') {
+                cardEl.refresh();
+              }
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 1000);
+
+          // Fourth attempt - even longer delay
+          setTimeout(() => {
+            if (cardEl.isConnected && hass) {
+              cardEl.hass = hass;
+              
+              if (typeof cardEl.play === 'function') {
+                try {
+                  cardEl.play();
+                } catch (e) {}
+              }
+              
+              if (typeof cardEl.requestUpdate === 'function') {
+                cardEl.requestUpdate();
+              }
+              
+              window.dispatchEvent(new Event('resize'));
+            }
+          }, 2000);
+        }
+      }
+
       (containerDiv as any)._ucInitialized = containerId; // Mark as initialized
     };
 

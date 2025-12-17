@@ -3069,6 +3069,22 @@ export class UltraSliderModule extends BaseUltraModule {
       observer: true,
       observeParents: true,
       observeSlideChildren: true,
+      // CRITICAL: Allow clicks on interactive elements (buttons, links) inside slides
+      // Without this, Swiper intercepts all touch/click events and prevents buttons from working
+      preventClicks: false,
+      preventClicksPropagation: false,
+      // Don't prevent default touch behavior - allows buttons/links to work
+      touchStartPreventDefault: false,
+      // Use passive listeners for better scroll performance
+      passiveListeners: true,
+      // Allow elements with 'swiper-no-swiping' class to receive events without triggering swipe
+      noSwiping: true,
+      noSwipingClass: 'swiper-no-swiping',
+      // Also allow common interactive elements to receive clicks
+      noSwipingSelector: 'button, a, input, select, textarea, .popup-trigger, [role="button"]',
+      // CRITICAL: Only listen for touch/mouse events on the swiper wrapper, not child content
+      // This allows interactive elements (buttons, links, popups) inside slides to work properly
+      touchEventsTarget: 'wrapper',
     };
 
     // Loop mode configuration

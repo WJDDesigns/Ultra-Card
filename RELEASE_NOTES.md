@@ -1,5 +1,23 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta10
+
+### 🚀 New Features
+
+- **Added bar module min/max values**
+- **Added the ability to change layout direction in info module without icon**
+
+### 🚀 Improvements
+
+- **Improved nested layout rendering issues in builder**
+
+### 🐛 Bug Fixes
+
+- **Fixed WebRTC card initial play issue**
+- **Fixed toggle functionality and sensing state changes from other modules**
+
+---
+
 ## Version 2.2.0-beta8
 
 ### 🔧 Maintenance

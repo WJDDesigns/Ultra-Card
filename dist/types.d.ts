@@ -357,6 +357,12 @@ export interface BarModule extends BaseModule {
     percentage_current_entity?: string;
     percentage_total_entity?: string;
     percentage_template?: string;
+    percentage_min?: number;
+    percentage_max?: number;
+    percentage_min_template_mode?: boolean;
+    percentage_min_template?: string;
+    percentage_max_template_mode?: boolean;
+    percentage_max_template?: string;
     bar_direction?: 'left-to-right' | 'right-to-left';
     bar_size?: 'extra-thick' | 'thick' | 'medium' | 'thin';
     bar_radius?: 'square' | 'round' | 'pill';

@@ -216,6 +216,7 @@ export declare class LayoutTab extends LitElement {
     private _moveColumn;
     private _moveRow;
     private _moveNestedChild;
+    private _moveDeepNestedChild;
     private _openRowSettings;
     private _updateRow;
     private _openColumnSettings;
@@ -233,6 +234,11 @@ export declare class LayoutTab extends LitElement {
      * Renders a deeply nested layout module (3rd level: e.g., popup inside horizontal inside slider)
      */
     private _renderDeepNestedLayoutModule;
+    /**
+     * Renders a child module inside a deeply nested layout (4th level)
+     * These are rendered as simplified module cards without further nesting capability
+     */
+    private _renderDeepNestedChildModule;
     /**
      * Renders a Tabs layout module at the top level (in a column)
      */
@@ -347,6 +353,12 @@ export declare class LayoutTab extends LitElement {
     private _onNestedChildDragStart;
     private _onNestedChildDragEnd;
     /**
+     * Handles drag start for child modules inside deeply nested layouts (4th level)
+     * e.g., icon module inside popup inside horizontal inside slider
+     */
+    private _onDeepNestedChildDragStart;
+    private _onDeepNestedChildDragEnd;
+    /**
      * Handles drag start for deep nested layout modules (3rd level nesting)
      * e.g., popup inside horizontal inside slider
      */
@@ -355,6 +367,10 @@ export declare class LayoutTab extends LitElement {
     private _onNestedChildDragEnter;
     private _onNestedChildDragLeave;
     private _onNestedChildDrop;
+    /**
+     * Handle dropping a module into a deeply nested layout (3rd level, e.g., Popup inside Horizontal inside Slider)
+     */
+    private _handleDropToDeepNestedLayout;
     private _onLayoutChildDragEnter;
     private _onLayoutChildDrop;
     private _onLayoutAppendDragEnter;
@@ -368,6 +384,18 @@ export declare class LayoutTab extends LitElement {
     private _duplicateNestedChildModule;
     private _deleteNestedChildModule;
     private _openNestedChildSettings;
+    /**
+     * Opens settings for a child module inside a deeply nested layout (4th level)
+     */
+    private _openDeepNestedChildSettings;
+    /**
+     * Duplicates a child module inside a deeply nested layout (4th level)
+     */
+    private _duplicateDeepNestedChildModule;
+    /**
+     * Deletes a child module inside a deeply nested layout (4th level)
+     */
+    private _deleteDeepNestedChildModule;
     private _regenerateModuleIds;
     private _deleteLayoutChildModule;
     /**

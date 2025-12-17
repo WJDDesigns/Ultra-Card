@@ -62,6 +62,14 @@ export class UltraBarModule extends BaseUltraModule {
       // Template mode
       percentage_template: '',
 
+      // Manual Min/Max Range (overrides auto-detection)
+      percentage_min: undefined, // undefined = auto-detect
+      percentage_max: undefined, // undefined = auto-detect
+      percentage_min_template_mode: false,
+      percentage_min_template: '',
+      percentage_max_template_mode: false,
+      percentage_max_template: '',
+
       // Bar Appearance - Fix height default to be explicit
       height: 20, // Explicit default height in pixels
       bar_direction: 'left-to-right', // Default fill direction
@@ -533,6 +541,141 @@ export class UltraBarModule extends BaseUltraModule {
                     )}
                   `
                 )
+              : ''
+          }
+
+          <!-- Manual Min/Max Range Configuration -->
+          ${
+            barModule.percentage_type !== 'template'
+              ? html`
+                  <div
+                    style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; border-left: 3px solid var(--primary-color);"
+                  >
+                    <div
+                      style="font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"
+                    >
+                      <ha-icon icon="mdi:arrow-expand-horizontal" style="color: var(--primary-color);"></ha-icon>
+                      ${localize('editor.bar.range.title', lang, 'Value Range (Min/Max)')}
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 16px;"
+                    >
+                      ${localize(
+                        'editor.bar.range.desc',
+                        lang,
+                        'Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states(\'sensor.max\') }}).'
+                      )}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                      <!-- Min Value -->
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);">
+                          ${localize('editor.bar.range.min', lang, 'Minimum')}
+                        </span>
+                        <ha-textfield
+                          .value=${barModule.percentage_min_template_mode && barModule.percentage_min_template
+                            ? barModule.percentage_min_template
+                            : barModule.percentage_min !== undefined
+                              ? String(barModule.percentage_min)
+                              : ''}
+                          placeholder="${localize('editor.bar.range.auto', lang, 'Auto (0)')}"
+                          @input=${(e: Event) => {
+                            // Capture value immediately before debounce
+                            const target = e.target as HTMLInputElement;
+                            const val = (target?.value || '').trim();
+                            clearTimeout(this._templateInputDebounce);
+                            this._templateInputDebounce = setTimeout(() => {
+                              // Auto-detect if it's a template (contains {{ or {%)
+                              const isTemplate = val.includes('{{') || val.includes('{%');
+                              if (isTemplate) {
+                                updateModule({
+                                  percentage_min_template_mode: true,
+                                  percentage_min_template: val,
+                                  percentage_min: undefined,
+                                });
+                              } else if (val === '') {
+                                updateModule({
+                                  percentage_min_template_mode: false,
+                                  percentage_min_template: '',
+                                  percentage_min: undefined,
+                                });
+                              } else {
+                                const num = parseFloat(val);
+                                updateModule({
+                                  percentage_min_template_mode: false,
+                                  percentage_min_template: '',
+                                  percentage_min: isNaN(num) ? undefined : num,
+                                });
+                              }
+                            }, 300);
+                          }}
+                          style="width: 100%;"
+                        ></ha-textfield>
+                        ${barModule.percentage_min_template_mode && 
+                          barModule.percentage_min_template && 
+                          (barModule.percentage_min_template.includes('{{') || barModule.percentage_min_template.includes('{%'))
+                          ? html`<span style="font-size: 10px; color: var(--primary-color); margin-top: 2px;">
+                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon> Template
+                            </span>`
+                          : ''}
+                      </div>
+
+                      <!-- Max Value -->
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);">
+                          ${localize('editor.bar.range.max', lang, 'Maximum')}
+                        </span>
+                        <ha-textfield
+                          .value=${barModule.percentage_max_template_mode && barModule.percentage_max_template
+                            ? barModule.percentage_max_template
+                            : barModule.percentage_max !== undefined
+                              ? String(barModule.percentage_max)
+                              : ''}
+                          placeholder="${localize('editor.bar.range.auto', lang, 'Auto (100)')}"
+                          @input=${(e: Event) => {
+                            // Capture value immediately before debounce
+                            const target = e.target as HTMLInputElement;
+                            const val = (target?.value || '').trim();
+                            clearTimeout(this._templateInputDebounce);
+                            this._templateInputDebounce = setTimeout(() => {
+                              // Auto-detect if it's a template (contains {{ or {%)
+                              const isTemplate = val.includes('{{') || val.includes('{%');
+                              if (isTemplate) {
+                                updateModule({
+                                  percentage_max_template_mode: true,
+                                  percentage_max_template: val,
+                                  percentage_max: undefined,
+                                });
+                              } else if (val === '') {
+                                updateModule({
+                                  percentage_max_template_mode: false,
+                                  percentage_max_template: '',
+                                  percentage_max: undefined,
+                                });
+                              } else {
+                                const num = parseFloat(val);
+                                updateModule({
+                                  percentage_max_template_mode: false,
+                                  percentage_max_template: '',
+                                  percentage_max: isNaN(num) ? undefined : num,
+                                });
+                              }
+                            }, 300);
+                          }}
+                          style="width: 100%;"
+                        ></ha-textfield>
+                        ${barModule.percentage_max_template_mode && 
+                          barModule.percentage_max_template && 
+                          (barModule.percentage_max_template.includes('{{') || barModule.percentage_max_template.includes('{%'))
+                          ? html`<span style="font-size: 10px; color: var(--primary-color); margin-top: 2px;">
+                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon> Template
+                            </span>`
+                          : ''}
+                      </div>
+                    </div>
+                  </div>
+                `
               : ''
           }
 
@@ -3398,11 +3541,105 @@ export class UltraBarModule extends BaseUltraModule {
     const hasValidEntity = barModule.entity && hass?.states[barModule.entity];
     const isPreviewMode = !hasValidEntity;
 
+    // Helper to resolve min/max values from templates or static values
+    const resolveMinMax = (): { min: number | undefined; max: number | undefined } => {
+      let resolvedMin: number | undefined = barModule.percentage_min;
+      let resolvedMax: number | undefined = barModule.percentage_max;
+
+      // Helper to check if value is a real Jinja template
+      const isRealTemplate = (val: string) => val.includes('{{') || val.includes('{%');
+
+      // Resolve min template if enabled
+      if (barModule.percentage_min_template_mode && barModule.percentage_min_template) {
+        const tpl = barModule.percentage_min_template;
+        // If it's just a plain number (not a real template), use it directly
+        if (!isRealTemplate(tpl)) {
+          const directNum = parseFloat(tpl);
+          if (!isNaN(directNum)) resolvedMin = directNum;
+        } else if (hass) {
+          // Real Jinja template - use template service
+          if (!this._templateService) {
+            this._templateService = new TemplateService(hass);
+          }
+          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+          const key = `bar_min_${barModule.id}_${this._hashString(tpl)}`;
+          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
+            this._templateService.subscribeToTemplate(tpl, key, () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            });
+          }
+          const rendered = hass.__uvc_template_strings?.[key];
+          if (rendered !== undefined) {
+            const num = parseFloat(String(rendered));
+            if (!isNaN(num)) resolvedMin = num;
+          }
+        }
+      }
+
+      // Resolve max template if enabled
+      if (barModule.percentage_max_template_mode && barModule.percentage_max_template) {
+        const tpl = barModule.percentage_max_template;
+        // If it's just a plain number (not a real template), use it directly
+        if (!isRealTemplate(tpl)) {
+          const directNum = parseFloat(tpl);
+          if (!isNaN(directNum)) resolvedMax = directNum;
+        } else if (hass) {
+          // Real Jinja template - use template service
+          if (!this._templateService) {
+            this._templateService = new TemplateService(hass);
+          }
+          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+          const key = `bar_max_${barModule.id}_${this._hashString(tpl)}`;
+          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
+            this._templateService.subscribeToTemplate(tpl, key, () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            });
+          }
+          const rendered = hass.__uvc_template_strings?.[key];
+          if (rendered !== undefined) {
+            const num = parseFloat(String(rendered));
+            if (!isNaN(num)) resolvedMax = num;
+          }
+        }
+      }
+
+      return { min: resolvedMin, max: resolvedMax };
+    };
+
+    // Calculate percentage with min/max range: ((value - min) / (max - min)) * 100
+    const calculatePercentageWithRange = (
+      value: number,
+      autoMin: number,
+      autoMax: number,
+      manualMin?: number,
+      manualMax?: number
+    ): number => {
+      const min = manualMin !== undefined ? manualMin : autoMin;
+      const max = manualMax !== undefined ? manualMax : autoMax;
+      const range = max - min;
+      if (range <= 0) return 0;
+      return clampPercent(((value - min) / range) * 100);
+    };
+
     // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
     if (!barModule.unified_template_mode) {
       const pctType = (barModule as any).percentage_type || 'entity';
       if (pctType === 'template' && (barModule as any).percentage_template) {
-        // Template-driven percentage
+        // Template-driven percentage (template already returns final percentage, no min/max needed)
         if (!this._templateService && hass) {
           this._templateService = new TemplateService(hass);
         }
@@ -3433,6 +3670,7 @@ export class UltraBarModule extends BaseUltraModule {
           }
         }
       } else if (pctType === 'attribute') {
+        const { min: manualMin, max: manualMax } = resolveMinMax();
         const entId = (barModule as any).percentage_attribute_entity || (barModule as any).entity;
         const attrName = (barModule as any).percentage_attribute_name || '';
         const st = entId ? hass?.states[entId] : undefined;
@@ -3440,42 +3678,64 @@ export class UltraBarModule extends BaseUltraModule {
         const unit = st?.attributes?.unit_of_measurement || '';
         const num = parseFloat(String(raw ?? '0'));
         if (!isNaN(num)) {
-          if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
+          // If manual min/max are set, use them for range calculation
+          if (manualMin !== undefined || manualMax !== undefined) {
+            percentage = calculatePercentageWithRange(num, 0, 100, manualMin, manualMax);
+          } else if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
             percentage = clampPercent(num);
           } else if (st?.attributes?.max) {
             const max = parseFloat(String(st.attributes.max));
-            percentage = max > 0 ? clampPercent((num / max) * 100) : 0;
+            const min = st?.attributes?.min !== undefined ? parseFloat(String(st.attributes.min)) : 0;
+            percentage = calculatePercentageWithRange(num, min, max);
           } else {
             // Assume direct percent
             percentage = clampPercent(num);
           }
         }
       } else if (pctType === 'difference') {
+        // Difference mode calculates current/total ratio - min/max can still adjust the range
+        const { min: manualMin, max: manualMax } = resolveMinMax();
         const currId = (barModule as any).percentage_current_entity;
         const totalId = (barModule as any).percentage_total_entity;
         const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
         const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
-        percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
+        
+        if (manualMin !== undefined || manualMax !== undefined) {
+          // If manual range is set, use current value against that range
+          percentage = calculatePercentageWithRange(curr, 0, total, manualMin, manualMax);
+        } else {
+          percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
+        }
       } else {
-        // Entity-based percentage
+        // Entity-based percentage with min/max support
+        const { min: manualMin, max: manualMax } = resolveMinMax();
         const entityState = hass?.states[barModule.entity];
         let value = 0;
-        let maxValue = 100;
+        let autoMin = 0;
+        let autoMax = 100;
         let unit = '';
 
         if (entityState) {
           value = parseFloat(entityState.state) || 0;
           unit = entityState.attributes?.unit_of_measurement || '';
 
-          if (entityState.attributes?.max) {
-            maxValue = parseFloat(entityState.attributes.max);
+          // Auto-detect min from entity attributes
+          if (entityState.attributes?.min !== undefined) {
+            autoMin = parseFloat(String(entityState.attributes.min)) || 0;
+          }
+
+          // Auto-detect max from entity attributes
+          if (entityState.attributes?.max !== undefined) {
+            autoMax = parseFloat(String(entityState.attributes.max)) || 100;
           } else if (unit === '%') {
-            maxValue = 100;
+            autoMax = 100;
           } else if (entityState.attributes?.device_class === 'battery') {
-            maxValue = 100;
+            autoMax = 100;
           }
         }
-        percentage = clampPercent((value / maxValue) * 100);
+
+        // Calculate percentage with manual overrides taking precedence
+        percentage = calculatePercentageWithRange(value, autoMin, autoMax, manualMin, manualMax);
       }
     }
 
@@ -3720,6 +3980,10 @@ export class UltraBarModule extends BaseUltraModule {
     const showPercentageText = barModule.show_percentage !== false;
     const percentageTextAlignment = barModule.percentage_text_alignment || 'center';
 
+    // Calculate the display text for the bar
+    // Store percentage in a separate const to ensure it's captured correctly
+    const displayPercentage = Math.round(percentage);
+    
     const percentageDisplayText = (() => {
       if (!showPercentageText) {
         return '';
@@ -3769,7 +4033,8 @@ export class UltraBarModule extends BaseUltraModule {
         return 'N/A';
       }
 
-      return `${Math.round(percentage)}%`;
+      // Use the pre-calculated displayPercentage
+      return `${displayPercentage}%`;
     })();
 
     if (barModule.use_gradient) {
@@ -5139,7 +5404,22 @@ export class UltraBarModule extends BaseUltraModule {
                 max-width: 100%;
               "
             >
-              ${percentageDisplayText}
+              ${(() => {
+                if (!showPercentageText) return '';
+
+                // If a manual min/max range is set, the bar fill no longer represents the raw entity value.
+                // In that case, always show the calculated percent so the text matches the fill.
+                const hasManualRange =
+                  barModule.percentage_min !== undefined ||
+                  barModule.percentage_max !== undefined ||
+                  (barModule.percentage_min_template_mode && !!barModule.percentage_min_template) ||
+                  (barModule.percentage_max_template_mode && !!barModule.percentage_max_template);
+
+                if (hasManualRange) return `${displayPercentage}%`;
+
+                // Legacy behavior: allow showing the raw value in the bar text.
+                return barModule.show_value ? percentageDisplayText : `${displayPercentage}%`;
+              })()}
             </div>
           </div>
 

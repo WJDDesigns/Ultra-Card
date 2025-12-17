@@ -1,4 +1,4 @@
-import { TemplateResult, html } from 'lit';
+import { TemplateResult, html, render } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
@@ -9,6 +9,9 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
+
+// Map to track portal containers for each popup instance
+const popupPortals = new Map<string, HTMLElement>();
 
 export class UltraPopupModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -1938,8 +1941,15 @@ export class UltraPopupModule extends BaseUltraModule {
 
         triggerElement = html`
           <button
+            class="swiper-no-swiping popup-trigger"
             @click=${handleTriggerClick}
-            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon ? '8px' : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; ${isFullWidth
+            @touchend=${(e: Event) => {
+              // Explicitly handle touch end to ensure popup opens on mobile
+              e.preventDefault();
+              e.stopPropagation();
+              handleTriggerClick(e);
+            }}
+            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon ? '8px' : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; position: relative; z-index: 10; ${isFullWidth
               ? 'width: 100%;'
               : ''}"
           >
@@ -1986,11 +1996,17 @@ export class UltraPopupModule extends BaseUltraModule {
         } else {
           triggerElement = html`
             <img
+              class="swiper-no-swiping popup-trigger"
               src="${imageUrl}"
               @click=${handleTriggerClick}
+              @touchend=${(e: Event) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleTriggerClick(e);
+              }}
               style="${isFullWidth
                 ? 'width: 100%;'
-                : 'max-width: 200px;'} cursor: pointer; border-radius: 8px; transition: transform 0.2s ease; display: block;"
+                : 'max-width: 200px;'} cursor: pointer; border-radius: 8px; transition: transform 0.2s ease; display: block; touch-action: manipulation; pointer-events: auto; position: relative; z-index: 10;"
               @mouseover=${(e: Event) => {
                 const target = e.target as HTMLElement;
                 target.style.transform = 'scale(1.05)';
@@ -2006,9 +2022,15 @@ export class UltraPopupModule extends BaseUltraModule {
         const triggerIcon = popupModule.trigger_icon || 'mdi:information';
         triggerElement = html`
           <ha-icon
+            class="swiper-no-swiping popup-trigger"
             icon="${triggerIcon}"
             @click=${handleTriggerClick}
-            style="--mdc-icon-size: 48px; cursor: pointer; color: var(--primary-color); transition: transform 0.2s ease;"
+            @touchend=${(e: Event) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleTriggerClick(e);
+            }}
+            style="--mdc-icon-size: 48px; cursor: pointer; color: var(--primary-color); transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto; position: relative; z-index: 10;"
             @mouseover=${(e: Event) => {
               const target = e.target as HTMLElement;
               target.style.transform = 'scale(1.1)';
@@ -2023,8 +2045,9 @@ export class UltraPopupModule extends BaseUltraModule {
 
       // Wrap trigger in alignment container
       // Use inline-flex to minimize space taken, only expand if needed
+      // CRITICAL: Add swiper-no-swiping class to container to prevent swipe interference
       return html`
-        <div style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment === 'left' || alignment === 'right' ? 'auto' : '100%'};">
+        <div class="swiper-no-swiping" style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment === 'left' || alignment === 'right' ? 'auto' : '100%'}; position: relative; z-index: 10;">
           ${triggerElement}
         </div>
       `;
@@ -2103,15 +2126,74 @@ export class UltraPopupModule extends BaseUltraModule {
     const hasChildren = popupModule.modules && popupModule.modules.length > 0;
     const registry = getModuleRegistry();
 
-    const renderPopupContent = () => {
-      if (!isOpen) return '';
+    // PORTAL APPROACH: Render popup to document.body to escape Swiper's transform containment
+    // When a parent element has CSS transform, position:fixed elements become relative to that element
+    // By rendering to document.body, the popup overlay properly covers the entire viewport
+    const renderPopupToPortal = () => {
+      const portalId = `ultra-popup-portal-${popupModule.id}`;
+      let portal = popupPortals.get(popupModule.id);
+      
+      if (!isOpen) {
+        // If closing, remove the portal
+        if (portal) {
+          portal.remove();
+          popupPortals.delete(popupModule.id);
+        }
+        return;
+      }
+      
+      // Create portal container if it doesn't exist
+      if (!portal) {
+        portal = document.createElement('div');
+        portal.id = portalId;
+        portal.className = 'ultra-popup-portal';
+        document.body.appendChild(portal);
+        popupPortals.set(popupModule.id, portal);
+      }
 
       // Use extremely high z-index in preview contexts to appear above builder interface and HA edit outlines
       const isPreviewContext = previewContext === 'ha-preview' || previewContext === 'live';
       // Use maximum safe z-index value (2147483647 is max 32-bit integer) with !important for preview contexts
-      const overlayZIndex = isPreviewContext ? '2147483647 !important' : Z_INDEX.DIALOG_OVERLAY.toString();
+      const overlayZIndex = isPreviewContext ? 2147483647 : Z_INDEX.DIALOG_OVERLAY;
 
-      return html`
+      const popupContent = html`
+        <style>
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          @keyframes zoomOut {
+            from { opacity: 0; transform: scale(1.1); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          .animation-fadeIn { animation-name: fadeIn; }
+          .animation-zoomIn { animation-name: zoomIn; }
+          .animation-zoomOut { animation-name: zoomOut; }
+          .animation-slideInDown { animation-name: slideInDown; }
+          .animation-slideInUp { animation-name: slideInUp; }
+          .animation-slideInLeft { animation-name: slideInLeft; }
+          .animation-slideInRight { animation-name: slideInRight; }
+        </style>
         <div
           class="ultra-popup-overlay"
           @click=${handleOverlayClick}
@@ -2232,7 +2314,13 @@ export class UltraPopupModule extends BaseUltraModule {
           </div>
         </div>
       `;
+
+      // Render the popup content into the portal
+      render(popupContent, portal);
     };
+
+    // Call the portal render function (it handles both open and close states)
+    renderPopupToPortal();
 
     // Don't wrap in a container div - just return the trigger and popup overlay
     // The popup overlay is fixed positioned so it won't take up space
@@ -2276,17 +2364,13 @@ export class UltraPopupModule extends BaseUltraModule {
     
     if (!hasVisibleTrigger) {
       // No visible trigger - render as completely invisible (takes no space)
-      return html`
-        <div style="display: contents;">
-          ${renderPopupContent()}
-        </div>
-      `;
+      // The popup content is rendered via portal to document.body
+      return html`<div style="display: contents;"></div>`;
     }
     
     // Has visible trigger - render normally
-    return html`
-      ${renderTrigger()} ${renderPopupContent()}
-    `;
+    // The popup content is rendered via portal to document.body
+    return html`${renderTrigger()}`;
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

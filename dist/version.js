@@ -1,6 +1,6 @@
 /**
  * Ultra Card Version
- * v2.2.0-beta9
+ * v2.2.0-beta10
  * 
  * This file is auto-generated from src/version.ts
  * DO NOT MODIFY DIRECTLY
@@ -13,6 +13,6 @@ function setVersion(value) {
 }
 
 // Set default version (will be overridden by card)
-setVersion('2.2.0-beta9');
+setVersion('2.2.0-beta10');
 
 export { version, setVersion };

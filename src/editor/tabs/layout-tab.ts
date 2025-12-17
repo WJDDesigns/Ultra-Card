@@ -671,20 +671,22 @@ export class LayoutTab extends LitElement {
 
   // Drag and drop state
   @state() private _draggedItem: {
-    type: 'module' | 'column' | 'row' | 'nested-child';
+    type: 'module' | 'column' | 'row' | 'layout-child' | 'nested-child' | 'deep-nested-child';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
     data: any;
     layoutChildIndex?: number;
     nestedChildIndex?: number;
+    deepNestedChildIndex?: number;
   } | null = null;
   @state() private _dropTarget: {
-    type: 'module' | 'column' | 'row' | 'layout' | 'layout-child';
+    type: 'module' | 'column' | 'row' | 'layout' | 'layout-child' | 'deep-nested-layout';
     rowIndex: number;
     columnIndex?: number;
     moduleIndex?: number;
     childIndex?: number;
+    nestedChildIndex?: number;
   } | null = null;
   // Track the intended drag target element (set on mousedown before dragstart)
   // This helps parent handlers know when a nested element is being dragged
@@ -3208,11 +3210,73 @@ export class LayoutTab extends LitElement {
 
     const layoutModule = targetColumn.modules[parentModuleIndex] as any;
 
-    // Check if we're updating a nested child module (module inside a nested layout)
+    // Check if we're updating a deeply nested child module (4th level: module inside layout inside layout inside layout)
     let updatedModule: any;
 
-    if (this._selectedNestedChildIndex >= 0) {
-      // We're updating a nested child module
+    if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+      // We're updating a deeply nested child module (4th level)
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
+
+      const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+      if (
+        !nestedLayoutModule.modules ||
+        !nestedLayoutModule.modules[this._selectedNestedChildIndex]
+      )
+        return;
+
+      const deepNestedLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+      if (
+        !deepNestedLayoutModule.modules ||
+        !deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex]
+      )
+        return;
+
+      const originalChildModule = deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex];
+
+      // Create updated module by copying original and applying updates
+      updatedModule = { ...originalChildModule };
+
+      // Special handling: deep-merge nested design object so partial updates don't wipe other fields
+      if (updates.hasOwnProperty('design')) {
+        const incomingDesign = (updates as any).design || {};
+        const existingDesign = (updatedModule.design || {}) as Record<string, any>;
+        const mergedDesign: Record<string, any> = { ...existingDesign };
+        for (const [dKey, dVal] of Object.entries(incomingDesign)) {
+          if (dVal === undefined) {
+            delete mergedDesign[dKey];
+          } else {
+            mergedDesign[dKey] = dVal;
+          }
+        }
+        if (Object.keys(mergedDesign).length === 0) {
+          delete updatedModule.design;
+        } else {
+          updatedModule.design = mergedDesign;
+        }
+      }
+
+      // Apply remaining updates at top-level, but DELETE properties that are set to undefined (for reset)
+      for (const [key, value] of Object.entries(updates)) {
+        if (key === 'design') continue;
+        if (value === undefined) {
+          delete updatedModule[key];
+        } else {
+          updatedModule[key] = value;
+        }
+      }
+
+      // Clean up top-level padding/margin objects
+      if (updatedModule.padding && typeof updatedModule.padding === 'object') {
+        delete updatedModule.padding;
+      }
+      if (updatedModule.margin && typeof updatedModule.margin === 'object') {
+        delete updatedModule.margin;
+      }
+
+      // Update the deeply nested child module
+      deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex] = updatedModule;
+    } else if (this._selectedNestedChildIndex >= 0) {
+      // We're updating a nested child module (3rd level)
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return;
 
       const nestedLayoutModule = layoutModule.modules[childIndex] as any;
@@ -3359,13 +3423,20 @@ export class LayoutTab extends LitElement {
 
       if (!layoutModule?.modules?.[childIndex]) return null;
 
-      // Check if this is a nested child module (module inside a nested layout)
-      if (this._selectedNestedChildIndex >= 0) {
+      // Check if this is a deeply nested child module (4th level)
+      if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+        const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+        if (!nestedLayoutModule?.modules?.[this._selectedNestedChildIndex]) return null;
+        const deepNestedLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+        if (!deepNestedLayoutModule?.modules?.[this._selectedNestedNestedChildIndex]) return null;
+        return deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex];
+      } else if (this._selectedNestedChildIndex >= 0) {
+        // 3rd level: Nested child module (module inside a nested layout)
         const nestedLayoutModule = layoutModule.modules[childIndex] as any;
         if (!nestedLayoutModule?.modules?.[this._selectedNestedChildIndex]) return null;
         return nestedLayoutModule.modules[this._selectedNestedChildIndex];
       } else {
-        // Regular layout child module
+        // 2nd level: Regular layout child module
         return layoutModule.modules[childIndex];
       }
     }
@@ -4195,6 +4266,7 @@ export class LayoutTab extends LitElement {
       module: ['module', 'column', 'layout', 'layout-child'], // Modules can be dropped on other modules, column areas, layout modules, or layout children for reordering
       'nested-child': ['module', 'column', 'layout', 'layout-child'], // Back-compat alias (older DnD path)
       'layout-child': ['module', 'column', 'layout', 'layout-child'], // Actual type emitted by layout child drag start
+      'deep-nested-child': ['module', 'column', 'layout', 'layout-child'], // Modules from deeply nested layouts can be dropped on columns, layouts, etc.
       column: ['column', 'row'], // Columns can be dropped on other columns or row areas
       row: ['row'], // Rows can only be dropped on other rows
     };
@@ -4212,6 +4284,9 @@ export class LayoutTab extends LitElement {
         break;
       case 'nested-child':
         this._moveNestedChild(newLayout, source, target);
+        break;
+      case 'deep-nested-child':
+        this._moveDeepNestedChild(newLayout, source, target);
         break;
       case 'column':
         this._moveColumn(newLayout, source, target);
@@ -4552,6 +4627,43 @@ export class LayoutTab extends LitElement {
       targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
     }
     // Note: We could add more target types here for moving to nested layouts, etc.
+  }
+
+  private _moveDeepNestedChild(layout: any, source: any, target: any): void {
+    // Handle moving deep nested child modules (modules inside deeply nested layout modules, e.g., icon inside popup inside horizontal inside slider)
+    const sourceTopLayout =
+      layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
+    const sourceNestedLayout = sourceTopLayout.modules[source.layoutChildIndex];
+    const sourceDeepNestedLayout = sourceNestedLayout.modules[source.nestedChildIndex];
+    const sourceModule = sourceDeepNestedLayout.modules[source.deepNestedChildIndex];
+
+    // Remove from source
+    sourceDeepNestedLayout.modules.splice(source.deepNestedChildIndex, 1);
+
+    // Add to target based on target type
+    if (target.type === 'module' || target.type === 'column') {
+      // Moving to a regular column
+      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
+      const targetIndex = target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
+      targetColumn.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'layout') {
+      // Moving to a layout module (1st level)
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      if (!targetLayoutModule.modules) {
+        targetLayoutModule.modules = [];
+      }
+      targetLayoutModule.modules.push(sourceModule);
+    } else if (target.type === 'layout-child') {
+      // Moving to a specific position within a layout module
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      if (!targetLayoutModule.modules) {
+        targetLayoutModule.modules = [];
+      }
+      const targetIndex = target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
+      targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
+    }
   }
 
   // Row settings methods
@@ -5589,7 +5701,17 @@ export class LayoutTab extends LitElement {
 
               // Get the source module
               let sourceModule;
-              if ((this._draggedItem as any).nestedChildIndex !== undefined) {
+              if (this._draggedItem.type === 'deep-nested-child' && this._draggedItem.deepNestedChildIndex !== undefined) {
+                // From deep nested layout child (4th level - e.g., icon inside popup inside horizontal inside slider)
+                const sourceTopLayout =
+                  newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
+                    .modules[this._draggedItem.moduleIndex] as any;
+                const sourceNestedLayout = sourceTopLayout.modules[this._draggedItem.layoutChildIndex!] as any;
+                const sourceDeepNestedLayout = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex!] as any;
+                sourceModule = sourceDeepNestedLayout.modules[this._draggedItem.deepNestedChildIndex];
+                // Remove from source deep nested layout
+                sourceDeepNestedLayout.modules.splice(this._draggedItem.deepNestedChildIndex, 1);
+              } else if (this._draggedItem.nestedChildIndex !== undefined) {
                 // From nested layout child (3rd level - e.g., image inside vertical inside horizontal)
                 const sourceParentLayout =
                   newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex]
@@ -5597,9 +5719,9 @@ export class LayoutTab extends LitElement {
                 const sourceNestedLayout =
                   sourceParentLayout.modules[this._draggedItem.layoutChildIndex!];
                 sourceModule =
-                  sourceNestedLayout.modules[(this._draggedItem as any).nestedChildIndex];
+                  sourceNestedLayout.modules[this._draggedItem.nestedChildIndex];
                 // Remove from source nested layout
-                sourceNestedLayout.modules.splice((this._draggedItem as any).nestedChildIndex, 1);
+                sourceNestedLayout.modules.splice(this._draggedItem.nestedChildIndex, 1);
               } else if (this._draggedItem.layoutChildIndex !== undefined) {
                 // From direct layout child (2nd level - e.g., vertical inside horizontal)
                 const sourceParentLayout =
@@ -5876,7 +5998,7 @@ export class LayoutTab extends LitElement {
           </div>
         </div>
         <div
-          class="nested-layout-modules-container layout-modules-container"
+          class="nested-layout-modules-container layout-modules-container deep-nested-drop-zone"
           style="
             display: flex;
             flex-direction: column;
@@ -5886,17 +6008,75 @@ export class LayoutTab extends LitElement {
             box-sizing: border-box;
             overflow: hidden;
           "
+          @dragover=${this._onDragOver}
+          @dragenter=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!this._draggedItem) return;
+
+            // Allow dropping into deep nested layout modules
+            this._dropTarget = {
+              type: 'deep-nested-layout' as any,
+              rowIndex: parentRowIndex!,
+              columnIndex: parentColumnIndex!,
+              moduleIndex: parentModuleIndex!,
+              childIndex: nestedLayoutIndex,
+              nestedChildIndex: deepNestedIndex,
+            };
+
+            // Add visual feedback
+            const target = e.currentTarget as HTMLElement;
+            if (target) {
+              target.style.borderColor = 'var(--primary-color)';
+              target.style.backgroundColor = 'rgba(var(--rgb-primary-color), 0.1)';
+            }
+
+            this.requestUpdate();
+          }}
+          @dragleave=${this._onDragLeave}
+          @drop=${(e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Reset visual feedback
+            const target = e.currentTarget as HTMLElement;
+            if (target) {
+              target.style.borderColor = '';
+              target.style.backgroundColor = '';
+            }
+
+            if (!this._draggedItem) return;
+
+            // Move the module to the deep nested layout
+            this._handleDropToDeepNestedLayout(
+              parentRowIndex!,
+              parentColumnIndex!,
+              parentModuleIndex!,
+              nestedLayoutIndex!,
+              deepNestedIndex!
+            );
+          }}
         >
           ${hasChildren
-            ? html`
-                <div style="color: var(--secondary-text-color); font-style: italic; padding: 12px; text-align: center;">
-                  ${localize(
-                    'editor.layout.deep_nesting_notice',
-                    lang,
-                    'Deep nesting detected. Add modules via the + button above.'
-                  )}
-                </div>
-              `
+            ? deepNestedLayout.modules.map(
+                (deepChildModule: CardModule, deepChildIndex: number) => html`
+                  <div
+                    class="deep-nested-child-wrapper"
+                    style="width: 100%; box-sizing: border-box;"
+                  >
+                    ${this._renderDeepNestedChildModule(
+                      deepChildModule,
+                      parentRowIndex,
+                      parentColumnIndex,
+                      parentModuleIndex,
+                      nestedLayoutIndex,
+                      deepNestedIndex,
+                      deepChildIndex
+                    )}
+                  </div>
+                `
+              )
             : html`
                 <div
                   class="nested-layout-empty layout-module-empty"
@@ -5931,6 +6111,167 @@ export class LayoutTab extends LitElement {
                   </span>
                 </div>
               `}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders a child module inside a deeply nested layout (4th level)
+   * These are rendered as simplified module cards without further nesting capability
+   */
+  private _renderDeepNestedChildModule(
+    childModule: CardModule,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    deepNestedIndex?: number,
+    deepChildIndex?: number
+  ): TemplateResult {
+    const lang = this.hass?.locale?.language || 'en';
+    const registry = getModuleRegistry();
+    const moduleHandler = registry.getModule(childModule.type);
+
+    const metadata = moduleHandler?.metadata || {
+      icon: 'mdi:help-circle',
+      title: 'Unknown',
+      description: 'Unknown module type',
+    };
+
+    const moduleInfo = this._generateModuleInfo(childModule);
+    const moduleTitle = this._getModuleDisplayName(childModule);
+
+    return html`
+      <div
+        class="layout-child-simplified-module deep-nested-child-module"
+        draggable="true"
+        @mousedown=${(e: MouseEvent) => {
+          // Set the intended drag target BEFORE dragstart fires
+          this._intendedDragTarget = e.currentTarget as HTMLElement;
+        }}
+        @dragstart=${(e: DragEvent) =>
+          this._onDeepNestedChildDragStart(
+            e,
+            childModule,
+            parentRowIndex,
+            parentColumnIndex,
+            parentModuleIndex,
+            nestedLayoutIndex,
+            deepNestedIndex,
+            deepChildIndex
+          )}
+        @dragend=${(e: DragEvent) => {
+          this._intendedDragTarget = null;
+          this._onDeepNestedChildDragEnd(e);
+        }}
+        @click=${(e: Event) => {
+          const target = e.target as HTMLElement;
+          if (
+            !target.closest('.layout-child-actions') &&
+            !target.closest('.layout-child-drag-handle')
+          ) {
+            e.stopPropagation();
+            if (
+              parentRowIndex !== undefined &&
+              parentColumnIndex !== undefined &&
+              parentModuleIndex !== undefined &&
+              nestedLayoutIndex !== undefined &&
+              deepNestedIndex !== undefined &&
+              deepChildIndex !== undefined
+            ) {
+              this._openDeepNestedChildSettings(
+                parentRowIndex,
+                parentColumnIndex,
+                parentModuleIndex,
+                nestedLayoutIndex,
+                deepNestedIndex,
+                deepChildIndex
+              );
+            }
+          }
+        }}
+      >
+        <div class="layout-child-module-header">
+          <div
+            class="layout-child-drag-handle"
+            title="${localize('editor.layout.drag_to_reorder', this.hass?.locale?.language || 'en', 'Drag to reorder')}"
+          >
+            <ha-icon icon="mdi:drag"></ha-icon>
+          </div>
+          <ha-icon icon="${metadata.icon}" class="layout-child-icon"></ha-icon>
+          <div class="layout-child-content">
+            <div class="layout-child-title">${moduleTitle}</div>
+            <div class="layout-child-info">${moduleInfo}</div>
+          </div>
+          ${parentRowIndex !== undefined &&
+          parentColumnIndex !== undefined &&
+          parentModuleIndex !== undefined &&
+          nestedLayoutIndex !== undefined &&
+          deepNestedIndex !== undefined &&
+          deepChildIndex !== undefined
+            ? html`
+                <div class="layout-child-actions">
+                  <button
+                    class="layout-child-action-btn edit-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._openDeepNestedChildSettings(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        nestedLayoutIndex,
+                        deepNestedIndex,
+                        deepChildIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize('editor.layout.edit_child_module', lang, 'Edit')}"
+                  >
+                    <ha-icon icon="mdi:pencil"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-child-action-btn duplicate-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._duplicateDeepNestedChildModule(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        nestedLayoutIndex,
+                        deepNestedIndex,
+                        deepChildIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize('editor.layout.duplicate_child_module', lang, 'Duplicate')}"
+                  >
+                    <ha-icon icon="mdi:content-copy"></ha-icon>
+                  </button>
+                  <button
+                    class="layout-child-action-btn delete-btn"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._deleteDeepNestedChildModule(
+                        parentRowIndex,
+                        parentColumnIndex,
+                        parentModuleIndex,
+                        nestedLayoutIndex,
+                        deepNestedIndex,
+                        deepChildIndex
+                      );
+                    }}
+                    @mousedown=${(e: Event) => e.stopPropagation()}
+                    @dragstart=${(e: Event) => e.preventDefault()}
+                    title="${localize('editor.layout.delete_child_module', lang, 'Delete')}"
+                  >
+                    <ha-icon icon="mdi:delete"></ha-icon>
+                  </button>
+                </div>
+              `
+            : ''}
         </div>
       </div>
     `;
@@ -9034,6 +9375,61 @@ export class LayoutTab extends LitElement {
   }
 
   /**
+   * Handles drag start for child modules inside deeply nested layouts (4th level)
+   * e.g., icon module inside popup inside horizontal inside slider
+   */
+  private _onDeepNestedChildDragStart(
+    e: DragEvent,
+    childModule: CardModule,
+    parentRowIndex?: number,
+    parentColumnIndex?: number,
+    parentModuleIndex?: number,
+    nestedLayoutIndex?: number,
+    deepNestedIndex?: number,
+    deepChildIndex?: number
+  ): void {
+    if (!e.dataTransfer) return;
+
+    e.stopPropagation();
+
+    // Set up drag data for deep nested child modules
+    this._draggedItem = {
+      type: 'deep-nested-child',
+      rowIndex: parentRowIndex!,
+      columnIndex: parentColumnIndex!,
+      moduleIndex: parentModuleIndex!,
+      layoutChildIndex: nestedLayoutIndex!,
+      nestedChildIndex: deepNestedIndex!,
+      deepNestedChildIndex: deepChildIndex!,
+      data: childModule,
+    };
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'deep-nested-child-module');
+
+    // Visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '0.5';
+    }
+  }
+
+  private _onDeepNestedChildDragEnd(e: DragEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Reset visual feedback
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.opacity = '';
+      target.style.transform = '';
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+  }
+
+  /**
    * Handles drag start for deep nested layout modules (3rd level nesting)
    * e.g., popup inside horizontal inside slider
    */
@@ -9217,6 +9613,101 @@ export class LayoutTab extends LitElement {
     this._updateLayout(newLayout);
 
     this._draggedItem = null;
+    this.requestUpdate();
+  }
+
+  /**
+   * Handle dropping a module into a deeply nested layout (3rd level, e.g., Popup inside Horizontal inside Slider)
+   */
+  private _handleDropToDeepNestedLayout(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepNestedIndex: number
+  ): void {
+    if (!this._draggedItem) return;
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    // Get the deep nested layout module
+    const topLevelLayout = newLayout.rows[parentRowIndex]?.columns[parentColumnIndex]?.modules[parentModuleIndex] as any;
+    if (!topLevelLayout?.modules?.[nestedLayoutIndex]) return;
+
+    const nestedLayout = topLevelLayout.modules[nestedLayoutIndex] as any;
+    if (!nestedLayout?.modules?.[deepNestedIndex]) return;
+
+    const deepNestedLayout = nestedLayout.modules[deepNestedIndex] as any;
+    if (!this._isLayoutModule(deepNestedLayout.type)) return;
+
+    if (!deepNestedLayout.modules) {
+      deepNestedLayout.modules = [];
+    }
+
+    // Get the source module based on drag type
+    let sourceModule: any;
+
+    if (this._draggedItem.type === 'module') {
+      // Dragging from a column
+      sourceModule = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex];
+      if (!sourceModule) return;
+
+      // Remove from source column
+      newLayout.rows[this._draggedItem.rowIndex].columns[this._draggedItem.columnIndex].modules.splice(
+        this._draggedItem.moduleIndex,
+        1
+      );
+    } else if (this._draggedItem.type === 'layout-child' && this._draggedItem.layoutChildIndex !== undefined) {
+      // Dragging from a layout module (2nd level)
+      const sourceParentLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex] as any;
+      if (!sourceParentLayout?.modules) return;
+
+      sourceModule = sourceParentLayout.modules[this._draggedItem.layoutChildIndex];
+      if (!sourceModule) return;
+
+      // Remove from source layout
+      sourceParentLayout.modules.splice(this._draggedItem.layoutChildIndex, 1);
+    } else if (this._draggedItem.type === 'nested-child' && this._draggedItem.nestedChildIndex !== undefined) {
+      // Dragging from a nested layout (3rd level)
+      const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex] as any;
+      if (!sourceTopLayout?.modules?.[this._draggedItem.layoutChildIndex!]) return;
+
+      const sourceNestedLayout = sourceTopLayout.modules[this._draggedItem.layoutChildIndex!] as any;
+      if (!sourceNestedLayout?.modules) return;
+
+      sourceModule = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex];
+      if (!sourceModule) return;
+
+      // Remove from source nested layout
+      sourceNestedLayout.modules.splice(this._draggedItem.nestedChildIndex, 1);
+    } else if (this._draggedItem.type === 'deep-nested-child' && this._draggedItem.deepNestedChildIndex !== undefined) {
+      // Dragging from a deep nested layout (4th level)
+      const sourceTopLayout = newLayout.rows[this._draggedItem.rowIndex]?.columns[this._draggedItem.columnIndex]?.modules[this._draggedItem.moduleIndex] as any;
+      if (!sourceTopLayout?.modules?.[this._draggedItem.layoutChildIndex!]) return;
+
+      const sourceNestedLayout = sourceTopLayout.modules[this._draggedItem.layoutChildIndex!] as any;
+      if (!sourceNestedLayout?.modules?.[this._draggedItem.nestedChildIndex!]) return;
+
+      const sourceDeepNestedLayout = sourceNestedLayout.modules[this._draggedItem.nestedChildIndex!] as any;
+      if (!sourceDeepNestedLayout?.modules) return;
+
+      sourceModule = sourceDeepNestedLayout.modules[this._draggedItem.deepNestedChildIndex];
+      if (!sourceModule) return;
+
+      // Remove from source deep nested layout
+      sourceDeepNestedLayout.modules.splice(this._draggedItem.deepNestedChildIndex, 1);
+    } else {
+      // Unknown drag type
+      return;
+    }
+
+    // Add to deep nested layout
+    deepNestedLayout.modules.push(sourceModule);
+
+    this._updateLayout(newLayout);
+    this._draggedItem = null;
+    this._dropTarget = null;
     this.requestUpdate();
   }
 
@@ -9850,6 +10341,217 @@ export class LayoutTab extends LitElement {
     // Store the nested child index separately for deeper nesting
     this._selectedNestedChildIndex = nestedChildIndex;
     this._showLayoutChildSettings = true;
+  }
+
+  /**
+   * Opens settings for a child module inside a deeply nested layout (4th level)
+   */
+  private _openDeepNestedChildSettings(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepNestedIndex: number,
+    deepChildIndex: number
+  ): void {
+    // Get the child module from deep nested layout
+    const layout = this._ensureLayout();
+    const row = layout.rows[parentRowIndex];
+    if (!row || !row.columns[parentColumnIndex]) return;
+
+    const column = row.columns[parentColumnIndex];
+    if (!column.modules || !column.modules[parentModuleIndex]) return;
+
+    const parentLayoutModule = column.modules[parentModuleIndex] as any;
+    if (!parentLayoutModule.modules || !parentLayoutModule.modules[nestedLayoutIndex]) return;
+
+    const nestedLayoutModule = parentLayoutModule.modules[nestedLayoutIndex] as any;
+    if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[deepNestedIndex]) return;
+
+    const deepNestedLayoutModule = nestedLayoutModule.modules[deepNestedIndex] as any;
+    if (!deepNestedLayoutModule.modules || !deepNestedLayoutModule.modules[deepChildIndex]) return;
+
+    // Use the layout child settings system with nested indexing
+    // Store the deep nested layout as the child, and track the deeper indices
+    this._selectedLayoutChild = {
+      parentRowIndex,
+      parentColumnIndex,
+      parentModuleIndex,
+      childIndex: nestedLayoutIndex,
+    };
+    this._selectedNestedChildIndex = deepNestedIndex;
+    this._selectedNestedNestedChildIndex = deepChildIndex;
+    this._showLayoutChildSettings = true;
+  }
+
+  /**
+   * Duplicates a child module inside a deeply nested layout (4th level)
+   */
+  private _duplicateDeepNestedChildModule(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepNestedIndex: number,
+    deepChildIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const row = layout.rows[parentRowIndex];
+    if (!row || !row.columns[parentColumnIndex]) return;
+
+    const column = row.columns[parentColumnIndex];
+    if (!column.modules || !column.modules[parentModuleIndex]) return;
+
+    const parentLayoutModule = column.modules[parentModuleIndex] as any;
+    if (!parentLayoutModule.modules || !parentLayoutModule.modules[nestedLayoutIndex]) return;
+
+    const nestedLayoutModule = parentLayoutModule.modules[nestedLayoutIndex] as any;
+    if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[deepNestedIndex]) return;
+
+    const deepNestedLayoutModule = nestedLayoutModule.modules[deepNestedIndex] as any;
+    if (!deepNestedLayoutModule.modules || !deepNestedLayoutModule.modules[deepChildIndex]) return;
+
+    // Deep clone the module to duplicate
+    const moduleToDuplicate = JSON.parse(JSON.stringify(deepNestedLayoutModule.modules[deepChildIndex]));
+
+    // Regenerate IDs for the duplicated module
+    this._regenerateModuleIds(moduleToDuplicate);
+
+    // Create new layout with duplicated module
+    const newLayout = {
+      rows: layout.rows.map((r, rIndex) => {
+        if (rIndex === parentRowIndex) {
+          return {
+            ...r,
+            columns: r.columns.map((col, cIndex) => {
+              if (cIndex === parentColumnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((module, mIndex) => {
+                    if (mIndex === parentModuleIndex) {
+                      const updatedParentLayoutModule = module as any;
+                      return {
+                        ...updatedParentLayoutModule,
+                        modules: updatedParentLayoutModule.modules.map(
+                          (nestedModule: any, nIndex: number) => {
+                            if (nIndex === nestedLayoutIndex) {
+                              return {
+                                ...nestedModule,
+                                modules: nestedModule.modules.map(
+                                  (deepModule: any, dIndex: number) => {
+                                    if (dIndex === deepNestedIndex) {
+                                      const newModules = [...deepModule.modules];
+                                      newModules.splice(deepChildIndex + 1, 0, moduleToDuplicate);
+                                      return {
+                                        ...deepModule,
+                                        modules: newModules,
+                                      };
+                                    }
+                                    return deepModule;
+                                  }
+                                ),
+                              };
+                            }
+                            return nestedModule;
+                          }
+                        ),
+                      };
+                    }
+                    return module;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return r;
+      }),
+    };
+
+    this._updateLayout(newLayout);
+  }
+
+  /**
+   * Deletes a child module inside a deeply nested layout (4th level)
+   */
+  private _deleteDeepNestedChildModule(
+    parentRowIndex: number,
+    parentColumnIndex: number,
+    parentModuleIndex: number,
+    nestedLayoutIndex: number,
+    deepNestedIndex: number,
+    deepChildIndex: number
+  ): void {
+    const layout = this._ensureLayout();
+    const row = layout.rows[parentRowIndex];
+    if (!row || !row.columns[parentColumnIndex]) return;
+
+    const column = row.columns[parentColumnIndex];
+    if (!column.modules || !column.modules[parentModuleIndex]) return;
+
+    const parentLayoutModule = column.modules[parentModuleIndex] as any;
+    if (!parentLayoutModule.modules || !parentLayoutModule.modules[nestedLayoutIndex]) return;
+
+    const nestedLayoutModule = parentLayoutModule.modules[nestedLayoutIndex] as any;
+    if (!nestedLayoutModule.modules || !nestedLayoutModule.modules[deepNestedIndex]) return;
+
+    const deepNestedLayoutModule = nestedLayoutModule.modules[deepNestedIndex] as any;
+    if (!deepNestedLayoutModule.modules || !deepNestedLayoutModule.modules[deepChildIndex]) return;
+
+    // Create new layout with the deep nested child module removed
+    const newLayout = {
+      rows: layout.rows.map((r, rIndex) => {
+        if (rIndex === parentRowIndex) {
+          return {
+            ...r,
+            columns: r.columns.map((col, cIndex) => {
+              if (cIndex === parentColumnIndex) {
+                return {
+                  ...col,
+                  modules: col.modules.map((module, mIndex) => {
+                    if (mIndex === parentModuleIndex) {
+                      const updatedParentLayoutModule = module as any;
+                      return {
+                        ...updatedParentLayoutModule,
+                        modules: updatedParentLayoutModule.modules.map(
+                          (nestedModule: any, nIndex: number) => {
+                            if (nIndex === nestedLayoutIndex) {
+                              return {
+                                ...nestedModule,
+                                modules: nestedModule.modules.map(
+                                  (deepModule: any, dIndex: number) => {
+                                    if (dIndex === deepNestedIndex) {
+                                      const newModules = [...deepModule.modules];
+                                      newModules.splice(deepChildIndex, 1);
+                                      return {
+                                        ...deepModule,
+                                        modules: newModules,
+                                      };
+                                    }
+                                    return deepModule;
+                                  }
+                                ),
+                              };
+                            }
+                            return nestedModule;
+                          }
+                        ),
+                      };
+                    }
+                    return module;
+                  }),
+                };
+              }
+              return col;
+            }),
+          };
+        }
+        return r;
+      }),
+    };
+
+    this._updateLayout(newLayout);
   }
 
   private _regenerateModuleIds(module: any): void {
@@ -11323,9 +12025,28 @@ export class LayoutTab extends LitElement {
 
     let childModule: any;
 
-    // Check if we're accessing a nested child module (module inside a nested layout)
-    if (this._selectedNestedChildIndex >= 0) {
-      // We're accessing a nested child module
+    // Check if we're accessing a deeply nested child module (4th level: module inside layout inside layout inside layout)
+    if (this._selectedNestedNestedChildIndex >= 0 && this._selectedNestedChildIndex >= 0) {
+      // We're accessing a deeply nested child module (4th level)
+      if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
+
+      const nestedLayoutModule = layoutModule.modules[childIndex] as any;
+      if (
+        !nestedLayoutModule.modules ||
+        !nestedLayoutModule.modules[this._selectedNestedChildIndex]
+      )
+        return html``;
+
+      const deepNestedLayoutModule = nestedLayoutModule.modules[this._selectedNestedChildIndex] as any;
+      if (
+        !deepNestedLayoutModule.modules ||
+        !deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex]
+      )
+        return html``;
+
+      childModule = deepNestedLayoutModule.modules[this._selectedNestedNestedChildIndex];
+    } else if (this._selectedNestedChildIndex >= 0) {
+      // We're accessing a nested child module (3rd level)
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
 
       const nestedLayoutModule = layoutModule.modules[childIndex] as any;
@@ -11337,7 +12058,7 @@ export class LayoutTab extends LitElement {
 
       childModule = nestedLayoutModule.modules[this._selectedNestedChildIndex];
     } else {
-      // Regular layout child module access
+      // Regular layout child module access (2nd level)
       if (!layoutModule.modules || !layoutModule.modules[childIndex]) return html``;
 
       childModule = layoutModule.modules[childIndex];

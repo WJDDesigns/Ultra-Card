@@ -941,14 +941,25 @@ export class UltraToggleModule extends BaseUltraModule {
     this._hass = hass;
 
     // Determine active toggle point
-    // If user has clicked a toggle point, use that; otherwise check entity state
+    // Priority: Always check entity state first, then fall back to clicked state
     let activePointId: string | undefined;
-    if (this._activeTogglePointId) {
-      // Use the last clicked toggle point
+    
+    // Check if any entity tracking is configured
+    const hasEntityTracking = toggleModule.tracking_entity || 
+      toggleModule.toggle_points.some(p => p.match_entity && p.match_state);
+    
+    if (hasEntityTracking) {
+      // When entity tracking is configured, always determine from entity state
+      // This ensures the toggle reacts to external state changes
+      activePointId = this.determineActiveTogglePoint(toggleModule, hass);
+      // Update the cached value so it stays in sync
+      this._activeTogglePointId = activePointId;
+    } else if (this._activeTogglePointId) {
+      // No entity tracking - use the last clicked toggle point
       activePointId = this._activeTogglePointId;
     } else {
-      // Determine from entity state
-      activePointId = this.determineActiveTogglePoint(toggleModule, hass);
+      // No entity tracking and nothing clicked - default to first point
+      activePointId = toggleModule.toggle_points[0]?.id;
       this._activeTogglePointId = activePointId;
     }
 

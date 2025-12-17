@@ -132,6 +132,43 @@ class ExternalCardContainerService {
           }
         }, 150);
       }
+
+      // For WebRTC camera cards, trigger stream initialization when container is retrieved
+      // This handles the case where card was created but needs to start streaming on dashboard
+      if ((elementName.includes('webrtc-camera') || elementName.includes('webrtc')) && containerInfo.cardElement) {
+        // Schedule initialization after the container is mounted
+        setTimeout(() => {
+          if (containerInfo!.cardElement?.isConnected && this.currentHass) {
+            (containerInfo!.cardElement as any).hass = this.currentHass;
+
+            // Force re-render to trigger stream
+            if (typeof (containerInfo!.cardElement as any).requestUpdate === 'function') {
+              (containerInfo!.cardElement as any).requestUpdate();
+            }
+
+            // Try to trigger internal refresh if card has the method
+            if (typeof (containerInfo!.cardElement as any).refresh === 'function') {
+              (containerInfo!.cardElement as any).refresh();
+            }
+
+            // Dispatch resize to help card detect dimensions
+            window.dispatchEvent(new Event('resize'));
+          }
+        }, 150);
+
+        // Second attempt for slow WebRTC connections
+        setTimeout(() => {
+          if (containerInfo!.cardElement?.isConnected && this.currentHass) {
+            (containerInfo!.cardElement as any).hass = this.currentHass;
+
+            if (typeof (containerInfo!.cardElement as any).requestUpdate === 'function') {
+              (containerInfo!.cardElement as any).requestUpdate();
+            }
+
+            window.dispatchEvent(new Event('resize'));
+          }
+        }, 600);
+      }
     }
 
     return containerInfo.container;
@@ -155,11 +192,12 @@ class ExternalCardContainerService {
     // Create the card element
     let cardElement: HTMLElement;
     try {
-      // Create element WITHOUT hass - we'll set it after
+      // Create element WITH hass if available - critical for WebRTC and other streaming cards
+      // that need hass during setConfig to establish connections
       cardElement = ucExternalCardsService.createCardElement(
         elementName,
         config,
-        null
+        this.currentHass || null
       ) as HTMLElement;
 
       if (!cardElement) {

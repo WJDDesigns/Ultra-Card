@@ -87,7 +87,7 @@ export class UltraInfoModule extends BaseUltraModule {
           state_alignment: 'start',
           overall_alignment: 'center',
           icon_gap: 8,
-          // Name/Value layout when icon is disabled
+          // Name/Value layout direction (works with any icon position)
           name_value_layout: 'vertical',
           name_value_gap: 2,
           // Content distribution control
@@ -497,168 +497,176 @@ export class UltraInfoModule extends BaseUltraModule {
             : ''}
         </div>
 
-        <!-- Name & Value Layout Section (shown when icon is disabled) -->
-        ${entity.show_icon === false
-          ? html`
-              <div
-                class="settings-section name-value-layout-section"
-                style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
+        <!-- Name & Value Layout Section (always shown) -->
+        <div
+          class="settings-section name-value-layout-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 24px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
+          >
+            ${localize('editor.info.name_value_layout.title', lang, 'Name & Value Layout')}
+          </div>
+
+          <div class="field-group" style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
+            >
+              ${localize(
+                'editor.info.name_value_layout.orientation',
+                lang,
+                'Layout Direction'
+              )}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+            >
+              ${entity.show_icon === false
+                ? localize(
+                    'editor.info.name_value_layout.orientation_desc',
+                    lang,
+                    'Choose how to display the name and value'
+                  )
+                : (entity.icon_position === 'left' || entity.icon_position === 'right')
+                  ? localize(
+                      'editor.info.name_value_layout.orientation_desc_with_icon',
+                      lang,
+                      'Choose how to arrange the name and value beside the icon'
+                    )
+                  : localize(
+                      'editor.info.name_value_layout.orientation_desc_vertical_icon',
+                      lang,
+                      'Arrange name and value (horizontal places them on one line)'
+                    )}
+            </div>
+            <div
+              class="control-button-group"
+              style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;"
+            >
+              ${[
+                { value: 'vertical', icon: 'mdi:arrow-up-down', label: 'Vertical' },
+                { value: 'horizontal', icon: 'mdi:arrow-left-right', label: 'Horizontal' },
+              ].map(
+                layout => html`
+                  <button
+                    type="button"
+                    class="control-btn ${(entity.name_value_layout || 'vertical') ===
+                    layout.value
+                      ? 'active'
+                      : ''}"
+                    @click=${() => {
+                      this._updateEntity(
+                        infoModule,
+                        0,
+                        { name_value_layout: layout.value as any },
+                        updateModule
+                      );
+                      // Delay long enough for debounced config to propagate (200ms > 100ms debounce)
+                      setTimeout(() => this.triggerPreviewUpdate(), 200);
+                    }}
+                    title="${layout.label}"
+                    style="padding: 12px 8px; gap: 8px;"
+                  >
+                    <ha-icon icon="${layout.icon}"></ha-icon>
+                    <span style="font-size: 12px;">${layout.label}</span>
+                  </button>
+                `
+              )}
+            </div>
+          </div>
+
+          <div class="field-container" style="margin-bottom: 24px;">
+            <div
+              class="field-title"
+              style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
+            >
+              ${localize('editor.info.name_value_gap', lang, 'Name & Value Gap')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+            >
+              ${localize(
+                'editor.info.name_value_gap_desc',
+                lang,
+                'Space between the name and value in pixels'
+              )}
+            </div>
+            <div
+              class="gap-control-container"
+              style="display: flex; align-items: center; gap: 12px;"
+            >
+              <input
+                type="range"
+                class="gap-slider"
+                min="0"
+                max="32"
+                step="1"
+                .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  this._updateEntity(infoModule, 0, { name_value_gap: value }, updateModule);
+                  setTimeout(() => this.triggerPreviewUpdate(), 200);
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="0"
+                max="32"
+                step="1"
+                .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    this._updateEntity(
+                      infoModule,
+                      0,
+                      { name_value_gap: value },
+                      updateModule
+                    );
+                    setTimeout(() => this.triggerPreviewUpdate(), 200);
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const target = e.target as HTMLInputElement;
+                    const currentValue = Number(target.value) || 2;
+                    const increment = e.key === 'ArrowUp' ? 1 : -1;
+                    const newValue = Math.max(0, Math.min(32, currentValue + increment));
+                    this._updateEntity(
+                      infoModule,
+                      0,
+                      { name_value_gap: newValue },
+                      updateModule
+                    );
+                    setTimeout(() => this.triggerPreviewUpdate(), 200);
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => {
+                  this._updateEntity(infoModule, 0, { name_value_gap: 2 }, updateModule);
+                  setTimeout(() => this.triggerPreviewUpdate(), 200);
+                }}
+                title="${localize(
+                  'editor.fields.reset_default_value',
+                  lang,
+                  'Reset to default ({value})'
+                ).replace('{value}', '2')}"
               >
-                <div
-                  class="section-title"
-                  style="font-size: 18px !important; font-weight: 700 !important; text-transform: uppercase !important; color: var(--primary-color); margin-bottom: 16px; border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;"
-                >
-                  ${localize('editor.info.name_value_layout.title', lang, 'Name & Value Layout')}
-                </div>
-
-                <div class="field-group" style="margin-bottom: 24px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 12px;"
-                  >
-                    ${localize(
-                      'editor.info.name_value_layout.orientation',
-                      lang,
-                      'Layout Direction'
-                    )}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.info.name_value_layout.orientation_desc',
-                      lang,
-                      'Choose how to display the name and value'
-                    )}
-                  </div>
-                  <div
-                    class="control-button-group"
-                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%;"
-                  >
-                    ${[
-                      { value: 'vertical', icon: 'mdi:arrow-up-down', label: 'Vertical' },
-                      { value: 'horizontal', icon: 'mdi:arrow-left-right', label: 'Horizontal' },
-                    ].map(
-                      layout => html`
-                        <button
-                          type="button"
-                          class="control-btn ${(entity.name_value_layout || 'vertical') ===
-                          layout.value
-                            ? 'active'
-                            : ''}"
-                          @click=${() => {
-                            this._updateEntity(
-                              infoModule,
-                              0,
-                              { name_value_layout: layout.value as any },
-                              updateModule
-                            );
-                            // Delay long enough for debounced config to propagate (200ms > 100ms debounce)
-                            setTimeout(() => this.triggerPreviewUpdate(), 200);
-                          }}
-                          title="${layout.label}"
-                          style="padding: 12px 8px; gap: 8px;"
-                        >
-                          <ha-icon icon="${layout.icon}"></ha-icon>
-                          <span style="font-size: 12px;">${layout.label}</span>
-                        </button>
-                      `
-                    )}
-                  </div>
-                </div>
-
-                <div class="field-container" style="margin-bottom: 24px;">
-                  <div
-                    class="field-title"
-                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
-                  >
-                    ${localize('editor.info.name_value_gap', lang, 'Name & Value Gap')}
-                  </div>
-                  <div
-                    class="field-description"
-                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
-                  >
-                    ${localize(
-                      'editor.info.name_value_gap_desc',
-                      lang,
-                      'Space between the name and value in pixels'
-                    )}
-                  </div>
-                  <div
-                    class="gap-control-container"
-                    style="display: flex; align-items: center; gap: 12px;"
-                  >
-                    <input
-                      type="range"
-                      class="gap-slider"
-                      min="0"
-                      max="32"
-                      step="1"
-                      .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = Number(target.value);
-                        this._updateEntity(infoModule, 0, { name_value_gap: value }, updateModule);
-                        setTimeout(() => this.triggerPreviewUpdate(), 200);
-                      }}
-                    />
-                    <input
-                      type="number"
-                      class="gap-input"
-                      min="0"
-                      max="32"
-                      step="1"
-                      .value="${entity.name_value_gap !== undefined ? entity.name_value_gap : 2}"
-                      @input=${(e: Event) => {
-                        const target = e.target as HTMLInputElement;
-                        const value = Number(target.value);
-                        if (!isNaN(value)) {
-                          this._updateEntity(
-                            infoModule,
-                            0,
-                            { name_value_gap: value },
-                            updateModule
-                          );
-                          setTimeout(() => this.triggerPreviewUpdate(), 200);
-                        }
-                      }}
-                      @keydown=${(e: KeyboardEvent) => {
-                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                          e.preventDefault();
-                          const target = e.target as HTMLInputElement;
-                          const currentValue = Number(target.value) || 2;
-                          const increment = e.key === 'ArrowUp' ? 1 : -1;
-                          const newValue = Math.max(0, Math.min(32, currentValue + increment));
-                          this._updateEntity(
-                            infoModule,
-                            0,
-                            { name_value_gap: newValue },
-                            updateModule
-                          );
-                          setTimeout(() => this.triggerPreviewUpdate(), 200);
-                        }
-                      }}
-                    />
-                    <button
-                      class="reset-btn"
-                      @click=${() => {
-                        this._updateEntity(infoModule, 0, { name_value_gap: 2 }, updateModule);
-                        setTimeout(() => this.triggerPreviewUpdate(), 200);
-                      }}
-                      title="${localize(
-                        'editor.fields.reset_default_value',
-                        lang,
-                        'Reset to default ({value})'
-                      ).replace('{value}', '2')}"
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `
-          : ''}
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- Migration Banner (if legacy templates detected) -->
         ${shouldShowMigrationPrompt(entity)
@@ -2543,75 +2551,66 @@ export class UltraInfoModule extends BaseUltraModule {
                 return 'none';
               };
 
-              // Determine layout direction for name/value when icon is disabled
-              const nameValueLayout =
-                entity.show_icon === false ? entity.name_value_layout || 'vertical' : 'vertical';
+              // Determine layout direction for name/value
+              // Always respect user's choice - works best with left/right icon positions
+              // or when icon is disabled, but also available for top/bottom layouts
+              const nameValueLayout = entity.name_value_layout || 'vertical';
               const nameValueGap = entity.name_value_gap !== undefined ? entity.name_value_gap : 2;
-
-              const contentElement = html`
-                <div
-                  class="entity-content"
-                  data-layout="${nameValueLayout}"
-                  data-gap="${nameValueGap}"
-                  data-entity-gap="${entity.name_value_gap}"
-                  data-show-icon="${entity.show_icon}"
-                  style="
-                  display: flex;
-                  align-items: ${nameValueLayout === 'horizontal'
-                    ? 'center'
-                    : getFlexAlignment(entity)};
-                  flex-direction: ${nameValueLayout === 'horizontal' ? 'row' : 'column'};
-                  gap: ${nameValueGap}px;
-                  flex: ${contentDistribution !== 'normal' ? '0 0 auto' : '1'};
-                "
-                >
-                  ${entity.show_name !== false
-                    ? html`
-                        <div
-                          class="entity-name"
-                          style="
-                    color: ${(entity as any)._template_name_color ||
+              
+              // Check if we're using horizontal layout with distribution
+              const isHorizontalWithDistribution = nameValueLayout === 'horizontal' && contentDistribution !== 'normal';
+              const hasIcon = entity.show_icon !== false && (iconPosition === 'left' || iconPosition === 'right');
+              
+              // Create name element template
+              const nameElement = entity.show_name !== false
+                ? html`
+                    <div
+                      class="entity-name"
+                      style="
+                        color: ${(entity as any)._template_name_color ||
                           designProperties.color ||
                           entity.name_color ||
                           'var(--secondary-text-color)'};
-                    font-size: ${getFontSizeWithUnits(
-                            designProperties.font_size,
-                            entity.name_size || 12
-                          )};
-                    font-weight: ${designProperties.font_weight ||
+                        font-size: ${getFontSizeWithUnits(
+                          designProperties.font_size,
+                          entity.name_size || 12
+                        )};
+                        font-weight: ${designProperties.font_weight ||
                           (entity.name_bold ? 'bold' : 'normal')};
-                    font-style: ${designProperties.font_style ||
+                        font-style: ${designProperties.font_style ||
                           (entity.name_italic ? 'italic' : 'normal')};
-                    text-transform: ${designProperties.text_transform ||
+                        text-transform: ${designProperties.text_transform ||
                           (entity.name_uppercase ? 'uppercase' : 'none')};
-                    text-decoration: ${entity.name_strikethrough ? 'line-through' : 'none'};
-                    font-family: ${designProperties.font_family || 'inherit'};
-                    line-height: ${designProperties.line_height || 'inherit'};
-                    letter-spacing: ${designProperties.letter_spacing || 'inherit'};
-                    text-align: ${getNameAlignment(entity)};
-                    text-shadow: ${getTextShadow()};
-                    white-space: ${designProperties.white_space || 'normal'};
-                    width: 100%;
-                  "
-                        >
-                          ${displayName}
-                        </div>
-                      `
-                    : ''}
-                  ${entity.show_state !== false
-                    ? html`
-                        <div
-                          class="entity-value"
-                          style="
+                        text-decoration: ${entity.name_strikethrough ? 'line-through' : 'none'};
+                        font-family: ${designProperties.font_family || 'inherit'};
+                        line-height: ${designProperties.line_height || 'inherit'};
+                        letter-spacing: ${designProperties.letter_spacing || 'inherit'};
+                        text-align: ${getNameAlignment(entity)};
+                        text-shadow: ${getTextShadow()};
+                        white-space: ${designProperties.white_space || 'normal'};
+                        flex-shrink: 0;
+                      "
+                    >
+                      ${displayName}
+                    </div>
+                  `
+                : '';
+              
+              // Create value element template
+              const valueElement = entity.show_state !== false
+                ? html`
+                    <div
+                      class="entity-value"
+                      style="
                         color: ${(entity as any)._template_state_color ||
                           designProperties.color ||
                           entity.state_color ||
                           entity.text_color ||
                           'var(--primary-text-color)'};
                         font-size: ${getFontSizeWithUnits(
-                            designProperties.font_size,
-                            entity.text_size || 14
-                          )};
+                          designProperties.font_size,
+                          entity.text_size || 14
+                        )};
                         font-weight: ${designProperties.font_weight ||
                           (entity.text_bold ? 'bold' : 'normal')};
                         font-style: ${designProperties.font_style ||
@@ -2624,20 +2623,75 @@ export class UltraInfoModule extends BaseUltraModule {
                         letter-spacing: ${designProperties.letter_spacing || 'inherit'};
                         text-align: ${getStateAlignment(entity)};
                         text-shadow: ${getTextShadow()};
-                        width: 100%;
                         white-space: ${designProperties.white_space || 'normal'};
+                        flex-shrink: 0;
                       "
-                        >
-                          ${displayValue}
-                        </div>
-                      `
-                    : ''}
+                    >
+                      ${displayValue}
+                    </div>
+                  `
+                : '';
+
+              // Standard content element (used when NOT horizontal+distribution with icon)
+              const contentElement = html`
+                <div
+                  class="entity-content"
+                  data-layout="${nameValueLayout}"
+                  data-gap="${nameValueGap}"
+                  data-entity-gap="${entity.name_value_gap}"
+                  data-show-icon="${entity.show_icon}"
+                  style="
+                    display: flex;
+                    align-items: ${nameValueLayout === 'horizontal' ? 'center' : getFlexAlignment(entity)};
+                    flex-direction: ${nameValueLayout === 'horizontal' ? 'row' : 'column'};
+                    gap: ${isHorizontalWithDistribution && !hasIcon ? 0 : nameValueGap}px;
+                    justify-content: ${isHorizontalWithDistribution && !hasIcon ? contentDistribution : 'flex-start'};
+                    flex: ${isHorizontalWithDistribution && !hasIcon ? '1' : (contentDistribution !== 'normal' ? '0 0 auto' : '1')};
+                    width: ${isHorizontalWithDistribution && !hasIcon ? '100%' : 'auto'};
+                  "
+                >
+                  ${nameElement}
+                  ${valueElement}
                 </div>
               `;
+              
+              // When using horizontal layout with distribution AND icon is shown,
+              // we need to group icon+name together, with value separate
+              // Structure: [icon + name wrapper] <--distribution--> [value]
+              const iconNameGroupElement = isHorizontalWithDistribution && hasIcon
+                ? html`
+                    <div
+                      class="icon-name-group"
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: ${iconGap}px;
+                        flex-shrink: 0;
+                      "
+                    >
+                      ${iconPosition === 'left' ? html`${iconElement}${nameElement}` : html`${nameElement}${iconElement}`}
+                    </div>
+                  `
+                : null;
 
               // Get hover effect configuration from module design
               const hoverEffect = (infoModule as any).design?.hover_effect;
               const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
+
+              // Determine content based on layout mode
+              // When horizontal+distribution+icon: [icon+name] <-> [value]
+              // Otherwise: [icon] [name+value content]
+              const renderInnerContent = () => {
+                if (iconNameGroupElement) {
+                  // Horizontal + distribution + icon: group icon+name, then value
+                  return html`${iconNameGroupElement}${valueElement}`;
+                }
+                // Standard layout
+                if (iconPosition === 'left' || iconPosition === 'top') {
+                  return html`${iconElement}${contentElement}`;
+                }
+                return html`${contentElement}${iconElement}`;
+              };
 
               // Wrap in clickable element if actions are configured
               const element = ((m: any) =>
@@ -2658,7 +2712,7 @@ export class UltraInfoModule extends BaseUltraModule {
                         ? 'flex-end'
                         : 'center'};
                     justify-content: ${justifyContent};
-                    gap: ${effectiveGap}px;
+                    gap: ${iconNameGroupElement ? 0 : effectiveGap}px;
                     cursor: pointer;
                     user-select: none;
                     -webkit-user-select: none;
@@ -2673,9 +2727,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     @touchstart=${(e: Event) => this.handleTouchStart(e, infoModule, hass, config)}
                     @touchend=${(e: Event) => this.handleTouchEnd(e, infoModule, hass, config)}
                   >
-                    ${iconPosition === 'left' || iconPosition === 'top'
-                      ? html`${iconElement}${contentElement}`
-                      : html`${contentElement}${iconElement}`}
+                    ${renderInnerContent()}
                   </div>`
                 : html`<div
                     class="info-entity-item position-${iconPosition} ${hoverEffectClass}"
@@ -2691,12 +2743,10 @@ export class UltraInfoModule extends BaseUltraModule {
                         ? 'flex-end'
                         : 'center'};
                     justify-content: ${justifyContent};
-                    gap: ${effectiveGap}px;
+                    gap: ${iconNameGroupElement ? 0 : effectiveGap}px;
                   "
                   >
-                    ${iconPosition === 'left' || iconPosition === 'top'
-                      ? html`${iconElement}${contentElement}`
-                      : html`${contentElement}${iconElement}`}
+                    ${renderInnerContent()}
                   </div>`;
 
               return element;
@@ -3404,7 +3454,7 @@ export class UltraInfoModule extends BaseUltraModule {
       state_alignment: 'start',
       overall_alignment: 'center',
       icon_gap: 8,
-      // Name/Value layout when icon is disabled
+      // Name/Value layout direction (works with any icon position)
       name_value_layout: 'vertical',
       name_value_gap: 2,
       // Content distribution control
