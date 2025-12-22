@@ -25,6 +25,7 @@ export declare class UltraVerticalModule extends BaseUltraModule {
     private getPaddingCSS;
     private getMarginCSS;
     private getBackgroundCSS;
+    private getBackgroundImageOrGradient;
     private getBackgroundImageCSS;
     private getBorderCSS;
     private getJustifyContent;

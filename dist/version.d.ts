@@ -3,4 +3,4 @@
  * This is the single source of truth for version information
  * Build timestamp: 2025-12-21
  */
-export declare const VERSION = "2.2.0-beta11";
+export declare const VERSION = "2.2.0-beta12";

@@ -239,16 +239,29 @@ export class UltraVerticalModule extends BaseUltraModule {
 
     // Container styles for positioning and effects
     const gapValue = verticalModule.gap !== undefined ? verticalModule.gap : 1.2;
-    const containerStyles = {
+    const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
       margin: this.getMarginCSS(effective),
       background: this.getBackgroundCSS(effective),
-      backgroundImage: this.getBackgroundImageCSS(effective, hass),
+      backgroundImage: this.getBackgroundImageOrGradient(effective, hass),
       backgroundSize: effective.background_size || 'cover',
       backgroundPosition: effective.background_position || 'center',
       backgroundRepeat: effective.background_repeat || 'no-repeat',
-      border: effective.border_width ? this.getBorderCSS(effective) : 'none',
+      border: (effective.border_width || effective.border_color || (effective.border_style && effective.border_style !== 'none')) ? this.getBorderCSS(effective) : 'none',
       borderRadius: this.addPixelUnit(effective.border_radius) || '0',
+      // Respect explicit positioning/z-index so the entire column can overlay siblings
+      // If a z-index is provided but no position, use relative so z-index takes effect
+      position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
+      zIndex: (effective as any).z_index || 'auto',
+      // Respect sizing controls from design/global design
+      width: (effective as any).width || undefined,
+      height: (effective as any).height || undefined,
+      maxWidth: (effective as any).max_width || undefined,
+      minWidth: (effective as any).min_width || undefined,
+      maxHeight: (effective as any).max_height || undefined,
+      boxShadow: (effective as any).box_shadow || undefined,
+      backdropFilter: (effective as any).backdrop_filter || undefined,
+      clipPath: (effective as any).clip_path || undefined,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: this.getJustifyContent(verticalModule.alignment || 'center'),
@@ -261,10 +274,13 @@ export class UltraVerticalModule extends BaseUltraModule {
           ? `${gapValue}rem`
           : '0',
       alignItems: this.getAlignItems(verticalModule.horizontal_alignment || 'center'),
-      // Only set width if user explicitly controls it, otherwise let flexbox handle sizing
-      width: (effective as any).width || undefined,
       // Allow fully collapsed layouts when designers set 0 padding/margin
-      minHeight: '0',
+      // Only set min-height if explicitly specified by user, otherwise let content determine height
+      minHeight: (effective as any).min_height || 'auto',
+      // Allow overlaps (e.g., negative margins) to render across siblings
+      overflowX: (effective as any).overflow_x || 'visible',
+      overflowY: (effective as any).overflow_y || 'visible',
+      boxSizing: 'border-box',
     };
 
     // Gesture handling variables
@@ -841,7 +857,22 @@ export class UltraVerticalModule extends BaseUltraModule {
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {
-    return moduleWithDesign.background_color || 'transparent';
+    const bgColor = moduleWithDesign.background_color || '';
+    // If it's a gradient, return transparent so backgroundImage can be used instead
+    if (bgColor && (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))) {
+      return 'transparent';
+    }
+    return bgColor || 'transparent';
+  }
+
+  private getBackgroundImageOrGradient(moduleWithDesign: any, hass: HomeAssistant): string {
+    // Check if background_color is actually a gradient
+    const bgColor = moduleWithDesign.background_color || '';
+    if (bgColor && (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))) {
+      return bgColor;
+    }
+    // Otherwise use the regular background image logic
+    return this.getBackgroundImageCSS(moduleWithDesign, hass);
   }
 
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
@@ -901,9 +932,11 @@ export class UltraVerticalModule extends BaseUltraModule {
   }
 
   private getBorderCSS(moduleWithDesign: any): string {
-    const width = this.addPixelUnit(moduleWithDesign.border_width) || '0';
+    // Default to 1px if style is set but width is not
+    const hasStyle = moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none';
+    const width = this.addPixelUnit(moduleWithDesign.border_width) || (hasStyle ? '1px' : '0');
     const style = moduleWithDesign.border_style || 'solid';
-    const color = moduleWithDesign.border_color || 'transparent';
+    const color = moduleWithDesign.border_color || 'var(--divider-color)';
     return `${width} ${style} ${color}`;
   }
 

@@ -14810,7 +14810,10 @@ export class LayoutTab extends LitElement {
       text_align: (() => {
         // Explicit priority order for text alignment
         if ((module as any).text_align !== undefined) return (module as any).text_align;
-        if ((module as any).alignment !== undefined) return (module as any).alignment;
+        // IMPORTANT: Don't use alignment as fallback for layout modules (vertical/horizontal)
+        // because their alignment property controls flexbox layout, not text alignment
+        const isLayoutModule = (module as any).type === 'vertical' || (module as any).type === 'horizontal';
+        if (!isLayoutModule && (module as any).alignment !== undefined) return (module as any).alignment;
         if ((module as any).design?.text_align !== undefined)
           return (module as any).design.text_align;
         // Do not inject defaults here; allow field to remain blank in the editor
@@ -15822,7 +15825,7 @@ export class LayoutTab extends LitElement {
           ${layout.rows.map(
             (row, rowIndex) => html`
               <div
-                class="row-builder"
+                class="row-builder ${this._dropTarget?.type === 'row' && this._dropTarget?.rowIndex === rowIndex ? 'drop-target' : ''}"
                 draggable="true"
                 @dragstart=${(e: DragEvent) => this._onDragStart(e, 'row', rowIndex)}
                 @dragend=${this._onDragEnd}
@@ -15830,9 +15833,6 @@ export class LayoutTab extends LitElement {
                 @dragenter=${(e: DragEvent) => this._onDragEnter(e, 'row', rowIndex)}
                 @dragleave=${this._onDragLeave}
                 @drop=${(e: DragEvent) => this._onDrop(e, 'row', rowIndex)}
-                class="${this._dropTarget?.type === 'row' && this._dropTarget?.rowIndex === rowIndex
-                  ? 'drop-target'
-                  : ''}"
               >
                 <div class="row-header">
                   <div class="row-title">
@@ -19400,7 +19400,8 @@ export class LayoutTab extends LitElement {
         border-bottom: 2px solid var(--primary-color);
         position: relative;
         z-index: 0;
-        border-radius: 8px 8px 0px 0px;
+        /* Inner radius = outer radius (8px) - border width (2px) = 6px */
+        border-radius: 6px 6px 0 0;
       }
 
       .row-title {
