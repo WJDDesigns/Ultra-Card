@@ -1081,6 +1081,11 @@ All standard markdown features are automatically enabled!`,
         color: var(--primary-text-color) !important;
       }
 
+      /* Underline - ensure u tag renders correctly in HA dashboard */
+      .markdown-content u {
+        text-decoration: underline !important;
+      }
+
       .markdown-content code {
         font-size: inherit;
         color: var(--primary-text-color) !important;

@@ -34,6 +34,8 @@ import { UltraStatusSummaryModule } from './status-summary-module';
 import { UltraToggleModule } from './toggle-module';
 import { UltraTabsModule } from './tabs-module';
 import { UltraCalendarModule } from './calendar-module';
+import { UltraSportsScoreModule } from './sports-score-module';
+import { UltraGridModule } from './grid-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -100,6 +102,10 @@ export class ModuleRegistry {
     this.registerModule(new UltraTabsModule());
     // Register calendar module (Pro feature)
     this.registerModule(new UltraCalendarModule());
+    // Register sports score module (Pro feature)
+    this.registerModule(new UltraSportsScoreModule());
+    // Register grid module
+    this.registerModule(new UltraGridModule());
   }
 
   // Register a new module (for core modules or third-party modules)

@@ -118,7 +118,9 @@ export interface BaseModule {
     | 'status_summary'
     | 'toggle'
     | 'tabs'
-    | 'calendar';
+    | 'calendar'
+    | 'sports_score'
+    | 'grid';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -1664,6 +1666,7 @@ export interface PopupModule extends BaseModule {
   title_text_color?: string;
   popup_background_color?: string;
   popup_text_color?: string;
+  show_overlay?: boolean;
   overlay_background?: string;
 
   // Trigger Logic (for logic-based popup triggering)
@@ -3783,7 +3786,9 @@ export type CardModule =
   | StatusSummaryModule
   | ToggleModule
   | TabsModule
-  | CalendarModule;
+  | CalendarModule
+  | SportsScoreModule
+  | GridModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -4484,4 +4489,322 @@ export interface CalendarModule extends BaseModule {
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
+}
+
+// ============================================
+// SPORTS SCORE MODULE TYPES
+// ============================================
+
+// Supported sports leagues
+export type SportsLeague =
+  | 'nfl'
+  | 'nba'
+  | 'mlb'
+  | 'nhl'
+  | 'mls'
+  | 'premier_league'
+  | 'ncaaf'
+  | 'ncaab'
+  | 'la_liga'
+  | 'bundesliga'
+  | 'serie_a'
+  | 'ligue_1';
+
+// Display style options
+export type SportsDisplayStyle =
+  | 'scorecard'
+  | 'upcoming'
+  | 'compact'
+  | 'detailed'
+  | 'mini';
+
+// Game status types
+export type SportsGameStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'halftime'
+  | 'final'
+  | 'delayed'
+  | 'postponed'
+  | 'cancelled';
+
+// Normalized game data interface (used by both HA sensor and ESPN API)
+export interface SportsGameData {
+  // Game identification
+  gameId: string;
+  league: SportsLeague;
+  
+  // Team information
+  homeTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo: string;
+    score: number | null;
+    record?: string; // e.g., "10-5"
+    color?: string; // Primary team color
+  };
+  awayTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo: string;
+    score: number | null;
+    record?: string;
+    color?: string;
+  };
+  
+  // Game status
+  status: SportsGameStatus;
+  statusDetail?: string; // e.g., "4th Quarter", "Top 7th"
+  clock?: string; // e.g., "5:32", "3rd Period"
+  period?: number | string;
+  
+  // Schedule information
+  gameTime: Date | null;
+  venue?: string;
+  broadcast?: string; // e.g., "ESPN", "FOX"
+  
+  // Odds (if available)
+  odds?: {
+    spread?: string;
+    overUnder?: string;
+  };
+  
+  // Metadata
+  lastUpdated: Date;
+}
+
+// Team data for team picker
+export interface SportsTeamInfo {
+  id: string;
+  name: string;
+  abbreviation: string;
+  logo: string;
+  league: SportsLeague;
+  color?: string;
+}
+
+// Sports score module configuration
+export interface SportsScoreModule extends BaseModule {
+  type: 'sports_score';
+  
+  // Data source configuration
+  data_source: 'ha_sensor' | 'espn_api';
+  sensor_entity?: string; // For HA sensor mode
+  league?: SportsLeague; // For ESPN API mode
+  team_id?: string; // ESPN team ID for API mode
+  team_name?: string; // Display name for reference
+  
+  // Display configuration
+  display_style: SportsDisplayStyle;
+  refresh_interval: number; // Minutes (1-60)
+  
+  // Element visibility
+  show_team_logos: boolean;
+  show_team_names: boolean;
+  show_team_records: boolean;
+  show_game_time: boolean;
+  show_venue: boolean;
+  show_broadcast: boolean;
+  show_score: boolean;
+  show_odds: boolean;
+  show_status_detail: boolean;
+  
+  // Styling options
+  home_team_color?: string;
+  away_team_color?: string;
+  use_team_colors?: boolean; // Auto-detect from logos
+  win_color?: string;
+  loss_color?: string;
+  in_progress_color?: string;
+  scheduled_color?: string;
+  
+  // Font sizes
+  team_name_font_size?: string;
+  score_font_size?: string;
+  detail_font_size?: string;
+  
+  // Layout options
+  logo_size?: string; // e.g., "48px"
+  compact_mode?: boolean;
+  
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// Grid Module Types
+// =================
+
+// Grid style preset identifiers
+export type GridStylePreset =
+  | 'style_1' // Modern: Name above icon above state
+  | 'style_2' // Modern: Icon above state (minimalist)
+  | 'style_3' // Modern: Icon left, name + state right
+  | 'style_4' // Modern: Large icon with floating state badge
+  | 'style_5' // Modern: Icon + name horizontal, state below
+  | 'style_6' // Minimal: Icon only (hover shows name)
+  | 'style_7' // Minimal: Icon + state (compact)
+  | 'style_8' // Minimal: Text-only (name + state)
+  | 'style_9' // Minimal: Circular icon with ring progress
+  | 'style_10' // Minimal: Square tile with corner state
+  | 'style_11' // Classic: Card-like with shadow
+  | 'style_12' // Classic: Button-style with border
+  | 'style_13' // Classic: List-style horizontal
+  | 'style_14' // Classic: Badge-style rounded
+  | 'style_15' // Classic: Panel with header bar
+  | 'style_16' // Advanced: Glass morphism
+  | 'style_17' // Advanced: Gradient background
+  | 'style_18' // Advanced: Split-color design
+  | 'style_19' // Advanced: Neumorphic
+  | 'style_20'; // Advanced: Flat with accent border
+
+// Grid display modes
+export type GridDisplayMode = 'grid' | 'masonry' | 'metro';
+
+// Grid sort options
+export type GridSortBy = 'name' | 'last_updated' | 'state' | 'custom' | 'domain';
+
+// Grid pagination style
+export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
+
+// Grid load animations
+export type GridLoadAnimation = 'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
+
+// Metro size options
+export type MetroSize = 'small' | 'medium' | 'large';
+
+// Individual entity in the grid
+export interface GridEntity {
+  id: string;
+  entity: string;
+
+  // Optional display overrides
+  custom_name?: string;
+  custom_icon?: string;
+  custom_color?: string;
+  custom_background?: string;
+
+  // Per-item action overrides
+  override_actions?: boolean;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Metro mode: custom tile size
+  metro_size?: MetroSize;
+
+  // State-based color overrides
+  state_colors?: Record<string, string>;
+
+  // Hidden flag for filtering
+  hidden?: boolean;
+}
+
+// Grid Module configuration
+export interface GridModule extends BaseModule {
+  type: 'grid';
+
+  // Entity Management
+  entities: GridEntity[];
+  enable_auto_filter?: boolean;
+  include_domains?: string[];
+  exclude_domains?: string[];
+  exclude_entities?: string[];
+  // Keyword filtering - matches against entity_id
+  include_keywords?: string[];
+  exclude_keywords?: string[];
+
+  // Layout Configuration
+  grid_style: GridStylePreset;
+  grid_display_mode: GridDisplayMode;
+  columns: number; // 1-12, default 4
+  rows?: number; // auto (0 or undefined) or fixed number
+  gap: number; // pixels between items, default 8
+
+  // Sorting & Filtering
+  sort_by: GridSortBy;
+  sort_direction: 'asc' | 'desc';
+  max_items: number; // 0 = show all
+
+  // Pagination
+  enable_pagination: boolean;
+  items_per_page: number;
+  pagination_style: GridPaginationStyle;
+
+  // Animation
+  enable_load_animation: boolean;
+  load_animation: GridLoadAnimation;
+  grid_animation_duration: number; // duration of each animation in ms
+  animation_stagger: number; // delay between items in ms
+
+  // Global Styling (applies to all items unless overridden)
+  global_icon_size: number; // pixels
+  global_font_size: number; // pixels
+  global_name_color?: string;
+  global_state_color?: string;
+  global_icon_color?: string;
+  global_background_color?: string;
+  global_border_radius: string; // e.g., "8px" or "50%"
+  global_padding: string; // e.g., "12px"
+  global_border_width?: number;
+  global_border_color?: string;
+
+  // State-based styling
+  global_on_color?: string;
+  global_off_color?: string;
+  global_unavailable_color?: string;
+
+  // Style-specific colors
+  // Glass style (style_16)
+  glass_tint_color?: string;
+  glass_blur_amount?: number;
+  glass_border_color?: string;
+
+  // Gradient style (style_17)
+  gradient_start_color?: string;
+  gradient_end_color?: string;
+  gradient_direction?: 'to-bottom' | 'to-right' | 'to-bottom-right' | 'to-bottom-left';
+
+  // Panel style (style_15)
+  panel_header_color?: string;
+  panel_header_text_color?: string;
+
+  // Split style (style_18)
+  split_left_color?: string;
+  split_right_color?: string;
+
+  // Neumorphic style (style_19)
+  neumorphic_light_shadow?: string;
+  neumorphic_dark_shadow?: string;
+
+  // Accent Border style (style_20)
+  accent_border_color?: string;
+
+  // Card style (style_11)
+  card_shadow_color?: string;
+
+  // Global Actions (can be overridden per-item)
+  tap_action: ModuleActionConfig;
+  hold_action: ModuleActionConfig;
+  double_tap_action: ModuleActionConfig;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_effect?: 'none' | 'scale' | 'glow' | 'lift' | 'color';
+  hover_scale?: number; // e.g., 1.05
+  hover_background_color?: string;
+  hover_glow_color?: string;
+
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+  unified_template_mode?: boolean;
+  unified_template?: string;
 }

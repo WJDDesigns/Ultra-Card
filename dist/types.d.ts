@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -937,6 +937,7 @@ export interface PopupModule extends BaseModule {
     title_text_color?: string;
     popup_background_color?: string;
     popup_text_color?: string;
+    show_overlay?: boolean;
     overlay_background?: string;
     trigger_mode?: 'every' | 'any' | 'manual';
     trigger_conditions?: DisplayCondition[];
@@ -2068,7 +2069,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -2495,4 +2496,170 @@ export interface CalendarModule extends BaseModule {
     template?: string;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+}
+export type SportsLeague = 'nfl' | 'nba' | 'mlb' | 'nhl' | 'mls' | 'premier_league' | 'ncaaf' | 'ncaab' | 'la_liga' | 'bundesliga' | 'serie_a' | 'ligue_1';
+export type SportsDisplayStyle = 'scorecard' | 'upcoming' | 'compact' | 'detailed' | 'mini';
+export type SportsGameStatus = 'scheduled' | 'in_progress' | 'halftime' | 'final' | 'delayed' | 'postponed' | 'cancelled';
+export interface SportsGameData {
+    gameId: string;
+    league: SportsLeague;
+    homeTeam: {
+        id: string;
+        name: string;
+        abbreviation: string;
+        logo: string;
+        score: number | null;
+        record?: string;
+        color?: string;
+    };
+    awayTeam: {
+        id: string;
+        name: string;
+        abbreviation: string;
+        logo: string;
+        score: number | null;
+        record?: string;
+        color?: string;
+    };
+    status: SportsGameStatus;
+    statusDetail?: string;
+    clock?: string;
+    period?: number | string;
+    gameTime: Date | null;
+    venue?: string;
+    broadcast?: string;
+    odds?: {
+        spread?: string;
+        overUnder?: string;
+    };
+    lastUpdated: Date;
+}
+export interface SportsTeamInfo {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo: string;
+    league: SportsLeague;
+    color?: string;
+}
+export interface SportsScoreModule extends BaseModule {
+    type: 'sports_score';
+    data_source: 'ha_sensor' | 'espn_api';
+    sensor_entity?: string;
+    league?: SportsLeague;
+    team_id?: string;
+    team_name?: string;
+    display_style: SportsDisplayStyle;
+    refresh_interval: number;
+    show_team_logos: boolean;
+    show_team_names: boolean;
+    show_team_records: boolean;
+    show_game_time: boolean;
+    show_venue: boolean;
+    show_broadcast: boolean;
+    show_score: boolean;
+    show_odds: boolean;
+    show_status_detail: boolean;
+    home_team_color?: string;
+    away_team_color?: string;
+    use_team_colors?: boolean;
+    win_color?: string;
+    loss_color?: string;
+    in_progress_color?: string;
+    scheduled_color?: string;
+    team_name_font_size?: string;
+    score_font_size?: string;
+    detail_font_size?: string;
+    logo_size?: string;
+    compact_mode?: boolean;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+export type GridStylePreset = 'style_1' | 'style_2' | 'style_3' | 'style_4' | 'style_5' | 'style_6' | 'style_7' | 'style_8' | 'style_9' | 'style_10' | 'style_11' | 'style_12' | 'style_13' | 'style_14' | 'style_15' | 'style_16' | 'style_17' | 'style_18' | 'style_19' | 'style_20';
+export type GridDisplayMode = 'grid' | 'masonry' | 'metro';
+export type GridSortBy = 'name' | 'last_updated' | 'state' | 'custom' | 'domain';
+export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
+export type GridLoadAnimation = 'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
+export type MetroSize = 'small' | 'medium' | 'large';
+export interface GridEntity {
+    id: string;
+    entity: string;
+    custom_name?: string;
+    custom_icon?: string;
+    custom_color?: string;
+    custom_background?: string;
+    override_actions?: boolean;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    metro_size?: MetroSize;
+    state_colors?: Record<string, string>;
+    hidden?: boolean;
+}
+export interface GridModule extends BaseModule {
+    type: 'grid';
+    entities: GridEntity[];
+    enable_auto_filter?: boolean;
+    include_domains?: string[];
+    exclude_domains?: string[];
+    exclude_entities?: string[];
+    include_keywords?: string[];
+    exclude_keywords?: string[];
+    grid_style: GridStylePreset;
+    grid_display_mode: GridDisplayMode;
+    columns: number;
+    rows?: number;
+    gap: number;
+    sort_by: GridSortBy;
+    sort_direction: 'asc' | 'desc';
+    max_items: number;
+    enable_pagination: boolean;
+    items_per_page: number;
+    pagination_style: GridPaginationStyle;
+    enable_load_animation: boolean;
+    load_animation: GridLoadAnimation;
+    grid_animation_duration: number;
+    animation_stagger: number;
+    global_icon_size: number;
+    global_font_size: number;
+    global_name_color?: string;
+    global_state_color?: string;
+    global_icon_color?: string;
+    global_background_color?: string;
+    global_border_radius: string;
+    global_padding: string;
+    global_border_width?: number;
+    global_border_color?: string;
+    global_on_color?: string;
+    global_off_color?: string;
+    global_unavailable_color?: string;
+    glass_tint_color?: string;
+    glass_blur_amount?: number;
+    glass_border_color?: string;
+    gradient_start_color?: string;
+    gradient_end_color?: string;
+    gradient_direction?: 'to-bottom' | 'to-right' | 'to-bottom-right' | 'to-bottom-left';
+    panel_header_color?: string;
+    panel_header_text_color?: string;
+    split_left_color?: string;
+    split_right_color?: string;
+    neumorphic_light_shadow?: string;
+    neumorphic_dark_shadow?: string;
+    accent_border_color?: string;
+    card_shadow_color?: string;
+    tap_action: ModuleActionConfig;
+    hold_action: ModuleActionConfig;
+    double_tap_action: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_effect?: 'none' | 'scale' | 'glow' | 'lift' | 'color';
+    hover_scale?: number;
+    hover_background_color?: string;
+    hover_glow_color?: string;
+    template_mode?: boolean;
+    template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
 }

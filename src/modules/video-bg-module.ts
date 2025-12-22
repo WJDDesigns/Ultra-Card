@@ -11,9 +11,9 @@ import '../components/ultra-color-picker';
 export class UltraVideoBgModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'video_bg',
-    title: 'Video Background (Pro)',
+    title: 'Video Background',
     description:
-      'Add dynamic, conditional video backgrounds to your dashboard view. Pro feature only.',
+      'Add dynamic, conditional video backgrounds to your dashboard view.',
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:video-box',

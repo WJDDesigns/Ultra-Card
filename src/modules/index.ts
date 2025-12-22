@@ -29,6 +29,7 @@ export * from './status-summary-module';
 export * from './toggle-module';
 export * from './calendar-module';
 export * from './calendar-module-views';
+export * from './grid-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

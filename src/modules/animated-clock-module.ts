@@ -12,7 +12,7 @@ import { getImageUrl } from '../utils/image-upload';
 export class UltraAnimatedClockModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'animated_clock',
-    title: 'Animated Clock (PRO)',
+    title: 'Animated Clock',
     description: 'Beautiful flip clock with smooth animations',
     author: 'WJD Designs',
     version: '1.0.0',

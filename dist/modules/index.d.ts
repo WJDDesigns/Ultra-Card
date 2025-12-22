@@ -26,6 +26,7 @@ export * from './status-summary-module';
 export * from './toggle-module';
 export * from './calendar-module';
 export * from './calendar-module-views';
+export * from './grid-module';
 export { getModuleRegistry } from './module-registry';
 export { ucPresetsService } from '../services/uc-presets-service';
 export { ucFavoritesService } from '../services/uc-favorites-service';

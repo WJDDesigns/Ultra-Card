@@ -10,7 +10,7 @@ import { renderAnimatedForecastModuleEditor } from './animated-forecast-module-e
 export class UltraAnimatedForecastModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'animated_forecast',
-    title: 'Animated Forecast (PRO)',
+    title: 'Animated Forecast',
     description: 'Multi-day weather forecast with animated icons',
     author: 'WJD Designs',
     version: '1.0.0',

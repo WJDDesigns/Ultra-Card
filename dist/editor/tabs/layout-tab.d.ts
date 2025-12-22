@@ -44,6 +44,7 @@ export declare class LayoutTab extends LitElement {
     private _openMoreMenuRowIndex;
     private _hasModuleClipboard;
     private _hasColumnClipboard;
+    private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
     private _maxHistorySize;
@@ -217,6 +218,10 @@ export declare class LayoutTab extends LitElement {
     private _moveRow;
     private _moveNestedChild;
     private _moveDeepNestedChild;
+    /**
+     * Move a module from inside a tabs section to another location in the layout
+     */
+    private _moveTabsSectionChild;
     private _openRowSettings;
     private _updateRow;
     private _openColumnSettings;
@@ -340,7 +345,12 @@ export declare class LayoutTab extends LitElement {
      */
     private _onTabsSectionChildDragStart;
     /**
-     * Handles drop on a tabs section
+     * Handles drop on a specific child module within a tabs section (for reordering)
+     */
+    private _handleTabsSectionChildDrop;
+    /**
+     * Handles drop on a tabs section (empty area or at the end)
+     * This should only be called when dropping on empty space, not on a specific child module
      */
     private _handleTabsSectionDrop;
     private _renderNestedChildModule;

@@ -238,6 +238,9 @@ export class LayoutTab extends LitElement {
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
 
+  // Flag to prevent double-processing of drops in tabs sections
+  private _tabsSectionDropHandled = false;
+
   // Undo/Redo state management
   @state() private _undoStack: { rows: CardRow[] }[] = [];
   @state() private _redoStack: { rows: CardRow[] }[] = [];
@@ -4267,6 +4270,7 @@ export class LayoutTab extends LitElement {
       'nested-child': ['module', 'column', 'layout', 'layout-child'], // Back-compat alias (older DnD path)
       'layout-child': ['module', 'column', 'layout', 'layout-child'], // Actual type emitted by layout child drag start
       'deep-nested-child': ['module', 'column', 'layout', 'layout-child'], // Modules from deeply nested layouts can be dropped on columns, layouts, etc.
+      'tabs-section-child': ['module', 'column', 'layout', 'layout-child'], // Modules from tabs sections can be dropped on columns, layouts, etc.
       column: ['column', 'row'], // Columns can be dropped on other columns or row areas
       row: ['row'], // Rows can only be dropped on other rows
     };
@@ -4287,6 +4291,9 @@ export class LayoutTab extends LitElement {
         break;
       case 'deep-nested-child':
         this._moveDeepNestedChild(newLayout, source, target);
+        break;
+      case 'tabs-section-child':
+        this._moveTabsSectionChild(newLayout, source, target);
         break;
       case 'column':
         this._moveColumn(newLayout, source, target);
@@ -4648,6 +4655,53 @@ export class LayoutTab extends LitElement {
       targetColumn.modules.splice(targetIndex, 0, sourceModule);
     } else if (target.type === 'layout') {
       // Moving to a layout module (1st level)
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      if (!targetLayoutModule.modules) {
+        targetLayoutModule.modules = [];
+      }
+      targetLayoutModule.modules.push(sourceModule);
+    } else if (target.type === 'layout-child') {
+      // Moving to a specific position within a layout module
+      const targetLayoutModule =
+        layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
+      if (!targetLayoutModule.modules) {
+        targetLayoutModule.modules = [];
+      }
+      const targetIndex = target.childIndex !== undefined ? target.childIndex : targetLayoutModule.modules.length;
+      targetLayoutModule.modules.splice(targetIndex, 0, sourceModule);
+    }
+  }
+
+  /**
+   * Move a module from inside a tabs section to another location in the layout
+   */
+  private _moveTabsSectionChild(layout: any, source: any, target: any): void {
+    // Get the source tabs module
+    let sourceTabsModule: any;
+    if (source.isNested && source.parentLayoutChildIndex !== undefined) {
+      const parentLayout = layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
+      sourceTabsModule = parentLayout.modules[source.parentLayoutChildIndex];
+    } else {
+      sourceTabsModule = layout.rows[source.rowIndex].columns[source.columnIndex].modules[source.moduleIndex];
+    }
+
+    // Get the module from the tabs section
+    if (!sourceTabsModule?.sections?.[source.sectionIndex]?.modules?.[source.childIndex]) {
+      return;
+    }
+
+    // Extract the module
+    const sourceModule = sourceTabsModule.sections[source.sectionIndex].modules.splice(source.childIndex, 1)[0];
+
+    // Add to target based on target type
+    if (target.type === 'module' || target.type === 'column') {
+      // Moving to a regular column
+      const targetColumn = layout.rows[target.rowIndex].columns[target.columnIndex];
+      const targetIndex = target.moduleIndex !== undefined ? target.moduleIndex : targetColumn.modules.length;
+      targetColumn.modules.splice(targetIndex, 0, sourceModule);
+    } else if (target.type === 'layout') {
+      // Moving to a layout module (horizontal, vertical, etc.)
       const targetLayoutModule =
         layout.rows[target.rowIndex].columns[target.columnIndex].modules[target.moduleIndex];
       if (!targetLayoutModule.modules) {
@@ -6706,6 +6760,52 @@ export class LayoutTab extends LitElement {
                       isNested
                     );
                   }}
+                  @dragover=${(e: DragEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!this._draggedItem) return;
+                    
+                    // Only show drop indicator if dragging a valid module
+                    if (e.dataTransfer) {
+                      e.dataTransfer.dropEffect = 'move';
+                    }
+                    
+                    // Add visual feedback
+                    const target = e.currentTarget as HTMLElement;
+                    if (target) {
+                      target.style.borderTop = '2px solid var(--primary-color)';
+                    }
+                  }}
+                  @dragleave=${(e: DragEvent) => {
+                    e.preventDefault();
+                    // Reset visual feedback
+                    const target = e.currentTarget as HTMLElement;
+                    if (target) {
+                      target.style.borderTop = '';
+                    }
+                  }}
+                  @drop=${(e: DragEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Reset visual feedback
+                    const target = e.currentTarget as HTMLElement;
+                    if (target) {
+                      target.style.borderTop = '';
+                    }
+                    
+                    if (!this._draggedItem) return;
+                    
+                    this._handleTabsSectionChildDrop(
+                      rowIndex,
+                      columnIndex,
+                      moduleIndex,
+                      sectionIndex,
+                      childIndex,
+                      parentLayoutChildIndex,
+                      isNested
+                    );
+                  }}
                   @dragend=${(e: DragEvent) => this._onLayoutChildDragEnd(e)}
                   style="width: 100%; box-sizing: border-box;"
                 >
@@ -8705,6 +8805,9 @@ export class LayoutTab extends LitElement {
     parentLayoutChildIndex?: number,
     isNested: boolean = false
   ): void {
+    // CRITICAL: Stop propagation to prevent parent module drag handlers from firing
+    e.stopPropagation();
+    
     if (
       rowIndex === undefined ||
       columnIndex === undefined ||
@@ -8754,7 +8857,167 @@ export class LayoutTab extends LitElement {
   }
 
   /**
-   * Handles drop on a tabs section
+   * Handles drop on a specific child module within a tabs section (for reordering)
+   */
+  private _handleTabsSectionChildDrop(
+    rowIndex?: number,
+    columnIndex?: number,
+    moduleIndex?: number,
+    sectionIndex?: number,
+    targetChildIndex?: number,
+    parentLayoutChildIndex?: number,
+    isNested: boolean = false
+  ): void {
+    // Set flag immediately to prevent section handler from also processing
+    this._tabsSectionDropHandled = true;
+    
+    if (!this._draggedItem) {
+      this._tabsSectionDropHandled = false;
+      return;
+    }
+
+    if (
+      rowIndex === undefined ||
+      columnIndex === undefined ||
+      moduleIndex === undefined ||
+      sectionIndex === undefined ||
+      targetChildIndex === undefined
+    ) {
+      this._tabsSectionDropHandled = false;
+      return;
+    }
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+
+    // Get the target tabs module
+    let targetTabsModule: any;
+    if (isNested && parentLayoutChildIndex !== undefined) {
+      const parentLayout = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+      targetTabsModule = parentLayout.modules[parentLayoutChildIndex];
+    } else {
+      targetTabsModule = newLayout.rows[rowIndex].columns[columnIndex].modules[moduleIndex];
+    }
+
+    if (!targetTabsModule?.sections?.[sectionIndex]) {
+      this._draggedItem = null;
+      this._dropTarget = null;
+      return;
+    }
+
+    // Initialize modules array if needed
+    if (!targetTabsModule.sections[sectionIndex].modules) {
+      targetTabsModule.sections[sectionIndex].modules = [];
+    }
+
+    const draggedItem = this._draggedItem as any;
+
+    // Check if we're reordering within the same tabs section
+    if (draggedItem.type === 'tabs-section-child') {
+      const isSameTabsModule =
+        draggedItem.rowIndex === rowIndex &&
+        draggedItem.columnIndex === columnIndex &&
+        draggedItem.moduleIndex === moduleIndex &&
+        draggedItem.sectionIndex === sectionIndex &&
+        draggedItem.parentLayoutChildIndex === parentLayoutChildIndex &&
+        draggedItem.isNested === isNested;
+
+      if (isSameTabsModule) {
+        const sourceChildIndex = draggedItem.childIndex;
+        
+        // Don't do anything if dropping on itself
+        if (sourceChildIndex === targetChildIndex) {
+          this._draggedItem = null;
+          this._dropTarget = null;
+          this._tabsSectionDropHandled = false;
+          return;
+        }
+
+        // Reorder within the same section
+        const modules = targetTabsModule.sections[sectionIndex].modules;
+        
+        const [movedModule] = modules.splice(sourceChildIndex, 1);
+
+        // Calculate new insertion index - INSERT BEFORE the target module
+        let newIndex = targetChildIndex;
+
+        // If we removed an item from before the target position, adjust the target index
+        if (sourceChildIndex < targetChildIndex) {
+          newIndex = targetChildIndex - 1;
+        }
+
+        // Insert at new position (before the target module)
+        modules.splice(newIndex, 0, movedModule);
+
+        this._updateLayout(newLayout);
+        this._draggedItem = null;
+        this._dropTarget = null;
+        this._tabsSectionDropHandled = false;
+        this.requestUpdate();
+        return;
+      }
+    }
+
+    // If not reordering within same section, handle as a move from elsewhere
+    // Get the source module
+    let sourceModule: any;
+
+    if (draggedItem.type === 'tabs-section-child') {
+      // Moving from a different tabs section
+      let sourceTabsModule: any;
+      if (draggedItem.isNested && draggedItem.parentLayoutChildIndex !== undefined) {
+        const sourceParentLayout =
+          newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex].modules[
+            draggedItem.moduleIndex
+          ];
+        sourceTabsModule = sourceParentLayout.modules[draggedItem.parentLayoutChildIndex];
+      } else {
+        sourceTabsModule =
+          newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex].modules[
+            draggedItem.moduleIndex
+          ];
+      }
+
+      if (sourceTabsModule?.sections?.[draggedItem.sectionIndex]?.modules) {
+        sourceModule = sourceTabsModule.sections[draggedItem.sectionIndex].modules.splice(
+          draggedItem.childIndex,
+          1
+        )[0];
+      }
+    } else if (draggedItem.layoutChildIndex !== undefined) {
+      // From a layout child
+      const sourceLayoutModule =
+        newLayout.rows[draggedItem.rowIndex].columns[draggedItem.columnIndex].modules[
+          draggedItem.moduleIndex
+        ];
+      if (sourceLayoutModule?.modules) {
+        sourceModule = sourceLayoutModule.modules.splice(draggedItem.layoutChildIndex, 1)[0];
+      }
+    } else if (draggedItem.moduleIndex !== undefined) {
+      // From a regular column
+      sourceModule = newLayout.rows[draggedItem.rowIndex].columns[
+        draggedItem.columnIndex
+      ].modules.splice(draggedItem.moduleIndex, 1)[0];
+    } else {
+      // New module from selector
+      sourceModule = JSON.parse(JSON.stringify(draggedItem.data));
+    }
+
+    if (sourceModule) {
+      // Insert at the target position (before the target module)
+      targetTabsModule.sections[sectionIndex].modules.splice(targetChildIndex, 0, sourceModule);
+      this._updateLayout(newLayout);
+    }
+
+    this._draggedItem = null;
+    this._dropTarget = null;
+    this._tabsSectionDropHandled = false;
+    this.requestUpdate();
+  }
+
+  /**
+   * Handles drop on a tabs section (empty area or at the end)
+   * This should only be called when dropping on empty space, not on a specific child module
    */
   private _handleTabsSectionDrop(
     rowIndex?: number,
@@ -8764,7 +9027,15 @@ export class LayoutTab extends LitElement {
     parentLayoutChildIndex?: number,
     isNested: boolean = false
   ): void {
-    if (!this._draggedItem) return;
+    // If child drop handler already processed this drop, don't do anything
+    if (this._tabsSectionDropHandled) {
+      this._tabsSectionDropHandled = false;
+      return;
+    }
+    
+    if (!this._draggedItem) {
+      return;
+    }
 
     if (
       rowIndex === undefined ||
@@ -8798,9 +9069,30 @@ export class LayoutTab extends LitElement {
       tabsModule.sections[sectionIndex].modules = [];
     }
 
+    const draggedItem = this._draggedItem as any;
+
+    // CRITICAL FIX: If dragging from the same section and there are already modules,
+    // don't handle it here - the child drop handler should handle reordering
+    if (draggedItem.type === 'tabs-section-child') {
+      const isSameSection =
+        draggedItem.rowIndex === rowIndex &&
+        draggedItem.columnIndex === columnIndex &&
+        draggedItem.moduleIndex === moduleIndex &&
+        draggedItem.sectionIndex === sectionIndex &&
+        draggedItem.parentLayoutChildIndex === parentLayoutChildIndex &&
+        draggedItem.isNested === isNested;
+
+      if (isSameSection && tabsModule.sections[sectionIndex].modules.length > 1) {
+        // This is reordering within same section - should be handled by child drop handler
+        // Don't process here to avoid conflicts
+        this._draggedItem = null;
+        this._dropTarget = null;
+        return;
+      }
+    }
+
     // Get the source module
     let sourceModule: any;
-    const draggedItem = this._draggedItem as any;
 
     if (draggedItem.type === 'tabs-section-child') {
       // Moving from another tabs section

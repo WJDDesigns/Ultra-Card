@@ -11,9 +11,9 @@ import { localize } from '../localize/localize';
 export class UltraDynamicWeatherModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'dynamic_weather',
-    title: 'Dynamic Weather (Pro)',
+    title: 'Dynamic Weather',
     description:
-      'Add animated weather effects (rain, snow, fog, sun beams) to your dashboard view. Pro feature only.',
+      'Add animated weather effects (rain, snow, fog, sun beams) to your dashboard view.',
     author: 'WJD Designs',
     version: '1.0.0',
     icon: 'mdi:weather-partly-rainy',

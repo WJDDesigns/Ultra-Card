@@ -11,7 +11,7 @@ import { formatEntityState } from '../utils/number-format';
 export class UltraAnimatedWeatherModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'animated_weather',
-    title: 'Animated Weather (PRO)',
+    title: 'Animated Weather',
     description: 'Current weather display with animated icons',
     author: 'WJD Designs',
     version: '1.0.0',

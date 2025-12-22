@@ -78,6 +78,7 @@ export class UltraPopupModule extends BaseUltraModule {
       title_text_color: '#ffffff',
       popup_background_color: 'var(--card-background-color)',
       popup_text_color: 'var(--primary-text-color)',
+      show_overlay: true,
       overlay_background: 'rgba(0,0,0,0.85)',
       
       // Trigger Logic
@@ -241,35 +242,39 @@ export class UltraPopupModule extends BaseUltraModule {
           </div>
         </div>
 
-        <!-- Overlay Styling Section -->
-        <div class="design-subsection">
-          <div class="subsection-title">
-            ${localize('editor.popup.design.overlay', lang, 'Background Overlay')}
-          </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
-            ${localize(
-              'editor.popup.design.overlay_desc',
-              lang,
-              'Customize the backdrop behind the popup.'
-            )}
-          </div>
+        <!-- Overlay Styling Section (only shown when overlay is enabled) -->
+        ${popupModule.show_overlay !== false
+          ? html`
+              <div class="design-subsection">
+                <div class="subsection-title">
+                  ${localize('editor.popup.design.overlay', lang, 'Background Overlay')}
+                </div>
+                <div
+                  style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+                >
+                  ${localize(
+                    'editor.popup.design.overlay_desc',
+                    lang,
+                    'Customize the backdrop behind the popup.'
+                  )}
+                </div>
 
-          <!-- Overlay Background Color -->
-          <div style="margin-bottom: 16px;">
-            <ultra-color-picker
-              .label=${localize('editor.popup.design.overlay_bg', lang, 'Background Overlay')}
-              .value=${popupModule.overlay_background || ''}
-              .defaultValue=${'rgba(0,0,0,0.85)'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) => {
-                const value = e.detail.value;
-                updateModule({ overlay_background: value });
-              }}
-            ></ultra-color-picker>
-          </div>
-        </div>
+                <!-- Overlay Background Color -->
+                <div style="margin-bottom: 16px;">
+                  <ultra-color-picker
+                    .label=${localize('editor.popup.design.overlay_bg', lang, 'Background Overlay')}
+                    .value=${popupModule.overlay_background || ''}
+                    .defaultValue=${'rgba(0,0,0,0.85)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) => {
+                      const value = e.detail.value;
+                      updateModule({ overlay_background: value });
+                    }}
+                  ></ultra-color-picker>
+                </div>
+              </div>
+            `
+          : ''}
 
         <!-- Close Button Styling Section -->
         ${popupModule.close_button_position !== 'none'
@@ -979,6 +984,31 @@ export class UltraPopupModule extends BaseUltraModule {
                 const next = e.detail.value.animation;
                 const prev = popupModule.animation || 'fade';
                 if (next === prev) return;
+                updateModule(e.detail.value);
+                setTimeout(() => {
+                  this.triggerPreviewUpdate();
+                }, 50);
+              },
+            },
+          ]
+        )}
+
+        <!-- Background Overlay Section -->
+        ${this.renderSettingsSection(
+          localize('editor.popup.overlay.section_title', lang, 'Background Overlay'),
+          '',
+          [
+            {
+              title: localize('editor.popup.overlay.show', lang, 'Show Background Overlay'),
+              description: localize(
+                'editor.popup.overlay.show_desc',
+                lang,
+                'Display a dimmed overlay behind the popup when open.'
+              ),
+              hass,
+              data: { show_overlay: popupModule.show_overlay !== false },
+              schema: [this.booleanField('show_overlay')],
+              onChange: (e: CustomEvent) => {
                 updateModule(e.detail.value);
                 setTimeout(() => {
                   this.triggerPreviewUpdate();
@@ -1879,12 +1909,21 @@ export class UltraPopupModule extends BaseUltraModule {
     // Handle close
     const handleClose = (e: Event) => {
       e.stopPropagation();
+      e.preventDefault();
       
       // Close the popup
       this.popupStates.set(popupModule.id, false);
       
       // Clear auto-close timer
       this._clearAutoCloseTimer(popupModule.id);
+      
+      // Directly remove the portal element to ensure immediate close
+      // This is necessary because Live Preview contexts may not re-render properly
+      const portal = popupPortals.get(popupModule.id);
+      if (portal) {
+        portal.remove();
+        popupPortals.delete(popupModule.id);
+      }
       
       // Note: We don't update lastLogicStates here
       // This allows the popup to stay closed even if logic conditions are still true
@@ -2109,6 +2148,8 @@ export class UltraPopupModule extends BaseUltraModule {
         color: ${closeColor};
         --mdc-icon-size: ${closeSize}px;
         user-select: none;
+        pointer-events: auto !important;
+        touch-action: manipulation;
       `;
 
       // Always render inside the popup
@@ -2116,8 +2157,13 @@ export class UltraPopupModule extends BaseUltraModule {
         <ha-icon
           icon="${closeIcon}"
           @click=${handleClose}
-          class="ultra-popup-close-button"
-          style="${baseStyle} position: absolute; top: calc(10px + ${offsetY}); right: calc(10px + ${offsetX}); z-index: 1;"
+          @touchend=${(e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleClose(e);
+          }}
+          class="ultra-popup-close-button swiper-no-swiping"
+          style="${baseStyle} position: absolute; top: calc(10px + ${offsetY}); right: calc(10px + ${offsetX}); z-index: 2147483647;"
         ></ha-icon>
       `;
     };
@@ -2147,6 +2193,8 @@ export class UltraPopupModule extends BaseUltraModule {
         portal = document.createElement('div');
         portal.id = portalId;
         portal.className = 'ultra-popup-portal';
+        // Ensure portal can receive pointer events and is above everything
+        portal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; z-index: 2147483647;';
         document.body.appendChild(portal);
         popupPortals.set(popupModule.id, portal);
       }
@@ -2207,9 +2255,10 @@ export class UltraPopupModule extends BaseUltraModule {
             align-items: center;
             justify-content: center;
             z-index: ${overlayZIndex};
-            background: ${popupModule.overlay_background || 'rgba(0,0,0,0.85)'};
-            backdrop-filter: blur(2px);
+            background: ${popupModule.show_overlay !== false ? (popupModule.overlay_background || 'rgba(0,0,0,0.85)') : 'transparent'};
+            ${popupModule.show_overlay !== false ? 'backdrop-filter: blur(2px);' : ''}
             animation: fadeIn 0.3s ease both;
+            pointer-events: auto !important;
           "
         >
           <div
@@ -2227,6 +2276,8 @@ export class UltraPopupModule extends BaseUltraModule {
               animation-duration: 0.4s;
               animation-fill-mode: both;
               animation-timing-function: ease;
+              pointer-events: auto;
+              z-index: 1;
             "
           >
             ${renderCloseButton()}

@@ -1442,10 +1442,23 @@ export class UltraClimateModule extends BaseUltraModule {
         align-items: center;
         justify-content: center;
         text-align: center;
-        pointer-events: auto;
+        pointer-events: none;
         width: 80%;
         height: 80%;
         z-index: 10;
+      }
+
+      /* Enable pointer events on interactive elements inside dial center */
+      .climate-dial-center .climate-preset-display,
+      .climate-dial-center .climate-current-temp,
+      .climate-dial-center .climate-target-stack,
+      .climate-dial-center .climate-humidity-row,
+      .climate-dial-center .climate-bottom-controls,
+      .climate-dial-center .climate-mode-popup,
+      .climate-dial-center .climate-fan-popup,
+      .climate-dial-center .climate-preset-popup,
+      .climate-dial-center .climate-info-popup {
+        pointer-events: auto;
       }
 
       /* Dial items wrapper to keep items centered when some are disabled */

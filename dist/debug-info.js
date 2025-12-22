@@ -1,4 +1,4 @@
 // Ultra Card Debug Info
-// Version: 2.2.0-beta10
-// Build Date: 2025-12-17T19:50:27.543Z
+// Version: 2.2.0-beta11
+// Build Date: 2025-12-22T01:54:06.463Z
 // Build Mode: production
