@@ -120,7 +120,8 @@ export interface BaseModule {
     | 'tabs'
     | 'calendar'
     | 'sports_score'
-    | 'grid';
+    | 'grid'
+    | 'badge_of_honor';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -3788,7 +3789,8 @@ export type CardModule =
   | TabsModule
   | CalendarModule
   | SportsScoreModule
-  | GridModule;
+  | GridModule
+  | BadgeOfHonorModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -4383,6 +4385,10 @@ export interface CalendarModule extends BaseModule {
   compact_events_to_show?: number;
   compact_show_all_day_events?: boolean;
   compact_hide_empty_days?: boolean;
+  // Auto-fit to height options
+  compact_auto_fit_height?: boolean;  // Enable height-based fitting instead of count
+  compact_height?: string;            // Container height (e.g., "300px", "50vh")
+  compact_overflow?: 'scroll' | 'hidden';  // Overflow behavior
 
   // Month view
   show_week_numbers?: WeekNumberFormat;
@@ -4636,6 +4642,72 @@ export interface SportsScoreModule extends BaseModule {
   
   // Hover configuration
   enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// ============================================
+// BADGE OF HONOR MODULE TYPES (Pro Feature)
+// ============================================
+
+/**
+ * Badge of Honor Module - Pro Feature
+ *
+ * A beautiful animated badge that celebrates Ultra Card Pro membership.
+ * Features rotating circular text, smooth gradient color transitions,
+ * and customizable inner content (icon, text, or image).
+ */
+export interface BadgeOfHonorModule extends BaseModule {
+  type: 'badge_of_honor';
+
+  // Badge text is fixed to "Ultra Card Pro • " - not configurable
+  badge_text?: string; // Reserved for future use
+  badge_text_repeat?: number; // Reserved for future use
+
+  // Visual settings
+  badge_size?: number; // Overall badge size in pixels (60-300)
+  inner_badge_ratio?: number; // Size of inner circle relative to outer (0.4-0.8)
+
+  // Gradient colors for the ring
+  gradient_color_1?: string; // Default: #4ecdc4 (Teal)
+  gradient_color_2?: string; // Default: #44a8b3 (Blue-teal)
+  gradient_color_3?: string; // Default: #7c5ce0 (Purple)
+  gradient_color_4?: string; // Default: #6366f1 (Indigo)
+
+  // Animation settings
+  rotation_speed?: number; // Seconds for full rotation (3-30)
+  rotation_direction?: 'clockwise' | 'counter-clockwise';
+  enable_color_shift?: boolean; // Animate gradient colors shifting
+  color_shift_speed?: number; // Seconds for color cycle (2-20)
+  enable_glow?: boolean; // Add soft glow around badge
+  glow_intensity?: number; // Glow strength (0.1-1)
+  enable_pulse?: boolean; // Add subtle pulsing animation
+  pulse_speed?: number; // Pulse duration in seconds (0.5-5)
+
+  // Inner content configuration
+  inner_content_type?: 'icon' | 'text' | 'image';
+  inner_icon?: string; // MDI icon (default: mdi:crown)
+  inner_text?: string; // Short text (e.g., "PRO")
+  inner_image_url?: string; // URL to image
+
+  // Inner styling
+  inner_background_type?: 'solid' | 'gradient' | 'transparent';
+  inner_background_color?: string; // For solid type
+  inner_text_color?: string;
+  inner_icon_color?: string;
+
+  // Text styling (fixed - not user configurable)
+  text_font_size?: number; // Reserved
+  text_font_weight?: number; // Reserved
+  text_letter_spacing?: number; // Reserved
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_scale?: number; // Scale on hover (1.0-1.2)
   hover_background_color?: string;
 }
 

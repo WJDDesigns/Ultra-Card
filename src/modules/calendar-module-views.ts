@@ -46,15 +46,20 @@ export function renderCompactListView(context: CalendarViewContext): TemplateRes
     ? dayGroups.filter(([, dayEvents]) => dayEvents.length > 0)
     : dayGroups;
 
-  // Limit events if not expanded
-  const maxEvents = module.compact_events_to_show || 5;
+  // Check if auto-fit to height mode is enabled
+  const useAutoFit = module.compact_auto_fit_height && module.compact_height;
+  
+  // When auto-fit is enabled, show unlimited events (CSS handles clipping/scrolling)
+  // Otherwise use the configured max events count
+  const maxEvents = useAutoFit ? Infinity : (module.compact_events_to_show || 5);
   let totalEventsShown = 0;
   let hasMore = false;
 
   const daysToRender: Array<{ dateKey: string; events: ProcessedCalendarEvent[] }> = [];
 
   for (const [dateKey, dayEvents] of filteredGroups) {
-    if (!expanded && totalEventsShown >= maxEvents) {
+    // Skip count-based limiting when using auto-fit mode
+    if (!expanded && !useAutoFit && totalEventsShown >= maxEvents) {
       hasMore = true;
       break;
     }
@@ -64,8 +69,8 @@ export function renderCompactListView(context: CalendarViewContext): TemplateRes
       ? dayEvents
       : dayEvents.filter(e => !e.isAllDay);
 
-    // Limit events per day if not expanded
-    const eventsToShow = expanded
+    // Limit events per day if not expanded (and not using auto-fit)
+    const eventsToShow = expanded || useAutoFit
       ? filteredDayEvents
       : filteredDayEvents.slice(0, maxEvents - totalEventsShown);
 
@@ -74,13 +79,18 @@ export function renderCompactListView(context: CalendarViewContext): TemplateRes
       totalEventsShown += eventsToShow.length;
     }
 
-    if (filteredDayEvents.length > eventsToShow.length) {
+    if (!useAutoFit && filteredDayEvents.length > eventsToShow.length) {
       hasMore = true;
     }
   }
 
+  // Build container style for auto-fit mode
+  const containerStyle = useAutoFit
+    ? `height: ${module.compact_height}; overflow-y: ${module.compact_overflow || 'scroll'};`
+    : '';
+
   return html`
-    <div class="uc-calendar-compact">
+    <div class="uc-calendar-compact ${useAutoFit ? 'auto-fit-height' : ''}" style="${containerStyle}">
       ${daysToRender.map(({ dateKey, events: dayEvents }) => {
         const date = new Date(dateKey + 'T00:00:00');
         const isToday = CalendarService.isToday(date);
@@ -109,7 +119,7 @@ export function renderCompactListView(context: CalendarViewContext): TemplateRes
         `;
       })}
       
-      ${module.tap_action_expand && hasMore
+      ${!useAutoFit && module.tap_action_expand && hasMore
         ? html`
             <button class="uc-calendar-expand-btn" @click=${onExpandToggle}>
               <ha-icon icon="${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>

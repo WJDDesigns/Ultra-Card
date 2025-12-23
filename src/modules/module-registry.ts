@@ -36,6 +36,7 @@ import { UltraTabsModule } from './tabs-module';
 import { UltraCalendarModule } from './calendar-module';
 import { UltraSportsScoreModule } from './sports-score-module';
 import { UltraGridModule } from './grid-module';
+import { UltraBadgeOfHonorModule } from './badge-of-honor-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -104,6 +105,8 @@ export class ModuleRegistry {
     this.registerModule(new UltraCalendarModule());
     // Register sports score module (Pro feature)
     this.registerModule(new UltraSportsScoreModule());
+    // Register badge of honor module (Pro feature)
+    this.registerModule(new UltraBadgeOfHonorModule());
     // Register grid module
     this.registerModule(new UltraGridModule());
   }

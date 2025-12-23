@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -2069,7 +2069,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -2426,6 +2426,9 @@ export interface CalendarModule extends BaseModule {
     compact_events_to_show?: number;
     compact_show_all_day_events?: boolean;
     compact_hide_empty_days?: boolean;
+    compact_auto_fit_height?: boolean;
+    compact_height?: string;
+    compact_overflow?: 'scroll' | 'hidden';
     show_week_numbers?: WeekNumberFormat;
     first_day_of_week?: FirstDayOfWeek;
     month_show_event_count?: boolean;
@@ -2576,6 +2579,49 @@ export interface SportsScoreModule extends BaseModule {
     hold_action?: ModuleActionConfig;
     double_tap_action?: ModuleActionConfig;
     enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+/**
+ * Badge of Honor Module - Pro Feature
+ *
+ * A beautiful animated badge that celebrates Ultra Card Pro membership.
+ * Features rotating circular text, smooth gradient color transitions,
+ * and customizable inner content (icon, text, or image).
+ */
+export interface BadgeOfHonorModule extends BaseModule {
+    type: 'badge_of_honor';
+    badge_text?: string;
+    badge_text_repeat?: number;
+    badge_size?: number;
+    inner_badge_ratio?: number;
+    gradient_color_1?: string;
+    gradient_color_2?: string;
+    gradient_color_3?: string;
+    gradient_color_4?: string;
+    rotation_speed?: number;
+    rotation_direction?: 'clockwise' | 'counter-clockwise';
+    enable_color_shift?: boolean;
+    color_shift_speed?: number;
+    enable_glow?: boolean;
+    glow_intensity?: number;
+    enable_pulse?: boolean;
+    pulse_speed?: number;
+    inner_content_type?: 'icon' | 'text' | 'image';
+    inner_icon?: string;
+    inner_text?: string;
+    inner_image_url?: string;
+    inner_background_type?: 'solid' | 'gradient' | 'transparent';
+    inner_background_color?: string;
+    inner_text_color?: string;
+    inner_icon_color?: string;
+    text_font_size?: number;
+    text_font_weight?: number;
+    text_letter_spacing?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_scale?: number;
     hover_background_color?: string;
 }
 export type GridStylePreset = 'style_1' | 'style_2' | 'style_3' | 'style_4' | 'style_5' | 'style_6' | 'style_7' | 'style_8' | 'style_9' | 'style_10' | 'style_11' | 'style_12' | 'style_13' | 'style_14' | 'style_15' | 'style_16' | 'style_17' | 'style_18' | 'style_19' | 'style_20';

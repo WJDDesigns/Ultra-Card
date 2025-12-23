@@ -522,21 +522,68 @@ export class UltraCalendarModule extends BaseUltraModule {
     updateModule: (updates: Partial<CalendarModule>) => void,
     lang: string
   ): TemplateResult {
+    const overflowOptions = [
+      { value: 'scroll', label: 'Scrollable' },
+      { value: 'hidden', label: 'Clip (hidden)' },
+    ];
+
     return html`
       <div class="view-options-group">
         <div class="view-options-title">Compact List Options</div>
 
         ${this.renderFieldSection(
-          'Events to Show',
-          'Maximum number of events to display (0 for unlimited)',
+          'Auto-fit to Height',
+          'Show as many events as fit within a specified height instead of limiting by count',
           hass,
-          { compact_events_to_show: module.compact_events_to_show ?? 5 },
-          [this.numberField('compact_events_to_show', 0, 100)],
+          { compact_auto_fit_height: module.compact_auto_fit_height || false },
+          [this.booleanField('compact_auto_fit_height')],
           (e: CustomEvent) => {
-            updateModule({ compact_events_to_show: e.detail.value.compact_events_to_show });
+            updateModule({ compact_auto_fit_height: e.detail.value.compact_auto_fit_height });
             setTimeout(() => this.triggerPreviewUpdate(), 50);
           }
         )}
+
+        ${module.compact_auto_fit_height
+          ? html`
+              <div class="conditional-fields-group">
+                <div class="conditional-fields-content">
+                  ${this.renderFieldSection(
+                    'Container Height',
+                    'Height of the events container (e.g., 300px, 50vh, 100%)',
+                    hass,
+                    { compact_height: module.compact_height || '300px' },
+                    [this.textField('compact_height')],
+                    (e: CustomEvent) => {
+                      updateModule({ compact_height: e.detail.value.compact_height });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+
+                  ${this.renderFieldSection(
+                    'Overflow Behavior',
+                    'How to handle events that exceed the container height',
+                    hass,
+                    { compact_overflow: module.compact_overflow || 'scroll' },
+                    [this.selectField('compact_overflow', overflowOptions)],
+                    (e: CustomEvent) => {
+                      updateModule({ compact_overflow: e.detail.value.compact_overflow });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+              </div>
+            `
+          : this.renderFieldSection(
+              'Events to Show',
+              'Maximum number of events to display (0 for unlimited)',
+              hass,
+              { compact_events_to_show: module.compact_events_to_show ?? 5 },
+              [this.numberField('compact_events_to_show', 0, 100)],
+              (e: CustomEvent) => {
+                updateModule({ compact_events_to_show: e.detail.value.compact_events_to_show });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
 
         ${this.renderFieldSection(
           'Show All-Day Events',
@@ -896,21 +943,15 @@ export class UltraCalendarModule extends BaseUltraModule {
         )}
 
         ${module.show_event_location
-          ? html`
-              <div class="conditional-fields-group">
-                <div class="conditional-fields-content">
-                  ${this.renderFieldSection(
-                    'Remove Country from Location',
-                    'Strip country name from displayed locations',
-                    hass,
-                    { remove_location_country: module.remove_location_country || false },
-                    [this.booleanField('remove_location_country')],
-                    (e: CustomEvent) =>
-                      updateModule({ remove_location_country: e.detail.value.remove_location_country })
-                  )}
-                </div>
-              </div>
-            `
+          ? this.renderFieldSection(
+              'Remove Country from Location',
+              'Strip country name from displayed locations',
+              hass,
+              { remove_location_country: module.remove_location_country || false },
+              [this.booleanField('remove_location_country')],
+              (e: CustomEvent) =>
+                updateModule({ remove_location_country: e.detail.value.remove_location_country })
+            )
           : ''}
 
         ${this.renderFieldSection(
@@ -1864,6 +1905,38 @@ export class UltraCalendarModule extends BaseUltraModule {
         flex-direction: column;
         gap: ${module.row_spacing || '8px'};
         border: none;
+      }
+
+      /* Auto-fit to height mode */
+      .uc-calendar-compact.auto-fit-height {
+        /* Scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-color) transparent;
+        /* Ensure flex children don't shrink - they should maintain natural height */
+        flex-wrap: nowrap;
+      }
+
+      /* Day rows must not shrink when in auto-fit mode */
+      .uc-calendar-compact.auto-fit-height > .uc-calendar-day-row {
+        flex-shrink: 0;
+      }
+
+      .uc-calendar-compact.auto-fit-height::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .uc-calendar-compact.auto-fit-height::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+      }
+
+      .uc-calendar-compact.auto-fit-height::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 3px;
+      }
+
+      .uc-calendar-compact.auto-fit-height::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-color-dark, var(--primary-color));
       }
 
       .uc-calendar-compact > * {

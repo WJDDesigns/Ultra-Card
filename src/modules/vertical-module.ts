@@ -277,9 +277,8 @@ export class UltraVerticalModule extends BaseUltraModule {
       // Allow fully collapsed layouts when designers set 0 padding/margin
       // Only set min-height if explicitly specified by user, otherwise let content determine height
       minHeight: (effective as any).min_height || 'auto',
-      // Allow overlaps (e.g., negative margins) to render across siblings
-      overflowX: (effective as any).overflow_x || 'visible',
-      overflowY: (effective as any).overflow_y || 'visible',
+      // Respect overflow settings from design properties (defaults to visible for negative margin overlaps)
+      overflow: (effective as any).overflow || 'visible',
       boxSizing: 'border-box',
     };
 
