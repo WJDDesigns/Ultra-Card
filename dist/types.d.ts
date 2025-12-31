@@ -405,6 +405,12 @@ export interface BarModule extends BaseModule {
     right_value_size?: number;
     right_title_color?: string;
     right_value_color?: string;
+    left_tap_action?: ModuleActionConfig;
+    left_hold_action?: ModuleActionConfig;
+    left_double_tap_action?: ModuleActionConfig;
+    right_tap_action?: ModuleActionConfig;
+    right_hold_action?: ModuleActionConfig;
+    right_double_tap_action?: ModuleActionConfig;
     bar_color?: string;
     bar_background_color?: string;
     bar_border_color?: string;
@@ -854,6 +860,9 @@ export interface TabsModule extends BaseModule {
     tab_position?: 'top' | 'bottom' | 'left' | 'right';
     switch_on_hover?: boolean;
     default_tab?: string;
+    wrap_tabs?: boolean;
+    mobile_icons_only?: boolean;
+    mobile_breakpoint?: number;
     font_size?: string;
     font_weight?: string;
     text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
@@ -910,7 +919,8 @@ export interface PopupModule extends BaseModule {
     title_text?: string;
     title_entity?: string;
     show_entity_name?: boolean;
-    trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic';
+    trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic' | 'module';
+    trigger_module_id?: string;
     trigger_button_text?: string;
     trigger_button_icon?: string;
     trigger_image_type?: 'upload' | 'entity' | 'url';
@@ -2099,6 +2109,8 @@ export interface SharedDesignProperties {
     white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
     background_color?: string;
     background_image?: string;
+    background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+    background_image_entity?: string;
     background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
     background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
     background_size?: 'cover' | 'contain' | 'auto' | string;
@@ -2501,7 +2513,7 @@ export interface CalendarModule extends BaseModule {
     hover_background_color?: string;
 }
 export type SportsLeague = 'nfl' | 'nba' | 'mlb' | 'nhl' | 'mls' | 'premier_league' | 'ncaaf' | 'ncaab' | 'la_liga' | 'bundesliga' | 'serie_a' | 'ligue_1';
-export type SportsDisplayStyle = 'scorecard' | 'upcoming' | 'compact' | 'detailed' | 'mini';
+export type SportsDisplayStyle = 'scorecard' | 'upcoming' | 'compact' | 'detailed' | 'mini' | 'logo_bg';
 export type SportsGameStatus = 'scheduled' | 'in_progress' | 'halftime' | 'final' | 'delayed' | 'postponed' | 'cancelled';
 export interface SportsGameData {
     gameId: string;
@@ -2575,6 +2587,9 @@ export interface SportsScoreModule extends BaseModule {
     detail_font_size?: string;
     logo_size?: string;
     compact_mode?: boolean;
+    show_logo_background?: boolean;
+    logo_background_size?: string;
+    logo_background_opacity?: number;
     tap_action?: ModuleActionConfig;
     hold_action?: ModuleActionConfig;
     double_tap_action?: ModuleActionConfig;

@@ -1,5 +1,26 @@
 # 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
+## Version 2.2.0-beta14
+
+### 🚀 New Features
+
+- **Image Icons for Grid Module Entities** - Added the ability to use image icons for entities within the grid module for enhanced visual customization.
+- **Accordion Module Customization** - Added comprehensive customization options to the accordion module including styling, colors, and behavior settings.
+- **Entity-Triggered Popups** - Added the ability to use entities to trigger popups. To use this feature:
+  1. Create a popup module with your desired content
+  2. In the popup settings, select an entity as the trigger
+  3. Configure the trigger condition (e.g., state equals "on", numeric threshold, etc.)
+  4. The popup will automatically open when the entity meets the trigger condition
+  5. You can also configure the popup to auto-close when the condition is no longer met
+
+### 🐛 Bug Fixes
+
+- **Fixed Sports Score Module Update Issue** - Resolved an issue where the sports score module was not properly updating when scores changed.
+- **Fixed Background Image Visibility in Rows/Columns** - Corrected visibility issues with background images in row and column layouts.
+- **Fixed Popup Edit Mode Issues** - Resolved visibility and interaction problems with popups when in edit mode, ensuring proper display and functionality.
+
+---
+
 ## Version 2.2.0-beta10
 
 ### 🚀 New Features

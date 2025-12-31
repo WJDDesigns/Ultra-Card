@@ -528,16 +528,13 @@ export class UltraExternalCardModule extends BaseUltraModule {
             return;
           }
 
+          // Track pending config for debounced updates (closure variable)
+          let pendingConfig: any = null;
+          
           // Set up config-changed listener (only once when editor is created)
           editor.addEventListener('config-changed', (e: CustomEvent) => {
             e.stopPropagation();
             e.stopImmediatePropagation();
-            
-            // Guard against re-entrancy (prevents freeze loops)
-            if (configChangeGuard.get(module.id)) {
-              console.log('[UC External Card] Config change guard active, skipping');
-              return;
-            }
             
             if (e.detail && e.detail.config) {
               // Preserve card-mod properties from original config
@@ -561,7 +558,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
               // Check against last sent config to prevent duplicate updates
               const configKey = JSON.stringify(mergedConfig);
               if (lastSentConfig.get(module.id) === configKey) {
-                console.log('[UC External Card] Duplicate config, skipping');
                 return;
               }
 
@@ -572,14 +568,14 @@ export class UltraExternalCardModule extends BaseUltraModule {
               );
 
               if (!configMeaningfullyChanged) {
-                console.log('[UC External Card] Config unchanged, skipping update');
                 return;
               }
 
-              console.log('[UC External Card] Config changed, updating module');
-              
               // Track this config to prevent duplicates
               lastSentConfig.set(module.id, configKey);
+              
+              // Store latest config for the debounced update
+              pendingConfig = { ...mergedConfig };
 
               // IMMEDIATE: Update the Live Preview card element directly (no waiting)
               // This ensures the Live Preview shows changes immediately
@@ -596,12 +592,16 @@ export class UltraExternalCardModule extends BaseUltraModule {
                 clearTimeout(existingTimer);
               }
 
-              // Set guard before update to prevent re-entrancy and protect editor during typing
+              // Set guard to prevent setupEditorProperties from resetting editor during typing
               configChangeGuard.set(module.id, true);
 
               // Longer debounce (600ms) to allow smooth typing without interruption
               const timer = window.setTimeout(() => {
-                updateModule({ card_config: { ...mergedConfig } });
+                // Use the latest pending config (captures all keystrokes during debounce)
+                if (pendingConfig) {
+                  updateModule({ card_config: pendingConfig });
+                  pendingConfig = null;
+                }
                 updateDebounceTimers.delete(module.id);
                 
                 // Clear guard after re-render completes
@@ -619,33 +619,6 @@ export class UltraExternalCardModule extends BaseUltraModule {
           container.innerHTML = '';
           container.appendChild(editor);
           
-          // CRITICAL FIX: Prevent keyboard and input events from bubbling to parent
-          // This isolates the embedded 3rd party editor from Ultra Card's event handlers
-          // Prevents issues where typing in embedded editors causes characters to be deleted
-          const stopEventBubbling = (e: Event) => {
-            e.stopPropagation();
-          };
-          
-          // Stop all events from bubbling UP to Ultra Card handlers
-          // Use bubble phase (false) so events reach the editor elements first
-          container.addEventListener('keydown', stopEventBubbling, false);
-          container.addEventListener('keyup', stopEventBubbling, false);
-          container.addEventListener('keypress', stopEventBubbling, false);
-          container.addEventListener('input', stopEventBubbling, false);
-          container.addEventListener('change', stopEventBubbling, false);
-          container.addEventListener('focus', stopEventBubbling, false);
-          container.addEventListener('blur', stopEventBubbling, false);
-          
-          // CRITICAL: Stop click/mouse/pointer events in BUBBLE phase (not capture phase)
-          // Using bubble phase (false) allows events to reach dropdown elements first,
-          // then stops them from bubbling up to Ultra Card's handlers which can cause freezing.
-          // Capture phase (true) would block events before reaching the dropdowns.
-          container.addEventListener('click', stopEventBubbling, false);
-          container.addEventListener('mousedown', stopEventBubbling, false);
-          container.addEventListener('mouseup', stopEventBubbling, false);
-          container.addEventListener('pointerdown', stopEventBubbling, false);
-          container.addEventListener('pointerup', stopEventBubbling, false);
-          
         } catch (error) {
           console.error('Failed to create native editor:', error);
           editorElementCache.delete(cacheKey);
@@ -662,6 +635,45 @@ export class UltraExternalCardModule extends BaseUltraModule {
         // Editor exists in cache but was detached from DOM (tab switch) - re-mount it
         container.innerHTML = '';
         container.appendChild(editor);
+      }
+
+      // CRITICAL FIX: Prevent keyboard and input events from bubbling to parent
+      // This isolates the embedded 3rd party editor from Ultra Card's event handlers
+      // Prevents issues where typing in embedded editors causes characters to be deleted
+      // Using a data attribute to prevent duplicate listeners on the same container
+      if (!container.hasAttribute('data-uc-events-attached')) {
+        container.setAttribute('data-uc-events-attached', 'true');
+        
+        const stopEventBubbling = (e: Event) => {
+          e.stopPropagation();
+        };
+        
+        // Stop all events from bubbling UP to Ultra Card handlers
+        // Use bubble phase (false) so events reach the editor elements first
+        container.addEventListener('keydown', stopEventBubbling, false);
+        container.addEventListener('keyup', stopEventBubbling, false);
+        container.addEventListener('keypress', stopEventBubbling, false);
+        container.addEventListener('input', stopEventBubbling, false);
+        container.addEventListener('change', stopEventBubbling, false);
+        container.addEventListener('focus', stopEventBubbling, false);
+        container.addEventListener('blur', stopEventBubbling, false);
+        
+        // CRITICAL: Stop click/mouse/pointer events in BUBBLE phase (not capture phase)
+        // Using bubble phase (false) allows events to reach dropdown elements first,
+        // then stops them from bubbling up to Ultra Card's handlers which can cause freezing.
+        // Capture phase (true) would block events before reaching the dropdowns.
+        container.addEventListener('click', stopEventBubbling, false);
+        container.addEventListener('mousedown', stopEventBubbling, false);
+        container.addEventListener('mouseup', stopEventBubbling, false);
+        container.addEventListener('pointerdown', stopEventBubbling, false);
+        container.addEventListener('pointerup', stopEventBubbling, false);
+      }
+
+      // CRITICAL: Skip ALL property updates when user is typing (guard is active)
+      // This prevents editor.hass updates from causing the 3rd party editor to re-render
+      // and reset input values during typing
+      if (configChangeGuard.get(module.id)) {
+        return;
       }
 
       // Update properties on cached editor (for cached/remounted editors)

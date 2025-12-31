@@ -105,6 +105,9 @@ export class UltraBarModule extends BaseUltraModule {
       left_title_color: '',
       left_value_color: '',
       left_enabled: false,
+      left_tap_action: { action: 'default' },
+      left_hold_action: { action: 'nothing' },
+      left_double_tap_action: { action: 'nothing' },
 
       // Right Side Configuration
       right_title: '',
@@ -119,6 +122,9 @@ export class UltraBarModule extends BaseUltraModule {
       right_value_size: 14,
       right_title_color: '',
       right_value_color: '',
+      right_tap_action: { action: 'default' },
+      right_hold_action: { action: 'nothing' },
+      right_double_tap_action: { action: 'nothing' },
 
       // Colors - use empty default so global design can control track bg by default
       bar_color: '',
@@ -2155,6 +2161,67 @@ export class UltraBarModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
+
+                  <!-- Left Side Actions -->
+                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
+                    >
+                      ${localize('editor.bar.left.actions', lang, 'Left Side Actions')}
+                    </div>
+                    <div class="field-description" style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);">
+                      ${localize('editor.bar.left.actions_desc', lang, 'Configure what happens when tapping the left side info')}
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ left_tap_action: barModule.left_tap_action || { action: 'default' } }}
+                        .schema=${[
+                          {
+                            name: 'left_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ left_tap_action: e.detail.value.left_tap_action })}
+                      ></ha-form>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ left_hold_action: barModule.left_hold_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'left_hold_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.hold_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ left_hold_action: e.detail.value.left_hold_action })}
+                      ></ha-form>
+                    </div>
+                    <div>
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ left_double_tap_action: barModule.left_double_tap_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'left_double_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ left_double_tap_action: e.detail.value.left_double_tap_action })}
+                      ></ha-form>
+                    </div>
+                  </div>
                 `
               : html`
                   <div
@@ -2425,6 +2492,67 @@ export class UltraBarModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
+
+                  <!-- Right Side Actions -->
+                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
+                    >
+                      ${localize('editor.bar.right.actions', lang, 'Right Side Actions')}
+                    </div>
+                    <div class="field-description" style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);">
+                      ${localize('editor.bar.right.actions_desc', lang, 'Configure what happens when tapping the right side info')}
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ right_tap_action: barModule.right_tap_action || { action: 'default' } }}
+                        .schema=${[
+                          {
+                            name: 'right_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ right_tap_action: e.detail.value.right_tap_action })}
+                      ></ha-form>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ right_hold_action: barModule.right_hold_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'right_hold_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.hold_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ right_hold_action: e.detail.value.right_hold_action })}
+                      ></ha-form>
+                    </div>
+                    <div>
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ right_double_tap_action: barModule.right_double_tap_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'right_double_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ right_double_tap_action: e.detail.value.right_double_tap_action })}
+                      ></ha-form>
+                    </div>
+                  </div>
                 `
               : html`
                   <div
@@ -5449,10 +5577,95 @@ export class UltraBarModule extends BaseUltraModule {
                   'space-between'}; align-items: center; margin-top: 8px; gap: 16px; width: 100%; overflow: hidden; box-sizing: border-box;"
                 >
                   ${barModule.left_enabled
-                    ? html`
+                    ? (() => {
+                        // Left side action handling
+                        let leftHoldTimeout: ReturnType<typeof setTimeout> | null = null;
+                        let leftIsHolding = false;
+                        let leftClickCount = 0;
+                        let leftLastClickTime = 0;
+                        let leftClickTimeout: ReturnType<typeof setTimeout> | null = null;
+                        const leftEntity = barModule.left_entity || barModule.entity;
+
+                        const leftHandlePointerDown = () => {
+                          leftIsHolding = false;
+                          leftHoldTimeout = setTimeout(() => {
+                            leftIsHolding = true;
+                            // Execute hold action
+                            if (barModule.left_hold_action && barModule.left_hold_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.left_hold_action as any,
+                                hass,
+                                document.body,
+                                config,
+                                leftEntity,
+                                barModule
+                              );
+                            }
+                          }, 500);
+                        };
+
+                        const leftHandlePointerUp = (e: Event) => {
+                          e.stopPropagation();
+                          if (leftHoldTimeout) {
+                            clearTimeout(leftHoldTimeout);
+                            leftHoldTimeout = null;
+                          }
+                          if (leftIsHolding) {
+                            leftIsHolding = false;
+                            return;
+                          }
+
+                          const now = Date.now();
+                          const timeSinceLastClick = now - leftLastClickTime;
+
+                          if (timeSinceLastClick < 300 && leftClickCount === 1) {
+                            // Double click
+                            if (leftClickTimeout) {
+                              clearTimeout(leftClickTimeout);
+                              leftClickTimeout = null;
+                            }
+                            leftClickCount = 0;
+                            if (barModule.left_double_tap_action && barModule.left_double_tap_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.left_double_tap_action as any,
+                                hass,
+                                e.target as HTMLElement,
+                                config,
+                                leftEntity,
+                                barModule
+                              );
+                            }
+                          } else {
+                            // Single click (wait to see if double click follows)
+                            leftClickCount = 1;
+                            leftLastClickTime = now;
+                            leftClickTimeout = setTimeout(() => {
+                              leftClickCount = 0;
+                              // Execute tap action
+                              if (!barModule.left_tap_action || barModule.left_tap_action.action !== 'nothing') {
+                                UltraLinkComponent.handleAction(
+                                  (barModule.left_tap_action as any) || { action: 'default' },
+                                  hass,
+                                  e.target as HTMLElement,
+                                  config,
+                                  leftEntity,
+                                  barModule
+                                );
+                              }
+                            }, 300);
+                          }
+                        };
+
+                        return html`
                         <div
                           class="left-side-below"
-                          style="text-align: left; flex: 1; min-width: 0; overflow: hidden;"
+                          style="text-align: left; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
+                          @pointerdown=${leftHandlePointerDown}
+                          @pointerup=${leftHandlePointerUp}
+                          @pointercancel=${() => {
+                            if (leftHoldTimeout) clearTimeout(leftHoldTimeout);
+                            leftIsHolding = false;
+                          }}
                         >
                           ${barModule.left_title && barModule.left_title.trim()
                             ? html`
@@ -5482,13 +5695,99 @@ export class UltraBarModule extends BaseUltraModule {
                             ${leftDisplay}
                           </span>
                         </div>
-                      `
+                      `;
+                      })()
                     : html`<div></div>`}
                   ${barModule.right_enabled
-                    ? html`
+                    ? (() => {
+                        // Right side action handling
+                        let rightHoldTimeout: ReturnType<typeof setTimeout> | null = null;
+                        let rightIsHolding = false;
+                        let rightClickCount = 0;
+                        let rightLastClickTime = 0;
+                        let rightClickTimeout: ReturnType<typeof setTimeout> | null = null;
+                        const rightEntity = barModule.right_entity || barModule.entity;
+
+                        const rightHandlePointerDown = () => {
+                          rightIsHolding = false;
+                          rightHoldTimeout = setTimeout(() => {
+                            rightIsHolding = true;
+                            // Execute hold action
+                            if (barModule.right_hold_action && barModule.right_hold_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.right_hold_action as any,
+                                hass,
+                                document.body,
+                                config,
+                                rightEntity,
+                                barModule
+                              );
+                            }
+                          }, 500);
+                        };
+
+                        const rightHandlePointerUp = (e: Event) => {
+                          e.stopPropagation();
+                          if (rightHoldTimeout) {
+                            clearTimeout(rightHoldTimeout);
+                            rightHoldTimeout = null;
+                          }
+                          if (rightIsHolding) {
+                            rightIsHolding = false;
+                            return;
+                          }
+
+                          const now = Date.now();
+                          const timeSinceLastClick = now - rightLastClickTime;
+
+                          if (timeSinceLastClick < 300 && rightClickCount === 1) {
+                            // Double click
+                            if (rightClickTimeout) {
+                              clearTimeout(rightClickTimeout);
+                              rightClickTimeout = null;
+                            }
+                            rightClickCount = 0;
+                            if (barModule.right_double_tap_action && barModule.right_double_tap_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.right_double_tap_action as any,
+                                hass,
+                                e.target as HTMLElement,
+                                config,
+                                rightEntity,
+                                barModule
+                              );
+                            }
+                          } else {
+                            // Single click (wait to see if double click follows)
+                            rightClickCount = 1;
+                            rightLastClickTime = now;
+                            rightClickTimeout = setTimeout(() => {
+                              rightClickCount = 0;
+                              // Execute tap action
+                              if (!barModule.right_tap_action || barModule.right_tap_action.action !== 'nothing') {
+                                UltraLinkComponent.handleAction(
+                                  (barModule.right_tap_action as any) || { action: 'default' },
+                                  hass,
+                                  e.target as HTMLElement,
+                                  config,
+                                  rightEntity,
+                                  barModule
+                                );
+                              }
+                            }, 300);
+                          }
+                        };
+
+                        return html`
                         <div
                           class="right-side-below"
-                          style="text-align: right; flex: 1; min-width: 0; overflow: hidden;"
+                          style="text-align: right; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
+                          @pointerdown=${rightHandlePointerDown}
+                          @pointerup=${rightHandlePointerUp}
+                          @pointercancel=${() => {
+                            if (rightHoldTimeout) clearTimeout(rightHoldTimeout);
+                            rightIsHolding = false;
+                          }}
                         >
                           ${barModule.right_title && barModule.right_title.trim()
                             ? html`
@@ -5518,7 +5817,8 @@ export class UltraBarModule extends BaseUltraModule {
                             ${rightDisplay}
                           </span>
                         </div>
-                      `
+                      `;
+                      })()
                     : html`<div></div>`}
                 </div>
               `

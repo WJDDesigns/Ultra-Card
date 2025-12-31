@@ -323,9 +323,21 @@ export class LayoutTab extends LitElement {
 
     // Add keyboard shortcuts for undo/redo
     this._keydownListener = (e: KeyboardEvent) => {
-      // Check if we're focused on an input element
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      // Check if any element in the composed path is an input field
+      // This correctly handles inputs inside shadow DOM (e.g., 3rd party card editors like Mushroom)
+      // Using composedPath() instead of e.target because shadow DOM retargets events
+      const isTypingInInput = e.composedPath().some((el: EventTarget) => {
+        if (el instanceof HTMLElement) {
+          return (
+            el.tagName === 'INPUT' ||
+            el.tagName === 'TEXTAREA' ||
+            el.isContentEditable
+          );
+        }
+        return false;
+      });
+
+      if (isTypingInInput) {
         return; // Don't intercept keyboard shortcuts when typing in input fields
       }
 

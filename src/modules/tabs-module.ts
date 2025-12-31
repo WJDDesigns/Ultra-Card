@@ -42,6 +42,10 @@ export class UltraTabsModule extends BaseUltraModule {
       alignment: 'left',
       switch_on_hover: false,
       default_tab: section1Id,
+      // Responsive options
+      wrap_tabs: false,
+      mobile_icons_only: false,
+      mobile_breakpoint: 600,
       // Typography
       font_size: '14px',
       font_weight: '500',
@@ -531,6 +535,115 @@ export class UltraTabsModule extends BaseUltraModule {
               ></ha-switch>
             </div>
           </div>
+        </div>
+
+        <!-- Responsive Options Section -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 8px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.tabs_module.responsive.title', lang, 'Responsive')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.tabs_module.responsive.desc',
+              lang,
+              'Control how tabs behave on smaller screens or when space is limited.'
+            )}
+          </div>
+
+          <!-- Wrap Tabs Toggle -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="flex: 1;">
+              <div
+                class="field-title"
+                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+              >
+                ${localize('editor.tabs_module.responsive.wrap_tabs', lang, 'Wrap Tabs')}
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
+              >
+                ${localize(
+                  'editor.tabs_module.responsive.wrap_tabs_desc',
+                  lang,
+                  'Allow tabs to wrap to multiple lines instead of overflowing.'
+                )}
+              </div>
+            </div>
+            <div style="margin-left: 16px;">
+              <ha-switch
+                .checked=${tabsModule.wrap_tabs || false}
+                @change=${(e: Event) => {
+                  const target = e.target as any;
+                  updateModule({ wrap_tabs: target.checked });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              ></ha-switch>
+            </div>
+          </div>
+
+          <!-- Mobile Icons Only Toggle -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="flex: 1;">
+              <div
+                class="field-title"
+                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
+              >
+                ${localize('editor.tabs_module.responsive.mobile_icons_only', lang, 'Icons Only on Mobile')}
+              </div>
+              <div
+                class="field-description"
+                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
+              >
+                ${localize(
+                  'editor.tabs_module.responsive.mobile_icons_only_desc',
+                  lang,
+                  'Only show icons (hide text) on screens narrower than the breakpoint. Requires icons on tabs.'
+                )}
+              </div>
+            </div>
+            <div style="margin-left: 16px;">
+              <ha-switch
+                .checked=${tabsModule.mobile_icons_only || false}
+                @change=${(e: Event) => {
+                  const target = e.target as any;
+                  updateModule({ mobile_icons_only: target.checked });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              ></ha-switch>
+            </div>
+          </div>
+
+          <!-- Mobile Breakpoint (conditional on mobile_icons_only) -->
+          ${tabsModule.mobile_icons_only
+            ? html`
+                <div style="border-left: 3px solid var(--primary-color); padding-left: 16px; margin-top: 8px;">
+                  ${this.renderFieldSection(
+                    localize('editor.tabs_module.responsive.mobile_breakpoint', lang, 'Mobile Breakpoint'),
+                    localize(
+                      'editor.tabs_module.responsive.mobile_breakpoint_desc',
+                      lang,
+                      'Screen width in pixels below which tabs collapse to icons only.'
+                    ),
+                    hass,
+                    { mobile_breakpoint: tabsModule.mobile_breakpoint ?? 600 },
+                    [this.numberField('mobile_breakpoint', 320, 1200, 10)],
+                    (e: CustomEvent) => {
+                      updateModule({ mobile_breakpoint: e.detail.value.mobile_breakpoint });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+              `
+            : ''}
         </div>
 
         <!-- Sections Manager -->
@@ -1258,6 +1371,26 @@ export class UltraTabsModule extends BaseUltraModule {
       flexDirection = position === 'right' ? 'row-reverse' : 'row';
     }
 
+    // Build mobile icons-only CSS if enabled
+    const mobileBreakpoint = tabsModule.mobile_breakpoint ?? 600;
+    const uniqueContainerClass = `ultra-tabs-${tabsModule.id}`;
+    const mobileIconsOnlyCSS = tabsModule.mobile_icons_only
+      ? `
+        @media (max-width: ${mobileBreakpoint}px) {
+          .${uniqueContainerClass} .ultra-tab-btn .tab-text {
+            display: none !important;
+          }
+          .${uniqueContainerClass} .ultra-tab-btn {
+            padding: 10px !important;
+            min-width: unset !important;
+          }
+          .${uniqueContainerClass} .ultra-tab-btn.has-icon {
+            aspect-ratio: 1;
+          }
+        }
+      `
+      : '';
+
     return html`
       <style>
         .ultra-tabs-container {
@@ -1267,8 +1400,8 @@ export class UltraTabsModule extends BaseUltraModule {
         .ultra-tabs-header {
           display: flex;
           flex-direction: ${orientation === 'horizontal' ? 'row' : 'column'};
-          flex-wrap: nowrap;
-          overflow: hidden;
+          flex-wrap: ${tabsModule.wrap_tabs ? 'wrap' : 'nowrap'};
+          overflow: ${tabsModule.wrap_tabs ? 'visible' : 'hidden'};
           /* Hide scrollbar by default */
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -1296,9 +1429,10 @@ export class UltraTabsModule extends BaseUltraModule {
           color: ${tabsModule.hover_tab_color || 'var(--primary-text-color)'};
           background: ${tabsModule.hover_tab_background || 'rgba(var(--rgb-primary-color), 0.1)'};
         }
+        ${mobileIconsOnlyCSS}
       </style>
 
-      <div class="ultra-tabs-container" style="${containerStyles}">
+      <div class="ultra-tabs-container ${uniqueContainerClass}" style="${containerStyles}">
         <!-- Tabs Header -->
         <div class="ultra-tabs-header" style="${tabsContainerStyles}">
           ${sections.map(section => this._renderTabButton(section, activeTabId!, tabsModule, hass))}
@@ -1340,13 +1474,13 @@ export class UltraTabsModule extends BaseUltraModule {
 
     return html`
       <button
-        class="ultra-tab-btn ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''}"
+        class="ultra-tab-btn ${isActive ? 'active' : ''} ${isIconOnly ? 'icon-only' : ''} ${hasIcon ? 'has-icon' : ''}"
         style="${buttonStyles}"
         @click=${handleClick}
         @mouseenter=${handleHover}
       >
         ${hasIcon ? html`<ha-icon icon="${section.icon}" style="${iconStyle}"></ha-icon>` : ''}
-        ${hasTitle ? html`<span>${section.title}</span>` : ''}
+        ${hasTitle ? html`<span class="tab-text">${section.title}</span>` : ''}
       </button>
     `;
   }
@@ -1443,6 +1577,7 @@ export class UltraTabsModule extends BaseUltraModule {
   private _buildTabsContainerStyles(tabsModule: TabsModule, orientation: string, alignment: string): string {
     const gap = tabsModule.tab_gap ?? 4;
     const style = tabsModule.style || 'switch_1';
+    const wrapTabs = tabsModule.wrap_tabs || false;
     
     let justifyContent = 'flex-start';
     if (alignment === 'center') justifyContent = 'center';
@@ -1487,10 +1622,14 @@ export class UltraTabsModule extends BaseUltraModule {
       }
     }
 
+    // Flex wrap for responsive tabs
+    const flexWrap = wrapTabs ? 'flex-wrap: wrap;' : 'flex-wrap: nowrap;';
+
     return `
       display: flex;
       flex-direction: ${orientation === 'horizontal' ? 'row' : 'column'};
       gap: ${gap}px;
+      ${flexWrap}
       ${orientation === 'horizontal' && alignment !== 'stretch' ? `justify-content: ${justifyContent};` : ''}
       ${verticalWidthStyle}
       padding: ${containerPadding};

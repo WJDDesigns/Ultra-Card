@@ -280,7 +280,26 @@
       "toggle_config": "Toggle Configuration",
       "entity": "Entity",
       "entity_more_info_desc": "Select which entity to show more information for",
-      "entity_toggle_desc": "Select which entity to toggle on/off"
+      "entity_toggle_desc": "Select which entity to toggle on/off",
+      "default": "Default",
+      "more_info": "More Info",
+      "toggle": "Toggle",
+      "navigate": "Navigate",
+      "url": "URL",
+      "perform_action": "Perform Action",
+      "assist": "Assist",
+      "nothing": "Nothing",
+      "open_popup": "Open Popup",
+      "popup_config": "Popup Configuration",
+      "popup_target": "Target Popup",
+      "popup_target_desc": "Select which popup to open when this action is triggered",
+      "select_popup": "Select a popup...",
+      "no_popups_available": "No popups available in this card. Add a popup module first.",
+      "open_popup_instead": "Open a popup instead of the action above",
+      "select_popup_desc": "Choose which popup to open when this action is triggered",
+      "no_popups": "No popup modules in this card",
+      "confirm_action": "Confirm Action",
+      "confirm_action_desc": "When enabled, a confirmation dialog will appear before executing any action (tap, hold, or double tap)."
     },
     "icon": {
       "entity_config": {

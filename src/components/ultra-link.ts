@@ -3,6 +3,7 @@ import { HomeAssistant, forwardHaptic } from 'custom-card-helpers';
 import { localize } from '../localize/localize';
 import { UltraCardConfig, CardModule } from '../types';
 import { ucActionConfirmationService } from '../services/uc-action-confirmation-service';
+import { getPopupForModule, openPopupById } from '../services/popup-trigger-registry';
 
 export interface UltraLinkConfig {
   tap_action?: TapActionConfig;
@@ -698,6 +699,16 @@ export class UltraLinkComponent {
     moduleEntity?: string,
     module?: CardModule
   ): Promise<void> {
+    // Check if this module should trigger a popup instead of its normal action
+    if (module?.id) {
+      const popupId = getPopupForModule(module.id);
+      if (popupId) {
+        // This module is configured as a popup trigger - open the popup instead
+        openPopupById(popupId);
+        return;
+      }
+    }
+
     // If action is undefined or missing, or explicitly set to 'default', use smart resolution
     let resolvedAction: TapActionConfig;
 

@@ -758,7 +758,12 @@ export class GlobalDesignTab extends LitElement {
     }
 
     // Update local state immediately so UI reflects the reset
-    this.designProperties = { ...(this.designProperties || {}), ...resetProperties } as any;
+    // IMPORTANT: Delete properties rather than setting to undefined for proper Lit change detection
+    const newDesignProperties = { ...(this.designProperties || {}) };
+    Object.keys(resetProperties).forEach(key => {
+      delete (newDesignProperties as any)[key];
+    });
+    this.designProperties = newDesignProperties as any;
     this.requestUpdate();
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
@@ -902,6 +907,11 @@ export class GlobalDesignTab extends LitElement {
       animation_timing: undefined,
     };
 
+    // Update local state immediately so UI reflects the reset
+    // IMPORTANT: Create a clean empty object rather than setting properties to undefined
+    this.designProperties = {} as any;
+    this.requestUpdate();
+
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
       try {
@@ -945,6 +955,10 @@ export class GlobalDesignTab extends LitElement {
         background_image: imagePath,
         background_image_type: 'upload' as const,
       };
+
+      // Update local state immediately so UI reflects the change (matches _updateProperty behavior)
+      this.designProperties = { ...(this.designProperties || {}), ...updates } as any;
+      this.requestUpdate();
 
       // Use callback if provided (module integration), otherwise use event (row/column integration)
       if (this.onUpdate) {

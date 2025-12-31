@@ -687,6 +687,16 @@ export interface BarModule extends BaseModule {
   right_title_color?: string;
   right_value_color?: string;
 
+  // Left Side Actions
+  left_tap_action?: ModuleActionConfig;
+  left_hold_action?: ModuleActionConfig;
+  left_double_tap_action?: ModuleActionConfig;
+
+  // Right Side Actions
+  right_tap_action?: ModuleActionConfig;
+  right_hold_action?: ModuleActionConfig;
+  right_double_tap_action?: ModuleActionConfig;
+
   // Colors
   bar_color?: string;
   bar_background_color?: string;
@@ -1526,6 +1536,11 @@ export interface TabsModule extends BaseModule {
   switch_on_hover?: boolean;
   default_tab?: string; // ID of the default active tab
 
+  // Responsive options
+  wrap_tabs?: boolean; // Allow tabs to wrap to multiple lines
+  mobile_icons_only?: boolean; // Show only icons on mobile/narrow screens
+  mobile_breakpoint?: number; // Breakpoint in pixels for mobile mode (default 600)
+
   // Typography
   font_size?: string;
   font_weight?: string;
@@ -1621,7 +1636,8 @@ export interface PopupModule extends BaseModule {
   show_entity_name?: boolean;
 
   // Trigger configuration
-  trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic';
+  trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic' | 'module';
+  trigger_module_id?: string; // ID of the module that triggers this popup
   trigger_button_text?: string;
   trigger_button_icon?: string;
   trigger_image_type?: 'upload' | 'entity' | 'url';
@@ -3844,6 +3860,8 @@ export interface SharedDesignProperties {
   // Background properties
   background_color?: string;
   background_image?: string;
+  background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+  background_image_entity?: string;
   // New: background image rendering controls
   background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
   background_position?:
@@ -4522,7 +4540,8 @@ export type SportsDisplayStyle =
   | 'upcoming'
   | 'compact'
   | 'detailed'
-  | 'mini';
+  | 'mini'
+  | 'logo_bg';
 
 // Game status types
 export type SportsGameStatus =
@@ -4634,6 +4653,11 @@ export interface SportsScoreModule extends BaseModule {
   // Layout options
   logo_size?: string; // e.g., "48px"
   compact_mode?: boolean;
+  
+  // Logo BG style options
+  show_logo_background?: boolean; // Show/hide watermark logos in Logo BG style
+  logo_background_size?: string; // Size of background logo watermarks (e.g., "80px")
+  logo_background_opacity?: number; // Opacity of background logos (0-100)
   
   // Actions
   tap_action?: ModuleActionConfig;

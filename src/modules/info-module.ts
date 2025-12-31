@@ -11,6 +11,7 @@ import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import { getPopupForModule } from '../services/popup-trigger-registry';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 import { buildEntityContext } from '../utils/template-context';
@@ -2693,8 +2694,10 @@ export class UltraInfoModule extends BaseUltraModule {
                 return html`${contentElement}${iconElement}`;
               };
 
-              // Wrap in clickable element if actions are configured
+              // Wrap in clickable element if actions are configured OR if this module is a popup trigger
+              const isPopupTrigger = Boolean(infoModule?.id && getPopupForModule(infoModule.id));
               const element = ((m: any) =>
+                isPopupTrigger ||
                 (m?.tap_action && m.tap_action.action !== 'nothing') ||
                 (m?.hold_action && m.hold_action.action !== 'nothing') ||
                 (m?.double_tap_action && m.double_tap_action.action !== 'nothing'))(infoModule)

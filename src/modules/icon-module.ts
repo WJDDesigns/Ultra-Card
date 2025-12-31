@@ -2479,6 +2479,11 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Container styles for design system - no hardcoded spacing, user controls all
     const containerStyles = {
+      // Flexbox centering for when specific width/height is set
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
       // Only apply padding if explicitly set by user
       padding:
         designProperties.padding_top ||

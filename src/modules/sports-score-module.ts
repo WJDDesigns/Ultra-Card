@@ -14,6 +14,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { sportsDataService, LEAGUE_NAMES, SportsDataService } from '../services/sports-data-service';
 import { localize } from '../localize/localize';
+import { getImageUrl } from '../utils/image-upload';
 import '../components/ultra-color-picker';
 
 /**
@@ -48,7 +49,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     fetchInProgress: boolean;
   }> = new Map();
   
-  private _refreshInterval: ReturnType<typeof setInterval> | null = null;
+  // Auto-refresh intervals per config key for live game updates
+  private _refreshIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
   private _teams: Map<SportsLeague, { id: string; name: string; logo: string }[]> = new Map();
 
   private _getState(configKey: string) {
@@ -62,6 +64,91 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       });
     }
     return this._stateByConfig.get(configKey)!;
+  }
+
+  // Track which interval key is currently active to detect changes
+  private _activeIntervalKey: string = '';
+
+  /**
+   * Set up auto-refresh interval for live game updates.
+   * Uses shorter intervals for live games, longer for scheduled games.
+   */
+  private _setupAutoRefresh(module: SportsScoreModule, configKey: string, isLive: boolean): void {
+    // Calculate the appropriate refresh interval
+    // Live games: use configured interval (default 5 min, min 1 min for live)
+    // Scheduled games: check less frequently (every 10-15 min)
+    const configuredMinutes = module.refresh_interval || 5;
+    const refreshMinutes = isLive 
+      ? Math.max(1, Math.min(configuredMinutes, 5)) // Live: 1-5 min, capped at configured
+      : Math.max(configuredMinutes, 10); // Scheduled: at least 10 min
+    const refreshMs = refreshMinutes * 60 * 1000;
+
+    // Create a unique key for this interval configuration
+    const intervalKey = `${configKey}_${refreshMs}_${isLive}`;
+    
+    // If we already have this exact interval set up, do nothing
+    if (this._activeIntervalKey === intervalKey && this._refreshIntervals.has(configKey)) {
+      return;
+    }
+
+    // Clean up ALL existing intervals when config changes
+    // This prevents memory leaks from orphaned intervals
+    if (this._refreshIntervals.size > 0) {
+      for (const [key, id] of this._refreshIntervals.entries()) {
+        clearInterval(id);
+      }
+      this._refreshIntervals.clear();
+    }
+
+    // Only set up auto-refresh for ESPN API (HA sensors are updated by HA itself)
+    if (module.data_source !== 'espn_api') {
+      this._activeIntervalKey = '';
+      return;
+    }
+
+    // Don't set up refresh if no team is selected
+    if (!module.team_id) {
+      this._activeIntervalKey = '';
+      return;
+    }
+
+    // Set up the new interval
+    const intervalId = setInterval(() => {
+      const state = this._getState(configKey);
+      // Reset lastFetch to force a new fetch on next render
+      state.lastFetch = 0;
+      // Trigger a preview update which will call renderPreview and fetch new data
+      this.triggerPreviewUpdate(true);
+    }, refreshMs);
+
+    this._refreshIntervals.set(configKey, intervalId);
+    this._activeIntervalKey = intervalKey;
+
+    // Log for debugging (can be removed in production)
+    console.debug(`[Sports Module] Auto-refresh set up for ${configKey}: every ${refreshMinutes} min (live: ${isLive})`);
+  }
+
+  /**
+   * Clean up all refresh intervals. Called when module is removed or changed.
+   */
+  public cleanup(): void {
+    for (const [key, intervalId] of this._refreshIntervals.entries()) {
+      clearInterval(intervalId);
+    }
+    this._refreshIntervals.clear();
+    this._stateByConfig.clear();
+    console.debug('[Sports Module] Cleaned up all refresh intervals');
+  }
+
+  /**
+   * Clean up a specific config's refresh interval
+   */
+  private _cleanupConfigInterval(configKey: string): void {
+    const intervalId = this._refreshIntervals.get(configKey);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this._refreshIntervals.delete(configKey);
+    }
   }
 
   createDefault(id?: string, hass?: HomeAssistant): SportsScoreModule {
@@ -106,6 +193,11 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       // Layout
       logo_size: '48px',
       compact_mode: false,
+
+      // Logo BG style options
+      show_logo_background: true,
+      logo_background_size: '80px',
+      logo_background_opacity: 8,
 
       // Actions
       tap_action: { action: 'nothing' },
@@ -432,6 +524,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       { value: 'compact', label: 'Compact - Single line ticker' },
       { value: 'detailed', label: 'Detailed - Full game info' },
       { value: 'mini', label: 'Mini - Small logo & score' },
+      { value: 'logo_bg', label: 'Logo BG - Half-card with logo background' },
     ];
 
     return html`
@@ -487,6 +580,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       compact: ['logos', 'names', 'score', 'status'],
       detailed: ['logos', 'names', 'records', 'score', 'time', 'venue', 'broadcast', 'status', 'odds'],
       mini: ['logos', 'score', 'time', 'status'],
+      logo_bg: ['logos', 'names', 'score', 'time', 'status'],
     };
 
     const features = styleFeatures[style] || styleFeatures.scorecard;
@@ -571,6 +665,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       compact: ['logo', 'score', 'name'],
       detailed: ['logo', 'score', 'name', 'detail'],
       mini: ['logo', 'score'],
+      logo_bg: ['logo', 'score', 'name'],
     };
 
     const sizeFeatures = styleSizeFeatures[style] || styleSizeFeatures.scorecard;
@@ -727,6 +822,97 @@ export class UltraSportsScoreModule extends BaseUltraModule {
               )
             : ''}
         </div>
+
+        <!-- Logo BG Style Options - Only shown for logo_bg style -->
+        ${style === 'logo_bg'
+          ? html`
+              <div style="margin-top: 24px;">
+                <div class="section-title" style="font-size: 16px; margin-bottom: 16px;">
+                  ${localize('editor.sports.logo_bg_options', lang, 'BACKGROUND LOGO OPTIONS')}
+                </div>
+                
+                <!-- Show Logo Background Toggle -->
+                ${this.renderSettingsSection('', '', [
+                  {
+                    title: localize('editor.sports.show_logo_background', lang, 'Show Background Logos'),
+                    description: localize('editor.sports.show_logo_background_desc', lang, 'Display subtle watermark logos in the background'),
+                    hass,
+                    data: { show_logo_background: module.show_logo_background !== false },
+                    schema: [this.booleanField('show_logo_background')],
+                    onChange: (e: CustomEvent) => {
+                      updateModule({ show_logo_background: e.detail.value.show_logo_background });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    },
+                  },
+                ])}
+
+                ${module.show_logo_background !== false
+                  ? html`
+                      <div style="margin-top: 16px;">
+                        ${this._renderSizeSlider(
+                          module,
+                          updateModule,
+                          'logo_background_size',
+                          localize('editor.sports.logo_background_size', lang, 'Background Logo Size'),
+                          localize('editor.sports.logo_background_size_desc', lang, 'Size of the watermark logos in the background'),
+                          40,
+                          150,
+                          80
+                        )}
+                      </div>
+                      <div style="margin-top: 16px;">
+                        <div class="field-container">
+                          <div class="field-title">${localize('editor.sports.logo_background_opacity', lang, 'Background Logo Opacity')}</div>
+                          <div class="field-description">${localize('editor.sports.logo_background_opacity_desc', lang, 'Transparency of the watermark logos (1-20%)')}</div>
+                          <div class="gap-control-container">
+                            <input
+                              type="range"
+                              class="gap-slider"
+                              min="1"
+                              max="20"
+                              step="1"
+                              .value="${String(module.logo_background_opacity || 8)}"
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                updateModule({ logo_background_opacity: parseInt(target.value, 10) });
+                                this.triggerPreviewUpdate();
+                              }}
+                            />
+                            <input
+                              type="number"
+                              class="gap-input"
+                              min="1"
+                              max="20"
+                              step="1"
+                              .value="${String(module.logo_background_opacity || 8)}"
+                              @input=${(e: Event) => {
+                                const target = e.target as HTMLInputElement;
+                                const numValue = parseInt(target.value, 10);
+                                if (!isNaN(numValue) && numValue >= 1 && numValue <= 20) {
+                                  updateModule({ logo_background_opacity: numValue });
+                                  this.triggerPreviewUpdate();
+                                }
+                              }}
+                            />
+                            <span style="font-size: 12px; color: var(--secondary-text-color); min-width: 20px;">%</span>
+                            <button
+                              class="reset-btn"
+                              @click=${() => {
+                                updateModule({ logo_background_opacity: 8 });
+                                this.triggerPreviewUpdate();
+                              }}
+                              title="Reset to default (8%)"
+                            >
+                              <ha-icon icon="mdi:refresh"></ha-icon>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    `
+                  : ''}
+              </div>
+            `
+          : ''}
       </div>
     `;
   }
@@ -955,6 +1141,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const sportsModule = module as SportsScoreModule;
+    const moduleWithDesign = sportsModule as any;
+    const designFromDesignObject = (sportsModule as any).design || {};
 
     // Check Pro access for preview
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(hass);
@@ -983,20 +1171,243 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     this._currentError = state.error;
     this._currentLoading = state.loading;
 
-    // Render based on display style
+    // Set up auto-refresh based on game status (only after initial fetch completes)
+    if (state.gameData && !state.loading) {
+      const isLive = SportsDataService.isLive(state.gameData.status);
+      this._setupAutoRefresh(sportsModule, configKey, isLive);
+    } else if (!state.loading && !state.fetchInProgress && sportsModule.team_id) {
+      // Even without game data, set up a refresh to check for upcoming games
+      this._setupAutoRefresh(sportsModule, configKey, false);
+    }
+
+    // Extract design properties (prioritize top-level over design object)
+    const designProperties = {
+      background_color: moduleWithDesign.background_color || designFromDesignObject.background_color,
+      background_image: moduleWithDesign.background_image || designFromDesignObject.background_image,
+      background_image_type: moduleWithDesign.background_image_type || designFromDesignObject.background_image_type,
+      background_image_entity: moduleWithDesign.background_image_entity || designFromDesignObject.background_image_entity,
+      background_image_upload: moduleWithDesign.background_image_upload || designFromDesignObject.background_image_upload,
+      background_image_url: moduleWithDesign.background_image_url || designFromDesignObject.background_image_url,
+      background_size: moduleWithDesign.background_size || designFromDesignObject.background_size,
+      background_position: moduleWithDesign.background_position || designFromDesignObject.background_position,
+      background_repeat: moduleWithDesign.background_repeat || designFromDesignObject.background_repeat,
+      padding_top: designFromDesignObject.padding_top !== undefined ? designFromDesignObject.padding_top : moduleWithDesign.padding_top,
+      padding_bottom: designFromDesignObject.padding_bottom !== undefined ? designFromDesignObject.padding_bottom : moduleWithDesign.padding_bottom,
+      padding_left: designFromDesignObject.padding_left !== undefined ? designFromDesignObject.padding_left : moduleWithDesign.padding_left,
+      padding_right: designFromDesignObject.padding_right !== undefined ? designFromDesignObject.padding_right : moduleWithDesign.padding_right,
+      margin_top: designFromDesignObject.margin_top !== undefined ? designFromDesignObject.margin_top : moduleWithDesign.margin_top,
+      margin_bottom: designFromDesignObject.margin_bottom !== undefined ? designFromDesignObject.margin_bottom : moduleWithDesign.margin_bottom,
+      margin_left: designFromDesignObject.margin_left !== undefined ? designFromDesignObject.margin_left : moduleWithDesign.margin_left,
+      margin_right: designFromDesignObject.margin_right !== undefined ? designFromDesignObject.margin_right : moduleWithDesign.margin_right,
+      border_style: moduleWithDesign.border_style || designFromDesignObject.border_style,
+      border_width: moduleWithDesign.border_width || designFromDesignObject.border_width,
+      border_color: moduleWithDesign.border_color || designFromDesignObject.border_color,
+      border_radius: moduleWithDesign.border_radius || designFromDesignObject.border_radius,
+      box_shadow_h: moduleWithDesign.box_shadow_h || designFromDesignObject.box_shadow_h,
+      box_shadow_v: moduleWithDesign.box_shadow_v || designFromDesignObject.box_shadow_v,
+      box_shadow_blur: moduleWithDesign.box_shadow_blur || designFromDesignObject.box_shadow_blur,
+      box_shadow_spread: moduleWithDesign.box_shadow_spread || designFromDesignObject.box_shadow_spread,
+      box_shadow_color: moduleWithDesign.box_shadow_color || designFromDesignObject.box_shadow_color,
+      width: moduleWithDesign.width || designFromDesignObject.width,
+      height: moduleWithDesign.height || designFromDesignObject.height,
+      min_width: moduleWithDesign.min_width || designFromDesignObject.min_width,
+      min_height: moduleWithDesign.min_height || designFromDesignObject.min_height,
+      max_width: moduleWithDesign.max_width || designFromDesignObject.max_width,
+      max_height: moduleWithDesign.max_height || designFromDesignObject.max_height,
+      overflow: moduleWithDesign.overflow || designFromDesignObject.overflow,
+      backdrop_filter: moduleWithDesign.backdrop_filter || designFromDesignObject.backdrop_filter,
+      background_filter: moduleWithDesign.background_filter || designFromDesignObject.background_filter,
+    };
+
+    // Check if background filter is present - requires pseudo-element approach
+    const hasBackgroundFilter = designProperties.background_filter && designProperties.background_filter !== 'none';
+    const bgImageCSS = this.getBackgroundImageCSS(designProperties, hass);
+
+    // Build container styles
+    // When background_filter is present, we use CSS variables for pseudo-element approach
+    const containerStyles: Record<string, string> = {
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
+          : '0',
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right
+          ? `${this.addPixelUnit(designProperties.margin_top) || '0px'} ${this.addPixelUnit(designProperties.margin_right) || '0px'} ${this.addPixelUnit(designProperties.margin_bottom) || '0px'} ${this.addPixelUnit(designProperties.margin_left) || '0px'}`
+          : '0',
+      // When background filter is present, set background on pseudo-element via CSS variables
+      background: hasBackgroundFilter ? 'transparent' : (designProperties.background_color || 'var(--card-background-color, var(--ha-card-background))'),
+      backgroundImage: hasBackgroundFilter ? 'none' : bgImageCSS,
+      backgroundSize: hasBackgroundFilter ? 'auto' : (designProperties.background_size || 'cover'),
+      backgroundPosition: hasBackgroundFilter ? 'center' : (designProperties.background_position || 'center'),
+      backgroundRepeat: hasBackgroundFilter ? 'repeat' : (designProperties.background_repeat || 'no-repeat'),
+      backdropFilter: designProperties.backdrop_filter || 'none',
+      border:
+        designProperties.border_style && designProperties.border_style !== 'none'
+          ? `${this.addPixelUnit(designProperties.border_width) || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
+          : 'none',
+      borderRadius: this.addPixelUnit(designProperties.border_radius) || '8px',
+      boxShadow:
+        designProperties.box_shadow_h || designProperties.box_shadow_v || designProperties.box_shadow_blur
+          ? `${designProperties.box_shadow_h || '0px'} ${designProperties.box_shadow_v || '0px'} ${designProperties.box_shadow_blur || '0px'} ${designProperties.box_shadow_spread || '0px'} ${designProperties.box_shadow_color || 'rgba(0,0,0,0.2)'}`
+          : 'none',
+      width: designProperties.width || 'auto',
+      height: designProperties.height || 'auto',
+      minWidth: designProperties.min_width || 'auto',
+      minHeight: designProperties.min_height || 'auto',
+      maxWidth: designProperties.max_width || 'none',
+      maxHeight: designProperties.max_height || 'none',
+      overflow: hasBackgroundFilter ? 'hidden' : (designProperties.overflow || 'visible'),
+    };
+
+    // Add CSS variables for pseudo-element when background filter is present
+    if (hasBackgroundFilter) {
+      containerStyles['--bg-image'] = bgImageCSS;
+      containerStyles['--bg-color'] = designProperties.background_color || 'var(--card-background-color, var(--ha-card-background))';
+      containerStyles['--bg-size'] = designProperties.background_size || 'cover';
+      containerStyles['--bg-position'] = designProperties.background_position || 'center';
+      containerStyles['--bg-repeat'] = designProperties.background_repeat || 'no-repeat';
+      containerStyles['--bg-filter'] = designProperties.background_filter;
+      containerStyles['position'] = 'relative';
+      containerStyles['isolation'] = 'isolate';
+    }
+
+    // Get style content based on display style
+    let styleContent: TemplateResult;
     switch (sportsModule.display_style) {
       case 'upcoming':
-        return this.renderUpcomingStyle(sportsModule, hass);
+        styleContent = this.renderUpcomingStyle(sportsModule, hass);
+        break;
       case 'compact':
-        return this.renderCompactStyle(sportsModule, hass);
+        styleContent = this.renderCompactStyle(sportsModule, hass);
+        break;
       case 'detailed':
-        return this.renderDetailedStyle(sportsModule, hass);
+        styleContent = this.renderDetailedStyle(sportsModule, hass);
+        break;
       case 'mini':
-        return this.renderMiniStyle(sportsModule, hass);
+        styleContent = this.renderMiniStyle(sportsModule, hass);
+        break;
+      case 'logo_bg':
+        styleContent = this.renderLogoBgStyle(sportsModule, hass);
+        break;
       case 'scorecard':
       default:
-        return this.renderScorecardStyle(sportsModule, hass);
+        styleContent = this.renderScorecardStyle(sportsModule, hass);
+        break;
     }
+
+    // Wrap content with design container
+    const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
+    
+    return html`
+      <style>
+        /* Background filter support - use pseudo-element to avoid blurring content */
+        .sports-module-container.has-background-filter {
+          position: relative;
+          isolation: isolate;
+        }
+        .sports-module-container.has-background-filter::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: var(--bg-color);
+          background-image: var(--bg-image);
+          background-size: var(--bg-size);
+          background-position: var(--bg-position);
+          background-repeat: var(--bg-repeat);
+          filter: var(--bg-filter);
+          border-radius: inherit;
+          z-index: -1;
+          pointer-events: none;
+        }
+      </style>
+      <div class="sports-module-container ${filterClass}" style="${this.styleObjectToCss(containerStyles)}">
+        ${styleContent}
+      </div>
+    `;
+  }
+
+  /**
+   * Helper to convert design properties to background image CSS
+   */
+  private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
+    const imageType = moduleWithDesign.background_image_type;
+    const backgroundImage = moduleWithDesign.background_image;
+    const backgroundEntity = moduleWithDesign.background_image_entity;
+    const backgroundUpload = moduleWithDesign.background_image_upload;
+    const backgroundUrl = moduleWithDesign.background_image_url;
+
+    if (!imageType || imageType === 'none') return 'none';
+
+    switch (imageType) {
+      case 'upload': {
+        const img = backgroundUpload || backgroundImage;
+        if (img) {
+          const resolved = getImageUrl(hass, img);
+          return `url("${resolved}")`;
+        }
+        break;
+      }
+      case 'url': {
+        const url = backgroundUrl || backgroundImage;
+        if (url) {
+          return `url("${url}")`;
+        }
+        break;
+      }
+      case 'entity': {
+        if (backgroundEntity && hass.states[backgroundEntity]) {
+          const entityState = hass.states[backgroundEntity];
+          const imageUrl = entityState.attributes?.entity_picture || entityState.state;
+          if (imageUrl && imageUrl !== 'unknown' && imageUrl !== 'unavailable') {
+            return `url("${imageUrl}")`;
+          }
+        }
+        break;
+      }
+    }
+
+    return 'none';
+  }
+
+  /**
+   * Convert style object to CSS string
+   * Only filters out undefined/null - lets valid CSS values through
+   */
+  private styleObjectToCss(styles: Record<string, any>): string {
+    return Object.entries(styles)
+      .filter(([key, value]) => {
+        // Skip undefined/null
+        if (value === undefined || value === null) return false;
+        // Skip default/reset values that shouldn't be applied (but not for CSS variables)
+        if (!key.startsWith('--')) {
+          if (key === 'padding' && value === '0') return false;
+          if (key === 'margin' && value === '0') return false;
+          if (key === 'border' && value === 'none') return false;
+          if (key === 'boxShadow' && value === 'none') return false;
+          if (key === 'backgroundImage' && value === 'none') return false;
+          if (key === 'backdropFilter' && value === 'none') return false;
+        }
+        return true;
+      })
+      .map(([key, value]) => {
+        // CSS variables should be kept as-is (e.g., --bg-image)
+        if (key.startsWith('--')) {
+          return `${key}: ${value}`;
+        }
+        // Convert camelCase to kebab-case
+        const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        return `${cssKey}: ${value}`;
+      })
+      .join('; ');
   }
 
   // Temporary storage for current render's state (avoids multiple Map lookups)
@@ -1099,8 +1510,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       <style>
         .sports-scorecard {
           padding: 16px;
-          border-radius: 8px;
-          background: var(--card-background-color, var(--ha-card-background));
+          border-radius: inherit;
+          background: transparent;
         }
         .sports-scorecard .teams-container {
           display: flex;
@@ -1250,8 +1661,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       <style>
         .sports-upcoming {
           padding: 16px;
-          border-radius: 8px;
-          background: var(--card-background-color, var(--ha-card-background));
+          border-radius: inherit;
+          background: transparent;
         }
         .sports-upcoming .matchup {
           display: flex;
@@ -1425,8 +1836,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       <style>
         .sports-detailed {
           padding: 20px;
-          border-radius: 12px;
-          background: var(--card-background-color, var(--ha-card-background));
+          border-radius: inherit;
+          background: transparent;
         }
         .sports-detailed .header {
           display: flex;
@@ -1626,8 +2037,8 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           justify-content: center;
           padding: 8px;
           min-width: 80px;
-          border-radius: 8px;
-          background: var(--card-background-color, var(--ha-card-background));
+          border-radius: inherit;
+          background: transparent;
         }
         .sports-mini .logos {
           display: flex;
@@ -1671,6 +2082,204 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           ? html`<div class="score">${this._formatScore(data.awayTeam.score)}-${this._formatScore(data.homeTeam.score)}</div>`
           : html`<div style="font-size: 10px;">${SportsDataService.formatGameTime(data.gameTime)}</div>`}
         ${isLive ? html`<div class="live-dot"></div>` : ''}
+      </div>
+    `;
+  }
+
+  private renderLogoBgStyle(module: SportsScoreModule, hass: HomeAssistant): TemplateResult {
+    const data = this._currentGameData;
+    const logoSize = module.logo_size || '40px';
+    const scoreFontSize = module.score_font_size || '18px';
+    const nameFontSize = module.team_name_font_size || '11px';
+    
+    // Logo BG specific options
+    const showLogoBg = module.show_logo_background !== false;
+    const logoBgSize = module.logo_background_size || '80px';
+    const logoBgOpacity = (module.logo_background_opacity || 8) / 100;
+
+    if (this._currentLoading) {
+      return html`<div style="height: 80px; display: flex; align-items: center; justify-content: center;"><ha-circular-progress indeterminate size="small"></ha-circular-progress></div>`;
+    }
+
+    if (this._currentError || !data) {
+      return html`
+        <div style="height: 80px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--secondary-text-color);">
+          ${module.team_id ? 'No game data' : 'Select a team'}
+        </div>
+      `;
+    }
+
+    const isLive = SportsDataService.isLive(data.status);
+    const hasScore = this._hasValidScore(data.awayTeam.score, data.homeTeam.score);
+    const statusColor = isLive ? module.in_progress_color || '#ff9800' : module.scheduled_color || 'var(--primary-text-color)';
+
+    // Use team colors for subtle background accents if enabled
+    const homeColor = module.use_team_colors && data.homeTeam.color ? data.homeTeam.color : 'var(--primary-color)';
+    const awayColor = module.use_team_colors && data.awayTeam.color ? data.awayTeam.color : 'var(--primary-color)';
+
+    return html`
+      <style>
+        .sports-logo-bg {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          min-height: 60px;
+          border-radius: inherit;
+          background: transparent;
+          overflow: hidden;
+        }
+        .sports-logo-bg .bg-logo {
+          position: absolute;
+          width: ${logoBgSize};
+          height: ${logoBgSize};
+          object-fit: contain;
+          opacity: ${logoBgOpacity};
+          pointer-events: none;
+          filter: grayscale(30%);
+        }
+        .sports-logo-bg .bg-logo-away {
+          left: -10px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        .sports-logo-bg .bg-logo-home {
+          right: -10px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        .sports-logo-bg .team-side {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          flex: 1;
+          min-width: 0;
+        }
+        .sports-logo-bg .team-logo {
+          width: ${logoSize};
+          height: ${logoSize};
+          object-fit: contain;
+          margin-bottom: 4px;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+        }
+        .sports-logo-bg .team-abbr {
+          font-size: ${nameFontSize};
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+        .sports-logo-bg .center-content {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 0 8px;
+          min-width: 70px;
+        }
+        .sports-logo-bg .score-display {
+          font-size: ${scoreFontSize};
+          font-weight: 800;
+          letter-spacing: 1px;
+          line-height: 1.1;
+        }
+        .sports-logo-bg .vs-display {
+          font-size: calc(${scoreFontSize} * 0.7);
+          font-weight: 600;
+          color: var(--secondary-text-color);
+        }
+        .sports-logo-bg .status-line {
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          margin-top: 2px;
+          white-space: nowrap;
+        }
+        .sports-logo-bg .live-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+        }
+        .sports-logo-bg .live-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          animation: pulse-logo-bg 1.5s infinite;
+        }
+        .sports-logo-bg .game-time-line {
+          font-size: 9px;
+          color: var(--secondary-text-color);
+          margin-top: 2px;
+          white-space: nowrap;
+        }
+        @keyframes pulse-logo-bg {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      </style>
+
+      <div class="sports-logo-bg">
+        <!-- Background logos for visual effect (conditional) -->
+        ${showLogoBg && data.awayTeam.logo
+          ? html`<img class="bg-logo bg-logo-away" src="${data.awayTeam.logo}" alt="" />`
+          : ''}
+        ${showLogoBg && data.homeTeam.logo
+          ? html`<img class="bg-logo bg-logo-home" src="${data.homeTeam.logo}" alt="" />`
+          : ''}
+
+        <!-- Away Team -->
+        <div class="team-side">
+          ${module.show_team_logos && data.awayTeam.logo
+            ? html`<img class="team-logo" src="${data.awayTeam.logo}" alt="${data.awayTeam.name}" />`
+            : ''}
+          ${module.show_team_names
+            ? html`<div class="team-abbr" style="color: ${module.use_team_colors && awayColor ? awayColor : 'inherit'}">${data.awayTeam.abbreviation || data.awayTeam.name.substring(0, 3).toUpperCase()}</div>`
+            : ''}
+        </div>
+
+        <!-- Center: Score or VS + Status -->
+        <div class="center-content">
+          ${module.show_score && hasScore
+            ? html`<div class="score-display">${this._formatScore(data.awayTeam.score)} - ${this._formatScore(data.homeTeam.score)}</div>`
+            : html`<div class="vs-display">VS</div>`}
+          
+          ${module.show_status_detail
+            ? isLive
+              ? html`
+                  <div class="status-line" style="color: ${statusColor}">
+                    <span class="live-indicator">
+                      <span class="live-dot" style="background: ${statusColor}"></span>
+                      ${data.statusDetail || 'LIVE'}
+                    </span>
+                  </div>
+                `
+              : data.status === 'final'
+                ? html`<div class="status-line" style="color: var(--secondary-text-color)">FINAL</div>`
+                : module.show_game_time && data.gameTime
+                  ? html`<div class="game-time-line">${SportsDataService.formatGameTime(data.gameTime)}</div>`
+                  : ''
+            : module.show_game_time && data.gameTime && data.status === 'scheduled'
+              ? html`<div class="game-time-line">${SportsDataService.formatGameTime(data.gameTime)}</div>`
+              : ''}
+        </div>
+
+        <!-- Home Team -->
+        <div class="team-side">
+          ${module.show_team_logos && data.homeTeam.logo
+            ? html`<img class="team-logo" src="${data.homeTeam.logo}" alt="${data.homeTeam.name}" />`
+            : ''}
+          ${module.show_team_names
+            ? html`<div class="team-abbr" style="color: ${module.use_team_colors && homeColor ? homeColor : 'inherit'}">${data.homeTeam.abbreviation || data.homeTeam.name.substring(0, 3).toUpperCase()}</div>`
+            : ''}
+        </div>
       </div>
     `;
   }
@@ -1732,6 +2341,32 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       return fallback;
     }
     return String(score);
+  }
+
+  /**
+   * Helper to add pixel unit to numeric values
+   */
+  private addPixelUnit(value: string | number | undefined): string | undefined {
+    if (!value && value !== 0) return undefined;
+    
+    const valueStr = String(value);
+    
+    // Handle special CSS values
+    if (valueStr === 'auto' || valueStr === 'none' || valueStr === 'inherit' || valueStr === 'initial' || valueStr === 'unset') {
+      return valueStr;
+    }
+    
+    // If value is just a number, add px
+    if (/^\d+$/.test(valueStr)) {
+      return `${valueStr}px`;
+    }
+    
+    // If already has unit, return as-is
+    if (/[a-zA-Z%]/.test(valueStr)) {
+      return valueStr;
+    }
+    
+    return valueStr;
   }
 
   validate(module: CardModule): { valid: boolean; errors: string[] } {

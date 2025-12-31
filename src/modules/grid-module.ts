@@ -401,7 +401,7 @@ export class UltraGridModule extends BaseUltraModule {
       // Sorting & Filtering
       sort_by: 'name',
       sort_direction: 'asc',
-      max_items: 0, // show all
+      max_items: 15, // default limit for new grids
 
       // Pagination
       enable_pagination: false,
@@ -649,7 +649,7 @@ export class UltraGridModule extends BaseUltraModule {
     entity: GridEntity,
     hass: HomeAssistant,
     module: GridModule
-  ): { name: string; state: string; icon: string; isOn: boolean; isUnavailable: boolean } {
+  ): { name: string; state: string; icon: string; isOn: boolean; isUnavailable: boolean; entityPicture: string | null } {
     const entityState = hass?.states?.[entity.entity];
 
     const name = entity.custom_name || entityState?.attributes?.friendly_name || entity.entity.split('.')[1] || entity.entity;
@@ -657,8 +657,11 @@ export class UltraGridModule extends BaseUltraModule {
     const icon = entity.custom_icon || entityState?.attributes?.icon || this.getDefaultIcon(entity.entity);
     const isOn = ['on', 'open', 'playing', 'home', 'active'].includes(state.toLowerCase());
     const isUnavailable = state === 'unavailable' || state === 'unknown';
+    
+    // Get entity_picture for person, camera, media_player entities (unless custom_icon is set)
+    const entityPicture = !entity.custom_icon ? (entityState?.attributes?.entity_picture || null) : null;
 
-    return { name, state, icon, isOn, isUnavailable };
+    return { name, state, icon, isOn, isUnavailable, entityPicture };
   }
 
   // Get default icon based on domain
@@ -2756,7 +2759,7 @@ export class UltraGridModule extends BaseUltraModule {
     shouldAnimate: boolean,
     metroSizes?: string[]
   ): TemplateResult {
-    const { name, state, icon, isOn, isUnavailable } = this.getEntityDisplayInfo(entity, hass, module);
+    const { name, state, icon, isOn, isUnavailable, entityPicture } = this.getEntityDisplayInfo(entity, hass, module);
     const iconColor = this.getIconColor(entity, isOn, isUnavailable, module);
 
     // Build item styles
@@ -2794,7 +2797,7 @@ export class UltraGridModule extends BaseUltraModule {
         style="${itemStyles}${animationStyles}"
         @click=${(e: Event) => this.handleItemClick(e, entity, module, hass)}
       >
-        ${this.renderItemContent(entity, module, styleConfig, name, state, icon, iconColor)}
+        ${this.renderItemContent(entity, module, styleConfig, name, state, icon, iconColor, entityPicture)}
       </div>
     `;
   }
@@ -2888,21 +2891,32 @@ export class UltraGridModule extends BaseUltraModule {
     name: string,
     state: string,
     icon: string,
-    iconColor: string
+    iconColor: string,
+    entityPicture: string | null
   ): TemplateResult {
     const iconSize = module.global_icon_size || styleConfig.defaultIconSize;
     const fontSize = module.global_font_size || styleConfig.defaultFontSize;
     const nameColor = module.global_name_color || 'var(--primary-text-color)';
     const stateColor = module.global_state_color || 'var(--secondary-text-color)';
 
+    // Helper to render icon or entity picture (for person, camera, media_player entities)
+    const renderIconOrPicture = (size: number, color: string) => {
+      if (entityPicture) {
+        return html`
+          <div class="grid-item-picture" style="width: ${size}px; height: ${size}px;">
+            <img src="${entityPicture}" alt="${name}" />
+          </div>
+        `;
+      }
+      return html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${size}px; color: ${color};"></ha-icon>`;
+    };
+
     // Different layouts based on style
     switch (styleConfig.layout) {
       case 'horizontal':
         return html`
           <div class="grid-item-horizontal">
-            ${styleConfig.showIcon
-              ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: ${iconColor};"></ha-icon>`
-              : ''}
+            ${styleConfig.showIcon ? renderIconOrPicture(iconSize, iconColor) : ''}
             <div class="grid-item-text">
               ${styleConfig.showName ? html`<span class="grid-item-name" style="font-size: ${fontSize}px; color: ${nameColor};">${name}</span>` : ''}
               ${styleConfig.showState ? html`<span class="grid-item-state" style="font-size: ${fontSize - 1}px; color: ${stateColor};">${state}</span>` : ''}
@@ -2913,9 +2927,7 @@ export class UltraGridModule extends BaseUltraModule {
       case 'icon-only':
         return html`
           <div class="grid-item-icon-only">
-            ${styleConfig.showIcon
-              ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: ${iconColor};"></ha-icon>`
-              : ''}
+            ${styleConfig.showIcon ? renderIconOrPicture(iconSize, iconColor) : ''}
             ${styleConfig.showState && module.grid_style === 'style_4'
               ? html`<span class="grid-item-badge" style="font-size: ${fontSize - 2}px;">${state}</span>`
               : ''}
@@ -2934,7 +2946,7 @@ export class UltraGridModule extends BaseUltraModule {
           return html`
             <div class="grid-item-vertical">
               ${styleConfig.showName ? html`<span class="grid-item-name" style="font-size: ${fontSize}px; color: ${nameColor}; margin-bottom: 8px;">${name}</span>` : ''}
-              ${styleConfig.showIcon ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: ${iconColor};"></ha-icon>` : ''}
+              ${styleConfig.showIcon ? renderIconOrPicture(iconSize, iconColor) : ''}
               ${styleConfig.showState ? html`<span class="grid-item-state" style="font-size: ${fontSize - 1}px; color: ${stateColor}; margin-top: 8px;">${state}</span>` : ''}
             </div>
           `;
@@ -2942,7 +2954,7 @@ export class UltraGridModule extends BaseUltraModule {
           return html`
             <div class="grid-item-compact">
               <div class="grid-item-top-row">
-                ${styleConfig.showIcon ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: ${iconColor};"></ha-icon>` : ''}
+                ${styleConfig.showIcon ? renderIconOrPicture(iconSize, iconColor) : ''}
                 ${styleConfig.showName ? html`<span class="grid-item-name" style="font-size: ${fontSize}px; color: ${nameColor};">${name}</span>` : ''}
               </div>
               ${styleConfig.showState ? html`<span class="grid-item-state" style="font-size: ${fontSize - 1}px; color: ${stateColor};">${state}</span>` : ''}
@@ -2955,7 +2967,11 @@ export class UltraGridModule extends BaseUltraModule {
           return html`
             <div class="grid-item-panel">
               <div class="grid-item-panel-header" style="background: ${panelHeaderBg};">
-                ${styleConfig.showIcon ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize - 4}px; color: ${panelHeaderText};"></ha-icon>` : ''}
+                ${styleConfig.showIcon
+                  ? entityPicture
+                    ? html`<div class="grid-item-picture" style="width: ${iconSize - 4}px; height: ${iconSize - 4}px;"><img src="${entityPicture}" alt="${name}" /></div>`
+                    : html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize - 4}px; color: ${panelHeaderText};"></ha-icon>`
+                  : ''}
               </div>
               <div class="grid-item-panel-body" style="padding: 12px;">
                 ${styleConfig.showName ? html`<span class="grid-item-name" style="font-size: ${fontSize}px; color: ${nameColor};">${name}</span>` : ''}
@@ -2970,7 +2986,11 @@ export class UltraGridModule extends BaseUltraModule {
           return html`
             <div class="grid-item-split">
               <div class="grid-item-split-left" style="background: ${splitLeftBg}; padding: 16px;">
-                ${styleConfig.showIcon ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: var(--text-primary-color, white);"></ha-icon>` : ''}
+                ${styleConfig.showIcon
+                  ? entityPicture
+                    ? html`<div class="grid-item-picture" style="width: ${iconSize}px; height: ${iconSize}px;"><img src="${entityPicture}" alt="${name}" /></div>`
+                    : html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: var(--text-primary-color, white);"></ha-icon>`
+                  : ''}
               </div>
               <div class="grid-item-split-right" style="background: ${splitRightBg}; padding: 12px;">
                 ${styleConfig.showName ? html`<span class="grid-item-name" style="font-size: ${fontSize}px; color: ${nameColor};">${name}</span>` : ''}
@@ -2981,7 +3001,7 @@ export class UltraGridModule extends BaseUltraModule {
         } else {
           return html`
             <div class="grid-item-vertical">
-              ${styleConfig.showIcon ? html`<ha-icon icon="${icon}" style="--mdc-icon-size: ${iconSize}px; color: ${iconColor};"></ha-icon>` : ''}
+              ${styleConfig.showIcon ? renderIconOrPicture(iconSize, iconColor) : ''}
               ${styleConfig.showName ? html`<span class="grid-item-name" style="font-size: ${fontSize}px; color: ${nameColor}; ${styleConfig.showIcon ? 'margin-top: 8px;' : ''}">${name}</span>` : ''}
               ${styleConfig.showState ? html`<span class="grid-item-state" style="font-size: ${fontSize - 1}px; color: ${stateColor}; margin-top: 4px;">${state}</span>` : ''}
             </div>
@@ -3492,6 +3512,24 @@ export class UltraGridModule extends BaseUltraModule {
         position: relative;
         width: 100%;
         height: 100%;
+      }
+
+      /* Entity picture for person, camera, media_player entities */
+      .grid-item-picture {
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: var(--secondary-background-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .grid-item-picture img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
       }
 
       .grid-item-compact {

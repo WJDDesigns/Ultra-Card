@@ -53,177 +53,18 @@ export class UltraAccordionModule extends BaseUltraModule {
   ): TemplateResult {
     const accordionModule = module as AccordionModule;
     const lang = hass?.locale?.language || 'en';
-    const moduleWithDesign = accordionModule as any;
-    const d = moduleWithDesign.design || {};
 
     return html`
       ${this.injectUcFormStyles()}
-      <style>
-        .design-subsection {
-          background: rgba(var(--rgb-primary-color), 0.05);
-          border-left: 3px solid var(--primary-color);
-          padding: 16px;
-          margin-bottom: 24px;
-          border-radius: 0 8px 8px 0;
-        }
-        .subsection-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--primary-color);
-          margin-bottom: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-      </style>
 
       <div class="module-design-settings">
-        <!-- Header Design Section -->
-        <div class="design-subsection">
-          <div class="subsection-title">
-            ${localize('editor.accordion.design.header_title', lang, 'Header Design')}
-          </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
-            ${localize(
-              'editor.accordion.design.header_desc',
-              lang,
-              'Customize the appearance of the accordion header bar.'
-            )}
-          </div>
-
-          <!-- Header Text Color -->
-          <div style="margin-bottom: 16px;">
-            <ultra-color-picker
-              .label=${localize('editor.accordion.design.header_text_color', lang, 'Header Text Color')}
-              .value=${d.header_text_color || ''}
-              .defaultValue=${'var(--primary-text-color)'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) => {
-                const value = e.detail.value;
-                const design = { ...d, header_text_color: value };
-                updateModule({ design } as any);
-              }}
-            ></ultra-color-picker>
-          </div>
-
-          <!-- Header Background Color -->
-          <div style="margin-bottom: 16px;">
-            <ultra-color-picker
-              .label=${localize('editor.accordion.design.header_bg_color', lang, 'Header Background Color')}
-              .value=${d.header_background_color || ''}
-              .defaultValue=${'var(--card-background-color)'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) => {
-                const value = e.detail.value;
-                const design = { ...d, header_background_color: value };
-                updateModule({ design } as any);
-              }}
-            ></ultra-color-picker>
-          </div>
-
-          <!-- Header Font Size -->
-          ${this.renderFieldSection(
-            localize('editor.accordion.design.header_font_size', lang, 'Header Font Size'),
-            localize(
-              'editor.accordion.design.header_font_size_desc',
-              lang,
-              'Font size for the header title text (in pixels).'
-            ),
-            hass,
-            { header_font_size: d.header_font_size || 16 },
-            [this.numberField('header_font_size', 8, 48, 1)],
-            (e: CustomEvent) => {
-              const design = { ...d, header_font_size: e.detail.value.header_font_size };
-              updateModule({ design } as any);
-            }
-          )}
-
-          <!-- Header Font Weight -->
-          ${this.renderFieldSection(
-            localize('editor.accordion.design.header_font_weight', lang, 'Header Font Weight'),
-            localize(
-              'editor.accordion.design.header_font_weight_desc',
-              lang,
-              'Font weight for the header title text.'
-            ),
-            hass,
-            { header_font_weight: d.header_font_weight || 'normal' },
-            [
-              this.selectField('header_font_weight', [
-                { value: 'normal', label: 'Normal' },
-                { value: 'bold', label: 'Bold' },
-                { value: '300', label: 'Light' },
-                { value: '500', label: 'Medium' },
-                { value: '600', label: 'Semi-Bold' },
-                { value: '700', label: 'Bold' },
-                { value: '800', label: 'Extra Bold' },
-              ]),
-            ],
-            (e: CustomEvent) => {
-              const design = { ...d, header_font_weight: e.detail.value.header_font_weight };
-              updateModule({ design } as any);
-            }
-          )}
-        </div>
-
-        <!-- Content Design Section -->
-        <div class="design-subsection">
-          <div class="subsection-title">
-            ${localize('editor.accordion.design.content_title', lang, 'Content Design')}
-          </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
-            ${localize(
-              'editor.accordion.design.content_desc',
-              lang,
-              'Customize the appearance of the accordion content area when expanded.'
-            )}
-          </div>
-
-          <!-- Content Background Color -->
-          <div style="margin-bottom: 16px;">
-            <ultra-color-picker
-              .label=${localize('editor.accordion.design.content_bg_color', lang, 'Content Background Color')}
-              .value=${d.content_background_color || ''}
-              .defaultValue=${'transparent'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) => {
-                const value = e.detail.value;
-                const design = { ...d, content_background_color: value };
-                updateModule({ design } as any);
-              }}
-            ></ultra-color-picker>
-          </div>
-
-          <!-- Content Padding -->
-          ${this.renderFieldSection(
-            localize('editor.accordion.design.content_padding', lang, 'Content Padding'),
-            localize(
-              'editor.accordion.design.content_padding_desc',
-              lang,
-              'Padding around the content area (in pixels).'
-            ),
-            hass,
-            { content_padding: d.content_padding || 16 },
-            [this.numberField('content_padding', 0, 48, 1)],
-            (e: CustomEvent) => {
-              const design = { ...d, content_padding: e.detail.value.content_padding };
-              updateModule({ design } as any);
-            }
-          )}
-        </div>
-
         <!-- Standard Design Tab Content (from GlobalDesignTab) -->
-        <div style="margin-top: 24px;">
-          <div
-            style="font-size: 14px; font-weight: 600; color: var(--secondary-text-color); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;"
-          >
-            ${localize('editor.accordion.design.general_title', lang, 'General Container Design')}
-          </div>
-          ${super.renderDesignTab(module, hass, config, updateModule)}
+        <div
+          style="font-size: 14px; font-weight: 600; color: var(--secondary-text-color); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.accordion.design.general_title', lang, 'General Module Design')}
         </div>
+        ${super.renderDesignTab(module, hass, config, updateModule)}
       </div>
     `;
   }
@@ -236,9 +77,56 @@ export class UltraAccordionModule extends BaseUltraModule {
   ): TemplateResult {
     const accordionModule = module as AccordionModule;
     const lang = hass?.locale?.language || 'en';
+    const moduleWithDesign = accordionModule as any;
+    const d = moduleWithDesign.design || {};
 
     return html`
       ${this.injectUcFormStyles()}
+      <style>
+        .color-row {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+        .color-row > * {
+          width: 100%;
+          min-width: 0;
+        }
+        .design-field {
+          margin-bottom: 16px;
+        }
+        .field-row {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+        .field-row > * {
+          width: 100%;
+          min-width: 0;
+        }
+        .design-subsection {
+          background: rgba(var(--rgb-primary-color), 0.05);
+          border-left: 3px solid var(--primary-color);
+          padding: 16px;
+          margin-bottom: 24px;
+          border-radius: 0 8px 8px 0;
+          overflow: visible;
+        }
+        .design-subsection ultra-color-picker {
+          width: 100%;
+          display: block;
+        }
+        .subsection-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--primary-color);
+          margin-bottom: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      </style>
 
       <div class="module-general-settings">
         <!-- Title Configuration Section -->
@@ -518,6 +406,324 @@ export class UltraAccordionModule extends BaseUltraModule {
               ]
             )
           : ''}
+
+        <!-- Container Customization Section -->
+        <div class="design-subsection">
+          <div class="subsection-title">
+            ${localize('editor.accordion.design.container_title', lang, 'Container Customization')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.accordion.design.container_desc',
+              lang,
+              'Customize the outer wrapper styling of the accordion.'
+            )}
+          </div>
+
+          <!-- Container Background & Border Color Row -->
+          <div class="color-row">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.container_bg_color', lang, 'Background Color')}
+              .value=${d.container_background_color || ''}
+              .defaultValue=${'var(--card-background-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, container_background_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.container_border_color', lang, 'Border Color')}
+              .value=${d.container_border_color || ''}
+              .defaultValue=${'var(--divider-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, container_border_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+          </div>
+
+          <!-- Container Border Width & Radius -->
+          <div class="field-row">
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.container_border_width', lang, 'Border Width'),
+                '',
+                hass,
+                { container_border_width: d.container_border_width ?? 1 },
+                [this.numberField('container_border_width', 0, 10, 1)],
+                (e: CustomEvent) => {
+                  const design = { ...d, container_border_width: e.detail.value.container_border_width };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.container_border_radius', lang, 'Border Radius'),
+                '',
+                hass,
+                { container_border_radius: d.container_border_radius ?? 8 },
+                [this.numberField('container_border_radius', 0, 50, 1)],
+                (e: CustomEvent) => {
+                  const design = { ...d, container_border_radius: e.detail.value.container_border_radius };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+          </div>
+
+          <!-- Box Shadow -->
+          ${this.renderFieldSection(
+            localize('editor.accordion.design.container_shadow', lang, 'Box Shadow'),
+            localize('editor.accordion.design.container_shadow_desc', lang, 'CSS box-shadow value (e.g., 0 2px 8px rgba(0,0,0,0.1))'),
+            hass,
+            { container_shadow: d.container_shadow || '' },
+            [this.textField('container_shadow')],
+            (e: CustomEvent) => {
+              const design = { ...d, container_shadow: e.detail.value.container_shadow };
+              updateModule({ design } as any);
+            }
+          )}
+        </div>
+
+        <!-- Header Customization Section -->
+        <div class="design-subsection">
+          <div class="subsection-title">
+            ${localize('editor.accordion.design.header_title', lang, 'Header Customization')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.accordion.design.header_desc',
+              lang,
+              'Customize the clickable header bar appearance.'
+            )}
+          </div>
+
+          <!-- Header Text & Background Colors -->
+          <div class="color-row">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.header_text_color', lang, 'Text Color')}
+              .value=${d.header_text_color || ''}
+              .defaultValue=${'var(--primary-text-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, header_text_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.header_bg_color', lang, 'Background Color')}
+              .value=${d.header_background_color || ''}
+              .defaultValue=${'var(--card-background-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, header_background_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+          </div>
+
+          <!-- Header Hover Background -->
+          <div class="design-field">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.header_hover_color', lang, 'Hover Background Color')}
+              .value=${d.header_hover_color || ''}
+              .defaultValue=${'rgba(var(--rgb-primary-color), 0.1)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, header_hover_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+          </div>
+
+          <!-- Icon Color & Size -->
+          <div class="color-row">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.icon_color', lang, 'Icon Color')}
+              .value=${d.icon_color || ''}
+              .defaultValue=${'var(--primary-text-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, icon_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.icon_size', lang, 'Icon Size'),
+                '',
+                hass,
+                { icon_size: d.icon_size ?? 24 },
+                [this.numberField('icon_size', 12, 48, 1)],
+                (e: CustomEvent) => {
+                  const design = { ...d, icon_size: e.detail.value.icon_size };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+          </div>
+
+          <!-- Header Font Size & Weight -->
+          <div class="field-row">
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.header_font_size', lang, 'Font Size'),
+                '',
+                hass,
+                { header_font_size: d.header_font_size || 16 },
+                [this.numberField('header_font_size', 8, 48, 1)],
+                (e: CustomEvent) => {
+                  const design = { ...d, header_font_size: e.detail.value.header_font_size };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.header_font_weight', lang, 'Font Weight'),
+                '',
+                hass,
+                { header_font_weight: d.header_font_weight || 'normal' },
+                [
+                  this.selectField('header_font_weight', [
+                    { value: 'normal', label: 'Normal' },
+                    { value: '300', label: 'Light' },
+                    { value: '500', label: 'Medium' },
+                    { value: '600', label: 'Semi-Bold' },
+                    { value: 'bold', label: 'Bold' },
+                    { value: '800', label: 'Extra Bold' },
+                  ]),
+                ],
+                (e: CustomEvent) => {
+                  const design = { ...d, header_font_weight: e.detail.value.header_font_weight };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+          </div>
+
+          <!-- Header Padding -->
+          ${this.renderFieldSection(
+            localize('editor.accordion.design.header_padding', lang, 'Header Padding'),
+            localize('editor.accordion.design.header_padding_desc', lang, 'Padding inside the header (in pixels).'),
+            hass,
+            { header_padding: d.header_padding ?? 12 },
+            [this.numberField('header_padding', 0, 48, 1)],
+            (e: CustomEvent) => {
+              const design = { ...d, header_padding: e.detail.value.header_padding };
+              updateModule({ design } as any);
+            }
+          )}
+
+          <!-- Header Border Bottom -->
+          <div class="color-row">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.header_border_color', lang, 'Border Bottom Color')}
+              .value=${d.header_border_color || ''}
+              .defaultValue=${'var(--divider-color)'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, header_border_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.header_border_width', lang, 'Border Width'),
+                '',
+                hass,
+                { header_border_width: d.header_border_width ?? 1 },
+                [this.numberField('header_border_width', 0, 5, 1)],
+                (e: CustomEvent) => {
+                  const design = { ...d, header_border_width: e.detail.value.header_border_width };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Customization Section -->
+        <div class="design-subsection">
+          <div class="subsection-title">
+            ${localize('editor.accordion.design.content_title', lang, 'Content Customization')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.accordion.design.content_desc',
+              lang,
+              'Customize the expanded content area appearance.'
+            )}
+          </div>
+
+          <!-- Content Background Color -->
+          <div class="design-field">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.content_bg_color', lang, 'Background Color')}
+              .value=${d.content_background_color || ''}
+              .defaultValue=${'transparent'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, content_background_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+          </div>
+
+          <!-- Content Padding -->
+          ${this.renderFieldSection(
+            localize('editor.accordion.design.content_padding', lang, 'Content Padding'),
+            localize('editor.accordion.design.content_padding_desc', lang, 'Padding around the content area (in pixels).'),
+            hass,
+            { content_padding: d.content_padding || 16 },
+            [this.numberField('content_padding', 0, 48, 1)],
+            (e: CustomEvent) => {
+              const design = { ...d, content_padding: e.detail.value.content_padding };
+              updateModule({ design } as any);
+            }
+          )}
+
+          <!-- Content Border -->
+          <div class="color-row">
+            <ultra-color-picker
+              .label=${localize('editor.accordion.design.content_border_color', lang, 'Border Color')}
+              .value=${d.content_border_color || ''}
+              .defaultValue=${'transparent'}
+              .hass=${hass}
+              @value-changed=${(e: CustomEvent) => {
+                const design = { ...d, content_border_color: e.detail.value };
+                updateModule({ design } as any);
+              }}
+            ></ultra-color-picker>
+
+            <div>
+              ${this.renderFieldSection(
+                localize('editor.accordion.design.content_border_width', lang, 'Border Width'),
+                '',
+                hass,
+                { content_border_width: d.content_border_width ?? 0 },
+                [this.numberField('content_border_width', 0, 5, 1)],
+                (e: CustomEvent) => {
+                  const design = { ...d, content_border_width: e.detail.value.content_border_width };
+                  updateModule({ design } as any);
+                }
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1037,38 +1243,62 @@ export class UltraAccordionModule extends BaseUltraModule {
       }
     }
     
-    // Header styles
+    // Container styles - using design properties
+    const containerBorderWidth = d.container_border_width ?? 1;
+    const containerBorderColor = d.container_border_color || 'var(--divider-color)';
+    const containerBorderRadius = d.container_border_radius ?? 8;
+    const containerBackground = d.container_background_color || 'var(--card-background-color)';
+    const containerStyles = {
+      border: `${containerBorderWidth}px solid ${containerBorderColor}`,
+      borderRadius: `${containerBorderRadius}px`,
+      overflow: 'hidden',
+      background: containerBackground,
+      boxShadow: d.container_shadow || 'none',
+    };
+    
+    // Header styles - using design properties
+    const headerPadding = d.header_padding ?? 12;
+    const headerBorderWidth = d.header_border_width ?? 1;
+    const headerBorderColor = d.header_border_color || 'var(--divider-color)';
+    const headerBackground = d.header_background_color || 'var(--card-background-color)';
     const headerStyles = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: headerJustifyContent,
-      padding: '12px 16px',
+      padding: `${headerPadding}px 16px`,
       cursor: 'pointer',
-      backgroundColor: d.header_background_color || 'var(--card-background-color)',
+      background: headerBackground,
       color: d.header_text_color || 'var(--primary-text-color)',
       fontSize: d.header_font_size ? `${d.header_font_size}px` : '16px',
       fontWeight: d.header_font_weight || 'normal',
-      borderBottom: '1px solid var(--divider-color)',
-      transition: 'background-color 0.2s',
+      borderBottom: `${headerBorderWidth}px solid ${headerBorderColor}`,
+      transition: 'background 0.2s',
       userSelect: 'none' as const,
       gap: headerAlignment === 'center' ? '8px' : '0',
     };
     
-    // Content styles
+    // Content styles - using design properties
+    const contentBorderWidth = d.content_border_width ?? 0;
+    const contentBorderColor = d.content_border_color || 'transparent';
+    const contentBackground = d.content_background_color || 'transparent';
     const contentStyles = {
       maxHeight: isOpen ? '2000px' : '0',
       overflow: 'hidden',
-      transition: 'max-height 0.3s ease-in-out',
-      backgroundColor: d.content_background_color || 'transparent',
+      transition: 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out',
+      background: contentBackground,
       padding: isOpen ? `${d.content_padding || 16}px` : '0',
+      borderTop: contentBorderWidth > 0 ? `${contentBorderWidth}px solid ${contentBorderColor}` : 'none',
     };
     
-    // Chevron icon styles
+    // Chevron icon styles - using design properties
+    const iconSize = d.icon_size ?? 24;
+    const iconColor = d.icon_color || 'inherit';
     const chevronStyles = {
       transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
       transition: 'transform 0.3s ease',
       order: iconOrder,
       flexShrink: 0,
+      color: iconColor,
     };
     
     // Title styles
@@ -1081,13 +1311,8 @@ export class UltraAccordionModule extends BaseUltraModule {
       whiteSpace: 'nowrap' as const,
     };
     
-    // Container styles for the entire accordion
-    const containerStyles = {
-      border: '1px solid var(--divider-color)',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      backgroundColor: d.background_color || 'var(--card-background-color)',
-    };
+    // Hover color for header
+    const headerHoverColor = d.header_hover_color || 'rgba(var(--rgb-primary-color), 0.1)';
     
     // Toggle handler
     const handleToggle = (e: Event) => {
@@ -1101,8 +1326,16 @@ export class UltraAccordionModule extends BaseUltraModule {
     const hasChildren = accordionModule.modules && accordionModule.modules.length > 0;
     const registry = getModuleRegistry();
     
+    // Generate unique ID for scoped hover styles
+    const accordionId = `accordion-${accordionModule.id.replace(/[^a-zA-Z0-9]/g, '')}`;
+    
     return html`
-      <div class="ultra-accordion-container" style=${this.styleObjectToCss(containerStyles)}>
+      <style>
+        .${accordionId} .ultra-accordion-header:hover {
+          background: ${headerHoverColor} !important;
+        }
+      </style>
+      <div class="ultra-accordion-container ${accordionId}" style=${this.styleObjectToCss(containerStyles)}>
         <!-- Accordion Header -->
         <div 
           class="ultra-accordion-header" 
@@ -1115,7 +1348,7 @@ export class UltraAccordionModule extends BaseUltraModule {
           <!-- Control Icon (Chevron) -->
           <ha-icon 
             icon="${iconToDisplay}" 
-            style=${this.styleObjectToCss(chevronStyles) + '; --mdc-icon-size: 24px;'}
+            style=${this.styleObjectToCss(chevronStyles) + `; --mdc-icon-size: ${iconSize}px;`}
           ></ha-icon>
         </div>
         

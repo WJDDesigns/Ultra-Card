@@ -9,9 +9,61 @@ import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { getImageUrl } from '../utils/image-upload';
+import { registerPopupTrigger, unregisterPopupTrigger } from '../services/popup-trigger-registry';
 
-// Map to track portal containers for each popup instance
-const popupPortals = new Map<string, HTMLElement>();
+// Global store to persist popup state across module re-instantiation/reloads
+// This survives HA preview/dash re-renders because it's kept on window
+type PopupStore = {
+  portals: Map<string, HTMLElement>;
+  states: Map<string, boolean>;
+  timers: Map<string, number>;
+  logicStates: Map<string, boolean>;
+  manuallyOpened: Set<string>;
+  timerEnabled: Map<string, boolean>;
+};
+
+const POPUP_STORE_KEY = '__ultraPopupStore__';
+
+const getPopupStore = (): PopupStore => {
+  const w = window as any;
+  if (!w[POPUP_STORE_KEY]) {
+    w[POPUP_STORE_KEY] = {
+      portals: new Map<string, HTMLElement>(),
+      states: new Map<string, boolean>(),
+      timers: new Map<string, number>(),
+      logicStates: new Map<string, boolean>(),
+      manuallyOpened: new Set<string>(),
+      timerEnabled: new Map<string, boolean>(),
+    } as PopupStore;
+  }
+  return w[POPUP_STORE_KEY] as PopupStore;
+};
+
+// References to global store maps/sets
+const {
+  portals: popupPortals,
+  states: popupStates,
+  timers: popupTimers,
+  logicStates: lastLogicStates,
+  manuallyOpened: manuallyOpenedPopups,
+  timerEnabled: popupTimerEnabled,
+} =
+  getPopupStore();
+
+// Helper to restore HA editor overlays after popup closes
+const restoreHAEditorOverlays = () => {
+  document.querySelectorAll('[data-ultra-popup-original-z-index]').forEach((el: Element) => {
+    const htmlEl = el as HTMLElement;
+    const originalZIndex = htmlEl.dataset.ultraPopupOriginalZIndex || '';
+    if (originalZIndex) {
+      htmlEl.style.zIndex = originalZIndex;
+    } else {
+      htmlEl.style.zIndex = '';
+    }
+    htmlEl.style.pointerEvents = '';
+    delete htmlEl.dataset.ultraPopupOriginalZIndex;
+  });
+};
 
 export class UltraPopupModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -40,6 +92,7 @@ export class UltraPopupModule extends BaseUltraModule {
       
       // Trigger configuration
       trigger_type: 'button',
+      trigger_module_id: '', // ID of the module that triggers this popup (for 'module' trigger type)
       trigger_button_text: 'Open Popup',
       trigger_button_icon: '',
       trigger_image_type: 'url',
@@ -426,6 +479,7 @@ export class UltraPopupModule extends BaseUltraModule {
                   { value: 'button', label: localize('editor.popup.trigger.button', lang, 'Button') },
                   { value: 'image', label: localize('editor.popup.trigger.image', lang, 'Image') },
                   { value: 'icon', label: localize('editor.popup.trigger.icon', lang, 'Icon') },
+                  { value: 'module', label: localize('editor.popup.trigger.module', lang, 'Module') },
                   {
                     value: 'page_load',
                     label: localize('editor.popup.trigger.page_load', lang, 'Page Load'),
@@ -695,6 +749,20 @@ export class UltraPopupModule extends BaseUltraModule {
                         }, 50);
                       }
                     )}
+                  `
+                )}
+              </div>
+            `
+          : ''}
+
+        <!-- Conditional: Module Trigger -->
+        ${popupModule.trigger_type === 'module'
+          ? html`
+              <div style="margin-top: -16px; margin-bottom: 32px;">
+                ${this.renderConditionalFieldsGroup(
+                  localize('editor.popup.trigger.module_config', lang, 'Module Trigger'),
+                  html`
+                    ${this._renderModuleTriggerConfig(popupModule, hass, config, updateModule, lang)}
                   `
                 )}
               </div>
@@ -1194,6 +1262,246 @@ export class UltraPopupModule extends BaseUltraModule {
     `;
   }
 
+  /**
+   * Get available modules from the config that can be used as popup triggers.
+   * Excludes popup modules and the current module itself.
+   */
+  private _getAvailableModulesForTrigger(
+    currentPopupId: string,
+    config?: UltraCardConfig
+  ): Array<{ value: string; label: string }> {
+    const modules: Array<{ value: string; label: string }> = [];
+    
+    if (!config || !config.layout || !config.layout.rows) return modules;
+
+    // Helper to recursively collect modules from rows/columns/containers
+    const collectModules = (items: any[], depth = 0): void => {
+      if (!items || !Array.isArray(items)) return;
+      
+      for (const item of items) {
+        // Skip if it's the current popup module
+        if (item.id === currentPopupId) continue;
+        
+        // Skip popup modules (can't trigger a popup from another popup)
+        if (item.type === 'popup') continue;
+        
+        // Skip pagebreak modules
+        if (item.type === 'pagebreak') continue;
+        
+        // Handle rows - recurse into columns
+        if (item.columns && Array.isArray(item.columns)) {
+          for (const column of item.columns) {
+            if (column.modules) {
+              collectModules(column.modules, depth + 1);
+            }
+          }
+          continue;
+        }
+        
+        // Check if this is a module with a type (not a row/column container)
+        if (item.type) {
+          // Add this module as an option
+          const moduleType = item.type.charAt(0).toUpperCase() + item.type.slice(1);
+          
+          // Get the best available name for this module based on its type
+          // Check name property first - ensure it's a non-empty string
+          let moduleName: string | null = null;
+          
+          // Primary: Check the custom module_name field (set in Module Settings)
+          if (item.module_name && typeof item.module_name === 'string' && item.module_name.trim()) {
+            moduleName = item.module_name.trim();
+          }
+          // Secondary: Check the legacy name field (BaseModule.name)
+          else if (item.name && typeof item.name === 'string' && item.name.trim()) {
+            moduleName = item.name.trim();
+          }
+          
+          // Tertiary: Type-specific fallbacks (entity names, labels, etc.)
+          if (!moduleName) {
+            switch (item.type) {
+              case 'info':
+                // Info modules might have entity-based names
+                if (item.info_entities?.[0]?.label && item.info_entities[0].label.trim()) {
+                  moduleName = item.info_entities[0].label.trim();
+                } else if (item.info_entities?.[0]?.entity) {
+                  // Get friendly name from entity ID
+                  moduleName = item.info_entities[0].entity.split('.').pop() || null;
+                }
+                break;
+              case 'icon':
+                if (item.icons?.[0]?.label && item.icons[0].label.trim()) {
+                  moduleName = item.icons[0].label.trim();
+                } else if (item.icons?.[0]?.entity) {
+                  moduleName = item.icons[0].entity.split('.').pop() || null;
+                }
+                break;
+              case 'bar':
+              case 'button':
+              case 'text':
+              case 'camera':
+              case 'climate':
+              case 'light':
+              case 'slider':
+                moduleName = (item.label && item.label.trim()) || 
+                             (item.title && item.title.trim()) || 
+                             (item.entity ? item.entity.split('.').pop() : null);
+                break;
+              case 'image':
+                moduleName = (item.title && item.title.trim()) || null;
+                break;
+              case 'graphs':
+                moduleName = (item.title && item.title.trim()) || null;
+                break;
+              case 'horizontal':
+              case 'vertical':
+              case 'accordion':
+                moduleName = (item.title && item.title.trim()) || null;
+                break;
+              default:
+                moduleName = (item.title && item.title.trim()) || 
+                             (item.title_text && item.title_text.trim()) || 
+                             (item.trigger_button_text && item.trigger_button_text.trim()) || null;
+            }
+          }
+          
+          // Final fallback: Show truncated ID
+          if (!moduleName) {
+            // Extract just the timestamp part for a shorter display
+            const idMatch = item.id.match(/\d{13}/);
+            if (idMatch) {
+              moduleName = `ID: ...${idMatch[0].slice(-6)}`;
+            } else {
+              moduleName = `ID: ${item.id.slice(-12)}`;
+            }
+          }
+          
+          const label = `${moduleType}: ${moduleName}`;
+          
+          modules.push({
+            value: item.id,
+            label: label,
+          });
+        }
+        
+        // Recurse into nested modules for containers like horizontal, vertical, accordion, slider
+        if (item.modules && Array.isArray(item.modules)) {
+          collectModules(item.modules, depth + 1);
+        }
+      }
+    };
+
+    // Start from the card's layout.rows array
+    collectModules(config.layout.rows);
+
+    return modules;
+  }
+
+  /**
+   * Render the module trigger configuration UI
+   */
+  private _renderModuleTriggerConfig(
+    popupModule: PopupModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void,
+    lang: string
+  ): TemplateResult {
+    const availableModules = this._getAvailableModulesForTrigger(popupModule.id, config);
+    const selectedModuleId = popupModule.trigger_module_id || '';
+
+    // Find the selected module's label for display
+    const selectedModule = availableModules.find(m => m.value === selectedModuleId);
+
+    return html`
+      <div
+        class="settings-section"
+        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+      >
+        <div
+          class="section-title"
+          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+        >
+          ${localize('editor.popup.trigger.module_trigger_title', lang, 'Module Trigger')}
+        </div>
+        <div
+          style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+        >
+          ${localize(
+            'editor.popup.trigger.module_trigger_desc',
+            lang,
+            'Select a module in this card that will open the popup when tapped. The selected module will have its tap action overridden to open this popup instead.'
+          )}
+        </div>
+
+        ${availableModules.length > 0
+          ? html`
+              ${this.renderFieldSection(
+                localize('editor.popup.trigger.select_module', lang, 'Select Module'),
+                localize(
+                  'editor.popup.trigger.select_module_desc',
+                  lang,
+                  'Choose which module should trigger this popup when clicked.'
+                ),
+                hass,
+                { trigger_module_id: selectedModuleId },
+                [
+                  this.selectField('trigger_module_id', [
+                    { value: '', label: localize('editor.popup.trigger.no_module', lang, '-- Select a Module --') },
+                    ...availableModules,
+                  ]),
+                ],
+                (e: CustomEvent) => {
+                  const next = e.detail.value.trigger_module_id;
+                  const prev = selectedModuleId;
+                  if (next === prev) return;
+                  updateModule({ trigger_module_id: next } as any);
+                  setTimeout(() => {
+                    this.triggerPreviewUpdate();
+                  }, 50);
+                }
+              )}
+
+              ${selectedModule
+                ? html`
+                    <div
+                      style="margin-top: 12px; padding: 12px; background: rgba(var(--rgb-success-color, 76, 175, 80), 0.1); border-left: 3px solid var(--success-color, #4caf50); border-radius: 4px; font-size: 13px; line-height: 1.5;"
+                    >
+                      <div style="font-weight: 600; margin-bottom: 4px; color: var(--success-color, #4caf50);">
+                        <ha-icon icon="mdi:check-circle" style="--mdc-icon-size: 16px; vertical-align: middle;"></ha-icon>
+                        ${localize('editor.popup.trigger.module_linked', lang, 'Module Linked')}
+                      </div>
+                      <div style="color: var(--primary-text-color);">
+                        ${localize(
+                          'editor.popup.trigger.module_linked_desc',
+                          lang,
+                          'Tapping on "${module}" will now open this popup.'
+                        ).replace('${module}', selectedModule.label)}
+                      </div>
+                    </div>
+                  `
+                : ''}
+            `
+          : html`
+              <div
+                style="padding: 16px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-left: 3px solid var(--warning-color, #ff9800); border-radius: 4px; font-size: 13px; line-height: 1.5;"
+              >
+                <div style="font-weight: 600; margin-bottom: 4px; color: var(--warning-color, #ff9800);">
+                  <ha-icon icon="mdi:alert" style="--mdc-icon-size: 16px; vertical-align: middle;"></ha-icon>
+                  ${localize('editor.popup.trigger.no_modules_available', lang, 'No Modules Available')}
+                </div>
+                <div style="color: var(--primary-text-color);">
+                  ${localize(
+                    'editor.popup.trigger.no_modules_available_desc',
+                    lang,
+                    'Add other modules to this card first, then you can select one to trigger this popup.'
+                  )}
+                </div>
+              </div>
+            `}
+      </div>
+    `;
+  }
+
   private _renderTriggerLogic(
     popupModule: PopupModule,
     hass: HomeAssistant,
@@ -1682,89 +1990,6 @@ export class UltraPopupModule extends BaseUltraModule {
     `;
   }
 
-  private popupStates = new Map<string, boolean>();
-  private popupTimers = new Map<string, number>();
-  private lastLogicStates = new Map<string, boolean>(); // Track previous logic evaluation results
-
-  /**
-   * Render only the trigger element (used when popups are disabled on edit page)
-   */
-  private _renderTriggerOnly(popupModule: PopupModule, triggerType: string, lang: string): TemplateResult {
-    if (triggerType === 'page_load' || triggerType === 'logic') {
-      return html``;
-    }
-
-    // Get alignment
-    const alignment = popupModule.trigger_alignment || 'center';
-    const justifyContent =
-      alignment === 'left' ? 'flex-start' : alignment === 'right' ? 'flex-end' : 'center';
-
-    let triggerElement = html``;
-
-    if (triggerType === 'button') {
-      const buttonText = popupModule.trigger_button_text || 'Open Popup';
-      const buttonIcon = popupModule.trigger_button_icon || '';
-      const isFullWidth = popupModule.trigger_button_full_width || false;
-
-      triggerElement = html`
-        <button
-          disabled
-          style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon ? '8px' : '0'}; padding: 12px 24px; background: var(--disabled-color, #888); color: white; border: none; border-radius: 8px; cursor: not-allowed; font-size: 16px; font-weight: 500; opacity: 0.6; ${isFullWidth
-            ? 'width: 100%;'
-            : ''}"
-        >
-          ${buttonIcon ? html`<ha-icon icon="${buttonIcon}" style="--mdc-icon-size: 24px;"></ha-icon>` : ''}
-          ${buttonText}
-        </button>
-      `;
-    } else if (triggerType === 'image') {
-      const imageType = popupModule.trigger_image_type || 'url';
-      const isFullWidth = popupModule.trigger_image_full_width || false;
-      
-      // Get image URL based on type (simplified for edit mode - just show placeholder)
-      let imageUrl = '';
-      if (imageType === 'upload' || imageType === 'url') {
-        imageUrl = popupModule.trigger_image_url || '';
-      } else if (imageType === 'entity' && popupModule.trigger_image_entity) {
-        // In edit mode, we can't easily get entity image, so just show placeholder
-        imageUrl = '';
-      }
-
-      if (!imageUrl) {
-        triggerElement = html`
-          <div style="padding: 24px; text-align: center; color: var(--secondary-text-color); border: 1px dashed var(--divider-color); border-radius: 8px; opacity: 0.6;">
-            ${localize('editor.popup.trigger.no_image', lang, 'No image configured')}
-          </div>
-        `;
-      } else {
-        triggerElement = html`
-          <img
-            src="${imageUrl}"
-            style="${isFullWidth
-              ? 'width: 100%;'
-              : 'max-width: 200px;'} opacity: 0.6; border-radius: 8px; display: block;"
-          />
-        `;
-      }
-    } else if (triggerType === 'icon') {
-      const triggerIcon = popupModule.trigger_icon || 'mdi:information';
-      triggerElement = html`
-        <ha-icon
-          icon="${triggerIcon}"
-          style="--mdc-icon-size: 48px; color: var(--disabled-color, #888); opacity: 0.6;"
-        ></ha-icon>
-      `;
-    }
-
-    // Wrap trigger in alignment container
-    // Use inline-flex to minimize space taken, only expand if needed
-    return html`
-      <div style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment === 'left' || alignment === 'right' ? 'auto' : '100%'};">
-        ${triggerElement}
-      </div>
-    `;
-  }
-
   renderPreview(
     module: CardModule,
     hass: HomeAssistant,
@@ -1774,28 +1999,31 @@ export class UltraPopupModule extends BaseUltraModule {
     const popupModule = module as PopupModule;
     const lang = hass?.locale?.language || 'en';
 
-    // Check if we're in edit mode (URL contains edit=1)
-    // Allow popups in all preview contexts (live, ha-preview, dashboard)
-    // Only block popups when actually editing (edit=1 AND not in a preview context)
-    const isEditMode = (() => {
-      // If we're in any preview context, always allow popups regardless of URL
-      if (previewContext === 'live' || previewContext === 'ha-preview' || previewContext === 'dashboard') {
-        return false;
-      }
-      // Only block if edit=1 in URL AND we're not in a preview context
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('edit') === '1';
-      } catch {
-        return false;
-      }
-    })();
+    // CRITICAL FIX: Ensure trigger_mode is 'manual' for non-logic triggers
+    // This prevents logic evaluation from interfering with button/icon/image/page_load triggers
+    const triggerType = popupModule.trigger_type || 'button';
+    if (triggerType !== 'logic' && popupModule.trigger_mode !== 'manual') {
+      popupModule.trigger_mode = 'manual';
+    }
 
-    // Store edit mode flag for later use in rendering
-    // We'll handle edit mode display at the end, after rendering trigger and popup content
+    // Handle module trigger registration
+    // When trigger_type is 'module', register this popup to be opened by the selected module
+    if (triggerType === 'module' && popupModule.trigger_module_id) {
+      registerPopupTrigger(popupModule.id, popupModule.trigger_module_id);
+    } else {
+      // Unregister if not using module trigger anymore
+      unregisterPopupTrigger(popupModule.id);
+    }
+
+    // Keep timer config in sync with latest module config.
+    // Critical: if the user disables the timer, any previously scheduled timer must NOT close the popup.
+    const timerEnabled = popupModule.auto_close_timer_enabled === true;
+    popupTimerEnabled.set(popupModule.id, timerEnabled);
+    if (!timerEnabled) {
+      this._clearAutoCloseTimer(popupModule.id);
+    }
 
     // Evaluate trigger logic for logic-based triggers
-    const triggerType = popupModule.trigger_type || 'button';
     let logicDeterminedState: boolean | null = null;
 
     if (triggerType === 'logic') {
@@ -1840,22 +2068,22 @@ export class UltraPopupModule extends BaseUltraModule {
     } else if (triggerType === 'page_load') {
       // Page load trigger: only open on initial load (when state doesn't exist yet)
       // Once closed by user, don't reopen until page reloads (which resets popupStates Map)
-      if (!this.popupStates.has(popupModule.id)) {
+      if (!popupStates.has(popupModule.id)) {
         logicDeterminedState = true;
       }
       // If state already exists, don't set logicDeterminedState - let user's manual close persist
     }
 
     // Initialize popup state if not exists
-    if (!this.popupStates.has(popupModule.id)) {
+    if (!popupStates.has(popupModule.id)) {
       // Use logic-determined state if available, otherwise use default_open
       const initialState =
         logicDeterminedState !== null ? logicDeterminedState : popupModule.default_open || false;
-      this.popupStates.set(popupModule.id, initialState);
+      popupStates.set(popupModule.id, initialState);
       
       // Track initial logic state
       if (logicDeterminedState !== null) {
-        this.lastLogicStates.set(popupModule.id, logicDeterminedState);
+        lastLogicStates.set(popupModule.id, logicDeterminedState);
       }
       
       // Start auto-close timer if popup opens initially and timer is enabled
@@ -1865,16 +2093,18 @@ export class UltraPopupModule extends BaseUltraModule {
     } else if (logicDeterminedState !== null && triggerType === 'logic' && popupModule.auto_close !== false) {
       // Only update state for logic triggers with auto_close enabled
       // Key fix: Only react to logic STATE CHANGES, not constant true/false values
-      const lastLogicState = this.lastLogicStates.get(popupModule.id);
+      const lastLogicState = lastLogicStates.get(popupModule.id);
       const logicStateChanged = lastLogicState !== logicDeterminedState;
       
       // Update tracked logic state
-      this.lastLogicStates.set(popupModule.id, logicDeterminedState);
+      lastLogicStates.set(popupModule.id, logicDeterminedState);
       
       // Only update popup state if logic condition actually changed
-      if (logicStateChanged) {
-        const wasOpen = this.popupStates.get(popupModule.id) || false;
-        this.popupStates.set(popupModule.id, logicDeterminedState);
+      // IMPORTANT: Don't overwrite manually opened popups - they should stay open until user closes them
+      const isManuallyOpened = manuallyOpenedPopups.has(popupModule.id);
+      if (logicStateChanged && !isManuallyOpened) {
+        const wasOpen = popupStates.get(popupModule.id) || false;
+        popupStates.set(popupModule.id, logicDeterminedState);
         
         // Handle timer based on state change
         if (!wasOpen && logicDeterminedState && popupModule.auto_close_timer_enabled) {
@@ -1887,7 +2117,44 @@ export class UltraPopupModule extends BaseUltraModule {
       }
     }
 
-    const isOpen = this.popupStates.get(popupModule.id) || false;
+    // Read popup state, but if manually opened, ensure it stays true
+    let isOpen = popupStates.get(popupModule.id) || false;
+    const isManuallyOpened = manuallyOpenedPopups.has(popupModule.id);
+    
+    // If manually opened, force state to true (protects against re-render resets)
+    if (isManuallyOpened && !isOpen) {
+      popupStates.set(popupModule.id, true);
+      isOpen = true;
+    }
+
+    // Forward declaration - will be assigned later
+    // This allows handleTriggerClick to call renderPopupToPortal
+    let renderPopupToPortal: () => void;
+
+    // Register external popup open listener (for module triggers)
+    // This is idempotent - only one listener per popup ID
+    const listenerKey = `__ultraPopupOpenListener_${popupModule.id}`;
+    const w = window as any;
+    if (!w[listenerKey]) {
+      const handleExternalOpen = (e: Event) => {
+        const customEvent = e as CustomEvent;
+        if (customEvent.detail?.popupId === popupModule.id) {
+          popupStates.set(popupModule.id, true);
+          manuallyOpenedPopups.add(popupModule.id);
+          if (popupModule.auto_close_timer_enabled) {
+            this._startAutoCloseTimer(popupModule);
+          }
+          // renderPopupToPortal might not be assigned yet, so use setTimeout to defer
+          setTimeout(() => {
+            if (renderPopupToPortal) {
+              renderPopupToPortal();
+            }
+          }, 0);
+        }
+      };
+      window.addEventListener('ultra-popup-open', handleExternalOpen);
+      w[listenerKey] = handleExternalOpen;
+    }
 
     // Handle trigger click
     const handleTriggerClick = (e: Event) => {
@@ -1896,14 +2163,18 @@ export class UltraPopupModule extends BaseUltraModule {
         // For logic-controlled triggers, don't allow manual toggle unless mode is manual
         return;
       }
-      this.popupStates.set(popupModule.id, true);
+      popupStates.set(popupModule.id, true);
+      // Mark as manually opened - popup will stay open until explicitly closed
+      manuallyOpenedPopups.add(popupModule.id);
       
       // Start auto-close timer if enabled
       if (popupModule.auto_close_timer_enabled) {
         this._startAutoCloseTimer(popupModule);
       }
       
-      this.triggerPreviewUpdate(true);
+      // Directly render the popup - don't rely on triggerPreviewUpdate
+      // This ensures the popup opens immediately in all contexts
+      renderPopupToPortal();
     };
 
     // Handle close
@@ -1912,15 +2183,25 @@ export class UltraPopupModule extends BaseUltraModule {
       e.preventDefault();
       
       // Close the popup
-      this.popupStates.set(popupModule.id, false);
+      popupStates.set(popupModule.id, false);
+      // Remove from manually opened set so re-renders don't keep it open
+      manuallyOpenedPopups.delete(popupModule.id);
       
       // Clear auto-close timer
       this._clearAutoCloseTimer(popupModule.id);
+      
+      // Restore HA editor overlays (works in all contexts, does nothing if none were hidden)
+      restoreHAEditorOverlays();
       
       // Directly remove the portal element to ensure immediate close
       // This is necessary because Live Preview contexts may not re-render properly
       const portal = popupPortals.get(popupModule.id);
       if (portal) {
+        // Disconnect mutation observer
+        const observer = (portal as any)._ultraInertObserver;
+        if (observer) {
+          observer.disconnect();
+        }
         portal.remove();
         popupPortals.delete(popupModule.id);
       }
@@ -1988,7 +2269,7 @@ export class UltraPopupModule extends BaseUltraModule {
               e.stopPropagation();
               handleTriggerClick(e);
             }}
-            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon ? '8px' : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; position: relative; z-index: 10; ${isFullWidth
+            style="display: flex; align-items: center; justify-content: center; gap: ${buttonIcon ? '8px' : '0'}; padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s ease; touch-action: manipulation; pointer-events: auto; ${isFullWidth
               ? 'width: 100%;'
               : ''}"
           >
@@ -2045,7 +2326,7 @@ export class UltraPopupModule extends BaseUltraModule {
               }}
               style="${isFullWidth
                 ? 'width: 100%;'
-                : 'max-width: 200px;'} cursor: pointer; border-radius: 8px; transition: transform 0.2s ease; display: block; touch-action: manipulation; pointer-events: auto; position: relative; z-index: 10;"
+                : 'max-width: 200px;'} cursor: pointer; border-radius: 8px; transition: transform 0.2s ease; display: block; touch-action: manipulation; pointer-events: auto;"
               @mouseover=${(e: Event) => {
                 const target = e.target as HTMLElement;
                 target.style.transform = 'scale(1.05)';
@@ -2069,7 +2350,7 @@ export class UltraPopupModule extends BaseUltraModule {
               e.stopPropagation();
               handleTriggerClick(e);
             }}
-            style="--mdc-icon-size: 48px; cursor: pointer; color: var(--primary-color); transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto; position: relative; z-index: 10;"
+            style="--mdc-icon-size: 48px; cursor: pointer; color: var(--primary-color); transition: transform 0.2s ease; touch-action: manipulation; pointer-events: auto;"
             @mouseover=${(e: Event) => {
               const target = e.target as HTMLElement;
               target.style.transform = 'scale(1.1)';
@@ -2085,8 +2366,9 @@ export class UltraPopupModule extends BaseUltraModule {
       // Wrap trigger in alignment container
       // Use inline-flex to minimize space taken, only expand if needed
       // CRITICAL: Add swiper-no-swiping class to container to prevent swipe interference
+      // pointer-events: auto ensures clicks work in preview contexts where parent may have pointer-events: none
       return html`
-        <div class="swiper-no-swiping" style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment === 'left' || alignment === 'right' ? 'auto' : '100%'}; position: relative; z-index: 10;">
+        <div class="swiper-no-swiping" style="display: inline-flex; justify-content: ${justifyContent}; width: ${alignment === 'left' || alignment === 'right' ? 'auto' : '100%'}; pointer-events: auto;">
           ${triggerElement}
         </div>
       `;
@@ -2132,6 +2414,10 @@ export class UltraPopupModule extends BaseUltraModule {
       popupPositionStyle = `width: ${popupModule.popup_width || '600px'}; max-width: 90vw;`;
     }
 
+    // Calculate close button z-index (needs to be available in renderCloseButton and requestAnimationFrame)
+    const isPreviewContextForClose = previewContext === 'ha-preview' || previewContext === 'live';
+    const closeButtonZIndex = isPreviewContextForClose ? '2147483647' : '2147483647';
+
     // Render close button
     const renderCloseButton = () => {
       if (popupModule.close_button_position === 'none') return '';
@@ -2142,20 +2428,9 @@ export class UltraPopupModule extends BaseUltraModule {
       const offsetX = popupModule.close_button_offset_x || '0px';
       const offsetY = popupModule.close_button_offset_y || '0px';
 
-      const baseStyle = `
-        cursor: pointer;
-        transition: transform 0.2s ease, opacity 0.2s ease;
-        color: ${closeColor};
-        --mdc-icon-size: ${closeSize}px;
-        user-select: none;
-        pointer-events: auto !important;
-        touch-action: manipulation;
-      `;
-
-      // Always render inside the popup
+      // Always render inside the popup - wrap in button element for reliable click handling in portal
       return html`
-        <ha-icon
-          icon="${closeIcon}"
+        <button
           @click=${handleClose}
           @touchend=${(e: Event) => {
             e.preventDefault();
@@ -2163,8 +2438,45 @@ export class UltraPopupModule extends BaseUltraModule {
             handleClose(e);
           }}
           class="ultra-popup-close-button swiper-no-swiping"
-          style="${baseStyle} position: absolute; top: calc(10px + ${offsetY}); right: calc(10px + ${offsetX}); z-index: 2147483647;"
-        ></ha-icon>
+          style="
+            position: absolute;
+            top: calc(10px + ${offsetY});
+            right: calc(10px + ${offsetX});
+            z-index: ${closeButtonZIndex};
+            background: none;
+            border: none;
+            padding: 8px;
+            margin: 0;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s ease, transform 0.2s ease;
+            isolation: isolate;
+          "
+          @mouseover=${(e: Event) => {
+            const target = e.currentTarget as HTMLElement;
+            target.style.background = 'rgba(255,255,255,0.1)';
+            target.style.transform = 'scale(1.1)';
+          }}
+          @mouseout=${(e: Event) => {
+            const target = e.currentTarget as HTMLElement;
+            target.style.background = 'none';
+            target.style.transform = 'scale(1)';
+          }}
+        >
+          <ha-icon
+            icon="${closeIcon}"
+            style="
+              color: ${closeColor};
+              --mdc-icon-size: ${closeSize}px;
+              pointer-events: none;
+            "
+          ></ha-icon>
+        </button>
       `;
     };
 
@@ -2175,17 +2487,46 @@ export class UltraPopupModule extends BaseUltraModule {
     // PORTAL APPROACH: Render popup to document.body to escape Swiper's transform containment
     // When a parent element has CSS transform, position:fixed elements become relative to that element
     // By rendering to document.body, the popup overlay properly covers the entire viewport
-    const renderPopupToPortal = () => {
+    renderPopupToPortal = () => {
       const portalId = `ultra-popup-portal-${popupModule.id}`;
       let portal = popupPortals.get(popupModule.id);
       
-      if (!isOpen) {
-        // If closing, remove the portal
+      // CRITICAL: Check if manually opened FIRST - this takes precedence over everything
+      // Manually opened popups should NEVER close from re-renders, logic triggers, or any other automatic mechanism
+      // They can ONLY be closed by: 1) User clicking close, 2) Auto-close timer (if enabled)
+      const isManuallyOpenedCheck = manuallyOpenedPopups.has(popupModule.id);
+      
+      // Read current state directly from the Map (not the closure variable)
+      let currentlyOpen = popupStates.get(popupModule.id) || false;
+      
+      // If manually opened, FORCE state to true - this is non-negotiable
+      if (isManuallyOpenedCheck) {
+        // Always set state to true if manually opened, regardless of what it currently is
+        // This protects against any re-render or logic trigger that might have reset it
+        popupStates.set(popupModule.id, true);
+        currentlyOpen = true;
+      }
+      
+      // Only close if NOT manually opened AND state is false
+      if (!currentlyOpen && !isManuallyOpenedCheck) {
+        // If closing, remove the portal and restore HA overlays
         if (portal) {
+          // Disconnect mutation observer
+          const observer = (portal as any)._ultraInertObserver;
+          if (observer) {
+            observer.disconnect();
+          }
+          restoreHAEditorOverlays();
           portal.remove();
           popupPortals.delete(popupModule.id);
         }
         return;
+      }
+      
+      // At this point, we know the popup should be open (either manually opened or state is true)
+      // Ensure state is definitely true
+      if (!currentlyOpen) {
+        popupStates.set(popupModule.id, true);
       }
       
       // Create portal container if it doesn't exist
@@ -2193,16 +2534,72 @@ export class UltraPopupModule extends BaseUltraModule {
         portal = document.createElement('div');
         portal.id = portalId;
         portal.className = 'ultra-popup-portal';
-        // Ensure portal can receive pointer events and is above everything
-        portal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; z-index: 2147483647;';
+        // Set styles individually instead of cssText (prevents commenting out)
+        portal.style.position = 'fixed';
+        portal.style.top = '0';
+        portal.style.left = '0';
+        portal.style.width = '100%';
+        portal.style.height = '100%';
+        portal.style.pointerEvents = 'auto';
+        portal.style.zIndex = '2147483647';
+        // Remove inert attribute if present
+        portal.removeAttribute('inert');
         document.body.appendChild(portal);
         popupPortals.set(popupModule.id, portal);
       }
+      
+      // Always ensure portal is not inert on every render
+      // Browser extensions or HA might add inert attribute
+      portal.removeAttribute('inert');
+      
+      // Re-apply critical styles every render (in case they get overwritten)
+      portal.style.position = 'fixed';
+      portal.style.top = '0';
+      portal.style.left = '0';
+      portal.style.width = '100%';
+      portal.style.height = '100%';
+      portal.style.pointerEvents = 'auto';
+      portal.style.zIndex = '2147483647';
+      
+      // Add mutation observer to watch for inert being added by browser extensions
+      // This is critical - some extensions add inert to all fixed elements
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'inert') {
+            if (portal.hasAttribute('inert')) {
+              portal.removeAttribute('inert');
+            }
+          }
+        });
+      });
+      observer.observe(portal, { attributes: true, attributeFilter: ['inert'] });
+      
+      // Store observer for cleanup
+      (portal as any)._ultraInertObserver = observer;
 
       // Use extremely high z-index in preview contexts to appear above builder interface and HA edit outlines
       const isPreviewContext = previewContext === 'ha-preview' || previewContext === 'live';
-      // Use maximum safe z-index value (2147483647 is max 32-bit integer) with !important for preview contexts
-      const overlayZIndex = isPreviewContext ? 2147483647 : Z_INDEX.DIALOG_OVERLAY;
+      // Use maximum safe z-index value (2147483647 is max 32-bit integer)
+      const overlayZIndex = isPreviewContext ? '2147483647 !important' : Z_INDEX.DIALOG_OVERLAY;
+
+      // CRITICAL FIX for HA Preview: Hide HA's editor overlays when popup is open
+      // HA adds .edit-mode overlays and card edit outlines that cover our popup
+      // We need to temporarily hide them while our popup is visible
+      if (isPreviewContext) {
+        // Find and hide HA's editor overlay elements
+        document.querySelectorAll('.edit-mode, ha-card[edit-mode], [data-edit-mode]').forEach((el: Element) => {
+          const htmlEl = el as HTMLElement;
+          if (!htmlEl.dataset.ultraPopupOriginalZIndex) {
+            htmlEl.dataset.ultraPopupOriginalZIndex = htmlEl.style.zIndex || '';
+          }
+          htmlEl.style.zIndex = '-1';
+          htmlEl.style.pointerEvents = 'none';
+        });
+      }
+
+      // Clear portal content before re-rendering to ensure fresh event bindings
+      // This is critical for portal-based rendering where lit-html may not properly re-hydrate events
+      portal.innerHTML = '';
 
       const popupContent = html`
         <style>
@@ -2276,8 +2673,9 @@ export class UltraPopupModule extends BaseUltraModule {
               animation-duration: 0.4s;
               animation-fill-mode: both;
               animation-timing-function: ease;
-              pointer-events: auto;
-              z-index: 1;
+              pointer-events: auto !important;
+              z-index: 2147483646;
+              isolation: isolate;
             "
           >
             ${renderCloseButton()}
@@ -2289,7 +2687,7 @@ export class UltraPopupModule extends BaseUltraModule {
                     style="
                       background: ${popupModule.title_background_color || 'var(--primary-color)'};
                       color: ${popupModule.title_text_color || '#ffffff'};
-                      padding: 16px ${popupModule.popup_padding || '5%'};
+                      padding: 16px 20px;
                       font-size: 20px;
                       font-weight: 600;
                       border-bottom: 1px solid var(--divider-color);
@@ -2368,50 +2766,77 @@ export class UltraPopupModule extends BaseUltraModule {
 
       // Render the popup content into the portal
       render(popupContent, portal);
+
+      // Add native event listeners as fallback for portal rendering
+      // This ensures clicks work even if lit-html event binding has issues with portals
+      // Always re-attach since portal.innerHTML='' clears everything
+      requestAnimationFrame(() => {
+        const overlay = portal.querySelector('.ultra-popup-overlay') as HTMLElement;
+        const closeBtn = portal.querySelector('.ultra-popup-close-button') as HTMLElement;
+        const container = portal.querySelector('.ultra-popup-container') as HTMLElement;
+
+        // Remove inert from all popup elements (browser extensions may add it)
+        // Also re-apply critical styles that might have been commented out
+        if (overlay) {
+          overlay.removeAttribute('inert');
+          overlay.style.pointerEvents = 'auto';
+          overlay.style.zIndex = overlayZIndex.toString();
+        }
+        if (closeBtn) {
+          closeBtn.removeAttribute('inert');
+          closeBtn.style.pointerEvents = 'auto';
+          closeBtn.style.cursor = 'pointer';
+          closeBtn.style.zIndex = closeButtonZIndex.toString();
+        }
+        if (container) {
+          container.removeAttribute('inert');
+          container.style.pointerEvents = 'auto';
+        }
+
+        if (overlay) {
+          overlay.addEventListener('click', (e: Event) => {
+            // Only close if clicking directly on overlay, not on popup content
+            if (e.target === overlay) {
+              handleClose(e);
+            }
+          });
+        }
+
+        if (closeBtn) {
+          closeBtn.addEventListener('click', (e: Event) => {
+            e.stopPropagation();
+            handleClose(e);
+          });
+        }
+
+        if (container) {
+          container.addEventListener('click', (e: Event) => {
+            e.stopPropagation();
+          });
+        }
+      });
     };
 
-    // Call the portal render function (it handles both open and close states)
-    renderPopupToPortal();
-
-    // Don't wrap in a container div - just return the trigger and popup overlay
-    // The popup overlay is fixed positioned so it won't take up space
-    // The trigger should be inline/inline-block to not take up unnecessary space
+    // CRITICAL FIX: Only render portal when actually needed
+    // Check if popup SHOULD be open before rendering
+    const currentState = popupStates.get(popupModule.id) || false;
+    const portalExists = popupPortals.has(popupModule.id);
+    const isManuallyOpen = manuallyOpenedPopups.has(popupModule.id);
     
-    // If in edit mode, show preview only notice for ALL trigger types
-    if (isEditMode) {
-      return html`
-        <div
-          style="
-            padding: 24px;
-            background: var(--card-background-color);
-            border: 2px dashed var(--warning-color);
-            border-radius: 8px;
-            text-align: center;
-            color: var(--primary-text-color);
-            margin: 16px 0;
-          "
-        >
-          <ha-icon
-            icon="mdi:information"
-            style="--mdc-icon-size: 32px; color: var(--warning-color); margin-bottom: 12px; display: block;"
-          ></ha-icon>
-          <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--warning-color);">
-            ${localize('editor.popup.edit_page_notice.title', lang, 'Preview Only')}
-          </div>
-          <div style="font-size: 14px; color: var(--secondary-text-color); line-height: 1.5;">
-            ${localize(
-              'editor.popup.edit_page_notice.message',
-              lang,
-              'This popup module preview can be seen once inside the edit area.'
-            )}
-          </div>
-        </div>
-      `;
+    // Only render portal if:
+    // 1. Popup should be open (state=true OR manually opened)
+    // 2. AND (portal doesn't exist yet OR it's a logic/page_load trigger that needs continuous evaluation)
+    const shouldBeOpen = currentState || isManuallyOpen;
+    const needsRender = !portalExists || triggerType === 'logic' || triggerType === 'page_load';
+    const shouldRenderPortal = shouldBeOpen && needsRender;
+    
+    if (shouldRenderPortal) {
+      renderPopupToPortal();
     }
     
-    // If there's no visible trigger (logic or page_load), wrap in a zero-height container
+    // If there's no visible trigger (logic, page_load, or module), wrap in a zero-height container
     // so it doesn't take up any space on the dashboard
-    const hasVisibleTrigger = triggerType !== 'page_load' && triggerType !== 'logic';
+    const hasVisibleTrigger = triggerType !== 'page_load' && triggerType !== 'logic' && triggerType !== 'module';
     
     if (!hasVisibleTrigger) {
       // No visible trigger - render as completely invisible (takes no space)
@@ -2526,19 +2951,43 @@ export class UltraPopupModule extends BaseUltraModule {
     
     // Set new timer
     const timerId = window.setTimeout(() => {
-      this.popupStates.set(popupModule.id, false);
-      this.popupTimers.delete(popupModule.id);
+      // If the timer has been disabled since this timeout was scheduled, do nothing.
+      // This prevents "auto close" even when auto_close_timer_enabled is false.
+      if (popupTimerEnabled.get(popupModule.id) !== true) {
+        popupTimers.delete(popupModule.id);
+        return;
+      }
+      popupStates.set(popupModule.id, false);
+      // Remove from manually opened set so the popup can close
+      manuallyOpenedPopups.delete(popupModule.id);
+      popupTimers.delete(popupModule.id);
+      
+      // Restore HA editor overlays
+      restoreHAEditorOverlays();
+      
+      // Directly remove the portal for immediate close
+      const portal = popupPortals.get(popupModule.id);
+      if (portal) {
+        // Disconnect mutation observer
+        const observer = (portal as any)._ultraInertObserver;
+        if (observer) {
+          observer.disconnect();
+        }
+        portal.remove();
+        popupPortals.delete(popupModule.id);
+      }
+      
       this.triggerPreviewUpdate(true);
     }, milliseconds);
     
-    this.popupTimers.set(popupModule.id, timerId);
+    popupTimers.set(popupModule.id, timerId);
   }
 
   private _clearAutoCloseTimer(popupId: string): void {
-    const timerId = this.popupTimers.get(popupId);
+    const timerId = popupTimers.get(popupId);
     if (timerId !== undefined) {
       window.clearTimeout(timerId);
-      this.popupTimers.delete(popupId);
+      popupTimers.delete(popupId);
     }
   }
 }

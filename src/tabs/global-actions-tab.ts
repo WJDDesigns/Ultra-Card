@@ -47,7 +47,11 @@ export class GlobalActionsTab extends LitElement {
     // Check for graphs module entities array
     if (module.type === 'graphs') {
       const graphsModule = module as any;
-      if (graphsModule.entities && Array.isArray(graphsModule.entities) && graphsModule.entities.length > 0) {
+      if (
+        graphsModule.entities &&
+        Array.isArray(graphsModule.entities) &&
+        graphsModule.entities.length > 0
+      ) {
         return true;
       }
     }
@@ -113,42 +117,42 @@ export class GlobalActionsTab extends LitElement {
   }
 
   private _processAction(action: any): any {
-      if (!action) return action;
+    if (!action) return action;
 
-      // Get the appropriate entity for this module
-      let moduleEntity: string | undefined = (this.module as any).entity;
+    // Get the appropriate entity for this module
+    let moduleEntity: string | undefined = (this.module as any).entity;
 
-      // Special handling for icon modules - use first icon's entity
-      if (!moduleEntity && this.module.type === 'icon') {
-        const iconModule = this.module as any;
-        if (iconModule.icons && iconModule.icons.length > 0 && iconModule.icons[0].entity) {
-          moduleEntity = iconModule.icons[0].entity;
-        }
+    // Special handling for icon modules - use first icon's entity
+    if (!moduleEntity && this.module.type === 'icon') {
+      const iconModule = this.module as any;
+      if (iconModule.icons && iconModule.icons.length > 0 && iconModule.icons[0].entity) {
+        moduleEntity = iconModule.icons[0].entity;
       }
+    }
 
-      // Special handling for info modules - use first info entity's entity
-      if (!moduleEntity && this.module.type === 'info') {
-        const infoModule = this.module as any;
-        if (
-          infoModule.info_entities &&
-          infoModule.info_entities.length > 0 &&
-          infoModule.info_entities[0].entity
-        ) {
-          moduleEntity = infoModule.info_entities[0].entity;
-        }
+    // Special handling for info modules - use first info entity's entity
+    if (!moduleEntity && this.module.type === 'info') {
+      const infoModule = this.module as any;
+      if (
+        infoModule.info_entities &&
+        infoModule.info_entities.length > 0 &&
+        infoModule.info_entities[0].entity
+      ) {
+        moduleEntity = infoModule.info_entities[0].entity;
       }
+    }
 
-      // If it's more-info without an entity, add the module's entity
-      if (action.action === 'more-info' && !action.entity && moduleEntity) {
-        return { ...action, entity: moduleEntity };
-      }
+    // If it's more-info without an entity, add the module's entity
+    if (action.action === 'more-info' && !action.entity && moduleEntity) {
+      return { ...action, entity: moduleEntity };
+    }
 
-      // If it's toggle without an entity, add the module's entity
-      if (action.action === 'toggle' && !action.entity && !action.target && moduleEntity) {
-        return { ...action, entity: moduleEntity };
-      }
+    // If it's toggle without an entity, add the module's entity
+    if (action.action === 'toggle' && !action.entity && !action.target && moduleEntity) {
+      return { ...action, entity: moduleEntity };
+    }
 
-      return action;
+    return action;
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -156,7 +160,7 @@ export class GlobalActionsTab extends LitElement {
 
     // Direct passthrough like Mushroom - update internal state
     this._config = { ...ev.detail.value };
-    
+
     // Trigger update to show/hide entity selectors
     this.requestUpdate();
 
@@ -328,11 +332,18 @@ export class GlobalActionsTab extends LitElement {
               this._triggerPreviewUpdate();
             }}
           ></ha-form>
-          ${this._renderEntitySelectors('double_tap_action', doubleTapAction, moduleHasEntity, lang)}
+          ${this._renderEntitySelectors(
+            'double_tap_action',
+            doubleTapAction,
+            moduleHasEntity,
+            lang
+          )}
         </div>
 
         <!-- Action Confirmation Toggle -->
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+        <div
+          style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);"
+        >
           ${UcFormUtils.renderFieldSection(
             localize('editor.actions.confirm_action', lang, 'Confirm Action'),
             localize(

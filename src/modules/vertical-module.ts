@@ -746,12 +746,10 @@ export class UltraVerticalModule extends BaseUltraModule {
     if (layoutDesign.animation_timing)
       mergedModule.animation_timing = layoutDesign.animation_timing;
 
-    // Apply horizontal alignment inheritance - only for child LAYOUT modules
-    // Info, Image, Bar, and Text modules have their own alignment systems and should preserve them
-    if (layoutDesign.horizontal_alignment && 
-        (childModule.type === 'horizontal' || childModule.type === 'vertical')) {
-      mergedModule.alignment = layoutDesign.horizontal_alignment;
-    }
+    // NOTE: We intentionally do NOT inherit alignment from parent to child layout modules.
+    // The child module's alignment controls its own internal content distribution (e.g., top/center/bottom/space-between).
+    // The parent's horizontal_alignment controls cross-axis positioning, which is a different concept.
+    // Inheriting these would incorrectly override the child's own alignment settings and break features like negative gap.
 
     return mergedModule;
   }
