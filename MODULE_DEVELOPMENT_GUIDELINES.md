@@ -746,16 +746,52 @@ ${FormUtils.renderField(
 )}
 ```
 
-### 3. Boolean Toggle
+### 3. Boolean Toggle (Inline Layout)
+
+**All boolean toggles (switches) MUST use the inline layout pattern** where the title and toggle appear on the same line. This is automatically handled by `UcFormUtils.renderFieldSection()` when a boolean field is detected.
+
+**Correct Pattern:**
 
 ```typescript
-${FormUtils.renderCleanForm(
-  hass,
-  { boolean_field: module.boolean_field || false },
-  [FormUtils.createSchemaItem('boolean_field', { boolean: {} })],
-  (e: CustomEvent) => updateModule({ boolean_field: e.detail.value.boolean_field })
+${this.renderSettingsSection(
+  'Section Title',
+  'Section description',
+  [
+    {
+      title: 'Toggle Title',
+      description: 'Toggle description explaining what this controls',
+      hass,
+      data: { boolean_field: module.boolean_field || false },
+      schema: [this.booleanField('boolean_field')],
+      onChange: (e: CustomEvent) => updateModule({ boolean_field: e.detail.value.boolean_field }),
+    },
+  ]
 )}
 ```
+
+**Visual Layout:**
+
+- Title and description on the left (flexible width)
+- Toggle switch on the right (fixed position)
+- 16px gap between text and toggle
+- Minimum 48px height for proper touch targets
+- Description appears below title when both are present
+
+**Implementation Notes:**
+
+- `UcFormUtils.renderFieldSection()` automatically detects boolean fields and applies inline layout
+- The CSS classes `.boolean-field` are applied automatically
+- Title remains bold and primary text color
+- Description uses secondary text color with 0.8 opacity
+- Toggle uses `var(--primary-color)` for active state
+
+**What NOT to do:**
+
+- ❌ Don't use vertical layout for boolean fields (toggle below title)
+- ❌ Don't manually create custom toggle layouts
+- ❌ Don't use `FormUtils.renderCleanForm()` directly for boolean toggles in settings sections
+
+This pattern ensures consistent, professional-looking toggles across all modules, matching modern UI/UX standards and Home Assistant conventions.
 
 ### 4. Number Range Control with Slider
 
@@ -931,3 +967,270 @@ This pattern provides:
 - Support for negative values and decimal precision
 
 This guideline ensures consistency across all modules and provides a clear development path for new features.
+
+## Unified Template System
+
+### Overview
+
+The Unified Template System allows modules to use a single JSON-based template instead of multiple separate template boxes. This provides better UX, entity remapping support, and cleaner code.
+
+### When to Use
+
+Implement unified templates for modules that need dynamic display updates based on:
+
+- Entity state changes
+- Attribute values
+- Time-based conditions
+- Complex conditional logic
+
+### Type Definition Requirements
+
+Add these properties to your module's config interface:
+
+```typescript
+export interface YourModuleConfig {
+  // ... other properties ...
+
+  // Legacy template support
+  template_mode?: boolean;
+  template?: string;
+
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean; // For modules with active/inactive states
+}
+```
+
+### Implementation Steps
+
+#### 1. Import Required Utilities
+
+```typescript
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import {
+  detectLegacyTemplates,
+  migrateToUnified,
+  shouldShowMigrationPrompt,
+} from '../utils/template-migration';
+```
+
+#### 2. Update createDefault()
+
+```typescript
+createDefault(id?: string): YourModule {
+  return {
+    // ... other defaults ...
+
+    template_mode: false,
+    template: '',
+    unified_template_mode: false,
+    unified_template: '',
+    ignore_entity_state_config: false,
+  };
+}
+```
+
+#### 3. Implement Template Rendering (Priority Cascade)
+
+In your `renderPreview()` method:
+
+```typescript
+// Get base display values
+let displayIcon = config.icon || 'mdi:help-circle';
+let displayColor = config.color || 'var(--primary-color)';
+
+// PRIORITY 1: Unified template (if enabled)
+if (config.unified_template_mode && config.unified_template) {
+  if (!this._templateService && hass) {
+    this._templateService = new TemplateService(hass);
+  }
+
+  const templateHash = this._hashString(config.unified_template);
+  const templateKey = `unified_${config.entity}_${config.id}_${templateHash}`;
+
+  if (!this._templateService.hasTemplateSubscription(templateKey)) {
+    const context = buildEntityContext(config.entity, hass, config);
+    this._templateService.subscribeToTemplate(
+      config.unified_template,
+      templateKey,
+      () => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+        }
+      },
+      context // Pass entity context variables
+    );
+  }
+
+  const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+  if (unifiedResult && String(unifiedResult).trim() !== '') {
+    const parsed = parseUnifiedTemplate(unifiedResult);
+    if (!hasTemplateError(parsed)) {
+      if (parsed.icon) displayIcon = parsed.icon;
+      if (parsed.icon_color) displayColor = parsed.icon_color;
+      // Apply other properties as needed
+    }
+  }
+}
+// PRIORITY 2: Legacy templates (existing behavior)
+else if (config.template_mode && config.template) {
+  // Legacy template logic
+}
+```
+
+#### 4. Add Migration UI
+
+In `renderGeneralTab()`, add migration banner before template sections:
+
+```typescript
+<!-- Migration Banner -->
+${shouldShowMigrationPrompt(config)
+  ? html`
+      <div class="migration-banner" style="...styling...">
+        <button @click=${() => {
+          const migration = migrateToUnified(config);
+          updateConfig({
+            unified_template_mode: migration.unified_template_mode,
+            unified_template: migration.unified_template,
+            ignore_entity_state_config: migration.ignore_entity_state_config,
+            // Disable legacy templates
+            template_mode: false,
+          });
+        }}>
+          Migrate to Unified Template
+        </button>
+      </div>
+    `
+  : ''}
+```
+
+#### 5. Add Unified Template UI Section
+
+```typescript
+<!-- Unified Template Section -->
+<div class="template-section">
+  <div class="switch-container">
+    <label>Smart Display Template</label>
+    <input type="checkbox"
+           .checked=${config.unified_template_mode || false}
+           @change=${(e) => updateConfig({ unified_template_mode: e.target.checked })} />
+  </div>
+
+  ${config.unified_template_mode
+    ? html`
+        <!-- Optional: ignore_entity_state_config toggle for modules with animations -->
+
+        <ultra-template-editor
+          .hass=${hass}
+          .value=${config.unified_template || ''}
+          .placeholder=${'{\n  "icon": "mdi:fire",\n  "icon_color": "red"\n}'}
+          @value-changed=${(e) => updateConfig({ unified_template: e.detail.value })}
+        ></ultra-template-editor>
+
+        <div class="template-help">
+          <!-- Context variable reference -->
+          <!-- JSON syntax examples -->
+        </div>
+      `
+    : ''}
+</div>
+
+<!-- Legacy Templates (Deprecated) -->
+<details>
+  <summary>Legacy Templates (Deprecated)</summary>
+  <!-- Old template sections here -->
+</details>
+```
+
+### Entity Context Variables
+
+Templates automatically have access to these variables:
+
+```typescript
+{
+  entity: 'sensor.temperature',    // Entity ID
+  state: '23.5',                   // Current state
+  name: 'Living Room Temp',        // Display name
+  attributes: { /* all attrs */ }, // Full attributes
+  unit: '°C',                      // Unit of measurement
+  domain: 'sensor',                // Entity domain
+  device_class: 'temperature',     // Device class
+  friendly_name: '...',            // HA friendly name
+  config: { /* module config */ }, // Module configuration
+  state_number: 23.5,              // State as number
+  state_boolean: false,            // State as boolean
+}
+```
+
+### Template Response Structure
+
+Modules can define which properties are supported in `UnifiedTemplateResponse`:
+
+```typescript
+// For icon-based modules
+{
+  icon?: string;           // Icon name
+  icon_color?: string;     // Icon color
+}
+
+// For text-based modules
+{
+  content?: string;        // Text content
+  color?: string;          // Text color
+}
+
+// For data modules
+{
+  value?: number | string; // Data value
+  label?: string;          // Label text
+}
+```
+
+### State Control vs Display Control
+
+**Default Behavior (Display Only):**
+
+- Templates control visual properties only
+- Active/inactive state controlled by entity state config
+- Clear separation of concerns
+
+**Optional Override:**
+
+- Add `ignore_entity_state_config` toggle
+- When enabled, template controls both display AND state logic
+- Useful for migrating from old `template_mode` behavior
+
+### Best Practices
+
+1. **Always use entity context variables** - Don't hardcode entity IDs
+2. **Validate JSON responses** - Use `parseUnifiedTemplate()` and `hasTemplateError()`
+3. **Provide migration path** - Auto-detect legacy templates, show migration banner
+4. **Keep templates pure display** - Unless `ignore_entity_state_config` is enabled
+5. **Show helpful examples** - Include context variable reference in template editor
+6. **Support string fallback** - Simple string return for backward compatibility
+
+### Example Implementation
+
+See `src/modules/icon-module.ts` and `src/modules/info-module.ts` for complete reference implementations.
+
+### Testing Checklist
+
+- [ ] Legacy templates still work (backward compatibility)
+- [ ] Migration preserves exact behavior
+- [ ] Entity remapping works (change entity, template still works)
+- [ ] JSON validation shows helpful errors
+- [ ] Priority cascade works (unified > dynamic > legacy > static)
+- [ ] Performance is acceptable (no lag with multiple templates)
+
+### Documentation
+
+Always document unified template support in:
+
+1. Module type definition comments
+2. Editor UI tooltips and help text
+3. User-facing documentation
+4. Example presets and templates
+
+For complete user guide, see [UNIFIED_TEMPLATES.md](UNIFIED_TEMPLATES.md).

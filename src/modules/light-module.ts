@@ -2,11 +2,13 @@ import { TemplateResult, html } from 'lit';
 import { localize } from '../localize/localize';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
-import { CardModule, LightModule, UltraCardConfig } from '../types';
+import { CardModule, LightModule, UltraCardConfig, EntityMapping, EntityReference } from '../types';
 import { UltraLinkComponent } from '../components/ultra-link';
 import '../components/ultra-color-picker';
 import '../components/uc-light-color-picker';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { simpleEntityMapper } from '../components/uc-simple-entity-mapper';
+import { entityMapper } from '../services/uc-entity-mapper';
 
 // Light color mode types based on Home Assistant's supported modes
 export type LightColorMode =
@@ -24,6 +26,7 @@ export type LightColorMode =
 export interface LightPreset {
   id: string;
   name: string; // Display name/label for the preset
+  action?: 'turn_on' | 'turn_off' | 'toggle'; // Action type for this preset
   icon?: string; // Optional icon for button/icon display
   entities: string[]; // Entities this preset applies to
   brightness?: number; // 0-255
@@ -51,6 +54,9 @@ export interface LightPreset {
   button_style?: 'filled' | 'outlined' | 'text'; // Button visual style for this preset
   show_label?: boolean; // Show preset name for this preset
   border_radius?: number; // Button border radius (0-50)
+  // Color control toggles
+  enable_color?: boolean; // Controls whether color values (RGB/HS/XY) are sent (default: true)
+  enable_color_temp?: boolean; // Controls whether color_temp (MIRED) is sent (default: true)
 }
 
 // Color conversion utilities
@@ -260,6 +266,7 @@ export class UltraLightModule extends BaseUltraModule {
         {
           id: this.generateId('preset'),
           name: 'My Preset',
+          action: 'turn_on' as const,
           entities: [],
           brightness: 255,
           rgb_color: [255, 255, 255],
@@ -278,7 +285,9 @@ export class UltraLightModule extends BaseUltraModule {
           button_style: 'filled',
           show_label: true,
           border_radius: 8,
-        },
+          enable_color: true, // Enable color by default
+          enable_color_temp: true, // Enable color temperature by default
+        } as LightPreset,
       ],
       layout: 'buttons', // buttons, grid
       button_alignment: 'center', // center, left, right, space-between, space-around, space-evenly
@@ -295,7 +304,6 @@ export class UltraLightModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -312,9 +320,20 @@ export class UltraLightModule extends BaseUltraModule {
     return entities.some(entityId => {
       const entity = hass.states[entityId];
       const modes = entity?.attributes.supported_color_modes || [];
-      return modes.some(
+
+      // True RGBWW lights
+      const hasRgbww = modes.some(
         (mode: string) => mode === 'rgbww' || mode === 'rgbcct' || mode === 'rgbww_color'
       );
+
+      // OR lights that support BOTH color AND temperature
+      const hasColor = modes.some(
+        (mode: string) => mode === 'xy' || mode === 'hs' || mode === 'rgb'
+      );
+      const hasColorTemp = modes.includes('color_temp');
+      const hasBothModes = hasColor && hasColorTemp;
+
+      return hasRgbww || hasBothModes;
     });
   }
 
@@ -476,10 +495,36 @@ export class UltraLightModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="general-tab">
+        <!-- Preset Configuration -->
+        <div class="presets-configuration">
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            Light Presets
+          </div>
+          <div class="field-description" style="margin-bottom: 16px;">
+            Configure light presets with specific colors, brightness, and effects. Each preset can
+            control different entities.
+          </div>
+
+          ${(lightModule.presets || []).map((preset, index) =>
+            this.renderPresetEditor(preset, index, lightModule, hass, updateModule, config)
+          )}
+
+          <button
+            class="add-preset-btn"
+            @click=${() => this.addPreset(lightModule, updateModule)}
+            style="width: 100%; padding: 12px; border: 2px dashed var(--primary-color); background: transparent; color: var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; margin-top: 16px;"
+          >
+            + Add New Preset
+          </button>
+        </div>
+
         <!-- Layout Configuration -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px; margin-top: 32px;"
         >
           <div
             class="section-title"
@@ -487,106 +532,74 @@ export class UltraLightModule extends BaseUltraModule {
           >
             Layout Configuration
           </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
+          <div class="field-description" style="margin-bottom: 16px;">
             Configure how preset buttons are arranged and displayed
           </div>
 
           <!-- Layout Style -->
-          <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Layout Style</div>
-            <div class="field-description">Choose the overall arrangement style for preset buttons</div>
-            ${this.renderUcForm(
-              hass,
-              { layout: lightModule.layout || 'buttons' },
-              [
-                this.selectField('layout', [
-                  { value: 'buttons', label: 'Flexible Buttons' },
-                  { value: 'grid', label: 'Grid Layout' },
-                ]),
-              ],
-              (e: CustomEvent) => {
-                const next = e.detail.value.layout;
-                if (next === lightModule.layout) return;
-                updateModule({ layout: next });
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              },
-              false
-            )}
-          </div>
+          ${this.renderFieldSection(
+            'Layout Style',
+            'Choose the overall arrangement style for preset buttons',
+            hass,
+            { layout: lightModule.layout || 'buttons' },
+            [
+              this.selectField('layout', [
+                { value: 'buttons', label: 'Flexible Buttons' },
+                { value: 'grid', label: 'Grid Layout' },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.layout;
+              if (next === lightModule.layout) return;
+              updateModule({ layout: next });
+            }
+          )}
 
-            <!-- Button Alignment -->
-            <div class="field-container" style="margin-bottom: 16px;">
-              <div class="field-title">Button Alignment</div>
-              <div class="field-description">Choose how buttons are aligned within the container</div>
-              ${this.renderUcForm(
-                hass,
-                { button_alignment: lightModule.button_alignment || 'center' },
-                [
-                  this.selectField('button_alignment', [
-                    { value: 'left', label: 'Left' },
-                    { value: 'center', label: 'Center' },
-                    { value: 'right', label: 'Right' },
-                    { value: 'space-between', label: 'Space Between' },
-                    { value: 'space-around', label: 'Space Around' },
-                    { value: 'space-evenly', label: 'Space Evenly' },
-                  ]),
-                ],
-                (e: CustomEvent) => {
-                  const next = e.detail.value.button_alignment;
-                  if (next === lightModule.button_alignment) return;
-                  updateModule({ button_alignment: next });
-                  // Trigger re-render to update dropdown UI
-                  setTimeout(() => {
-                    this.triggerPreviewUpdate();
-                  }, 50);
-                },
-                false
-              )}
-            </div>
+          <!-- Button Alignment -->
+          ${this.renderFieldSection(
+            'Button Alignment',
+            'Choose how buttons are aligned within the container',
+            hass,
+            { button_alignment: lightModule.button_alignment || 'center' },
+            [
+              this.selectField('button_alignment', [
+                { value: 'left', label: 'Left' },
+                { value: 'center', label: 'Center' },
+                { value: 'right', label: 'Right' },
+                { value: 'space-between', label: 'Space Between' },
+                { value: 'space-around', label: 'Space Around' },
+                { value: 'space-evenly', label: 'Space Evenly' },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.button_alignment;
+              if (next === lightModule.button_alignment) return;
+              updateModule({ button_alignment: next });
+            }
+          )}
           </div>
         </div>
 
         <!-- Allow Wrapping Toggle -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
-        >
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 1;">
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-              >
-                Allow Button Wrapping
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; color: var(--secondary-text-color); opacity: 0.8; line-height: 1.4;"
-              >
-                Allow buttons to wrap to the next line when they exceed the container width
-              </div>
-            </div>
-            <div style="margin-left: 16px;">
-              <ha-switch
-                .checked=${lightModule.allow_wrapping || false}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updateModule({ allow_wrapping: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
-        </div>
+        ${this.renderSettingsSection(
+          'Button Wrapping',
+          'Control whether buttons wrap to the next line',
+          [
+            {
+              title: 'Allow Button Wrapping',
+              description: 'Allow buttons to wrap to the next line when they exceed the container width',
+              hass,
+              data: { allow_wrapping: lightModule.allow_wrapping || false },
+              schema: [this.booleanField('allow_wrapping')],
+              onChange: (e: CustomEvent) => updateModule({ allow_wrapping: e.detail.value.allow_wrapping }),
+            },
+          ]
+        )}
 
         <!-- Gap Configuration -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;"
         >
           <div
             class="section-title"
@@ -595,23 +608,10 @@ export class UltraLightModule extends BaseUltraModule {
             Gap Configuration
           </div>
 
-          <div style="margin-bottom: 24px;">
-            <div
-              class="field-title"
-              style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-            >
-              Gap Between Buttons
-            </div>
-            <div
-              class="field-description"
-              style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-            >
-              Set the spacing between preset buttons (in rem units)
-            </div>
-            <div
-              class="gap-control-container"
-              style="display: flex; align-items: center; gap: 12px;"
-            >
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Gap Between Buttons</div>
+            <div class="field-description">Set the spacing between preset buttons (in rem units)</div>
+            <div class="gap-control-container">
               <input
                 type="range"
                 class="gap-slider"
@@ -628,7 +628,6 @@ export class UltraLightModule extends BaseUltraModule {
               <input
                 type="number"
                 class="gap-input"
-                style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
                 min="0"
                 max="5"
                 step="0.1"
@@ -656,7 +655,6 @@ export class UltraLightModule extends BaseUltraModule {
                 class="reset-btn"
                 @click=${() => updateModule({ button_gap: 0.8 })}
                 title="Reset to default (0.8)"
-                style="width: 36px; height: 36px; padding: 0; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
               >
                 <ha-icon icon="mdi:refresh"></ha-icon>
               </button>
@@ -676,54 +674,31 @@ export class UltraLightModule extends BaseUltraModule {
                   >
                     Grid Settings
                   </div>
-                  <div
-                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-                  >
+                  <div class="field-description" style="margin-bottom: 16px;">
                     Configure grid layout options
                   </div>
 
-                  <div style="margin-bottom: 20px;">
-                    <div
-                      class="field-title"
-                      style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 4px;"
-                    >
-                      Columns
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 8px; opacity: 0.8; line-height: 1.4;"
-                    >
-                      Number of columns in grid layout
-                    </div>
-                    <div class="field-container" style="margin-bottom: 16px;">
-                      <div class="field-title">Columns</div>
-                      <div class="field-description">Number of columns in grid layout</div>
-                      ${this.renderUcForm(
-                        hass,
-                        { columns: lightModule.columns || 3 },
-                        [
-                          this.selectField('columns', [
-                            { value: '1', label: '1 Column' },
-                            { value: '2', label: '2 Columns' },
-                            { value: '3', label: '3 Columns' },
-                            { value: '4', label: '4 Columns' },
-                            { value: '5', label: '5 Columns' },
-                            { value: '6', label: '6 Columns' },
-                          ]),
-                        ],
-                        (e: CustomEvent) => {
-                          const next = Number(e.detail.value.columns);
-                          if (isNaN(next) || next === lightModule.columns) return;
-                          updateModule({ columns: next });
-                          // Trigger re-render to update dropdown UI
-                          setTimeout(() => {
-                            this.triggerPreviewUpdate();
-                          }, 50);
-                        },
-                        false
-                      )}
-                    </div>
-                  </div>
+                  ${this.renderFieldSection(
+                    'Columns',
+                    'Number of columns in grid layout',
+                    hass,
+                    { columns: lightModule.columns || 3 },
+                    [
+                      this.selectField('columns', [
+                        { value: '1', label: '1 Column' },
+                        { value: '2', label: '2 Columns' },
+                        { value: '3', label: '3 Columns' },
+                        { value: '4', label: '4 Columns' },
+                        { value: '5', label: '5 Columns' },
+                        { value: '6', label: '6 Columns' },
+                      ]),
+                    ],
+                    (e: CustomEvent) => {
+                      const next = Number(e.detail.value.columns);
+                      if (isNaN(next) || next === lightModule.columns) return;
+                      updateModule({ columns: next });
+                    }
+                  )}
                 </div>
               `
             : ''
@@ -740,31 +715,22 @@ export class UltraLightModule extends BaseUltraModule {
           >
             Global Settings
           </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
+          <div class="field-description" style="margin-bottom: 16px;">
             Settings that apply to all presets
           </div>
 
-          <div class="field-container" style="margin-bottom: 16px;">
-            <div class="field-title">Default Transition Time</div>
-            <div class="field-description">Default transition time for all presets (can be overridden per preset)</div>
-            ${this.renderUcForm(
-              hass,
-              { default_transition_time: lightModule.default_transition_time ?? 0.5 },
-              [this.numberField('default_transition_time', 0, 10, 0.1)],
-              (e: CustomEvent) => {
-                const next = Number(e.detail.value.default_transition_time);
-                if (isNaN(next) || next === lightModule.default_transition_time) return;
-                updateModule({ default_transition_time: next });
-                // Trigger re-render to update dropdown UI
-                setTimeout(() => {
-                  this.triggerPreviewUpdate();
-                }, 50);
-              },
-              false
-            )}
-          </div>
+          ${this.renderFieldSection(
+            'Default Transition Time',
+            'Default transition time for all presets (can be overridden per preset)',
+            hass,
+            { default_transition_time: lightModule.default_transition_time ?? 0.5 },
+            [this.numberField('default_transition_time', 0, 10, 0.1)],
+            (e: CustomEvent) => {
+              const next = Number(e.detail.value.default_transition_time);
+              if (isNaN(next) || next === lightModule.default_transition_time) return;
+              updateModule({ default_transition_time: next });
+            }
+          )}
           </div>
         </div>
 
@@ -776,9 +742,7 @@ export class UltraLightModule extends BaseUltraModule {
           >
             Light Presets
           </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
-          >
+          <div class="field-description" style="margin-bottom: 16px;">
             Configure light presets with specific colors, brightness, and effects. Each preset can
             control different entities.
           </div>
@@ -847,7 +811,7 @@ export class UltraLightModule extends BaseUltraModule {
               },
             ],
             onChange: (e: CustomEvent) =>
-              this.importPresets(e.detail.value.import_data, lightModule, updateModule),
+              this.importPresets(e.detail.value.import_data, lightModule, updateModule, hass),
           },
         ])}
 
@@ -1039,18 +1003,86 @@ export class UltraLightModule extends BaseUltraModule {
     config?: UltraCardConfig
   ): TemplateResult {
     return html`
-      <!-- Basic Settings -->
+      <!-- Action Selection -->
       <div class="field-group" style="margin-bottom: 16px;">
         ${this.renderFieldSection(
-          'Basic Settings',
-          'Configure preset name and icon',
+          'Preset Action',
+          'Choose what this preset should do',
           hass,
-          {
-            name: preset.name || '',
-            icon: preset.icon || '',
-          },
-          [this.textField('name'), this.iconField('icon')],
-          (e: CustomEvent) => updatePreset(e.detail.value)
+          { action: preset.action || 'turn_on' },
+          [
+            this.selectField('action', [
+              { value: 'turn_on', label: 'Turn On (with settings)' },
+              { value: 'turn_off', label: 'Turn Off' },
+              { value: 'toggle', label: 'Toggle' },
+            ]),
+          ],
+          (e: CustomEvent) => updatePreset({ action: e.detail.value.action })
+        )}
+      </div>
+
+      <!-- Preset Name -->
+      <div class="field-group" style="margin-bottom: 16px;">
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+          Preset Name
+        </div>
+        <div class="field-description" style="margin-bottom: 12px;">
+          Display name for this preset
+        </div>
+        <ha-textfield
+          .value=${preset.name || ''}
+          placeholder="Enter preset name"
+          @input=${(e: Event) => {
+            const target = e.target as any;
+            const input = target.shadowRoot?.querySelector('input') || target;
+            const value = target.value;
+            const cursorPosition = input.selectionStart;
+            const cursorEnd = input.selectionEnd;
+
+            // Update immediately
+            updatePreset({ name: value });
+
+            // Preserve cursor position after re-render
+            requestAnimationFrame(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            });
+            setTimeout(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            }, 0);
+            setTimeout(() => {
+              if (input && typeof cursorPosition === 'number') {
+                target.value = value;
+                input.value = value;
+                input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+              }
+            }, 10);
+          }}
+          style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+        ></ha-textfield>
+      </div>
+
+      <!-- Preset Icon -->
+      <div class="field-group" style="margin-bottom: 16px;">
+        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+          Preset Icon
+        </div>
+        <div class="field-description" style="margin-bottom: 12px;">
+          Optional icon for this preset (e.g., mdi:lightbulb)
+        </div>
+        ${this.renderUcForm(
+          hass,
+          { icon: preset.icon || '' },
+          [this.iconField('icon')],
+          (e: CustomEvent) => updatePreset(e.detail.value),
+          false
         )}
       </div>
 
@@ -1075,81 +1107,93 @@ export class UltraLightModule extends BaseUltraModule {
           (e: CustomEvent) => updatePreset({ entities: e.detail.value.entities })
         )}
 
-        <!-- Light Controls: Color, White, Effects & Test -->
-        <div class="light-controls-section" style="margin-top: 20px; margin-bottom: 20px;">
-          <div
-            style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
-          >
-            Light Controls
-          </div>
+        ${
+          (preset.action || 'turn_on') !== 'turn_off'
+            ? html`
+                <!-- Light Controls: Color, White, Effects & Test -->
+                <div class="light-controls-section" style="margin-top: 20px; margin-bottom: 20px;">
+                  <div
+                    style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
+                  >
+                    Light Controls
+                  </div>
 
-          <uc-light-color-picker
-            .hass=${hass}
-            .rgb_color=${preset.rgb_color}
-            .hs_color=${preset.hs_color}
-            .xy_color=${preset.xy_color}
-            .color_temp=${preset.color_temp}
-            .effect=${preset.effect}
-            .effect_speed=${preset.effect_speed}
-            .effect_intensity=${preset.effect_intensity}
-            .effect_reverse=${preset.effect_reverse}
-            .effect_list=${this.getCommonSupportedEffects(preset.entities || [], hass)}
-            .mode=${this.getPresetLightMode(preset) === 'effect'
-              ? 'effect'
-              : this.getPresetColorMode(preset)}
-            .min_mireds=${153}
-            .max_mireds=${500}
-            .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
-            @color-changed=${(e: CustomEvent) => {
-              const detail = e.detail;
-              const updates: Partial<LightPreset> = {};
+                  <uc-light-color-picker
+                    .hass=${hass}
+                    .rgb_color=${preset.rgb_color}
+                    .hs_color=${preset.hs_color}
+                    .xy_color=${preset.xy_color}
+                    .color_temp=${preset.color_temp}
+                    .effect=${preset.effect}
+                    .effect_speed=${preset.effect_speed}
+                    .effect_intensity=${preset.effect_intensity}
+                    .effect_reverse=${preset.effect_reverse}
+                    .effect_list=${this.getCommonSupportedEffects(preset.entities || [], hass)}
+                    .mode=${this.getPresetLightMode(preset) === 'effect'
+                      ? 'effect'
+                      : this.getPresetColorMode(preset)}
+                    .min_mireds=${153}
+                    .max_mireds=${500}
+                    .rgbww_mode=${this.hasRgbwwSupport(preset.entities || [], hass)}
+                    .enable_color=${preset.enable_color ?? true}
+                    .enable_color_temp=${preset.enable_color_temp ?? true}
+                    @color-changed=${(e: CustomEvent) => {
+                      const detail = e.detail;
+                      const updates: Partial<LightPreset> = {};
 
-              if (detail.mode === 'effect') {
-                updates.effect = detail.effect || '';
-                // Clear ALL color parameters when effect is set
-                updates.color_temp = undefined;
-                updates.rgb_color = undefined;
-                updates.hs_color = undefined;
-                updates.xy_color = undefined;
-                updates.rgbw_color = undefined;
-                updates.rgbww_color = undefined;
-                updates.white = undefined;
-              } else if (detail.mode === 'rgbww') {
-                // RGBWW mode: Keep BOTH color and temperature
-                updates.rgb_color = detail.rgb_color;
-                updates.hs_color = detail.hs_color;
-                updates.xy_color = detail.xy_color;
-                updates.color_temp = detail.color_temp;
-                updates.effect = ''; // Clear effect when setting color
-              } else if (detail.mode === 'color_temp') {
-                updates.color_temp = detail.color_temp;
-                updates.rgb_color = undefined;
-                updates.hs_color = undefined;
-                updates.xy_color = undefined;
-                updates.rgbw_color = undefined;
-                updates.rgbww_color = undefined;
-                updates.white = undefined;
-                updates.effect = ''; // Clear effect when setting color
-              } else {
-                updates.rgb_color = detail.rgb_color;
-                updates.hs_color = detail.hs_color;
-                updates.xy_color = detail.xy_color;
-                updates.color_temp = undefined;
-                updates.rgbw_color = undefined;
-                updates.rgbww_color = undefined;
-                updates.white = undefined;
-                updates.effect = ''; // Clear effect when setting color
-              }
+                      if (detail.mode === 'effect') {
+                        updates.effect = detail.effect || '';
+                        // Clear ALL color parameters when effect is set
+                        updates.color_temp = undefined;
+                        updates.rgb_color = undefined;
+                        updates.hs_color = undefined;
+                        updates.xy_color = undefined;
+                        updates.rgbw_color = undefined;
+                        updates.rgbww_color = undefined;
+                        updates.white = undefined;
+                      } else if (detail.mode === 'rgbww') {
+                        // RGBWW mode: Keep BOTH color and temperature
+                        updates.rgb_color = detail.rgb_color;
+                        updates.hs_color = detail.hs_color;
+                        updates.xy_color = detail.xy_color;
+                        updates.color_temp = detail.color_temp;
+                        updates.effect = ''; // Clear effect when setting color
+                      } else if (detail.mode === 'color_temp') {
+                        updates.color_temp = detail.color_temp;
+                        updates.rgb_color = undefined;
+                        updates.hs_color = undefined;
+                        updates.xy_color = undefined;
+                        updates.rgbw_color = undefined;
+                        updates.rgbww_color = undefined;
+                        updates.white = undefined;
+                        updates.effect = ''; // Clear effect when setting color
+                      } else {
+                        updates.rgb_color = detail.rgb_color;
+                        updates.hs_color = detail.hs_color;
+                        updates.xy_color = detail.xy_color;
+                        updates.color_temp = undefined;
+                        updates.rgbw_color = undefined;
+                        updates.rgbww_color = undefined;
+                        updates.white = undefined;
+                        updates.effect = ''; // Clear effect when setting color
+                      }
 
-              updatePreset(updates);
-              // Trigger immediate preview update
-              this.triggerPreviewUpdate();
-            }}
-            @test-preset=${() => {
-              this.applyPreset(preset, lightModule, hass, config);
-            }}
-          ></uc-light-color-picker>
-        </div>
+                      updatePreset(updates);
+                    }}
+                    @enable-color-changed=${(e: CustomEvent) => {
+                      updatePreset({ enable_color: e.detail.value });
+                    }}
+                    @enable-color-temp-changed=${(e: CustomEvent) => {
+                      updatePreset({ enable_color_temp: e.detail.value });
+                    }}
+                    @test-preset=${() => {
+                      this.applyPreset(preset, lightModule, hass, config);
+                    }}
+                  ></uc-light-color-picker>
+                </div>
+              `
+            : ''
+        }
 
         <!-- Button Style (moved here from global settings) -->
         <div
@@ -1175,21 +1219,23 @@ export class UltraLightModule extends BaseUltraModule {
           )}
 
           <!-- Border Radius (for filled and outlined styles) -->
-          ${(preset.button_style || 'filled') !== 'text'
-            ? html`
-                <div style="margin-top: 12px;">
-                  ${this.renderFieldSection(
-                    'Border Radius',
-                    'Adjust button roundness (0 = square, 50 = circle)',
-                    hass,
-                    { border_radius: preset.border_radius || 8 },
-                    [this.numberField('border_radius', 0, 50, 1)],
-                    (e: CustomEvent) =>
-                      updatePreset({ border_radius: e.detail.value.border_radius })
-                  )}
-                </div>
-              `
-            : ''}
+          ${
+            (preset.button_style || 'filled') !== 'text'
+              ? html`
+                  <div style="margin-top: 12px;">
+                    ${this.renderFieldSection(
+                      'Border Radius',
+                      'Adjust button roundness (0 = square, 50 = circle)',
+                      hass,
+                      { border_radius: preset.border_radius || 8 },
+                      [this.numberField('border_radius', 0, 50, 1)],
+                      (e: CustomEvent) =>
+                        updatePreset({ border_radius: e.detail.value.border_radius })
+                    )}
+                  </div>
+                `
+              : ''
+          }
 
           <div
             style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;"
@@ -1213,48 +1259,70 @@ export class UltraLightModule extends BaseUltraModule {
         </div>
       </div>
 
-      <!-- Light Controls Section -->
-      <div class="light-controls-section" style="margin-top: 20px;">
-        <div
-          style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
-        >
-          Light Controls
-        </div>
+      ${
+        (preset.action || 'turn_on') !== 'turn_off'
+          ? html`
+              <!-- Light Controls Section -->
+              <div class="light-controls-section" style="margin-top: 20px;">
+                <div
+                  style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
+                >
+                  Light Controls
+                </div>
 
-        <!-- Brightness Control -->
-        <div class="brightness-control" style="margin-bottom: 20px;">
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-            <ha-icon icon="mdi:brightness-6" style="color: var(--primary-color);"></ha-icon>
-            <span style="font-weight: 500; color: var(--primary-text-color);">Brightness</span>
-            <span style="margin-left: auto; font-size: 14px; color: var(--secondary-text-color);">
-              ${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}%
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 12px; color: var(--secondary-text-color);">0%</span>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              step="1"
-              .value=${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}
-              @input=${(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                const brightness = Math.round((parseInt(target.value) / 100) * 255);
-                updatePreset({ brightness });
-                this.triggerPreviewUpdate();
-              }}
-              class="brightness-slider"
-            />
-            <span style="font-size: 12px; color: var(--secondary-text-color);">100%</span>
-          </div>
-        </div>
+                <!-- Brightness Control -->
+                <div class="brightness-control" style="margin-bottom: 20px;">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <ha-icon icon="mdi:brightness-6" style="color: var(--primary-color);"></ha-icon>
+                    <span style="font-weight: 500; color: var(--primary-text-color);"
+                      >Brightness</span
+                    >
+                    <span
+                      style="margin-left: auto; font-size: 14px; color: var(--secondary-text-color);"
+                    >
+                      ${preset.brightness ? Math.round((preset.brightness / 255) * 100) : 100}%
+                    </span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 12px; color: var(--secondary-text-color);">0%</span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      step="1"
+                      .value=${preset.brightness
+                        ? Math.round((preset.brightness / 255) * 100)
+                        : 100}
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const brightness = Math.round((parseInt(target.value) / 100) * 255);
+                        updatePreset({ brightness });
+                      }}
+                      class="brightness-slider"
+                    />
+                    <span style="font-size: 12px; color: var(--secondary-text-color);">100%</span>
+                  </div>
+                </div>
 
-        <!-- Visual Customization -->
-        <div
-          class="visual-customization"
-          style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
-        >
+                <!-- Visual Customization -->
+                <div
+                  class="visual-customization"
+                  style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--divider-color);"
+                ></div>
+              </div>
+            `
+          : html`
+              <div
+                style="padding: 20px; text-align: center; color: var(--secondary-text-color); background: var(--secondary-background-color); border-radius: 8px; font-style: italic; margin-top: 20px;"
+              >
+                Light controls are not available for "Turn Off" action
+              </div>
+            `
+      }
+
+      ${
+        (preset.action || 'turn_on') !== 'turn_off'
+          ? html`
           <div
             style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;"
           >
@@ -1293,9 +1361,9 @@ export class UltraLightModule extends BaseUltraModule {
 
             <!-- Use Light Color for Icon (disabled if smart contrast is on) -->
             <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${preset.smart_color
-                ? 'opacity: 0.5;'
-                : ''}"
+              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${
+                preset.smart_color ? 'opacity: 0.5;' : ''
+              }"
             >
               <div>
                 <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
@@ -1317,9 +1385,9 @@ export class UltraLightModule extends BaseUltraModule {
 
             <!-- Use Light Color for Button (disabled if smart contrast is on) -->
             <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${preset.smart_color
-                ? 'opacity: 0.5;'
-                : ''}"
+              style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; ${
+                preset.smart_color ? 'opacity: 0.5;' : ''
+              }"
             >
               <div>
                 <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
@@ -1341,9 +1409,9 @@ export class UltraLightModule extends BaseUltraModule {
 
             <!-- Use Icon Color for Text (disabled if smart contrast is on) -->
             <div
-              style="display: flex; align-items: center; justify-content: space-between; ${preset.smart_color
-                ? 'opacity: 0.5;'
-                : ''}"
+              style="display: flex; align-items: center; justify-content: space-between; ${
+                preset.smart_color ? 'opacity: 0.5;' : ''
+              }"
             >
               <div>
                 <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
@@ -1364,162 +1432,123 @@ export class UltraLightModule extends BaseUltraModule {
             </div>
           </div>
 
-          <!-- Per-Preset Styling -->
-          <div
-            style="margin-bottom: 16px; background: rgba(var(--rgb-accent-color), 0.05); border-radius: 6px; padding: 12px;"
-          >
-            <div style="font-weight: 500; margin-bottom: 12px; color: var(--primary-text-color);">
-              Button Style
-            </div>
-
-            ${this.renderFieldSection(
-              'Button Style',
-              'Visual style for this preset button',
-              hass,
-              { button_style: preset.button_style || 'filled' },
-              [
-                this.selectField('button_style', [
-                  { value: 'filled', label: 'Filled (solid background)' },
-                  { value: 'outlined', label: 'Outlined (border only)' },
-                  { value: 'text', label: 'Text (minimal style)' },
-                ]),
-              ],
-              (e: CustomEvent) => updatePreset({ button_style: e.detail.value.button_style })
-            )}
-
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;"
-            >
-              <div>
-                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
-                  Show Label
-                </div>
-                <div style="font-size: 12px; color: var(--secondary-text-color);">
-                  Display preset name on this button
-                </div>
-              </div>
-              <ha-switch
-                .checked=${preset.show_label ?? true}
-                @change=${(e: Event) => {
-                  const target = e.target as any;
-                  updatePreset({ show_label: target.checked });
-                }}
-              ></ha-switch>
-            </div>
-          </div>
-
           <!-- Custom Colors (only show when smart contrast is disabled) -->
-          ${!preset.smart_color
-            ? html`
-                <div
-                  class="custom-colors"
-                  style="display: flex; flex-direction: column; gap: 16px;"
-                >
-                  <!-- Text Color -->
-                  ${!preset.use_icon_color_for_text
-                    ? html`
-                        <div class="color-field">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
-                          >
-                            Text Color
+          ${
+            !preset.smart_color
+              ? html`
+                  <div
+                    class="custom-colors"
+                    style="display: flex; flex-direction: column; gap: 16px;"
+                  >
+                    <!-- Text Color -->
+                    ${!preset.use_icon_color_for_text
+                      ? html`
+                          <div class="color-field">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
+                              Text Color
+                            </div>
+                            <ultra-color-picker
+                              .hass=${hass}
+                              .value=${preset.text_color || 'var(--primary-text-color)'}
+                              @value-changed=${(e: CustomEvent) =>
+                                updatePreset({ text_color: e.detail.value })}
+                            ></ultra-color-picker>
                           </div>
-                          <ultra-color-picker
-                            .hass=${hass}
-                            .value=${preset.text_color || 'var(--primary-text-color)'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updatePreset({ text_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      `
-                    : html`
-                        <div class="color-field disabled">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            Text Color
+                        `
+                      : html`
+                          <div class="color-field disabled">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
+                            >
+                              Text Color
+                            </div>
+                            <div
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                            >
+                              Using icon color
+                            </div>
                           </div>
-                          <div
-                            style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
-                          >
-                            Using icon color
-                          </div>
-                        </div>
-                      `}
+                        `}
 
-                  <!-- Icon Color -->
-                  ${!preset.use_light_color_for_icon
-                    ? html`
-                        <div class="color-field">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
-                          >
-                            Icon Color
+                    <!-- Icon Color -->
+                    ${!preset.use_light_color_for_icon
+                      ? html`
+                          <div class="color-field">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
+                              Icon Color
+                            </div>
+                            <ultra-color-picker
+                              .hass=${hass}
+                              .value=${preset.icon_color || 'var(--primary-color)'}
+                              @value-changed=${(e: CustomEvent) =>
+                                updatePreset({ icon_color: e.detail.value })}
+                            ></ultra-color-picker>
                           </div>
-                          <ultra-color-picker
-                            .hass=${hass}
-                            .value=${preset.icon_color || 'var(--primary-color)'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updatePreset({ icon_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      `
-                    : html`
-                        <div class="color-field disabled">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            Icon Color
+                        `
+                      : html`
+                          <div class="color-field disabled">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
+                            >
+                              Icon Color
+                            </div>
+                            <div
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                            >
+                              Using light color
+                            </div>
                           </div>
-                          <div
-                            style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
-                          >
-                            Using light color
-                          </div>
-                        </div>
-                      `}
+                        `}
 
-                  <!-- Button Color -->
-                  ${!preset.use_light_color_for_button
-                    ? html`
-                        <div class="color-field">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
-                          >
-                            Button Color
+                    <!-- Button Color -->
+                    ${!preset.use_light_color_for_button
+                      ? html`
+                          <div class="color-field">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--primary-text-color);"
+                            >
+                              Button Color
+                            </div>
+                            <ultra-color-picker
+                              .hass=${hass}
+                              .value=${preset.button_color || 'var(--primary-color)'}
+                              @value-changed=${(e: CustomEvent) =>
+                                updatePreset({ button_color: e.detail.value })}
+                            ></ultra-color-picker>
                           </div>
-                          <ultra-color-picker
-                            .hass=${hass}
-                            .value=${preset.button_color || 'var(--primary-color)'}
-                            @value-changed=${(e: CustomEvent) =>
-                              updatePreset({ button_color: e.detail.value })}
-                          ></ultra-color-picker>
-                        </div>
-                      `
-                    : html`
-                        <div class="color-field disabled">
-                          <div
-                            style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
-                          >
-                            Button Color
+                        `
+                      : html`
+                          <div class="color-field disabled">
+                            <div
+                              style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--secondary-text-color);"
+                            >
+                              Button Color
+                            </div>
+                            <div
+                              style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
+                            >
+                              Using light color
+                            </div>
                           </div>
-                          <div
-                            style="padding: 20px; text-align: center; color: var(--secondary-text-color); font-style: italic; background: var(--secondary-background-color); border-radius: 4px;"
-                          >
-                            Using light color
-                          </div>
-                        </div>
-                      `}
-                </div>
-              `
-            : html`
-                <div
-                  style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 6px;"
-                >
-                  Smart Contrast Mode is enabled - colors are automatically optimized
-                </div>
-              `}
+                        `}
+                  </div>
+                `
+              : html`
+                  <div
+                    style="text-align: center; padding: 24px; color: var(--secondary-text-color); font-style: italic; background: rgba(var(--rgb-primary-color), 0.05); border-radius: 6px;"
+                  >
+                    Smart Contrast Mode is enabled - colors are automatically optimized
+                  </div>
+                `
+          }
         </div>
+            `
+          : ''
+      }
 
         <!-- Advanced Settings -->
         <div
@@ -1688,6 +1717,7 @@ export class UltraLightModule extends BaseUltraModule {
     const newPreset: LightPreset = {
       id: newPresetId,
       name: `Preset ${(lightModule.presets || []).length + 1}`,
+      action: 'turn_on' as const,
       entities: [],
       brightness: 255,
       hs_color: [0, 0], // Default to white in HS mode
@@ -1702,6 +1732,8 @@ export class UltraLightModule extends BaseUltraModule {
       button_style: 'filled',
       show_label: true,
       border_radius: 8,
+      enable_color: true, // Enable color by default
+      enable_color_temp: true, // Enable color temperature by default
     };
 
     // Add to expanded presets so new presets start expanded
@@ -1711,6 +1743,18 @@ export class UltraLightModule extends BaseUltraModule {
   }
 
   private getPresetColorMode(preset: LightPreset): 'rgb' | 'hs' | 'xy' | 'color_temp' {
+    // Check if this is RGBWW mode (both color and color_temp are set)
+    const hasColorRgb = preset.rgb_color || preset.hs_color || preset.xy_color;
+    const isRgbwwMode = hasColorRgb && preset.color_temp !== undefined;
+
+    // In RGBWW mode, prioritize color mode (don't switch to color_temp tab)
+    if (isRgbwwMode) {
+      if (preset.hs_color) return 'hs';
+      if (preset.rgb_color) return 'rgb';
+      if (preset.xy_color) return 'xy';
+    }
+
+    // Not RGBWW mode - use normal priority
     if (preset.color_temp) return 'color_temp';
     if (preset.hs_color) return 'hs';
     if (preset.xy_color) return 'xy';
@@ -1747,7 +1791,8 @@ export class UltraLightModule extends BaseUltraModule {
   private importPresets(
     jsonData: string,
     lightModule: LightModule,
-    updateModule: (updates: Partial<CardModule>) => void
+    updateModule: (updates: Partial<CardModule>) => void,
+    hass: HomeAssistant
   ): void {
     try {
       if (!jsonData.trim()) return;
@@ -1760,6 +1805,102 @@ export class UltraLightModule extends BaseUltraModule {
           id: this.generateId('preset'),
         }));
 
+        // Detect entities in imported presets
+        const entityReferences = this._detectLightPresetEntities(importedPresets);
+
+        if (entityReferences.length > 0 && hass) {
+          // Show entity mapping dialog
+          this._showLightPresetMappingDialog(
+            importedPresets,
+            entityReferences,
+            lightModule,
+            updateModule,
+            hass
+          );
+        } else {
+          // No entities or no hass, import directly
+          const newPresets = [...(lightModule.presets || []), ...importedPresets];
+          updateModule({ presets: newPresets });
+
+          // Show success message
+          const event = new CustomEvent('hass-notification', {
+            detail: { message: `Successfully imported ${importedPresets.length} presets` },
+          });
+          document.dispatchEvent(event);
+        }
+      }
+    } catch (error) {
+      // Show error message
+      const event = new CustomEvent('hass-notification', {
+        detail: { message: 'Failed to import presets: Invalid JSON format' },
+      });
+      document.dispatchEvent(event);
+    }
+  }
+
+  private _detectLightPresetEntities(presets: any[]): EntityReference[] {
+    const references: Map<string, EntityReference> = new Map();
+
+    presets.forEach((preset, presetIndex) => {
+      if (preset.entities && Array.isArray(preset.entities)) {
+        preset.entities.forEach((entity: string, entityIndex: number) => {
+          if (references.has(entity)) {
+            const existing = references.get(entity)!;
+            existing.locations.push(`presets[${presetIndex}].entities[${entityIndex}]`);
+            if (preset.name && !existing.context?.includes(preset.name)) {
+              existing.context = existing.context
+                ? `${existing.context}, ${preset.name}`
+                : preset.name;
+            }
+          } else {
+            references.set(entity, {
+              entityId: entity,
+              locations: [`presets[${presetIndex}].entities[${entityIndex}]`],
+              moduleType: 'light',
+              context: preset.name,
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(references.values());
+  }
+
+  private _showLightPresetMappingDialog(
+    importedPresets: any[],
+    entityReferences: EntityReference[],
+    lightModule: LightModule,
+    updateModule: (updates: Partial<CardModule>) => void,
+    hass: HomeAssistant
+  ): void {
+    if (!hass) return;
+
+    // Show the simple entity mapper dialog
+    simpleEntityMapper.show(
+      hass,
+      `Map Entities for Light Presets`,
+      entityReferences,
+      (mappings: EntityMapping[]) => {
+        console.log('✅ Apply light preset mappings:', mappings);
+        // Apply mappings to presets
+        const mappedPresets = this._applyMappingsToLightPresets(importedPresets, mappings);
+
+        // Add mapped presets
+        const newPresets = [...(lightModule.presets || []), ...mappedPresets];
+        updateModule({ presets: newPresets });
+
+        // Show success message
+        const event = new CustomEvent('hass-notification', {
+          detail: {
+            message: `Successfully imported ${mappedPresets.length} presets with ${mappings.length} entity mapping(s)`,
+          },
+        });
+        document.dispatchEvent(event);
+      },
+      () => {
+        console.log('❌ Cancel light preset mapping');
+        // Cancel - add presets with original entities (no mappings)
         const newPresets = [...(lightModule.presets || []), ...importedPresets];
         updateModule({ presets: newPresets });
 
@@ -1769,13 +1910,19 @@ export class UltraLightModule extends BaseUltraModule {
         });
         document.dispatchEvent(event);
       }
-    } catch (error) {
-      // Show error message
-      const event = new CustomEvent('hass-notification', {
-        detail: { message: 'Failed to import presets: Invalid JSON format' },
-      });
-      document.dispatchEvent(event);
-    }
+    );
+  }
+
+  private _applyMappingsToLightPresets(presets: any[], mappings: EntityMapping[]): any[] {
+    if (mappings.length === 0) return presets;
+
+    const mappingMap = new Map<string, string>();
+    mappings.forEach(m => mappingMap.set(m.original, m.mapped));
+
+    return presets.map(preset => ({
+      ...preset,
+      entities: preset.entities?.map((entity: string) => mappingMap.get(entity) || entity) || [],
+    }));
   }
 
   private async applyPreset(
@@ -1801,7 +1948,16 @@ export class UltraLightModule extends BaseUltraModule {
       return;
     }
 
+    const action = preset.action || 'turn_on';
+
     for (const entityId of entities) {
+      // Handle turn_off action - simple, no parameters needed
+      if (action === 'turn_off') {
+        await this.callLightService('turn_off', entityId, {}, hass);
+        continue;
+      }
+
+      // For turn_on and toggle, build service data with settings
       const serviceData: any = {};
 
       // Check if this is a WLED device early for special handling
@@ -1831,11 +1987,127 @@ export class UltraLightModule extends BaseUltraModule {
         serviceData.brightness = preset.brightness;
       }
 
-      // Check if this is RGBWW mode (both color and temp defined)
-      const isRgbwwMode =
-        (preset.rgb_color || preset.hs_color || preset.xy_color) && preset.color_temp !== undefined;
+      // Prevent conflicts: Home Assistant requires mutually exclusive color descriptors
+      // IMPORTANT: Home Assistant does NOT allow multiple color descriptors in one service call,
+      // even if the device supports both (like RGBWW lights). Send them sequentially instead.
+      
+      // Detect which descriptor types are present (respect toggle states)
+      const enableColor = preset.enable_color ?? true;
+      const enableColorTemp = preset.enable_color_temp ?? true;
+      const hasColorRgb =
+        enableColor &&
+        (preset.rgb_color !== undefined ||
+          preset.hs_color !== undefined ||
+          preset.xy_color !== undefined);
+      const hasColorTemp = enableColorTemp && preset.color_temp !== undefined;
+      const hasWhite = preset.white !== undefined;
+      const hasRgbw = preset.rgbw_color !== undefined;
+      const hasRgbww = preset.rgbww_color !== undefined;
+      const hasEffect = preset.effect && preset.effect.trim() !== '';
 
-      // Add color - handle RGBWW mode specially
+      // Check if this is RGBWW mode (both color and temp defined)
+      const isRgbwwMode = hasColorRgb && hasColorTemp && !hasEffect;
+
+      // Handle RGBWW mode with sequential calls (Home Assistant doesn't allow both in one call)
+      if (isRgbwwMode) {
+        // RGBWW mode: Send color first, then color_temp in a second call
+        // This matches Home Assistant's behavior where values persist across mode changes
+        
+        // First call: Set color (RGB/HS/XY) - priority: RGB > HS > XY
+        const colorServiceData: any = { ...serviceData };
+        if (enableColor) {
+          if (preset.rgb_color !== undefined) {
+            colorServiceData.rgb_color = preset.rgb_color;
+          } else if (preset.hs_color !== undefined) {
+            colorServiceData.hs_color = preset.hs_color;
+          } else if (preset.xy_color !== undefined) {
+            colorServiceData.xy_color = preset.xy_color;
+          } else {
+            // Color enabled but no color set - use white
+            colorServiceData.rgb_color = [255, 255, 255];
+          }
+        } else {
+          // Color disabled - force white RGB
+          colorServiceData.rgb_color = [255, 255, 255];
+        }
+        // Ensure NO color_temp in the first call
+        delete colorServiceData.color_temp;
+        delete colorServiceData.white;
+        delete colorServiceData.rgbw_color;
+        delete colorServiceData.rgbww_color;
+        
+        if (isWLED) {
+          colorServiceData.effect = 'Solid'; // Clear effects for WLED devices
+        }
+
+        // Second call: Set color temperature
+        const tempServiceData: any = { ...serviceData };
+        if (enableColorTemp) {
+          tempServiceData.color_temp = preset.color_temp;
+        }
+        // Ensure NO color descriptors in the second call
+        delete tempServiceData.rgb_color;
+        delete tempServiceData.hs_color;
+        delete tempServiceData.xy_color;
+        delete tempServiceData.rgbw_color;
+        delete tempServiceData.rgbww_color;
+        delete tempServiceData.white;
+        
+        if (isWLED) {
+          tempServiceData.effect = 'Solid'; // Clear effects for WLED devices
+        }
+
+        // Send both calls sequentially (only if enabled)
+        const serviceName = action === 'toggle' ? 'turn_on' : 'turn_on';
+        if (enableColor) {
+          await this.callLightService(serviceName, entityId, colorServiceData, hass);
+        }
+        if (enableColorTemp) {
+          // Small delay to ensure first call completes before second
+          if (enableColor) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          await this.callLightService(serviceName, entityId, tempServiceData, hass);
+        }
+        continue; // Skip the normal single-call logic below
+      }
+
+      // Normal mode: enforce single descriptor per call
+      if (!hasEffect) {
+        // Not in RGBWW mode and no effect - enforce single descriptor
+        if (hasRgbww) {
+          // Use rgbww_color exclusively
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+          delete (preset as any).color_temp;
+          delete (preset as any).rgbw_color;
+          delete (preset as any).white;
+        } else if (hasRgbw) {
+          // Use rgbw_color exclusively
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+          delete (preset as any).color_temp;
+          delete (preset as any).white;
+        } else if (hasWhite) {
+          // Use white exclusively - clear all other color descriptors
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+          delete (preset as any).color_temp;
+        } else if (hasColorTemp && hasColorRgb) {
+          // Both color_temp and RGB set but not RGBWW mode - prioritize color_temp
+          delete (preset as any).rgb_color;
+          delete (preset as any).hs_color;
+          delete (preset as any).xy_color;
+        } else if (hasColorRgb) {
+          // RGB/HS/XY mode - clear white
+          delete (preset as any).white;
+        }
+      }
+
+      // Add color - handle effects and single descriptor modes
       if (preset.effect && preset.effect.trim() !== '') {
         // Check if this entity supports the selected effect
         const entityEffectList = this.getEffectList(entityId, hass);
@@ -1881,42 +2153,26 @@ export class UltraLightModule extends BaseUltraModule {
             // Skip effect for this device, but continue with other settings like brightness
           }
         }
-      } else if (isRgbwwMode) {
-        // RGBWW mode: Send BOTH color and color temperature
-        // Priority: RGB > HS > XY for color value
-        if (preset.rgb_color !== undefined) {
-          serviceData.rgb_color = preset.rgb_color;
-        } else if (preset.hs_color !== undefined) {
-          serviceData.hs_color = preset.hs_color;
-        } else if (preset.xy_color !== undefined) {
-          serviceData.xy_color = preset.xy_color;
-        }
-        // Always include color temp in RGBWW mode
+      } else if (preset.color_temp !== undefined && !hasColorRgb && enableColorTemp) {
+        // Color temperature mode only (when no color is set and enabled)
         serviceData.color_temp = preset.color_temp;
-
-        if (isWLED) {
-          serviceData.effect = 'Solid'; // Clear effects for WLED devices
-        }
-      } else if (preset.color_temp !== undefined) {
-        // Color temperature mode only
-        serviceData.color_temp = preset.color_temp;
-      } else if (isWLED && preset.rgb_color !== undefined) {
+      } else if (isWLED && preset.rgb_color !== undefined && enableColor) {
         // For WLED devices, prioritize RGB color mode and clear effects
         serviceData.rgb_color = preset.rgb_color;
         serviceData.effect = 'Solid'; // Explicitly set to Solid effect to clear any active effects
-      } else if (preset.hs_color !== undefined) {
+      } else if (preset.hs_color !== undefined && enableColor) {
         // HS color mode (preferred for Home Assistant)
         serviceData.hs_color = preset.hs_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.xy_color !== undefined) {
+      } else if (preset.xy_color !== undefined && enableColor) {
         // XY color mode
         serviceData.xy_color = preset.xy_color;
         if (isWLED) {
           serviceData.effect = 'Solid'; // Clear effects for WLED devices
         }
-      } else if (preset.rgb_color !== undefined) {
+      } else if (preset.rgb_color !== undefined && enableColor) {
         // RGB color mode - fallback for non-WLED devices
         serviceData.rgb_color = preset.rgb_color;
         if (isWLED) {
@@ -1933,7 +2189,9 @@ export class UltraLightModule extends BaseUltraModule {
         serviceData.white = preset.white;
       }
 
-      await this.callLightService('turn_on', entityId, serviceData, hass);
+      // Use the appropriate service based on action
+      const serviceName = action === 'toggle' ? 'toggle' : 'turn_on';
+      await this.callLightService(serviceName, entityId, serviceData, hass);
     }
 
     // Show feedback if enabled
@@ -1961,7 +2219,7 @@ export class UltraLightModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const lightModule = module as LightModule;
     const presets = lightModule.presets || [];
@@ -1981,6 +2239,8 @@ export class UltraLightModule extends BaseUltraModule {
       width: '100%',
     };
 
+    // GRACEFUL RENDERING: Show helpful placeholders for incomplete configurations
+
     if (presets.length === 0) {
       return html`
         <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
@@ -1988,6 +2248,30 @@ export class UltraLightModule extends BaseUltraModule {
             <ha-icon icon="mdi:lightbulb-group"></ha-icon>
             <div>No presets configured</div>
             <div class="config-hint">Add presets in the General tab</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Check if any presets are missing entities
+    const validPresets = presets.filter(p => p.entities && p.entities.length > 0);
+    const incompletePresets = presets.filter(p => !p.entities || p.entities.length === 0);
+
+    // If ALL presets are incomplete, show a sleek, compact error state
+    if (validPresets.length === 0 && presets.length > 0) {
+      const presetList = incompletePresets.map((p, i) => p.name || `Preset ${i + 1}`).join(', ');
+
+      return html`
+        <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+          <div class="ultra-config-needed">
+            <div class="ultra-config-gradient"></div>
+            <div class="ultra-config-content">
+              <ha-icon icon="mdi:lightbulb-alert-outline"></ha-icon>
+              <div class="ultra-config-text">
+                <div class="ultra-config-title">Configure Entities</div>
+                <div class="ultra-config-subtitle">${presetList}</div>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -2007,6 +2291,7 @@ export class UltraLightModule extends BaseUltraModule {
       containerLayoutStyles = `
         display: grid;
         grid-template-columns: repeat(${columns}, 1fr);
+        grid-auto-flow: ${allowWrapping === false ? 'column' : 'row'};
         gap: ${buttonGap}rem;
       `;
     } else {
@@ -2020,10 +2305,28 @@ export class UltraLightModule extends BaseUltraModule {
       `;
     }
 
+    // Show sleek warning banner if some presets are incomplete (but render valid ones)
+    const warningBanner =
+      incompletePresets.length > 0
+        ? html`
+            <div class="ultra-config-banner">
+              <div class="ultra-config-banner-gradient"></div>
+              <div class="ultra-config-banner-content">
+                <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+                <span
+                  >${incompletePresets.length} preset${incompletePresets.length > 1 ? 's' : ''} need
+                  configuration</span
+                >
+              </div>
+            </div>
+          `
+        : '';
+
     return html`
       <div class="light-module-container" style=${this.styleObjectToCss(containerStyles)}>
+        ${warningBanner}
         <div class="presets-container ${layout}" style="${containerLayoutStyles}">
-          ${presets.map(preset =>
+          ${validPresets.map(preset =>
             this.renderPresetButton(preset, lightModule, hass, showLabels, buttonStyle, config)
           )}
         </div>
@@ -2119,6 +2422,17 @@ export class UltraLightModule extends BaseUltraModule {
     }
   }
 
+  private getDefaultIconForAction(action?: string): string {
+    switch (action) {
+      case 'turn_off':
+        return 'mdi:lightbulb-off';
+      case 'toggle':
+        return 'mdi:lightbulb-auto';
+      default:
+        return 'mdi:lightbulb';
+    }
+  }
+
   private renderPresetButton(
     preset: LightPreset,
     lightModule: LightModule,
@@ -2181,7 +2495,7 @@ export class UltraLightModule extends BaseUltraModule {
           title="${hasEntities ? `Apply preset: ${preset.name}` : 'No entities configured'}"
         >
           <ha-icon
-            icon="${preset.icon || 'mdi:lightbulb'}"
+            icon="${preset.icon || this.getDefaultIconForAction(preset.action)}"
             style="color: ${colors.iconColor};"
           ></ha-icon>
           ${showLabels ? html`<span class="preset-label">${preset.name}</span>` : ''}
@@ -2373,16 +2687,27 @@ export class UltraLightModule extends BaseUltraModule {
       errors.push('At least one entity must be selected for each preset');
     }
 
-    // Allow both color and temp for RGBWW lights - no mutual exclusivity check needed
-    if (
-      !preset.brightness &&
-      !preset.rgb_color &&
-      !preset.hs_color &&
-      !preset.xy_color &&
-      !preset.color_temp &&
-      !preset.effect
-    ) {
-      errors.push('At least one light setting (brightness, color, or effect) must be configured');
+    const action = preset.action || 'turn_on';
+
+    // Only require light settings for turn_on and toggle actions
+    if (action !== 'turn_off') {
+      const enableColor = preset.enable_color ?? true;
+      const enableColorTemp = preset.enable_color_temp ?? true;
+      const hasBrightness = preset.brightness !== undefined;
+      const hasEffect = preset.effect && preset.effect.trim() !== '';
+      const hasColor =
+        enableColor &&
+        (preset.rgb_color !== undefined ||
+          preset.hs_color !== undefined ||
+          preset.xy_color !== undefined);
+      const hasColorTemp = enableColorTemp && preset.color_temp !== undefined;
+
+      // At least one toggle must be ON, or brightness/effect must be set
+      if (!enableColor && !enableColorTemp && !hasBrightness && !hasEffect) {
+        errors.push(
+          'At least one of the following must be enabled: Color, Color Temperature, Brightness, or Effect'
+        );
+      }
     }
 
     return errors;
@@ -2393,28 +2718,47 @@ export class UltraLightModule extends BaseUltraModule {
     const lightModule = module as LightModule;
     const errors = [...baseValidation.errors];
 
-    // Check if at least one preset is configured
-    if (!lightModule.presets || lightModule.presets.length === 0) {
-      errors.push('At least one preset must be configured');
-    }
+    // LENIENT VALIDATION: Allow empty/incomplete presets - they will show helpful placeholders
+    // Don't fail validation for missing presets or entities - let the UI handle it gracefully
+    // Only validate presets that have been started (have a name or entities)
 
-    // Validate each preset
+    // Validate each preset - but only for truly breaking configuration errors
     (lightModule.presets || []).forEach((preset, index) => {
-      const presetErrors = this.validatePreset(preset);
-      presetErrors.forEach(error => {
-        errors.push(`Preset ${index + 1}: ${error}`);
-      });
+      // Only validate presets that have some content (started configuration)
+      const hasContent =
+        (preset.name && preset.name.trim() !== '') ||
+        (preset.entities && preset.entities.length > 0);
+
+      if (hasContent) {
+        // Only check for truly critical errors that would break functionality
+        // Don't fail on missing entities - the UI will show a helpful placeholder
+        const presetErrors = this.validatePreset(preset);
+
+        // Filter out non-critical errors that can be shown in the UI instead
+        const criticalErrors = presetErrors.filter(err => {
+          // Allow missing entities - UI will show placeholder
+          if (err.includes('At least one entity must be selected')) return false;
+          // Allow missing light settings - user might be configuring turn_off
+          if (err.includes('At least one light setting')) return false;
+          return true;
+        });
+
+        criticalErrors.forEach(error => {
+          errors.push(`Preset ${index + 1}: ${error}`);
+        });
+      }
     });
 
-    // Validate transition time
+    // Validate transition time (truly breaking if invalid)
     if (
-      lightModule.default_transition_time &&
+      lightModule.default_transition_time !== undefined &&
+      lightModule.default_transition_time !== null &&
       (lightModule.default_transition_time < 0 || lightModule.default_transition_time > 10)
     ) {
       errors.push('Default transition time must be between 0 and 10 seconds');
     }
 
-    // Validate grid columns
+    // Validate grid columns (truly breaking if invalid)
     if (
       lightModule.layout === 'grid' &&
       lightModule.columns &&
@@ -2423,6 +2767,8 @@ export class UltraLightModule extends BaseUltraModule {
       errors.push('Grid columns must be between 1 and 6');
     }
 
+    // Always return valid unless there are CRITICAL errors
+    // This allows the module to render with helpful placeholders for incomplete config
     return { valid: errors.length === 0, errors };
   }
 
@@ -2453,6 +2799,96 @@ export class UltraLightModule extends BaseUltraModule {
         font-size: 12px;
         opacity: 0.7;
         margin-top: 8px;
+      }
+
+      /* Ultra Card Modern Gradient Error State */
+      .ultra-config-needed {
+        position: relative;
+        padding: 16px;
+        border-radius: 12px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .ultra-config-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.15) 0%, 
+          rgba(236, 72, 153, 0.15) 50%, 
+          rgba(59, 130, 246, 0.15) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .ultra-config-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 24px;
+      }
+
+      .ultra-config-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .ultra-config-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 2px;
+      }
+
+      .ultra-config-subtitle {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compact Warning Banner */
+      .ultra-config-banner {
+        position: relative;
+        padding: 10px 14px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        backdrop-filter: blur(10px);
+      }
+
+      .ultra-config-banner-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.12) 0%, 
+          rgba(236, 72, 153, 0.12) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-banner-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--primary-text-color);
+      }
+
+      .ultra-config-banner-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 18px;
       }
 
       .presets-container {

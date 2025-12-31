@@ -22,6 +22,9 @@ export declare class LayoutTab extends LitElement {
     private _showColumnSettings;
     private _selectedColumnForSettings;
     private _activeColumnTab;
+    private _showTabsSectionChildSettings;
+    private _selectedTabsSectionChild;
+    private _activeTabsChildTab;
     private _showColumnLayoutSelector;
     private _selectedRowForLayout;
     private _collapsedPreviewModules;
@@ -39,19 +42,26 @@ export declare class LayoutTab extends LitElement {
     private _favoriteRowToSave;
     private _showImportDialog;
     private _openMoreMenuRowIndex;
+    private _hasModuleClipboard;
+    private _hasColumnClipboard;
+    private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
     private _maxHistorySize;
     private _isUndoRedoAction;
     /** Listen for template updates from modules to refresh live previews */
     private _templateUpdateListener?;
+    private _tabSwitchListener?;
     private _documentClickListener?;
     private _keydownListener?;
     private _templateUpdateTimer?;
     private _lastTemplateUpdate;
     private _savedScrollPosition;
     private _shouldRestoreScroll;
+    private _entityMappingOpen;
     connectedCallback(): void;
+    /** Detect Safari browser and add class for Safari-specific CSS fixes */
+    private _detectSafari;
     /** Determine if current device/viewport should be treated as mobile */
     private _isMobileDevice;
     private _handleWindowResize;
@@ -71,8 +81,10 @@ export declare class LayoutTab extends LitElement {
     private _resolvePreviewBackgroundImageCSS;
     private _draggedItem;
     private _dropTarget;
+    private _intendedDragTarget;
     private _selectedLayoutModuleIndex;
     private _selectedNestedChildIndex;
+    private _selectedNestedNestedChildIndex;
     private _showLayoutChildSettings;
     private _selectedLayoutChild;
     private _popupDragState;
@@ -126,6 +138,10 @@ export declare class LayoutTab extends LitElement {
     private _addPageBreakToSlider;
     private _addPageBreakToColumnSlider;
     private _addPreset;
+    private _showEntityMappingDialog;
+    private _applyPresetToLayout;
+    private _remapRowEntities;
+    private _applyMappingsToRow;
     private _addFavorite;
     private _saveRowAsFavorite;
     private _exportRow;
@@ -134,6 +150,10 @@ export declare class LayoutTab extends LitElement {
     private _deleteFavorite;
     private _cloneRowWithNewIds;
     private _toggleMoreMenu;
+    private _copyModule;
+    private _pasteModule;
+    private _copyColumn;
+    private _pasteColumn;
     private _showToast;
     private _countExternalCardModules;
     /**
@@ -156,6 +176,15 @@ export declare class LayoutTab extends LitElement {
      */
     private _handleRefresh3rdPartyTab;
     /**
+     * Handle refresh button click in Cards tab
+     */
+    private _handleRefreshCardsTab;
+    /**
+     * Add a native HA card from the Cards tab
+     * Creates a native_card module (not external_card)
+     */
+    private _addNativeCard;
+    /**
      * Open Ultra Card Pro purchase page
      */
     private _openProPage;
@@ -165,10 +194,16 @@ export declare class LayoutTab extends LitElement {
     private _openModuleSettings;
     private _updateModule;
     private _updateLayoutChildModule;
+    /**
+     * Helper method to get the correct module for design updates.
+     * Handles both regular module edits and nested layout child module edits.
+     */
+    private _getModuleForDesignUpdate;
     private _updateModuleDesign;
     private _closeModuleSettings;
     private _navigateToPro;
     private _closeLayoutChildSettings;
+    private _closeTabsSectionChildSettings;
     private _onDragStart;
     private _onDragEnd;
     private _onDragOver;
@@ -178,9 +213,15 @@ export declare class LayoutTab extends LitElement {
     private _isValidDropTarget;
     private _performMove;
     private _moveModule;
+    private _relocateLayoutModule;
     private _moveColumn;
     private _moveRow;
     private _moveNestedChild;
+    private _moveDeepNestedChild;
+    /**
+     * Move a module from inside a tabs section to another location in the layout
+     */
+    private _moveTabsSectionChild;
     private _openRowSettings;
     private _updateRow;
     private _openColumnSettings;
@@ -194,6 +235,124 @@ export declare class LayoutTab extends LitElement {
     private _getJustifyContent;
     private _renderLayoutChildModule;
     private _renderNestedLayoutModule;
+    /**
+     * Renders a deeply nested layout module (3rd level: e.g., popup inside horizontal inside slider)
+     */
+    private _renderDeepNestedLayoutModule;
+    /**
+     * Renders a child module inside a deeply nested layout (4th level)
+     * These are rendered as simplified module cards without further nesting capability
+     */
+    private _renderDeepNestedChildModule;
+    /**
+     * Renders a Tabs layout module at the top level (in a column)
+     */
+    private _renderTabsLayoutModule;
+    /**
+     * Renders a Tabs layout module when nested inside another layout
+     */
+    private _renderNestedTabsLayoutModule;
+    /**
+     * Renders a single section of a Tabs module with its own drop zone
+     */
+    private _renderTabsSection;
+    /**
+     * Renders a child module inside a tabs section
+     */
+    private _renderTabsSectionChild;
+    /**
+     * Renders a nested layout module inside a tabs section (horizontal, vertical, slider, etc.)
+     */
+    private _renderTabsSectionNestedLayout;
+    /**
+     * Renders a child module inside a nested layout that's inside a tabs section
+     */
+    private _renderTabsSectionNestedLayoutChild;
+    /**
+     * Renders a deeply nested layout module (layout inside a layout inside a tabs section)
+     */
+    private _renderTabsSectionDeeplyNestedLayout;
+    /**
+     * Renders a child module inside a deeply nested layout (layout inside layout inside tabs)
+     */
+    private _renderTabsSectionDeeplyNestedLayoutChild;
+    /**
+     * Opens module selector for nested layout inside a tabs section
+     */
+    private _openTabsSectionNestedLayoutModuleSelector;
+    /**
+     * Opens settings for a child module inside a nested layout that's inside a tabs section
+     */
+    private _openTabsSectionNestedLayoutChildSettings;
+    /**
+     * Duplicates a child module inside a nested layout that's inside a tabs section
+     */
+    private _duplicateTabsSectionNestedLayoutChild;
+    /**
+     * Deletes a child module inside a nested layout that's inside a tabs section
+     */
+    private _deleteTabsSectionNestedLayoutChild;
+    /**
+     * Opens the module selector for adding a module to a tabs section
+     */
+    private _openTabsSectionModuleSelector;
+    private _tabsSectionContext;
+    private _tabsSectionNestedLayoutContext;
+    private _tabsSectionDeeplyNestedLayoutContext;
+    /**
+     * Adds a module to a specific tabs section
+     */
+    private _addModuleToTabsSection;
+    /**
+     * Adds a module to a nested layout inside a tabs section
+     */
+    private _addModuleToTabsSectionNestedLayout;
+    /**
+     * Opens module selector for a deeply nested layout (layout inside layout inside tabs)
+     */
+    private _openTabsSectionDeeplyNestedLayoutModuleSelector;
+    /**
+     * Adds a module to a deeply nested layout (layout inside layout inside tabs)
+     */
+    private _addModuleToTabsSectionDeeplyNestedLayout;
+    /**
+     * Opens settings for a child module inside a deeply nested layout
+     */
+    private _openTabsSectionDeeplyNestedLayoutChildSettings;
+    /**
+     * Duplicates a child module inside a deeply nested layout
+     */
+    private _duplicateTabsSectionDeeplyNestedLayoutChild;
+    /**
+     * Deletes a child module from a deeply nested layout
+     */
+    private _deleteTabsSectionDeeplyNestedLayoutChild;
+    /**
+     * Opens settings for a child module in a tabs section
+     * Uses a custom event to trigger the module popup in the parent editor
+     */
+    private _openTabsSectionChildSettings;
+    /**
+     * Updates a child module in a tabs section
+     */
+    private _updateTabsSectionChild;
+    /**
+     * Copies a child module from a tabs section to clipboard
+     */
+    private _copyTabsSectionChild;
+    /**
+     * Handles drag start for modules inside tabs sections
+     */
+    private _onTabsSectionChildDragStart;
+    /**
+     * Handles drop on a specific child module within a tabs section (for reordering)
+     */
+    private _handleTabsSectionChildDrop;
+    /**
+     * Handles drop on a tabs section (empty area or at the end)
+     * This should only be called when dropping on empty space, not on a specific child module
+     */
+    private _handleTabsSectionDrop;
     private _renderNestedChildModule;
     private _onLayoutModuleDragOver;
     private _onLayoutModuleDragEnter;
@@ -203,23 +362,57 @@ export declare class LayoutTab extends LitElement {
     private _onLayoutChildDragEnd;
     private _onNestedChildDragStart;
     private _onNestedChildDragEnd;
+    /**
+     * Handles drag start for child modules inside deeply nested layouts (4th level)
+     * e.g., icon module inside popup inside horizontal inside slider
+     */
+    private _onDeepNestedChildDragStart;
+    private _onDeepNestedChildDragEnd;
+    /**
+     * Handles drag start for deep nested layout modules (3rd level nesting)
+     * e.g., popup inside horizontal inside slider
+     */
+    private _onDeepNestedLayoutDragStart;
     private _onNestedChildDragOver;
     private _onNestedChildDragEnter;
     private _onNestedChildDragLeave;
     private _onNestedChildDrop;
+    /**
+     * Handle dropping a module into a deeply nested layout (3rd level, e.g., Popup inside Horizontal inside Slider)
+     */
+    private _handleDropToDeepNestedLayout;
     private _onLayoutChildDragEnter;
     private _onLayoutChildDrop;
     private _onLayoutAppendDragEnter;
     private _onLayoutAppendDrop;
     private _openLayoutModuleSelector;
     private _openNestedLayoutModuleSelector;
+    private _openDeepNestedLayoutModuleSelector;
     private _openLayoutChildSettings;
     private _duplicateLayoutChildModule;
+    private _copyLayoutChildModule;
     private _duplicateNestedChildModule;
     private _deleteNestedChildModule;
     private _openNestedChildSettings;
+    /**
+     * Opens settings for a child module inside a deeply nested layout (4th level)
+     */
+    private _openDeepNestedChildSettings;
+    /**
+     * Duplicates a child module inside a deeply nested layout (4th level)
+     */
+    private _duplicateDeepNestedChildModule;
+    /**
+     * Deletes a child module inside a deeply nested layout (4th level)
+     */
+    private _deleteDeepNestedChildModule;
     private _regenerateModuleIds;
     private _deleteLayoutChildModule;
+    /**
+     * Converts module type names to friendly display titles
+     * Example: "animated_clock" -> "Animated Clock"
+     */
+    private _formatModuleTypeName;
     private _getModuleSettingsTitle;
     private _getModuleDisplayName;
     private _generateModuleInfo;
@@ -228,6 +421,18 @@ export declare class LayoutTab extends LitElement {
     private _getColumnPreviewAnimationData;
     private _renderRowPreview;
     private _renderColumnPreview;
+    private _renderTabsSectionChildSettings;
+    private _renderTabsSectionChildPreview;
+    private _renderTabsSectionChildGeneralTab;
+    private _renderTabsSectionChildYamlTab;
+    private _renderTabsSectionChildActionsTab;
+    private _renderTabsSectionChildOtherTab;
+    private _renderTabsSectionChildLogicTab;
+    private _renderTabsSectionChildDesignTab;
+    private _duplicateTabsSectionChild;
+    private _duplicateTabsSectionChildFromPopup;
+    private _deleteTabsSectionChild;
+    private _deleteTabsSectionChildFromPopup;
     private _renderModuleSettings;
     private _renderLayoutChildSettings;
     private _renderLayoutChildGeneralTab;
@@ -240,6 +445,15 @@ export declare class LayoutTab extends LitElement {
     private _renderRowSettings;
     private _renderColumnSettings;
     private _renderRowGeneralTab;
+    /**
+     * Get the column vertical alignment value for display in row settings
+     * Returns the first column's alignment if all columns have the same, otherwise returns undefined
+     */
+    private _getColumnVerticalAlignment;
+    /**
+     * Update vertical alignment for all columns in a row
+     */
+    private _updateAllColumnsVerticalAlignment;
     private _renderRowActionsTab;
     private _renderRowLogicTab;
     private _renderRowDesignTab;
@@ -295,11 +509,21 @@ export declare class LayoutTab extends LitElement {
     private _renderPresetsTab;
     private _renderFavoritesTab;
     private _render3rdPartyTab;
+    /**
+     * Render the new Cards tab with both native and 3rd party cards
+     */
+    private _renderCardsTab;
     private _addCardFromTab;
     private _renderFavoriteDialog;
     private _renderImportDialog;
     private _handleImport;
+    private _showRowImportMappingDialog;
+    private _addImportedRow;
+    private _addImportedRowWithMappings;
     private _getDefaultCardConfig;
+    private _tryHACardHelper;
+    private _getHardcodedDefault;
+    private _tryGetStubConfig;
     private _add3rdPartyCard;
     private _isLayoutModule;
     private _shouldAutoOpenSettings;

@@ -12,7 +12,7 @@ export declare class UltraTextModule extends BaseUltraModule {
     createDefault(id?: string, hass?: HomeAssistant): TextModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;

@@ -13,9 +13,22 @@ import { UltraLinkComponent } from '../components/ultra-link';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
+import { buildEntityContext } from '../utils/template-context';
+import {
+  parseUnifiedTemplate,
+  hasTemplateError,
+  getTemplateError,
+  isStringResult,
+} from '../utils/template-parser';
+import {
+  detectLegacyTemplates,
+  migrateToUnified,
+  shouldShowMigrationPrompt,
+} from '../utils/template-migration';
 
 export class UltraIconModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
@@ -289,12 +302,18 @@ export class UltraIconModule extends BaseUltraModule {
           dynamic_icon_template: '',
           dynamic_color_template_mode: false,
           dynamic_color_template: '',
+
+          // Unified template system
+          unified_template_mode: false,
+          unified_template: '',
+          ignore_entity_state_config: false,
         },
       ],
       // alignment: undefined, // No default alignment to allow Global Design tab control
       // vertical_alignment: undefined, // No default alignment to allow Global Design tab control
       columns: 3,
       gap: 16,
+      allow_wrap: true, // Allow grid items to wrap to new rows
       // Global action configuration (for the module container) - smart default based on entity type
       tap_action: undefined,
       hold_action: undefined,
@@ -302,7 +321,6 @@ export class UltraIconModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -1539,119 +1557,121 @@ export class UltraIconModule extends BaseUltraModule {
                   : ''}
               </div>
 
-              <!-- Advanced Template Mode Section -->
-              <div class="template-section" style="margin-bottom: 24px;">
-                <div class="template-header">
-                  <div class="switch-container">
-                    <label class="switch-label"
-                      >${localize(
-                        'editor.icon.template_section.title',
-                        lang,
-                        'Advanced Template Mode'
-                      )}</label
+              <!-- Migration Banner (if legacy templates detected) -->
+              ${shouldShowMigrationPrompt(icon)
+                ? html`
+                    <div
+                      class="migration-banner"
+                      style="
+                        background: linear-gradient(135deg, rgba(var(--rgb-primary-color), 0.1), rgba(var(--rgb-primary-color), 0.05));
+                        border: 2px solid var(--primary-color);
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 24px;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                      "
                     >
-                    <label class="switch">
-                      <input
-                        type="checkbox"
-                        .checked=${icon.template_mode || false}
-                        @change=${(e: Event) => {
-                          const checked = (e.target as HTMLInputElement).checked;
-                          this._updateIcon(
-                            iconModule,
-                            index,
-                            { template_mode: checked },
-                            updateModule
-                          );
-                        }}
-                      />
-                      <span class="slider round"></span>
-                    </label>
-                  </div>
-                  <div class="template-description">
-                    ${localize(
-                      'editor.icon.template_section.desc',
-                      lang,
-                      'Use Jinja2 templates for advanced icon control. Templates can control visibility (true/false to show/hide icons) and customize state text. Return custom text for Active State, return actual entity state for Inactive State.'
-                    )}
-                  </div>
-                </div>
-
-                ${icon.template_mode
-                  ? html`
-                      <div class="template-content">
-                        <ultra-template-editor
-                          .hass=${hass}
-                          .value=${icon.template || ''}
-                          .placeholder=${"{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"}
-                          .minHeight=${150}
-                          .maxHeight=${400}
-                          @value-changed=${(e: CustomEvent) => {
-                            this._updateIcon(
-                              iconModule,
-                              index,
-                              { template: e.detail.value },
-                              updateModule
-                            );
-                          }}
-                        ></ultra-template-editor>
-                        <div class="template-help">
-                          <p><strong>For visibility control, return a boolean:</strong></p>
-                          <ul>
-                            <li>
-                              <code>true</code>, <code>on</code>, <code>yes</code>, <code>1</code> →
-                              Show icon (Active State)
-                            </li>
-                            <li>
-                              <code>false</code>, <code>off</code>, <code>no</code>,
-                              <code>0</code> → Hide icon (Inactive State)
-                            </li>
-                          </ul>
-                          <p><strong>For custom state text, return a string:</strong></p>
-                          <ul>
-                            <li>
-                              <code
-                                >{% if states('weather.forecast_home') == 'cloudy' %}About to Rain{%
-                                else %}{{ states('weather.forecast_home') }}{% endif %}</code
-                              >
-                              → When cloudy: shows "About to Rain" (Active), when not cloudy: shows
-                              actual state (Inactive)
-                            </li>
-                            <li>
-                              <code>{{ states('sensor.temperature') | round(1) }}°F</code> → Shows
-                              formatted temperature and Active State is current
-                            </li>
-                          </ul>
-                          <p>
-                            <strong>Note:</strong> Use the same entity name throughout your template
-                            to avoid "unknown" states
-                          </p>
+                      <div style="display: flex; align-items: start; gap: 16px;">
+                        <ha-icon
+                          icon="mdi:lightbulb-on-outline"
+                          style="color: var(--primary-color); font-size: 32px; flex-shrink: 0;"
+                        ></ha-icon>
+                        <div style="flex: 1;">
+                          <div
+                            style="font-size: 18px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.icon.migration_title',
+                              lang,
+                              'Template Migration Available'
+                            )}
+                          </div>
+                          <div
+                            style="font-size: 14px; color: var(--primary-text-color); margin-bottom: 12px; line-height: 1.5;"
+                          >
+                            ${localize(
+                              'editor.icon.migration_desc',
+                              lang,
+                              `You have ${detectLegacyTemplates(icon).templateCount} separate template(s). Combine them into one unified template for easier editing and better entity remapping support.`
+                            )}
+                          </div>
+                          <div style="display: flex; gap: 12px;">
+                            <button
+                              style="
+                                background: var(--primary-color);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                padding: 10px 20px;
+                                font-size: 14px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                              "
+                              @click=${() => {
+                                const migration = migrateToUnified(icon);
+                                this._updateIcon(
+                                  iconModule,
+                                  index,
+                                  {
+                                    unified_template_mode: migration.unified_template_mode,
+                                    unified_template: migration.unified_template,
+                                    ignore_entity_state_config:
+                                      migration.ignore_entity_state_config,
+                                    // Disable legacy templates after migration
+                                    template_mode: false,
+                                    dynamic_icon_template_mode: false,
+                                    dynamic_color_template_mode: false,
+                                  },
+                                  updateModule
+                                );
+                              }}
+                              @mouseover=${(e: Event) => {
+                                const btn = e.target as HTMLElement;
+                                btn.style.transform = 'translateY(-2px)';
+                                btn.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+                              }}
+                              @mouseout=${(e: Event) => {
+                                const btn = e.target as HTMLElement;
+                                btn.style.transform = 'translateY(0)';
+                                btn.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+                              }}
+                            >
+                              ${localize(
+                                'editor.icon.migrate_button',
+                                lang,
+                                'Migrate to Unified Template'
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    `
-                  : ''}
-              </div>
+                    </div>
+                  `
+                : ''}
 
-              <!-- Dynamic Icon Color Template Section -->
+              <!-- Unified Template Section (New Preferred Method) -->
               <div class="template-section" style="margin-bottom: 24px;">
                 <div class="template-header">
                   <div class="switch-container">
                     <label class="switch-label"
                       >${localize(
-                        'editor.icon.dynamic_color_template_section.title',
+                        'editor.icon.unified_template_section.title',
                         lang,
-                        'Dynamic Icon Color Template'
+                        'Template Mode'
                       )}</label
                     >
                     <label class="switch">
                       <input
                         type="checkbox"
-                        .checked=${icon.dynamic_color_template_mode || false}
+                        .checked=${icon.unified_template_mode || false}
                         @change=${(e: Event) => {
                           const checked = (e.target as HTMLInputElement).checked;
                           this._updateIcon(
                             iconModule,
                             index,
-                            { dynamic_color_template_mode: checked },
+                            { unified_template_mode: checked },
                             updateModule
                           );
                         }}
@@ -1661,57 +1681,441 @@ export class UltraIconModule extends BaseUltraModule {
                   </div>
                   <div class="template-description">
                     ${localize(
-                      'editor.icon.dynamic_color_template_section.desc',
+                      'editor.icon.unified_template_section.desc',
                       lang,
-                      'Use Jinja2 templates to dynamically change icon color based on conditions. Return a valid CSS color value (e.g., #FF0000, rgb(255,0,0), red) or empty for default color.'
+                      'Use Jinja2 templates to control icon and color dynamically. Return simple string for icon-only, or JSON object for multiple properties. Uses entity context variables (entity, state, name, attributes) for seamless entity remapping.'
                     )}
                   </div>
                 </div>
 
-                ${icon.dynamic_color_template_mode
+                ${icon.unified_template_mode
                   ? html`
-                      <div class="template-content">
+                      <!-- Ignore Entity State Config Toggle -->
+                      <div
+                        style="margin-bottom: 16px; padding: 12px; background: rgba(var(--rgb-warning-color, 255, 152, 0), 0.1); border-radius: 8px; border-left: 4px solid var(--warning-color, #FF9800);"
+                      >
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <ha-switch
+                            .checked=${icon.ignore_entity_state_config || false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                { ignore_entity_state_config: target.checked },
+                                updateModule
+                              );
+                            }}
+                          ></ha-switch>
+                          <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 4px;">
+                              ${localize(
+                                'editor.icon.ignore_entity_state',
+                                lang,
+                                'Ignore Entity State Config'
+                              )}
+                            </div>
+                            <div style="font-size: 12px; color: var(--secondary-text-color);">
+                              ${localize(
+                                'editor.icon.ignore_entity_state_desc',
+                                lang,
+                                'When enabled, entity state settings above will be ignored and template will control active/inactive state for animations'
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div 
+                        class="template-content"
+                        @mousedown=${(e: Event) => {
+                          // Only stop propagation for drag operations, not clicks on the editor
+                          const target = e.target as HTMLElement;
+                          if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                            e.stopPropagation();
+                          }
+                        }}
+                        @dragstart=${(e: Event) => e.stopPropagation()}
+                      >
                         <ultra-template-editor
                           .hass=${hass}
-                          .value=${icon.dynamic_color_template || ''}
-                          .placeholder=${"{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"}
-                          .minHeight=${100}
-                          .maxHeight=${300}
+                          .value=${icon.unified_template || ''}
+                          .placeholder=${'{% set level = state | int %}\n{\n  "icon": "mdi:battery-{{ (level / 10) | round(0) * 10 }}",\n  "icon_color": "{% if level <= 20 %}red{% else %}green{% endif %}"\n}'}
+                          .minHeight=${200}
+                          .maxHeight=${500}
                           @value-changed=${(e: CustomEvent) => {
                             this._updateIcon(
                               iconModule,
                               index,
-                              { dynamic_color_template: e.detail.value },
+                              { unified_template: e.detail.value },
                               updateModule
                             );
                           }}
                         ></ultra-template-editor>
                         <div class="template-help">
-                          <p><strong>Return a CSS color value:</strong></p>
+                          <p><strong>Return simple string for icon-only:</strong></p>
                           <ul>
-                            <li><code>#FF0000</code> → Red color in hex</li>
-                            <li><code>rgb(255, 0, 0)</code> → Red color in RGB</li>
-                            <li><code>red</code> → Red color by name</li>
+                            <li><code>mdi:fire</code> → Changes icon only</li>
                             <li>
                               <code
-                                >{{ states.light.living_room.attributes.rgb_color | join(',') |
-                                format('rgb(%s)') }}</code
+                                >{% if state|int > 25 %}mdi:fire{% else %}mdi:snowflake{% endif
+                                %}</code
                               >
-                              → Use entity RGB color
+                            </li>
+                          </ul>
+                          <p><strong>Return JSON for multiple properties:</strong></p>
+                          <ul>
+                            <li><code>{ "icon": "mdi:fire", "icon_color": "#FF0000" }</code></li>
+                            <li>
+                              Available properties: <code>icon</code>, <code>icon_color</code>
                             </li>
                           </ul>
                           <p>
-                            <strong>Example:</strong>
-                            <code
-                              >{% if states('sensor.temperature') | int > 25 %}#FF4444{% else
-                              %}#4444FF{% endif %}</code
+                            <strong
+                              >Entity context variables (no need to hardcode entity ID):</strong
                             >
                           </p>
+                          <ul>
+                            <li><code>entity</code> → Entity ID (${icon.entity})</li>
+                            <li><code>state</code> → Current state value</li>
+                            <li><code>name</code> → Entity name</li>
+                            <li><code>attributes</code> → All entity attributes</li>
+                            <li><code>unit</code> → Unit of measurement</li>
+                            <li><code>domain</code> → Entity domain (e.g., 'sensor', 'light')</li>
+                            <li><code>device_class</code> → Device class</li>
+                          </ul>
+                          <p><strong>Example - Works with ANY battery entity:</strong></p>
+                          <code
+                            style="display: block; background: var(--code-editor-background-color, #1e1e1e); padding: 12px; border-radius: 4px; font-size: 11px;"
+                          >
+                            {% set level = state | int %}<br />
+                            {<br />
+                            &nbsp;&nbsp;"icon": "mdi:battery-{{ (level / 10) | round(0) * 10 }}",<br />
+                            &nbsp;&nbsp;"icon_color": "{% if level <= 20 %}#FF0000{% elif level <=
+                            50 %}#FF8800{% else %}#00CC00{% endif %}"<br />
+                            }
+                          </code>
                         </div>
                       </div>
                     `
                   : ''}
               </div>
+
+              <!-- Advanced Template Mode Section (Deprecated - Legacy) -->
+              <details style="margin-bottom: 24px;" ${icon.template_mode ? 'open' : ''}>
+                <summary
+                  style="
+                  padding: 12px 16px;
+                  background: var(--secondary-background-color);
+                  border: 1px solid var(--divider-color);
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-weight: 600;
+                  color: var(--secondary-text-color);
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                "
+                >
+                  <ha-icon icon="mdi:alpha-a-box-outline" style="opacity: 0.6;"></ha-icon>
+                  ${localize('editor.icon.legacy_templates', lang, 'Legacy Templates (Deprecated)')}
+                  ${icon.template_mode ||
+                  icon.dynamic_icon_template_mode ||
+                  icon.dynamic_color_template_mode
+                    ? html`<span
+                        style="background: var(--warning-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700;"
+                        >IN USE</span
+                      >`
+                    : ''}
+                </summary>
+                <div
+                  style="padding: 16px; background: var(--card-background-color); border: 1px solid var(--divider-color); border-top: none; border-radius: 0 0 8px 8px;"
+                >
+                  <!-- Advanced Template Mode Section -->
+                  <div class="template-section" style="margin-bottom: 24px;">
+                    <div class="template-header">
+                      <div class="switch-container">
+                        <label class="switch-label"
+                          >${localize(
+                            'editor.icon.template_section.title',
+                            lang,
+                            'Advanced Template Mode'
+                          )}</label
+                        >
+                        <label class="switch">
+                          <input
+                            type="checkbox"
+                            .checked=${icon.template_mode || false}
+                            @change=${(e: Event) => {
+                              const checked = (e.target as HTMLInputElement).checked;
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                { template_mode: checked },
+                                updateModule
+                              );
+                            }}
+                          />
+                          <span class="slider round"></span>
+                        </label>
+                      </div>
+                      <div class="template-description">
+                        ${localize(
+                          'editor.icon.template_section.desc',
+                          lang,
+                          'Use Jinja2 templates for advanced icon control. Templates can control visibility (true/false to show/hide icons) and customize state text. Return custom text for Active State, return actual entity state for Inactive State.'
+                        )}
+                      </div>
+                    </div>
+
+                    ${icon.template_mode
+                      ? html`
+                          <div 
+                            class="template-content"
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
+                            <ultra-template-editor
+                              .hass=${hass}
+                              .value=${icon.template || ''}
+                              .placeholder=${"{% if states('binary_sensor.example') == 'on' %}true{% else %}false{% endif %}"}
+                              .minHeight=${150}
+                              .maxHeight=${400}
+                              @value-changed=${(e: CustomEvent) => {
+                                this._updateIcon(
+                                  iconModule,
+                                  index,
+                                  { template: e.detail.value },
+                                  updateModule
+                                );
+                              }}
+                            ></ultra-template-editor>
+                            <div class="template-help">
+                              <p><strong>For visibility control, return a boolean:</strong></p>
+                              <ul>
+                                <li>
+                                  <code>true</code>, <code>on</code>, <code>yes</code>,
+                                  <code>1</code> → Show icon (Active State)
+                                </li>
+                                <li>
+                                  <code>false</code>, <code>off</code>, <code>no</code>,
+                                  <code>0</code> → Hide icon (Inactive State)
+                                </li>
+                              </ul>
+                              <p><strong>For custom state text, return a string:</strong></p>
+                              <ul>
+                                <li>
+                                  <code
+                                    >{% if states('weather.forecast_home') == 'cloudy' %}About to
+                                    Rain{% else %}{{ states('weather.forecast_home') }}{% endif
+                                    %}</code
+                                  >
+                                  → When cloudy: shows "About to Rain" (Active), when not cloudy:
+                                  shows actual state (Inactive)
+                                </li>
+                                <li>
+                                  <code>{{ states('sensor.temperature') | round(1) }}°F</code> →
+                                  Shows formatted temperature and Active State is current
+                                </li>
+                              </ul>
+                              <p>
+                                <strong>Note:</strong> Use the same entity name throughout your
+                                template to avoid "unknown" states
+                              </p>
+                            </div>
+                          </div>
+                        `
+                      : ''}
+                  </div>
+
+                  <!-- Dynamic Icon Color Template Section -->
+                  <div class="template-section" style="margin-bottom: 24px;">
+                    <div class="template-header">
+                      <div class="switch-container">
+                        <label class="switch-label"
+                          >${localize(
+                            'editor.icon.dynamic_color_template_section.title',
+                            lang,
+                            'Dynamic Icon Color Template'
+                          )}</label
+                        >
+                        <label class="switch">
+                          <input
+                            type="checkbox"
+                            .checked=${icon.dynamic_color_template_mode || false}
+                            @change=${(e: Event) => {
+                              const checked = (e.target as HTMLInputElement).checked;
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                { dynamic_color_template_mode: checked },
+                                updateModule
+                              );
+                            }}
+                          />
+                          <span class="slider round"></span>
+                        </label>
+                      </div>
+                      <div class="template-description">
+                        ${localize(
+                          'editor.icon.dynamic_color_template_section.desc',
+                          lang,
+                          'Use Jinja2 templates to dynamically change icon color based on conditions. Return a valid CSS color value (e.g., #FF0000, rgb(255,0,0), red) or empty for default color.'
+                        )}
+                      </div>
+                    </div>
+
+                    ${icon.dynamic_color_template_mode
+                      ? html`
+                          <div 
+                            class="template-content"
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
+                            <ultra-template-editor
+                              .hass=${hass}
+                              .value=${icon.dynamic_color_template || ''}
+                              .placeholder=${"{% if states('binary_sensor.example') == 'on' %}#FF0000{% else %}#00FF00{% endif %}"}
+                              .minHeight=${100}
+                              .maxHeight=${300}
+                              @value-changed=${(e: CustomEvent) => {
+                                this._updateIcon(
+                                  iconModule,
+                                  index,
+                                  { dynamic_color_template: e.detail.value },
+                                  updateModule
+                                );
+                              }}
+                            ></ultra-template-editor>
+                            <div class="template-help">
+                              <p><strong>Return a CSS color value:</strong></p>
+                              <ul>
+                                <li><code>#FF0000</code> → Red color in hex</li>
+                                <li><code>rgb(255, 0, 0)</code> → Red color in RGB</li>
+                                <li><code>red</code> → Red color by name</li>
+                                <li>
+                                  <code
+                                    >{{ states.light.living_room.attributes.rgb_color | join(',') |
+                                    format('rgb(%s)') }}</code
+                                  >
+                                  → Use entity RGB color
+                                </li>
+                              </ul>
+                              <p>
+                                <strong>Example:</strong>
+                                <code
+                                  >{% if states('sensor.temperature') | int > 25 %}#FF4444{% else
+                                  %}#4444FF{% endif %}</code
+                                >
+                              </p>
+                            </div>
+                          </div>
+                        `
+                      : ''}
+                  </div>
+
+                  <!-- Dynamic Icon Template Section -->
+                  <div class="template-section" style="margin-bottom: 24px;">
+                    <div class="template-header">
+                      <div class="switch-container">
+                        <label class="switch-label"
+                          >${localize(
+                            'editor.icon.dynamic_icon_template_section.title',
+                            lang,
+                            'Dynamic Icon Template'
+                          )}</label
+                        >
+                        <label class="switch">
+                          <input
+                            type="checkbox"
+                            .checked=${icon.dynamic_icon_template_mode || false}
+                            @change=${(e: Event) => {
+                              const checked = (e.target as HTMLInputElement).checked;
+                              this._updateIcon(
+                                iconModule,
+                                index,
+                                { dynamic_icon_template_mode: checked },
+                                updateModule
+                              );
+                            }}
+                          />
+                          <span class="slider round"></span>
+                        </label>
+                      </div>
+                      <div class="template-description">
+                        ${localize(
+                          'editor.icon.dynamic_icon_template_section.desc',
+                          lang,
+                          'Use Jinja2 templates to dynamically change the icon based on conditions. Return a valid icon name (e.g., mdi:weather-sunny, mdi:home, mdi:lightbulb) or empty for default icon.'
+                        )}
+                      </div>
+                    </div>
+
+                    ${icon.dynamic_icon_template_mode
+                      ? html`
+                          <div 
+                            class="template-content"
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
+                            <ultra-template-editor
+                              .hass=${hass}
+                              .value=${icon.dynamic_icon_template || ''}
+                              .placeholder=${"{% if states('binary_sensor.example') == 'on' %}mdi:lightbulb-on{% else %}mdi:lightbulb-off{% endif %}"}
+                              .minHeight=${100}
+                              .maxHeight=${300}
+                              @value-changed=${(e: CustomEvent) => {
+                                this._updateIcon(
+                                  iconModule,
+                                  index,
+                                  { dynamic_icon_template: e.detail.value },
+                                  updateModule
+                                );
+                              }}
+                            ></ultra-template-editor>
+                            <div class="template-help">
+                              <p><strong>Return an icon name:</strong></p>
+                              <ul>
+                                <li><code>mdi:weather-sunny</code> → Weather icon</li>
+                                <li><code>mdi:home</code> → Home icon</li>
+                                <li><code>mdi:lightbulb</code> → Light icon</li>
+                                <li>
+                                  <code>{{ states.light.living_room.attributes.icon }}</code>
+                                  → Use entity's current icon
+                                </li>
+                              </ul>
+                              <p>
+                                <strong>Example:</strong>
+                                <code
+                                  >{% if states('sensor.temperature') | int > 25 %}mdi:thermometer{%
+                                  else %}mdi:snowflake{% endif %}</code
+                                >
+                              </p>
+                            </div>
+                          </div>
+                        `
+                      : ''}
+                  </div>
+                </div>
+              </details>
 
               <!-- Icon Animation Section -->
               ${this.renderSettingsSection(
@@ -1927,7 +2331,7 @@ export class UltraIconModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const iconModule = module as IconModule;
 
@@ -2018,8 +2422,68 @@ export class UltraIconModule extends BaseUltraModule {
       hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
     };
 
+    // Check if any icon has a template-based container background color (needs to be parsed from template strings)
+    // This needs to happen BEFORE containerStyles are built
+    let templateContainerBg = '';
+    const tempValidIcons = (iconModule.icons || []).filter(i => i.entity && i.entity.trim() !== '');
+    for (const icon of tempValidIcons) {
+      // Check if icon has unified template mode enabled
+      if (icon.unified_template_mode && icon.unified_template) {
+        // Initialize template service if needed
+        if (!this._templateService && hass) {
+          this._templateService = new TemplateService(hass);
+        }
+
+        const templateHash = this._hashString(icon.unified_template);
+        // Use the same key format as the render loop: unified_${entity}_${id}_${hash}
+        const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+
+        // Subscribe to template if not already subscribed (needed for template evaluation)
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          const context = this._getEntityContext(icon, hass);
+          this._templateService.subscribeToTemplate(
+            icon.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+            break; // Use first icon's template background
+          }
+        }
+      }
+    }
+
     // Container styles for design system - no hardcoded spacing, user controls all
     const containerStyles = {
+      // Flexbox centering for when specific width/height is set
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
       // Only apply padding if explicitly set by user
       padding:
         designProperties.padding_top ||
@@ -2045,7 +2509,10 @@ export class UltraIconModule extends BaseUltraModule {
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
       background:
-        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+        templateContainerBg ||
+        designProperties.background_color ||
+        moduleWithDesign.background_color ||
+        'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
         hass
@@ -2099,8 +2566,41 @@ export class UltraIconModule extends BaseUltraModule {
       : html``;
     this._localStylesInjected = true;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    const validIcons = (iconModule.icons || []).filter(i => i.entity && i.entity.trim() !== '');
+    const incompleteIcons = (iconModule.icons || []).filter(
+      i => !i.entity || i.entity.trim() === ''
+    );
+
+    if (!iconModule.icons || iconModule.icons.length === 0) {
+      return html`
+        ${localStyle}
+        ${this.renderGradientErrorState(
+          'Add Icons',
+          'Configure icons in the General tab',
+          'mdi:shape-outline'
+        )}
+      `;
+    }
+
+    if (validIcons.length === 0 && incompleteIcons.length > 0) {
+      const iconList = incompleteIcons.map((i, idx) => `Icon ${idx + 1}`).join(', ');
+      return html`
+        ${localStyle}
+        ${this.renderGradientErrorState('Icons Need Entities', iconList, 'mdi:shape-outline')}
+      `;
+    }
+
+    const warningBanner =
+      incompleteIcons.length > 0
+        ? this.renderGradientWarningBanner(
+            `${incompleteIcons.length > 1 ? 'icons' : 'icon'} need${incompleteIcons.length === 1 ? 's' : ''} entities`,
+            incompleteIcons.length
+          )
+        : '';
+
     return html`
-      ${localStyle}
+      ${localStyle} ${warningBanner}
       <div class="icon-module-container" style=${this.styleObjectToCss(containerStyles)}>
         <div class="icon-module-preview">
           <div
@@ -2109,17 +2609,21 @@ export class UltraIconModule extends BaseUltraModule {
             display: grid;
             grid-template-columns: repeat(${Math.min(
               iconModule.columns || 3,
-              iconModule.icons.length
+              validIcons.length
             )}, 1fr);
+            grid-auto-flow: ${iconModule.allow_wrap === false ? 'column' : 'row'};
             gap: ${iconModule.gap || 16}px;
             justify-content: ${iconModule.alignment || 'center'};
           "
           >
-            ${iconModule.icons.slice(0, 6).map(icon => {
+            ${validIcons.slice(0, 6).map(icon => {
               const entityState = hass?.states[icon.entity];
               const currentState = entityState?.state || 'unknown';
 
               const isActive = this._evaluateIconState(icon, hass);
+
+              // Store template results in local variables (icons may be read-only)
+              let templateContainerBgColor: string | undefined;
 
               // Determine what to show based on state
               const shouldShowIcon = isActive
@@ -2132,13 +2636,88 @@ export class UltraIconModule extends BaseUltraModule {
                 ? icon.show_state_when_active !== false
                 : icon.show_state_when_inactive !== false;
 
-              // Get display values based on state - check dynamic templates first
+              // Get display values based on state - priority cascade for templates
               let displayIcon = isActive
                 ? icon.icon_active || icon.icon_inactive
                 : icon.icon_inactive;
+              let displayColor = isActive
+                ? icon.use_state_color_for_active_icon
+                  ? this._getEntityStateColor(entityState) || icon.active_icon_color
+                  : icon.use_entity_color_for_icon
+                    ? entityState?.attributes?.rgb_color
+                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                      : icon.active_icon_color
+                    : icon.active_icon_color
+                : icon.use_state_color_for_inactive_icon
+                  ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
+                  : icon.use_entity_color_for_icon
+                    ? entityState?.attributes?.rgb_color
+                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                      : icon.inactive_icon_color
+                    : icon.inactive_icon_color;
 
-              // Apply dynamic icon template if enabled
-              if (icon.dynamic_icon_template_mode && icon.dynamic_icon_template) {
+              // PRIORITY 1: Unified template (if enabled)
+              if (icon.unified_template_mode && icon.unified_template) {
+                if (!this._templateService && hass) {
+                  this._templateService = new TemplateService(hass);
+                }
+
+                const templateHash = this._hashString(icon.unified_template);
+                const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+                if (!hass.__uvc_template_strings) {
+                  hass.__uvc_template_strings = {};
+                }
+
+                if (
+                  this._templateService &&
+                  !this._templateService.hasTemplateSubscription(templateKey)
+                ) {
+                  const context = this._getEntityContext(icon, hass);
+                  this._templateService.subscribeToTemplate(
+                    icon.unified_template,
+                    templateKey,
+                    () => {
+                      if (typeof window !== 'undefined') {
+                        if (!window._ultraCardUpdateTimer) {
+                          window._ultraCardUpdateTimer = setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                            window._ultraCardUpdateTimer = null;
+                          }, 50);
+                        }
+                      }
+                    },
+                    context
+                  );
+                }
+
+                const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+                if (unifiedResult && String(unifiedResult).trim() !== '') {
+                  const parsed = parseUnifiedTemplate(unifiedResult);
+                  if (!hasTemplateError(parsed)) {
+                    if (parsed.icon) displayIcon = parsed.icon;
+                    if (parsed.icon_color) displayColor = parsed.icon_color;
+                    // Store template name, state_text, and colors for later use
+                    if (parsed.name) {
+                      (icon as any)._template_name = parsed.name;
+                    }
+                    if (parsed.state_text !== undefined) {
+                      (icon as any)._template_state_text = parsed.state_text;
+                    }
+                    if (parsed.name_color) {
+                      (icon as any)._template_name_color = parsed.name_color;
+                    }
+                    if (parsed.state_color) {
+                      (icon as any)._template_state_color = parsed.state_color;
+                    }
+                    if (parsed.container_background_color) {
+                      templateContainerBgColor = parsed.container_background_color;
+                    }
+                  }
+                }
+              }
+              // PRIORITY 2: Apply dynamic icon template if enabled (legacy)
+              else if (icon.dynamic_icon_template_mode && icon.dynamic_icon_template) {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
@@ -2187,23 +2766,7 @@ export class UltraIconModule extends BaseUltraModule {
                 }
               }
 
-              let displayColor = isActive
-                ? icon.use_state_color_for_active_icon
-                  ? this._getEntityStateColor(entityState) || icon.active_icon_color
-                  : icon.use_entity_color_for_icon
-                    ? entityState?.attributes?.rgb_color
-                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                      : icon.active_icon_color
-                    : icon.active_icon_color
-                : icon.use_state_color_for_inactive_icon
-                  ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
-                  : icon.use_entity_color_for_icon
-                    ? entityState?.attributes?.rgb_color
-                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                      : icon.inactive_icon_color
-                    : icon.inactive_icon_color;
-
-              // Apply dynamic color template if enabled
+              // PRIORITY 3: Apply dynamic color template if enabled (legacy)
               if (icon.dynamic_color_template_mode && icon.dynamic_color_template) {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
@@ -2249,9 +2812,11 @@ export class UltraIconModule extends BaseUltraModule {
               }
 
               const nameColor =
+                (icon as any)._template_name_color ||
                 designProperties.color ||
                 (isActive ? icon.active_name_color : icon.inactive_name_color);
               const stateColor =
+                (icon as any)._template_state_color ||
                 designProperties.color ||
                 (isActive ? icon.active_state_color : icon.inactive_state_color);
 
@@ -2275,20 +2840,26 @@ export class UltraIconModule extends BaseUltraModule {
                     : undefined,
               };
 
-              const displayName = isActive
-                ? icon.custom_active_name_text ||
-                  icon.name ||
-                  entityState?.attributes?.friendly_name ||
-                  icon.entity
-                : icon.custom_inactive_name_text ||
-                  icon.name ||
-                  entityState?.attributes?.friendly_name ||
-                  icon.entity;
+              const displayName =
+                (icon as any)._template_name ||
+                (isActive
+                  ? icon.custom_active_name_text ||
+                    icon.name ||
+                    entityState?.attributes?.friendly_name ||
+                    icon.entity
+                  : icon.custom_inactive_name_text ||
+                    icon.name ||
+                    entityState?.attributes?.friendly_name ||
+                    icon.entity);
 
               let displayState: string;
 
-              // Check template_mode first for state text
-              if (icon.template_mode && icon.template) {
+              // PRIORITY 1: Check unified template state_text first
+              if ((icon as any)._template_state_text !== undefined) {
+                displayState = (icon as any)._template_state_text;
+              }
+              // PRIORITY 2: Check template_mode for state text (legacy)
+              else if (icon.template_mode && icon.template) {
                 // Initialize template service if needed
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
@@ -2317,8 +2888,12 @@ export class UltraIconModule extends BaseUltraModule {
 
                 // Get template result for state text
                 const templateResult = hass?.__uvc_template_strings?.[templateKey];
-                if (templateResult !== undefined) {
-                  const result = String(templateResult).toLowerCase();
+                if (templateResult !== undefined && String(templateResult).trim() !== '') {
+                  const trimmedResult = String(templateResult).trim();
+                  const resultString = trimmedResult.toLowerCase();
+                  // Check if template returned an icon name (starts with mdi:, hass:, etc.)
+                  const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
+                  // Only use template result as state text if it's NOT a boolean-like value or an icon name
                   const isBooleanResult = [
                     'true',
                     'false',
@@ -2328,24 +2903,19 @@ export class UltraIconModule extends BaseUltraModule {
                     'no',
                     '0',
                     '1',
-                  ].includes(result);
+                  ].includes(resultString);
 
-                  if (!isBooleanResult && String(templateResult).trim() !== '') {
-                    // Template returned custom text (not boolean) - use it as state text
-                    if (String(templateResult) !== currentState) {
-                      // It's truly custom text, not just the entity state
-                      displayState = String(templateResult);
+                  if (isIconName) {
+                    // Template returned an icon name - use it for the icon instead of state text
+                    displayIcon = trimmedResult;
+                    // Use actual entity state for display state when icon is being controlled by template
+                    displayState = this._getDisplayStateValue(icon, hass, isActive);
+                  } else if (!isBooleanResult) {
+                    // Check if template returned 'unknown' due to non-existent entity
+                    if (String(templateResult) === 'unknown') {
+                      displayState = `Template Error: Check entity names`;
                     } else {
-                      // Template returned actual entity state - use normal logic below
-                      displayState = isActive
-                        ? icon.custom_active_state_text &&
-                          icon.custom_active_state_text.trim() !== ''
-                          ? icon.custom_active_state_text
-                          : this._formatValueWithUnits(currentState, icon.entity, icon, hass)
-                        : icon.custom_inactive_state_text &&
-                            icon.custom_inactive_state_text.trim() !== ''
-                          ? icon.custom_inactive_state_text
-                          : this._formatValueWithUnits(currentState, icon.entity, icon, hass);
+                      displayState = String(templateResult);
                     }
                   } else {
                     // Template returned boolean or empty - use normal custom text logic
@@ -2383,23 +2953,33 @@ export class UltraIconModule extends BaseUltraModule {
                 ? icon.active_icon_background_color || icon.icon_background_color
                 : icon.inactive_icon_background_color || icon.icon_background_color;
 
-              const iconBackgroundStyle =
-                iconBackground !== 'none'
-                  ? {
-                      backgroundColor: icon.use_entity_color_for_icon_background
-                        ? entityState?.attributes?.rgb_color
-                          ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                          : iconBackgroundColor
-                        : iconBackgroundColor,
-                      borderRadius:
-                        iconBackground === 'circle'
-                          ? '50%'
-                          : iconBackground === 'rounded-square'
-                            ? '8px'
-                            : '0',
-                      padding: '8px',
-                    }
-                  : {};
+              const iconBackgroundStyle = (() => {
+                if (iconBackground === 'none') {
+                  return {};
+                }
+
+                const computedColor = icon.use_entity_color_for_icon_background
+                  ? entityState?.attributes?.rgb_color
+                    ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                    : iconBackgroundColor
+                  : iconBackgroundColor;
+
+                const { styles: backgroundStyles } = computeBackgroundStyles({
+                  color: computedColor,
+                  fallback: iconBackgroundColor || 'transparent',
+                });
+
+                return {
+                  ...backgroundStyles,
+                  borderRadius:
+                    iconBackground === 'circle'
+                      ? '50%'
+                      : iconBackground === 'rounded-square'
+                        ? '8px'
+                        : '0',
+                  padding: '8px',
+                };
+              })();
 
               // Always ensure wrapper centers content for animations
               const baseWrapperStyle = {
@@ -2426,29 +3006,63 @@ export class UltraIconModule extends BaseUltraModule {
               }
 
               // Container styles
-              const containerStyles = {
+              const containerStyles: Record<string, string> = {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: icon.vertical_alignment || 'center',
-                // No default padding so zero layouts are possible
-                padding: '0',
+                // Apply padding from design properties if set, otherwise use 0
+                padding:
+                  designProperties.padding_top || designProperties.padding_bottom || designProperties.padding_left || designProperties.padding_right
+                    ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
+                    : '0',
                 borderRadius:
-                  icon.container_background_shape === 'circle'
-                    ? '50%'
-                    : icon.container_background_shape === 'rounded'
-                      ? '8px'
-                      : icon.container_background_shape === 'square'
-                        ? '0'
-                        : '0',
-                background:
-                  icon.container_background_shape && icon.container_background_shape !== 'none'
-                    ? icon.container_background_color || '#808080'
-                    : 'transparent',
+                  designProperties.border_radius
+                    ? this.addPixelUnit(designProperties.border_radius) || '0'
+                    : icon.container_background_shape === 'circle'
+                      ? '50%'
+                      : icon.container_background_shape === 'rounded'
+                        ? '8px'
+                        : icon.container_background_shape === 'square'
+                          ? '0'
+                          : '0',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 width: icon.container_width ? `${icon.container_width}%` : 'auto',
               };
+
+              const hasContainerBackground =
+                icon.container_background_shape && icon.container_background_shape !== 'none';
+
+              if (hasContainerBackground) {
+                // Priority: template result > configured container_background_color > default
+                const containerBgColor =
+                  templateContainerBgColor ||
+                  icon.container_background_color ||
+                  '#808080';
+                const { styles: backgroundStyles } = computeBackgroundStyles({
+                  color: containerBgColor,
+                  fallback: containerBgColor,
+                  image: this.getBackgroundImageCSS(icon, hass),
+                  imageSize: (icon as any).background_size || 'cover',
+                  imagePosition: icon.background_position || 'center',
+                  imageRepeat: icon.background_repeat || 'no-repeat',
+                });
+                Object.assign(containerStyles, backgroundStyles);
+              } else {
+                // Even if container_background_shape is 'none', check for template background color
+                if (templateContainerBgColor) {
+                  containerStyles.backgroundColor = templateContainerBgColor;
+                  containerStyles.background = templateContainerBgColor;
+                  // Apply border-radius from design properties when template background is used
+                  if (designProperties.border_radius) {
+                    containerStyles.borderRadius = this.addPixelUnit(designProperties.border_radius) || '0';
+                  }
+                } else {
+                  containerStyles.background = 'transparent';
+                  containerStyles.backgroundColor = 'transparent';
+                }
+              }
 
               // Gesture detection variables (using closure to maintain state per icon)
               let clickTimeout: NodeJS.Timeout | null = null;
@@ -2480,7 +3094,8 @@ export class UltraIconModule extends BaseUltraModule {
                       hass,
                       e.target as HTMLElement,
                       config,
-                      icon.entity
+                      icon.entity,
+                      iconModule
                     );
                   }, 500); // 500ms hold threshold
                 },
@@ -2522,7 +3137,8 @@ export class UltraIconModule extends BaseUltraModule {
                         hass,
                         e.target as HTMLElement,
                         config,
-                        icon.entity
+                        icon.entity,
+                        iconModule
                       );
                     }
                   } else {
@@ -2549,7 +3165,8 @@ export class UltraIconModule extends BaseUltraModule {
                         hass,
                         e.target as HTMLElement,
                         config,
-                        icon.entity
+                        icon.entity,
+                        iconModule
                       );
                     } else if (
                       iconModule.double_tap_action &&
@@ -2565,7 +3182,8 @@ export class UltraIconModule extends BaseUltraModule {
                             hass,
                             e.target as HTMLElement,
                             config,
-                            icon.entity
+                            icon.entity,
+                            iconModule
                           );
                         }
                         clickCount = 0;
@@ -2716,7 +3334,7 @@ export class UltraIconModule extends BaseUltraModule {
                 </div>
               `;
             })}
-            ${iconModule.icons.length > 6
+            ${validIcons.length > 6
               ? html`
                   <div
                     class="more-icons"
@@ -2730,14 +3348,14 @@ export class UltraIconModule extends BaseUltraModule {
                 font-style: italic;
               "
                   >
-                    +${iconModule.icons.length - 6} more
+                    +${validIcons.length - 6} more
                   </div>
                 `
               : ''}
           </div>
 
           <!-- More Icons Indicator -->
-          ${iconModule.icons.length > 6
+          ${validIcons.length > 6
             ? html`
                 <div
                   class="more-icons"
@@ -2752,7 +3370,7 @@ export class UltraIconModule extends BaseUltraModule {
                     margin-top: 8px;
                   "
                 >
-                  +${iconModule.icons.length - 6} more icons
+                  +${validIcons.length - 6} more icons
                 </div>
               `
             : ''}
@@ -3030,6 +3648,9 @@ export class UltraIconModule extends BaseUltraModule {
     const entityState = hass?.states[icon.entity];
     const currentState = entityState?.state || 'unknown';
 
+    // Store template results in local variables (icons may be read-only)
+    let templateContainerBgColor: string | undefined;
+
     // Use exact same logic as main card - determine what to show based on state
     const shouldShowIcon = isActiveState
       ? icon.show_icon_when_active !== false
@@ -3041,11 +3662,78 @@ export class UltraIconModule extends BaseUltraModule {
       ? icon.show_state_when_active !== false
       : icon.show_state_when_inactive !== false;
 
-    // Get display values based on state - check dynamic templates first
+    // Get display values based on state - priority cascade for templates
     let displayIcon = isActiveState ? icon.icon_active || icon.icon_inactive : icon.icon_inactive;
+    let displayColor = isActiveState
+      ? icon.use_state_color_for_active_icon
+        ? this._getEntityStateColor(entityState) || icon.active_icon_color
+        : icon.use_entity_color_for_icon
+          ? entityState?.attributes?.rgb_color
+            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+            : icon.active_icon_color
+          : icon.active_icon_color
+      : icon.use_state_color_for_inactive_icon
+        ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
+        : icon.use_entity_color_for_icon
+          ? entityState?.attributes?.rgb_color
+            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+            : icon.inactive_icon_color
+          : icon.inactive_icon_color;
 
-    // Apply dynamic icon template if enabled
-    if (icon.dynamic_icon_template_mode && icon.dynamic_icon_template) {
+    // PRIORITY 1: Unified template (if enabled)
+    if (icon.unified_template_mode && icon.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      const templateHash = this._hashString(icon.unified_template);
+      const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+      if (!hass.__uvc_template_strings) {
+        hass.__uvc_template_strings = {};
+      }
+
+      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        const context = this._getEntityContext(icon, hass);
+        this._templateService.subscribeToTemplate(
+          icon.unified_template,
+          templateKey,
+          () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
+          },
+          context
+        );
+      }
+
+      const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+      if (unifiedResult && String(unifiedResult).trim() !== '') {
+        const parsed = parseUnifiedTemplate(unifiedResult);
+        if (!hasTemplateError(parsed)) {
+          if (parsed.icon) displayIcon = parsed.icon;
+          if (parsed.icon_color) displayColor = parsed.icon_color;
+          // Store template name, state_text, and colors for later use
+          if (parsed.name) {
+            (icon as any)._template_name = parsed.name;
+          }
+          if (parsed.state_text !== undefined) {
+            (icon as any)._template_state_text = parsed.state_text;
+          }
+          if (parsed.name_color) {
+            (icon as any)._template_name_color = parsed.name_color;
+          }
+          if (parsed.state_color) {
+            (icon as any)._template_state_color = parsed.state_color;
+          }
+          if (parsed.container_background_color) {
+            templateContainerBgColor = parsed.container_background_color;
+          }
+        }
+      }
+    }
+    // PRIORITY 2: Apply dynamic icon template if enabled (legacy)
+    else if (icon.dynamic_icon_template_mode && icon.dynamic_icon_template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -3081,23 +3769,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
     }
 
-    let displayColor = isActiveState
-      ? icon.use_state_color_for_active_icon
-        ? this._getEntityStateColor(entityState) || icon.active_icon_color
-        : icon.use_entity_color_for_icon
-          ? entityState?.attributes?.rgb_color
-            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-            : icon.active_icon_color
-          : icon.active_icon_color
-      : icon.use_state_color_for_inactive_icon
-        ? this._getEntityStateColor(entityState) || icon.inactive_icon_color
-        : icon.use_entity_color_for_icon
-          ? entityState?.attributes?.rgb_color
-            ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-            : icon.inactive_icon_color
-          : icon.inactive_icon_color;
-
-    // Apply dynamic color template if enabled
+    // PRIORITY 3: Apply dynamic color template if enabled (legacy)
     if (icon.dynamic_color_template_mode && icon.dynamic_color_template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
@@ -3130,9 +3802,11 @@ export class UltraIconModule extends BaseUltraModule {
     }
 
     const nameColor =
+      (icon as any)._template_name_color ||
       designProperties?.color ||
       (isActiveState ? icon.active_name_color : icon.inactive_name_color);
     const stateColor =
+      (icon as any)._template_state_color ||
       designProperties?.color ||
       (isActiveState ? icon.active_state_color : icon.inactive_state_color);
 
@@ -3168,20 +3842,26 @@ export class UltraIconModule extends BaseUltraModule {
           textShadow: undefined,
         };
 
-    const displayName = isActiveState
-      ? icon.custom_active_name_text ||
-        icon.name ||
-        entityState?.attributes?.friendly_name ||
-        icon.entity
-      : icon.custom_inactive_name_text ||
-        icon.name ||
-        entityState?.attributes?.friendly_name ||
-        icon.entity;
+    const displayName =
+      (icon as any)._template_name ||
+      (isActiveState
+        ? icon.custom_active_name_text ||
+          icon.name ||
+          entityState?.attributes?.friendly_name ||
+          icon.entity
+        : icon.custom_inactive_name_text ||
+          icon.name ||
+          entityState?.attributes?.friendly_name ||
+          icon.entity);
 
     let displayState: string;
 
-    // Check if template mode is enabled for state text customization
-    if (icon.template_mode && icon.template) {
+    // PRIORITY 1: Check unified template state_text first
+    if ((icon as any)._template_state_text !== undefined) {
+      displayState = (icon as any)._template_state_text;
+    }
+    // PRIORITY 2: Check if template mode is enabled for state text customization (legacy)
+    else if (icon.template_mode && icon.template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -3208,13 +3888,21 @@ export class UltraIconModule extends BaseUltraModule {
       // Get template result for state text
       const templateResult = hass?.__uvc_template_strings?.[templateKey];
       if (templateResult !== undefined && String(templateResult).trim() !== '') {
-        const resultString = String(templateResult).toLowerCase();
-        // Only use template result as state text if it's NOT a boolean-like value
+        const trimmedResult = String(templateResult).trim();
+        const resultString = trimmedResult.toLowerCase();
+        // Check if template returned an icon name (starts with mdi:, hass:, etc.)
+        const isIconName = /^(mdi:|hass:|hass-clab:|hc:)/.test(trimmedResult);
+        // Only use template result as state text if it's NOT a boolean-like value or an icon name
         const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
           resultString
         );
 
-        if (!isBooleanResult) {
+        if (isIconName) {
+          // Template returned an icon name - use it for the icon instead of state text
+          displayIcon = trimmedResult;
+          // Use actual entity state for display state when icon is being controlled by template
+          displayState = this._getDisplayStateValue(icon, hass, isActiveState);
+        } else if (!isBooleanResult) {
           // Check if template returned 'unknown' due to non-existent entity
           if (String(templateResult) === 'unknown') {
             displayState = `Template Error: Check entity names`;
@@ -3248,23 +3936,29 @@ export class UltraIconModule extends BaseUltraModule {
       ? icon.active_icon_background_color || icon.icon_background_color
       : icon.inactive_icon_background_color || icon.icon_background_color;
 
-    const iconBackgroundStyle =
-      iconBackground !== 'none'
-        ? {
-            backgroundColor: icon.use_entity_color_for_icon_background
-              ? entityState?.attributes?.rgb_color
-                ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                : iconBackgroundColor
-              : iconBackgroundColor,
-            borderRadius:
-              iconBackground === 'circle'
-                ? '50%'
-                : iconBackground === 'rounded-square'
-                  ? '8px'
-                  : '0',
-            padding: '8px',
-          }
-        : {};
+    const iconBackgroundStyle = (() => {
+      if (iconBackground === 'none') {
+        return {};
+      }
+
+      const computedColor = icon.use_entity_color_for_icon_background
+        ? entityState?.attributes?.rgb_color
+          ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+          : iconBackgroundColor
+        : iconBackgroundColor;
+
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: computedColor,
+        fallback: iconBackgroundColor || 'transparent',
+      });
+
+      return {
+        ...backgroundStyles,
+        borderRadius:
+          iconBackground === 'circle' ? '50%' : iconBackground === 'rounded-square' ? '8px' : '0',
+        padding: '8px',
+      };
+    })();
 
     // Always ensure wrapper centers content for animations
     const baseWrapperStyle = {
@@ -3282,33 +3976,64 @@ export class UltraIconModule extends BaseUltraModule {
     const animationClass = currentAnimation !== 'none' ? `icon-animation-${currentAnimation}` : '';
 
     // Container styles - exact same as main card
-    const containerStyles = {
+    const containerStyles: Record<string, string> = {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: icon.vertical_alignment || 'center',
-      padding: '0',
+      // Apply padding from design properties if set, otherwise use 0
+      padding:
+        designProperties?.padding_top || designProperties?.padding_bottom || designProperties?.padding_left || designProperties?.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left) || '0px'}`
+          : '0',
       borderRadius:
-        icon.container_background_shape === 'circle'
-          ? '50%'
-          : icon.container_background_shape === 'rounded'
-            ? '8px'
-            : icon.container_background_shape === 'square'
-              ? '0'
-              : '8px',
-      background:
-        icon.container_background_shape && icon.container_background_shape !== 'none'
-          ? icon.container_background_color || '#808080'
-          : 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(icon, hass),
-      backgroundSize: (icon as any).background_size || 'cover',
-      backgroundPosition: icon.background_position || 'center',
-      backgroundRepeat: icon.background_repeat || 'no-repeat',
+        designProperties?.border_radius
+          ? this.addPixelUnit(designProperties.border_radius) || '0'
+          : icon.container_background_shape === 'circle'
+            ? '50%'
+            : icon.container_background_shape === 'rounded'
+              ? '8px'
+              : icon.container_background_shape === 'square'
+                ? '0'
+                : '8px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       width: icon.container_width ? `${icon.container_width}%` : 'auto',
       margin: '0 auto',
     };
+
+    const hasContainerBackground =
+      icon.container_background_shape && icon.container_background_shape !== 'none';
+
+    if (hasContainerBackground) {
+      // Priority: template result > configured container_background_color > default
+      const containerBgColor =
+        templateContainerBgColor ||
+        icon.container_background_color ||
+        '#808080';
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: containerBgColor,
+        fallback: containerBgColor,
+        image: this.getBackgroundImageCSS(icon, hass),
+        imageSize: (icon as any).background_size || 'cover',
+        imagePosition: icon.background_position || 'center',
+        imageRepeat: icon.background_repeat || 'no-repeat',
+      });
+      Object.assign(containerStyles, backgroundStyles);
+    } else {
+      // Even if container_background_shape is 'none', check for template background color
+      if (templateContainerBgColor) {
+        containerStyles.backgroundColor = templateContainerBgColor;
+        containerStyles.background = templateContainerBgColor;
+        // Apply border-radius from design properties when template background is used
+        if (designProperties?.border_radius) {
+          containerStyles.borderRadius = this.addPixelUnit(designProperties.border_radius) || '0';
+        }
+      } else {
+        containerStyles.background = 'transparent';
+        containerStyles.backgroundColor = 'transparent';
+      }
+    }
 
     // Use actual spacing values for true-to-life preview
     const actualNameIconGap = icon.name_icon_gap ?? 8;
@@ -3336,7 +4061,8 @@ export class UltraIconModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               undefined,
-              icon.entity
+              icon.entity,
+              iconModule
             );
           }
         }}
@@ -3507,6 +4233,7 @@ export class UltraIconModule extends BaseUltraModule {
           Math.max(1, Math.floor((iconModule.columns || 3) / 2)),
           iconModule.icons.length
         )}, 1fr);
+          grid-auto-flow: ${iconModule.allow_wrap === false ? 'column' : 'row'};
           gap: ${iconModule.gap || 16}px;
           justify-content: ${iconModule.alignment || 'center'};
         "
@@ -3516,6 +4243,53 @@ export class UltraIconModule extends BaseUltraModule {
           const currentState = entityState?.state || 'unknown';
           // Force the active state based on the forceActive parameter
           const isActive = forceActive;
+
+          // Store template results in local variables (icons may be read-only)
+          let templateContainerBgColor: string | undefined;
+
+          // PRIORITY 1: Evaluate unified template if enabled (needed for container_background_color)
+          if (icon.unified_template_mode && icon.unified_template) {
+            if (!this._templateService && hass) {
+              this._templateService = new TemplateService(hass);
+            }
+
+            const templateHash = this._hashString(icon.unified_template);
+            const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+            if (!hass.__uvc_template_strings) {
+              hass.__uvc_template_strings = {};
+            }
+
+            if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+              const context = this._getEntityContext(icon, hass);
+              this._templateService.subscribeToTemplate(
+                icon.unified_template,
+                templateKey,
+                () => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                  }
+                },
+                context
+              );
+            }
+
+            const unifiedResult = hass?.__uvc_template_strings?.[templateKey];
+            if (unifiedResult && String(unifiedResult).trim() !== '') {
+              const parsed = parseUnifiedTemplate(unifiedResult);
+              if (!hasTemplateError(parsed)) {
+                if (parsed.icon) (icon as any)._template_icon = parsed.icon;
+                if (parsed.icon_color) (icon as any)._template_icon_color = parsed.icon_color;
+                if (parsed.name) (icon as any)._template_name = parsed.name;
+                if (parsed.state_text !== undefined) (icon as any)._template_state_text = parsed.state_text;
+                if (parsed.name_color) (icon as any)._template_name_color = parsed.name_color;
+                if (parsed.state_color) (icon as any)._template_state_color = parsed.state_color;
+                if (parsed.container_background_color) {
+                  templateContainerBgColor = parsed.container_background_color;
+                }
+              }
+            }
+          }
 
           // Determine what to show based on forced state
           const shouldShowIcon = isActive
@@ -3553,9 +4327,11 @@ export class UltraIconModule extends BaseUltraModule {
                 : icon.inactive_icon_color;
 
           const nameColor =
+            (icon as any)._template_name_color ||
             designProperties.color ||
             (isActive ? icon.active_name_color : icon.inactive_name_color);
           const stateColor =
+            (icon as any)._template_state_color ||
             designProperties.color ||
             (isActive ? icon.active_state_color : icon.inactive_state_color);
 
@@ -3579,20 +4355,27 @@ export class UltraIconModule extends BaseUltraModule {
                 : undefined,
           };
 
-          const displayName = isActive
-            ? icon.custom_active_name_text ||
-              icon.name ||
-              entityState?.attributes?.friendly_name ||
-              icon.entity
-            : icon.custom_inactive_name_text ||
-              icon.name ||
-              entityState?.attributes?.friendly_name ||
-              icon.entity;
+          const displayName =
+            (icon as any)._template_name ||
+            (isActive
+              ? icon.custom_active_name_text ||
+                icon.name ||
+                entityState?.attributes?.friendly_name ||
+                icon.entity
+              : icon.custom_inactive_name_text ||
+                icon.name ||
+                entityState?.attributes?.friendly_name ||
+                icon.entity);
 
           let displayState: string;
 
-          // Use the new display state helper that checks for attributes
-          displayState = this._getDisplayStateValue(icon, hass, isActive);
+          // PRIORITY 1: Check unified template state_text first
+          if ((icon as any)._template_state_text !== undefined) {
+            displayState = (icon as any)._template_state_text;
+          } else {
+            // Use the new display state helper that checks for attributes
+            displayState = this._getDisplayStateValue(icon, hass, isActive);
+          }
 
           // Icon background styles - use active/inactive specific properties
           const iconBackground = isActive
@@ -3603,23 +4386,33 @@ export class UltraIconModule extends BaseUltraModule {
             ? icon.active_icon_background_color || icon.icon_background_color
             : icon.inactive_icon_background_color || icon.icon_background_color;
 
-          const iconBackgroundStyle =
-            iconBackground !== 'none'
-              ? {
-                  backgroundColor: icon.use_entity_color_for_icon_background
-                    ? entityState?.attributes?.rgb_color
-                      ? `rgb(${entityState.attributes.rgb_color.join(',')})`
-                      : iconBackgroundColor
-                    : iconBackgroundColor,
-                  borderRadius:
-                    iconBackground === 'circle'
-                      ? '50%'
-                      : iconBackground === 'rounded-square'
-                        ? '8px'
-                        : '0',
-                  padding: '8px',
-                }
-              : {};
+          const iconBackgroundStyle = (() => {
+            if (iconBackground === 'none') {
+              return {};
+            }
+
+            const computedColor = icon.use_entity_color_for_icon_background
+              ? entityState?.attributes?.rgb_color
+                ? `rgb(${entityState.attributes.rgb_color.join(',')})`
+                : iconBackgroundColor
+              : iconBackgroundColor;
+
+            const { styles: backgroundStyles } = computeBackgroundStyles({
+              color: computedColor,
+              fallback: iconBackgroundColor || 'transparent',
+            });
+
+            return {
+              ...backgroundStyles,
+              borderRadius:
+                iconBackground === 'circle'
+                  ? '50%'
+                  : iconBackground === 'rounded-square'
+                    ? '8px'
+                    : '0',
+              padding: '8px',
+            };
+          })();
 
           // Always ensure wrapper centers content for animations
           const baseWrapperStyle = {
@@ -3648,7 +4441,7 @@ export class UltraIconModule extends BaseUltraModule {
           // Animation styles are handled by CSS classes
 
           // Container styles (smaller for split view)
-          const containerStyles = {
+          const containerStyles: Record<string, string> = {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -3662,19 +4455,40 @@ export class UltraIconModule extends BaseUltraModule {
                   : icon.container_background_shape === 'square'
                     ? '0'
                     : '8px',
-            background:
-              icon.container_background_shape && icon.container_background_shape !== 'none'
-                ? icon.container_background_color || '#808080'
-                : 'transparent',
-            backgroundImage: this.getBackgroundImageCSS(icon, hass),
-            backgroundSize: (icon as any).background_size || 'cover',
-            backgroundPosition: icon.background_position || 'center',
-            backgroundRepeat: icon.background_repeat || 'no-repeat',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             width: icon.container_width ? `${icon.container_width}%` : 'auto',
             margin: '0 auto',
           };
+
+          const hasContainerBackground =
+            icon.container_background_shape && icon.container_background_shape !== 'none';
+
+          if (hasContainerBackground) {
+            // Priority: template result > configured container_background_color > default
+            const containerBgColor =
+              templateContainerBgColor ||
+              icon.container_background_color ||
+              '#808080';
+            const { styles: backgroundStyles } = computeBackgroundStyles({
+              color: containerBgColor,
+              fallback: containerBgColor,
+              image: this.getBackgroundImageCSS(icon, hass),
+              imageSize: (icon as any).background_size || 'cover',
+              imagePosition: icon.background_position || 'center',
+              imageRepeat: icon.background_repeat || 'no-repeat',
+            });
+            Object.assign(containerStyles, backgroundStyles);
+          } else {
+            // Even if container_background_shape is 'none', check for template background color
+            if (templateContainerBgColor) {
+              containerStyles.backgroundColor = templateContainerBgColor;
+              containerStyles.background = templateContainerBgColor;
+            } else {
+              containerStyles.background = 'transparent';
+              containerStyles.backgroundColor = 'transparent';
+            }
+          }
 
           // Use actual spacing values for true-to-life preview
           const actualNameIconGap = icon.name_icon_gap ?? 8;
@@ -3819,19 +4633,21 @@ export class UltraIconModule extends BaseUltraModule {
     const iconModule = module as IconModule;
     const errors = [...baseValidation.errors];
 
-    if (!iconModule.icons || iconModule.icons.length === 0) {
-      errors.push('At least one icon is required');
+    // LENIENT VALIDATION: Allow empty/incomplete icons - UI will show placeholder
+    // Only validate icons that have been started
+    if (iconModule.icons && iconModule.icons.length > 0) {
+      iconModule.icons.forEach((icon, index) => {
+        // Only validate icons that have some content
+        const hasContent =
+          (icon.entity && icon.entity.trim() !== '') ||
+          (icon.icon_inactive && icon.icon_inactive.trim() !== '');
+
+        if (hasContent) {
+          // Only validate truly critical errors
+          // Icon format validation could go here if needed
+        }
+      });
     }
-
-    iconModule.icons.forEach((icon, index) => {
-      if (!icon.entity || icon.entity.trim() === '') {
-        errors.push(`Icon ${index + 1}: Entity ID is required`);
-      }
-
-      if (!icon.icon_inactive || icon.icon_inactive.trim() === '') {
-        errors.push(`Icon ${index + 1}: Inactive icon is required`);
-      }
-    });
 
     return {
       valid: errors.length === 0,
@@ -4121,7 +4937,60 @@ export class UltraIconModule extends BaseUltraModule {
       ? entityState.attributes?.[icon.active_attribute]?.toString() || ''
       : currentState;
 
-    // Check template_mode first
+    // PRIORITY 1: Check unified template with ignore_entity_state_config flag
+    if (icon.unified_template_mode && icon.unified_template && icon.ignore_entity_state_config) {
+      // Template controls both display AND state logic
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      const templateHash = this._hashString(icon.unified_template);
+      const templateKey = `unified_${icon.entity}_${icon.id}_${templateHash}`;
+
+      if (!hass.__uvc_template_strings) {
+        hass.__uvc_template_strings = {};
+      }
+
+      // Subscribe with entity context
+      if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+        const context = this._getEntityContext(icon, hass);
+        this._templateService.subscribeToTemplate(
+          icon.unified_template,
+          templateKey,
+          () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
+          },
+          context
+        );
+      }
+
+      const templateResult = hass?.__uvc_template_strings?.[templateKey];
+      if (templateResult !== undefined) {
+        const result = String(templateResult).toLowerCase();
+        const isBooleanResult = ['true', 'false', 'on', 'off', 'yes', 'no', '0', '1'].includes(
+          result
+        );
+
+        if (isBooleanResult) {
+          return (
+            ['true', 'on', 'yes', '1'].includes(result) ||
+            (parseFloat(result) > 0 && !isNaN(parseFloat(result)))
+          );
+        } else if (String(templateResult).trim() !== '') {
+          // Template returned custom text - active condition met
+          return true;
+        } else {
+          // Template returned empty - inactive
+          return false;
+        }
+      }
+    }
+
+    // PRIORITY 2: Check legacy template_mode (deprecated)
+    // IMPORTANT: If active_state is explicitly configured, prioritize entity state check over template result
+    // Templates should only affect display, not active state evaluation when active_state is set
     if (icon.template_mode && icon.template) {
       // Initialize template service if needed
       if (!this._templateService && hass) {
@@ -4166,8 +5035,16 @@ export class UltraIconModule extends BaseUltraModule {
             // Template returned actual entity state - use normal entity evaluation
             // Fall through to normal evaluation below
           } else {
-            // Template returned custom text - this means active condition was met
-            return true;
+            // Template returned custom text
+            // If active_state is explicitly configured, prioritize entity state check over template result
+            // This ensures animations work correctly when active_state is set
+            if (icon.active_state || icon.inactive_state) {
+              // Fall through to normal entity state evaluation below
+              // Template is only for display, not for determining active state
+            } else {
+              // No active_state configured - template result indicates active condition was met
+              return true;
+            }
           }
         } else {
           // Template returned empty - inactive
@@ -4266,6 +5143,20 @@ export class UltraIconModule extends BaseUltraModule {
 
     // Default fallback
     return false;
+  }
+
+  /**
+   * Build entity context for unified templates
+   * Provides access to entity data, attributes, and helper functions
+   */
+  private _getEntityContext(icon: IconConfig, hass: HomeAssistant): Record<string, any> {
+    return buildEntityContext(icon.entity, hass, {
+      name: icon.name,
+      icon_inactive: icon.icon_inactive,
+      icon_active: icon.icon_active,
+      active_state: icon.active_state,
+      inactive_state: icon.inactive_state,
+    });
   }
 
   getStyles(): string {
@@ -5540,6 +6431,11 @@ export class UltraIconModule extends BaseUltraModule {
       dynamic_icon_template: '',
       dynamic_color_template_mode: false,
       dynamic_color_template: '',
+
+      // Unified template system
+      unified_template_mode: false,
+      unified_template: '',
+      ignore_entity_state_config: false,
     };
 
     const updatedIcons = [...iconModule.icons, newIcon];
@@ -5719,27 +6615,6 @@ export class UltraIconModule extends BaseUltraModule {
         return `${kebabKey}: ${value}`;
       })
       .join('; ');
-  }
-
-  // Helper method to ensure border radius values have proper units
-  private addPixelUnit(value: string | undefined): string | undefined {
-    if (!value) return value;
-
-    // If value is just a number or contains only numbers, add px
-    if (/^\d+$/.test(value)) {
-      return `${value}px`;
-    }
-
-    // If value is a multi-value (like "5 10 15 20"), add px to each number
-    if (/^[\d\s]+$/.test(value)) {
-      return value
-        .split(' ')
-        .map(v => (v.trim() ? `${v}px` : v))
-        .join(' ');
-    }
-
-    // Otherwise return as-is (already has units like px, em, %, etc.)
-    return value;
   }
 
   private _renderSizeControl(
@@ -6229,6 +7104,61 @@ export class UltraIconModule extends BaseUltraModule {
     };
 
     attemptInjection();
+  }
+
+  /**
+   * Helper method to add pixel unit if needed
+   * Handles edge cases like "20x" -> "20px" and validates unit strings
+   * Supports both string and number types for flexibility
+   */
+  private addPixelUnit(value: string | number | undefined): string | undefined {
+    if (!value && value !== 0) return value as string | undefined;
+    
+    // Convert number to string
+    const valueStr = String(value);
+    
+    // Handle special CSS values
+    if (valueStr === 'auto' || valueStr === 'none' || valueStr === 'inherit' || valueStr === 'initial' || valueStr === 'unset') {
+      return valueStr;
+    }
+    
+    // Normalize "x" to "px" (common typo when users can't type "px")
+    if (valueStr.endsWith('x') && !valueStr.endsWith('px')) {
+      const normalized = valueStr.replace(/x$/, 'px');
+      return normalized;
+    }
+    
+    // Check if value already has valid CSS units
+    if (
+      valueStr.includes('px') ||
+      valueStr.includes('%') ||
+      valueStr.includes('em') ||
+      valueStr.includes('rem') ||
+      valueStr.includes('vh') ||
+      valueStr.includes('vw') ||
+      valueStr.includes('ch') ||
+      valueStr.includes('ex') ||
+      valueStr.includes('vmin') ||
+      valueStr.includes('vmax')
+    ) {
+      return valueStr;
+    }
+    
+    // If value is just a number (with optional decimal), add px
+    if (/^\d+(\.\d+)?$/.test(valueStr)) {
+      return `${valueStr}px`;
+    }
+    
+    // If value is multiple numbers separated by spaces, add px to each
+    if (/^[\d\.\s]+$/.test(valueStr)) {
+      return valueStr
+        .split(' ')
+        .map(v => (v.trim() && /^\d+(\.\d+)?$/.test(v.trim()) ? `${v.trim()}px` : v.trim()))
+        .join(' ');
+    }
+    
+    // Otherwise return as-is (might be a CSS variable, calc(), etc.)
+    return valueStr;
   }
 
   /**

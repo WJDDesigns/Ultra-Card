@@ -14,13 +14,14 @@ export declare class UltraBarModule extends BaseUltraModule {
     private findSuitableBatterySensor;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     private _hashString;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];
     };
     getStyles(): string;
+    private normalizeSizeValue;
     private styleObjectToCss;
     private camelToKebab;
     private getBackgroundImageCSS;
@@ -30,5 +31,7 @@ export declare class UltraBarModule extends BaseUltraModule {
     private interpolateColor;
     private hexToRgb;
     private rgbToHex;
+    private parseColorToRGBA;
+    private resolveCSSColor;
     private addPixelUnit;
 }

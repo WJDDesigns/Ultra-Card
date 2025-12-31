@@ -139,8 +139,6 @@ export class UcConfigEncoder {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-
-      console.log('✅ Config exported to file');
     } catch (error) {
       console.error('Failed to export config:', error);
       throw new Error('Failed to export config to file');
@@ -166,7 +164,6 @@ export class UcConfigEncoder {
           // Try to decode as encoded format first
           if (content.startsWith(CONFIG_PREFIX)) {
             const config = this.decode(content);
-            console.log('✅ Imported encoded config from file');
             resolve(config);
             return;
           }
@@ -174,7 +171,6 @@ export class UcConfigEncoder {
           // Fallback: try to parse as plain JSON
           try {
             const config = JSON.parse(content) as UltraCardConfig;
-            console.log('✅ Imported plain JSON config from file');
             resolve(config);
             return;
           } catch {
@@ -200,7 +196,6 @@ export class UcConfigEncoder {
     try {
       const encoded = this.encode(config);
       await navigator.clipboard.writeText(encoded);
-      console.log('✅ Encoded config copied to clipboard');
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
       throw new Error('Failed to copy config to clipboard');
@@ -221,14 +216,12 @@ export class UcConfigEncoder {
       // Try to decode as encoded format first
       if (text.startsWith(CONFIG_PREFIX)) {
         const config = this.decode(text);
-        console.log('✅ Pasted encoded config from clipboard');
         return config;
       }
 
       // Fallback: try to parse as plain JSON
       try {
         const config = JSON.parse(text) as UltraCardConfig;
-        console.log('✅ Pasted plain JSON config from clipboard');
         return config;
       } catch {
         throw new Error('Clipboard does not contain valid config data');

@@ -9,6 +9,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { generateCSSVariables } from '../utils/css-variable-utils';
 
 // Use the existing VerticalModule and HorizontalModule interfaces from types
 import { VerticalModule, HorizontalModule } from '../types';
@@ -31,8 +32,8 @@ export class UltraVerticalModule extends BaseUltraModule {
       type: 'vertical',
       // Main-axis (vertical) alignment defaults to 'center' for column layout
       alignment: 'center',
-      // Cross-axis alignment for items in the single column defaults to 'center'
-      horizontal_alignment: 'center',
+      // Cross-axis alignment for items in the single column defaults to 'stretch'
+      horizontal_alignment: 'stretch',
       gap: 1.2,
       modules: [],
       // Global action configuration
@@ -175,7 +176,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 min="-50"
                 max="50"
                 step="0.1"
-                .value="${verticalModule.gap || 1.2}"
+                .value="${verticalModule.gap !== undefined ? verticalModule.gap : 1.2}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -187,7 +188,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                 class="gap-input"
                 style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
                 step="0.1"
-                .value="${verticalModule.gap || 1.2}"
+                .value="${verticalModule.gap !== undefined ? verticalModule.gap : 1.2}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -199,7 +200,7 @@ export class UltraVerticalModule extends BaseUltraModule {
                   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                     e.preventDefault();
                     const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 1.2;
+                    const currentValue = parseFloat(target.value) || 0;
                     const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
                     const newValue = currentValue + increment;
                     const roundedValue = Math.round(newValue * 10) / 10;
@@ -225,26 +226,42 @@ export class UltraVerticalModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const verticalModule = module as VerticalModule;
+    // Store config and previewContext for child rendering
+    (this as any)._currentConfig = config;
+    (this as any)._currentPreviewContext = previewContext;
     const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = verticalModule as any;
     const effective = { ...moduleWithDesign, ...(moduleWithDesign.design || {}) } as any;
     const hasChildren = verticalModule.modules && verticalModule.modules.length > 0;
 
     // Container styles for positioning and effects
-    const gapValue = verticalModule.gap || 1.2;
-    const containerStyles = {
+    const gapValue = verticalModule.gap !== undefined ? verticalModule.gap : 1.2;
+    const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
       margin: this.getMarginCSS(effective),
       background: this.getBackgroundCSS(effective),
-      backgroundImage: this.getBackgroundImageCSS(effective, hass),
+      backgroundImage: this.getBackgroundImageOrGradient(effective, hass),
       backgroundSize: effective.background_size || 'cover',
       backgroundPosition: effective.background_position || 'center',
       backgroundRepeat: effective.background_repeat || 'no-repeat',
-      border: effective.border_width ? this.getBorderCSS(effective) : 'none',
+      border: (effective.border_width || effective.border_color || (effective.border_style && effective.border_style !== 'none')) ? this.getBorderCSS(effective) : 'none',
       borderRadius: this.addPixelUnit(effective.border_radius) || '0',
+      // Respect explicit positioning/z-index so the entire column can overlay siblings
+      // If a z-index is provided but no position, use relative so z-index takes effect
+      position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
+      zIndex: (effective as any).z_index || 'auto',
+      // Respect sizing controls from design/global design
+      width: (effective as any).width || undefined,
+      height: (effective as any).height || undefined,
+      maxWidth: (effective as any).max_width || undefined,
+      minWidth: (effective as any).min_width || undefined,
+      maxHeight: (effective as any).max_height || undefined,
+      boxShadow: (effective as any).box_shadow || undefined,
+      backdropFilter: (effective as any).backdrop_filter || undefined,
+      clipPath: (effective as any).clip_path || undefined,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: this.getJustifyContent(verticalModule.alignment || 'center'),
@@ -257,9 +274,12 @@ export class UltraVerticalModule extends BaseUltraModule {
           ? `${gapValue}rem`
           : '0',
       alignItems: this.getAlignItems(verticalModule.horizontal_alignment || 'center'),
-      width: '100%',
       // Allow fully collapsed layouts when designers set 0 padding/margin
-      minHeight: '0',
+      // Only set min-height if explicitly specified by user, otherwise let content determine height
+      minHeight: (effective as any).min_height || 'auto',
+      // Respect overflow settings from design properties (defaults to visible for negative margin overlaps)
+      overflow: (effective as any).overflow || 'visible',
+      boxSizing: 'border-box',
     };
 
     // Gesture handling variables
@@ -271,6 +291,25 @@ export class UltraVerticalModule extends BaseUltraModule {
 
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
+      // CRITICAL FIX: Don't handle events from nested module editor controls
+      // This prevents parent container gestures from interfering with nested module editing
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.layout-child-actions') ||
+        target.closest('.layout-child-drag-handle') ||
+        target.closest('.nested-layout-drag-handle') ||
+        target.closest('.layout-module-drag-handle') ||
+        target.closest('.layout-child-simplified-module') ||
+        target.closest('.nested-layout-module-container') ||
+        target.closest('.layout-module-container') ||
+        target.closest('.layout-module-actions') ||
+        target.closest('.module-settings-popup') ||
+        target.closest('.popup-content')
+      ) {
+        // This event is on a nested module's editor controls - don't handle it
+        return;
+      }
+
       e.preventDefault();
       isHolding = false;
 
@@ -282,13 +321,34 @@ export class UltraVerticalModule extends BaseUltraModule {
             verticalModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (verticalModule as any).entity,
+            verticalModule
           );
         }
       }, 500); // 500ms hold threshold
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      // CRITICAL FIX: Don't handle events from nested module editor controls
+      // This prevents parent container gestures from interfering with nested module editing
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.layout-child-actions') ||
+        target.closest('.layout-child-drag-handle') ||
+        target.closest('.nested-layout-drag-handle') ||
+        target.closest('.layout-module-drag-handle') ||
+        target.closest('.layout-child-simplified-module') ||
+        target.closest('.nested-layout-module-container') ||
+        target.closest('.layout-module-container') ||
+        target.closest('.layout-module-actions') ||
+        target.closest('.module-settings-popup') ||
+        target.closest('.popup-content')
+      ) {
+        // This event is on a nested module's editor controls - don't handle it
+        return;
+      }
+
       e.preventDefault();
       // Clear hold timer
       if (holdTimeout) {
@@ -322,7 +382,9 @@ export class UltraVerticalModule extends BaseUltraModule {
             verticalModule.double_tap_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (verticalModule as any).entity,
+            verticalModule
           );
         }
       } else {
@@ -341,12 +403,22 @@ export class UltraVerticalModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (verticalModule as any).entity
+              (verticalModule as any).entity,
+              verticalModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows
       }
     };
+
+    // Extract CSS variable prefix for Shadow DOM styling
+    const cssVarPrefix = (verticalModule as any).design?.css_variable_prefix;
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (cssVarPrefix) {
+      const cssVars = generateCSSVariables(cssVarPrefix, (verticalModule as any).design);
+      Object.assign(containerStyles, cssVars);
+    }
 
     return html`
       <div class="vertical-module-preview">
@@ -389,11 +461,17 @@ export class UltraVerticalModule extends BaseUltraModule {
                   return html`
                     <div
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
-                      style="max-width: 100%; overflow: hidden; width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
+                      style="max-width: 100%; box-sizing: border-box; margin: ${childMargin}; ${isNegativeGap
                         ? 'padding: 0; border: none; background: transparent;'
                         : ''}"
                     >
-                      ${this._renderChildModulePreview(childModule, hass, moduleWithDesign)}
+                      ${this._renderChildModulePreview(
+                        childModule,
+                        hass,
+                        moduleWithDesign,
+                        (this as any)._currentConfig,
+                        (this as any)._currentPreviewContext
+                      )}
                     </div>
                   `;
                 });
@@ -424,7 +502,9 @@ export class UltraVerticalModule extends BaseUltraModule {
   private _renderChildModulePreview(
     childModule: CardModule,
     hass: HomeAssistant,
-    layoutDesign?: any
+    layoutDesign?: any,
+    config?: UltraCardConfig,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     // Apply layout design properties to child modules by creating a merged module
     let moduleToRender = childModule;
@@ -482,7 +562,12 @@ export class UltraVerticalModule extends BaseUltraModule {
     const shouldShowProOverlay = isProModule && !hasProAccess;
 
     if (moduleHandler) {
-      const moduleContent = moduleHandler.renderPreview(moduleToRender, hass);
+      const moduleContent = moduleHandler.renderPreview(
+        moduleToRender,
+        hass,
+        config,
+        previewContext
+      );
 
       // If this is a pro module and user doesn't have access, show overlay
       if (shouldShowProOverlay) {
@@ -606,6 +691,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     if (layoutDesign.letter_spacing) mergedModule.letter_spacing = layoutDesign.letter_spacing;
     if (layoutDesign.text_transform) mergedModule.text_transform = layoutDesign.text_transform;
     if (layoutDesign.font_style) mergedModule.font_style = layoutDesign.font_style;
+    if (layoutDesign.white_space) mergedModule.white_space = layoutDesign.white_space;
 
     // Do NOT propagate container background styling to children.
     // Backgrounds belong to the container surface; passing them down causes
@@ -660,10 +746,10 @@ export class UltraVerticalModule extends BaseUltraModule {
     if (layoutDesign.animation_timing)
       mergedModule.animation_timing = layoutDesign.animation_timing;
 
-    // Apply horizontal alignment inheritance - vertical layout's horizontal alignment overrides child module alignment
-    if (layoutDesign.horizontal_alignment) {
-      mergedModule.alignment = layoutDesign.horizontal_alignment;
-    }
+    // NOTE: We intentionally do NOT inherit alignment from parent to child layout modules.
+    // The child module's alignment controls its own internal content distribution (e.g., top/center/bottom/space-between).
+    // The parent's horizontal_alignment controls cross-axis positioning, which is a different concept.
+    // Inheriting these would incorrectly override the child's own alignment settings and break features like negative gap.
 
     return mergedModule;
   }
@@ -688,14 +774,14 @@ export class UltraVerticalModule extends BaseUltraModule {
     // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
     if (verticalModule.modules && verticalModule.modules.length > 0) {
       for (const childModule of verticalModule.modules) {
-        // Allow both horizontal and vertical modules at level 1
-        if (childModule.type === 'horizontal' || childModule.type === 'vertical') {
+        // Allow horizontal, vertical, and accordion modules at level 1
+        if (childModule.type === 'horizontal' || childModule.type === 'vertical' || childModule.type === 'accordion') {
           const layoutChild = childModule as HorizontalModule | VerticalModule;
 
           // Check level 2 nesting - allow layout modules but prevent level 3
           if (layoutChild.modules && layoutChild.modules.length > 0) {
             for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical') {
+              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical' || nestedModule.type === 'accordion') {
                 const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
 
                 // Check level 3 nesting - prevent any layout modules at this level
@@ -703,7 +789,8 @@ export class UltraVerticalModule extends BaseUltraModule {
                   for (const deepNestedModule of deepLayoutModule.modules) {
                     if (
                       deepNestedModule.type === 'horizontal' ||
-                      deepNestedModule.type === 'vertical'
+                      deepNestedModule.type === 'vertical' ||
+                      deepNestedModule.type === 'accordion'
                     ) {
                       errors.push(
                         'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
@@ -753,8 +840,8 @@ export class UltraVerticalModule extends BaseUltraModule {
       moduleWithDesign.padding_bottom ||
       moduleWithDesign.padding_left ||
       moduleWithDesign.padding_right
-      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '8px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '8px'}`
-      : '8px';
+      ? `${this.addPixelUnit(moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(moduleWithDesign.padding_left) || '0px'}`
+      : '0px';
   }
 
   private getMarginCSS(moduleWithDesign: any): string {
@@ -767,7 +854,22 @@ export class UltraVerticalModule extends BaseUltraModule {
   }
 
   private getBackgroundCSS(moduleWithDesign: any): string {
-    return moduleWithDesign.background_color || 'transparent';
+    const bgColor = moduleWithDesign.background_color || '';
+    // If it's a gradient, return transparent so backgroundImage can be used instead
+    if (bgColor && (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))) {
+      return 'transparent';
+    }
+    return bgColor || 'transparent';
+  }
+
+  private getBackgroundImageOrGradient(moduleWithDesign: any, hass: HomeAssistant): string {
+    // Check if background_color is actually a gradient
+    const bgColor = moduleWithDesign.background_color || '';
+    if (bgColor && (bgColor.includes('gradient') || bgColor.includes('linear-') || bgColor.includes('radial-'))) {
+      return bgColor;
+    }
+    // Otherwise use the regular background image logic
+    return this.getBackgroundImageCSS(moduleWithDesign, hass);
   }
 
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
@@ -827,9 +929,11 @@ export class UltraVerticalModule extends BaseUltraModule {
   }
 
   private getBorderCSS(moduleWithDesign: any): string {
-    const width = this.addPixelUnit(moduleWithDesign.border_width) || '0';
+    // Default to 1px if style is set but width is not
+    const hasStyle = moduleWithDesign.border_style && moduleWithDesign.border_style !== 'none';
+    const width = this.addPixelUnit(moduleWithDesign.border_width) || (hasStyle ? '1px' : '0');
     const style = moduleWithDesign.border_style || 'solid';
-    const color = moduleWithDesign.border_color || 'transparent';
+    const color = moduleWithDesign.border_color || 'var(--divider-color)';
     return `${width} ${style} ${color}`;
   }
 
@@ -869,7 +973,7 @@ export class UltraVerticalModule extends BaseUltraModule {
     return `
       /* Vertical Module Styles */
       .vertical-module-preview {
-        width: 100%;
+        /* Let flexbox handle width naturally - no forced width */
         min-height: 60px;
       }
 
@@ -886,7 +990,9 @@ export class UltraVerticalModule extends BaseUltraModule {
         border-radius: 4px;
         padding: 0;
         transition: all 0.2s ease;
-        width: 100%;
+        /* Let flexbox handle width naturally - only constrain to prevent overflow */
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       .child-module-preview.negative-gap {

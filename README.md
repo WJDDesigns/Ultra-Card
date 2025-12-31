@@ -1,7 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 ![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 
-# Ultra Card
+# Ultra Card 2.0
 
 ## The Visual Dashboard Builder That Changes Everything
 
@@ -46,7 +46,6 @@ Cloud sync, automatic daily backups with 30-day retention, and smart restore fun
 - **🎨 Drag-and-Drop Builder** - Effortlessly arrange layouts with instant visual feedback
 - **🛠️ Visual Editor** - Configure everything through an intuitive UI, no YAML required
 - **🎯 4-Tab Module Settings** - General, Actions, Logic, and Design for complete control
-- **📏 Smart Scaling** - Intelligent responsive scaling adapts to narrow columns automatically
 - **📱 Mobile Optimized** - Touch gestures and responsive layouts for all devices
 
 ### Endless Possibilities
@@ -54,7 +53,7 @@ Cloud sync, automatic daily backups with 30-day retention, and smart restore fun
 - **📦 19+ Module Types** - Content display, interactive controls, layout systems, and Pro animated modules
 - **🔧 Conditional Logic** - Show/hide elements based on states, time, or Jinja2 templates
 - **🔗 Template Support** - Full Jinja2 template evaluation with CodeMirror editor
-- **🔌 3rd Party Card Integration (Pro)** - Embed any custom Home Assistant card
+- **🔌 Card Integration** - Native HA cards (unlimited) + 3rd party cards (5 free, unlimited Pro)
 - **🎭 Rich Animation System** - Animated icons, bars, hover effects, and smooth transitions
 
 ### Professional Design
@@ -71,7 +70,7 @@ Cloud sync, automatic daily backups with 30-day retention, and smart restore fun
 - **📸 Automatic Daily Backups** - 30-day retention protects your dashboard investment
 - **💾 Manual Snapshots** - Up to 30 named backups for critical configurations
 - **🔄 Smart Restore** - Intelligent backup matching by name or position
-- **🔌 Unlimited 3rd Party Cards** - Integrate your entire card ecosystem
+- **🔌 Native & 3rd Party Cards** - Native HA cards unlimited for all; unlimited custom cards with Pro
 
 ### Community-Driven
 
@@ -170,13 +169,10 @@ Visit **[UltraCard.io](https://ultracard.io)** to unlock cloud sync, automated b
 
 - ↔️ **[Horizontal Layout](docs/modules/horizontal.md)** - Arrange modules horizontally
 - ↕️ **[Vertical Layout](docs/modules/vertical.md)** - Stack modules vertically
+- 📑 **Tabs Module** - Tabbed container with horizontal or vertical orientation for organizing modules into switchable sections
 - ➖ **[Separator Module](docs/modules/separator.md)** - Visual dividers with multiple styles
 
 ### Pro Animated Modules 🌟
-
-<p align="center">
-  <img src="https://ultracard.io/wp-content/uploads/2025/10/fishy-uc.gif" alt="Ultra Card Fishy Demo" width="600">
-</p>
 
 Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)**:
 
@@ -185,9 +181,15 @@ Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)*
 - 📅 **Animated Forecast** - Multi-day forecast with animated icons and detailed information
 - 🎬 **Video Background** - Stunning video backgrounds with glass blur effects
 
-### 3rd Party Card Integration 🔌
+### Card Integration 🔌
 
-**Embed ANY custom Home Assistant card** within Ultra Card's layout system:
+**Use native HA cards and embed custom cards** within Ultra Card's layout system:
+
+**Native Home Assistant Cards (Unlimited - All Users):**
+- Entities, Glance, Button, Picture, Markdown, Conditional, and all other native HA cards
+- No limits, always free
+
+**Community & 3rd Party Cards:**
 
 - **Bubble Card** - Modern bubble-style cards
 - **Mushroom Cards** - Minimalist card collection
@@ -196,8 +198,9 @@ Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)*
 - **Button Card** - Highly customizable buttons
 - **And hundreds more!**
 
-**Free Tier:** Up to 5 third-party cards per dashboard  
-**Pro Tier:** Unlimited third-party card integration
+**All Users:** Unlimited native Home Assistant cards  
+**Free Tier:** Up to 5 community/3rd-party cards per dashboard  
+**Pro Tier:** Unlimited community/3rd-party card integration
 
 ---
 
@@ -225,8 +228,9 @@ Create up to 30 named snapshots per card. Perfect for seasonal layouts, testing 
 - **Animated Weather** - Current weather with animated icons
 - **Animated Forecast** - Multi-day weather forecast with animations
 
-🔌 **Unlimited 3rd Party Cards**  
-Integrate your entire card ecosystem. Embed as many Bubble Cards, Mushroom Cards, ApexCharts, or any custom card as you need.
+🔌 **Native & 3rd Party Card Integration**  
+- **Native HA Cards (Unlimited)**: Use all native Home Assistant cards (entities, glance, button, etc.) without limits
+- **3rd Party Cards (Pro)**: Embed unlimited Bubble Cards, Mushroom Cards, ApexCharts, and any custom card with Ultra Card Pro
 
 ⚡ **Priority Support**  
 Get faster responses from the Ultra Card development team when you need help.
@@ -263,6 +267,7 @@ Enjoy cloud-powered features, exclusive modules, and peace of mind knowing your 
 | Animated Clock Module      |   ❌    |     ✅      |
 | Animated Weather Module    |   ❌    |     ✅      |
 | Animated Forecast Module   |   ❌    |     ✅      |
+| Native HA Cards            |   ✅ Unlimited   |  ✅ Unlimited   |
 | 3rd Party Card Integration | 5 cards |  Unlimited  |
 | Priority Support           |   ❌    |     ✅      |
 
@@ -338,450 +343,17 @@ Professional styling controls:
 
 ---
 
-## 3rd Party Card Integration (Pro)
+## Card Integration
 
-Ultra Card Pro breaks down the barriers between card ecosystems by allowing you to embed **any** custom Home Assistant card directly within your layouts.
+Ultra Card integrates seamlessly with both native Home Assistant cards and custom 3rd party cards.
 
-### How It Works
+### Native HA Cards (Unlimited - All Users)
 
-1. **Add a Module** - Click "Add Module" on any column
-2. **Navigate to 3rd Party Tab** - Find installed custom cards
-3. **Click to Add** - Select any card to add it instantly
-4. **Configure** - Use the card's native visual editor within Ultra Card
+All users can add unlimited native Home Assistant cards (entities, glance, button, picture, markdown, conditional, etc.) to their Ultra Card layouts. These cards use their native editors and work exactly as they do in standard Home Assistant dashboards.
 
-### Benefits
+### 3rd Party Card Integration (5 Free, Unlimited Pro)
 
-- **Unified Layout System** - Combine your favorite cards with Ultra Card's powerful layout engine
-- **Native Configuration** - Each card keeps its own visual editor
-- **Apply Logic & Design** - Use Ultra Card's Logic and Design tabs to control visibility and styling
-- **Smart Caching** - No flashing or reloading with intelligent element caching
-- **Live Preview** - See exactly how cards look before adding them
-
-### Supported Cards
-
-Ultra Card works with **all** custom Lovelace cards, including:
-
-- Bubble Card
-- Mushroom Cards
-- ApexCharts Card
-- Mini Graph Card
-- Button Card
-- Swipe Card
-- Slider Entity Row
-- And hundreds more!
-
-**Upgrade to Pro for unlimited 3rd party card integration at [UltraCard.io](https://ultracard.io).**
-
----
-
-## Translations
-
-Ultra Card supports 14 languages with full internationalization:
-
-🇺🇸 English • 🇬🇧 British English • 🇩🇪 German • 🇫🇷 French • 🇪🇸 Spanish • 🇮🇹 Italian • 🇳🇱 Dutch • 🇳🇴 Norwegian • 🇩🇰 Danish • 🇨🇿 Czech • 🇵🇱 Polish • 🇸🇪 Swedish • 🇵🇹 Portuguese • 🇷🇺 Russian
-
-### Help Translate
-
-We welcome translation contributions! See our [Translation Guide](CONTRIBUTING_TRANSLATIONS.md) for details on how to:
-
-- Update existing translations
-- Add new languages
-- Test your translations
-
-**Quick start**: Edit translation files directly on GitHub in [`src/translations/`](https://github.com/WJDDesigns/Ultra-Card/tree/main/src/translations) and create a pull request.
-
----
-
-## Community & Support
-
-### Official Channels
-
-**🌐 [UltraCard.io](https://ultracard.io)** - Official website, Pro subscriptions, and account management
-
-**💬 [Discord Community](https://discord.gg/6xVgHxzzBV)** - Get help, share creations, and connect with other users
-
-**🐛 [GitHub Issues](https://github.com/WJDDesigns/Ultra-Card/issues)** - Report bugs and request features
-
-**🛒 [Preset Marketplace](https://ultracard.io)** - Browse and share card presets
-
-### Get Pro Support
-
-Pro subscribers receive priority support through the UltraCard.io portal and Discord. Questions are answered faster, and you get direct access to the development team.
-
-**[Upgrade to Pro at UltraCard.io](https://ultracard.io)**
-
-### Support Development
-
-If you find Ultra Card useful, consider:
-
-- **[Upgrading to Pro](https://ultracard.io)** - Get exclusive features while supporting development
-- **[Leaving a tip](https://www.paypal.com/ncp/payment/NLHALFSPA7PUS)** - One-time contributions are always appreciated
-- **Sharing Ultra Card** - Tell others about your favorite dashboard builder
-- **Contributing** - Submit translations, presets, or code improvements
-
----
-
-## Contributing
-
-We welcome contributions from the community! Whether you're fixing bugs, adding features, improving documentation, or translating to new languages, your help makes Ultra Card better for everyone.
-
-### Ways to Contribute
-
-- **Translations** - See [Translation Guide](CONTRIBUTING_TRANSLATIONS.md)
-- **Presets** - Share your card designs in the Marketplace
-- **Code** - Submit pull requests for bug fixes or features
-- **Documentation** - Improve guides and examples
-- **Testing** - Report bugs and test beta releases
-
-Please follow our coding standards and create pull requests with clear descriptions of your changes.
-
----
-
-## Technical Details
-
-### Requirements
-
-- **Home Assistant** 2024.1.0 or newer
-- **HACS** (recommended for easy installation)
-- **Modern Browser** with ES2015+ support
-
-### Performance
-
-- Built with TypeScript for reliability and type safety
-- Optimized rendering with smart caching
-- Minimal bundle size with tree-shaking
-- Responsive design scales from mobile to 4K displays
-
-### Privacy & Security
-
-- **No tracking** - Ultra Card doesn't collect analytics or personal data
-- **Local-first** - Free features work entirely locally
-- **Secure sync** - Pro Cloud uses encrypted connections
-- **Open source** - Full code transparency on GitHub
-
----
-
-## License
-
-MIT License - see [LICENSE](license) file for details.
-
----
-
-## Credits
-
-**Created by [WJD Designs](https://wjddesigns.com)**
-
-### Special Thanks
-
-Ultra Card wouldn't be what it is today without our amazing Discord community. Special recognition to:
-
-**BlowfishDiesel** • **Knucklehead Smiff** • **Martin / Korsiolsa** • **MoonRaven** • **mooseBringer** • **The_Cre8r** • **K1ngF1sher**
-
-Your feedback, testing, preset contributions, and enthusiasm drive this project forward. Thank you! 🙏
-
----
-
-## Built by Dashboard Creators, for Dashboard Creators
-
-Ultra Card 2.0 represents the culmination of years of Home Assistant dashboard experience and months of intensive development. We've taken everything we learned building dashboards and created the tool we always wished existed.
-
-**Version 2.0.0** - The visual dashboard builder that changes everything.
-
-**[Get Started Free](https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=Ultra-Card&category=plugin)** • **[Upgrade to Pro](https://ultracard.io)** • **[Join Our Community](https://discord.gg/6xVgHxzzBV)**
-
----
-
-_Built for Home Assistant with ❤️_- **📏 Smart Scaling** - Intelligent responsive scaling adapts to narrow columns automatically
-- **📱 Mobile Optimized** - Touch gestures and responsive layouts for all devices
-
-### Endless Possibilities
-
-- **📦 19+ Module Types** - Content display, interactive controls, layout systems, and Pro animated modules
-- **🔧 Conditional Logic** - Show/hide elements based on states, time, or Jinja2 templates
-- **🔗 Template Support** - Full Jinja2 template evaluation with CodeMirror editor
-- **🔌 3rd Party Card Integration (Pro)** - Embed any custom Home Assistant card
-- **🎭 Rich Animation System** - Animated icons, bars, hover effects, and smooth transitions
-
-### Professional Design
-
-- **🌈 Complete Design Controls** - Typography, colors, spacing, borders, shadows, and filters
-- **🎨 Gradient Support** - Full gradient modes with multiple style options
-- **✨ Animation Effects** - Intro/outro animations, hover states, and Pro animated modules
-- **🎬 Video Backgrounds (Pro)** - Stunning video backgrounds with glass blur effects
-- **🌓 Light & Dark Theme Support** - Seamless integration with Home Assistant themes
-
-### Cloud Power (Pro)
-
-- **☁️ Cloud Configuration Sync** - Edit anywhere, access everywhere across all devices
-- **📸 Automatic Daily Backups** - 30-day retention protects your dashboard investment
-- **💾 Manual Snapshots** - Up to 30 named backups for critical configurations
-- **🔄 Smart Restore** - Intelligent backup matching by name or position
-- **🔌 Unlimited 3rd Party Cards** - Integrate your entire card ecosystem
-
-### Community-Driven
-
-- **🛒 Preset Marketplace** - One-click community presets with instant installation
-- **🌎 14 Languages** - Full internationalization support
-- **💬 Active Discord Community** - Help, discussion, and sharing creations
-- **⭐ Favorites System** - Star and organize your most-used presets
-
----
-
-## Quick Start
-
-### 1. Install Ultra Card
-
-#### HACS (Recommended)
-
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=Ultra-Card&category=plugin)
-
-**Or manually:**
-
-1. Install HACS if you don't have it already
-2. Open HACS in Home Assistant
-3. Go to "Frontend"
-4. Click the menu (three dots) and select "Custom repositories"
-5. Add `https://github.com/WJDDesigns/Ultra-Card` as a "Lovelace" repository
-6. Install "Ultra Card"
-7. Restart Home Assistant
-
-#### Manual Installation
-
-1. Download `ultra-card.js` from the [latest release](https://github.com/WJDDesigns/Ultra-Card/releases)
-2. Put `ultra-card.js` file into your `config/www` folder
-3. Add reference in Dashboard:
-   - **UI Method:** _Settings_ → _Dashboards_ → _More Options_ → _Resources_ → _Add Resource_ → Set URL as `/local/ultra-card.js` → Set type as `JavaScript Module`
-   - **YAML Method:** Add to `lovelace` section:
-     ```yaml
-     resources:
-       - url: /local/ultra-card.js
-         type: module
-     ```
-
-### 2. Create Your First Card
-
-1. In Dashboard UI, click **3 dots** in top right corner
-2. Click **Edit Dashboard**
-3. Click **Plus button** to add a new card
-4. Find **Custom: Ultra Card** in the list
-5. Use the **Layout Builder** tab to drag and drop modules
-
-### 3. Customize with the 4-Tab Editor
-
-Each module has four tabs for complete control:
-
-- **General** - Module content and basic settings
-- **Actions** - Tap, hold, and double-tap behaviors
-- **Logic** - Conditional display rules
-- **Design** - Typography, colors, spacing, borders, shadows, animations
-
-### 4. Optional: Upgrade to Pro
-
-Visit **[UltraCard.io](https://ultracard.io)** to unlock cloud sync, automated backups, exclusive animated modules, and unlimited 3rd party card integration.
-
----
-
-## 19+ Modules for Every Use Case
-
-<img width="812" height="814" alt="modules" src="https://github.com/user-attachments/assets/b8208e40-e0c4-43c6-afa3-eba61aa22485" />
-
-### Content Display Modules
-
-**Free Modules:**
-
-- 📝 **[Text Module](docs/modules/text.md)** - Custom text with rich formatting and template support
-- 🎯 **[Icon Module](docs/modules/icon.md)** - Entity-linked icons with states, templates, and animations
-- ℹ️ **[Info Module](docs/modules/info.md)** - Entity information display with organized rows
-- 🖼️ **[Image Module](docs/modules/image.md)** - Images with conditional logic and unlimited height
-- 📖 **[Markdown Module](docs/modules/markdown.md)** - Rich text with CodeMirror editor
-- 📊 **[Bar Module](docs/modules/bar.md)** - Progress bars with multiple styles, gradients, and animations
-- 📈 **[Graphs Module](docs/modules/graphs.md)** - Historical data visualization with forecasts
-- 📹 **[Camera Module](docs/modules/camera.md)** - Live camera feeds with fullscreen, zoom, and audio controls
-
-### Interactive Control Modules
-
-**Free Modules:**
-
-- 🔘 **[Button Module](docs/modules/button.md)** - Interactive buttons with custom actions
-- 🎚️ **Slider Module** - Smooth numeric input controls with animations
-- 🔢 **Spinbox Module** - Increment/decrement controls for precise adjustments
-- 📋 **Dropdown Module** - Interactive selectors with entity source support
-- 💡 **Light Module** - Specialized light controls with color picking and auto-detection
-- 📊 **Gauge Module** - Circular gauge displays for sensor values
-
-### Layout & Organization Modules
-
-**Free Modules:**
-
-- ↔️ **[Horizontal Layout](docs/modules/horizontal.md)** - Arrange modules horizontally
-- ↕️ **[Vertical Layout](docs/modules/vertical.md)** - Stack modules vertically
-- ➖ **[Separator Module](docs/modules/separator.md)** - Visual dividers with multiple styles
-
-### Pro Animated Modules 🌟
-
-Unlock exclusive animated modules with **[Ultra Card Pro](https://ultracard.io)**:
-
-- 🕐 **Animated Clock** - Beautiful flip clock with smooth animations and customizable styles
-- 🌤️ **Animated Weather** - Current weather with animated weather icons
-- 📅 **Animated Forecast** - Multi-day forecast with animated icons and detailed information
-- 🎬 **Video Background** - Stunning video backgrounds with glass blur effects
-
-### 3rd Party Card Integration 🔌
-
-**Embed ANY custom Home Assistant card** within Ultra Card's layout system:
-
-- **Bubble Card** - Modern bubble-style cards
-- **Mushroom Cards** - Minimalist card collection
-- **ApexCharts Card** - Advanced charting
-- **Mini Graph Card** - Compact graphs
-- **Button Card** - Highly customizable buttons
-- **And hundreds more!**
-
-**Free Tier:** Up to 5 third-party cards per dashboard  
-**Pro Tier:** Unlimited third-party card integration
-
----
-
-## 🚀 Ultra Card Pro Cloud - Enterprise Dashboard Management
-
-**Take your dashboards to the next level with cloud sync, automated backups, and exclusive features.**
-
-Ultra Card Pro transforms how you manage your Home Assistant dashboards. Never lose your work, sync seamlessly across devices, and unlock exclusive professional modules that make your dashboards truly stand out.
-
-### Why Go Pro?
-
-☁️ **Cloud Configuration Sync**  
-Edit on your phone, tablet, or desktop—changes sync instantly across all your Home Assistant instances. One configuration, accessible everywhere.
-
-📸 **Automatic Daily Backups**  
-Every dashboard is backed up automatically with 30-day retention. Sleep soundly knowing your hours of design work are protected.
-
-💾 **Manual Snapshots**  
-Create up to 30 named snapshots per card. Perfect for seasonal layouts, testing configurations, or keeping multiple dashboard versions.
-
-🎬 **Exclusive Pro Modules**
-
-- **Video Background Module** - Stunning video backgrounds with glass blur effects
-- **Animated Clock** - Beautiful flip clock with smooth animations
-- **Animated Weather** - Current weather with animated icons
-- **Animated Forecast** - Multi-day weather forecast with animations
-
-🔌 **Unlimited 3rd Party Cards**  
-Integrate your entire card ecosystem. Embed as many Bubble Cards, Mushroom Cards, ApexCharts, or any custom card as you need.
-
-⚡ **Priority Support**  
-Get faster responses from the Ultra Card development team when you need help.
-
-🔄 **Smart Restore**  
-Intelligent backup restore that matches cards by custom name or position—no manual reconfiguration needed.
-
-### How to Get Started
-
-**Step 1: Subscribe to Ultra Card Pro**  
-Visit **[UltraCard.io](https://ultracard.io)** and subscribe for just **$4.99/month**. Get instant access to all Pro features and support ongoing development.
-
-**Step 2: Install the Integration**  
-Install the **[Ultra Card Pro Cloud](https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration)** integration via HACS with one click.
-
-**Step 3: Connect Your Account**  
-Enter your UltraCard.io credentials once. All devices connected to your Home Assistant instance automatically get Pro features—no per-device login required.
-
-**Step 4: Start Creating**  
-Enjoy cloud-powered features, exclusive modules, and peace of mind knowing your dashboards are protected.
-
-### Free vs Pro
-
-| Feature                    |  Free   |     Pro     |
-| -------------------------- | :-----: | :---------: |
-| Core Modules (15+)         |   ✅    |     ✅      |
-| Visual Editor & Builder    |   ✅    |     ✅      |
-| Preset Marketplace         |   ✅    |     ✅      |
-| Conditional Logic          |   ✅    |     ✅      |
-| Cloud Configuration Sync   |   ❌    |     ✅      |
-| Automatic Daily Backups    |   ❌    |     ✅      |
-| Manual Snapshots           |   ❌    | ✅ Up to 30 |
-| Video Background Module    |   ❌    |     ✅      |
-| Animated Clock Module      |   ❌    |     ✅      |
-| Animated Weather Module    |   ❌    |     ✅      |
-| Animated Forecast Module   |   ❌    |     ✅      |
-| 3rd Party Card Integration | 5 cards |  Unlimited  |
-| Priority Support           |   ❌    |     ✅      |
-
-**Start your Pro journey at [UltraCard.io](https://ultracard.io) and unlock the full potential of your Home Assistant dashboards.**
-
----
-
-## Preset Marketplace
-
-Accelerate your dashboard design with the built-in Preset Marketplace. Browse, preview, and install community-created card designs with a single click.
-
-### Features
-
-- 🛒 **One-Click Installation** - Install presets instantly without manual JSON copying
-- 📂 **Category Filtering** - Browse by Dashboards, Vehicles, Weather, Smart Home, and more
-- 👁️ **Preview Before Install** - See screenshots and descriptions before applying
-- ⭐ **Favorites System** - Star your most-used presets for quick access
-- 🌐 **Community Contributions** - Submit your own presets to share with others
-- 🔄 **Auto-Updates** - Marketplace content refreshes automatically
-
-### How to Access
-
-1. Open any Ultra Card in edit mode
-2. Navigate to the **Presets** tab in the editor
-3. Click **Browse Marketplace**
-4. Select a preset and click **Install**
-
-The marketplace makes it easy to discover new design ideas and share your creations with the Ultra Card community.
-
----
-
-## Module Settings System
-
-Each module includes a powerful 4-tab settings system for complete customization:
-
-<img width="698" height="754" alt="tabs-view" src="https://github.com/user-attachments/assets/b65cc607-e914-4d0a-88fa-2d07dfbafba3" />
-
-### General Tab
-
-Configure module content, entity selection, and basic settings. Each module type has specialized options tailored to its function.
-
-### Actions Tab
-
-Set up tap, hold, and double-tap behaviors:
-
-- More Info - Open entity details
-- Toggle - Switch entity state
-- Navigate - Go to another dashboard
-- URL - Open external links
-- Perform Action - Call Home Assistant services
-- Assist - Trigger voice assistant
-
-### Logic Tab
-
-Control module visibility with conditional logic:
-
-- **Entity State Conditions** - Show/hide based on entity states
-- **Time-Based Conditions** - Display modules at specific times
-- **Template Conditions** - Use Jinja2 templates for complex logic
-- **Multiple Conditions** - Combine conditions with AND/OR logic
-
-### Design Tab
-
-Professional styling controls:
-
-- **Typography** - Font size, weight, alignment, line height
-- **Colors** - Background, text, border colors with transparency
-- **Spacing** - Margins, padding, and gap controls
-- **Borders** - Style, width, radius, and individual side control
-- **Shadows** - Box shadows with customizable blur and spread
-- **Animations** - Intro/outro animations, hover effects, and transitions
-- **Filters** - Blur, brightness, contrast, and more
-
----
-
-## 3rd Party Card Integration (Pro)
-
-Ultra Card Pro breaks down the barriers between card ecosystems by allowing you to embed **any** custom Home Assistant card directly within your layouts.
+Ultra Card breaks down the barriers between card ecosystems by allowing you to embed **any** custom Home Assistant card directly within your layouts.
 
 ### How It Works
 
@@ -933,202 +505,3 @@ Ultra Card 2.0 represents the culmination of years of Home Assistant dashboard e
 ---
 
 _Built for Home Assistant with ❤️_
-   - **Using UI:** _Settings_ → _Dashboards_ → _More Options icon_ → _Resources_ → _Add Resource_ → Set _Url_ as `/local/ultra-card.js` → Set _Resource type_ as `JavaScript Module`.
-     **Note:** If you do not see the Resources menu, you will need to enable _Advanced Mode_ in your _User Profile_
-   - **Using YAML:** Add following code to `lovelace` section.
-     ```yaml
-     resources:
-       - url: /local/ultra-card.js
-         type: module
-     ```
-
-## Usage
-
-All Ultra Card layouts can be configured using Dashboard UI editor.
-
-1. In Dashboard UI, click 3 dots in top right corner.
-2. Click _Edit Dashboard_.
-3. Click Plus button to add a new card.
-4. Find _Custom: Ultra Card_ in the list.
-5. Use the _Layout Builder_ tab to drag and drop modules.
-
-## Modules
-
-Ultra Card provides 19+ module types organized by category:
-
-<img width="812" height="814" alt="modules" src="https://github.com/user-attachments/assets/b8208e40-e0c4-43c6-afa3-eba61aa22485" />
-
-### Free Modules - Core Content
-
-- 📝 [Text module](docs/modules/text.md) - Display custom text with rich formatting
-- 🖼️ [Image module](docs/modules/image.md) - Show images with conditional logic and animations
-- 🎯 [Icon module](docs/modules/icon.md) - Entity-linked icons with states and templates
-- 📊 [Bar module](docs/modules/bar.md) - Progress bars with multiple styles and gradients
-- ℹ️ [Info module](docs/modules/info.md) - Entity information display with rich formatting
-- 🔘 [Button module](docs/modules/button.md) - Interactive buttons with custom actions
-- ➖ [Separator module](docs/modules/separator.md) - Visual dividers (horizontal/vertical)
-- 📖 [Markdown module](docs/modules/markdown.md) - Rich text with markdown support
-- 📹 [Camera module](docs/modules/camera.md) - Live camera feeds with fullscreen and zoom
-- 📈 [Graphs module](docs/modules/graphs.md) - Historical data visualization with forecasts
-
-### Free Modules - Layout & Interactive
-
-- ↔️ [Horizontal layout](docs/modules/horizontal.md) - Arrange modules horizontally
-- ↕️ [Vertical layout](docs/modules/vertical.md) - Stack modules vertically
-- 🎚️ **Slider module** - Interactive slider for numeric inputs and adjustments
-- 🔢 **Spinbox module** - Numeric input with increment/decrement controls
-- 📋 **Dropdown module** - Select from options with entity source support
-- 📊 **Gauge module** - Circular gauge displays for sensor values
-
-### Pro Modules 🌟
-
-Unlock exclusive animated modules with [Ultra Card Pro](#ultra-card-pro-):
-
-- 🕐 **Animated Clock** - Beautiful flip clock with smooth animations
-- 🌤️ **Animated Weather** - Current weather with animated weather icons
-- 📅 **Animated Forecast** - Multi-day forecast with detailed information
-
-### 3rd Party Cards 🔌
-
-Embed **any** installed custom Home Assistant card within Ultra Card's layout system:
-
-- Bubble Card
-- Mushroom Cards
-- ApexCharts Card
-- Mini Graph Card
-- And hundreds more!
-
-**Free:** Up to 5 third-party cards | **Pro:** Unlimited
-
-## Module Settings
-
-Each module has 4 tabs for complete customization:
-
-<img width="698" height="754" alt="tabs-view" src="https://github.com/user-attachments/assets/b65cc607-e914-4d0a-88fa-2d07dfbafba3" />
-
-- **General** - Module content and basic settings
-- **Actions** - Tap, hold, and double-tap behaviors
-- **Logic** - Conditional display rules based on states, time, or templates
-- **Design** - Typography, colors, spacing, borders, shadows, animations, and filters
-
-## 3rd Party Card Integration
-
-Ultra Card allows you to embed any custom Home Assistant card directly within your layouts. This powerful feature lets you combine the flexibility of your favorite community cards with Ultra Card's advanced layout system.
-
-### How It Works
-
-1. **Add a Module** - Click "Add Module" on any column
-2. **Navigate to 3rd Party Tab** - Find the "3rd Party" tab in the module selector
-3. **Click to Add** - Select any installed custom card to add it instantly
-4. **Configure** - Use the card's native visual editor within Ultra Card's settings popup
-
-### Supported Cards
-
-Ultra Card works with **all** custom Lovelace cards, including:
-
-- **Bubble Card** - Modern bubble-style cards
-- **Mushroom Cards** - Minimalist card collection
-- **ApexCharts Card** - Advanced charting
-- **Mini Graph Card** - Compact graphs
-- **Button Card** - Highly customizable buttons
-- **And hundreds more!**
-
-### Free vs Pro
-
-- **Free Tier:** Add up to 5 third-party cards per dashboard
-- **Pro Tier:** Unlimited third-party card integration
-
-### Benefits
-
-- Use existing cards you love within Ultra Card's powerful layout system
-- Access each card's native visual editor
-- Apply Ultra Card's Logic and Design tabs to control visibility and styling
-- Combine multiple card types in cohesive, professional layouts
-
-## Preset Marketplace
-
-Accelerate your dashboard design with the built-in Preset Marketplace. Browse, preview, and install community-created card designs with a single click.
-
-### Features
-
-- 🛒 **One-Click Installation** - Install presets instantly without manual JSON copying
-- 📂 **Category Filtering** - Browse by Dashboards, Vehicles, Weather, Smart Home, and more
-- 👁️ **Preview Before Install** - See screenshots and descriptions before applying
-- ⭐ **Favorites System** - Star your most-used presets for quick access
-- 🌐 **Community Contributions** - Submit your own presets to share with others
-- 🔄 **Auto-Updates** - Marketplace content refreshes automatically
-
-### How to Access
-
-1. Open any Ultra Card in edit mode
-2. Navigate to the **Presets** tab in the editor
-3. Click **Browse Marketplace**
-4. Select a preset and click **Install**
-
-The marketplace makes it easy to discover new design ideas and share your creations with the Ultra Card community.
-
-## Ultra Card Pro 🌟
-
-Unlock the full potential of Ultra Card with **Ultra Card Pro**—a premium tier that adds cloud sync, automated backups, exclusive modules, and unlimited third-party card integration.
-
-### Pro Features
-
-- 🌟 **3 Exclusive Animated Modules** - Animated Clock, Weather, and Forecast
-- ☁️ **Cloud Configuration Sync** - Seamlessly sync all your card configs across devices
-- 📸 **Auto Dashboard Snapshots** - Daily automatic backups with 30-day retention
-- 💾 **Manual Card Backups** - Create named backups (up to 30) for important configurations
-- 🔌 **Unlimited 3rd Party Cards** - Embed as many custom cards as you need
-- 🎯 **Smart Replace Restore** - Intelligent backup restore that matches cards by name or position
-- ⚡ **Priority Support** - Get help faster from the Ultra Card team
-
-### Get Started
-
-Register for Ultra Card Pro at **[ultracard.io](https://ultracard.io)** to unlock all Pro features. Pro subscriptions support ongoing development and help us build even more amazing features for the community.
-
-## Translations
-
-Ultra Card supports multiple languages:
-
-🇺🇸 English • 🇬🇧 British English • 🇩🇪 German • 🇫🇷 French • 🇪🇸 Spanish • 🇮🇹 Italian • 🇳🇱 Dutch • 🇳🇴 Norwegian • 🇩🇰 Danish • 🇨🇿 Czech • 🇵🇱 Polish • 🇸🇪 Swedish • 🇵🇹 Portuguese • 🇷🇺 Russian
-
-### Help Translate
-
-We welcome translation contributions! See our [Translation Guide](CONTRIBUTING_TRANSLATIONS.md) for details on how to:
-
-- Update existing translations
-- Add new languages
-- Test your translations
-
-**Quick start**: Edit translation files directly on GitHub in [`src/translations/`](https://github.com/WJDDesigns/Ultra-Card/tree/main/src/translations) and create a pull request.
-
-## Community & Support
-
-- **Discord**: [Join our Discord](https://discord.gg/6xVgHxzzBV) for help, discussion, and sharing your creations
-- **GitHub**: [Report issues](https://github.com/WJDDesigns/Ultra-Card/issues) or contribute code
-- **Support Development**: [Leave a tip](https://www.paypal.com/ncp/payment/NLHALFSPA7PUS) if you find Ultra Card useful
-
-## Contributing
-
-We welcome contributions! Whether you're fixing bugs, adding features, improving documentation, or translating to new languages, your help makes Ultra Card better for everyone.
-
-Please see our [contributing guidelines](CONTRIBUTING_TRANSLATIONS.md) for more details.
-
-## License
-
-MIT License - see [LICENSE](license) file for details.
-
-## Credits
-
-Created by **[WJD Designs](https://wjddesigns.com)**
-
-### Special Thanks
-
-Special thanks to our amazing Discord community for helping shape Ultra Card and making it what it is today:
-
-BlowfishDiesel, Knucklehead Smiff, Martin / Korsiolsa, MoonRaven, mooseBringer, The_Cre8r, K1ngF1sher and many others.
-
-Your feedback, testing, preset contributions, and enthusiasm drive this project forward. Thank you! 🙏
-
----
-
-**Built for Home Assistant with ❤️**

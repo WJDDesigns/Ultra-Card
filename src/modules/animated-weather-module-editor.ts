@@ -1,10 +1,35 @@
 // Animated Weather Module Editor
-// Comprehensive editor UI for the Animated Weather Module organized by columns
+// Visual drag-and-drop editor with accordion items
 
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { AnimatedWeatherModule, UltraCardConfig, CardModule } from '../types';
 import { localize } from '../localize/localize';
+
+// Item metadata
+interface WeatherItemMeta {
+  id: string;
+  label: string;
+  icon: string;
+  column: 'left' | 'right';
+}
+
+const WEATHER_ITEMS: Record<string, WeatherItemMeta> = {
+  location: { id: 'location', label: 'Location', icon: 'mdi:map-marker', column: 'left' },
+  condition: { id: 'condition', label: 'Condition', icon: 'mdi:weather-partly-cloudy', column: 'left' },
+  custom_entity: { id: 'custom_entity', label: 'Custom Entity', icon: 'mdi:plus-circle', column: 'left' },
+  precipitation: { id: 'precipitation', label: 'Precipitation', icon: 'mdi:weather-pouring', column: 'left' },
+  precipitation_probability: { id: 'precipitation_probability', label: 'Precipitation Probability', icon: 'mdi:weather-rainy', column: 'left' },
+  wind: { id: 'wind', label: 'Wind', icon: 'mdi:weather-windy', column: 'left' },
+  pressure: { id: 'pressure', label: 'Pressure', icon: 'mdi:gauge', column: 'left' },
+  visibility: { id: 'visibility', label: 'Visibility', icon: 'mdi:eye', column: 'left' },
+  date: { id: 'date', label: 'Date', icon: 'mdi:calendar', column: 'right' },
+  temperature: { id: 'temperature', label: 'Temperature', icon: 'mdi:thermometer', column: 'right' },
+  temp_range: { id: 'temp_range', label: 'High/Low', icon: 'mdi:thermometer-lines', column: 'right' },
+};
+
+// Track expanded accordion in module's temporary state (not persisted to config)
+const expandedAccordionState: Record<string, string | null> = {};
 
 export function renderAnimatedWeatherModuleEditor(
   context: any,
@@ -16,107 +41,390 @@ export function renderAnimatedWeatherModuleEditor(
   const weatherModule = module as AnimatedWeatherModule;
   const lang = hass.locale?.language || 'en';
 
+  // Check which attributes are available in the weather entity
+  const weatherEntity = weatherModule.weather_entity
+    ? hass.states[weatherModule.weather_entity]
+    : null;
+  const hasPrecipitation =
+    weatherEntity?.attributes?.precipitation !== undefined &&
+    weatherEntity?.attributes?.precipitation !== null;
+  const hasPrecipitationProbability =
+    weatherEntity?.attributes?.precipitation_probability !== undefined &&
+    weatherEntity?.attributes?.precipitation_probability !== null;
+  const hasWind =
+    weatherEntity?.attributes?.wind_speed !== undefined ||
+    weatherEntity?.attributes?.wind_bearing !== undefined;
+  const hasPressure =
+    weatherEntity?.attributes?.pressure !== undefined &&
+    weatherEntity?.attributes?.pressure !== null;
+  const hasVisibility =
+    weatherEntity?.attributes?.visibility !== undefined &&
+    weatherEntity?.attributes?.visibility !== null;
+
+  // Get default order if not set
+  const getDefaultOrder = (column: 'left' | 'right'): string[] => {
+    if (column === 'left') {
+      const items: string[] = ['location', 'condition'];
+      if (weatherModule.custom_entity) items.push('custom_entity');
+      if (hasPrecipitation) items.push('precipitation');
+      if (hasPrecipitationProbability) items.push('precipitation_probability');
+      if (hasWind) items.push('wind');
+      if (hasPressure) items.push('pressure');
+      if (hasVisibility) items.push('visibility');
+      return items;
+    } else {
+      return ['date', 'temperature', 'temp_range'];
+    }
+  };
+
+  const leftOrder = weatherModule.left_column_order || getDefaultOrder('left');
+  const rightOrder = weatherModule.right_column_order || getDefaultOrder('right');
+
+  // State management
+  let draggedItem: { itemId: string; fromColumn: 'left' | 'right'; fromIndex: number } | null = null;
+  const moduleId = weatherModule.id || 'default';
+  
+  // Get expanded accordion state
+  const getExpandedAccordion = () => expandedAccordionState[moduleId] || null;
+  const setExpandedAccordion = (itemId: string | null) => {
+    expandedAccordionState[moduleId] = itemId;
+  };
+
+  // Drag handlers
+  const handleDragStart = (e: DragEvent, itemId: string, column: 'left' | 'right', index: number) => {
+    draggedItem = { itemId, fromColumn: column, fromIndex: index };
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', itemId);
+    }
+    (e.target as HTMLElement).style.opacity = '0.4';
+  };
+
+  const handleDragEnd = (e: DragEvent) => {
+    (e.target as HTMLElement).style.opacity = '';
+    draggedItem = null;
+    // Remove all drop zone highlights
+    document.querySelectorAll('.drop-zone-active').forEach(el => el.classList.remove('drop-zone-active'));
+  };
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleDragEnter = (e: DragEvent) => {
+    (e.currentTarget as HTMLElement).classList.add('drop-zone-active');
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    (e.currentTarget as HTMLElement).classList.remove('drop-zone-active');
+  };
+
+  const handleDrop = (e: DragEvent, targetColumn: 'left' | 'right', targetIndex: number) => {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).classList.remove('drop-zone-active');
+
+    if (!draggedItem) return;
+
+    const { itemId, fromColumn, fromIndex } = draggedItem;
+
+    // Create new order arrays
+    let newLeftOrder = [...leftOrder];
+    let newRightOrder = [...rightOrder];
+
+    // Remove from source
+    if (fromColumn === 'left') {
+      newLeftOrder.splice(fromIndex, 1);
+    } else {
+      newRightOrder.splice(fromIndex, 1);
+    }
+
+    // Add to target
+    if (targetColumn === 'left') {
+      newLeftOrder.splice(targetIndex, 0, itemId);
+    } else {
+      newRightOrder.splice(targetIndex, 0, itemId);
+    }
+
+    // Update module
+    updateModule({
+      left_column_order: newLeftOrder,
+      right_column_order: newRightOrder,
+    });
+
+    setTimeout(() => context.triggerPreviewUpdate(), 50);
+  };
+
+  // Toggle visibility
+  const toggleVisibility = (itemId: string) => {
+    const showKey = `show_${itemId}` as keyof AnimatedWeatherModule;
+    const currentValue = weatherModule[showKey];
+    updateModule({ [showKey]: currentValue === false ? true : false } as any);
+    setTimeout(() => context.triggerPreviewUpdate(), 50);
+  };
+
+  // Render accordion item
+  const renderAccordionItem = (itemId: string, column: 'left' | 'right', index: number) => {
+    const meta = WEATHER_ITEMS[itemId];
+    if (!meta) return html``;
+
+    // Check if item should be available (entity has this attribute)
+    if (itemId === 'precipitation' && !hasPrecipitation) return html``;
+    if (itemId === 'precipitation_probability' && !hasPrecipitationProbability) return html``;
+    if (itemId === 'wind' && !hasWind) return html``;
+    if (itemId === 'pressure' && !hasPressure) return html``;
+    if (itemId === 'visibility' && !hasVisibility) return html``;
+
+    const showKey = `show_${itemId}` as keyof AnimatedWeatherModule;
+    const sizeKey = `${itemId}_size` as keyof AnimatedWeatherModule;
+    const colorKey = `${itemId}_color` as keyof AnimatedWeatherModule;
+
+    const isVisible = weatherModule[showKey] !== false;
+    const isExpanded = getExpandedAccordion() === itemId;
+
+    const toggleExpand = (e: Event) => {
+      e.stopPropagation();
+      const currentExpanded = getExpandedAccordion();
+      setExpandedAccordion(currentExpanded === itemId ? null : itemId);
+      // Force re-render
+      updateModule({});
+    };
+
+    return html`
+      <div
+        class="accordion-item"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => handleDragStart(e, itemId, column, index)}
+        @dragend=${handleDragEnd}
+        @dragover=${handleDragOver}
+        @dragenter=${handleDragEnter}
+        @dragleave=${handleDragLeave}
+        @drop=${(e: DragEvent) => handleDrop(e, column, index)}
+      >
+        <div class="accordion-header ${isExpanded ? 'expanded' : ''}">
+          <ha-icon icon="mdi:drag" class="drag-handle"></ha-icon>
+          <ha-icon icon="${meta.icon}" class="item-icon"></ha-icon>
+          <span class="item-label">${meta.label}</span>
+          <ha-icon
+            icon="${isVisible ? 'mdi:eye' : 'mdi:eye-off'}"
+            class="visibility-toggle ${isVisible ? 'visible' : 'hidden'}"
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              toggleVisibility(itemId);
+            }}
+          ></ha-icon>
+          <ha-icon
+            icon="mdi:chevron-${isExpanded ? 'up' : 'down'}"
+            class="expand-toggle"
+            @click=${toggleExpand}
+          ></ha-icon>
+        </div>
+
+        ${isExpanded
+          ? html`
+              <div class="accordion-content">
+                <!-- Size Control -->
+                <div class="control-row">
+                  <div class="control-label">Size (px)</div>
+                  ${context.renderUcForm(
+                    hass,
+                    { [sizeKey]: weatherModule[sizeKey] || (column === 'left' ? 14 : 16) },
+                    [context.numberField(sizeKey as string, 0, 128, 1)],
+                    (e: CustomEvent) => updateModule(e.detail.value),
+                    false
+                  )}
+                </div>
+
+                <!-- Color Control -->
+                <div class="control-row">
+                  <div class="control-label">Color</div>
+                  <ultra-color-picker
+                    .value="${weatherModule[colorKey] || 'var(--primary-text-color)'}"
+                    .hass="${hass}"
+                    @value-changed=${(e: CustomEvent) => {
+                      updateModule({ [colorKey]: e.detail.value } as any);
+                      setTimeout(() => context.triggerPreviewUpdate(), 50);
+                    }}
+                  ></ultra-color-picker>
+                </div>
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  };
+
   return html`
     ${context.injectUcFormStyles()}
     <style>
-      .toggle-row {
+      .weather-editor-container {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding: 16px;
+      }
+
+      .entity-config-section {
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--primary-color);
+        margin-bottom: 16px;
+        letter-spacing: 0.5px;
+      }
+
+      .section-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        margin-bottom: 16px;
+        line-height: 1.4;
+      }
+
+      .columns-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .column {
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 200px;
+      }
+
+      .column-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+      }
+
+      .accordion-item {
+        background: var(--primary-background-color);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        cursor: move;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .accordion-item.drop-zone-active {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        opacity: 0.3;
+      }
+
+      .accordion-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
-        padding: 4px 0;
-        width: 100%;
-        max-width: 100%;
+        padding: 12px;
+        gap: 8px;
+        cursor: pointer;
       }
-      .toggle-row .field-title {
-        margin: 0 !important;
-        padding: 0 !important;
-        flex: 1 1 auto;
+
+      .drag-handle {
+        --mdc-icon-size: 20px;
+        color: var(--secondary-text-color);
+        cursor: grab;
+      }
+
+      .drag-handle:active {
+        cursor: grabbing;
+      }
+
+      .item-icon {
+        --mdc-icon-size: 20px;
+        color: var(--primary-color);
+      }
+
+      .item-label {
+        flex: 1;
         font-size: 14px;
         font-weight: 500;
         color: var(--primary-text-color);
-        line-height: 1.4;
-        white-space: nowrap;
       }
-      .toggle-row ha-switch {
-        flex: 0 0 auto;
+
+      .visibility-toggle {
+        --mdc-icon-size: 20px;
+        cursor: pointer;
+        transition: color 0.2s;
       }
-      .full-width-field {
-        width: 100%;
+
+      .visibility-toggle.visible {
+        color: var(--primary-color);
       }
-      .full-width-field ha-form {
-        width: 100%;
+
+      .visibility-toggle.hidden {
+        color: var(--disabled-text-color);
       }
-      .full-width-color-picker {
-        display: block;
-        width: 100%;
+
+      .expand-toggle {
+        --mdc-icon-size: 20px;
+        color: var(--secondary-text-color);
+        transition: transform 0.2s;
       }
-      .full-width-color-picker ultra-color-picker {
-        display: block;
-        width: 100%;
+
+      .accordion-header.expanded .expand-toggle {
+        transform: rotate(180deg);
+      }
+
+      .accordion-content {
+        padding: 0 12px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .control-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .control-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+
+      @media (max-width: 768px) {
+        .columns-container {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
-    <div class="module-general-settings">
-      <!-- ============================================ -->
-      <!-- COLUMN LAYOUT SETTINGS -->
-      <!-- ============================================ -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-        >
-          Column Layout
-        </div>
 
-        <!-- Column Visibility Toggles -->
-        <div class="toggle-row">
-          <div class="field-title">Show Left Column</div>
-          <ha-switch
-            .checked=${weatherModule.show_left_column !== false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              updateModule({ show_left_column: target.checked });
-            }}
-          ></ha-switch>
-        </div>
+    <div class="weather-editor-container">
+      <!-- Entity Configuration -->
+      <div class="entity-config-section">
+        <div class="section-title">Weather Entity</div>
+        ${context.renderUcForm(
+          hass,
+          { weather_entity: weatherModule.weather_entity || '' },
+          [context.entityField('weather_entity', ['weather'])],
+          (e: CustomEvent) => updateModule(e.detail.value),
+          false
+        )}
+      </div>
 
-        <div class="toggle-row">
-          <div class="field-title">Show Center Column</div>
-          <ha-switch
-            .checked=${weatherModule.show_center_column !== false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              updateModule({ show_center_column: target.checked });
-            }}
-          ></ha-switch>
-        </div>
-
-        <div class="toggle-row">
-          <div class="field-title">Show Right Column</div>
-          <ha-switch
-            .checked=${weatherModule.show_right_column !== false}
-            @change=${(e: Event) => {
-              const target = e.target as any;
-              updateModule({ show_right_column: target.checked });
-            }}
-          ></ha-switch>
-        </div>
-
-        <!-- Column Gap -->
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 16px;"
-        >
-          Horizontal Column Gap
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Space between visible columns in pixels (0-48)
-        </div>
-        <div class="full-width-field">
+      <!-- General Settings -->
+      <div class="entity-config-section">
+        <div class="section-title">Layout Settings</div>
+        
+        <!-- Column Gaps -->
+        <div class="control-row" style="margin-bottom: 16px;">
+          <div class="control-label">Horizontal Column Gap (0-48px)</div>
           ${context.renderUcForm(
             hass,
             { column_gap: weatherModule.column_gap ?? 12 },
@@ -125,719 +433,87 @@ export function renderAnimatedWeatherModuleEditor(
             false
           )}
         </div>
+
+        <div class="control-row" style="margin-bottom: 16px;">
+          <div class="control-label">Left Column Vertical Gap (0-32px)</div>
+          ${context.renderUcForm(
+            hass,
+            { left_column_gap: weatherModule.left_column_gap ?? 8 },
+            [context.numberField('left_column_gap', 0, 32, 1)],
+            (e: CustomEvent) => updateModule(e.detail.value),
+            false
+          )}
+        </div>
+
+        <div class="control-row" style="margin-bottom: 16px;">
+          <div class="control-label">Right Column Vertical Gap (0-32px)</div>
+          ${context.renderUcForm(
+            hass,
+            { right_column_gap: weatherModule.right_column_gap ?? 8 },
+            [context.numberField('right_column_gap', 0, 32, 1)],
+            (e: CustomEvent) => updateModule(e.detail.value),
+            false
+          )}
+        </div>
       </div>
 
-      <!-- ============================================ -->
-      <!-- ENTITY CONFIGURATION -->
-      <!-- ============================================ -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-        >
-          Weather Entities
+      <!-- Center Column Settings -->
+      <div class="entity-config-section">
+        <div class="section-title">Center Column (Weather Icon)</div>
+        
+        <div class="control-row" style="margin-bottom: 16px;">
+          <div class="control-label">Icon Size (0-300px)</div>
+          ${context.renderUcForm(
+            hass,
+            { main_icon_size: weatherModule.main_icon_size || 120 },
+            [context.numberField('main_icon_size', 0, 300, 10)],
+            (e: CustomEvent) => updateModule(e.detail.value),
+            false
+          )}
         </div>
 
-        <!-- Weather Entity -->
-        <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-          Weather Entity
+        <div class="control-row">
+          <div class="control-label">Icon Style</div>
+          ${context.renderUcForm(
+            hass,
+            { icon_style: weatherModule.icon_style || 'fill' },
+            [
+              context.selectField('icon_style', [
+                { value: 'fill', label: 'Filled' },
+                { value: 'line', label: 'Outlined' },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.icon_style;
+              const prev = weatherModule.icon_style;
+              if (next === prev) return;
+              updateModule(e.detail.value);
+              setTimeout(() => context.triggerPreviewUpdate(), 50);
+            },
+            false
+          )}
         </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Primary weather.* entity with current conditions
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { weather_entity: weatherModule.weather_entity || '' },
-          [context.entityField('weather_entity', ['weather'])],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
-        )}
-
-        <!-- Temperature Entity (Fallback) -->
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
-        >
-          Temperature Entity (Optional)
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Fallback if not using weather entity
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { temperature_entity: weatherModule.temperature_entity || '' },
-          [context.entityField('temperature_entity', ['sensor'])],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
-        )}
-
-        <!-- Condition Entity (Fallback) -->
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
-        >
-          Condition Entity (Optional)
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Fallback if not using weather entity
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { condition_entity: weatherModule.condition_entity || '' },
-          [context.entityField('condition_entity', ['sensor'])],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
-        )}
-
-        <!-- Custom Entity -->
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
-        >
-          Custom Entity (Optional)
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Additional info to display in left column (e.g., humidity, wind)
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { custom_entity: weatherModule.custom_entity || '' },
-          [context.entityField('custom_entity')],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
-        )}
-
-        <!-- Custom Entity Name -->
-        <div
-          class="field-title"
-          style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
-        >
-          Custom Entity Name (Optional)
-        </div>
-        <div class="field-description" style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;">
-          Override the displayed name for the custom entity
-        </div>
-        ${context.renderUcForm(
-          hass,
-          { custom_entity_name: weatherModule.custom_entity_name || '' },
-          [context.textField('custom_entity_name')],
-          (e: CustomEvent) => updateModule(e.detail.value),
-          false
-        )}
       </div>
 
-      <!-- ============================================ -->
-      <!-- LEFT COLUMN SETTINGS -->
-      <!-- ============================================ -->
-      ${weatherModule.show_left_column !== false
-        ? html`
-            <div
-              class="settings-section"
-              style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px; border-left: 4px solid var(--primary-color);"
-            >
-              <div
-                class="section-title"
-                style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-              >
-                Left Column Settings
-              </div>
+      <!-- Column Layout Editor -->
+      <div class="entity-config-section" style="padding-bottom: 0;">
+        <div class="section-title">Drag & Drop Column Items</div>
+        <div class="section-description">
+          Drag items to reorder them within or between columns. Click the eye icon to toggle visibility. Click the chevron to expand item settings.
+        </div>
+      </div>
 
-              <!-- Vertical Gap -->
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-              >
-                Vertical Gap
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-              >
-                Space between items within left column (0-32px)
-              </div>
-              <div class="full-width-field">
-                ${context.renderUcForm(
-                  hass,
-                  { left_column_gap: weatherModule.left_column_gap ?? 8 },
-                  [context.numberField('left_column_gap', 0, 32, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <!-- Display Toggles -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 24px; color: var(--primary-text-color);"
-              >
-                Display Elements
-              </div>
-
-              <div class="toggle-row">
-                <div class="field-title">Show Location</div>
-                <ha-switch
-                  .checked=${weatherModule.show_location !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ show_location: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
-
-              <div class="toggle-row">
-                <div class="field-title">Show Condition</div>
-                <ha-switch
-                  .checked=${weatherModule.show_condition !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ show_condition: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
-
-              <div class="toggle-row">
-                <div class="field-title">Show Custom Entity</div>
-                <ha-switch
-                  .checked=${weatherModule.show_custom_entity !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ show_custom_entity: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
-
-              <!-- Location Configuration -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 24px; color: var(--primary-text-color);"
-              >
-                Location Configuration
-              </div>
-
-              <!-- Location Override Mode -->
-              <div
-                class="field-title"
-                style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-              >
-                Location Override Mode
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-              >
-                Use text input or entity state for location name
-              </div>
-              ${context.renderUcForm(
-                hass,
-                { location_override_mode: weatherModule.location_override_mode || 'text' },
-                [
-                  context.selectField('location_override_mode', [
-                    { value: 'text', label: 'Text Input' },
-                    { value: 'entity', label: 'Entity State' },
-                  ]),
-                ],
-                (e: CustomEvent) => {
-                  const next = e.detail.value.location_override_mode;
-                  const prev = weatherModule.location_override_mode;
-                  if (next === prev) return;
-                  updateModule(e.detail.value);
-                  setTimeout(() => context.triggerPreviewUpdate(), 50);
-                },
-                false
-              )}
-              ${weatherModule.location_override_mode === 'entity'
-                ? html`
-                    <!-- Location Entity -->
-                    <div
-                      class="field-title"
-                      style="font-size: 14px; font-weight: 600; margin-bottom: 4px; margin-top: 16px;"
-                    >
-                      Location Entity
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-                    >
-                      Entity to use for location (e.g., device_tracker for current location)
-                    </div>
-                    ${context.renderUcForm(
-                      hass,
-                      { location_entity: weatherModule.location_entity || '' },
-                      [context.entityField('location_entity')],
-                      (e: CustomEvent) => updateModule(e.detail.value),
-                      false
-                    )}
-                  `
-                : html`
-                    <!-- Location Name Text -->
-                    <div
-                      class="field-title"
-                      style="font-size: 14px; font-weight: 600; margin-bottom: 4px; margin-top: 16px;"
-                    >
-                      Location Name
-                    </div>
-                    <div
-                      class="field-description"
-                      style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-                    >
-                      Override location name (leave empty to use entity name)
-                    </div>
-                    ${context.renderUcForm(
-                      hass,
-                      { location_name: weatherModule.location_name || '' },
-                      [context.textField('location_name')],
-                      (e: CustomEvent) => updateModule(e.detail.value),
-                      false
-                    )}
-                  `}
-
-              <!-- Text Sizes -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 32px; color: var(--primary-text-color);"
-              >
-                Text Sizes
-              </div>
-
-              <div class="full-width-field" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  Location Size (0-64px)
-                </div>
-                ${context.renderUcForm(
-                  hass,
-                  { location_size: weatherModule.location_size || 16 },
-                  [context.numberField('location_size', 0, 64, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <div class="full-width-field" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  Condition Size (0-96px)
-                </div>
-                ${context.renderUcForm(
-                  hass,
-                  { condition_size: weatherModule.condition_size || 24 },
-                  [context.numberField('condition_size', 0, 96, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <div class="full-width-field">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  Custom Entity Size (0-64px)
-                </div>
-                ${context.renderUcForm(
-                  hass,
-                  { custom_entity_size: weatherModule.custom_entity_size || 18 },
-                  [context.numberField('custom_entity_size', 0, 64, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <!-- Colors -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 32px; color: var(--primary-text-color);"
-              >
-                Colors
-              </div>
-
-              <div class="full-width-color-picker" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                >
-                  Location Color
-                </div>
-                <ultra-color-picker
-                  .value="${weatherModule.location_color || 'var(--primary-text-color)'}"
-                  .hass="${hass}"
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({ location_color: e.detail.value });
-                    setTimeout(() => context.triggerPreviewUpdate(), 50);
-                  }}
-                ></ultra-color-picker>
-              </div>
-
-              <div class="full-width-color-picker" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                >
-                  Condition Color
-                </div>
-                <ultra-color-picker
-                  .value="${weatherModule.condition_color || 'var(--primary-text-color)'}"
-                  .hass="${hass}"
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({ condition_color: e.detail.value });
-                    setTimeout(() => context.triggerPreviewUpdate(), 50);
-                  }}
-                ></ultra-color-picker>
-              </div>
-
-              <div class="full-width-color-picker">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                >
-                  Custom Entity Color
-                </div>
-                <ultra-color-picker
-                  .value="${weatherModule.custom_entity_color || 'var(--primary-text-color)'}"
-                  .hass="${hass}"
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({ custom_entity_color: e.detail.value });
-                    setTimeout(() => context.triggerPreviewUpdate(), 50);
-                  }}
-                ></ultra-color-picker>
-              </div>
-            </div>
-          `
-        : ''}
-
-      <!-- ============================================ -->
-      <!-- CENTER COLUMN SETTINGS -->
-      <!-- ============================================ -->
-      ${weatherModule.show_center_column !== false
-        ? html`
-            <div
-              class="settings-section"
-              style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px; border-left: 4px solid var(--primary-color);"
-            >
-              <div
-                class="section-title"
-                style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-              >
-                Center Column Settings
-              </div>
-
-              <!-- Icon Size -->
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-              >
-                Weather Icon Size
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-              >
-                Size of the main weather icon (0-300px)
-              </div>
-              <div class="full-width-field">
-                ${context.renderUcForm(
-                  hass,
-                  { main_icon_size: weatherModule.main_icon_size || 120 },
-                  [context.numberField('main_icon_size', 0, 300, 10)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <!-- Icon Style -->
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 4px; margin-top: 24px;"
-              >
-                Icon Style
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-              >
-                Choose between filled or outlined animated icons
-              </div>
-              ${context.renderUcForm(
-                hass,
-                { icon_style: weatherModule.icon_style || 'fill' },
-                [
-                  context.selectField('icon_style', [
-                    { value: 'fill', label: 'Filled' },
-                    { value: 'line', label: 'Outlined' },
-                  ]),
-                ],
-                (e: CustomEvent) => {
-                  const next = e.detail.value.icon_style;
-                  const prev = weatherModule.icon_style;
-                  if (next === prev) return;
-                  updateModule(e.detail.value);
-                  setTimeout(() => context.triggerPreviewUpdate(), 50);
-                },
-                false
-              )}
-            </div>
-          `
-        : ''}
-
-      <!-- ============================================ -->
-      <!-- RIGHT COLUMN SETTINGS -->
-      <!-- ============================================ -->
-      ${weatherModule.show_right_column !== false
-        ? html`
-            <div
-              class="settings-section"
-              style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px; border-left: 4px solid var(--primary-color);"
-            >
-              <div
-                class="section-title"
-                style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-              >
-                Right Column Settings
-              </div>
-
-              <!-- Vertical Gap -->
-              <div
-                class="field-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 4px;"
-              >
-                Vertical Gap
-              </div>
-              <div
-                class="field-description"
-                style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-              >
-                Space between items within right column (0-32px)
-              </div>
-              <div class="full-width-field">
-                ${context.renderUcForm(
-                  hass,
-                  { right_column_gap: weatherModule.right_column_gap ?? 8 },
-                  [context.numberField('right_column_gap', 0, 32, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <!-- Display Toggles -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 24px; color: var(--primary-text-color);"
-              >
-                Display Elements
-              </div>
-
-              <div class="toggle-row">
-                <div class="field-title">Show Date</div>
-                <ha-switch
-                  .checked=${weatherModule.show_date !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ show_date: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
-
-              <div class="toggle-row">
-                <div class="field-title">Show Temperature</div>
-                <ha-switch
-                  .checked=${weatherModule.show_temperature !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ show_temperature: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
-
-              <div class="toggle-row">
-                <div class="field-title">Show High/Low Range</div>
-                <ha-switch
-                  .checked=${weatherModule.show_temp_range !== false}
-                  @change=${(e: Event) => {
-                    const target = e.target as any;
-                    updateModule({ show_temp_range: target.checked });
-                  }}
-                ></ha-switch>
-              </div>
-
-              <!-- Text Sizes -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 24px; color: var(--primary-text-color);"
-              >
-                Text Sizes
-              </div>
-
-              <div class="full-width-field" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  Date Size (0-64px)
-                </div>
-                ${context.renderUcForm(
-                  hass,
-                  { date_size: weatherModule.date_size || 16 },
-                  [context.numberField('date_size', 0, 64, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <div class="full-width-field" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  Temperature Size (0-128px)
-                </div>
-                ${context.renderUcForm(
-                  hass,
-                  { temperature_size: weatherModule.temperature_size || 64 },
-                  [context.numberField('temperature_size', 0, 128, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <div class="full-width-field">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 4px;"
-                >
-                  High/Low Size (0-64px)
-                </div>
-                ${context.renderUcForm(
-                  hass,
-                  { temp_range_size: weatherModule.temp_range_size || 18 },
-                  [context.numberField('temp_range_size', 0, 64, 1)],
-                  (e: CustomEvent) => updateModule(e.detail.value),
-                  false
-                )}
-              </div>
-
-              <!-- Colors -->
-              <div
-                class="subsection-title"
-                style="font-size: 16px; font-weight: 600; margin-bottom: 12px; margin-top: 32px; color: var(--primary-text-color);"
-              >
-                Colors
-              </div>
-
-              <div class="full-width-color-picker" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                >
-                  Date Color
-                </div>
-                <ultra-color-picker
-                  .value="${weatherModule.date_color || 'var(--primary-text-color)'}"
-                  .hass="${hass}"
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({ date_color: e.detail.value });
-                    setTimeout(() => context.triggerPreviewUpdate(), 50);
-                  }}
-                ></ultra-color-picker>
-              </div>
-
-              <div class="full-width-color-picker" style="margin-bottom: 16px;">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                >
-                  Temperature Color
-                </div>
-                <ultra-color-picker
-                  .value="${weatherModule.temperature_color || 'var(--primary-text-color)'}"
-                  .hass="${hass}"
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({ temperature_color: e.detail.value });
-                    setTimeout(() => context.triggerPreviewUpdate(), 50);
-                  }}
-                ></ultra-color-picker>
-              </div>
-
-              <div class="full-width-color-picker">
-                <div
-                  class="field-title"
-                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px;"
-                >
-                  High/Low Color
-                </div>
-                <ultra-color-picker
-                  .value="${weatherModule.temp_range_color || 'var(--primary-text-color)'}"
-                  .hass="${hass}"
-                  @value-changed=${(e: CustomEvent) => {
-                    updateModule({ temp_range_color: e.detail.value });
-                    setTimeout(() => context.triggerPreviewUpdate(), 50);
-                  }}
-                ></ultra-color-picker>
-              </div>
-            </div>
-          `
-        : ''}
-
-      <!-- ============================================ -->
-      <!-- BACKGROUNDS -->
-      <!-- ============================================ -->
-      <div
-        class="settings-section"
-        style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 24px;"
-      >
-        <div
-          class="section-title"
-          style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
-        >
-          Backgrounds & Borders
+      <div class="columns-container">
+        <!-- Left Column -->
+        <div class="column">
+          <div class="column-title">Left Column</div>
+          ${leftOrder.map((itemId, index) => renderAccordionItem(itemId, 'left', index))}
         </div>
 
-        <!-- Module Background -->
-        <div class="full-width-color-picker" style="margin-bottom: 16px;">
-          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-            Module Background
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-          >
-            Overall background of the weather module
-          </div>
-          <ultra-color-picker
-            .value="${weatherModule.module_background || 'transparent'}"
-            .hass="${hass}"
-            @value-changed=${(e: CustomEvent) => {
-              updateModule({ module_background: e.detail.value });
-              setTimeout(() => context.triggerPreviewUpdate(), 50);
-            }}
-          ></ultra-color-picker>
-        </div>
-
-        <!-- Module Border -->
-        <div class="full-width-color-picker">
-          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
-            Module Border Color
-          </div>
-          <div
-            class="field-description"
-            style="font-size: 13px; opacity: 0.7; margin-bottom: 12px;"
-          >
-            Border color around the module
-          </div>
-          <ultra-color-picker
-            .value="${weatherModule.module_border || 'transparent'}"
-            .hass="${hass}"
-            @value-changed=${(e: CustomEvent) => {
-              updateModule({ module_border: e.detail.value });
-              setTimeout(() => context.triggerPreviewUpdate(), 50);
-            }}
-          ></ultra-color-picker>
+        <!-- Right Column -->
+        <div class="column">
+          <div class="column-title">Right Column</div>
+          ${rightOrder.map((itemId, index) => renderAccordionItem(itemId, 'right', index))}
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, css, TemplateResult, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -18,14 +18,45 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucModulePreviewService } from '../services/uc-module-preview-service';
 import { clockUpdateService } from '../services/clock-update-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
+import { ucVideoBgService } from '../services/uc-video-bg-service';
+import { ucDynamicWeatherService } from '../services/uc-dynamic-weather-service';
+import { ucBackgroundService } from '../services/uc-background-service';
 import { Z_INDEX } from '../utils/uc-z-index';
+import { dbg3p } from '../utils/uc-debug';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
+import { generateCSSVariables } from '../utils/css-variable-utils';
+import {
+  ThirdPartyLimitService,
+  computeCardInstanceId,
+  getCurrentDashboardId,
+} from '../pro/third-party-limit-service';
 
 // Import editor at top level to ensure it's available
 import '../editor/ultra-card-editor';
+import { externalCardContainerService } from '../services/external-card-container-service';
 
 @customElement('ultra-card')
 export class UltraCard extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  private _hass?: HomeAssistant;
+
+  @property({ attribute: false })
+  public get hass(): HomeAssistant | undefined {
+    return this._hass;
+  }
+
+  public set hass(value: HomeAssistant | undefined) {
+    const oldHass = this._hass;
+    this._hass = value;
+
+    // Only update external card containers if hass object reference changed
+    // (HA creates new objects when state changes, so reference check is sufficient)
+    if (value && value !== oldHass) {
+      externalCardContainerService.setHass(value);
+    }
+
+    // Let Lit handle the property change for other updates
+    this.requestUpdate('hass', oldHass);
+  }
   @property({ attribute: false, type: Object }) public config?: UltraCardConfig;
 
   @state() private _moduleVisibilityState = new Map<string, boolean>();
@@ -36,15 +67,77 @@ export class UltraCard extends LitElement {
   @state() private _animatingColumns = new Set<string>();
   @state() private _cloudUser: CloudUser | null = null;
   private _lastHassChangeTime = 0;
-  private _templateUpdateListener?: () => void;
+  private _templateUpdateListener?: (event: Event) => void;
   private _authListener?: (user: CloudUser | null) => void;
   /**
    * Flag to ensure module CSS is injected only once per card instance.
    */
   private _moduleStylesInjected = false;
+  private _instanceId: string = '';
+  private _limitUnsub?: () => void;
+  private _isEditorPreviewCard = false;
+  private _globalTransparencyListener?: () => void;
+  private _globalTransparencyApplied = false;
 
   connectedCallback(): void {
     super.connectedCallback();
+
+    // Listen for global transparency changes
+    this._globalTransparencyListener = () => {
+      this._applyGlobalTransparency();
+    };
+    window.addEventListener(
+      'ultra-card-global-transparency-changed',
+      this._globalTransparencyListener
+    );
+
+    // Apply global transparency if already set
+    this._applyGlobalTransparency();
+
+    // Refresh preview detection once we're in the DOM
+    const previewContext = this._detectEditorPreviewContext();
+    if (previewContext !== this._isEditorPreviewCard) {
+      this._isEditorPreviewCard = previewContext;
+    }
+
+    // Ensure a stable per-card instance id across remounts
+    if (this._isEditorPreviewCard) {
+      if (!this._instanceId || !this._instanceId.startsWith('uc-preview-')) {
+        this._instanceId = this._generatePreviewInstanceId();
+      }
+    } else if (!this._instanceId || this._instanceId.startsWith('uc-preview-')) {
+      const dashboardId = getCurrentDashboardId();
+      const cards = Array.from(document.querySelectorAll('ultra-card')) as Element[];
+      const index = Math.max(0, cards.indexOf(this));
+      const persistKey = `uc_card_id_${dashboardId}:${index}`;
+      let id = '';
+      try {
+        id = localStorage.getItem(persistKey) || '';
+      } catch {}
+      if (!id) {
+        id = `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        try {
+          localStorage.setItem(persistKey, id);
+        } catch {}
+      }
+      this._instanceId = id;
+    }
+
+    this._applyInstanceIdToDataset();
+    this._syncConfigMetadata();
+
+    // Subscribe to third-party limit service changes to re-render immediately
+    try {
+      this._limitUnsub = ThirdPartyLimitService.onChange(() => {
+        // Only update if we actually have 3rd party cards that might need lock status change
+        const has3rdPartyCards = this.config?.layout?.rows?.some(row =>
+          row.columns?.some(col => col.modules?.some(mod => mod.type === 'external_card'))
+        );
+        if (has3rdPartyCards) {
+          this.requestUpdate();
+        }
+      });
+    } catch {}
 
     // Inject combined CSS from all registered modules so that any module-specific
     // styles (e.g. icon animations) are available inside this card's shadow-root.
@@ -60,16 +153,50 @@ export class UltraCard extends LitElement {
 
     // Set up clock update service to trigger re-renders for clock modules
     clockUpdateService.setUpdateCallback(() => {
-      this.requestUpdate();
+      // Only update if we have animated clock modules
+      const hasClockModules = this.config?.layout?.rows?.some(row =>
+        row.columns?.some(col => col.modules?.some(mod => mod.type === 'animated_clock'))
+      );
+
+      if (hasClockModules) {
+        this.requestUpdate();
+      }
     });
 
     // Listen for template updates from modules
-    this._templateUpdateListener = () => {
+    this._templateUpdateListener = (event: Event) => {
+      // Check if we have any non-3rd party modules
+      const hasNonExternalModules = this.config?.layout?.rows?.some(row =>
+        row.columns?.some(col => col.modules?.some(mod => mod.type !== 'external_card'))
+      );
+
+      // If we only have 3rd party cards, skip all template updates
+      if (!hasNonExternalModules) {
+        return;
+      }
+
+      // Only update if the event is from a non-external module
+      const detail = (event as CustomEvent).detail;
+      if (detail?.moduleType === 'external_card') {
+        return; // Skip updates from external cards
+      }
+
       this.requestUpdate();
       // Update hover styles when configuration changes
       this._updateHoverEffectStyles();
     };
     window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+
+    // React to preview flag toggles so open editor Save/Done updates unlocks immediately
+    const previewListener = (e?: any) => {
+      // Do not change registration on preview open/close, just re-render.
+      // Registration is idempotent and deduped; keys are card-agnostic now.
+      dbg3p('card:preview-flag', e?.detail);
+      this.requestUpdate();
+    };
+    window.addEventListener('uc-preview-suppress-locks-changed', previewListener);
+    // Store to remove later
+    (this as any)._ucPreviewFlagListener = previewListener;
 
     // Listen for slider state changes (both on element and window for reliability)
     const sliderStateHandler = (e: Event) => {
@@ -83,6 +210,7 @@ export class UltraCard extends LitElement {
     this._cloudUser = ucCloudAuthService.getCurrentUser();
     this._authListener = (user: CloudUser | null) => {
       this._cloudUser = user;
+      dbg3p('card:auth-changed');
       this.requestUpdate(); // Re-render when auth status changes
     };
     ucCloudAuthService.addListener(this._authListener);
@@ -111,10 +239,21 @@ export class UltraCard extends LitElement {
       };
       window.addEventListener('resize', this._windowResizeHandler);
     }
+
+    // Register video background modules with the service
+    this._registerVideoBgModules();
+
+    // Register dynamic weather modules with the service
+    this._registerDynamicWeatherModules();
+    this._registerBackgroundModules();
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    if (this._limitUnsub) {
+      this._limitUnsub();
+      this._limitUnsub = undefined;
+    }
 
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);
@@ -130,6 +269,21 @@ export class UltraCard extends LitElement {
     if (this._templateUpdateListener) {
       window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
     }
+
+    // Clean up global transparency listener
+    if (this._globalTransparencyListener) {
+      window.removeEventListener(
+        'ultra-card-global-transparency-changed',
+        this._globalTransparencyListener
+      );
+    }
+
+    // Remove preview flag listener
+    try {
+      const l = (this as any)._ucPreviewFlagListener;
+      if (l) window.removeEventListener('uc-preview-suppress-locks-changed', l);
+      (this as any)._ucPreviewFlagListener = undefined;
+    } catch {}
 
     // Clean up auth listener
     if (this._authListener) {
@@ -153,6 +307,26 @@ export class UltraCard extends LitElement {
     if (this._scaleDebounceTimer) {
       clearTimeout(this._scaleDebounceTimer);
     }
+
+    // Don't destroy containers on disconnect - they will be reused when reconnected
+    // This prevents the flashing when switching views
+    // Containers will be properly cleaned up when modules are actually removed
+
+    // Unregister from 3rd party limit service immediately when card is removed
+    try {
+      if (this._instanceId) {
+        ThirdPartyLimitService.unregister(this._instanceId);
+      }
+    } catch {}
+
+    // Unregister video background modules
+    this._unregisterVideoBgModules();
+
+    // Unregister dynamic weather modules
+    this._unregisterDynamicWeatherModules();
+
+    // Unregister background modules so per-view backgrounds are cleaned up
+    this._unregisterBackgroundModules();
   }
 
   /**
@@ -207,16 +381,48 @@ export class UltraCard extends LitElement {
     if (changedProps.has('hass')) {
       const currentTime = Date.now();
 
-      // Throttle updates to avoid excessive re-renders (max once every 100ms)
-      if (currentTime - this._lastHassChangeTime > 100) {
+      // Update logic service with new hass instance
+      if (this.hass) {
+        logicService.setHass(this.hass);
+      }
+
+      // Check what types of modules we have
+      const moduleTypes = new Set<string>();
+      this.config?.layout?.rows?.forEach(row => {
+        row.columns?.forEach(col => {
+          col.modules?.forEach(mod => {
+            if (mod.type) moduleTypes.add(mod.type);
+          });
+        });
+      });
+
+      const has3rdPartyCards = moduleTypes.has('external_card');
+      const hasNonExternalModules = Array.from(moduleTypes).some(type => type !== 'external_card');
+
+      // Only request update if we have logic conditions or non-3rd party modules that need updates
+      const hasLogicConditions = this.config?.layout?.rows?.some(
+        row =>
+          row.display_conditions?.length > 0 ||
+          row.columns?.some(
+            col =>
+              col.display_conditions?.length > 0 ||
+              col.modules?.some(mod => mod.display_conditions?.length > 0)
+          )
+      );
+
+      // If we ONLY have 3rd party cards and no logic conditions, skip Ultra Card re-render
+      if (has3rdPartyCards && !hasNonExternalModules && !hasLogicConditions) {
+        return; // 3rd party cards update via direct hass passthrough
+      }
+
+      // Throttle Ultra Card re-renders only when needed for logic or other modules
+      const throttleDelay = has3rdPartyCards ? 500 : 100;
+      const shouldUpdate = currentTime - this._lastHassChangeTime > throttleDelay;
+
+      // Only update if we have a reason to (logic conditions or non-external modules)
+      if (shouldUpdate && (hasLogicConditions || hasNonExternalModules)) {
         this._lastHassChangeTime = currentTime;
-
-        // Update logic service with new hass instance
-        if (this.hass) {
-          logicService.setHass(this.hass);
-        }
-
-        // Request update to re-evaluate logic conditions
+        // Request update to re-evaluate logic conditions or update non-3rd party modules
         this.requestUpdate();
       }
     }
@@ -235,22 +441,119 @@ export class UltraCard extends LitElement {
       throw new Error(`Invalid configuration: ${validationResult.errors.join(', ')}`);
     }
 
-    // Check for duplicate module IDs and fix them
+    // Detect preview context EARLY so we can keep IDs stable in previews
+    const isPreviewContext = this._detectEditorPreviewContext();
+
+    // Check for duplicate module IDs and fix them (skip in previews to avoid ID churn)
     const uniqueIdCheck = configValidationService.validateUniqueModuleIds(
       validationResult.correctedConfig!
     );
 
     let finalConfig = validationResult.correctedConfig!;
-    if (!uniqueIdCheck.valid) {
-      // Duplicate module IDs detected; fixing silently
+    if (!isPreviewContext && !uniqueIdCheck.valid) {
+      // Duplicate module IDs detected; fixing silently (only outside previews)
       finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
     }
 
     // Suppress console info; warnings are surfaced in-editor only
 
     this.config = { ...finalConfig };
+
+    // Register modules with ThirdPartyLimitService for global evaluation (non-breaking)
+    try {
+      const dashboardId = getCurrentDashboardId();
+      const cardInstanceId =
+        this._instanceId || `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // Use the earlier-detected preview flag to keep behavior consistent
+      this._isEditorPreviewCard = isPreviewContext;
+      // Attach a non-enumerable flags for downstream resolution
+      try {
+        Object.defineProperty(this.config, '__ucInstanceId', {
+          value: cardInstanceId,
+          enumerable: false,
+          configurable: true,
+          writable: true,
+        });
+        Object.defineProperty(this.config, '__ucIsEditorPreview', {
+          value: this._isEditorPreviewCard,
+          enumerable: false,
+          configurable: true,
+          writable: true,
+        });
+      } catch {}
+
+      // Skip registration entirely for editor preview cards so they never affect limits
+      if (!this._isEditorPreviewCard && !(window as any).__UC_PREVIEW_SUPPRESS_LOCKS) {
+        ThirdPartyLimitService.register(cardInstanceId, dashboardId, this.config);
+      }
+    } catch {}
+
     // Request update to ensure re-render with new config
     this.requestUpdate();
+  }
+
+  /**
+   * True if this Ultra Card is hosted inside HA's preview dialog (not the dashboard).
+   * This traverses up the DOM to detect if we're inside hui-card-preview or hui-dialog-edit-card.
+   * NOTE: We do NOT check hass.editMode because that's true for the entire dashboard when editing.
+   */
+  private _detectEditorPreviewContext(): boolean {
+    try {
+      const isTarget = (el: Element | null | undefined): boolean => {
+        if (!el) return false;
+        const tag = el.tagName?.toLowerCase?.();
+        return tag === 'hui-card-preview' || tag === 'hui-dialog-edit-card';
+      };
+
+      let node: any = this as any;
+      let depth = 0;
+      while (node && depth < 30) {
+        if (isTarget(node)) return true;
+        const root = node.getRootNode?.();
+        if (root && root.host) {
+          node = root.host;
+        } else {
+          node = node.parentElement;
+        }
+        depth++;
+      }
+    } catch {}
+    return false;
+  }
+
+  private _syncConfigMetadata(): void {
+    if (!this.config) return;
+    try {
+      Object.defineProperty(this.config, '__ucInstanceId', {
+        value: this._instanceId,
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      });
+      Object.defineProperty(this.config, '__ucIsEditorPreview', {
+        value: this._isEditorPreviewCard,
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      });
+    } catch {
+      try {
+        (this.config as any).__ucInstanceId = this._instanceId;
+        (this.config as any).__ucIsEditorPreview = this._isEditorPreviewCard;
+      } catch {}
+    }
+  }
+
+  private _applyInstanceIdToDataset(): void {
+    if (!this._instanceId) return;
+    try {
+      (this as any).dataset = (this as any).dataset || {};
+      (this as any).dataset.ucInstanceId = this._instanceId;
+    } catch {}
+  }
+
+  private _generatePreviewInstanceId(): string {
+    return `uc-preview-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
   // Tell Home Assistant this card has a visual editor
@@ -320,6 +623,76 @@ export class UltraCard extends LitElement {
       `;
     }
 
+    // Check if card only contains video_bg, dynamic_weather or popup modules
+    const allModules: CardModule[] = [];
+    this.config.layout.rows.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          allModules.push(module);
+        });
+      });
+    });
+
+    // Modules that render view-wide effects or are invisible on the dashboard
+    const invisibleTypes = ['video_bg', 'dynamic_weather', 'background'];
+    const onlyInvisibleModules =
+      allModules.length > 0 && allModules.every(m => invisibleTypes.includes(m.type));
+
+    const onlyPopupModules =
+      allModules.length > 0 && allModules.every(m => m.type === 'popup');
+
+    // Check if all popups have invisible triggers (logic or page_load)
+    const allPopupsInvisible = onlyPopupModules && allModules.every(m => {
+      const popup = m as any;
+      const triggerType = popup.trigger_type || 'button';
+      return triggerType === 'logic' || triggerType === 'page_load';
+    });
+
+    // Check if we're in the card editor (not just dashboard edit mode)
+    const isInCardEditor = !!document.querySelector('hui-dialog-edit-card');
+
+    // Check if the dashboard itself is in edit mode
+    const isDashboardEditMode = (() => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('edit') === '1';
+      } catch {
+        return false;
+      }
+    })();
+
+    // If only invisible modules (video_bg, dynamic_weather) and NOT in card editor AND NOT in dashboard edit mode, don't render anything
+    if (onlyInvisibleModules && !isInCardEditor && !isDashboardEditMode) {
+      return html``;
+    }
+
+    // If only popup modules with invisible triggers (logic/page_load) and NOT in card editor, render with display: contents (no visible container)
+    if (allPopupsInvisible && !isInCardEditor) {
+      return html`
+        <div style="display: contents;">
+          ${this.config.layout.rows.map(row => this._renderRow(row))}
+        </div>
+      `;
+    }
+
+    // If only popup modules with visible triggers and NOT in card editor, render without card-container wrapper
+    // Popups need to render their triggers, but still need the card background styling
+    if (onlyPopupModules && !isInCardEditor) {
+      return html`
+        <div style="${cardStyle}">
+          ${this.config.layout.rows.map(row => this._renderRow(row))}
+        </div>
+      `;
+    }
+
+    // Register weather modules after render to catch immediate changes
+    // Use requestAnimationFrame to avoid performance issues
+    if (this.config && this.hass && this._instanceId) {
+      requestAnimationFrame(() => {
+        this._registerDynamicWeatherModules();
+      });
+    }
+
     return html`
       <div class="card-container" style="${cardStyle}">
         ${this.config.layout.rows.map(row => this._renderRow(row))}
@@ -333,6 +706,21 @@ export class UltraCard extends LitElement {
       // Hard reset before re-initializing scaling logic
       this._forceResetScale();
       this._setupResponsiveScaling();
+
+      // Re-register video background modules when config changes
+      this._registerVideoBgModules();
+
+    // Re-register dynamic weather modules when config changes
+    this._registerDynamicWeatherModules();
+
+    // Re-register background modules when config changes
+    this._registerBackgroundModules();
+    }
+
+    // Also re-register weather modules when hass changes (for automatic mode updates)
+    if (changedProperties.has('hass')) {
+      this._registerDynamicWeatherModules();
+      this._registerBackgroundModules();
     }
 
     // Only check scaling when config or hass changes (not on every render) and feature is enabled
@@ -392,6 +780,9 @@ export class UltraCard extends LitElement {
   private _scaleDebounceTimer?: number;
   private _currentScale: number = 1;
   private _lastMeasuredWidth: number = 0;
+  private _lastContentWidth: number = 0;
+  private _lastContentWidthCheck: number = 0;
+  private _lastScaleTime: number = 0;
   private _visibilityChangeHandler?: () => void;
   private _windowResizeHandler?: () => void;
   private _isScalingInProgress: boolean = false;
@@ -420,12 +811,21 @@ export class UltraCard extends LitElement {
   }
 
   private _isScalingEnabled(): boolean {
-    // Default ON for new/unspecified configs; allow opt-out by setting to false
-    return this.config?.responsive_scaling !== false;
+    // Responsive scaling is now opt-in; only run when explicitly enabled
+    return this.config?.responsive_scaling === true;
   }
 
   private _checkAndScaleContent() {
     if (!this._isScalingEnabled()) {
+      return;
+    }
+
+    // Cooldown check: prevent immediate re-triggering after scaling is applied
+    if (
+      this._lastScaleTime > 0 &&
+      Date.now() - this._lastScaleTime < 300 &&
+      this._currentScale < 1
+    ) {
       return;
     }
 
@@ -441,28 +841,13 @@ export class UltraCard extends LitElement {
       return;
     }
 
-    // Get the container's available width (from parent)
     const availableWidth = this.offsetWidth;
+    const previousMeasuredWidth = this._lastMeasuredWidth;
+    const previousContentWidth = this._lastContentWidth;
+    const forcedCheck = previousMeasuredWidth === 0;
+    const wasScaledDown = this._currentScale < 1;
 
-    // If lastMeasuredWidth is 0, this is a forced recalculation - always proceed
-    const forcedCheck = this._lastMeasuredWidth === 0;
-    const currentlyScaledDown = this._currentScale < 1;
-
-    if (!forcedCheck && !currentlyScaledDown) {
-      // Skip if width hasn't changed significantly (prevents feedback loops)
-      // BUT always allow check if we need to reset scale back to 1 (when going from narrow to wide)
-      const widthChanged = Math.abs(availableWidth - this._lastMeasuredWidth) >= 5;
-      const needsReset = availableWidth > this._lastMeasuredWidth;
-
-      if (!widthChanged && !needsReset) {
-        this._isScalingInProgress = false;
-        return;
-      }
-    }
-
-    this._lastMeasuredWidth = availableWidth;
-
-    // Temporarily disable observer to prevent feedback loop
+    // Temporarily disable observer to prevent feedback loop while we measure
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
     }
@@ -474,59 +859,150 @@ export class UltraCard extends LitElement {
     // Force a layout recalculation
     void container.offsetHeight;
 
-    // Wait for next frame to ensure layout is complete
     requestAnimationFrame(() => {
-      // Get the actual content width (including overflow)
+      const measuredAvailableWidth = this.offsetWidth || availableWidth;
       const contentWidth = container.scrollWidth;
 
-      // Calculate scale needed
+      // Increased threshold from 4px to 8px for content width changes
+      // Add stability check: compare with previous check to avoid fluctuations
+      const contentChanged =
+        forcedCheck ||
+        (Math.abs(contentWidth - previousContentWidth) >= 8 &&
+          Math.abs(contentWidth - this._lastContentWidthCheck) >= 8);
+      const widthChanged =
+        forcedCheck || Math.abs(measuredAvailableWidth - previousMeasuredWidth) >= 4;
+      const shouldRecalculate = widthChanged || contentChanged || wasScaledDown;
+
+      this._lastMeasuredWidth = measuredAvailableWidth;
+      this._lastContentWidth = contentWidth;
+      this._lastContentWidthCheck = contentWidth;
+
+      if (!shouldRecalculate) {
+        // Reconnect observer after a delay to prevent immediate re-triggering
+        if (this._resizeObserver && this._isScalingEnabled()) {
+          setTimeout(() => {
+            if (this._resizeObserver && this._isScalingEnabled()) {
+              this._resizeObserver.observe(this);
+            }
+            this._isScalingInProgress = false;
+          }, 100);
+        } else {
+          this._isScalingInProgress = false;
+        }
+        return;
+      }
+
       let finalScale = 1;
 
-      // Only scale if content is actually wider than available space
-      // Add a small threshold to prevent unnecessary scaling for minor differences
-      if (contentWidth > availableWidth + 10 && availableWidth > 0) {
-        const scale = availableWidth / contentWidth;
-        // Use exact scale (no shrinking margin) and clamp
+      if (contentWidth > measuredAvailableWidth + 8 && measuredAvailableWidth > 0) {
+        const scale = measuredAvailableWidth / contentWidth;
         finalScale = Math.max(0.5, Math.min(1, scale));
       }
 
-      // Avoid tiny repeated downscales; if new target is within 0.02 of current, keep current
+      // Avoid micro adjustments when already scaled
       if (this._currentScale < 1 && finalScale < 1) {
-        if (Math.abs(finalScale - this._currentScale) < 0.02) {
+        if (Math.abs(finalScale - this._currentScale) < 0.01) {
           finalScale = this._currentScale;
         }
       }
 
-      // If the available width grew relative to last measure, prefer resetting to 1.0
-      if (availableWidth >= this._lastMeasuredWidth) {
-        finalScale = 1;
-      }
-
-      // Always apply the calculated scale (even if it's 1.0) to ensure proper reset
       this._currentScale = finalScale;
 
       if (finalScale < 1) {
         container.style.transform = `scale(${finalScale})`;
         container.style.transformOrigin = 'top left';
         container.style.width = `${100 / finalScale}%`;
+        // Update scale time when scaling is actually applied
+        this._lastScaleTime = Date.now();
       } else {
-        // Explicitly reset to ensure we return to normal size
         container.style.transform = '';
         container.style.width = '';
         container.style.transformOrigin = '';
+        // Reset scale time when scale returns to 1
+        this._lastScaleTime = 0;
       }
 
-      // Re-enable observer after changes are applied
+      // Extend observer disconnect: reconnect after delay to prevent immediate re-triggering
       if (this._resizeObserver && this._isScalingEnabled()) {
-        // Re-observe on next frame to avoid immediate feedback
-        requestAnimationFrame(() => {
+        setTimeout(() => {
           if (this._resizeObserver && this._isScalingEnabled()) {
             this._resizeObserver.observe(this);
           }
           this._isScalingInProgress = false;
-        });
+        }, 100);
       } else {
         this._isScalingInProgress = false;
+      }
+    });
+  }
+
+  /**
+   * Apply global transparency directly to the card-container element
+   */
+  private _applyGlobalTransparency(): void {
+    const globalTransparency = (window as any).ultraCardGlobalTransparency;
+
+    // Wait for card-container to be rendered
+    requestAnimationFrame(() => {
+      const cardContainer = this.shadowRoot?.querySelector('.card-container') as HTMLElement;
+
+      if (!cardContainer) {
+        return;
+      }
+
+      if (globalTransparency && globalTransparency.enabled) {
+        // Apply opacity
+        const opacity = globalTransparency.opacity / 100;
+        cardContainer.style.setProperty('opacity', String(opacity), 'important');
+
+        // Apply blur and make background semi-transparent so blur is visible
+        if (globalTransparency.blur_px > 0) {
+          const blur = `blur(${globalTransparency.blur_px}px)`;
+          cardContainer.style.setProperty('backdrop-filter', blur, 'important');
+
+          // Make background semi-transparent if it's not already
+          // This is necessary for backdrop-filter to be visible
+          if (globalTransparency.color && globalTransparency.color !== 'transparent') {
+            // User specified a color overlay - layer it over existing background
+            const computedBg = getComputedStyle(cardContainer).background || 'transparent';
+            const newBg = `linear-gradient(${globalTransparency.color}, ${globalTransparency.color}), ${computedBg}`;
+            cardContainer.style.setProperty('background', newBg, 'important');
+          } else {
+            // No color specified - make current background semi-transparent
+            const computedBg = getComputedStyle(cardContainer).backgroundColor;
+            if (computedBg && computedBg !== 'transparent') {
+              // Convert to rgba with opacity
+              if (computedBg.startsWith('rgb(')) {
+                const rgba = computedBg.replace('rgb(', 'rgba(').replace(')', ', 0.7)');
+                cardContainer.style.setProperty('background-color', rgba, 'important');
+              } else if (computedBg.startsWith('rgba(')) {
+                // Already rgba, ensure alpha is not 1
+                const match = computedBg.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+                if (match) {
+                  const rgba = `rgba(${match[1]}, ${match[2]}, ${match[3]}, 0.7)`;
+                  cardContainer.style.setProperty('background-color', rgba, 'important');
+                }
+              }
+            }
+          }
+        }
+
+        // Apply background color overlay (if specified and no blur)
+        if (globalTransparency.color && globalTransparency.blur_px === 0) {
+          cardContainer.style.setProperty('background', globalTransparency.color, 'important');
+        }
+
+        this._globalTransparencyApplied = true;
+      } else if (this._globalTransparencyApplied) {
+        // Only remove styles if we previously applied them
+        cardContainer.style.removeProperty('opacity');
+        cardContainer.style.removeProperty('backdrop-filter');
+        cardContainer.style.removeProperty('background');
+        cardContainer.style.removeProperty('background-color');
+        this._globalTransparencyApplied = false;
+
+        // Trigger a re-render to restore user's original styles
+        this.requestUpdate();
       }
     });
   }
@@ -755,7 +1231,10 @@ export class UltraCard extends LitElement {
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
     const rowContent = html`
-      <div class="card-row ${hoverEffectClass} ${filterClass}" style=${rowStyles}>
+      <div 
+        class="card-row ${hoverEffectClass} ${filterClass}"
+        style=${rowStyles}
+      >
         ${row.columns.map(column => this._renderColumn(column))}
       </div>
     `;
@@ -886,7 +1365,10 @@ export class UltraCard extends LitElement {
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
     const columnContent = html`
-      <div class="card-column ${hoverEffectClass} ${filterClass}" style=${columnStyles}>
+      <div 
+        class="card-column ${hoverEffectClass} ${filterClass}"
+        style=${columnStyles}
+      >
         ${column.modules.map(module => this._renderModule(module))}
       </div>
     `;
@@ -1061,6 +1543,9 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
+    // Detect if we're inside an HA Preview dialog (not the dashboard)
+    const isHaPreview = this._detectEditorPreviewContext();
+
     const moduleContent = ucModulePreviewService.renderModuleContent(
       module,
       this.hass,
@@ -1073,14 +1558,24 @@ export class UltraCard extends LitElement {
         introAnimation,
         outroAnimation,
         shouldTriggerStateAnimation,
+        isHaPreview, // Pass the detection result
       }
     );
+
+    // Extract CSS variable prefix for Shadow DOM styling
+    const cssVarPrefix = (module as any).design?.css_variable_prefix;
+
+    // Generate CSS variables for Shadow DOM styling
+    const cssVarStyles = cssVarPrefix 
+      ? this._styleObjectToCss(generateCSSVariables(cssVarPrefix, (module as any).design))
+      : '';
 
     // If this is a pro module and user doesn't have access, show overlay
     if (shouldShowProOverlay) {
       return html`
         <div
           class="pro-module-locked"
+          style=${cssVarStyles}
           @contextmenu=${(e: Event) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1114,7 +1609,8 @@ export class UltraCard extends LitElement {
       `;
     }
 
-    return moduleContent;
+    // Return module content without forcing DOM replacement
+    return html`<div class="uc-module-wrap" style=${cssVarStyles}>${moduleContent}</div>`;
   }
 
   private _parseAnimationDuration(duration: string): number {
@@ -1382,26 +1878,20 @@ export class UltraCard extends LitElement {
             ? `${row.padding}px`
             : undefined,
       // Margin (override default marginBottom if design margin is set)
+      // If full_width is false and no explicit margins are set, center the row with auto margins
       margin:
-        design.margin_top || design.margin_bottom || design.margin_left || design.margin_right
-          ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '0'} ${design.margin_left || '0'}`
-          : row.margin
-            ? `${row.margin}px`
-            : undefined,
-      // Background - when filter is present, move to CSS variables for ::before element
-      background: hasBackgroundFilter
-        ? 'transparent'
-        : design.background_color || row.background_color || 'transparent',
-      backgroundImage: hasBackgroundFilter ? 'none' : this._resolveBackgroundImageCSS(design),
-      backgroundSize: hasBackgroundFilter
-        ? undefined
-        : design.background_size || (design.background_image ? 'cover' : undefined),
-      backgroundPosition: hasBackgroundFilter
-        ? undefined
-        : design.background_position || (design.background_image ? 'center' : undefined),
-      backgroundRepeat: hasBackgroundFilter
-        ? undefined
-        : design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+        row.full_width === false &&
+        !design.margin_top &&
+        !design.margin_bottom &&
+        !design.margin_left &&
+        !design.margin_right &&
+        !row.margin
+          ? '0 auto' // Center horizontally when not full width
+          : design.margin_top || design.margin_bottom || design.margin_left || design.margin_right
+            ? `${design.margin_top || '0'} ${design.margin_right || '0'} ${design.margin_bottom || '0'} ${design.margin_left || '0'}`
+            : row.margin
+              ? `${row.margin}px`
+              : undefined,
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1417,8 +1907,13 @@ export class UltraCard extends LitElement {
       left: design.left || 'auto',
       right: design.right || 'auto',
       zIndex: design.z_index || 'auto',
-      // Size
-      width: design.width || '100%',
+      // Size - respect row width settings only if user explicitly controls it
+      // If design.width is set, use it. Otherwise, only set width if full_width is false (user control)
+      width:
+        design.width ||
+        (row.full_width === false && row.width_percent !== undefined
+          ? `${row.width_percent}%`
+          : undefined),
       height: design.height || 'auto',
       maxWidth: design.max_width || 'none',
       maxHeight: design.max_height || 'none',
@@ -1437,8 +1932,8 @@ export class UltraCard extends LitElement {
       boxSizing: 'border-box',
     };
 
-    // Add CSS variables for background filter support (used by ::before pseudo-element)
     if (hasBackgroundFilter) {
+      // Add CSS variables for background filter support (used by ::before pseudo-element)
       designStyles['--bg-image'] = this._resolveBackgroundImageCSS(design);
       designStyles['--bg-size'] =
         design.background_size || (design.background_image ? 'cover' : 'auto');
@@ -1449,6 +1944,26 @@ export class UltraCard extends LitElement {
       designStyles['--bg-filter'] = design.background_filter;
       // Set actual background color on main element (not on ::before)
       designStyles.background = design.background_color || row.background_color || 'transparent';
+      designStyles.backgroundColor =
+        design.background_color || row.background_color || 'transparent';
+    } else {
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: design.background_color ?? row.background_color,
+        fallback: row.background_color || 'transparent',
+        image: this._resolveBackgroundImageCSS(design),
+        imageSize: design.background_size || (design.background_image ? 'cover' : undefined),
+        imagePosition:
+          design.background_position || (design.background_image ? 'center' : undefined),
+        imageRepeat:
+          design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+      });
+      Object.assign(designStyles, backgroundStyles);
+    }
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (design.css_variable_prefix) {
+      const cssVars = generateCSSVariables(design.css_variable_prefix, design);
+      Object.assign(designStyles, cssVars);
     }
 
     // Filter out undefined values and combine styles
@@ -1466,33 +1981,65 @@ export class UltraCard extends LitElement {
   private _generateColumnStyles(column: CardColumn): string {
     const design = column.design || {};
 
+    // When using space-between, space-around, or justify, switch to horizontal layout
+    const useHorizontalLayout =
+      column.horizontal_alignment === 'space-between' ||
+      column.horizontal_alignment === 'space-around' ||
+      column.horizontal_alignment === 'justify';
+
     const baseStyles: Record<string, string> = {
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: useHorizontalLayout ? 'row' : 'column',
       // No gap - row controls spacing between columns, modules within column have no forced spacing
     };
 
     // Apply column alignment only if explicitly set
     if (column.horizontal_alignment) {
-      baseStyles.alignItems =
-        column.horizontal_alignment === 'left'
-          ? 'flex-start'
-          : column.horizontal_alignment === 'right'
-            ? 'flex-end'
-            : column.horizontal_alignment === 'stretch'
-              ? 'stretch'
-              : 'center';
+      if (useHorizontalLayout) {
+        // For horizontal layout (space-between, space-around, justify)
+        baseStyles.justifyContent =
+          column.horizontal_alignment === 'space-between'
+            ? 'space-between'
+            : column.horizontal_alignment === 'space-around'
+              ? 'space-around'
+              : column.horizontal_alignment === 'justify'
+                ? 'space-between' // justify behaves like space-between for horizontal
+                : 'center';
+      } else {
+        // For vertical layout (left, center, right, stretch)
+        baseStyles.alignItems =
+          column.horizontal_alignment === 'left'
+            ? 'flex-start'
+            : column.horizontal_alignment === 'right'
+              ? 'flex-end'
+              : column.horizontal_alignment === 'stretch'
+                ? 'stretch'
+                : 'center';
+      }
     }
 
     if (column.vertical_alignment) {
-      baseStyles.justifyContent =
-        column.vertical_alignment === 'top'
-          ? 'flex-start'
-          : column.vertical_alignment === 'bottom'
-            ? 'flex-end'
-            : column.vertical_alignment === 'stretch'
-              ? 'stretch'
-              : 'center';
+      if (useHorizontalLayout) {
+        // In horizontal mode, vertical alignment becomes alignItems (cross-axis)
+        baseStyles.alignItems =
+          column.vertical_alignment === 'top'
+            ? 'flex-start'
+            : column.vertical_alignment === 'bottom'
+              ? 'flex-end'
+              : column.vertical_alignment === 'stretch'
+                ? 'stretch'
+                : 'center';
+      } else {
+        // In vertical mode, vertical alignment is justifyContent (main axis)
+        baseStyles.justifyContent =
+          column.vertical_alignment === 'top'
+            ? 'flex-start'
+            : column.vertical_alignment === 'bottom'
+              ? 'flex-end'
+              : column.vertical_alignment === 'stretch'
+                ? 'stretch'
+                : 'center';
+      }
     }
 
     // Check if background filter is applied - if so, use CSS variables for ::before pseudo-element
@@ -1513,20 +2060,6 @@ export class UltraCard extends LitElement {
           : column.margin
             ? `${column.margin}px`
             : undefined,
-      // Background - when filter is present, move to CSS variables for ::before element
-      background: hasBackgroundFilter
-        ? 'transparent'
-        : design.background_color || column.background_color || 'transparent',
-      backgroundImage: hasBackgroundFilter ? 'none' : this._resolveBackgroundImageCSS(design),
-      backgroundSize: hasBackgroundFilter
-        ? undefined
-        : design.background_size || (design.background_image ? 'cover' : undefined),
-      backgroundPosition: hasBackgroundFilter
-        ? undefined
-        : design.background_position || (design.background_image ? 'center' : undefined),
-      backgroundRepeat: hasBackgroundFilter
-        ? undefined
-        : design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
       // Border
       border:
         design.border_style && design.border_style !== 'none'
@@ -1542,8 +2075,8 @@ export class UltraCard extends LitElement {
       left: design.left || 'auto',
       right: design.right || 'auto',
       zIndex: design.z_index || 'auto',
-      // Size
-      width: design.width || '100%',
+      // Size - only set width if user explicitly controls it, otherwise let grid handle sizing
+      width: design.width || undefined,
       height: design.height || 'auto',
       maxWidth: design.max_width || 'none',
       maxHeight: design.max_height || 'none',
@@ -1562,8 +2095,8 @@ export class UltraCard extends LitElement {
       boxSizing: 'border-box',
     };
 
-    // Add CSS variables for background filter support (used by ::before pseudo-element)
     if (hasBackgroundFilter) {
+      // Add CSS variables for background filter support (used by ::before pseudo-element)
       designStyles['--bg-image'] = this._resolveBackgroundImageCSS(design);
       designStyles['--bg-size'] =
         design.background_size || (design.background_image ? 'cover' : 'auto');
@@ -1574,6 +2107,26 @@ export class UltraCard extends LitElement {
       designStyles['--bg-filter'] = design.background_filter;
       // Set actual background color on main element (not on ::before)
       designStyles.background = design.background_color || column.background_color || 'transparent';
+      designStyles.backgroundColor =
+        design.background_color || column.background_color || 'transparent';
+    } else {
+      const { styles: backgroundStyles } = computeBackgroundStyles({
+        color: design.background_color ?? column.background_color,
+        fallback: column.background_color || 'transparent',
+        image: this._resolveBackgroundImageCSS(design),
+        imageSize: design.background_size || (design.background_image ? 'cover' : undefined),
+        imagePosition:
+          design.background_position || (design.background_image ? 'center' : undefined),
+        imageRepeat:
+          design.background_repeat || (design.background_image ? 'no-repeat' : undefined),
+      });
+      Object.assign(designStyles, backgroundStyles);
+    }
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (design.css_variable_prefix) {
+      const cssVars = generateCSSVariables(design.css_variable_prefix, design);
+      Object.assign(designStyles, cssVars);
     }
 
     // Filter out undefined values and combine styles
@@ -1705,6 +2258,140 @@ export class UltraCard extends LitElement {
   }
 
   /**
+   * Register all video background modules with the video background service
+   */
+  private _registerVideoBgModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    // Find all video_bg modules in the configuration
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'video_bg') {
+            ucVideoBgService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all video background modules from the video background service
+   */
+  private _unregisterVideoBgModules(): void {
+    if (!this.config || !this._instanceId) return;
+
+    // Find all video_bg modules and unregister them
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'video_bg') {
+            ucVideoBgService.unregisterModule(this._instanceId!, module.id);
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Register all dynamic weather modules with the dynamic weather service
+   */
+  private _registerDynamicWeatherModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    // Find all dynamic_weather modules in the configuration
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'dynamic_weather') {
+            ucDynamicWeatherService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any,
+              this._isEditorPreviewCard
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all dynamic weather modules from the dynamic weather service
+   */
+  private _unregisterDynamicWeatherModules(): void {
+    if (!this.config || !this._instanceId) return;
+
+    // Find all dynamic_weather modules and unregister them
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'dynamic_weather') {
+            ucDynamicWeatherService.unregisterModule(
+              this._instanceId!,
+              module.id,
+              this._isEditorPreviewCard
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Register all background modules with the background service
+   */
+  private _registerBackgroundModules(): void {
+    if (!this.config || !this.hass || !this._instanceId) return;
+
+    // Find all background modules in the configuration
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'background') {
+            ucBackgroundService.registerModule(
+              this._instanceId!,
+              module.id,
+              module as any,
+              this.hass!,
+              this.config!,
+              this as any
+            );
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Unregister all background modules from the background service
+   */
+  private _unregisterBackgroundModules(): void {
+    if (!this.config || !this._instanceId) return;
+
+    // Find all background modules and unregister them
+    this.config.layout?.rows?.forEach(row => {
+      row.columns?.forEach(column => {
+        column.modules?.forEach(module => {
+          if (module.type === 'background') {
+            ucBackgroundService.unregisterModule(this._instanceId!, module.id);
+          }
+        });
+      });
+    });
+  }
+
+  /**
    * Inject a <style> block containing the combined styles from every registered
    * module into the card's shadow-root. This is required for features such as
    * the icon animation classes (e.g. `.icon-animation-pulse`) defined within
@@ -1733,6 +2420,7 @@ export class UltraCard extends LitElement {
         container-type: inline-size;
         width: 100%;
         min-width: 0;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       .card-container {
@@ -1744,6 +2432,7 @@ export class UltraCard extends LitElement {
         /* Responsive sizing for sections view */
         width: 100%;
         box-sizing: border-box;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       .welcome-text {
@@ -1765,6 +2454,7 @@ export class UltraCard extends LitElement {
         /* No default margins - spacing controlled by individual modules */
         min-width: 0; /* allow columns to shrink inside row */
         width: 100%;
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       /* Background blur support - use pseudo-element to avoid blurring content */
@@ -1806,6 +2496,7 @@ export class UltraCard extends LitElement {
         width: 100%;
         max-width: 100%;
         overflow: hidden; /* keep column from exceeding its card area */
+        overflow-anchor: none; /* Prevent scroll anchoring on mobile when 3rd party cards update */
       }
 
       /* Ensure media inside columns never exceed the column width */
@@ -1832,11 +2523,12 @@ export class UltraCard extends LitElement {
         animation-delay: var(--animation-delay, 0s);
         animation-timing-function: var(--animation-timing, ease);
         animation-fill-mode: both;
-        /* Inherit width from content */
+        /* Inherit alignment from content */
         display: inherit;
-        width: inherit;
         height: inherit;
         flex: inherit;
+        align-self: inherit;
+        justify-self: inherit;
       }
 
       /* Intro Animations */
@@ -2559,6 +3251,87 @@ export class UltraCard extends LitElement {
         }
       }
 
+      /* Popup Module Styles */
+      .ultra-popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 8000;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+
+      /* Ensure popup appears above HA edit outlines in preview contexts */
+      ha-preview .ultra-popup-overlay,
+      .live-preview .ultra-popup-overlay,
+      [data-preview-context="ha-preview"] .ultra-popup-overlay,
+      [data-preview-context="live"] .ultra-popup-overlay {
+        z-index: 2147483647 !important;
+      }
+
+      .ultra-popup-container {
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .ultra-popup-close-button {
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        user-select: none;
+      }
+
+      .ultra-popup-close-button:hover {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+
+      /* Popup Layout Variations */
+      .ultra-popup-layout-full_screen {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+      }
+
+      .ultra-popup-layout-left_panel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        max-height: 100vh;
+      }
+
+      .ultra-popup-layout-right_panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100vh;
+        max-height: 100vh;
+      }
+
+      .ultra-popup-layout-top_panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        max-width: 100vw;
+      }
+
+      .ultra-popup-layout-bottom_panel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        max-width: 100vw;
+      }
+
       /* Container queries for responsive behavior in sections view */
       @container (max-width: 300px) {
         .card-row {
@@ -2567,12 +3340,6 @@ export class UltraCard extends LitElement {
 
         .card-column {
           gap: 8px;
-        }
-      }
-
-      @container (min-width: 500px) {
-        .card-row {
-          margin-bottom: 16px;
         }
       }
 

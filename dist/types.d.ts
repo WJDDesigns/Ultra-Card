@@ -6,6 +6,18 @@ declare global {
     }
 }
 export type ActionType = 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+export interface UnifiedTemplateResponse {
+    icon?: string;
+    icon_color?: string;
+    name?: string;
+    name_color?: string;
+    state_text?: string;
+    state_color?: string;
+    content?: string;
+    color?: string;
+    value?: number | string;
+    label?: string;
+}
 export interface ModuleActionConfig {
     action: ActionType;
     entity?: string;
@@ -35,11 +47,10 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'slider' | 'pagebreak' | 'button' | 'markdown' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
-    smart_scaling?: boolean;
     background_color?: string;
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';
@@ -72,6 +83,7 @@ export interface BaseModule {
     animation_delay?: string;
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
     design?: SharedDesignProperties;
+    confirm_action?: boolean;
 }
 export interface TextModule extends BaseModule {
     type: 'text';
@@ -121,6 +133,9 @@ export interface TextModule extends BaseModule {
     font_style?: 'normal' | 'italic' | 'oblique';
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
     hover_effect?: 'none' | 'color' | 'scale' | 'glow' | 'lift';
@@ -131,8 +146,8 @@ export interface SeparatorModule extends BaseModule {
     separator_style?: 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank';
     orientation?: 'horizontal' | 'vertical';
     thickness?: number;
-    width_percent?: number;
-    height_px?: number;
+    width_percent?: number | string;
+    height_px?: number | string;
     color?: string;
     show_title?: boolean;
     title?: string;
@@ -281,13 +296,18 @@ export interface InfoEntityConfig {
     dynamic_icon_template?: string;
     dynamic_color_template_mode?: boolean;
     dynamic_color_template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     icon_position?: 'left' | 'right' | 'top' | 'bottom';
     icon_alignment?: 'start' | 'center' | 'end';
-    content_alignment?: 'start' | 'center' | 'end';
+    name_alignment?: 'start' | 'center' | 'end';
+    state_alignment?: 'start' | 'center' | 'end';
     overall_alignment?: 'left' | 'center' | 'right';
     icon_gap?: number;
     name_value_layout?: 'vertical' | 'horizontal';
     name_value_gap?: number;
+    content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly';
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
@@ -337,6 +357,12 @@ export interface BarModule extends BaseModule {
     percentage_current_entity?: string;
     percentage_total_entity?: string;
     percentage_template?: string;
+    percentage_min?: number;
+    percentage_max?: number;
+    percentage_min_template_mode?: boolean;
+    percentage_min_template?: string;
+    percentage_max_template_mode?: boolean;
+    percentage_max_template?: string;
     bar_direction?: 'left-to-right' | 'right-to-left';
     bar_size?: 'extra-thick' | 'thick' | 'medium' | 'thin';
     bar_radius?: 'square' | 'round' | 'pill';
@@ -345,10 +371,14 @@ export interface BarModule extends BaseModule {
     bar_alignment?: 'left' | 'center' | 'right';
     height?: number;
     border_radius?: number;
+    glass_blur_amount?: number;
     label_alignment?: 'left' | 'center' | 'right' | 'space-between';
     show_percentage?: boolean;
     percentage_text_size?: number;
-    percentage_text_alignment?: 'left' | 'center' | 'right';
+    percentage_text_alignment?: 'left' | 'center' | 'right' | 'follow-fill';
+    percentage_text_bold?: boolean;
+    percentage_text_italic?: boolean;
+    percentage_text_strikethrough?: boolean;
     show_value?: boolean;
     value_position?: 'inside' | 'outside' | 'none';
     left_enabled?: boolean;
@@ -375,11 +405,24 @@ export interface BarModule extends BaseModule {
     right_value_size?: number;
     right_title_color?: string;
     right_value_color?: string;
+    left_tap_action?: ModuleActionConfig;
+    left_hold_action?: ModuleActionConfig;
+    left_double_tap_action?: ModuleActionConfig;
+    right_tap_action?: ModuleActionConfig;
+    right_hold_action?: ModuleActionConfig;
+    right_double_tap_action?: ModuleActionConfig;
     bar_color?: string;
     bar_background_color?: string;
     bar_border_color?: string;
     percentage_text_color?: string;
     dot_color?: string;
+    minimal_icon_enabled?: boolean;
+    minimal_icon?: string;
+    minimal_icon_mode?: 'dot-only' | 'icon-only' | 'icon-in-dot';
+    minimal_icon_size?: number;
+    minimal_icon_size_auto?: boolean;
+    minimal_icon_color?: string;
+    minimal_icon_use_dot_color?: boolean;
     use_gradient?: boolean;
     gradient_display_mode?: 'full' | 'cropped' | 'value-based';
     gradient_stops?: Array<{
@@ -392,6 +435,9 @@ export interface BarModule extends BaseModule {
     animation?: boolean;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     bar_animation_enabled?: boolean;
     bar_animation_entity?: string;
     bar_animation_trigger_type?: 'state' | 'attribute';
@@ -444,11 +490,15 @@ export interface GaugeModule extends BaseModule {
     gauge_style?: 'basic' | 'speedometer' | 'block' | 'lines' | 'modern' | 'inset' | '3d' | 'neon' | 'digital' | 'minimal' | 'arc' | 'radial';
     gauge_size?: number;
     gauge_thickness?: number;
+    flip_horizontal?: boolean;
     pointer_enabled?: boolean;
-    pointer_style?: 'triangle' | 'line' | 'needle' | 'arrow' | 'circle' | 'highlight' | 'cap' | 'custom';
+    pointer_style?: 'triangle' | 'line' | 'needle' | 'arrow' | 'circle' | 'highlight' | 'cap' | 'icon' | 'custom';
     pointer_color?: string;
     pointer_length?: number;
     pointer_width?: number;
+    pointer_icon?: string;
+    pointer_icon_color?: string;
+    pointer_icon_size?: number;
     gauge_color_mode?: 'solid' | 'gradient' | 'segments';
     gauge_color?: string;
     gauge_background_color?: string;
@@ -510,6 +560,9 @@ export interface GaugeModule extends BaseModule {
     }>;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -652,6 +705,9 @@ export interface IconConfig {
     dynamic_icon_template?: string;
     dynamic_color_template_mode?: boolean;
     dynamic_color_template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
 }
 export interface IconModule extends BaseModule {
     type: 'icon';
@@ -660,6 +716,7 @@ export interface IconModule extends BaseModule {
     vertical_alignment?: 'top' | 'center' | 'bottom';
     columns?: number;
     gap?: number;
+    allow_wrap?: boolean;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -750,45 +807,19 @@ export interface VerticalModule extends BaseModule {
         service_data?: Record<string, any>;
     };
 }
-export interface PageBreakModule extends BaseModule {
-    type: 'pagebreak';
-}
-export interface SliderModule extends BaseModule {
-    type: 'slider';
+export interface AccordionModule extends BaseModule {
+    type: 'accordion';
     modules: CardModule[];
-    show_pagination?: boolean;
-    pagination_style?: 'dots' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar';
-    pagination_position?: 'top' | 'bottom' | 'left' | 'right';
-    pagination_color?: string;
-    pagination_active_color?: string;
-    pagination_size?: number;
-    show_arrows?: boolean;
-    arrow_position?: 'inside' | 'outside';
-    arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
-    arrow_size?: number;
-    arrow_color?: string;
-    arrow_background_color?: string;
-    prev_arrow_icon?: string;
-    next_arrow_icon?: string;
-    arrows_always_visible?: boolean;
-    transition_effect?: 'slide-left' | 'slide-right' | 'slide-top' | 'slide-bottom' | 'fade' | 'zoom-in' | 'zoom-out' | 'circle';
-    transition_speed?: number;
-    transition_easing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
-    auto_play?: boolean;
-    auto_play_delay?: number;
-    pause_on_hover?: boolean;
-    loop?: boolean;
-    allow_swipe?: boolean;
-    allow_keyboard?: boolean;
-    allow_mousewheel?: boolean;
-    slider_height?: number;
-    slider_width?: string;
-    gap?: number;
-    slides_per_view?: number;
-    space_between?: number;
-    vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-    mobile_slides_per_view?: number;
-    mobile_space_between?: number;
+    title_mode?: 'custom' | 'entity';
+    title_text?: string;
+    title_entity?: string;
+    show_entity_name?: boolean;
+    icon?: string;
+    header_alignment?: 'center' | 'apart';
+    icon_side?: 'left' | 'right';
+    default_open?: boolean;
+    open_mode?: 'always' | 'every' | 'any' | 'manual';
+    open_conditions?: DisplayCondition[];
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -814,6 +845,337 @@ export interface SliderModule extends BaseModule {
         service_data?: Record<string, any>;
     };
 }
+export interface TabSection {
+    id: string;
+    title: string;
+    icon?: string;
+    modules: CardModule[];
+}
+export interface TabsModule extends BaseModule {
+    type: 'tabs';
+    sections: TabSection[];
+    orientation?: 'horizontal' | 'vertical';
+    style?: 'default' | 'simple' | 'simple_2' | 'simple_3' | 'switch_1' | 'switch_2' | 'switch_3' | 'modern' | 'trendy';
+    alignment?: 'left' | 'center' | 'right' | 'stretch';
+    tab_position?: 'top' | 'bottom' | 'left' | 'right';
+    switch_on_hover?: boolean;
+    default_tab?: string;
+    wrap_tabs?: boolean;
+    mobile_icons_only?: boolean;
+    mobile_breakpoint?: number;
+    font_size?: string;
+    font_weight?: string;
+    text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    tab_gap?: number;
+    tab_padding?: string;
+    active_tab_color?: string;
+    active_tab_background?: string;
+    active_tab_border_color?: string;
+    inactive_tab_color?: string;
+    inactive_tab_background?: string;
+    inactive_tab_border_color?: string;
+    hover_tab_color?: string;
+    hover_tab_background?: string;
+    tab_border_radius?: string;
+    tab_border_width?: number;
+    track_background?: string;
+    icon_color?: string;
+    content_background?: string;
+    content_padding?: string;
+    content_border_radius?: string;
+    content_border_color?: string;
+    content_border_width?: number;
+    transition_duration?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
+export interface PopupModule extends BaseModule {
+    type: 'popup';
+    modules: CardModule[];
+    show_title?: boolean;
+    title_mode?: 'custom' | 'entity';
+    title_text?: string;
+    title_entity?: string;
+    show_entity_name?: boolean;
+    trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic' | 'module';
+    trigger_module_id?: string;
+    trigger_button_text?: string;
+    trigger_button_icon?: string;
+    trigger_image_type?: 'upload' | 'entity' | 'url';
+    trigger_image_url?: string;
+    trigger_image_entity?: string;
+    trigger_icon?: string;
+    trigger_alignment?: 'left' | 'center' | 'right';
+    trigger_button_full_width?: boolean;
+    trigger_image_full_width?: boolean;
+    layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
+    animation?: 'fade' | 'scale_up' | 'scale_down' | 'slide_top' | 'slide_left' | 'slide_right' | 'slide_bottom';
+    popup_width?: string;
+    popup_padding?: string;
+    popup_border_radius?: string;
+    close_button_position?: 'inside' | 'none';
+    close_button_color?: string;
+    close_button_size?: number;
+    close_button_icon?: string;
+    close_button_offset_x?: string;
+    close_button_offset_y?: string;
+    auto_close_timer_enabled?: boolean;
+    auto_close_timer_seconds?: number;
+    title_background_color?: string;
+    title_text_color?: string;
+    popup_background_color?: string;
+    popup_text_color?: string;
+    show_overlay?: boolean;
+    overlay_background?: string;
+    trigger_mode?: 'every' | 'any' | 'manual';
+    trigger_conditions?: DisplayCondition[];
+    auto_close?: boolean;
+    default_open?: boolean;
+}
+export interface PageBreakModule extends BaseModule {
+    type: 'pagebreak';
+}
+export interface SliderModule extends BaseModule {
+    type: 'slider';
+    modules: CardModule[];
+    show_pagination?: boolean;
+    pagination_style?: 'dots' | 'dots-and-dash' | 'dash-lines' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar' | 'scrollbar' | 'dynamic';
+    pagination_position?: 'top' | 'bottom' | 'left' | 'right';
+    pagination_color?: string;
+    pagination_active_color?: string;
+    pagination_size?: number;
+    pagination_overlay?: boolean;
+    show_arrows?: boolean;
+    arrow_position_offset?: number;
+    arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
+    arrow_size?: number;
+    arrow_color?: string;
+    arrow_background_color?: string;
+    prev_arrow_icon?: string;
+    next_arrow_icon?: string;
+    arrows_always_visible?: boolean;
+    transition_effect?: 'slide' | 'fade' | 'cube' | 'coverflow' | 'flip' | 'zoom' | 'slide-left' | 'slide-right' | 'slide-top' | 'slide-bottom' | 'zoom-in' | 'zoom-out' | 'circle';
+    transition_speed?: number;
+    auto_play?: boolean;
+    auto_play_delay?: number;
+    pause_on_hover?: boolean;
+    loop?: boolean;
+    allow_swipe?: boolean;
+    allow_keyboard?: boolean;
+    allow_mousewheel?: boolean;
+    slider_direction?: 'horizontal' | 'vertical';
+    centered_slides?: boolean;
+    slider_height?: number;
+    auto_height?: boolean;
+    slider_width?: string;
+    gap?: number;
+    slides_per_view?: number;
+    space_between?: number;
+    vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+}
+export interface SliderBar {
+    id: string;
+    type: 'numeric' | 'brightness' | 'rgb' | 'color_temp' | 'red' | 'green' | 'blue' | 'attribute';
+    entity: string;
+    attribute?: string;
+    name?: string;
+    min_value?: number;
+    max_value?: number;
+    step?: number;
+    show_icon?: boolean;
+    show_name?: boolean;
+    show_value?: boolean;
+    outside_text_position?: 'left' | 'right';
+    outside_name_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    outside_value_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    split_bar_position?: 'left' | 'right';
+    split_bar_length?: number;
+    overlay_name_position?: 'top' | 'middle' | 'bottom';
+    overlay_value_position?: 'top' | 'middle' | 'bottom';
+    overlay_icon_position?: 'top' | 'middle' | 'bottom';
+    content_position?: 'left' | 'center' | 'right' | 'bottom' | 'top' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    icon_position?: 'left' | 'center' | 'right' | 'top' | 'bottom' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    name_position?: 'left' | 'center' | 'right' | 'top' | 'bottom' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    value_position?: 'left' | 'center' | 'right' | 'top' | 'bottom' | 'top_left' | 'top_center' | 'top_right' | 'bottom_left' | 'bottom_center' | 'bottom_right' | 'left_top' | 'left_center' | 'left_bottom' | 'right_top' | 'right_center' | 'right_bottom';
+    info_section_position?: 'left' | 'right' | 'top' | 'bottom';
+    slider_height?: number;
+    slider_track_color?: string;
+    slider_fill_color?: string;
+    dynamic_fill_color?: boolean;
+    slider_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'minimal';
+    glass_blur_amount?: number;
+    slider_radius?: 'square' | 'round' | 'pill';
+    border_radius?: number;
+    use_gradient?: boolean;
+    gradient_stops?: Array<{
+        id: string;
+        position: number;
+        color: string;
+    }>;
+    auto_contrast?: boolean;
+    icon?: string;
+    icon_size?: number;
+    icon_color?: string;
+    dynamic_icon?: boolean;
+    icon_as_toggle?: boolean;
+    name_size?: number;
+    name_color?: string;
+    name_bold?: boolean;
+    value_size?: number;
+    value_color?: string;
+    value_suffix?: string;
+    show_bar_label?: boolean;
+    animate_on_change?: boolean;
+    transition_duration?: number;
+    haptic_feedback?: boolean;
+    invert_direction?: boolean;
+}
+export interface SliderControlModule extends BaseModule {
+    type: 'slider_control';
+    bars: SliderBar[];
+    orientation?: 'horizontal' | 'vertical';
+    layout_mode?: 'overlay' | 'split' | 'outside';
+    overlay_position?: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+    overlay_name_position?: 'top' | 'middle' | 'bottom';
+    overlay_value_position?: 'top' | 'middle' | 'bottom';
+    overlay_icon_position?: 'top' | 'middle' | 'bottom';
+    outside_text_position?: 'left' | 'right';
+    outside_name_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    outside_value_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right' | 'top' | 'middle' | 'bottom';
+    split_bar_position?: 'left' | 'right';
+    split_info_position?: 'left' | 'center' | 'right';
+    split_bar_length?: number;
+    slider_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient-overlay' | 'neon-glow' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'minimal';
+    slider_height?: number;
+    bar_spacing?: number;
+    slider_radius?: 'square' | 'round' | 'pill';
+    border_radius?: number;
+    slider_track_color?: string;
+    slider_fill_color?: string;
+    dynamic_fill_color?: boolean;
+    glass_blur_amount?: number;
+    use_gradient?: boolean;
+    gradient_stops?: Array<{
+        id: string;
+        position: number;
+        color: string;
+    }>;
+    show_icon?: boolean;
+    icon?: string;
+    icon_size?: number;
+    icon_color?: string;
+    dynamic_icon?: boolean;
+    icon_as_toggle?: boolean;
+    auto_contrast?: boolean;
+    show_name?: boolean;
+    name_size?: number;
+    name_color?: string;
+    name_bold?: boolean;
+    show_state?: boolean;
+    state_size?: number;
+    state_color?: string;
+    state_bold?: boolean;
+    state_format?: string;
+    show_value?: boolean;
+    value_size?: number;
+    value_color?: string;
+    value_suffix?: string;
+    show_bar_label?: boolean;
+    show_toggle?: boolean;
+    toggle_position?: 'left' | 'right' | 'top' | 'bottom';
+    toggle_size?: number;
+    toggle_color_on?: string;
+    toggle_color_off?: string;
+    show_color_picker?: boolean;
+    color_picker_position?: 'below' | 'right';
+    color_picker_size?: 'small' | 'medium' | 'large';
+    animate_on_change?: boolean;
+    transition_duration?: number;
+    haptic_feedback?: boolean;
+    invert_direction?: boolean;
+    entity?: string;
+    name?: string;
+    attribute?: string;
+    min_value?: number;
+    max_value?: number;
+    step?: number;
+    light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all';
+    light_slider_order?: string[];
+    cover_invert?: boolean;
+    control_attribute?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
 export interface ButtonModule extends BaseModule {
     type: 'button';
     label: string;
@@ -823,6 +1185,7 @@ export interface ButtonModule extends BaseModule {
     show_icon?: boolean;
     icon?: string;
     icon_position?: 'before' | 'after';
+    icon_size?: string | number;
     background_color?: string;
     text_color?: string;
     tap_action?: {
@@ -851,6 +1214,11 @@ export interface ButtonModule extends BaseModule {
     };
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+    use_entity_color?: boolean;
+    background_color_entity?: string;
+    background_state_colors?: {
+        [state: string]: string;
+    };
 }
 export interface SpinboxModule extends BaseModule {
     type: 'spinbox';
@@ -877,6 +1245,9 @@ export interface SpinboxModule extends BaseModule {
     value_font_size?: number;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -909,6 +1280,9 @@ export interface MarkdownModule extends BaseModule {
     hide_if_no_link?: boolean;
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     font_size?: number;
     font_family?: string;
     color?: string;
@@ -965,11 +1339,12 @@ export interface CameraModule extends BaseModule {
     crop_right?: number;
     crop_bottom?: number;
     show_controls?: boolean;
-    auto_refresh?: boolean;
+    view_mode?: 'auto' | 'live' | 'snapshot';
     refresh_interval?: number;
+    auto_refresh?: boolean;
+    live_view?: boolean;
     image_quality?: 'high' | 'medium' | 'low';
     rotation?: number;
-    live_view?: boolean;
     audio_enabled?: boolean;
     show_unavailable?: boolean;
     fallback_image?: string;
@@ -999,6 +1374,9 @@ export interface CameraModule extends BaseModule {
     };
     template_mode?: boolean;
     template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    ignore_entity_state_config?: boolean;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
@@ -1035,6 +1413,7 @@ export interface GraphsModule extends BaseModule {
     chart_alignment?: 'left' | 'center' | 'right';
     show_legend?: boolean;
     normalize_values?: boolean;
+    use_fixed_y_axis?: boolean;
     legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
     show_grid?: boolean;
     show_grid_values?: boolean;
@@ -1070,6 +1449,7 @@ export interface GraphsModule extends BaseModule {
     point_radius?: number;
     bar_width?: number;
     bar_spacing?: number;
+    bar_display_limit?: number;
     stacked?: boolean;
     horizontal?: boolean;
     inner_radius?: number;
@@ -1141,6 +1521,15 @@ export interface DropdownModule extends BaseModule {
     }>;
     current_selection?: string;
     track_state?: boolean;
+    closed_title_mode?: 'last_chosen' | 'entity_state' | 'custom' | 'first_option';
+    closed_title_entity?: string;
+    closed_title_custom?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    control_icon?: string;
+    control_alignment?: 'center' | 'apart';
+    control_icon_side?: 'left' | 'right';
+    visible_items?: number;
     tap_action?: {
         action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
         entity?: string;
@@ -1173,6 +1562,7 @@ export interface LightModule extends BaseModule {
     presets: Array<{
         id: string;
         name: string;
+        action?: 'turn_on' | 'turn_off' | 'toggle';
         icon?: string;
         entities: string[];
         brightness?: number;
@@ -1235,6 +1625,60 @@ export interface LightModule extends BaseModule {
     };
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+}
+export interface MapMarker {
+    id: string;
+    name: string;
+    type: 'manual' | 'entity';
+    latitude?: number;
+    longitude?: number;
+    entity?: string;
+    icon?: string;
+    icon_color?: string;
+    icon_size?: number;
+    marker_image_type?: 'icon' | 'custom_image' | 'entity_image';
+    marker_image?: string;
+    use_entity_picture?: boolean;
+}
+export interface MapModule extends BaseModule {
+    type: 'map';
+    map_provider: 'openstreetmap' | 'google';
+    google_api_key?: string;
+    map_type: 'roadmap' | 'satellite' | 'hybrid' | 'terrain';
+    zoom: number;
+    show_map_controls: boolean;
+    disable_zoom_scroll: boolean;
+    disable_touch_drag: boolean;
+    auto_zoom_entities: boolean;
+    manual_center_latitude?: number;
+    manual_center_longitude?: number;
+    markers: MapMarker[];
+    map_height?: number;
+    aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom';
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
 }
 export interface AnimatedClockModule extends BaseModule {
     type: 'animated_clock';
@@ -1374,18 +1818,33 @@ export interface AnimatedWeatherModule extends BaseModule {
     location_override_mode?: 'text' | 'entity';
     location_name?: string;
     location_entity?: string;
+    left_column_order?: string[];
+    right_column_order?: string[];
     show_location?: boolean;
     show_condition?: boolean;
     show_custom_entity?: boolean;
+    show_precipitation?: boolean;
+    show_precipitation_probability?: boolean;
+    show_wind?: boolean;
+    show_pressure?: boolean;
+    show_visibility?: boolean;
     show_date?: boolean;
     show_temperature?: boolean;
     show_temp_range?: boolean;
     location_size?: number;
     condition_size?: number;
     custom_entity_size?: number;
+    precipitation_size?: number;
+    wind_size?: number;
+    pressure_size?: number;
+    visibility_size?: number;
     location_color?: string;
     condition_color?: string;
     custom_entity_color?: string;
+    precipitation_color?: string;
+    wind_color?: string;
+    pressure_color?: string;
+    visibility_color?: string;
     main_icon_size?: number;
     icon_style?: 'fill' | 'line';
     date_size?: number;
@@ -1406,6 +1865,7 @@ export interface AnimatedForecastModule extends BaseModule {
     forecast_entity?: string;
     forecast_days?: number;
     temperature_unit?: 'F' | 'C';
+    allow_wrap?: boolean;
     forecast_day_size?: number;
     forecast_temp_size?: number;
     forecast_icon_size?: number;
@@ -1446,7 +1906,180 @@ export interface ExternalCardModule extends BaseModule {
     card_type: string;
     card_config: Record<string, any>;
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | SliderModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule;
+export interface NativeCardModule extends BaseModule {
+    type: 'native_card';
+    card_type: string;
+    card_config: Record<string, any>;
+}
+export interface VideoBackgroundRule {
+    id: string;
+    condition_type: 'entity_state' | 'entity_attribute' | 'template' | 'time';
+    entity?: string;
+    attribute?: string;
+    operator?: '=' | '!=' | '>' | '>=' | '<' | '<=' | 'contains' | 'not_contains' | 'has_value' | 'no_value';
+    value?: string | number;
+    template?: string;
+    time_from?: string;
+    time_to?: string;
+    video_source: 'local' | 'url' | 'youtube' | 'vimeo';
+    video_url: string;
+    loop?: boolean;
+    start_time?: number;
+}
+export interface GlobalCardTransparency {
+    enabled: boolean;
+    opacity: number;
+    blur_px: number;
+    color?: string;
+}
+export interface VideoBackgroundModule extends BaseModule {
+    type: 'video_bg';
+    enabled: boolean;
+    editor_only: boolean;
+    controller_id?: string;
+    pause_when_hidden: boolean;
+    respect_reduced_motion: boolean;
+    enable_on_mobile: boolean;
+    opacity: number;
+    blur: string;
+    brightness: string;
+    scale: number;
+    default_source: 'local' | 'url' | 'youtube' | 'vimeo';
+    default_video_url: string;
+    default_loop: boolean;
+    default_muted: boolean;
+    default_start_time: number;
+    rules?: VideoBackgroundRule[];
+    global_card_transparency: GlobalCardTransparency;
+}
+export type WeatherEffectType = 'none' | 'rain' | 'rain_storm' | 'rain_drizzle' | 'hail' | 'acid_rain' | 'matrix_rain' | 'lightning' | 'snow_gentle' | 'snow_storm' | 'fog_light' | 'fog_dense' | 'sun_beams' | 'clouds' | 'wind';
+export interface DynamicWeatherModule extends BaseModule {
+    type: 'dynamic_weather';
+    enabled: boolean;
+    mode: 'automatic' | 'manual';
+    weather_entity?: string;
+    manual_effect?: WeatherEffectType;
+    position: 'foreground' | 'background';
+    opacity: number;
+    matrix_rain_color?: string;
+    enable_on_mobile: boolean;
+    respect_reduced_motion: boolean;
+    enable_snow_accumulation?: boolean;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export interface BackgroundModule extends BaseModule {
+    type: 'background';
+    background_type: 'none' | 'upload' | 'entity' | 'url';
+    background_image?: string;
+    background_image_entity?: string;
+    background_size?: 'cover' | 'contain' | 'fill' | 'auto';
+    background_position?: string;
+    background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+    opacity: number;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export interface StatusSummaryEntity {
+    id: string;
+    entity: string;
+    label?: string;
+    icon?: string;
+    show_icon?: boolean;
+    show_state?: boolean;
+    is_auto_generated?: boolean;
+    color_mode: 'state' | 'time' | 'custom' | 'none';
+    state_colors?: {
+        [state: string]: string;
+    };
+    time_colors?: {
+        threshold: number;
+        color: string;
+    }[];
+    custom_color_template?: string;
+}
+export interface StatusSummaryModule extends BaseModule {
+    type: 'status_summary';
+    entities: StatusSummaryEntity[];
+    enable_auto_filter: boolean;
+    include_filters?: string[];
+    exclude_filters?: string[];
+    max_time_since_change?: number;
+    title: string;
+    show_title: boolean;
+    show_last_change_header: boolean;
+    show_time_header: boolean;
+    sort_by: 'name' | 'last_change' | 'custom';
+    sort_direction: 'asc' | 'desc';
+    max_items_to_show?: number;
+    global_show_icon: boolean;
+    global_show_state: boolean;
+    row_height: number;
+    row_gap: number;
+    max_entity_name_length: number;
+    show_separator_lines: boolean;
+    global_color_mode: 'state' | 'time' | 'custom' | 'none';
+    global_state_colors?: {
+        [state: string]: string;
+    };
+    global_time_colors?: {
+        threshold: number;
+        color: string;
+    }[];
+    global_custom_color_template?: string;
+    default_text_color: string;
+    default_icon_color: string;
+    header_text_color: string;
+    header_background_color: string;
+    template_mode?: boolean;
+    template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
+    tap_action?: any;
+    hold_action?: any;
+    double_tap_action?: any;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export interface TogglePoint {
+    id: string;
+    label: string;
+    icon?: string;
+    tap_action?: ModuleActionConfig;
+    match_entity?: string;
+    match_state?: string | string[];
+    background_color?: string;
+    text_color?: string;
+    active_background_color?: string;
+    active_text_color?: string;
+    border_color?: string;
+    active_border_color?: string;
+}
+export interface ToggleModule extends BaseModule {
+    type: 'toggle';
+    toggle_points: TogglePoint[];
+    visual_style: 'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
+    tracking_entity?: string;
+    title?: string;
+    show_title?: boolean;
+    orientation?: 'horizontal' | 'vertical';
+    alignment?: 'left' | 'center' | 'right' | 'justify';
+    size?: 'compact' | 'normal' | 'large';
+    spacing?: number;
+    show_icons?: boolean;
+    icon_size?: string;
+    icon_position?: 'above' | 'left' | 'right' | 'below';
+    default_background_color?: string;
+    default_text_color?: string;
+    default_active_background_color?: string;
+    default_active_text_color?: string;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    display_mode: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
+}
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -1473,8 +2106,11 @@ export interface SharedDesignProperties {
     font_weight?: string;
     text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
     font_style?: 'normal' | 'italic' | 'oblique';
+    white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
     background_color?: string;
     background_image?: string;
+    background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+    background_image_entity?: string;
     background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
     background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
     background_size?: 'cover' | 'contain' | 'auto' | string;
@@ -1530,13 +2166,16 @@ export interface SharedDesignProperties {
     logic_attribute?: string;
     logic_operator?: '=' | '!=' | '>' | '>=' | '<' | '<=' | 'contains' | 'not_contains' | 'has_value' | 'no_value';
     logic_value?: string;
+    extra_class?: string;
+    element_id?: string;
+    css_variable_prefix?: string;
 }
 export interface CardColumn {
     id: string;
     name?: string;
     modules: CardModule[];
     vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-    horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
+    horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch' | 'space-between' | 'space-around' | 'justify';
     background_color?: string;
     padding?: number;
     margin?: number;
@@ -1557,6 +2196,8 @@ export interface CardRow {
     gap?: number;
     column_alignment?: 'top' | 'middle' | 'bottom';
     content_alignment?: 'start' | 'end' | 'center' | 'stretch';
+    full_width?: boolean;
+    width_percent?: number;
     background_color?: string;
     padding?: number;
     margin?: number;
@@ -1579,6 +2220,17 @@ export interface FavoriteColor {
     color: string;
     order: number;
 }
+export interface EntityReference {
+    entityId: string;
+    locations: string[];
+    moduleType: string;
+    context?: string;
+}
+export interface EntityMapping {
+    original: string;
+    mapped: string;
+    domain: string;
+}
 export interface PresetDefinition {
     id: string;
     name: string;
@@ -1596,6 +2248,7 @@ export interface PresetDefinition {
         updated: string;
         downloads?: number;
         rating?: number;
+        entityMappings?: EntityMapping[];
     };
 }
 export interface FavoriteRow {
@@ -1669,4 +2322,405 @@ export interface EditorTarget extends EventTarget {
     checked?: boolean;
     configValue?: string;
     configAttribute?: string;
+}
+export interface ClimateModule extends BaseModule {
+    type: 'climate';
+    entity: string;
+    name?: string;
+    show_current_temp?: boolean;
+    show_target_temp?: boolean;
+    show_humidity?: boolean;
+    show_mode_switcher?: boolean;
+    show_power_button?: boolean;
+    show_fan_controls?: boolean;
+    show_preset_modes?: boolean;
+    show_equipment_status?: boolean;
+    show_temp_controls?: boolean;
+    show_dial?: boolean;
+    enable_dial_interaction?: boolean;
+    info_position?: 'top' | 'bottom';
+    dial_size?: number;
+    dial_color_heating?: string;
+    dial_color_cooling?: string;
+    dial_color_idle?: string;
+    dial_color_off?: string;
+    dynamic_colors?: boolean;
+    temp_step_override?: number;
+    temperature_unit?: 'auto' | 'fahrenheit' | 'celsius';
+    temp_control_size?: number;
+    fan_layout?: 'chips' | 'dropdown';
+    preset_layout?: 'chips' | 'dropdown';
+    humidity_icon?: string;
+    current_temp_color?: string;
+    target_temp_color?: string;
+    mode_text_color?: string;
+    humidity_color?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+export type CalendarViewType = 'compact_list' | 'month' | 'week' | 'day' | 'table' | 'grid';
+export type FirstDayOfWeek = 'sunday' | 'monday' | 'saturday';
+export type WeekNumberFormat = 'none' | 'iso' | 'us';
+export interface CalendarEntityConfig {
+    id: string;
+    entity: string;
+    name?: string;
+    color?: string;
+    visible?: boolean;
+}
+export interface CalendarEventData {
+    uid?: string;
+    summary: string;
+    start: string | {
+        dateTime?: string;
+        date?: string;
+    };
+    end: string | {
+        dateTime?: string;
+        date?: string;
+    };
+    description?: string;
+    location?: string;
+    recurrence_id?: string;
+    rrule?: string;
+}
+export interface ProcessedCalendarEvent {
+    id: string;
+    calendarId: string;
+    calendarColor: string;
+    calendarName: string;
+    summary: string;
+    description?: string;
+    location?: string;
+    start: Date;
+    end: Date;
+    isAllDay: boolean;
+    isMultiDay: boolean;
+    raw: CalendarEventData;
+}
+export interface CalendarModule extends BaseModule {
+    type: 'calendar';
+    calendars: CalendarEntityConfig[];
+    view_type: CalendarViewType;
+    days_to_show: number;
+    start_date?: string;
+    title?: string;
+    show_title?: boolean;
+    title_font_size?: string;
+    title_color?: string;
+    show_title_separator?: boolean;
+    title_separator_color?: string;
+    title_separator_width?: string;
+    compact_events_to_show?: number;
+    compact_show_all_day_events?: boolean;
+    compact_hide_empty_days?: boolean;
+    compact_auto_fit_height?: boolean;
+    compact_height?: string;
+    compact_overflow?: 'scroll' | 'hidden';
+    show_week_numbers?: WeekNumberFormat;
+    first_day_of_week?: FirstDayOfWeek;
+    month_show_event_count?: boolean;
+    week_start_hour?: number;
+    week_end_hour?: number;
+    week_time_interval?: number;
+    day_start_hour?: number;
+    day_end_hour?: number;
+    day_time_interval?: number;
+    table_show_date_column?: boolean;
+    table_show_time_column?: boolean;
+    table_show_calendar_column?: boolean;
+    table_show_location_column?: boolean;
+    table_show_duration_column?: boolean;
+    grid_columns?: number;
+    grid_card_height?: string;
+    show_event_time?: boolean;
+    show_end_time?: boolean;
+    show_event_location?: boolean;
+    show_event_description?: boolean;
+    show_event_icon?: boolean;
+    time_24h?: boolean;
+    remove_location_country?: boolean;
+    max_event_title_length?: number;
+    show_past_events?: boolean;
+    date_vertical_alignment?: 'top' | 'middle' | 'bottom';
+    weekday_font_size?: string;
+    weekday_color?: string;
+    day_font_size?: string;
+    day_color?: string;
+    show_month?: boolean;
+    month_font_size?: string;
+    month_color?: string;
+    event_font_size?: string;
+    event_color?: string;
+    time_font_size?: string;
+    time_color?: string;
+    time_icon_size?: string;
+    location_font_size?: string;
+    location_color?: string;
+    location_icon_size?: string;
+    description_font_size?: string;
+    description_color?: string;
+    event_background_opacity?: number;
+    vertical_line_width?: string;
+    accent_color?: string;
+    row_spacing?: string;
+    event_spacing?: string;
+    additional_card_spacing?: string;
+    show_day_separator?: boolean;
+    day_separator_width?: string;
+    day_separator_color?: string;
+    show_week_separator?: boolean;
+    week_separator_width?: string;
+    week_separator_color?: string;
+    month_separator_width?: string;
+    month_separator_color?: string;
+    tap_action_expand?: boolean;
+    refresh_interval?: number;
+    filter_keywords?: string[];
+    filter_mode?: 'include' | 'exclude';
+    language?: string;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    event_tap_action?: ModuleActionConfig;
+    template_mode?: boolean;
+    template?: string;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+export type SportsLeague = 'nfl' | 'nba' | 'mlb' | 'nhl' | 'mls' | 'premier_league' | 'ncaaf' | 'ncaab' | 'la_liga' | 'bundesliga' | 'serie_a' | 'ligue_1';
+export type SportsDisplayStyle = 'scorecard' | 'upcoming' | 'compact' | 'detailed' | 'mini' | 'logo_bg';
+export type SportsGameStatus = 'scheduled' | 'in_progress' | 'halftime' | 'final' | 'delayed' | 'postponed' | 'cancelled';
+export interface SportsGameData {
+    gameId: string;
+    league: SportsLeague;
+    homeTeam: {
+        id: string;
+        name: string;
+        abbreviation: string;
+        logo: string;
+        score: number | null;
+        record?: string;
+        color?: string;
+    };
+    awayTeam: {
+        id: string;
+        name: string;
+        abbreviation: string;
+        logo: string;
+        score: number | null;
+        record?: string;
+        color?: string;
+    };
+    status: SportsGameStatus;
+    statusDetail?: string;
+    clock?: string;
+    period?: number | string;
+    gameTime: Date | null;
+    venue?: string;
+    broadcast?: string;
+    odds?: {
+        spread?: string;
+        overUnder?: string;
+    };
+    lastUpdated: Date;
+}
+export interface SportsTeamInfo {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo: string;
+    league: SportsLeague;
+    color?: string;
+}
+export interface SportsScoreModule extends BaseModule {
+    type: 'sports_score';
+    data_source: 'ha_sensor' | 'espn_api';
+    sensor_entity?: string;
+    league?: SportsLeague;
+    team_id?: string;
+    team_name?: string;
+    display_style: SportsDisplayStyle;
+    refresh_interval: number;
+    show_team_logos: boolean;
+    show_team_names: boolean;
+    show_team_records: boolean;
+    show_game_time: boolean;
+    show_venue: boolean;
+    show_broadcast: boolean;
+    show_score: boolean;
+    show_odds: boolean;
+    show_status_detail: boolean;
+    home_team_color?: string;
+    away_team_color?: string;
+    use_team_colors?: boolean;
+    win_color?: string;
+    loss_color?: string;
+    in_progress_color?: string;
+    scheduled_color?: string;
+    team_name_font_size?: string;
+    score_font_size?: string;
+    detail_font_size?: string;
+    logo_size?: string;
+    compact_mode?: boolean;
+    show_logo_background?: boolean;
+    logo_background_size?: string;
+    logo_background_opacity?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+}
+/**
+ * Badge of Honor Module - Pro Feature
+ *
+ * A beautiful animated badge that celebrates Ultra Card Pro membership.
+ * Features rotating circular text, smooth gradient color transitions,
+ * and customizable inner content (icon, text, or image).
+ */
+export interface BadgeOfHonorModule extends BaseModule {
+    type: 'badge_of_honor';
+    badge_text?: string;
+    badge_text_repeat?: number;
+    badge_size?: number;
+    inner_badge_ratio?: number;
+    gradient_color_1?: string;
+    gradient_color_2?: string;
+    gradient_color_3?: string;
+    gradient_color_4?: string;
+    rotation_speed?: number;
+    rotation_direction?: 'clockwise' | 'counter-clockwise';
+    enable_color_shift?: boolean;
+    color_shift_speed?: number;
+    enable_glow?: boolean;
+    glow_intensity?: number;
+    enable_pulse?: boolean;
+    pulse_speed?: number;
+    inner_content_type?: 'icon' | 'text' | 'image';
+    inner_icon?: string;
+    inner_text?: string;
+    inner_image_url?: string;
+    inner_background_type?: 'solid' | 'gradient' | 'transparent';
+    inner_background_color?: string;
+    inner_text_color?: string;
+    inner_icon_color?: string;
+    text_font_size?: number;
+    text_font_weight?: number;
+    text_letter_spacing?: number;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_scale?: number;
+    hover_background_color?: string;
+}
+export type GridStylePreset = 'style_1' | 'style_2' | 'style_3' | 'style_4' | 'style_5' | 'style_6' | 'style_7' | 'style_8' | 'style_9' | 'style_10' | 'style_11' | 'style_12' | 'style_13' | 'style_14' | 'style_15' | 'style_16' | 'style_17' | 'style_18' | 'style_19' | 'style_20';
+export type GridDisplayMode = 'grid' | 'masonry' | 'metro';
+export type GridSortBy = 'name' | 'last_updated' | 'state' | 'custom' | 'domain';
+export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
+export type GridLoadAnimation = 'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
+export type MetroSize = 'small' | 'medium' | 'large';
+export interface GridEntity {
+    id: string;
+    entity: string;
+    custom_name?: string;
+    custom_icon?: string;
+    custom_color?: string;
+    custom_background?: string;
+    override_actions?: boolean;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    metro_size?: MetroSize;
+    state_colors?: Record<string, string>;
+    hidden?: boolean;
+}
+export interface GridModule extends BaseModule {
+    type: 'grid';
+    entities: GridEntity[];
+    enable_auto_filter?: boolean;
+    include_domains?: string[];
+    exclude_domains?: string[];
+    exclude_entities?: string[];
+    include_keywords?: string[];
+    exclude_keywords?: string[];
+    grid_style: GridStylePreset;
+    grid_display_mode: GridDisplayMode;
+    columns: number;
+    rows?: number;
+    gap: number;
+    sort_by: GridSortBy;
+    sort_direction: 'asc' | 'desc';
+    max_items: number;
+    enable_pagination: boolean;
+    items_per_page: number;
+    pagination_style: GridPaginationStyle;
+    enable_load_animation: boolean;
+    load_animation: GridLoadAnimation;
+    grid_animation_duration: number;
+    animation_stagger: number;
+    global_icon_size: number;
+    global_font_size: number;
+    global_name_color?: string;
+    global_state_color?: string;
+    global_icon_color?: string;
+    global_background_color?: string;
+    global_border_radius: string;
+    global_padding: string;
+    global_border_width?: number;
+    global_border_color?: string;
+    global_on_color?: string;
+    global_off_color?: string;
+    global_unavailable_color?: string;
+    glass_tint_color?: string;
+    glass_blur_amount?: number;
+    glass_border_color?: string;
+    gradient_start_color?: string;
+    gradient_end_color?: string;
+    gradient_direction?: 'to-bottom' | 'to-right' | 'to-bottom-right' | 'to-bottom-left';
+    panel_header_color?: string;
+    panel_header_text_color?: string;
+    split_left_color?: string;
+    split_right_color?: string;
+    neumorphic_light_shadow?: string;
+    neumorphic_dark_shadow?: string;
+    accent_border_color?: string;
+    card_shadow_color?: string;
+    tap_action: ModuleActionConfig;
+    hold_action: ModuleActionConfig;
+    double_tap_action: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_effect?: 'none' | 'scale' | 'glow' | 'lift' | 'color';
+    hover_scale?: number;
+    hover_background_color?: string;
+    hover_glow_color?: string;
+    template_mode?: boolean;
+    template?: string;
+    unified_template_mode?: boolean;
+    unified_template?: string;
 }

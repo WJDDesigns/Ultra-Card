@@ -19,6 +19,24 @@ export type ActionType =
   | 'assist'
   | 'nothing';
 
+// Unified Template Response (parsed from JSON template results)
+export interface UnifiedTemplateResponse {
+  // Display properties (icon module)
+  icon?: string;
+  icon_color?: string;
+  // Display properties (general)
+  name?: string;
+  name_color?: string;
+  state_text?: string;
+  state_color?: string;
+  // Display properties (text/content modules)
+  content?: string;
+  color?: string;
+  // Display properties (bar module)
+  value?: number | string;
+  label?: string;
+}
+
 export interface ModuleActionConfig {
   action: ActionType;
   entity?: string;
@@ -74,10 +92,14 @@ export interface BaseModule {
     | 'separator'
     | 'horizontal'
     | 'vertical'
+    | 'accordion'
+    | 'popup'
     | 'slider'
+    | 'slider_control'
     | 'pagebreak'
     | 'button'
     | 'markdown'
+    | 'climate'
     | 'camera'
     | 'graphs'
     | 'dropdown'
@@ -87,13 +109,23 @@ export interface BaseModule {
     | 'animated_clock'
     | 'animated_weather'
     | 'animated_forecast'
-    | 'external_card';
+    | 'external_card'
+    | 'native_card'
+    | 'video_bg'
+    | 'dynamic_weather'
+    | 'background'
+    | 'map'
+    | 'status_summary'
+    | 'toggle'
+    | 'tabs'
+    | 'calendar'
+    | 'sports_score'
+    | 'grid'
+    | 'badge_of_honor';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
-  // Smart Scaling - automatically scale content to fit within container boundaries
-  smart_scaling?: boolean; // Default: true
   // Legacy design properties (for backward compatibility)
   background_color?: string;
   background_image?: string;
@@ -167,6 +199,8 @@ export interface BaseModule {
     | 'cubic-bezier(0.25,0.1,0.25,1)';
   // New design properties with priority system
   design?: SharedDesignProperties;
+  // Action confirmation - when enabled, shows a confirmation dialog before executing actions
+  confirm_action?: boolean;
 }
 
 // Text Module
@@ -245,6 +279,10 @@ export interface TextModule extends BaseModule {
   font_style?: 'normal' | 'italic' | 'oblique';
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -258,8 +296,8 @@ export interface SeparatorModule extends BaseModule {
   separator_style?: 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow' | 'blank';
   orientation?: 'horizontal' | 'vertical';
   thickness?: number;
-  width_percent?: number;
-  height_px?: number; // For vertical separators
+  width_percent?: number | string; // Percentage (e.g., "100%") or pixels (e.g., "200px")
+  height_px?: number | string; // Pixels (e.g., "300px") or percentage (e.g., "50%")
   color?: string;
   show_title?: boolean;
   title?: string;
@@ -472,15 +510,22 @@ export interface InfoEntityConfig {
   dynamic_icon_template?: string;
   dynamic_color_template_mode?: boolean;
   dynamic_color_template?: string;
+  // Unified template system (replaces multiple template boxes)
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Icon positioning and alignment
   icon_position?: 'left' | 'right' | 'top' | 'bottom';
   icon_alignment?: 'start' | 'center' | 'end';
-  content_alignment?: 'start' | 'center' | 'end';
+  name_alignment?: 'start' | 'center' | 'end';
+  state_alignment?: 'start' | 'center' | 'end';
   overall_alignment?: 'left' | 'center' | 'right';
   icon_gap?: number;
-  // Name/Value layout when icon is disabled
+  // Name/Value layout direction (works with any icon position or when icon is disabled)
   name_value_layout?: 'vertical' | 'horizontal';
   name_value_gap?: number;
+  // Content distribution control
+  content_distribution?: 'normal' | 'space-between' | 'space-around' | 'space-evenly';
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -571,6 +616,14 @@ export interface BarModule extends BaseModule {
   // Template mode
   percentage_template?: string;
 
+  // Manual Min/Max Range (overrides auto-detection)
+  percentage_min?: number;
+  percentage_max?: number;
+  percentage_min_template_mode?: boolean;
+  percentage_min_template?: string;
+  percentage_max_template_mode?: boolean;
+  percentage_max_template?: string;
+
   // Bar Appearance
   bar_direction?: 'left-to-right' | 'right-to-left';
   bar_size?: 'extra-thick' | 'thick' | 'medium' | 'thin';
@@ -593,12 +646,16 @@ export interface BarModule extends BaseModule {
   bar_alignment?: 'left' | 'center' | 'right';
   height?: number;
   border_radius?: number;
+  glass_blur_amount?: number; // Glass blur amount (0-20px) for glass style
 
   // Text Display
   label_alignment?: 'left' | 'center' | 'right' | 'space-between';
   show_percentage?: boolean;
   percentage_text_size?: number;
-  percentage_text_alignment?: 'left' | 'center' | 'right';
+  percentage_text_alignment?: 'left' | 'center' | 'right' | 'follow-fill';
+  percentage_text_bold?: boolean;
+  percentage_text_italic?: boolean;
+  percentage_text_strikethrough?: boolean;
   show_value?: boolean;
   value_position?: 'inside' | 'outside' | 'none';
 
@@ -630,12 +687,31 @@ export interface BarModule extends BaseModule {
   right_title_color?: string;
   right_value_color?: string;
 
+  // Left Side Actions
+  left_tap_action?: ModuleActionConfig;
+  left_hold_action?: ModuleActionConfig;
+  left_double_tap_action?: ModuleActionConfig;
+
+  // Right Side Actions
+  right_tap_action?: ModuleActionConfig;
+  right_hold_action?: ModuleActionConfig;
+  right_double_tap_action?: ModuleActionConfig;
+
   // Colors
   bar_color?: string;
   bar_background_color?: string;
   bar_border_color?: string;
   percentage_text_color?: string;
   dot_color?: string; // Color for minimal style dot indicator
+
+  // Minimal style icon configuration
+  minimal_icon_enabled?: boolean; // Enable icon display
+  minimal_icon?: string; // Icon to display (e.g., mdi:battery)
+  minimal_icon_mode?: 'dot-only' | 'icon-only' | 'icon-in-dot'; // Display mode
+  minimal_icon_size?: number; // Icon size in pixels
+  minimal_icon_size_auto?: boolean; // Auto-scale with bar height (default: true)
+  minimal_icon_color?: string; // Icon color (if empty, uses dot color)
+  minimal_icon_use_dot_color?: boolean; // Use dot color for icon (default: true)
 
   // Gradient Configuration
   use_gradient?: boolean;
@@ -654,6 +730,10 @@ export interface BarModule extends BaseModule {
   animation?: boolean;
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
 
   // Bar Animation (state/attribute triggered)
   bar_animation_enabled?: boolean;
@@ -790,6 +870,7 @@ export interface GaugeModule extends BaseModule {
     | 'radial';
   gauge_size?: number; // Gauge diameter/size in pixels
   gauge_thickness?: number; // Thickness of gauge track (1-50)
+  flip_horizontal?: boolean; // Flip gauge horizontally (Arc and Speedometer styles only)
 
   // Pointer Configuration
   pointer_enabled?: boolean;
@@ -801,10 +882,14 @@ export interface GaugeModule extends BaseModule {
     | 'circle'
     | 'highlight'
     | 'cap'
+    | 'icon'
     | 'custom';
   pointer_color?: string;
   pointer_length?: number; // Percentage of gauge radius (1-100)
   pointer_width?: number; // Width in pixels
+  pointer_icon?: string; // Icon name (e.g., 'mdi:gauge') for icon pointer style
+  pointer_icon_color?: string; // Color for icon pointer style
+  pointer_icon_size?: number; // Size of icon in pixels for icon pointer style
 
   // Color Configuration
   gauge_color_mode?: 'solid' | 'gradient' | 'segments';
@@ -890,6 +975,10 @@ export interface GaugeModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
 
   // Global action configuration
   tap_action?: {
@@ -1163,6 +1252,11 @@ export interface IconConfig {
   dynamic_icon_template?: string;
   dynamic_color_template_mode?: boolean;
   dynamic_color_template?: string;
+
+  // Unified template system (replaces multiple template boxes)
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean; // When true, template controls state logic too
 }
 
 // Icon Module
@@ -1173,6 +1267,7 @@ export interface IconModule extends BaseModule {
   vertical_alignment?: 'top' | 'center' | 'bottom';
   columns?: number;
   gap?: number;
+  allow_wrap?: boolean; // Allow grid items to wrap to new rows
   // Global action configuration (for the module container)
   tap_action?: {
     action:
@@ -1346,71 +1441,26 @@ export interface VerticalModule extends BaseModule {
   };
 }
 
-// Page Break Module (used in sliders to separate pages)
-export interface PageBreakModule extends BaseModule {
-  type: 'pagebreak';
-  // No additional properties - just a separator
-}
+// Accordion Layout Module
+export interface AccordionModule extends BaseModule {
+  type: 'accordion';
+  modules: CardModule[];
 
-// Slider Layout Module
-export interface SliderModule extends BaseModule {
-  type: 'slider';
-  modules: CardModule[]; // Flat array of modules with pagebreak modules as separators
+  // Header configuration
+  title_mode?: 'custom' | 'entity';
+  title_text?: string;
+  title_entity?: string;
+  show_entity_name?: boolean; // Show entity name when using entity title mode
+  icon?: string; // Main chevron/control icon (defaults to mdi:chevron-down)
+  header_alignment?: 'center' | 'apart'; // How title and icon are aligned
+  icon_side?: 'left' | 'right'; // Which side the icon appears on
 
-  // Pagination Configuration
-  show_pagination?: boolean;
-  pagination_style?: 'dots' | 'numbers' | 'thumbnails' | 'fraction' | 'progressbar';
-  pagination_position?: 'top' | 'bottom' | 'left' | 'right';
-  pagination_color?: string;
-  pagination_active_color?: string;
-  pagination_size?: number;
+  // State configuration
+  default_open?: boolean;
 
-  // Navigation Arrows Configuration
-  show_arrows?: boolean;
-  arrow_position?: 'inside' | 'outside';
-  arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
-  arrow_size?: number;
-  arrow_color?: string;
-  arrow_background_color?: string;
-  prev_arrow_icon?: string;
-  next_arrow_icon?: string;
-  arrows_always_visible?: boolean;
-
-  // Transition Configuration
-  transition_effect?:
-    | 'slide-left'
-    | 'slide-right'
-    | 'slide-top'
-    | 'slide-bottom'
-    | 'fade'
-    | 'zoom-in'
-    | 'zoom-out'
-    | 'circle';
-  transition_speed?: number;
-  transition_easing?: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
-
-  // Auto-play Configuration
-  auto_play?: boolean;
-  auto_play_delay?: number;
-  pause_on_hover?: boolean;
-  loop?: boolean;
-
-  // Interaction Configuration
-  allow_swipe?: boolean;
-  allow_keyboard?: boolean;
-  allow_mousewheel?: boolean;
-
-  // Layout Configuration
-  slider_height?: number;
-  slider_width?: string;
-  gap?: number;
-  slides_per_view?: number;
-  space_between?: number;
-  vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-
-  // Mobile Configuration
-  mobile_slides_per_view?: number;
-  mobile_space_between?: number;
+  // Open/Close Logic
+  open_mode?: 'always' | 'every' | 'any' | 'manual';
+  open_conditions?: DisplayCondition[];
 
   // Global action configuration
   tap_action?: {
@@ -1463,12 +1513,454 @@ export interface SliderModule extends BaseModule {
   };
 }
 
-// Button Module
-export interface ButtonModule extends BaseModule {
-  type: 'button';
-  label: string;
-  action?: LinkAction; // Legacy support
-  style?:
+// Tab Section for Tabs Module
+export interface TabSection {
+  id: string;
+  title: string;
+  icon?: string;
+  modules: CardModule[];
+}
+
+// Tabs Layout Module
+export interface TabsModule extends BaseModule {
+  type: 'tabs';
+  sections: TabSection[];
+
+  // Orientation and style
+  orientation?: 'horizontal' | 'vertical';
+  style?: 'default' | 'simple' | 'simple_2' | 'simple_3' | 'switch_1' | 'switch_2' | 'switch_3' | 'modern' | 'trendy';
+  alignment?: 'left' | 'center' | 'right' | 'stretch';
+  tab_position?: 'top' | 'bottom' | 'left' | 'right';
+
+  // Behavior
+  switch_on_hover?: boolean;
+  default_tab?: string; // ID of the default active tab
+
+  // Responsive options
+  wrap_tabs?: boolean; // Allow tabs to wrap to multiple lines
+  mobile_icons_only?: boolean; // Show only icons on mobile/narrow screens
+  mobile_breakpoint?: number; // Breakpoint in pixels for mobile mode (default 600)
+
+  // Typography
+  font_size?: string;
+  font_weight?: string;
+  text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+
+  // Tab Design
+  tab_gap?: number;
+  tab_padding?: string;
+  active_tab_color?: string;
+  active_tab_background?: string;
+  active_tab_border_color?: string;
+  inactive_tab_color?: string;
+  inactive_tab_background?: string;
+  inactive_tab_border_color?: string;
+  hover_tab_color?: string;
+  hover_tab_background?: string;
+  tab_border_radius?: string;
+  tab_border_width?: number;
+  track_background?: string;
+  icon_color?: string;
+
+  // Content area design
+  content_background?: string;
+  content_padding?: string;
+  content_border_radius?: string;
+  content_border_color?: string;
+  content_border_width?: number;
+
+  // Animation
+  transition_duration?: string;
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+}
+
+// Popup Layout Module
+export interface PopupModule extends BaseModule {
+  type: 'popup';
+  modules: CardModule[];
+
+  // Title configuration
+  show_title?: boolean;
+  title_mode?: 'custom' | 'entity';
+  title_text?: string;
+  title_entity?: string;
+  show_entity_name?: boolean;
+
+  // Trigger configuration
+  trigger_type?: 'button' | 'image' | 'icon' | 'page_load' | 'logic' | 'module';
+  trigger_module_id?: string; // ID of the module that triggers this popup
+  trigger_button_text?: string;
+  trigger_button_icon?: string;
+  trigger_image_type?: 'upload' | 'entity' | 'url';
+  trigger_image_url?: string;
+  trigger_image_entity?: string;
+  trigger_icon?: string;
+
+  // Trigger styling
+  trigger_alignment?: 'left' | 'center' | 'right';
+  trigger_button_full_width?: boolean;
+  trigger_image_full_width?: boolean;
+
+  // Layout settings
+  layout?: 'default' | 'full_screen' | 'left_panel' | 'right_panel' | 'top_panel' | 'bottom_panel';
+  animation?:
+    | 'fade'
+    | 'scale_up'
+    | 'scale_down'
+    | 'slide_top'
+    | 'slide_left'
+    | 'slide_right'
+    | 'slide_bottom';
+
+  // Popup styling
+  popup_width?: string; // '600px', '100%', '14rem', '10vw'
+  popup_padding?: string; // '5%', '20px', '1rem', '2vw'
+  popup_border_radius?: string; // '5px', '50%', '0.3em', '12px 0'
+
+  // Close button configuration
+  close_button_position?: 'inside' | 'none';
+  close_button_color?: string;
+  close_button_size?: number;
+  close_button_icon?: string;
+  close_button_offset_x?: string;
+  close_button_offset_y?: string;
+
+  // Auto-close timer
+  auto_close_timer_enabled?: boolean;
+  auto_close_timer_seconds?: number;
+
+  // Colors
+  title_background_color?: string;
+  title_text_color?: string;
+  popup_background_color?: string;
+  popup_text_color?: string;
+  show_overlay?: boolean;
+  overlay_background?: string;
+
+  // Trigger Logic (for logic-based popup triggering)
+  trigger_mode?: 'every' | 'any' | 'manual';
+  trigger_conditions?: DisplayCondition[];
+  auto_close?: boolean; // For logic triggers: auto-hide when conditions become false
+
+  // Default state
+  default_open?: boolean;
+}
+
+// Page Break Module (used in sliders to separate pages)
+export interface PageBreakModule extends BaseModule {
+  type: 'pagebreak';
+  // No additional properties - just a separator
+}
+
+// Slider Layout Module
+export interface SliderModule extends BaseModule {
+  type: 'slider';
+  modules: CardModule[]; // Flat array of modules with pagebreak modules as separators
+
+  // Pagination Configuration
+  show_pagination?: boolean;
+  pagination_style?:
+    | 'dots'
+    | 'dots-and-dash'
+    | 'dash-lines'
+    | 'numbers'
+    | 'thumbnails'
+    | 'fraction'
+    | 'progressbar'
+    | 'scrollbar'
+    | 'dynamic';
+  pagination_position?: 'top' | 'bottom' | 'left' | 'right';
+  pagination_color?: string;
+  pagination_active_color?: string;
+  pagination_size?: number;
+  pagination_overlay?: boolean; // Whether pagination overlays content or gets its own space
+
+  // Navigation Arrows Configuration
+  show_arrows?: boolean;
+  arrow_position_offset?: number; // Offset for arrow position (positive = more inside, negative = more outside)
+  arrow_style?: 'default' | 'circle' | 'square' | 'minimal';
+  arrow_size?: number;
+  arrow_color?: string;
+  arrow_background_color?: string;
+  prev_arrow_icon?: string;
+  next_arrow_icon?: string;
+  arrows_always_visible?: boolean;
+
+  // Transition Configuration
+  transition_effect?:
+    | 'slide'
+    | 'fade'
+    | 'cube'
+    | 'coverflow'
+    | 'flip'
+    | 'zoom'
+    // Legacy options for backward compatibility
+    | 'slide-left'
+    | 'slide-right'
+    | 'slide-top'
+    | 'slide-bottom'
+    | 'zoom-in'
+    | 'zoom-out'
+    | 'circle';
+  transition_speed?: number;
+
+  // Auto-play Configuration
+  auto_play?: boolean;
+  auto_play_delay?: number;
+  pause_on_hover?: boolean;
+  loop?: boolean;
+
+  // Interaction Configuration
+  allow_swipe?: boolean;
+  allow_keyboard?: boolean;
+  allow_mousewheel?: boolean;
+
+  // Layout Configuration
+  slider_direction?: 'horizontal' | 'vertical';
+  centered_slides?: boolean;
+  slider_height?: number;
+  auto_height?: boolean; // When true, slider adjusts to content height (default: true)
+  slider_width?: string;
+  gap?: number;
+  slides_per_view?: number;
+  space_between?: number;
+  vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+}
+
+// Slider Control Module (Entity Control)
+// Slider Bar Configuration
+export interface SliderBar {
+  id: string;
+  type: 'numeric' | 'brightness' | 'rgb' | 'color_temp' | 'red' | 'green' | 'blue' | 'attribute';
+  entity: string;
+  attribute?: string; // For attribute type
+  name?: string; // Override label
+  min_value?: number;
+  max_value?: number;
+  step?: number;
+
+  // Individual bar visibility controls (optional, falls back to global)
+  show_icon?: boolean;
+  show_name?: boolean;
+  show_value?: boolean;
+
+  // Individual bar positioning controls (optional, falls back to global)
+  outside_text_position?: 'left' | 'right';
+  outside_name_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+  outside_value_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+  split_bar_position?: 'left' | 'right';
+  split_bar_length?: number; // Percentage 0-100, default 60
+  overlay_name_position?: 'top' | 'middle' | 'bottom';
+  overlay_value_position?: 'top' | 'middle' | 'bottom';
+  overlay_icon_position?: 'top' | 'middle' | 'bottom';
+
+  // Unified content positioning for all layout modes (deprecated, use individual positions below)
+  content_position?: // Horizontal Overlay: Left, Center, Right
+  | 'left'
+    | 'center'
+    | 'right'
+    // Vertical Overlay: Bottom, Center, Top
+    | 'bottom'
+    | 'top'
+    // Horizontal Split: Left, Right (position of content relative to bar)
+    // Vertical Split: Top, Bottom (position of content relative to bar)
+    // Horizontal Outside: Top Left, Top Center, Top Right, Bottom Left, Bottom Center, Bottom Right
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right'
+    // Vertical Outside: Left Top, Left Center, Left Bottom, Right Top, Right Center, Right Bottom
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom';
+
+  // Individual element positioning (overrides content_position if set)
+  icon_position?:
+    | 'left'
+    | 'center'
+    | 'right' // Horizontal Overlay
+    | 'top'
+    | 'bottom' // Vertical Overlay
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right' // Horizontal Outside
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom'; // Vertical Outside
+
+  name_position?:
+    | 'left'
+    | 'center'
+    | 'right' // Horizontal Overlay
+    | 'top'
+    | 'bottom' // Vertical Overlay
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right' // Horizontal Outside
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom'; // Vertical Outside
+
+  value_position?:
+    | 'left'
+    | 'center'
+    | 'right' // Horizontal Overlay
+    | 'top'
+    | 'bottom' // Vertical Overlay
+    | 'top_left'
+    | 'top_center'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_center'
+    | 'bottom_right' // Horizontal Outside
+    | 'left_top'
+    | 'left_center'
+    | 'left_bottom'
+    | 'right_top'
+    | 'right_center'
+    | 'right_bottom'; // Vertical Outside
+
+  // For split mode - where content section is positioned relative to bar
+  info_section_position?: 'left' | 'right' | 'top' | 'bottom';
+
+  // Per-bar styling overrides (optional, falls back to global)
+  slider_height?: number;
+  slider_track_color?: string;
+  slider_fill_color?: string;
+  dynamic_fill_color?: boolean;
+
+  // Slider Style properties (optional, falls back to global)
+  slider_style?:
     | 'flat'
     | 'glossy'
     | 'embossed'
@@ -1479,14 +1971,179 @@ export interface ButtonModule extends BaseModule {
     | 'glass'
     | 'metallic'
     | 'neumorphic'
-    | 'dashed'
-    | 'dots';
-  alignment?: 'left' | 'center' | 'right' | 'justify';
+    | 'minimal';
+  glass_blur_amount?: number;
+  slider_radius?: 'square' | 'round' | 'pill';
+  border_radius?: number;
+
+  // Additional Color properties (optional, falls back to global)
+  use_gradient?: boolean;
+  gradient_stops?: Array<{
+    id: string;
+    position: number;
+    color: string;
+  }>;
+  auto_contrast?: boolean;
+
+  // Display Element properties (optional, falls back to global)
+  icon?: string;
+  icon_size?: number;
+  icon_color?: string;
+  dynamic_icon?: boolean;
+  icon_as_toggle?: boolean;
+
+  // Name display properties (optional, falls back to global)
+  name_size?: number;
+  name_color?: string;
+  name_bold?: boolean;
+
+  // Value display properties (optional, falls back to global)
+  value_size?: number;
+  value_color?: string;
+  value_suffix?: string;
+  show_bar_label?: boolean;
+
+  // Animation properties (optional, falls back to global)
+  animate_on_change?: boolean;
+  transition_duration?: number;
+  haptic_feedback?: boolean;
+
+  // Direction control
+  invert_direction?: boolean; // Reverse min/max positions (useful for curtains)
+}
+
+export interface SliderControlModule extends BaseModule {
+  type: 'slider_control';
+
+  // Multi-bar Configuration
+  bars: SliderBar[];
+
+  // Orientation
+  orientation?: 'horizontal' | 'vertical';
+
+  // Layout Mode
+  layout_mode?: 'overlay' | 'split' | 'outside';
+
+  // Overlay Mode Settings (when bar has info overlaid on top)
+  overlay_position?: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+  overlay_name_position?: 'top' | 'middle' | 'bottom';
+  overlay_value_position?: 'top' | 'middle' | 'bottom';
+  overlay_icon_position?: 'top' | 'middle' | 'bottom';
+
+  // Outside Mode Settings (when info is positioned outside the slider vertically)
+  outside_text_position?: 'left' | 'right';
+  outside_name_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+  outside_value_position?:
+    | 'top_left'
+    | 'top_right'
+    | 'bottom_left'
+    | 'bottom_right'
+    | 'top'
+    | 'middle'
+    | 'bottom';
+
+  // Split Mode Settings (bar and info are separate horizontally)
+  split_bar_position?: 'left' | 'right';
+  split_info_position?: 'left' | 'center' | 'right';
+  split_bar_length?: number; // Percentage 0-100, default 60
+
+  // Slider Visual Style
+  slider_style?:
+    | 'flat'
+    | 'glossy'
+    | 'embossed'
+    | 'inset'
+    | 'gradient-overlay'
+    | 'neon-glow'
+    | 'outline'
+    | 'glass'
+    | 'metallic'
+    | 'neumorphic'
+    | 'minimal';
+
+  // Slider Appearance
+  slider_height?: number; // Height for horizontal, width for vertical
+  bar_spacing?: number; // Spacing between multiple bars
+  slider_radius?: 'square' | 'round' | 'pill';
+  border_radius?: number;
+  slider_track_color?: string;
+  slider_fill_color?: string;
+  dynamic_fill_color?: boolean; // Use entity color (for RGB lights, etc.)
+  glass_blur_amount?: number; // For glass style
+
+  // Gradient Fill Support
+  use_gradient?: boolean;
+  gradient_stops?: Array<{
+    id: string;
+    position: number;
+    color: string;
+  }>;
+
+  // Display Elements
   show_icon?: boolean;
   icon?: string;
-  icon_position?: 'before' | 'after';
-  background_color?: string;
-  text_color?: string;
+  icon_size?: number;
+  icon_color?: string;
+  dynamic_icon?: boolean; // Use entity's default icon
+  icon_as_toggle?: boolean; // Make icon clickable to toggle entity on/off
+  auto_contrast?: boolean; // Automatically adjust text/icon color based on fill color
+
+  show_name?: boolean;
+  name_size?: number;
+  name_color?: string;
+  name_bold?: boolean;
+
+  show_state?: boolean;
+  state_size?: number;
+  state_color?: string;
+  state_bold?: boolean;
+  state_format?: string; // Format string for state display
+
+  show_value?: boolean; // Show numeric value
+  value_size?: number;
+  value_color?: string;
+  value_suffix?: string; // e.g., '%', '°C'
+  show_bar_label?: boolean; // Show bar label (e.g., "Brightness", "RGB Color")
+
+  // Toggle Integration
+  show_toggle?: boolean;
+  toggle_position?: 'left' | 'right' | 'top' | 'bottom';
+  toggle_size?: number;
+  toggle_color_on?: string;
+  toggle_color_off?: string;
+
+  // Light-specific Color Control
+  show_color_picker?: boolean; // For lights - show RGB color picker
+  color_picker_position?: 'below' | 'right';
+  color_picker_size?: 'small' | 'medium' | 'large';
+
+  // Animation & Interaction
+  animate_on_change?: boolean;
+  transition_duration?: number; // Renamed to avoid conflict with BaseModule's animation_duration
+  haptic_feedback?: boolean;
+
+  // Direction control
+  invert_direction?: boolean; // Global default for slider direction inversion
+
+  // Legacy support for backward compatibility
+  entity?: string; // Deprecated - use bars array instead
+  name?: string; // Deprecated - use bars array instead
+  attribute?: string; // Deprecated - use bars array instead
+  min_value?: number; // Deprecated - use bars array instead
+  max_value?: number; // Deprecated - use bars array instead
+  step?: number; // Deprecated - use bars array instead
+  light_control_mode?: 'brightness' | 'color_temp' | 'rgb' | 'both' | 'all'; // Deprecated
+  light_slider_order?: string[]; // Deprecated
+  cover_invert?: boolean; // Deprecated
+  control_attribute?: string; // Deprecated
+
   // Global action configuration
   tap_action?: {
     action:
@@ -1541,6 +2198,89 @@ export interface ButtonModule extends BaseModule {
   hover_background_color?: string;
 }
 
+// Button Module
+export interface ButtonModule extends BaseModule {
+  type: 'button';
+  label: string;
+  action?: LinkAction; // Legacy support
+  style?:
+    | 'flat'
+    | 'glossy'
+    | 'embossed'
+    | 'inset'
+    | 'gradient-overlay'
+    | 'neon-glow'
+    | 'outline'
+    | 'glass'
+    | 'metallic'
+    | 'neumorphic'
+    | 'dashed'
+    | 'dots';
+  alignment?: 'left' | 'center' | 'right' | 'justify';
+  show_icon?: boolean;
+  icon?: string;
+  icon_position?: 'before' | 'after';
+  icon_size?: string | number;
+  background_color?: string;
+  text_color?: string;
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+  // Entity-based background color
+  use_entity_color?: boolean;
+  background_color_entity?: string;
+  background_state_colors?: { [state: string]: string }; // e.g., { "on": "#4CAF50", "off": "#666666" }
+}
+
 // Spinbox Module (number input with +/- buttons)
 export interface SpinboxModule extends BaseModule {
   type: 'spinbox';
@@ -1582,6 +2322,10 @@ export interface SpinboxModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Global action configuration
   tap_action?: {
     action:
@@ -1641,6 +2385,10 @@ export interface MarkdownModule extends BaseModule {
   hide_if_no_link?: boolean;
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Styling options
   font_size?: number;
   font_family?: string;
@@ -1744,8 +2492,16 @@ export interface CameraModule extends BaseModule {
 
   // Camera controls
   show_controls?: boolean;
+
+  // Stream mode - controls how camera feed is displayed
+  view_mode?: 'auto' | 'live' | 'snapshot';
+
+  // Snapshot refresh settings (only used when view_mode === 'snapshot')
+  refresh_interval?: number; // 1-300 seconds
+
+  // Legacy properties (deprecated, migrated to view_mode)
   auto_refresh?: boolean;
-  refresh_interval?: number;
+  live_view?: boolean;
 
   // Image quality
   image_quality?: 'high' | 'medium' | 'low';
@@ -1753,8 +2509,7 @@ export interface CameraModule extends BaseModule {
   // Rotation
   rotation?: number;
 
-  // Live view (streaming)
-  live_view?: boolean;
+  // Audio settings (only used when view_mode === 'live' or auto upgrades to live)
   audio_enabled?: boolean;
 
   // Error handling
@@ -1814,6 +2569,10 @@ export interface CameraModule extends BaseModule {
   // Template support
   template_mode?: boolean;
   template?: string;
+  // Unified template system
+  unified_template_mode?: boolean;
+  unified_template?: string;
+  ignore_entity_state_config?: boolean;
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -1892,6 +2651,7 @@ export interface GraphsModule extends BaseModule {
 
   // Scale options
   normalize_values?: boolean;
+  use_fixed_y_axis?: boolean;
   legend_position?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
 
   show_grid?: boolean;
@@ -1959,6 +2719,7 @@ export interface GraphsModule extends BaseModule {
   // Bar/Histogram
   bar_width?: number;
   bar_spacing?: number;
+  bar_display_limit?: number; // Max bars to display (0 = unlimited, default)
   stacked?: boolean;
   horizontal?: boolean;
 
@@ -2092,6 +2853,23 @@ export interface DropdownModule extends BaseModule {
   current_selection?: string; // Tracks the currently selected option label
   track_state?: boolean; // Whether to track and display current selection
 
+  // Closed Dropdown Title Configuration
+  closed_title_mode?: 'last_chosen' | 'entity_state' | 'custom' | 'first_option'; // How to display closed dropdown title
+  closed_title_entity?: string; // Entity to use for entity_state mode
+  closed_title_custom?: string; // Custom text for custom mode
+
+  // Dynamic templates
+  unified_template_mode?: boolean;
+  unified_template?: string;
+
+  // Control icon customization
+  control_icon?: string;
+  control_alignment?: 'center' | 'apart';
+  control_icon_side?: 'left' | 'right';
+
+  // Dropdown display options
+  visible_items?: number; // Number of items visible in dropdown before scrolling (1-20)
+
   // Visual Configuration (label removed)
 
   // Global action configuration
@@ -2157,6 +2935,7 @@ export interface LightModule extends BaseModule {
   presets: Array<{
     id: string;
     name: string; // Display name/label for the preset
+    action?: 'turn_on' | 'turn_off' | 'toggle'; // Action type for this preset
     icon?: string; // Optional icon for button/icon display
     entities: string[]; // Entities this preset applies to
     brightness?: number; // 0-255
@@ -2261,6 +3040,110 @@ export interface LightModule extends BaseModule {
   // Hover effects
   enable_hover_effect?: boolean;
   hover_background_color?: string;
+}
+
+// Map marker type for individual pins
+export interface MapMarker {
+  id: string;
+  name: string;
+  type: 'manual' | 'entity'; // Manual coordinates or entity-based
+
+  // Manual marker properties
+  latitude?: number;
+  longitude?: number;
+
+  // Entity marker properties
+  entity?: string;
+
+  // Visual customization
+  icon?: string;
+  icon_color?: string;
+  icon_size?: number; // Size in pixels for icon markers
+  marker_image_type?: 'icon' | 'custom_image' | 'entity_image';
+  marker_image?: string; // Custom image URL or upload
+  use_entity_picture?: boolean; // Use entity's entity_picture attribute
+}
+
+// Map Module
+export interface MapModule extends BaseModule {
+  type: 'map';
+
+  // Map provider
+  map_provider: 'openstreetmap' | 'google';
+  google_api_key?: string; // Optional API key for Google Maps JavaScript API
+
+  // Map appearance
+  map_type: 'roadmap' | 'satellite' | 'hybrid' | 'terrain';
+  zoom: number; // 1-20
+
+  // Map controls
+  show_map_controls: boolean;
+  disable_zoom_scroll: boolean;
+  disable_touch_drag: boolean;
+
+  // Auto-zoom for entity markers
+  auto_zoom_entities: boolean; // Auto-calculate zoom to fit all entity markers
+
+  // Manual center coordinates (overrides auto-zoom and default centering)
+  manual_center_latitude?: number;
+  manual_center_longitude?: number;
+
+  // Markers list
+  markers: MapMarker[];
+
+  // Map dimensions
+  map_height?: number; // Height in pixels
+  aspect_ratio?: '16:9' | '4:3' | '1:1' | 'custom';
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
 }
 
 // Animated Clock Module (PRO)
@@ -2453,10 +3336,19 @@ export interface AnimatedWeatherModule extends BaseModule {
   location_name?: string; // Text override for location name
   location_entity?: string; // Entity to use for location (e.g., tracker)
 
+  // Column Order Configuration (for drag-and-drop editor)
+  left_column_order?: string[]; // Custom order of items in left column
+  right_column_order?: string[]; // Custom order of items in right column
+
   // Left Column Display Toggles
   show_location?: boolean; // Show location name (default: true)
   show_condition?: boolean; // Show weather condition (default: true)
   show_custom_entity?: boolean; // Show custom entity (default: true if entity set)
+  show_precipitation?: boolean; // Show precipitation amount (default: false)
+  show_precipitation_probability?: boolean; // Show precipitation probability (default: false)
+  show_wind?: boolean; // Show wind speed and direction (default: false)
+  show_pressure?: boolean; // Show air pressure (default: false)
+  show_visibility?: boolean; // Show visibility (default: false)
 
   // Right Column Display Toggles
   show_date?: boolean; // Show date (default: true)
@@ -2467,11 +3359,19 @@ export interface AnimatedWeatherModule extends BaseModule {
   location_size?: number; // Location text size (default: 16)
   condition_size?: number; // Weather condition size (default: 24)
   custom_entity_size?: number; // Custom entity size (default: 18)
+  precipitation_size?: number; // Precipitation text size (default: 14)
+  wind_size?: number; // Wind text size (default: 14)
+  pressure_size?: number; // Pressure text size (default: 14)
+  visibility_size?: number; // Visibility text size (default: 14)
 
   // Left Column - Colors
   location_color?: string; // Location text color (default: primary-text-color)
   condition_color?: string; // Condition text color (default: primary-text-color)
   custom_entity_color?: string; // Custom entity color (default: primary-text-color)
+  precipitation_color?: string; // Precipitation text color (default: primary-text-color)
+  wind_color?: string; // Wind text color (default: primary-text-color)
+  pressure_color?: string; // Pressure text color (default: primary-text-color)
+  visibility_color?: string; // Visibility text color (default: primary-text-color)
 
   // Center Column - Icon Styling
   main_icon_size?: number; // Main weather icon size (default: 120)
@@ -2508,6 +3408,7 @@ export interface AnimatedForecastModule extends BaseModule {
   // Configuration
   forecast_days?: number; // Number of forecast days (default: 5, range: 3-7)
   temperature_unit?: 'F' | 'C'; // Temperature unit (default: F)
+  allow_wrap?: boolean; // Allow forecast days to wrap to new rows
 
   // Styling - Text Sizes
   forecast_day_size?: number; // Forecast day name size (default: 14)
@@ -2566,6 +3467,306 @@ export interface ExternalCardModule extends BaseModule {
   // Note: No tap_action/hold_action - external cards handle their own actions
 }
 
+export interface NativeCardModule extends BaseModule {
+  type: 'native_card';
+  card_type: string; // e.g., 'hui-entities-card', 'hui-area-card'
+  card_config: Record<string, any>; // The card's configuration with YAML type (e.g., {type: 'entities'})
+  // Note: Native HA cards are unlimited for all users
+}
+
+// Video Background Conditional Rule
+export interface VideoBackgroundRule {
+  id: string;
+  // Condition (when to apply this rule)
+  condition_type: 'entity_state' | 'entity_attribute' | 'template' | 'time';
+  entity?: string;
+  attribute?: string;
+  operator?:
+    | '='
+    | '!='
+    | '>'
+    | '>='
+    | '<'
+    | '<='
+    | 'contains'
+    | 'not_contains'
+    | 'has_value'
+    | 'no_value';
+  value?: string | number;
+  template?: string;
+  time_from?: string;
+  time_to?: string;
+  // Video config (when condition is true)
+  video_source: 'local' | 'url' | 'youtube' | 'vimeo';
+  video_url: string;
+  loop?: boolean;
+  start_time?: number;
+}
+
+// Global Card Transparency Configuration
+export interface GlobalCardTransparency {
+  enabled: boolean;
+  opacity: number; // 0-100
+  blur_px: number; // 0-30
+  color?: string;
+}
+
+// Video Background Module (PRO)
+export interface VideoBackgroundModule extends BaseModule {
+  type: 'video_bg';
+
+  // Core Settings
+  enabled: boolean;
+  editor_only: boolean;
+  controller_id?: string;
+  pause_when_hidden: boolean;
+  respect_reduced_motion: boolean;
+  enable_on_mobile: boolean;
+
+  // Visual Filters
+  opacity: number; // 0-100
+  blur: string; // e.g., '0px', '10px'
+  brightness: string; // e.g., '100%', '150%'
+  scale: number; // 0.5-2.0 for video scaling
+
+  // Default Video Configuration
+  default_source: 'local' | 'url' | 'youtube' | 'vimeo';
+  default_video_url: string;
+  default_loop: boolean;
+  default_muted: boolean; // Always true
+  default_start_time: number;
+
+  // Conditional Rules (evaluated top to bottom)
+  rules?: VideoBackgroundRule[];
+
+  // Global Card Transparency
+  global_card_transparency: GlobalCardTransparency;
+}
+
+// Weather Effect Types
+export type WeatherEffectType =
+  | 'none'
+  | 'rain'
+  | 'rain_storm'
+  | 'rain_drizzle'
+  | 'hail'
+  | 'acid_rain'
+  | 'matrix_rain'
+  | 'lightning'
+  | 'snow_gentle'
+  | 'snow_storm'
+  | 'fog_light'
+  | 'fog_dense'
+  | 'sun_beams'
+  | 'clouds'
+  | 'wind';
+
+// Dynamic Weather Module (PRO)
+export interface DynamicWeatherModule extends BaseModule {
+  type: 'dynamic_weather';
+
+  // Core Settings
+  enabled: boolean;
+  mode: 'automatic' | 'manual'; // automatic uses weather entity, manual uses dropdown
+  weather_entity?: string; // For automatic mode
+  manual_effect?: WeatherEffectType; // For manual mode
+
+  // Display Settings
+  position: 'foreground' | 'background';
+  opacity: number; // 0-100
+
+  // Effect-specific Settings
+  matrix_rain_color?: string; // Custom color for matrix rain effect
+
+  // Mobile Settings
+  enable_on_mobile: boolean;
+  respect_reduced_motion: boolean;
+  enable_snow_accumulation?: boolean;
+
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Background Module - Apply custom backgrounds to dashboard view
+export interface BackgroundModule extends BaseModule {
+  type: 'background';
+
+  // Background source
+  background_type: 'none' | 'upload' | 'entity' | 'url';
+  background_image?: string; // For upload/url types
+  background_image_entity?: string; // For entity type
+
+  // Background display settings
+  background_size?: 'cover' | 'contain' | 'fill' | 'auto';
+  background_position?: string; // e.g., 'center', 'top left', 'bottom right'
+  background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+
+  // Opacity
+  opacity: number; // 0-100
+
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Status Summary Entity Configuration
+export interface StatusSummaryEntity {
+  id: string;
+  entity: string;
+  label?: string; // Override display name
+  icon?: string; // Override icon
+  show_icon?: boolean; // Override global show_icon (undefined = use global)
+  show_state?: boolean; // Override global show_state (undefined = use global)
+  is_auto_generated?: boolean; // Flag to indicate this was auto-generated from filters
+
+  // Color coding rules
+  color_mode: 'state' | 'time' | 'custom' | 'none';
+
+  // State-based colors
+  state_colors?: {
+    [state: string]: string; // e.g., { "on": "yellow", "off": "gray" }
+  };
+
+  // Time-based colors (minutes since last change)
+  time_colors?: {
+    threshold: number; // minutes
+    color: string;
+  }[];
+
+  // Custom template for color
+  custom_color_template?: string;
+}
+
+// Status Summary Module - Display entity activity with timestamps and color coding
+export interface StatusSummaryModule extends BaseModule {
+  type: 'status_summary';
+
+  // Entity Management
+  entities: StatusSummaryEntity[];
+
+  // Auto-filtering
+  enable_auto_filter: boolean;
+  include_filters?: string[]; // Domains or partial names to include (e.g., ['binary_sensor', 'light', 'garage'])
+  exclude_filters?: string[]; // Domains or partial names to exclude (e.g., ['battery', 'update'])
+
+  // Time Filtering
+  max_time_since_change?: number; // In minutes, hide if older
+
+  // Display Options
+  title: string;
+  show_title: boolean;
+  show_last_change_header: boolean;
+  show_time_header: boolean;
+  sort_by: 'name' | 'last_change' | 'custom';
+  sort_direction: 'asc' | 'desc';
+  max_items_to_show?: number; // Maximum number of entities to display (0 = unlimited)
+
+  // Global display settings
+  global_show_icon: boolean; // Global setting for showing entity icons
+  global_show_state: boolean; // Global setting for showing entity states
+
+  // Layout
+  row_height: number;
+  row_gap: number;
+  max_entity_name_length: number; // Max characters for entity name display
+  show_separator_lines: boolean; // Show lines between entity rows
+
+  // Global color mode (applies to all entities unless overridden per-entity)
+  global_color_mode: 'state' | 'time' | 'custom' | 'none';
+
+  // Global state-based colors
+  global_state_colors?: {
+    [state: string]: string;
+  };
+
+  // Global time-based colors
+  global_time_colors?: {
+    threshold: number;
+    color: string;
+  }[];
+
+  // Global custom template
+  global_custom_color_template?: string;
+
+  // Default colors (when entity has no custom rules)
+  default_text_color: string;
+  default_icon_color: string;
+  header_text_color: string;
+  header_background_color: string;
+
+  // Template support for entire module
+  template_mode?: boolean;
+  template?: string;
+  unified_template_mode?: boolean;
+  unified_template?: string;
+
+  // Actions
+  tap_action?: any;
+  hold_action?: any;
+  double_tap_action?: any;
+
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
+// Toggle Point Configuration
+export interface TogglePoint {
+  id: string;
+  label: string;
+  icon?: string;
+  
+  // Action configuration (uses HA's native action system)
+  tap_action?: ModuleActionConfig;
+  
+  // Entity state matching (for auto-selection)
+  match_entity?: string;
+  match_state?: string | string[]; // Can match multiple states
+  
+  // Styling
+  background_color?: string;
+  text_color?: string;
+  active_background_color?: string;
+  active_text_color?: string;
+  border_color?: string;
+  active_border_color?: string;
+}
+
+// Toggle Module - Interactive toggles and multi-state switchers
+export interface ToggleModule extends BaseModule {
+  type: 'toggle';
+  // Toggle points
+  toggle_points: TogglePoint[];
+  // Visual style
+  visual_style: 'ios_toggle' | 'segmented' | 'button_group' | 'slider_track' | 'minimal' | 'timeline';
+  // Tracking
+  tracking_entity?: string; // Entity to watch for state changes
+  // Display
+  title?: string;
+  show_title?: boolean;
+  orientation?: 'horizontal' | 'vertical';
+  alignment?: 'left' | 'center' | 'right' | 'justify';
+  size?: 'compact' | 'normal' | 'large';
+  spacing?: number; // Gap between toggle points
+  // Icon settings
+  show_icons?: boolean;
+  icon_size?: string;
+  icon_position?: 'above' | 'left' | 'right' | 'below';
+  // Default colors
+  default_background_color?: string;
+  default_text_color?: string;
+  default_active_background_color?: string;
+  default_active_text_color?: string;
+  // Actions (for module-level tap, not toggle points)
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  // Logic (visibility) defaults
+  display_mode: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
+}
+
 // Union type for all module types
 export type CardModule =
   | TextModule
@@ -2577,7 +3778,10 @@ export type CardModule =
   | IconModule
   | HorizontalModule
   | VerticalModule
+  | AccordionModule
+  | PopupModule
   | SliderModule
+  | SliderControlModule
   | PageBreakModule
   | ButtonModule
   | SpinboxModule
@@ -2586,10 +3790,23 @@ export type CardModule =
   | GraphsModule
   | DropdownModule
   | LightModule
+  | ClimateModule
+  | MapModule
   | AnimatedClockModule
   | AnimatedWeatherModule
   | AnimatedForecastModule
-  | ExternalCardModule;
+  | ExternalCardModule
+  | NativeCardModule
+  | VideoBackgroundModule
+  | DynamicWeatherModule
+  | BackgroundModule
+  | StatusSummaryModule
+  | ToggleModule
+  | TabsModule
+  | CalendarModule
+  | SportsScoreModule
+  | GridModule
+  | BadgeOfHonorModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -2639,9 +3856,12 @@ export interface SharedDesignProperties {
   font_weight?: string;
   text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   font_style?: 'normal' | 'italic' | 'oblique';
+  white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
   // Background properties
   background_color?: string;
   background_image?: string;
+  background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+  background_image_entity?: string;
   // New: background image rendering controls
   background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
   background_position?:
@@ -2766,6 +3986,10 @@ export interface SharedDesignProperties {
     | 'has_value'
     | 'no_value';
   logic_value?: string;
+  // Custom targeting properties
+  extra_class?: string;
+  element_id?: string;
+  css_variable_prefix?: string;
 }
 
 // Column interface that contains modules
@@ -2774,7 +3998,14 @@ export interface CardColumn {
   name?: string;
   modules: CardModule[];
   vertical_alignment?: 'top' | 'center' | 'bottom' | 'stretch';
-  horizontal_alignment?: 'left' | 'center' | 'right' | 'stretch';
+  horizontal_alignment?:
+    | 'left'
+    | 'center'
+    | 'right'
+    | 'stretch'
+    | 'space-between'
+    | 'space-around'
+    | 'justify';
   background_color?: string;
   padding?: number;
   margin?: number;
@@ -2826,6 +4057,8 @@ export interface CardRow {
   gap?: number;
   column_alignment?: 'top' | 'middle' | 'bottom';
   content_alignment?: 'start' | 'end' | 'center' | 'stretch';
+  full_width?: boolean; // Default true for backwards compatibility
+  width_percent?: number; // Default 100, only used when full_width is false
   background_color?: string;
   padding?: number;
   margin?: number;
@@ -2855,6 +4088,21 @@ export interface FavoriteColor {
 }
 
 // Preset system types
+
+// Entity mapping types for preset import
+export interface EntityReference {
+  entityId: string;
+  locations: string[]; // JSONPath-like strings indicating where entity is used
+  moduleType: string; // Type of module (icon, info, bar, etc.)
+  context?: string; // Additional context (preset name, label, etc.)
+}
+
+export interface EntityMapping {
+  original: string; // Original entity ID from preset
+  mapped: string; // User's mapped entity ID
+  domain: string; // Entity domain (light, sensor, etc.)
+}
+
 export interface PresetDefinition {
   id: string;
   name: string;
@@ -2873,6 +4121,7 @@ export interface PresetDefinition {
     updated: string;
     downloads?: number;
     rating?: number;
+    entityMappings?: EntityMapping[]; // Store original→mapped entity pairs
   };
 }
 
@@ -2967,4 +4216,691 @@ export interface EditorTarget extends EventTarget {
   checked?: boolean;
   configValue?: string;
   configAttribute?: string;
+}
+
+// Climate Module
+export interface ClimateModule extends BaseModule {
+  type: 'climate';
+  entity: string;
+  name?: string;
+
+  // Display toggles
+  show_current_temp?: boolean;
+  show_target_temp?: boolean;
+  show_humidity?: boolean;
+  show_mode_switcher?: boolean;
+  show_power_button?: boolean;
+  show_fan_controls?: boolean;
+  show_preset_modes?: boolean;
+  show_equipment_status?: boolean;
+  show_temp_controls?: boolean;
+  show_dial?: boolean;
+  enable_dial_interaction?: boolean;
+
+  // Layout / info placement
+  info_position?: 'top' | 'bottom';
+
+  // Dial configuration
+  dial_size?: number;
+  dial_color_heating?: string;
+  dial_color_cooling?: string;
+  dial_color_idle?: string;
+  dial_color_off?: string;
+
+  // Dynamic colors (auto-set based on HVAC action)
+  dynamic_colors?: boolean; // Enable automatic color changes based on heating/cooling
+
+  // Temperature adjustment
+  temp_step_override?: number;
+  temperature_unit?: 'auto' | 'fahrenheit' | 'celsius';
+  temp_control_size?: number; // Size of +/- buttons in pixels (24-60)
+
+  // Control layout
+  fan_layout?: 'chips' | 'dropdown';
+  preset_layout?: 'chips' | 'dropdown';
+
+  // Visual customization
+  humidity_icon?: string;
+  current_temp_color?: string;
+  target_temp_color?: string;
+  mode_text_color?: string;
+  humidity_color?: string;
+
+  // Global action configuration
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+
+  // Hover configuration (reuse standard flag)
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// ========================================
+// CALENDAR MODULE TYPES (Pro Feature)
+// ========================================
+
+// Calendar view types
+export type CalendarViewType =
+  | 'compact_list'
+  | 'month'
+  | 'week'
+  | 'day'
+  | 'table'
+  | 'grid';
+
+// First day of week options
+export type FirstDayOfWeek = 'sunday' | 'monday' | 'saturday';
+
+// Week number format
+export type WeekNumberFormat = 'none' | 'iso' | 'us';
+
+// Calendar entity configuration
+export interface CalendarEntityConfig {
+  id: string;
+  entity: string;
+  name?: string;
+  color?: string;
+  visible?: boolean;
+}
+
+// Calendar event from Home Assistant
+export interface CalendarEventData {
+  uid?: string;
+  summary: string;
+  start: string | { dateTime?: string; date?: string };
+  end: string | { dateTime?: string; date?: string };
+  description?: string;
+  location?: string;
+  recurrence_id?: string;
+  rrule?: string;
+}
+
+// Processed calendar event with additional metadata
+export interface ProcessedCalendarEvent {
+  id: string;
+  calendarId: string;
+  calendarColor: string;
+  calendarName: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  start: Date;
+  end: Date;
+  isAllDay: boolean;
+  isMultiDay: boolean;
+  raw: CalendarEventData;
+}
+
+// Calendar module interface
+export interface CalendarModule extends BaseModule {
+  type: 'calendar';
+
+  // Calendar entities
+  calendars: CalendarEntityConfig[];
+
+  // View configuration
+  view_type: CalendarViewType;
+  days_to_show: number;
+  start_date?: string;
+
+  // Title configuration
+  title?: string;
+  show_title?: boolean;
+  title_font_size?: string;
+  title_color?: string;
+  show_title_separator?: boolean;
+  title_separator_color?: string;
+  title_separator_width?: string;
+
+  // View-specific options
+  // Compact list view
+  compact_events_to_show?: number;
+  compact_show_all_day_events?: boolean;
+  compact_hide_empty_days?: boolean;
+  // Auto-fit to height options
+  compact_auto_fit_height?: boolean;  // Enable height-based fitting instead of count
+  compact_height?: string;            // Container height (e.g., "300px", "50vh")
+  compact_overflow?: 'scroll' | 'hidden';  // Overflow behavior
+
+  // Month view
+  show_week_numbers?: WeekNumberFormat;
+  first_day_of_week?: FirstDayOfWeek;
+  month_show_event_count?: boolean;
+
+  // Week view
+  week_start_hour?: number;
+  week_end_hour?: number;
+  week_time_interval?: number;
+
+  // Day view
+  day_start_hour?: number;
+  day_end_hour?: number;
+  day_time_interval?: number;
+
+  // Table view
+  table_show_date_column?: boolean;
+  table_show_time_column?: boolean;
+  table_show_calendar_column?: boolean;
+  table_show_location_column?: boolean;
+  table_show_duration_column?: boolean;
+
+  // Grid view
+  grid_columns?: number;
+  grid_card_height?: string;
+
+  // Event display options
+  show_event_time?: boolean;
+  show_end_time?: boolean;
+  show_event_location?: boolean;
+  show_event_description?: boolean;
+  show_event_icon?: boolean;
+  time_24h?: boolean;
+  remove_location_country?: boolean;
+  max_event_title_length?: number;
+  show_past_events?: boolean;
+
+  // Date column styling
+  date_vertical_alignment?: 'top' | 'middle' | 'bottom';
+  weekday_font_size?: string;
+  weekday_color?: string;
+  day_font_size?: string;
+  day_color?: string;
+  show_month?: boolean;
+  month_font_size?: string;
+  month_color?: string;
+
+  // Event styling
+  event_font_size?: string;
+  event_color?: string;
+  time_font_size?: string;
+  time_color?: string;
+  time_icon_size?: string;
+  location_font_size?: string;
+  location_color?: string;
+  location_icon_size?: string;
+  description_font_size?: string;
+  description_color?: string;
+
+  // Background and accent styling
+  event_background_opacity?: number;
+  vertical_line_width?: string;
+  accent_color?: string;
+
+  // Layout and spacing
+  row_spacing?: string;
+  event_spacing?: string;
+  additional_card_spacing?: string;
+
+  // Separators
+  show_day_separator?: boolean;
+  day_separator_width?: string;
+  day_separator_color?: string;
+  show_week_separator?: boolean;
+  week_separator_width?: string;
+  week_separator_color?: string;
+  month_separator_width?: string;
+  month_separator_color?: string;
+
+  // Expand/collapse functionality
+  tap_action_expand?: boolean;
+
+  // Refresh interval (in minutes)
+  refresh_interval?: number;
+
+  // Event filtering
+  filter_keywords?: string[];
+  filter_mode?: 'include' | 'exclude';
+
+  // Language override
+  language?: string;
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  event_tap_action?: ModuleActionConfig;
+
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// ============================================
+// SPORTS SCORE MODULE TYPES
+// ============================================
+
+// Supported sports leagues
+export type SportsLeague =
+  | 'nfl'
+  | 'nba'
+  | 'mlb'
+  | 'nhl'
+  | 'mls'
+  | 'premier_league'
+  | 'ncaaf'
+  | 'ncaab'
+  | 'la_liga'
+  | 'bundesliga'
+  | 'serie_a'
+  | 'ligue_1';
+
+// Display style options
+export type SportsDisplayStyle =
+  | 'scorecard'
+  | 'upcoming'
+  | 'compact'
+  | 'detailed'
+  | 'mini'
+  | 'logo_bg';
+
+// Game status types
+export type SportsGameStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'halftime'
+  | 'final'
+  | 'delayed'
+  | 'postponed'
+  | 'cancelled';
+
+// Normalized game data interface (used by both HA sensor and ESPN API)
+export interface SportsGameData {
+  // Game identification
+  gameId: string;
+  league: SportsLeague;
+  
+  // Team information
+  homeTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo: string;
+    score: number | null;
+    record?: string; // e.g., "10-5"
+    color?: string; // Primary team color
+  };
+  awayTeam: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    logo: string;
+    score: number | null;
+    record?: string;
+    color?: string;
+  };
+  
+  // Game status
+  status: SportsGameStatus;
+  statusDetail?: string; // e.g., "4th Quarter", "Top 7th"
+  clock?: string; // e.g., "5:32", "3rd Period"
+  period?: number | string;
+  
+  // Schedule information
+  gameTime: Date | null;
+  venue?: string;
+  broadcast?: string; // e.g., "ESPN", "FOX"
+  
+  // Odds (if available)
+  odds?: {
+    spread?: string;
+    overUnder?: string;
+  };
+  
+  // Metadata
+  lastUpdated: Date;
+}
+
+// Team data for team picker
+export interface SportsTeamInfo {
+  id: string;
+  name: string;
+  abbreviation: string;
+  logo: string;
+  league: SportsLeague;
+  color?: string;
+}
+
+// Sports score module configuration
+export interface SportsScoreModule extends BaseModule {
+  type: 'sports_score';
+  
+  // Data source configuration
+  data_source: 'ha_sensor' | 'espn_api';
+  sensor_entity?: string; // For HA sensor mode
+  league?: SportsLeague; // For ESPN API mode
+  team_id?: string; // ESPN team ID for API mode
+  team_name?: string; // Display name for reference
+  
+  // Display configuration
+  display_style: SportsDisplayStyle;
+  refresh_interval: number; // Minutes (1-60)
+  
+  // Element visibility
+  show_team_logos: boolean;
+  show_team_names: boolean;
+  show_team_records: boolean;
+  show_game_time: boolean;
+  show_venue: boolean;
+  show_broadcast: boolean;
+  show_score: boolean;
+  show_odds: boolean;
+  show_status_detail: boolean;
+  
+  // Styling options
+  home_team_color?: string;
+  away_team_color?: string;
+  use_team_colors?: boolean; // Auto-detect from logos
+  win_color?: string;
+  loss_color?: string;
+  in_progress_color?: string;
+  scheduled_color?: string;
+  
+  // Font sizes
+  team_name_font_size?: string;
+  score_font_size?: string;
+  detail_font_size?: string;
+  
+  // Layout options
+  logo_size?: string; // e.g., "48px"
+  compact_mode?: boolean;
+  
+  // Logo BG style options
+  show_logo_background?: boolean; // Show/hide watermark logos in Logo BG style
+  logo_background_size?: string; // Size of background logo watermarks (e.g., "80px")
+  logo_background_opacity?: number; // Opacity of background logos (0-100)
+  
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+  
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+}
+
+// ============================================
+// BADGE OF HONOR MODULE TYPES (Pro Feature)
+// ============================================
+
+/**
+ * Badge of Honor Module - Pro Feature
+ *
+ * A beautiful animated badge that celebrates Ultra Card Pro membership.
+ * Features rotating circular text, smooth gradient color transitions,
+ * and customizable inner content (icon, text, or image).
+ */
+export interface BadgeOfHonorModule extends BaseModule {
+  type: 'badge_of_honor';
+
+  // Badge text is fixed to "Ultra Card Pro • " - not configurable
+  badge_text?: string; // Reserved for future use
+  badge_text_repeat?: number; // Reserved for future use
+
+  // Visual settings
+  badge_size?: number; // Overall badge size in pixels (60-300)
+  inner_badge_ratio?: number; // Size of inner circle relative to outer (0.4-0.8)
+
+  // Gradient colors for the ring
+  gradient_color_1?: string; // Default: #4ecdc4 (Teal)
+  gradient_color_2?: string; // Default: #44a8b3 (Blue-teal)
+  gradient_color_3?: string; // Default: #7c5ce0 (Purple)
+  gradient_color_4?: string; // Default: #6366f1 (Indigo)
+
+  // Animation settings
+  rotation_speed?: number; // Seconds for full rotation (3-30)
+  rotation_direction?: 'clockwise' | 'counter-clockwise';
+  enable_color_shift?: boolean; // Animate gradient colors shifting
+  color_shift_speed?: number; // Seconds for color cycle (2-20)
+  enable_glow?: boolean; // Add soft glow around badge
+  glow_intensity?: number; // Glow strength (0.1-1)
+  enable_pulse?: boolean; // Add subtle pulsing animation
+  pulse_speed?: number; // Pulse duration in seconds (0.5-5)
+
+  // Inner content configuration
+  inner_content_type?: 'icon' | 'text' | 'image';
+  inner_icon?: string; // MDI icon (default: mdi:crown)
+  inner_text?: string; // Short text (e.g., "PRO")
+  inner_image_url?: string; // URL to image
+
+  // Inner styling
+  inner_background_type?: 'solid' | 'gradient' | 'transparent';
+  inner_background_color?: string; // For solid type
+  inner_text_color?: string;
+  inner_icon_color?: string;
+
+  // Text styling (fixed - not user configurable)
+  text_font_size?: number; // Reserved
+  text_font_weight?: number; // Reserved
+  text_letter_spacing?: number; // Reserved
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_scale?: number; // Scale on hover (1.0-1.2)
+  hover_background_color?: string;
+}
+
+// Grid Module Types
+// =================
+
+// Grid style preset identifiers
+export type GridStylePreset =
+  | 'style_1' // Modern: Name above icon above state
+  | 'style_2' // Modern: Icon above state (minimalist)
+  | 'style_3' // Modern: Icon left, name + state right
+  | 'style_4' // Modern: Large icon with floating state badge
+  | 'style_5' // Modern: Icon + name horizontal, state below
+  | 'style_6' // Minimal: Icon only (hover shows name)
+  | 'style_7' // Minimal: Icon + state (compact)
+  | 'style_8' // Minimal: Text-only (name + state)
+  | 'style_9' // Minimal: Circular icon with ring progress
+  | 'style_10' // Minimal: Square tile with corner state
+  | 'style_11' // Classic: Card-like with shadow
+  | 'style_12' // Classic: Button-style with border
+  | 'style_13' // Classic: List-style horizontal
+  | 'style_14' // Classic: Badge-style rounded
+  | 'style_15' // Classic: Panel with header bar
+  | 'style_16' // Advanced: Glass morphism
+  | 'style_17' // Advanced: Gradient background
+  | 'style_18' // Advanced: Split-color design
+  | 'style_19' // Advanced: Neumorphic
+  | 'style_20'; // Advanced: Flat with accent border
+
+// Grid display modes
+export type GridDisplayMode = 'grid' | 'masonry' | 'metro';
+
+// Grid sort options
+export type GridSortBy = 'name' | 'last_updated' | 'state' | 'custom' | 'domain';
+
+// Grid pagination style
+export type GridPaginationStyle = 'numbers' | 'buttons' | 'both';
+
+// Grid load animations
+export type GridLoadAnimation = 'fadeIn' | 'slideUp' | 'zoomIn' | 'slideDown' | 'slideLeft' | 'slideRight' | 'none';
+
+// Metro size options
+export type MetroSize = 'small' | 'medium' | 'large';
+
+// Individual entity in the grid
+export interface GridEntity {
+  id: string;
+  entity: string;
+
+  // Optional display overrides
+  custom_name?: string;
+  custom_icon?: string;
+  custom_color?: string;
+  custom_background?: string;
+
+  // Per-item action overrides
+  override_actions?: boolean;
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Metro mode: custom tile size
+  metro_size?: MetroSize;
+
+  // State-based color overrides
+  state_colors?: Record<string, string>;
+
+  // Hidden flag for filtering
+  hidden?: boolean;
+}
+
+// Grid Module configuration
+export interface GridModule extends BaseModule {
+  type: 'grid';
+
+  // Entity Management
+  entities: GridEntity[];
+  enable_auto_filter?: boolean;
+  include_domains?: string[];
+  exclude_domains?: string[];
+  exclude_entities?: string[];
+  // Keyword filtering - matches against entity_id
+  include_keywords?: string[];
+  exclude_keywords?: string[];
+
+  // Layout Configuration
+  grid_style: GridStylePreset;
+  grid_display_mode: GridDisplayMode;
+  columns: number; // 1-12, default 4
+  rows?: number; // auto (0 or undefined) or fixed number
+  gap: number; // pixels between items, default 8
+
+  // Sorting & Filtering
+  sort_by: GridSortBy;
+  sort_direction: 'asc' | 'desc';
+  max_items: number; // 0 = show all
+
+  // Pagination
+  enable_pagination: boolean;
+  items_per_page: number;
+  pagination_style: GridPaginationStyle;
+
+  // Animation
+  enable_load_animation: boolean;
+  load_animation: GridLoadAnimation;
+  grid_animation_duration: number; // duration of each animation in ms
+  animation_stagger: number; // delay between items in ms
+
+  // Global Styling (applies to all items unless overridden)
+  global_icon_size: number; // pixels
+  global_font_size: number; // pixels
+  global_name_color?: string;
+  global_state_color?: string;
+  global_icon_color?: string;
+  global_background_color?: string;
+  global_border_radius: string; // e.g., "8px" or "50%"
+  global_padding: string; // e.g., "12px"
+  global_border_width?: number;
+  global_border_color?: string;
+
+  // State-based styling
+  global_on_color?: string;
+  global_off_color?: string;
+  global_unavailable_color?: string;
+
+  // Style-specific colors
+  // Glass style (style_16)
+  glass_tint_color?: string;
+  glass_blur_amount?: number;
+  glass_border_color?: string;
+
+  // Gradient style (style_17)
+  gradient_start_color?: string;
+  gradient_end_color?: string;
+  gradient_direction?: 'to-bottom' | 'to-right' | 'to-bottom-right' | 'to-bottom-left';
+
+  // Panel style (style_15)
+  panel_header_color?: string;
+  panel_header_text_color?: string;
+
+  // Split style (style_18)
+  split_left_color?: string;
+  split_right_color?: string;
+
+  // Neumorphic style (style_19)
+  neumorphic_light_shadow?: string;
+  neumorphic_dark_shadow?: string;
+
+  // Accent Border style (style_20)
+  accent_border_color?: string;
+
+  // Card style (style_11)
+  card_shadow_color?: string;
+
+  // Global Actions (can be overridden per-item)
+  tap_action: ModuleActionConfig;
+  hold_action: ModuleActionConfig;
+  double_tap_action: ModuleActionConfig;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_effect?: 'none' | 'scale' | 'glow' | 'lift' | 'color';
+  hover_scale?: number; // e.g., 1.05
+  hover_background_color?: string;
+  hover_glow_color?: string;
+
+  // Template support
+  template_mode?: boolean;
+  template?: string;
+  unified_template_mode?: boolean;
+  unified_template?: string;
 }

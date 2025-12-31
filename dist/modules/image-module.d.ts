@@ -7,7 +7,7 @@ export declare class UltraImageModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     createDefault(id?: string): ImageModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     private handleFileUpload;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderDesignTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;

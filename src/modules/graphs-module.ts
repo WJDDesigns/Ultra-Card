@@ -3,11 +3,14 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, GraphsModule, GraphEntityConfig, UltraCardConfig } from '../types';
 import { TemplateService } from '../services/template-service';
+import { buildEntityContext, buildMultiEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { UltraLinkComponent, UltraLinkConfig } from '../components/ultra-link';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { FormUtils } from '../utils/form-utils';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import '../entity-picker';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
@@ -36,6 +39,9 @@ export class UltraGraphsModule extends BaseUltraModule {
   private _historyError: { [moduleId: string]: string | null } = {};
   private _historyLoading: { [moduleId: string]: boolean } = {};
   private _deferredHistoryScheduled: { [moduleId: string]: boolean } = {};
+
+  // Template result cache - per module instance
+  private _templateResults: { [moduleId: string]: any } = {};
 
   // Ultra-light cache (localStorage) for instantly restoring the last real
   // historical curve on reload (similar to mini-graph behavior)
@@ -179,6 +185,14 @@ export class UltraGraphsModule extends BaseUltraModule {
       // New: pie/donut slice labels
       show_slice_labels: true,
 
+      // Bar chart display limit
+      bar_display_limit: 0, // 0 = unlimited
+
+      // Fixed Y-axis scale
+      use_fixed_y_axis: false,
+      y_axis_min: undefined,
+      y_axis_max: undefined,
+
       // Global link configuration (store undefined to show Default)
       tap_action: undefined,
       hold_action: undefined,
@@ -191,7 +205,6 @@ export class UltraGraphsModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     } as any;
   }
 
@@ -259,11 +272,48 @@ export class UltraGraphsModule extends BaseUltraModule {
     return html`
       <div class="uc-graphs-general-tab">
         ${FormUtils.injectCleanFormStyles()}
+        <style>
+          .uc-graphs-general-tab {
+            padding: 8px;
+          }
+          .settings-section {
+            background: var(--secondary-background-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(var(--rgb-primary-color), 0.12);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+          .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .field-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-text-color);
+            margin-bottom: 4px;
+          }
+          .field-description {
+            font-size: 13px;
+            color: var(--secondary-text-color);
+            margin-bottom: 12px;
+            opacity: 0.8;
+            line-height: 1.4;
+          }
+        </style>
 
         <!-- Data Source Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -368,7 +418,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Chart Type Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -404,7 +454,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Data Sources Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -1024,7 +1074,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         <!-- Display Options Section -->
         <div
           class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
+          style="background: var(--secondary-background-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.12); width: 100%; max-width: 100%; box-sizing: border-box; overflow: visible;"
         >
           <div
             class="section-title"
@@ -1034,7 +1084,9 @@ export class UltraGraphsModule extends BaseUltraModule {
             ${localize('editor.graphs.display.title', lang, 'Display Options')}
           </div>
 
-          <div style="display: grid; gap: 16px;">
+          <div
+            style="display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%; overflow: visible;"
+          >
             <!-- Show Graph Title Toggle -->
             <label
               style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px; border-radius:6px;"
@@ -1189,6 +1241,209 @@ export class UltraGraphsModule extends BaseUltraModule {
                 `
               : ''}
 
+            <!-- Fixed Y-Axis Scale -->
+            ${['line', 'bar'].includes(graphsModule.chart_type)
+              ? html`
+                  <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                      <ha-switch
+                        .checked=${(graphsModule as any).use_fixed_y_axis || false}
+                        @change=${(e: Event) => {
+                          const checked = (e.target as any).checked;
+                          updateModule({ use_fixed_y_axis: checked } as any);
+                          // Clear cached data to force re-render with new scale
+                          delete this._historyData[graphsModule.id];
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }}
+                      ></ha-switch>
+                      <span style="font-size: 14px;"
+                        >${localize(
+                          'editor.graphs.display.use_fixed_y_axis',
+                          lang,
+                          'Use Fixed Y-Axis Scale'
+                        )}</span
+                      >
+                    </label>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; margin-left: 40px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.use_fixed_y_axis_desc',
+                        lang,
+                        'Set fixed min/max values instead of auto-scaling. Useful for consistent scales across multiple graphs or time periods.'
+                      )}
+                    </div>
+                  </div>
+                `
+              : ''}
+            ${(graphsModule as any).use_fixed_y_axis &&
+            ['line', 'bar'].includes(graphsModule.chart_type)
+              ? html`
+                  <div
+                    class="conditional-fields-group"
+                    style="padding: 16px; margin-top: 12px; margin-bottom: 16px;"
+                  >
+                    <!-- Min Value -->
+                    <div style="margin-bottom: 16px;">
+                      <label
+                        style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                      >
+                        ${localize('editor.graphs.display.y_axis_min', lang, 'Minimum Value')}
+                      </label>
+                      <div
+                        style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;"
+                      >
+                        <input
+                          type="number"
+                          step="any"
+                          .value=${String((graphsModule as any).y_axis_min ?? 0)}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const val = target.value === '' ? undefined : parseFloat(target.value);
+                            updateModule({ y_axis_min: val } as any);
+                            // Clear cached data to force re-render
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          placeholder="0"
+                          style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 6px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            font-size: 14px;
+                            transition: border-color 0.2s ease;
+                            box-sizing: border-box;
+                          "
+                        />
+                        <button
+                          @click=${() => {
+                            updateModule({ y_axis_min: 0 } as any);
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          title="${localize(
+                            'editor.fields.reset_default_value',
+                            lang,
+                            'Reset to default ({value})'
+                          ).replace('{value}', '0')}"
+                          style="
+                            width: 32px;
+                            height: 32px;
+                            padding: 0;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 4px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.2s ease;
+                            flex-shrink: 0;
+                          "
+                          @mouseenter=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--primary-color)';
+                            btn.style.color = 'var(--text-primary-color)';
+                            btn.style.borderColor = 'var(--primary-color)';
+                          }}
+                          @mouseleave=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--secondary-background-color)';
+                            btn.style.color = 'var(--primary-text-color)';
+                            btn.style.borderColor = 'var(--divider-color)';
+                          }}
+                        >
+                          <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Max Value -->
+                    <div>
+                      <label
+                        style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                      >
+                        ${localize('editor.graphs.display.y_axis_max', lang, 'Maximum Value')}
+                      </label>
+                      <div
+                        style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;"
+                      >
+                        <input
+                          type="number"
+                          step="any"
+                          .value=${String((graphsModule as any).y_axis_max ?? 100)}
+                          @input=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const val = target.value === '' ? undefined : parseFloat(target.value);
+                            updateModule({ y_axis_max: val } as any);
+                            // Clear cached data to force re-render
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          placeholder="100"
+                          style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 6px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            font-size: 14px;
+                            transition: border-color 0.2s ease;
+                            box-sizing: border-box;
+                          "
+                        />
+                        <button
+                          @click=${() => {
+                            updateModule({ y_axis_max: 100 } as any);
+                            delete this._historyData[graphsModule.id];
+                            setTimeout(() => this.triggerPreviewUpdate(), 50);
+                          }}
+                          title="${localize(
+                            'editor.fields.reset_default_value',
+                            lang,
+                            'Reset to default ({value})'
+                          ).replace('{value}', '100')}"
+                          style="
+                            width: 32px;
+                            height: 32px;
+                            padding: 0;
+                            border: 1px solid var(--divider-color);
+                            border-radius: 4px;
+                            background: var(--secondary-background-color);
+                            color: var(--primary-text-color);
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.2s ease;
+                            flex-shrink: 0;
+                          "
+                          @mouseenter=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--primary-color)';
+                            btn.style.color = 'var(--text-primary-color)';
+                            btn.style.borderColor = 'var(--primary-color)';
+                          }}
+                          @mouseleave=${(e: Event) => {
+                            const btn = e.target as HTMLButtonElement;
+                            btn.style.background = 'var(--secondary-background-color)';
+                            btn.style.color = 'var(--primary-text-color)';
+                            btn.style.borderColor = 'var(--divider-color)';
+                          }}
+                        >
+                          <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `
+              : ''}
+
             <!-- Chart Height -->
             <div>
               <label
@@ -1197,7 +1452,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 ${localize('editor.graphs.display.chart_height', lang, 'Chart Height')}
               </label>
               <div
-                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
+                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
               >
                 <input
                   type="range"
@@ -1271,7 +1526,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                 ${localize('editor.graphs.display.chart_width', lang, 'Chart Width (%)')}
               </label>
               <div
-                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
+                style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; box-sizing: border-box; width: 100%;"
               >
                 <input
                   type="range"
@@ -1471,7 +1726,7 @@ export class UltraGraphsModule extends BaseUltraModule {
             )}
 
             <!-- Background Color -->
-            <div>
+            <div style="position: relative; overflow: visible; z-index: 9999;">
               <label
                 style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
               >
@@ -1485,6 +1740,99 @@ export class UltraGraphsModule extends BaseUltraModule {
                 style="width: 100%; height: 40px;"
               ></ultra-color-picker>
             </div>
+
+            <!-- Bar Display Limit (Only for Bar Charts) -->
+            ${graphsModule.chart_type === 'bar'
+              ? html`
+                  <div>
+                    <label
+                      style="display: block; font-size: 14px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 6px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.bar_display_limit',
+                        lang,
+                        'Max Bars to Display'
+                      )}
+                    </label>
+                    <div
+                      style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;"
+                    >
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        .value=${graphsModule.bar_display_limit ?? 0}
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const val = Math.max(0, Math.min(100, parseInt(target.value)));
+                          updateModule({ bar_display_limit: val });
+                        }}
+                        style="
+                          width: 100%;
+                          height: 4px;
+                          background: var(--divider-color);
+                          border-radius: 2px;
+                          outline: none;
+                          -webkit-appearance: none;
+                        "
+                      />
+                      <span
+                        style="font-size: 13px; color: var(--secondary-text-color); min-width: 80px; text-align: right;"
+                        >${(graphsModule.bar_display_limit ?? 0) === 0
+                          ? 'Unlimited'
+                          : `${graphsModule.bar_display_limit ?? 0} bars`}</span
+                      >
+                      <button
+                        @click=${() => updateModule({ bar_display_limit: 0 })}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default (Unlimited)'
+                        )}"
+                        style="
+                          width: 32px;
+                          height: 32px;
+                          padding: 0;
+                          border: 1px solid var(--divider-color);
+                          border-radius: 4px;
+                          background: var(--secondary-background-color);
+                          color: var(--primary-text-color);
+                          cursor: pointer;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          transition: all 0.2s ease;
+                          flex-shrink: 0;
+                        "
+                        @mouseenter=${(e: Event) => {
+                          const btn = e.target as HTMLButtonElement;
+                          btn.style.background = 'var(--primary-color)';
+                          btn.style.color = 'var(--text-primary-color)';
+                          btn.style.borderColor = 'var(--primary-color)';
+                        }}
+                        @mouseleave=${(e: Event) => {
+                          const btn = e.target as HTMLButtonElement;
+                          btn.style.background = 'var(--secondary-background-color)';
+                          btn.style.color = 'var(--primary-text-color)';
+                          btn.style.borderColor = 'var(--divider-color)';
+                        }}
+                      >
+                        <ha-icon icon="mdi:refresh" style="font-size: 18px;"></ha-icon>
+                      </button>
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-top: 4px;"
+                    >
+                      ${localize(
+                        'editor.graphs.display.bar_display_limit_desc',
+                        lang,
+                        'Set to 0 or higher value to limit the number of bars shown. Useful when time period contains many data points. Set to 0 for unlimited.'
+                      )}
+                    </div>
+                  </div>
+                `
+              : ''}
 
             <!-- Chart Options -->
             <label
@@ -1636,18 +1984,101 @@ export class UltraGraphsModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const graphsModule = module as GraphsModule;
     const moduleWithDesign = graphsModule as any;
     const designProperties = (graphsModule as any).design || {};
 
-    // Apply template if enabled
+    // Template mode (if enabled)
+    let templateColors: string[] | undefined;
+    let templateGlobalColor: string | undefined;
+    let templateFillArea: boolean | undefined;
+    let templatePieFill: number | undefined;
+
     if (graphsModule.template_mode && graphsModule.template) {
-      if (!this._templateService) {
+      if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       }
-      // Template evaluation would be async, handle in chart rendering
+
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(graphsModule.template);
+        const templateKey = `graphs_${graphsModule.id}_${templateHash}`;
+
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          // Build context with primary entity or multi-entity context
+          const primaryEntity =
+            graphsModule.entities?.find(e => e.is_primary && e.entity)?.entity ||
+            graphsModule.entities?.find(e => e.entity)?.entity ||
+            '';
+          const entityIds = (graphsModule.entities || [])
+            .filter(e => (graphsModule.data_source === 'forecast' ? e.forecast_attribute : e.entity))
+            .map(e => (graphsModule.data_source === 'forecast' ? graphsModule.forecast_entity : e.entity) || '')
+            .filter(id => id);
+
+          const context = entityIds.length > 1
+            ? buildMultiEntityContext(entityIds, hass, graphsModule.entities)
+            : buildEntityContext(primaryEntity, hass, {
+              entities: graphsModule.entities,
+              chart_type: graphsModule.chart_type,
+            });
+
+          this._templateService.subscribeToTemplate(
+            graphsModule.template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent('ultra-card-template-update', {
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const templateResult = hass.__uvc_template_strings?.[templateKey];
+        if (templateResult && String(templateResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(templateResult);
+          if (!hasTemplateError(parsed)) {
+            // Store parsed results for use in rendering
+            this._templateResults[graphsModule.id] = parsed;
+
+            // Extract colors
+            if (parsed.colors && Array.isArray(parsed.colors)) {
+              templateColors = parsed.colors;
+            }
+            if (parsed.global_color) {
+              templateGlobalColor = parsed.global_color;
+            }
+
+            // Extract fill controls
+            if (parsed.fill_area !== undefined) {
+              templateFillArea = parsed.fill_area;
+            }
+            if (parsed.pie_fill !== undefined) {
+              templatePieFill =
+                typeof parsed.pie_fill === 'number'
+                  ? parsed.pie_fill
+                  : parseFloat(String(parsed.pie_fill));
+            }
+          }
+        }
+      }
     }
 
     // Trigger history data loading
@@ -1710,6 +2141,20 @@ export class UltraGraphsModule extends BaseUltraModule {
     };
 
     // Container styles for positioning and effects - design has priority
+    const bgColor =
+      designProperties.background_color || moduleWithDesign.background_color || 'transparent';
+    const bgImage = this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass);
+    const bgStyles = computeBackgroundStyles({
+      color: bgColor,
+      image: bgImage !== 'none' ? bgImage : undefined,
+      imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      imagePosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      imageRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      fallback: 'transparent',
+    });
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -1722,7 +2167,6 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -1734,22 +2178,7 @@ export class UltraGraphsModule extends BaseUltraModule {
         moduleWithDesign.margin_right
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
-      background:
-        designProperties.background_color && designProperties.background_color !== 'transparent'
-          ? designProperties.background_color
-          : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
-            ? moduleWithDesign.background_color
-            : 'transparent',
-      backgroundImage: this.getBackgroundImageCSS(
-        { ...moduleWithDesign, ...designProperties },
-        hass
-      ),
-      backgroundSize:
-        designProperties.background_size || moduleWithDesign.background_size || 'cover',
-      backgroundPosition:
-        designProperties.background_position || moduleWithDesign.background_position || 'center',
-      backgroundRepeat:
-        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      ...bgStyles.styles,
       backdropFilter: designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || '',
       border: designProperties.border_style
         ? `${designProperties.border_width || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
@@ -1793,36 +2222,21 @@ export class UltraGraphsModule extends BaseUltraModule {
         ? graphsModule.entities.some(e => e.forecast_attribute)
         : graphsModule.entities.some(e => e.entity));
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!graphsModule.chart_type) {
+      return this.renderGradientErrorState(
+        'Select Chart Type',
+        'Choose a chart type in the General tab',
+        'mdi:chart-line'
+      );
+    }
+
     if (!hasEntities) {
-      const resolvedBgColor = resolvedBackgroundColor;
-      return html`
-        <div class="uc-graphs-module" style="${this.styleObjectToCss(containerStyles)}">
-          <div
-            class="chart-placeholder"
-            style="
-              height: ${Math.min(
-              200,
-              typeof graphsModule.chart_height === 'number'
-                ? graphsModule.chart_height
-                : parseInt(String(graphsModule.chart_height)) || 160
-            )}px;
-              background: ${this._formatColor(resolvedBgColor) || 'rgba(0, 0, 0, 0.2)'};
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            ${composeTextStyle({ color: resolvedTextColor })};
-            font-size: 14px;
-          "
-          >
-            <div style="text-align: center;">
-              <ha-icon icon="mdi:chart-line" style="font-size: 48px; opacity: 0.5;"></ha-icon>
-              <div style="margin-top: 8px;">No entities configured</div>
-              <div style="font-size: 12px; opacity: 0.7;">Add entities to display chart</div>
-            </div>
-          </div>
-        </div>
-      `;
+      const subtitle =
+        graphsModule.data_source === 'forecast'
+          ? 'Configure forecast attributes in the General tab'
+          : 'Add entities to display chart';
+      return this.renderGradientErrorState('Configure Entities', subtitle, 'mdi:chart-line');
     }
 
     // Primary entity for header details
@@ -1848,18 +2262,37 @@ export class UltraGraphsModule extends BaseUltraModule {
       typeof primaryValueRaw === 'number' ? primaryValueRaw : parseFloat(primaryValueRaw);
 
     // Generate simple preview chart (or use forecast data for legend)
-    let chartData = this._prepareSimpleChartData(graphsModule, hass);
+    // Pass template colors to chart data preparation
+    let chartData = this._prepareSimpleChartData(
+      graphsModule,
+      hass,
+      templateColors,
+      templateGlobalColor,
+      templateFillArea
+    );
 
     // In forecast mode, prepare chart data from stored forecast data for legend
     if (graphsModule.data_source === 'forecast' && this._historyData[graphsModule.id]) {
       const forecastData = this._historyData[graphsModule.id];
-      chartData = forecastData.datasets.map((dataset: any) => ({
-        name: dataset.name,
-        value: dataset.values[dataset.values.length - 1] || 0, // Use last value
-        color: dataset.color,
-        unit: dataset.unit,
-        entityId: dataset.entityId,
-      }));
+      chartData = forecastData.datasets.map((dataset: any, index: number) => {
+        // Apply template colors: per-entity > global > dataset color
+        let datasetColor: string;
+        if (templateColors && templateColors[index]) {
+          datasetColor = this._formatColor(templateColors[index]);
+        } else if (templateGlobalColor) {
+          datasetColor = this._formatColor(templateGlobalColor);
+        } else {
+          datasetColor = dataset.color;
+        }
+        
+        return {
+          name: dataset.name,
+          value: dataset.values[dataset.values.length - 1] || 0, // Use last value
+          color: datasetColor,
+          unit: dataset.unit,
+          entityId: dataset.entityId,
+        };
+      });
     }
 
     const headerPos = graphsModule.info_position || 'top_left';
@@ -2040,7 +2473,11 @@ export class UltraGraphsModule extends BaseUltraModule {
                     );
                   return parts.join('; ');
                 })(),
-                align
+                align,
+                templateColors,
+                templateGlobalColor,
+                templateFillArea,
+                templatePieFill
               )}
             </div>
           </div>
@@ -2119,7 +2556,13 @@ export class UltraGraphsModule extends BaseUltraModule {
         : content;
   }
 
-  private _prepareSimpleChartData(module: GraphsModule, hass: HomeAssistant): any[] {
+  private _prepareSimpleChartData(
+    module: GraphsModule,
+    hass: HomeAssistant,
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templateFillArea?: boolean
+  ): any[] {
     const data = [];
 
     for (let i = 0; i < module.entities.length; i++) {
@@ -2135,14 +2578,27 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       const numValue = parseFloat(value);
 
+      // Determine color: template colors (per-entity) > template global_color > entity config > default
+      let entityColor: string;
+      if (templateColors && templateColors[i]) {
+        entityColor = this._formatColor(templateColors[i]);
+      } else if (templateGlobalColor) {
+        entityColor = this._formatColor(templateGlobalColor);
+      } else {
+        entityColor = this._formatColor(entityConfig.color) || this._getDefaultColor(i);
+      }
+
+      // Determine fill area: template fill_area > entity config
+      const fillArea = templateFillArea !== undefined ? templateFillArea : entityConfig.fill_area === true;
+
       data.push({
         name: entityConfig.name || entityState.attributes.friendly_name || entityConfig.entity,
         value: isNaN(numValue) ? 0 : numValue,
-        color: this._formatColor(entityConfig.color) || this._getDefaultColor(i),
+        color: entityColor,
         unit: entityState.attributes.unit_of_measurement || '',
         lineWidth: entityConfig.line_width ?? 2,
         showPoints: entityConfig.show_points !== false,
-        fillArea: entityConfig.fill_area === true,
+        fillArea: fillArea,
         lineStyle: entityConfig.line_style || 'solid',
         entityId: entityConfig.entity,
       });
@@ -2192,7 +2648,11 @@ export class UltraGraphsModule extends BaseUltraModule {
     data: any[],
     hass: HomeAssistant,
     textStyle?: string,
-    align?: 'left' | 'center' | 'right'
+    align?: 'left' | 'center' | 'right',
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templateFillArea?: boolean,
+    templatePieFill?: number
   ): TemplateResult {
     // In forecast mode, data comes from _historyData, not from _prepareSimpleChartData
     // So we skip the empty data check for forecast mode
@@ -2208,15 +2668,15 @@ export class UltraGraphsModule extends BaseUltraModule {
         : parseInt(String(module.chart_height)) || 345) - 80;
 
     if (['pie', 'donut'].includes(module.chart_type)) {
-      return this._renderPieChart(module, data, chartHeight, textStyle, hass, align);
+      return this._renderPieChart(module, data, chartHeight, textStyle, hass, align, templateColors, templateGlobalColor, templatePieFill);
     }
 
     if (['line', 'area'].includes(module.chart_type)) {
-      return this._renderLineChart(module, data, chartHeight, hass);
+      return this._renderLineChart(module, data, chartHeight, hass, templateColors, templateGlobalColor, templateFillArea);
     }
 
     // Default to bar chart for other types
-    return this._renderBarChart(module, data, chartHeight, textStyle, hass);
+    return this._renderBarChart(module, data, chartHeight, textStyle, hass, templateColors, templateGlobalColor);
   }
 
   private _renderPieChart(
@@ -2225,9 +2685,26 @@ export class UltraGraphsModule extends BaseUltraModule {
     chartHeight: number,
     textStyle?: string,
     hass?: HomeAssistant,
-    align?: 'left' | 'center' | 'right'
+    align?: 'left' | 'center' | 'right',
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templatePieFill?: number
   ): TemplateResult {
-    const total = data.reduce((sum, d) => sum + d.value, 0);
+    // Apply template pie_fill if provided - adjust total for slice sizing
+    let adjustedTotal = data.reduce((sum, d) => sum + d.value, 0);
+    let adjustedData = data;
+    
+    if (templatePieFill !== undefined && !isNaN(templatePieFill)) {
+      // If pie_fill is provided, scale values proportionally
+      const fillPercent = Math.max(0, Math.min(100, templatePieFill)) / 100;
+      adjustedData = data.map(d => ({
+        ...d,
+        value: d.value * fillPercent,
+      }));
+      adjustedTotal = adjustedData.reduce((sum, d) => sum + d.value, 0);
+    }
+
+    const total = adjustedTotal;
     const diameter = Math.max(120, Math.min(chartHeight, 260));
     const radius = diameter / 2;
     const isDonut = module.chart_type === 'donut';
@@ -2265,17 +2742,26 @@ export class UltraGraphsModule extends BaseUltraModule {
       return `M${sxOuter},${syOuter} A${rOuter},${rOuter} 0 ${largeArc} 1 ${exOuter},${eyOuter} L${sxInner},${syInner} A${rInner},${rInner} 0 ${largeArc} 0 ${exInner},${eyInner} Z`;
     };
 
-    // Compute segments (no trimming). Gaps will be drawn as uniform separators.
+    // Compute segments - apply template colors if provided
     let cumulative = 0;
-    const segments = data.map(d => {
+    const segments = adjustedData.map((d, index) => {
       const startDeg = total > 0 ? (cumulative / total) * 360 : 0;
       const sweepDeg = total > 0 ? (d.value / total) * 360 : 0;
       const endDeg = startDeg + sweepDeg;
       cumulative += d.value;
+      
+      // Apply template colors: per-entity > global > data color
+      let segmentColor = d.color;
+      if (templateColors && templateColors[index]) {
+        segmentColor = this._formatColor(templateColors[index]);
+      } else if (templateGlobalColor) {
+        segmentColor = this._formatColor(templateGlobalColor);
+      }
+      
       return {
         startDeg: startDeg,
         endDeg: endDeg,
-        color: d.color,
+        color: segmentColor,
         name: d.name,
         value: d.value,
         unit: d.unit,
@@ -2402,7 +2888,10 @@ export class UltraGraphsModule extends BaseUltraModule {
     module: GraphsModule,
     data: any[],
     chartHeight: number,
-    hass: HomeAssistant
+    hass: HomeAssistant,
+    templateColors?: string[],
+    templateGlobalColor?: string,
+    templateFillArea?: boolean
   ): TemplateResult {
     // Check if we have real history data stored on module
     const historyData = this._historyData[module.id];
@@ -2443,15 +2932,31 @@ export class UltraGraphsModule extends BaseUltraModule {
     }
 
     // Always apply latest visual properties (color, width, style, points, fill)
-    // so style changes are instant even when values come from cache/fast-path.
+    // Apply template colors if provided: per-entity > global > entity config > default
     datasets = datasets.map((dataset, i) => {
       const cfg = module.entities?.[i];
+      
+      // Determine color: template colors (per-entity) > template global_color > entity config > dataset color > default
+      let datasetColor: string;
+      if (templateColors && templateColors[i]) {
+        datasetColor = this._formatColor(templateColors[i]);
+      } else if (templateGlobalColor) {
+        datasetColor = this._formatColor(templateGlobalColor);
+      } else {
+        datasetColor = this._formatColor(cfg?.color) || dataset.color || this._getDefaultColor(i);
+      }
+      
+      // Determine fill area: template fill_area > entity config > dataset fillArea
+      const fillArea = templateFillArea !== undefined 
+        ? templateFillArea 
+        : (cfg?.fill_area === true || dataset.fillArea);
+      
       return {
         ...dataset,
-        color: this._formatColor(cfg?.color) || dataset.color || this._getDefaultColor(i),
+        color: datasetColor,
         lineWidth: cfg?.line_width ?? dataset.lineWidth ?? 2,
         showPoints: cfg?.show_points !== false,
-        fillArea: cfg?.fill_area === true,
+        fillArea: fillArea,
         lineStyle: cfg?.line_style || dataset.lineStyle || 'solid',
       };
     });
@@ -2474,8 +2979,24 @@ export class UltraGraphsModule extends BaseUltraModule {
       });
     }
 
-    const maxValue = Math.max(...normalizedDatasets.flatMap(d => d.values));
-    const minValue = Math.min(...normalizedDatasets.flatMap(d => d.values));
+    // Calculate min/max values - use fixed scale if enabled
+    let maxValue: number;
+    let minValue: number;
+    
+    if ((module as any).use_fixed_y_axis) {
+      // Use fixed values from configuration
+      minValue = (module as any).y_axis_min ?? 0;
+      maxValue = (module as any).y_axis_max ?? 100;
+      // Ensure max is greater than min
+      if (maxValue <= minValue) {
+        maxValue = minValue + 1;
+      }
+    } else {
+      // Auto-calculate from data (existing behavior)
+      maxValue = Math.max(...normalizedDatasets.flatMap(d => d.values));
+      minValue = Math.min(...normalizedDatasets.flatMap(d => d.values));
+    }
+    
     const valueRange = maxValue - minValue;
 
     const grid = module.show_grid !== false;
@@ -2796,113 +3317,323 @@ export class UltraGraphsModule extends BaseUltraModule {
     data: any[],
     chartHeight: number,
     textStyle?: string,
-    hass?: HomeAssistant
+    hass?: HomeAssistant,
+    templateColors?: string[],
+    templateGlobalColor?: string
   ): TemplateResult {
-    const maxValue = Math.max(...data.map(d => d.value));
+    const historyData = this._historyData[module.id];
+    let timePoints: string[] = [];
+    let datasets: Array<{
+      name: string;
+      color: string;
+      values: number[];
+      unit?: string;
+      entityId?: string;
+      originalValues?: number[];
+    }> = [];
+
+    if (historyData && Array.isArray(historyData.timePoints) && historyData.timePoints.length) {
+      timePoints = historyData.timePoints;
+      datasets = (historyData.datasets || []).map((dataset: any, index: number) => {
+        // Apply template colors: per-entity > global > dataset color > default
+        let datasetColor: string;
+        if (templateColors && templateColors[index]) {
+          datasetColor = this._formatColor(templateColors[index]);
+        } else if (templateGlobalColor) {
+          datasetColor = this._formatColor(templateGlobalColor);
+        } else {
+          datasetColor = this._formatColor(dataset.color) || this._getDefaultColor(index);
+        }
+        
+        return {
+          name: dataset.name,
+          color: datasetColor,
+          values: Array.isArray(dataset.values) ? dataset.values : [],
+          unit: dataset.unit,
+          entityId: dataset.entityId,
+        };
+      });
+    }
+
+    if (timePoints.length === 0 || datasets.length === 0) {
+      timePoints = this._generateTimePoints(module.time_period);
+      datasets = (module.entities || [])
+        .filter(e => (module.data_source === 'forecast' ? e.forecast_attribute : e.entity))
+        .map((entityConfig, index) => {
+          const fallback = data[index];
+          const value = fallback ? fallback.value : 0;
+          const values = new Array(timePoints.length).fill(value);
+          
+          // Apply template colors: per-entity > global > entity config > default
+          let datasetColor: string;
+          if (templateColors && templateColors[index]) {
+            datasetColor = this._formatColor(templateColors[index]);
+          } else if (templateGlobalColor) {
+            datasetColor = this._formatColor(templateGlobalColor);
+          } else {
+            datasetColor = this._formatColor(entityConfig.color) || this._getDefaultColor(index);
+          }
+          
+          return {
+            name:
+              entityConfig.name ||
+              fallback?.name ||
+              entityConfig.entity ||
+              this._getForecastAttributeLabel(entityConfig.forecast_attribute || ''),
+            color: datasetColor,
+            values,
+            unit: fallback?.unit,
+            entityId: fallback?.entityId || entityConfig.entity || module.forecast_entity,
+          };
+        });
+    }
+
+    if (timePoints.length === 0 || datasets.length === 0) {
+      return html`<div style="color: var(--secondary-text-color);">No data available</div>`;
+    }
+
+    let normalizedDatasets = datasets;
+    if (module.normalize_values && datasets.length > 1) {
+      normalizedDatasets = datasets.map(dataset => {
+        const datasetMax = Math.max(...dataset.values);
+        const datasetMin = Math.min(...dataset.values);
+        const datasetRange = datasetMax - datasetMin || 1;
+        return {
+          ...dataset,
+          originalValues: dataset.values,
+          values: dataset.values.map(value => ((value - datasetMin) / datasetRange) * 100),
+        };
+      });
+    }
+
+    const allValues = normalizedDatasets.flatMap(d => d.values);
+    
+    // Calculate min/max values - use fixed scale if enabled
+    let maxValue: number;
+    let minValue: number;
+    
+    if ((module as any).use_fixed_y_axis) {
+      // Use fixed values from configuration
+      minValue = (module as any).y_axis_min ?? 0;
+      maxValue = (module as any).y_axis_max ?? 100;
+      // Ensure max is greater than min
+      if (maxValue <= minValue) {
+        maxValue = minValue + 1;
+      }
+    } else {
+      // Auto-calculate from data (existing behavior)
+      maxValue = allValues.length ? Math.max(...allValues) : 0;
+      minValue = allValues.length ? Math.min(...allValues) : 0;
+    }
+    
+    const valueRange = maxValue - minValue || 1;
+
+    const labelArea = 28;
+    const barAreaHeight = Math.max(40, chartHeight - labelArea);
+    const scale = barAreaHeight / valueRange;
+
+    let zeroY: number;
+    if (minValue >= 0) {
+      zeroY = barAreaHeight;
+    } else if (maxValue <= 0) {
+      zeroY = 0;
+    } else {
+      zeroY = maxValue * scale;
+    }
+
+    const alignSetting = ((module as any).chart_alignment || 'center') as
+      | 'left'
+      | 'center'
+      | 'right';
+    const justifyContent =
+      alignSetting === 'left' ? 'flex-start' : alignSetting === 'right' ? 'flex-end' : 'center';
+
+    const datasetCount = normalizedDatasets.length;
+    const overlapFactor = 0.55;
+    const barWidth = Math.max(12, Math.min(28, 32 - datasetCount));
+    const groupWidth = Math.max(
+      48,
+      Math.round(barWidth + Math.max(0, datasetCount - 1) * barWidth * overlapFactor) + 12
+    );
+    const groupsMinWidth = Math.max(groupWidth * timePoints.length, 120);
+    const showTooltips = module.show_tooltips !== false;
+
+    // Apply bar display limit: show only the last N bars if limit is set
+    const displayLimit = module.bar_display_limit ?? 0;
+    let displayTimePoints = timePoints;
+    let displayDatasets = normalizedDatasets;
+
+    if (displayLimit > 0 && timePoints.length > displayLimit) {
+      const startIndex = timePoints.length - displayLimit;
+      displayTimePoints = timePoints.slice(startIndex);
+      displayDatasets = normalizedDatasets.map(dataset => ({
+        ...dataset,
+        values: dataset.values.slice(startIndex),
+        originalValues: dataset.originalValues
+          ? dataset.originalValues.slice(startIndex)
+          : undefined,
+      }));
+    }
+
+    const displayGroupsMinWidth = Math.max(groupWidth * displayTimePoints.length, 120);
 
     return html`
       <div
         class="bar-chart-container"
         style="
-          width:100%; 
-          height:${chartHeight}px; 
-          display:flex; 
-          align-items:center; 
-          justify-content:${(() => {
-          const a = ((module as any).chart_alignment || 'center') as string;
-          return a === 'left' ? 'flex-start' : a === 'right' ? 'flex-end' : 'center';
-        })()};
-          overflow: hidden;
-          box-sizing: border-box;
+          width:100%;
+          height:${chartHeight}px;
+          display:flex;
+          align-items:center;
+          justify-content:${justifyContent};
+          overflow:hidden;
+          box-sizing:border-box;
         "
       >
         <div
+          class="bar-chart-scroll"
           style="
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: flex-end;
-            justify-content: ${(() => {
-            const a = ((module as any).chart_alignment || 'center') as string;
-            if (a === 'left') return 'flex-start';
-            if (a === 'right') return 'flex-end';
-            return 'center';
-          })()};
-            gap: 8px;
-            padding: 8px;
-            box-sizing: border-box;
-            overflow: hidden;
+            width:100%;
+            height:100%;
+            overflow-x:auto;
+            overflow-y:hidden;
+            box-sizing:border-box;
           "
         >
-          ${data.map(d => {
-            const barHeight = maxValue > 0 ? (d.value / maxValue) * (chartHeight - 40) : 0;
-            return html`
-              <div
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  flex: 0 0 auto;
-                  width: 60px;
-                  max-width: calc(100% / ${data.length});
-                  box-sizing: border-box;
-                "
-              >
+          <div
+            class="bar-chart-groups"
+            style="
+              position:relative;
+              display:flex;
+              align-items:flex-end;
+              justify-content:${justifyContent};
+              gap:12px;
+              min-width:${displayGroupsMinWidth}px;
+              height:${barAreaHeight}px;
+              padding:0 12px;
+              box-sizing:border-box;
+            "
+          >
+            ${displayTimePoints.map((timePoint, pointIndex) => {
+              return html`
                 <div
+                  class="bar-group"
                   style="
-                    font-size: 11px;
-                    ${textStyle || ''};
-                    margin-bottom: 4px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    width: 100%;
-                    text-align: center;
+                    flex:0 0 ${groupWidth}px;
+                    height:100%;
+                    position:relative;
+                    box-sizing:border-box;
                   "
                 >
-                  ${(() => {
-                    let formatted = `${d.value}${d.unit || ''}`;
-                    if (hass && d.entityId) {
-                      try {
-                        formatted = formatEntityState(hass, d.entityId, {
-                          state: d.value,
-                          includeUnit: true,
-                        });
-                      } catch (_) {}
-                    }
-                    // Truncate long values
-                    return formatted.length > 8 ? formatted.substring(0, 8) + '...' : formatted;
-                  })()}
+                  <div
+                    class="bar-group-inner"
+                    style="
+                      position:relative;
+                      width:100%;
+                      height:100%;
+                    "
+                  >
+                    <div
+                      class="bar-group-zero-line"
+                      style="
+                        position:absolute;
+                        left:0;
+                        right:0;
+                        top:${zeroY}px;
+                        border-top:1px solid rgba(255,255,255,0.1);
+                        pointer-events:none;
+                      "
+                    ></div>
+                    ${displayDatasets.map((dataset, datasetIndex) => {
+                      const value = dataset.values[pointIndex] ?? 0;
+                      const originalValue =
+                        module.normalize_values && dataset.originalValues
+                          ? dataset.originalValues[pointIndex]
+                          : dataset.values[pointIndex];
+                      const entityId = dataset.entityId;
+                      let formatted = `${originalValue ?? 0}${dataset.unit || ''}`;
+                      if (hass && entityId !== undefined && originalValue !== undefined) {
+                        try {
+                          formatted = formatEntityState(hass, entityId, {
+                            state: originalValue,
+                            includeUnit: true,
+                          });
+                        } catch (_) {
+                          // ignore formatting errors
+                        }
+                      }
+
+                      const valueY = maxValue === minValue ? zeroY : (maxValue - value) * scale;
+                      const top = Math.min(zeroY, valueY);
+                      const barHeight = Math.max(2, Math.abs(zeroY - valueY));
+                      const offset =
+                        (datasetIndex - (datasetCount - 1) / 2) * (barWidth * overlapFactor);
+                      const showStaticValue = datasetCount === 1;
+
+                      return html`
+                        <div
+                          class="bar-segment"
+                          style="
+                            position:absolute;
+                            left:50%;
+                            bottom:0;
+                            width:${barWidth}px;
+                            transform:translateX(${offset}px);
+                            border-radius:3px 3px 0 0;
+                            background:${dataset.color};
+                            box-shadow:0 4px 10px rgba(0,0,0,0.15);
+                            cursor:${showTooltips ? 'pointer' : 'default'};
+                            top:${top}px;
+                            height:${barHeight}px;
+                            z-index:${100 + datasetIndex};
+                          "
+                          @mouseenter=${showTooltips
+                            ? (e: MouseEvent) =>
+                                this._showTooltip(e, module.id, dataset.name, formatted, timePoint)
+                            : null}
+                          @mouseleave=${showTooltips
+                            ? (e: MouseEvent) => this._hideTooltip(module.id, e)
+                            : null}
+                          title=${showTooltips ? '' : formatted}
+                        >
+                          ${showStaticValue
+                            ? html`<span
+                                style="
+                                  position:absolute;
+                                  left:50%;
+                                  bottom:100%;
+                                  transform:translate(-50%, -6px);
+                                  font-size:11px;
+                                  color: var(--secondary-text-color);
+                                  white-space:nowrap;
+                                  ${textStyle || ''};
+                                "
+                              >
+                                ${formatted}
+                              </span>`
+                            : ''}
+                        </div>
+                      `;
+                    })}
+                  </div>
+                  <div
+                    class="bar-group-label"
+                    style="
+                      margin-top:4px;
+                      font-size:11px;
+                      text-align:center;
+                      color: var(--secondary-text-color);
+                      white-space:nowrap;
+                      overflow:hidden;
+                      text-overflow:ellipsis;
+                    "
+                  >
+                    ${timePoint}
+                  </div>
                 </div>
-                <div
-                  style="
-                    width: 100%;
-                    height: ${barHeight}px;
-                    background: ${d.color};
-                    border-radius: 3px 3px 0 0;
-                    transition: height 0.3s ease;
-                    min-height: 2px;
-                  "
-                ></div>
-                <div
-                  style="
-                    font-size: 10px;
-                    ${textStyle || ''};
-                    opacity: 0.8;
-                    margin-top: 4px;
-                    text-align: center;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    width: 100%;
-                  "
-                  title="${d.name}"
-                >
-                  ${d.name.length > 8 ? d.name.substring(0, 8) + '...' : d.name}
-                </div>
-              </div>
-            `;
-          })}
+              `;
+            })}
+          </div>
         </div>
       </div>
     `;
@@ -4013,7 +4744,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         hass,
         event.target as HTMLElement,
         config,
-        (module as any).entity
+        (module as any).entity,
+        module
       );
     }
   }
@@ -4030,7 +4762,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         hass,
         event.target as HTMLElement,
         config,
-        (module as any).entity
+        (module as any).entity,
+        module
       );
     }
   }
@@ -4047,7 +4780,8 @@ export class UltraGraphsModule extends BaseUltraModule {
         hass,
         event.target as HTMLElement,
         config,
-        (module as any).entity
+        (module as any).entity,
+        module
       );
     }
   }
@@ -4171,51 +4905,24 @@ export class UltraGraphsModule extends BaseUltraModule {
     const graphsModule = module as GraphsModule;
     const errors = [...baseValidation.errors];
 
-    if (!graphsModule.chart_type) {
-      errors.push('Chart type is required');
-    }
+    // LENIENT VALIDATION: Allow incomplete configuration - UI will show placeholders
+    // Only validate for truly breaking errors
 
-    // Forecast mode validation
-    if (graphsModule.data_source === 'forecast') {
-      if (!graphsModule.forecast_entity) {
-        errors.push('Weather entity is required for forecast mode');
-      }
-
-      if (!graphsModule.entities || graphsModule.entities.length === 0) {
-        errors.push('At least one forecast attribute is required');
-      } else {
-        graphsModule.entities.forEach((entity, index) => {
-          if (!entity.forecast_attribute) {
-            errors.push(`Entity ${index + 1}: Forecast attribute selection is required`);
-          }
-        });
-      }
-    } else {
-      // History mode validation
-      if (!graphsModule.entities || graphsModule.entities.length === 0) {
-        errors.push('At least one entity is required');
-      } else {
-        graphsModule.entities.forEach((entity, index) => {
-          if (!entity.entity) {
-            errors.push(`Entity ${index + 1}: Entity selection is required`);
-          }
-        });
-      }
-    }
-
+    // Validate custom time period (only if custom is selected and has content)
     if (graphsModule.time_period === 'custom') {
-      if (!graphsModule.custom_time_start) {
-        errors.push('Custom start time is required');
+      if (graphsModule.custom_time_start && !graphsModule.custom_time_end) {
+        errors.push('Custom end time is required when start time is set');
       }
-      if (!graphsModule.custom_time_end) {
-        errors.push('Custom end time is required');
+      if (graphsModule.custom_time_end && !graphsModule.custom_time_start) {
+        errors.push('Custom start time is required when end time is set');
       }
     }
 
-    // Template validation
+    // Template validation - only if template mode is explicitly enabled
     if (
       graphsModule.template_mode &&
-      (!graphsModule.template || graphsModule.template.trim() === '')
+      graphsModule.template &&
+      graphsModule.template.trim() === ''
     ) {
       errors.push('Template code is required when template mode is enabled');
     }
@@ -4311,6 +5018,10 @@ export class UltraGraphsModule extends BaseUltraModule {
       .uc-graphs-actions-tab,
       .uc-graphs-other-tab {
         padding: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
       }
 
       .entities-repeater {
@@ -4717,6 +5428,71 @@ export class UltraGraphsModule extends BaseUltraModule {
 
       .reset-btn ha-icon {
         font-size: 16px;
+      }
+
+      /* Settings section width containment */
+      .settings-section {
+        max-width: 100%;
+        box-sizing: border-box;
+        width: 100%;
+        overflow: visible;
+      }
+
+      .settings-section > div[style*="display: grid"] {
+        max-width: 100%;
+        box-sizing: border-box;
+        width: 100%;
+        overflow: visible;
+      }
+
+      /* Ensure all grid children stay within bounds */
+      .settings-section div {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Field sections must respect container width */
+      .settings-section .field-section {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
+      }
+
+      /* Ensure ha-form respects container width */
+      .settings-section ha-form {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Force all ha-form internals to respect width */
+      .settings-section ha-form * {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Specific fix for ha-select dropdowns */
+      .settings-section ha-select,
+      .settings-section ha-textfield,
+      .settings-section input,
+      .settings-section select {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .settings-section ultra-color-picker {
+        width: 100%;
+        max-width: 100%;
+        display: block;
+      }
+      .settings-section ultra-color-picker .color-input-field {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .settings-section ultra-color-picker .color-value {
+        min-width: 0;
       }
     `;
   }

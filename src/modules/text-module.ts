@@ -8,7 +8,10 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
+import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -45,6 +48,8 @@ export class UltraTextModule extends BaseUltraModule {
       icon_position: 'before',
       template_mode: false,
       template: '',
+      unified_template_mode: false,
+      unified_template: '',
       // Hover configuration
       enable_hover_effect: true,
       hover_background_color: 'var(--divider-color)',
@@ -57,7 +62,6 @@ export class UltraTextModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -74,28 +78,76 @@ export class UltraTextModule extends BaseUltraModule {
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
         <!-- Content Configuration -->
-        ${this.renderSettingsSection(
-          localize('editor.text.content_section.title', lang, 'Content Configuration'),
-          localize(
-            'editor.text.content_section.desc',
-            lang,
-            'Configure the text content and basic settings for this module.'
-          ),
-          [
-            {
-              title: localize('editor.text.text_content', lang, 'Text Content'),
-              description: localize(
-                'editor.text.text_content_desc',
-                lang,
-                'Enter the text content to display in this module.'
-              ),
-              hass,
-              data: { text: textModule.text || '' },
-              schema: [this.textField('text')],
-              onChange: (e: CustomEvent) => updateModule(e.detail.value),
-            },
-          ]
-        )}
+        <!-- Content Configuration -->
+        <div
+          class="settings-section"
+          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+        >
+          <div
+            class="section-title"
+            style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; letter-spacing: 0.5px;"
+          >
+            ${localize('editor.text.content_section.title', lang, 'Content Configuration')}
+          </div>
+          <div
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.text.content_section.desc',
+              lang,
+              'Configure the text content and basic settings for this module.'
+            )}
+          </div>
+          <div class="field-title" style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">
+            ${localize('editor.text.text_content', lang, 'Text Content')}
+          </div>
+          <div
+            class="field-description"
+            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
+          >
+            ${localize(
+              'editor.text.text_content_desc',
+              lang,
+              'Enter the text content to display in this module.'
+            )}
+          </div>
+          <ha-textfield
+            .value=${textModule.text || ''}
+            placeholder="Enter text content"
+            @input=${(e: Event) => {
+              const target = e.target as any;
+              const input = target.shadowRoot?.querySelector('input') || target;
+              const value = target.value;
+              const cursorPosition = input.selectionStart;
+              const cursorEnd = input.selectionEnd;
+
+              updateModule({ text: value });
+
+              requestAnimationFrame(() => {
+                if (input && typeof cursorPosition === 'number') {
+                  target.value = value;
+                  input.value = value;
+                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                }
+              });
+              setTimeout(() => {
+                if (input && typeof cursorPosition === 'number') {
+                  target.value = value;
+                  input.value = value;
+                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                }
+              }, 0);
+              setTimeout(() => {
+                if (input && typeof cursorPosition === 'number') {
+                  target.value = value;
+                  input.value = value;
+                  input.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+                }
+              }, 10);
+            }}
+            style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+          ></ha-textfield>
+        </div>
 
         <!-- Icon Configuration -->
         <div
@@ -346,16 +398,27 @@ export class UltraTextModule extends BaseUltraModule {
                       'Template to render the text using Jinja2 syntax'
                     )}
                   </div>
-                  <ultra-template-editor
-                    .hass=${hass}
-                    .value=${textModule.template || ''}
-                    .placeholder=${"{{ states('sensor.example') }}"}
-                    .minHeight=${100}
-                    .maxHeight=${300}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ template: e.detail.value });
+                  <div
+                    @mousedown=${(e: Event) => {
+                      // Only stop propagation for drag operations, not clicks on the editor
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                        e.stopPropagation();
+                      }
                     }}
-                  ></ultra-template-editor>
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${textModule.template || ''}
+                      .placeholder=${"{{ states('sensor.example') }}"}
+                      .minHeight=${100}
+                      .maxHeight=${300}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ template: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                  </div>
                 </div>
 
                 <div class="template-examples">
@@ -419,10 +482,27 @@ export class UltraTextModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const textModule = module as TextModule;
     const lang = hass?.locale?.language || 'en';
+
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!textModule.template_mode && (!textModule.text || textModule.text.trim() === '')) {
+      return this.renderGradientErrorState(
+        'Enter Text Content',
+        'Add text in the General tab',
+        'mdi:format-text'
+      );
+    }
+
+    if (textModule.template_mode && (!textModule.template || textModule.template.trim() === '')) {
+      return this.renderGradientErrorState(
+        'Configure Template',
+        'Enter template code in the General tab',
+        'mdi:code-braces'
+      );
+    }
 
     // Check if element should be hidden when no link
     if (textModule.hide_if_no_link && !this.hasActiveLink(textModule)) {
@@ -453,6 +533,10 @@ export class UltraTextModule extends BaseUltraModule {
       right: 'flex-end',
     };
 
+    // Declare template variables before textStyles
+    let displayText: string = textModule.text || 'Sample Text';
+    let displayColor: string | undefined;
+
     const textStyles = {
       fontSize: (() => {
         if (
@@ -471,7 +555,9 @@ export class UltraTextModule extends BaseUltraModule {
         return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
-      color: designProperties.color || moduleWithDesign.color || 'inherit',
+      // Color: prioritize design properties, then template color, then module color, then inherit (to allow parent CSS variables)
+      // Use 'inherit' when no explicit color is set, allowing parent row/column CSS variables to work
+      color: designProperties.color || displayColor || textModule.color || 'inherit',
       textAlign: chosenAlign,
       fontWeight: (() => {
         if (designProperties.font_weight) return designProperties.font_weight;
@@ -490,6 +576,9 @@ export class UltraTextModule extends BaseUltraModule {
       lineHeight: designProperties.line_height || moduleWithDesign.line_height || 'inherit',
       letterSpacing:
         designProperties.letter_spacing || moduleWithDesign.letter_spacing || 'inherit',
+      ...(designProperties.white_space !== undefined || moduleWithDesign.white_space !== undefined
+        ? { whiteSpace: designProperties.white_space || moduleWithDesign.white_space || 'normal' }
+        : {}),
       margin: '0',
 
       display: 'flex',
@@ -521,8 +610,52 @@ export class UltraTextModule extends BaseUltraModule {
       : '';
 
     // Determine display text: prefer template result if template_mode is enabled
-    let displayText: string = textModule.text || 'Sample Text';
-    if (textModule.template_mode && textModule.template) {
+    // PRIORITY 1: Unified template (if enabled)
+    if (textModule.unified_template_mode && textModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(textModule.unified_template);
+        const templateKey = `unified_text_${textModule.id}_${templateHash}`;
+
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            text: textModule.text,
+          });
+          this._templateService.subscribeToTemplate(
+            textModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.content !== undefined) displayText = parsed.content;
+            if (parsed.color) displayColor = parsed.color;
+          }
+        }
+      }
+    }
+    // PRIORITY 2: Legacy template mode
+    else if (textModule.template_mode && textModule.template) {
       // Initialize template service
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
@@ -595,6 +728,55 @@ export class UltraTextModule extends BaseUltraModule {
         </div>`
       : content;
 
+    // Check if module has a template-based container background color (needs to be parsed from template strings)
+    // This needs to happen BEFORE containerStyles are built
+    let templateContainerBg = '';
+    if (textModule.unified_template_mode && textModule.unified_template) {
+      // Initialize template service if needed
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(textModule.unified_template);
+        const templateKey = `unified_text_${textModule.id}_${templateHash}`;
+
+        // Subscribe to template if not already subscribed (needed for template evaluation)
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            text: textModule.text,
+          });
+          this._templateService.subscribeToTemplate(
+            textModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+          }
+        }
+      }
+    }
+
     // Container styles for positioning - prioritize design properties, no hardcoded spacing
     const containerStyles = {
       // Only apply padding if explicitly set by user
@@ -621,19 +803,6 @@ export class UltraTextModule extends BaseUltraModule {
         moduleWithDesign.margin_right
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '8px 0',
-      // Only apply container-level design properties if specifically configured
-      background:
-        designProperties.background_color || moduleWithDesign.background_color || 'inherit',
-      backgroundImage: this.getBackgroundImageCSS(
-        { ...moduleWithDesign, ...designProperties },
-        hass
-      ),
-      backgroundSize:
-        designProperties.background_size || moduleWithDesign.background_size || 'cover',
-      backgroundPosition:
-        designProperties.background_position || moduleWithDesign.background_position || 'center',
-      backgroundRepeat:
-        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
       border:
         (designProperties.border_style || moduleWithDesign.border_style) &&
         (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
@@ -670,6 +839,18 @@ export class UltraTextModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
+    const { styles: backgroundStyles } = computeBackgroundStyles({
+      color: templateContainerBg || designProperties.background_color || moduleWithDesign.background_color,
+      fallback: moduleWithDesign.background_color || 'inherit',
+      image: this.getBackgroundImageCSS({ ...moduleWithDesign, ...designProperties }, hass),
+      imageSize: designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      imagePosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      imageRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+    });
+    Object.assign(containerStyles, backgroundStyles);
+
     // Get hover effect configuration from module design
     const hoverEffect = (moduleWithDesign as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
@@ -699,18 +880,17 @@ export class UltraTextModule extends BaseUltraModule {
     const textModule = module as TextModule;
     const errors = [...baseValidation.errors];
 
-    if (!textModule.text || textModule.text.trim() === '') {
-      errors.push('Text content is required');
-    }
+    // LENIENT VALIDATION: Allow empty text - UI will show placeholder
+    // Only validate for truly breaking errors
 
-    // Validate icon format if provided
+    // Validate icon format if provided (only if it has content)
     if (textModule.icon && textModule.icon.trim() !== '') {
       if (!textModule.icon.includes(':')) {
         errors.push('Icon must be in format "mdi:icon-name" or "hass:icon-name"');
       }
     }
 
-    // Validate link format if provided (legacy)
+    // Validate link format if provided (only if it has content)
     if (textModule.link && textModule.link.trim() !== '') {
       try {
         new URL(textModule.link);
@@ -722,7 +902,7 @@ export class UltraTextModule extends BaseUltraModule {
       }
     }
 
-    // Validate global link actions
+    // Validate global link actions (only truly critical action validation errors)
     if (
       textModule.tap_action &&
       textModule.tap_action.action !== 'default' &&
@@ -743,11 +923,6 @@ export class UltraTextModule extends BaseUltraModule {
       textModule.double_tap_action.action !== 'nothing'
     ) {
       errors.push(...this.validateAction(textModule.double_tap_action));
-    }
-
-    // Validate template if template mode is enabled
-    if (textModule.template_mode && (!textModule.template || textModule.template.trim() === '')) {
-      errors.push('Template code is required when template mode is enabled');
     }
 
     return {
@@ -924,7 +1099,9 @@ export class UltraTextModule extends BaseUltraModule {
         textModule.tap_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (textModule as any).entity,
+        textModule
       );
     }
   }
@@ -944,7 +1121,9 @@ export class UltraTextModule extends BaseUltraModule {
         textModule.double_tap_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (textModule as any).entity,
+        textModule
       );
     }
   }
@@ -964,7 +1143,9 @@ export class UltraTextModule extends BaseUltraModule {
         textModule.hold_action as any,
         hass,
         event.target as HTMLElement,
-        config
+        config,
+        (textModule as any).entity,
+        textModule
       );
     }
   }

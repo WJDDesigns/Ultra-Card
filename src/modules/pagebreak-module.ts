@@ -62,7 +62,7 @@ export class UltraPageBreakModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     // Page breaks are only for editor organization - don't render anything in the card preview
     return html``;

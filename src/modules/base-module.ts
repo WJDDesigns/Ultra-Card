@@ -5,6 +5,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -72,7 +73,7 @@ export interface UltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult;
 
   // Validate module configuration
@@ -100,7 +101,7 @@ export abstract class BaseUltraModule implements UltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult;
 
   // Default Actions tab implementation - can be overridden
@@ -155,6 +156,37 @@ export abstract class BaseUltraModule implements UltraModule {
   // Helper method to generate unique IDs
   protected generateId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Centralized action handler for all modules
+   * This ensures confirmation dialogs work consistently across all modules
+   * Modules should use this method instead of calling UltraLinkComponent.handleAction directly
+   * 
+   * @param action The action to execute
+   * @param hass Home Assistant instance
+   * @param element The element that triggered the action
+   * @param config Ultra Card config
+   * @param moduleEntity The module's entity (if any)
+   * @param module The module instance (required for confirmation dialogs)
+   */
+  async handleModuleAction(
+    action: TapActionConfig | undefined,
+    hass: HomeAssistant,
+    element?: HTMLElement,
+    config?: UltraCardConfig,
+    moduleEntity?: string,
+    module?: CardModule
+  ): Promise<void> {
+    // Always pass the module to ensure confirmation dialogs work
+    await UltraLinkComponent.handleAction(
+      action,
+      hass,
+      element,
+      config,
+      moduleEntity,
+      module
+    );
   }
 
   // Helper method to render form fields
@@ -407,7 +439,6 @@ export abstract class BaseUltraModule implements UltraModule {
   protected renderConditionalFieldsGroup(header: string, content: TemplateResult): TemplateResult {
     return html`
       <div class="conditional-fields-group">
-        <div class="conditional-fields-header">${header}</div>
         <div class="conditional-fields-content">${content}</div>
       </div>
     `;
@@ -479,18 +510,188 @@ export abstract class BaseUltraModule implements UltraModule {
    *
    * This dispatches a global event that both the editor popup preview
    * and the actual card listen for to trigger re-renders.
+   *
+   * @param immediate - If true, triggers update immediately without debouncing
    */
-  protected triggerPreviewUpdate(): void {
+  protected triggerPreviewUpdate(immediate: boolean = false): void {
+    // Clear any existing timer if immediate update requested
+    if (immediate && window._ultraCardUpdateTimer) {
+      clearTimeout(window._ultraCardUpdateTimer);
+      window._ultraCardUpdateTimer = null;
+    }
+
     // Global debouncing to prevent multiple modules from triggering rapid updates
     if (!window._ultraCardUpdateTimer) {
+      const delay = immediate ? 0 : 150; // Increased debounce time for better batching
+
       window._ultraCardUpdateTimer = setTimeout(() => {
         const event = new CustomEvent('ultra-card-template-update', {
           bubbles: true,
           composed: true,
+          detail: {
+            timestamp: Date.now(),
+            source: 'module-update',
+          },
         });
         window.dispatchEvent(event);
         window._ultraCardUpdateTimer = null;
-      }, 50); // Debounce to 50ms to allow multiple modules to batch their updates
+      }, delay);
     }
+  }
+
+  /**
+   * Render a beautiful gradient error state for incomplete module configuration
+   * Matches the website's gradient aesthetic (purple → pink → blue)
+   *
+   * @param title - Main error title (e.g., "Configure Entities")
+   * @param subtitle - Helpful subtitle text (e.g., "Select an entity in the General tab")
+   * @param icon - Icon to display (defaults to alert circle)
+   * @returns TemplateResult with gradient error state
+   */
+  protected renderGradientErrorState(
+    title: string,
+    subtitle: string,
+    icon: string = 'mdi:alert-circle-outline'
+  ): TemplateResult {
+    return html`
+      <style>
+        ${this.getGradientErrorStateStyles()}
+      </style>
+      <div class="ultra-config-needed">
+        <div class="ultra-config-gradient"></div>
+        <div class="ultra-config-content">
+          <ha-icon icon="${icon}"></ha-icon>
+          <div class="ultra-config-text">
+            <div class="ultra-config-title">${title}</div>
+            <div class="ultra-config-subtitle">${subtitle}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render a compact warning banner for partial configuration issues
+   * Shows when some items are valid but others need configuration
+   *
+   * @param message - Warning message to display
+   * @param count - Optional count to display (e.g., "2 items need configuration")
+   * @returns TemplateResult with gradient warning banner
+   */
+  protected renderGradientWarningBanner(message: string, count?: number): TemplateResult {
+    const displayMessage = count !== undefined ? `${count} ${message}` : message;
+
+    return html`
+      <style>
+        ${this.getGradientErrorStateStyles()}
+      </style>
+      <div class="ultra-config-banner">
+        <div class="ultra-config-banner-gradient"></div>
+        <div class="ultra-config-banner-content">
+          <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+          <span>${displayMessage}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Get shared CSS styles for gradient error states
+   * Called by renderGradientErrorState and renderGradientWarningBanner
+   *
+   * @returns CSS string with gradient error state styles
+   */
+  protected getGradientErrorStateStyles(): string {
+    return `
+      /* Ultra Card Modern Gradient Error State */
+      .ultra-config-needed {
+        position: relative;
+        padding: 16px;
+        border-radius: 12px;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .ultra-config-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.15) 0%, 
+          rgba(236, 72, 153, 0.15) 50%, 
+          rgba(59, 130, 246, 0.15) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .ultra-config-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 24px;
+      }
+
+      .ultra-config-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .ultra-config-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 2px;
+      }
+
+      .ultra-config-subtitle {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Compact Warning Banner */
+      .ultra-config-banner {
+        position: relative;
+        padding: 10px 14px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        backdrop-filter: blur(10px);
+      }
+
+      .ultra-config-banner-gradient {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, 
+          rgba(168, 85, 247, 0.12) 0%, 
+          rgba(236, 72, 153, 0.12) 100%);
+        z-index: 0;
+      }
+
+      .ultra-config-banner-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--primary-text-color);
+      }
+
+      .ultra-config-banner-content ha-icon {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        --mdc-icon-size: 18px;
+      }
+    `;
   }
 }

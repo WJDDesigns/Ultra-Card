@@ -52,7 +52,6 @@ class UcSessionSyncService {
    */
   enable(): void {
     this._isEnabled = true;
-    console.log('✅ Cloud session sync enabled');
   }
 
   /**
@@ -102,7 +101,6 @@ class UcSessionSyncService {
       if (data.success && data.session_id) {
         this._sessionId = data.session_id;
         this._saveSessionId(data.session_id);
-        console.log('✅ Cloud session created:', data.session_id);
         return data.session_id;
       }
 
@@ -164,7 +162,6 @@ class UcSessionSyncService {
       if (data.success && data.session?.user) {
         this._sessionId = data.session.session_id;
         this._saveSessionId(data.session.session_id);
-        console.log('✅ Retrieved active cloud session');
         return data.session.user;
       }
 
@@ -231,7 +228,6 @@ class UcSessionSyncService {
       });
 
       this._clearSessionId();
-      console.log('✅ Cloud session invalidated');
     } catch (error) {
       console.warn('⚠️ Failed to invalidate cloud session:', error);
     }
@@ -266,7 +262,6 @@ class UcSessionSyncService {
     if (this._pollTimer) {
       clearInterval(this._pollTimer);
       this._pollTimer = undefined;
-      console.log('✅ Stopped session validation polling');
     }
   }
 

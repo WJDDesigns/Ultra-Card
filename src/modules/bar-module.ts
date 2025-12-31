@@ -1,4 +1,5 @@
 import { TemplateResult, html } from 'lit';
+import { ref, createRef, Ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, BarModule, UltraCardConfig } from '../types';
@@ -13,6 +14,8 @@ import { formatEntityState } from '../utils/number-format';
 import { TemplateService } from '../services/template-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import {
   GradientStop,
   generateGradientString,
@@ -59,6 +62,14 @@ export class UltraBarModule extends BaseUltraModule {
       // Template mode
       percentage_template: '',
 
+      // Manual Min/Max Range (overrides auto-detection)
+      percentage_min: undefined, // undefined = auto-detect
+      percentage_max: undefined, // undefined = auto-detect
+      percentage_min_template_mode: false,
+      percentage_min_template: '',
+      percentage_max_template_mode: false,
+      percentage_max_template: '',
+
       // Bar Appearance - Fix height default to be explicit
       height: 20, // Explicit default height in pixels
       bar_direction: 'left-to-right', // Default fill direction
@@ -68,6 +79,7 @@ export class UltraBarModule extends BaseUltraModule {
       bar_width: 100,
       bar_alignment: 'center',
       border_radius: 10,
+      glass_blur_amount: 8, // Default glass blur amount
 
       // Text Display
       label_alignment: 'space-between',
@@ -75,6 +87,9 @@ export class UltraBarModule extends BaseUltraModule {
       show_value: false, // Default to percentage, not value
       percentage_text_size: 14,
       percentage_text_alignment: 'center',
+      percentage_text_bold: false,
+      percentage_text_italic: false,
+      percentage_text_strikethrough: false,
       value_position: 'inside',
 
       // Left Side Configuration
@@ -90,6 +105,9 @@ export class UltraBarModule extends BaseUltraModule {
       left_title_color: '',
       left_value_color: '',
       left_enabled: false,
+      left_tap_action: { action: 'default' },
+      left_hold_action: { action: 'nothing' },
+      left_double_tap_action: { action: 'nothing' },
 
       // Right Side Configuration
       right_title: '',
@@ -104,6 +122,9 @@ export class UltraBarModule extends BaseUltraModule {
       right_value_size: 14,
       right_title_color: '',
       right_value_color: '',
+      right_tap_action: { action: 'default' },
+      right_hold_action: { action: 'nothing' },
+      right_double_tap_action: { action: 'nothing' },
 
       // Colors - use empty default so global design can control track bg by default
       bar_color: '',
@@ -113,6 +134,15 @@ export class UltraBarModule extends BaseUltraModule {
 
       // Minimal style dot color
       dot_color: '',
+
+      // Minimal style icon configuration
+      minimal_icon_enabled: false,
+      minimal_icon: '',
+      minimal_icon_mode: 'icon-in-dot',
+      minimal_icon_size: 24,
+      minimal_icon_size_auto: true,
+      minimal_icon_color: '',
+      minimal_icon_use_dot_color: true,
 
       // Gradient Configuration
       use_gradient: false,
@@ -127,6 +157,8 @@ export class UltraBarModule extends BaseUltraModule {
       animation: true,
       template_mode: false,
       template: '',
+      unified_template_mode: false,
+      unified_template: '',
 
       // Bar Animation (state/attribute triggered)
       bar_animation_enabled: false,
@@ -150,7 +182,6 @@ export class UltraBarModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -519,6 +550,141 @@ export class UltraBarModule extends BaseUltraModule {
               : ''
           }
 
+          <!-- Manual Min/Max Range Configuration -->
+          ${
+            barModule.percentage_type !== 'template'
+              ? html`
+                  <div
+                    style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; border-left: 3px solid var(--primary-color);"
+                  >
+                    <div
+                      style="font-size: 14px; font-weight: 600; color: var(--primary-text-color); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"
+                    >
+                      <ha-icon icon="mdi:arrow-expand-horizontal" style="color: var(--primary-color);"></ha-icon>
+                      ${localize('editor.bar.range.title', lang, 'Value Range (Min/Max)')}
+                    </div>
+                    <div
+                      style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 16px;"
+                    >
+                      ${localize(
+                        'editor.bar.range.desc',
+                        lang,
+                        'Override auto-detected range. Enter a number or use a Jinja2 template (e.g., {{ states(\'sensor.max\') }}).'
+                      )}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                      <!-- Min Value -->
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);">
+                          ${localize('editor.bar.range.min', lang, 'Minimum')}
+                        </span>
+                        <ha-textfield
+                          .value=${barModule.percentage_min_template_mode && barModule.percentage_min_template
+                            ? barModule.percentage_min_template
+                            : barModule.percentage_min !== undefined
+                              ? String(barModule.percentage_min)
+                              : ''}
+                          placeholder="${localize('editor.bar.range.auto', lang, 'Auto (0)')}"
+                          @input=${(e: Event) => {
+                            // Capture value immediately before debounce
+                            const target = e.target as HTMLInputElement;
+                            const val = (target?.value || '').trim();
+                            clearTimeout(this._templateInputDebounce);
+                            this._templateInputDebounce = setTimeout(() => {
+                              // Auto-detect if it's a template (contains {{ or {%)
+                              const isTemplate = val.includes('{{') || val.includes('{%');
+                              if (isTemplate) {
+                                updateModule({
+                                  percentage_min_template_mode: true,
+                                  percentage_min_template: val,
+                                  percentage_min: undefined,
+                                });
+                              } else if (val === '') {
+                                updateModule({
+                                  percentage_min_template_mode: false,
+                                  percentage_min_template: '',
+                                  percentage_min: undefined,
+                                });
+                              } else {
+                                const num = parseFloat(val);
+                                updateModule({
+                                  percentage_min_template_mode: false,
+                                  percentage_min_template: '',
+                                  percentage_min: isNaN(num) ? undefined : num,
+                                });
+                              }
+                            }, 300);
+                          }}
+                          style="width: 100%;"
+                        ></ha-textfield>
+                        ${barModule.percentage_min_template_mode && 
+                          barModule.percentage_min_template && 
+                          (barModule.percentage_min_template.includes('{{') || barModule.percentage_min_template.includes('{%'))
+                          ? html`<span style="font-size: 10px; color: var(--primary-color); margin-top: 2px;">
+                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon> Template
+                            </span>`
+                          : ''}
+                      </div>
+
+                      <!-- Max Value -->
+                      <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 13px; font-weight: 500; color: var(--primary-text-color);">
+                          ${localize('editor.bar.range.max', lang, 'Maximum')}
+                        </span>
+                        <ha-textfield
+                          .value=${barModule.percentage_max_template_mode && barModule.percentage_max_template
+                            ? barModule.percentage_max_template
+                            : barModule.percentage_max !== undefined
+                              ? String(barModule.percentage_max)
+                              : ''}
+                          placeholder="${localize('editor.bar.range.auto', lang, 'Auto (100)')}"
+                          @input=${(e: Event) => {
+                            // Capture value immediately before debounce
+                            const target = e.target as HTMLInputElement;
+                            const val = (target?.value || '').trim();
+                            clearTimeout(this._templateInputDebounce);
+                            this._templateInputDebounce = setTimeout(() => {
+                              // Auto-detect if it's a template (contains {{ or {%)
+                              const isTemplate = val.includes('{{') || val.includes('{%');
+                              if (isTemplate) {
+                                updateModule({
+                                  percentage_max_template_mode: true,
+                                  percentage_max_template: val,
+                                  percentage_max: undefined,
+                                });
+                              } else if (val === '') {
+                                updateModule({
+                                  percentage_max_template_mode: false,
+                                  percentage_max_template: '',
+                                  percentage_max: undefined,
+                                });
+                              } else {
+                                const num = parseFloat(val);
+                                updateModule({
+                                  percentage_max_template_mode: false,
+                                  percentage_max_template: '',
+                                  percentage_max: isNaN(num) ? undefined : num,
+                                });
+                              }
+                            }, 300);
+                          }}
+                          style="width: 100%;"
+                        ></ha-textfield>
+                        ${barModule.percentage_max_template_mode && 
+                          barModule.percentage_max_template && 
+                          (barModule.percentage_max_template.includes('{{') || barModule.percentage_max_template.includes('{%'))
+                          ? html`<span style="font-size: 10px; color: var(--primary-color); margin-top: 2px;">
+                              <ha-icon icon="mdi:code-braces" style="font-size: 10px;"></ha-icon> Template
+                            </span>`
+                          : ''}
+                      </div>
+                    </div>
+                  </div>
+                `
+              : ''
+          }
+
           <!-- Bar Percentage Entity -->
           <div style="margin-top: 24px;">
             ${FormUtils.renderField(
@@ -770,16 +936,6 @@ export class UltraBarModule extends BaseUltraModule {
           <div class="field-container" style="margin-bottom: 24px;">
             <div class="field-title">${localize('editor.bar.appearance.height', lang, 'Bar Height')}</div>
             <div class="field-description">${localize('editor.bar.appearance.height_desc', lang, 'Adjust the thickness of the progress bar in pixels.')}</div>
-            <style>
-              .number-range-control {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-              }
-              .range-slider {
-                flex: 0 0 65%;
-              }
-            </style>
             <div class="number-range-control">
               <input
                 type="range"
@@ -798,7 +954,6 @@ export class UltraBarModule extends BaseUltraModule {
                 type="number"
                 class="range-input"
                 min="8"
-                max="60"
                 step="2"
                 .value="${(barModule as any).height ?? 20}"
                 @input=${(e: Event) => {
@@ -814,7 +969,7 @@ export class UltraBarModule extends BaseUltraModule {
                     const target = e.target as HTMLInputElement;
                     const currentValue = parseInt(target.value) || 20;
                     const increment = e.key === 'ArrowUp' ? 2 : -2;
-                    const newValue = Math.max(8, Math.min(60, currentValue + increment));
+                    const newValue = Math.max(8, currentValue + increment);
                     updateModule({ height: newValue });
                   }
                 }}
@@ -851,7 +1006,6 @@ export class UltraBarModule extends BaseUltraModule {
                 type="number"
                 class="gap-input"
                 min="0"
-                max="50"
                 step="1"
                 .value="${barModule.border_radius ?? 10}"
                 @input=${(e: Event) => {
@@ -906,7 +1060,6 @@ export class UltraBarModule extends BaseUltraModule {
                 type="number"
                 class="gap-input"
                 min="10"
-                max="100"
                 step="5"
                 .value="${barModule.bar_width || 100}"
                 @input=${(e: Event) => {
@@ -1096,7 +1249,401 @@ export class UltraBarModule extends BaseUltraModule {
                 `
               : ''
           }
+
+          <!-- Glass Blur Amount (only show when glass style is selected) -->
+          ${
+            barModule.bar_style === 'glass'
+              ? html`
+                  <div class="field-container" style="margin-bottom: 24px;">
+                    <div class="field-title">
+                      ${localize('editor.bar.appearance.glass_blur', lang, 'Glass Blur Amount')}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.appearance.glass_blur_desc',
+                        lang,
+                        'Adjust the blur intensity of the glass effect.'
+                      )}
+                    </div>
+                    <div
+                      class="gap-control-container"
+                      style="display: flex; align-items: center; gap: 12px;"
+                    >
+                      <input
+                        type="range"
+                        class="gap-slider"
+                        min="0"
+                        max="20"
+                        step="1"
+                        .value="${barModule.glass_blur_amount || 8}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = parseInt(target.value);
+                          if (!isNaN(value)) {
+                            updateModule({ glass_blur_amount: value });
+                          }
+                        }}
+                      />
+                      <input
+                        type="number"
+                        class="gap-input"
+                        min="0"
+                        max="20"
+                        step="1"
+                        .value="${barModule.glass_blur_amount || 8}"
+                        @input=${(e: Event) => {
+                          const target = e.target as HTMLInputElement;
+                          const value = parseInt(target.value);
+                          if (!isNaN(value)) {
+                            updateModule({ glass_blur_amount: value });
+                          }
+                        }}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = parseInt(target.value) || 8;
+                            const increment = e.key === 'ArrowUp' ? 1 : -1;
+                            const newValue = Math.max(0, Math.min(20, currentValue + increment));
+                            updateModule({ glass_blur_amount: newValue });
+                          }
+                        }}
+                      />
+                      <button
+                        class="reset-btn"
+                        @click=${() => updateModule({ glass_blur_amount: 8 })}
+                        title="${localize(
+                          'editor.fields.reset_default_value',
+                          lang,
+                          'Reset to default ({value})'
+                        ).replace('{value}', '8')}"
+                      >
+                        <ha-icon icon="mdi:refresh"></ha-icon>
+                      </button>
+                    </div>
+                  </div>
+                `
+              : ''
+          }
         </div>
+
+        <!-- Minimal Style Icon Configuration Section -->
+        ${
+          barModule.bar_style === 'minimal'
+            ? html`
+                <div
+                  class="settings-section"
+                  style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-bottom: 32px;"
+                >
+                  <div
+                    class="section-title"
+                    style="font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--primary-color); margin-bottom: 16px; padding-bottom: 0; border-bottom: none; letter-spacing: 0.5px;"
+                  >
+                    ${localize('editor.bar.minimal.icon_config', lang, 'Minimal Style Icon')}
+                  </div>
+
+                  <!-- Enable Icon Toggle -->
+                  <div
+                    class="field-group"
+                    style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                  >
+                    <div>
+                      <div
+                        class="field-title"
+                        style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                      >
+                        ${localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon')}
+                      </div>
+                    </div>
+                    <ha-switch
+                      .checked=${barModule.minimal_icon_enabled || false}
+                      @change=${(e: Event) => {
+                        const target = e.target as any;
+                        updateModule({ minimal_icon_enabled: target.checked });
+                      }}
+                    ></ha-switch>
+                  </div>
+
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                  >
+                    ${localize(
+                      'editor.bar.minimal.icon_enabled_desc',
+                      lang,
+                      'Enable icon display to replace or enhance the dot indicator in minimal bar style.'
+                    )}
+                  </div>
+
+                  ${barModule.minimal_icon_enabled
+                    ? html`
+                        <!-- Icon Picker -->
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                          >
+                            ${localize('editor.bar.minimal.icon', lang, 'Icon')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.bar.minimal.icon_desc',
+                              lang,
+                              'Select the icon to display (e.g., mdi:battery).'
+                            )}
+                          </div>
+                          <ha-icon-picker
+                            .hass=${hass}
+                            .value=${barModule.minimal_icon || ''}
+                            .placeholder=${'mdi:circle'}
+                            @value-changed=${(e: CustomEvent) =>
+                              updateModule({ minimal_icon: e.detail.value })}
+                          ></ha-icon-picker>
+                        </div>
+
+                        <!-- Icon Display Mode -->
+                        <div class="field-group" style="margin-bottom: 16px;">
+                          <div
+                            class="field-title"
+                            style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                          >
+                            ${localize('editor.bar.minimal.icon_mode', lang, 'Display Mode')}
+                          </div>
+                          <div
+                            class="field-description"
+                            style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 8px;"
+                          >
+                            ${localize(
+                              'editor.bar.minimal.icon_mode_desc',
+                              lang,
+                              'Choose how the icon is displayed with the dot.'
+                            )}
+                          </div>
+                          ${this.renderUcForm(
+                            hass,
+                            { minimal_icon_mode: barModule.minimal_icon_mode || 'icon-in-dot' },
+                            [
+                              this.selectField('minimal_icon_mode', [
+                                {
+                                  value: 'dot-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_dot_only',
+                                    lang,
+                                    'Dot Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_only',
+                                    lang,
+                                    'Icon Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-in-dot',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_in_dot',
+                                    lang,
+                                    'Icon in Dot'
+                                  ),
+                                },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              const next = e.detail.value.minimal_icon_mode;
+                              const prev = barModule.minimal_icon_mode || 'icon-in-dot';
+                              if (next === prev) return;
+                              updateModule({ minimal_icon_mode: next });
+                              setTimeout(() => {
+                                this.triggerPreviewUpdate();
+                              }, 50);
+                            },
+                            false
+                          )}
+                        </div>
+
+                        <!-- Icon Size Auto Toggle -->
+                        <div
+                          class="field-group"
+                          style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                        >
+                          <div>
+                            <div
+                              class="field-title"
+                              style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                            >
+                              ${localize('editor.bar.minimal.icon_size_auto', lang, 'Auto Size')}
+                            </div>
+                          </div>
+                          <ha-switch
+                            .checked=${barModule.minimal_icon_size_auto !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              updateModule({ minimal_icon_size_auto: target.checked });
+                            }}
+                          ></ha-switch>
+                        </div>
+
+                        <div
+                          class="field-description"
+                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                        >
+                          ${localize(
+                            'editor.bar.minimal.icon_size_auto_desc',
+                            lang,
+                            'Automatically scale icon size based on bar height.'
+                          )}
+                        </div>
+
+                        <!-- Manual Icon Size (only if auto is disabled) -->
+                        ${barModule.minimal_icon_size_auto === false
+                          ? html`
+                              <div class="field-container" style="margin-bottom: 24px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_size', lang, 'Icon Size')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_size_desc',
+                                    lang,
+                                    'Manually set the icon size in pixels.'
+                                  )}
+                                </div>
+                                <div class="number-range-control">
+                                  <input
+                                    type="range"
+                                    class="range-slider"
+                                    min="8"
+                                    max="48"
+                                    step="1"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const value = parseInt(target.value);
+                                      updateModule({ minimal_icon_size: value });
+                                    }}
+                                  />
+                                  <input
+                                    type="number"
+                                    class="range-input"
+                                    min="8"
+                                    step="1"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const target = e.target as HTMLInputElement;
+                                      const value = parseInt(target.value);
+                                      if (!isNaN(value)) {
+                                        updateModule({ minimal_icon_size: value });
+                                      }
+                                    }}
+                                    @keydown=${(e: KeyboardEvent) => {
+                                      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        const target = e.target as HTMLInputElement;
+                                        const currentValue = parseInt(target.value) || 16;
+                                        const increment = e.key === 'ArrowUp' ? 1 : -1;
+                                        const newValue = Math.max(
+                                          8,
+                                          Math.min(48, currentValue + increment)
+                                        );
+                                        updateModule({ minimal_icon_size: newValue });
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    class="range-reset-btn"
+                                    @click=${() => updateModule({ minimal_icon_size: 24 })}
+                                    title="${localize(
+                                      'editor.fields.reset_default_value',
+                                      lang,
+                                      'Reset to default ({value})'
+                                    ).replace('{value}', '24')}"
+                                  >
+                                    <ha-icon icon="mdi:refresh"></ha-icon>
+                                  </button>
+                                </div>
+                              </div>
+                            `
+                          : ''}
+
+                        <!-- Use Dot Color Toggle -->
+                        <div
+                          class="field-group"
+                          style="margin-bottom: 8px; display: grid !important; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; width: 100%;"
+                        >
+                          <div>
+                            <div
+                              class="field-title"
+                              style="font-size: 14px !important; font-weight: 600 !important; margin-bottom: 4px;"
+                            >
+                              ${localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color')}
+                            </div>
+                          </div>
+                          <ha-switch
+                            .checked=${barModule.minimal_icon_use_dot_color !== false}
+                            @change=${(e: Event) => {
+                              const target = e.target as any;
+                              updateModule({ minimal_icon_use_dot_color: target.checked });
+                            }}
+                          ></ha-switch>
+                        </div>
+
+                        <div
+                          class="field-description"
+                          style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 16px;"
+                        >
+                          ${localize(
+                            'editor.bar.minimal.use_dot_color_desc',
+                            lang,
+                            'Use the dot color (including gradient colors) for the icon.'
+                          )}
+                        </div>
+
+                        <!-- Custom Icon Color (only if use_dot_color is false) -->
+                        ${barModule.minimal_icon_use_dot_color === false
+                          ? html`
+                              <div class="field-container" style="margin-bottom: 16px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_color', lang, 'Icon Color')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_color_desc',
+                                    lang,
+                                    'Set a custom color for the icon.'
+                                  )}
+                                </div>
+                                <ultra-color-picker
+                                  style="width: 100%;"
+                                  .value=${barModule.minimal_icon_color || ''}
+                                  .defaultValue=${'var(--primary-color)'}
+                                  .hass=${hass}
+                                  @value-changed=${(e: CustomEvent) =>
+                                    updateModule({ minimal_icon_color: e.detail.value })}
+                                ></ultra-color-picker>
+                              </div>
+                            `
+                          : ''}
+                      `
+                    : html`
+                        <div
+                          style="text-align: center; padding: 20px; color: var(--secondary-text-color); font-style: italic;"
+                        >
+                          ${localize(
+                            'editor.bar.minimal.enable_toggle',
+                            lang,
+                            'Enable the toggle above to configure icon settings'
+                          )}
+                        </div>
+                      `}
+                </div>
+              `
+            : ''
+        }
 
         <!-- Percentage Text Display Section -->
         <div
@@ -1183,7 +1730,7 @@ export class UltraBarModule extends BaseUltraModule {
                         type="range"
                         class="range-slider"
                         min="8"
-                        max="32"
+                        max="100"
                         step="1"
                         .value="${barModule.percentage_text_size || 14}"
                         @input=${(e: Event) => {
@@ -1196,7 +1743,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.percentage_text_size || 14}"
                         @input=${(e: Event) => {
@@ -1212,7 +1758,7 @@ export class UltraBarModule extends BaseUltraModule {
                             const target = e.target as HTMLInputElement;
                             const currentValue = parseInt(target.value) || 14;
                             const increment = e.key === 'ArrowUp' ? 1 : -1;
-                            const newValue = Math.max(8, Math.min(32, currentValue + increment));
+                            const newValue = Math.max(8, currentValue + increment);
                             updateModule({ percentage_text_size: newValue });
                           }
                         }}
@@ -1253,6 +1799,14 @@ export class UltraBarModule extends BaseUltraModule {
                             value: 'right',
                             label: localize('editor.common.right', lang, 'Right'),
                           },
+                          {
+                            value: 'follow-fill',
+                            label: localize(
+                              'editor.bar.text_display.follow_fill',
+                              lang,
+                              'Follow Fill'
+                            ),
+                          },
                         ]),
                       ],
                       (e: CustomEvent) => {
@@ -1267,6 +1821,71 @@ export class UltraBarModule extends BaseUltraModule {
                       },
                       false
                     )}
+                  </div>
+
+                  <!-- Text Formatting -->
+                  <div class="field-container" style="margin-bottom: 16px;">
+                    <div class="field-title">
+                      ${localize(
+                        'editor.bar.text_display.text_formatting',
+                        lang,
+                        'Text Formatting'
+                      )}
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.text_display.text_formatting_desc',
+                        lang,
+                        'Apply formatting styles to the percentage text.'
+                      )}
+                    </div>
+                    <div class="format-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button
+                        class="format-btn ${barModule.percentage_text_bold ? 'active' : ''}"
+                        @click=${() =>
+                          updateModule({ percentage_text_bold: !barModule.percentage_text_bold })}
+                        style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${barModule.percentage_text_bold
+                          ? 'var(--primary-color)'
+                          : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${barModule.percentage_text_bold
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'};"
+                        title="Bold"
+                      >
+                        <ha-icon icon="mdi:format-bold"></ha-icon>
+                      </button>
+                      <button
+                        class="format-btn ${barModule.percentage_text_italic ? 'active' : ''}"
+                        @click=${() =>
+                          updateModule({
+                            percentage_text_italic: !barModule.percentage_text_italic,
+                          })}
+                        style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${barModule.percentage_text_italic
+                          ? 'var(--primary-color)'
+                          : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${barModule.percentage_text_italic
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'};"
+                        title="Italic"
+                      >
+                        <ha-icon icon="mdi:format-italic"></ha-icon>
+                      </button>
+                      <button
+                        class="format-btn ${barModule.percentage_text_strikethrough
+                          ? 'active'
+                          : ''}"
+                        @click=${() =>
+                          updateModule({
+                            percentage_text_strikethrough: !barModule.percentage_text_strikethrough,
+                          })}
+                        style="padding: 8px; border: 1px solid var(--divider-color, #cccccc); border-radius: 4px; background: ${barModule.percentage_text_strikethrough
+                          ? 'var(--primary-color)'
+                          : 'var(--secondary-background-color)'}; cursor: pointer; transition: all 0.2s ease; color: ${barModule.percentage_text_strikethrough
+                          ? 'var(--text-primary-color)'
+                          : 'var(--primary-text-color)'};"
+                        title="Strikethrough"
+                      >
+                        <ha-icon icon="mdi:format-strikethrough"></ha-icon>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Text Color -->
@@ -1392,7 +2011,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.left_title_size || 14}"
                         @input=${(e: Event) => {
@@ -1449,7 +2067,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.left_value_size || 14}"
                         @input=${(e: Event) => {
@@ -1544,6 +2161,67 @@ export class UltraBarModule extends BaseUltraModule {
                         </div>
                       `
                     : ''}
+
+                  <!-- Left Side Actions -->
+                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
+                    >
+                      ${localize('editor.bar.left.actions', lang, 'Left Side Actions')}
+                    </div>
+                    <div class="field-description" style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);">
+                      ${localize('editor.bar.left.actions_desc', lang, 'Configure what happens when tapping the left side info')}
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ left_tap_action: barModule.left_tap_action || { action: 'default' } }}
+                        .schema=${[
+                          {
+                            name: 'left_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ left_tap_action: e.detail.value.left_tap_action })}
+                      ></ha-form>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ left_hold_action: barModule.left_hold_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'left_hold_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.hold_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ left_hold_action: e.detail.value.left_hold_action })}
+                      ></ha-form>
+                    </div>
+                    <div>
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ left_double_tap_action: barModule.left_double_tap_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'left_double_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ left_double_tap_action: e.detail.value.left_double_tap_action })}
+                      ></ha-form>
+                    </div>
+                  </div>
                 `
               : html`
                   <div
@@ -1654,7 +2332,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.right_title_size || 14}"
                         @input=${(e: Event) => {
@@ -1711,7 +2388,6 @@ export class UltraBarModule extends BaseUltraModule {
                         type="number"
                         class="range-input"
                         min="8"
-                        max="32"
                         step="1"
                         .value="${barModule.right_value_size || 14}"
                         @input=${(e: Event) => {
@@ -1793,18 +2469,90 @@ export class UltraBarModule extends BaseUltraModule {
                               'Template to format the right-side value using Jinja2 syntax'
                             )}
                           </div>
-                          <ultra-template-editor
-                            .hass=${hass}
-                            .value=${barModule.right_template || ''}
-                            .placeholder=${"{{ states('sensor.example') }}"}
-                            .minHeight=${100}
-                            .maxHeight=${300}
-                            @value-changed=${(e: CustomEvent) =>
-                              updateModule({ right_template: e.detail.value })}
-                          ></ultra-template-editor>
+                          <div
+                            @mousedown=${(e: Event) => {
+                              // Only stop propagation for drag operations, not clicks on the editor
+                              const target = e.target as HTMLElement;
+                              if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                e.stopPropagation();
+                              }
+                            }}
+                            @dragstart=${(e: Event) => e.stopPropagation()}
+                          >
+                            <ultra-template-editor
+                              .hass=${hass}
+                              .value=${barModule.right_template || ''}
+                              .placeholder=${"{{ states('sensor.example') }}"}
+                              .minHeight=${100}
+                              .maxHeight=${300}
+                              @value-changed=${(e: CustomEvent) =>
+                                updateModule({ right_template: e.detail.value })}
+                            ></ultra-template-editor>
+                          </div>
                         </div>
                       `
                     : ''}
+
+                  <!-- Right Side Actions -->
+                  <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.2);">
+                    <div
+                      class="field-title"
+                      style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--primary-color);"
+                    >
+                      ${localize('editor.bar.right.actions', lang, 'Right Side Actions')}
+                    </div>
+                    <div class="field-description" style="font-size: 12px; margin-bottom: 12px; color: var(--secondary-text-color);">
+                      ${localize('editor.bar.right.actions_desc', lang, 'Configure what happens when tapping the right side info')}
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ right_tap_action: barModule.right_tap_action || { action: 'default' } }}
+                        .schema=${[
+                          {
+                            name: 'right_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ right_tap_action: e.detail.value.right_tap_action })}
+                      ></ha-form>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ right_hold_action: barModule.right_hold_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'right_hold_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.hold_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ right_hold_action: e.detail.value.right_hold_action })}
+                      ></ha-form>
+                    </div>
+                    <div>
+                      <ha-form
+                        .hass=${hass}
+                        .data=${{ right_double_tap_action: barModule.right_double_tap_action || { action: 'nothing' } }}
+                        .schema=${[
+                          {
+                            name: 'right_double_tap_action',
+                            selector: { ui_action: {} },
+                          },
+                        ]}
+                        .computeLabel=${(schema: any) =>
+                          hass.localize('ui.panel.lovelace.editor.card.generic.double_tap_action')}
+                        @value-changed=${(e: CustomEvent) =>
+                          updateModule({ right_double_tap_action: e.detail.value.right_double_tap_action })}
+                      ></ha-form>
+                    </div>
+                  </div>
                 `
               : html`
                   <div
@@ -1926,6 +2674,233 @@ export class UltraBarModule extends BaseUltraModule {
               }
             </div>
           </div>
+
+          <!-- Minimal Style Icon Configuration -->
+          ${
+            barModule.bar_style === 'minimal'
+              ? html`
+                  <div class="field-group" style="margin-top: 24px;">
+                    <div
+                      style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
+                    >
+                      <div class="field-title">
+                        ${localize('editor.bar.minimal.icon_enabled', lang, 'Enable Icon')}
+                      </div>
+                      <ha-switch
+                        .checked=${barModule.minimal_icon_enabled || false}
+                        @change=${(e: Event) =>
+                          updateModule({
+                            minimal_icon_enabled: (e.target as HTMLInputElement).checked,
+                          })}
+                      ></ha-switch>
+                    </div>
+                    <div class="field-description">
+                      ${localize(
+                        'editor.bar.minimal.icon_enabled_desc',
+                        lang,
+                        'Show an icon on the minimal bar indicator'
+                      )}
+                    </div>
+                  </div>
+
+                  ${barModule.minimal_icon_enabled
+                    ? html`
+                        <!-- Icon Selection -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          ${this.renderFieldSection(
+                            localize('editor.bar.minimal.icon', lang, 'Icon'),
+                            localize(
+                              'editor.bar.minimal.icon_desc',
+                              lang,
+                              'Choose an icon to display (e.g., mdi:battery)'
+                            ),
+                            hass,
+                            { minimal_icon: barModule.minimal_icon || '' },
+                            [this.iconField('minimal_icon')],
+                            (e: CustomEvent) => updateModule(e.detail.value)
+                          )}
+                        </div>
+
+                        <!-- Icon Display Mode -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          ${this.renderFieldSection(
+                            localize('editor.bar.minimal.icon_mode', lang, 'Display Mode'),
+                            localize(
+                              'editor.bar.minimal.icon_mode_desc',
+                              lang,
+                              'How to display the icon'
+                            ),
+                            hass,
+                            { minimal_icon_mode: barModule.minimal_icon_mode || 'icon-in-dot' },
+                            [
+                              this.selectField('minimal_icon_mode', [
+                                {
+                                  value: 'dot-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_dot_only',
+                                    lang,
+                                    'Dot Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-only',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_only',
+                                    lang,
+                                    'Icon Only'
+                                  ),
+                                },
+                                {
+                                  value: 'icon-in-dot',
+                                  label: localize(
+                                    'editor.bar.minimal.mode_icon_in_dot',
+                                    lang,
+                                    'Icon in Dot'
+                                  ),
+                                },
+                              ]),
+                            ],
+                            (e: CustomEvent) => {
+                              updateModule(e.detail.value);
+                              setTimeout(() => this.triggerPreviewUpdate(), 50);
+                            }
+                          )}
+                        </div>
+
+                        <!-- Icon Size Controls -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          <div
+                            style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
+                          >
+                            <div class="field-title">
+                              ${localize(
+                                'editor.bar.minimal.icon_size_auto',
+                                lang,
+                                'Auto-Scale Icon'
+                              )}
+                            </div>
+                            <ha-switch
+                              .checked=${barModule.minimal_icon_size_auto !== false}
+                              @change=${(e: Event) =>
+                                updateModule({
+                                  minimal_icon_size_auto: (e.target as HTMLInputElement).checked,
+                                })}
+                            ></ha-switch>
+                          </div>
+                          <div class="field-description">
+                            ${localize(
+                              'editor.bar.minimal.icon_size_auto_desc',
+                              lang,
+                              'Automatically scale icon with bar height'
+                            )}
+                          </div>
+                        </div>
+
+                        ${barModule.minimal_icon_size_auto === false
+                          ? html`
+                              <div class="field-container" style="margin-top: 16px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_size', lang, 'Icon Size')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_size_desc',
+                                    lang,
+                                    'Custom icon size in pixels'
+                                  )}
+                                </div>
+                                <div class="number-range-control">
+                                  <input
+                                    type="range"
+                                    class="range-slider"
+                                    min="8"
+                                    max="48"
+                                    step="2"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) =>
+                                      updateModule({
+                                        minimal_icon_size: parseInt(
+                                          (e.target as HTMLInputElement).value
+                                        ),
+                                      })}
+                                  />
+                                  <input
+                                    type="number"
+                                    class="range-input"
+                                    min="8"
+                                    step="2"
+                                    .value="${barModule.minimal_icon_size || 24}"
+                                    @input=${(e: Event) => {
+                                      const value = parseInt((e.target as HTMLInputElement).value);
+                                      if (!isNaN(value)) updateModule({ minimal_icon_size: value });
+                                    }}
+                                  />
+                                  <button
+                                    class="range-reset-btn"
+                                    @click=${() => updateModule({ minimal_icon_size: 24 })}
+                                  >
+                                    <ha-icon icon="mdi:refresh"></ha-icon>
+                                  </button>
+                                </div>
+                              </div>
+                            `
+                          : ''}
+
+                        <!-- Icon Color Controls -->
+                        <div class="field-group" style="margin-top: 16px;">
+                          <div
+                            style="display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px;"
+                          >
+                            <div class="field-title">
+                              ${localize('editor.bar.minimal.use_dot_color', lang, 'Use Dot Color')}
+                            </div>
+                            <ha-switch
+                              .checked=${barModule.minimal_icon_use_dot_color !== false}
+                              @change=${(e: Event) =>
+                                updateModule({
+                                  minimal_icon_use_dot_color: (e.target as HTMLInputElement)
+                                    .checked,
+                                })}
+                            ></ha-switch>
+                          </div>
+                          <div class="field-description">
+                            ${localize(
+                              'editor.bar.minimal.use_dot_color_desc',
+                              lang,
+                              'Use the dot color for the icon (matches gradient)'
+                            )}
+                          </div>
+                        </div>
+
+                        ${barModule.minimal_icon_use_dot_color === false
+                          ? html`
+                              <div class="field-container" style="margin-top: 16px;">
+                                <div class="field-title">
+                                  ${localize('editor.bar.minimal.icon_color', lang, 'Icon Color')}
+                                </div>
+                                <div class="field-description">
+                                  ${localize(
+                                    'editor.bar.minimal.icon_color_desc',
+                                    lang,
+                                    'Custom color for the icon'
+                                  )}
+                                </div>
+                                <ultra-color-picker
+                                  style="width: 100%;"
+                                  .value=${barModule.minimal_icon_color || ''}
+                                  .defaultValue=${'var(--primary-color)'}
+                                  .hass=${hass}
+                                  @value-changed=${(e: CustomEvent) =>
+                                    updateModule({ minimal_icon_color: e.detail.value })}
+                                ></ultra-color-picker>
+                              </div>
+                            `
+                          : ''}
+                      `
+                    : ''}
+                `
+              : ''
+          }
 
           <!-- Left Side Colors -->
           ${
@@ -2621,99 +3596,279 @@ export class UltraBarModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const barModule = module as BarModule;
 
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!barModule.entity || barModule.entity.trim() === '') {
+      return this.renderGradientErrorState(
+        'Select Entity',
+        'Choose an entity in the General tab',
+        'mdi:chart-box-outline'
+      );
+    }
+
     // Resolve bar percentage based on selected percentage calculation mode
     let percentage = 0;
+    let barColor: string | undefined;
+    let barLabel: string | undefined;
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
 
-    // For preview purposes, if no entity is configured, show a demo bar with 65%
-    const hasValidEntity = barModule.entity && hass?.states[barModule.entity];
-    const isPreviewMode = !hasValidEntity;
-
-    const pctType = (barModule as any).percentage_type || 'entity';
-    if (pctType === 'template' && (barModule as any).percentage_template) {
-      // Template-driven percentage
+    // PRIORITY 1: Unified template (if enabled)
+    if (barModule.unified_template_mode && barModule.unified_template) {
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       }
       if (hass) {
         if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-        const tpl = (barModule as any).percentage_template as string;
-        const key = `bar_percentage_${barModule.id}_${this._hashString(tpl)}`;
-        if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-          this._templateService.subscribeToTemplate(tpl, key, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
+        const templateHash = this._hashString(barModule.unified_template);
+        const templateKey = `unified_bar_${barModule.id}_${templateHash}`;
+
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext(barModule.entity, hass, {
+            entity: barModule.entity,
+          });
+          this._templateService.subscribeToTemplate(
+            barModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.value !== undefined) {
+              const num =
+                typeof parsed.value === 'number' ? parsed.value : parseFloat(String(parsed.value));
+              if (!isNaN(num)) {
+                percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
               }
             }
-          });
-        }
-        const rendered = hass.__uvc_template_strings?.[key];
-        if (rendered !== undefined) {
-          const num = parseFloat(String(rendered));
-          if (!isNaN(num)) {
-            // Accept 0..100 directly; if 0..1 assume fraction and upscale
-            percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
+            if (parsed.color) barColor = parsed.color;
+            if (parsed.label) barLabel = parsed.label;
           }
         }
       }
-    } else if (pctType === 'attribute') {
-      const entId = (barModule as any).percentage_attribute_entity || (barModule as any).entity;
-      const attrName = (barModule as any).percentage_attribute_name || '';
-      const st = entId ? hass?.states[entId] : undefined;
-      const raw = attrName ? (st?.attributes as any)?.[attrName] : undefined;
-      const unit = st?.attributes?.unit_of_measurement || '';
-      const num = parseFloat(String(raw ?? '0'));
-      if (!isNaN(num)) {
-        if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
-          percentage = clampPercent(num);
-        } else if (st?.attributes?.max) {
-          const max = parseFloat(String(st.attributes.max));
-          percentage = max > 0 ? clampPercent((num / max) * 100) : 0;
+    }
+
+    // For preview purposes, if no entity is configured, show a demo bar with 65%
+    const hasValidEntity = barModule.entity && hass?.states[barModule.entity];
+    const isPreviewMode = !hasValidEntity;
+
+    // Helper to resolve min/max values from templates or static values
+    const resolveMinMax = (): { min: number | undefined; max: number | undefined } => {
+      let resolvedMin: number | undefined = barModule.percentage_min;
+      let resolvedMax: number | undefined = barModule.percentage_max;
+
+      // Helper to check if value is a real Jinja template
+      const isRealTemplate = (val: string) => val.includes('{{') || val.includes('{%');
+
+      // Resolve min template if enabled
+      if (barModule.percentage_min_template_mode && barModule.percentage_min_template) {
+        const tpl = barModule.percentage_min_template;
+        // If it's just a plain number (not a real template), use it directly
+        if (!isRealTemplate(tpl)) {
+          const directNum = parseFloat(tpl);
+          if (!isNaN(directNum)) resolvedMin = directNum;
+        } else if (hass) {
+          // Real Jinja template - use template service
+          if (!this._templateService) {
+            this._templateService = new TemplateService(hass);
+          }
+          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+          const key = `bar_min_${barModule.id}_${this._hashString(tpl)}`;
+          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
+            this._templateService.subscribeToTemplate(tpl, key, () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            });
+          }
+          const rendered = hass.__uvc_template_strings?.[key];
+          if (rendered !== undefined) {
+            const num = parseFloat(String(rendered));
+            if (!isNaN(num)) resolvedMin = num;
+          }
+        }
+      }
+
+      // Resolve max template if enabled
+      if (barModule.percentage_max_template_mode && barModule.percentage_max_template) {
+        const tpl = barModule.percentage_max_template;
+        // If it's just a plain number (not a real template), use it directly
+        if (!isRealTemplate(tpl)) {
+          const directNum = parseFloat(tpl);
+          if (!isNaN(directNum)) resolvedMax = directNum;
+        } else if (hass) {
+          // Real Jinja template - use template service
+          if (!this._templateService) {
+            this._templateService = new TemplateService(hass);
+          }
+          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+          const key = `bar_max_${barModule.id}_${this._hashString(tpl)}`;
+          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
+            this._templateService.subscribeToTemplate(tpl, key, () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            });
+          }
+          const rendered = hass.__uvc_template_strings?.[key];
+          if (rendered !== undefined) {
+            const num = parseFloat(String(rendered));
+            if (!isNaN(num)) resolvedMax = num;
+          }
+        }
+      }
+
+      return { min: resolvedMin, max: resolvedMax };
+    };
+
+    // Calculate percentage with min/max range: ((value - min) / (max - min)) * 100
+    const calculatePercentageWithRange = (
+      value: number,
+      autoMin: number,
+      autoMax: number,
+      manualMin?: number,
+      manualMax?: number
+    ): number => {
+      const min = manualMin !== undefined ? manualMin : autoMin;
+      const max = manualMax !== undefined ? manualMax : autoMax;
+      const range = max - min;
+      if (range <= 0) return 0;
+      return clampPercent(((value - min) / range) * 100);
+    };
+
+    // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
+    if (!barModule.unified_template_mode) {
+      const pctType = (barModule as any).percentage_type || 'entity';
+      if (pctType === 'template' && (barModule as any).percentage_template) {
+        // Template-driven percentage (template already returns final percentage, no min/max needed)
+        if (!this._templateService && hass) {
+          this._templateService = new TemplateService(hass);
+        }
+        if (hass) {
+          if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+          const tpl = (barModule as any).percentage_template as string;
+          const key = `bar_percentage_${barModule.id}_${this._hashString(tpl)}`;
+          if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
+            this._templateService.subscribeToTemplate(tpl, key, () => {
+              if (typeof window !== 'undefined') {
+                // Use global debounced update
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            });
+          }
+          const rendered = hass.__uvc_template_strings?.[key];
+          if (rendered !== undefined) {
+            const num = parseFloat(String(rendered));
+            if (!isNaN(num)) {
+              // Accept 0..100 directly; if 0..1 assume fraction and upscale
+              percentage = num <= 1 ? clampPercent(num * 100) : clampPercent(num);
+            }
+          }
+        }
+      } else if (pctType === 'attribute') {
+        const { min: manualMin, max: manualMax } = resolveMinMax();
+        const entId = (barModule as any).percentage_attribute_entity || (barModule as any).entity;
+        const attrName = (barModule as any).percentage_attribute_name || '';
+        const st = entId ? hass?.states[entId] : undefined;
+        const raw = attrName ? (st?.attributes as any)?.[attrName] : undefined;
+        const unit = st?.attributes?.unit_of_measurement || '';
+        const num = parseFloat(String(raw ?? '0'));
+        if (!isNaN(num)) {
+          // If manual min/max are set, use them for range calculation
+          if (manualMin !== undefined || manualMax !== undefined) {
+            percentage = calculatePercentageWithRange(num, 0, 100, manualMin, manualMax);
+          } else if (unit === '%' || String(raw).toString().trim().endsWith('%')) {
+            percentage = clampPercent(num);
+          } else if (st?.attributes?.max) {
+            const max = parseFloat(String(st.attributes.max));
+            const min = st?.attributes?.min !== undefined ? parseFloat(String(st.attributes.min)) : 0;
+            percentage = calculatePercentageWithRange(num, min, max);
+          } else {
+            // Assume direct percent
+            percentage = clampPercent(num);
+          }
+        }
+      } else if (pctType === 'difference') {
+        // Difference mode calculates current/total ratio - min/max can still adjust the range
+        const { min: manualMin, max: manualMax } = resolveMinMax();
+        const currId = (barModule as any).percentage_current_entity;
+        const totalId = (barModule as any).percentage_total_entity;
+        const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
+        const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
+        
+        if (manualMin !== undefined || manualMax !== undefined) {
+          // If manual range is set, use current value against that range
+          percentage = calculatePercentageWithRange(curr, 0, total, manualMin, manualMax);
         } else {
-          // Assume direct percent
-          percentage = clampPercent(num);
+          percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
         }
-      }
-    } else if (pctType === 'difference') {
-      const currId = (barModule as any).percentage_current_entity;
-      const totalId = (barModule as any).percentage_total_entity;
-      const curr = currId ? parseFloat(String(hass?.states[currId]?.state ?? '0')) : 0;
-      const total = totalId ? parseFloat(String(hass?.states[totalId]?.state ?? '0')) : 0;
-      percentage = total > 0 ? clampPercent((curr / total) * 100) : 0;
-    } else {
-      // Entity-based percentage
-      const entityState = hass?.states[barModule.entity];
-      let value = 0;
-      let maxValue = 100;
-      let unit = '';
+      } else {
+        // Entity-based percentage with min/max support
+        const { min: manualMin, max: manualMax } = resolveMinMax();
+        const entityState = hass?.states[barModule.entity];
+        let value = 0;
+        let autoMin = 0;
+        let autoMax = 100;
+        let unit = '';
 
-      if (entityState) {
-        value = parseFloat(entityState.state) || 0;
-        unit = entityState.attributes?.unit_of_measurement || '';
+        if (entityState) {
+          value = parseFloat(entityState.state) || 0;
+          unit = entityState.attributes?.unit_of_measurement || '';
 
-        if (entityState.attributes?.max) {
-          maxValue = parseFloat(entityState.attributes.max);
-        } else if (unit === '%') {
-          maxValue = 100;
-        } else if (entityState.attributes?.device_class === 'battery') {
-          maxValue = 100;
+          // Auto-detect min from entity attributes
+          if (entityState.attributes?.min !== undefined) {
+            autoMin = parseFloat(String(entityState.attributes.min)) || 0;
+          }
+
+          // Auto-detect max from entity attributes
+          if (entityState.attributes?.max !== undefined) {
+            autoMax = parseFloat(String(entityState.attributes.max)) || 100;
+          } else if (unit === '%') {
+            autoMax = 100;
+          } else if (entityState.attributes?.device_class === 'battery') {
+            autoMax = 100;
+          }
         }
+
+        // Calculate percentage with manual overrides taking precedence
+        percentage = calculatePercentageWithRange(value, autoMin, autoMax, manualMin, manualMax);
       }
-      percentage = clampPercent((value / maxValue) * 100);
     }
 
     // If in preview mode (no valid entity), show demo percentage
-    if (isPreviewMode) {
+    if (isPreviewMode && !barModule.unified_template_mode) {
       percentage = 65; // Demo value for preview
     }
 
@@ -2832,6 +3987,25 @@ export class UltraBarModule extends BaseUltraModule {
 
     const barHeight = `${barHeightValue}px`;
 
+    // Calculate total container height including text elements
+    let totalContainerHeight = barHeightValue;
+
+    // Note: Percentage text is now positioned absolutely on top of the bar for all styles
+    // No need to add extra height for minimal style percentage text
+
+    // Add space for left/right labels if enabled (below the bar)
+    if (barModule.left_enabled || barModule.right_enabled) {
+      const labelSize = Math.max(
+        (barModule as any).left_title_size || 14,
+        (barModule as any).left_value_size || 14,
+        (barModule as any).right_title_size || 14,
+        (barModule as any).right_value_size || 14
+      );
+      totalContainerHeight += labelSize + 16; // label height + margin
+    }
+
+    const totalContainerHeightPx = `${totalContainerHeight}px`;
+
     // Calculate border radius for the bar track. Prefer module value over global design so the slider takes effect immediately.
     const resolvedBorderRadius = (barModule.border_radius ??
       designProperties.border_radius ??
@@ -2842,7 +4016,8 @@ export class UltraBarModule extends BaseUltraModule {
         : (resolvedBorderRadius as number);
 
     // Generate gradient or solid color for bar fill
-    let barFillBackground = barModule.bar_color || moduleWithDesign.color || 'var(--primary-color)';
+    let barFillBackground =
+      barColor || barModule.bar_color || moduleWithDesign.color || 'var(--primary-color)';
 
     // Resolve CSS variable colors (var(--...)) to computed RGB values when needed.
     // This ensures gradients and value-based colors render the same whether a hex or a CSS variable is provided.
@@ -2854,10 +4029,10 @@ export class UltraBarModule extends BaseUltraModule {
       // Attempt to resolve CSS variables or named colors via a temporary element
       try {
         const probe = document.createElement('span');
-        probe.style.color = trimmed;
+        probe.style.backgroundColor = trimmed; // Use backgroundColor to preserve alpha
         // Use body for widest variable scope (HA themes apply at document level)
         document.body.appendChild(probe);
-        const computed = getComputedStyle(probe).color;
+        const computed = getComputedStyle(probe).backgroundColor; // Preserves RGBA
         probe.remove();
         return computed && computed !== 'rgba(0, 0, 0, 0)' ? computed : trimmed;
       } catch {
@@ -2865,7 +4040,7 @@ export class UltraBarModule extends BaseUltraModule {
       }
     };
 
-    // Helper function to interpolate color at specific position
+    // Helper function to interpolate color at specific position with alpha preservation
     const interpolateColorAtPosition = (stops: any[], position: number): string => {
       const sortedStops = [...stops].sort((a, b) => a.position - b.position);
 
@@ -2885,37 +4060,110 @@ export class UltraBarModule extends BaseUltraModule {
       if (beforeStop.position === position) return beforeStop.color;
       if (afterStop.position === position) return afterStop.color;
 
-      // Attempt to interpolate between the two stops, resolving CSS vars to RGB first
+      // Interpolate between the two stops using the updated interpolateColor method
       const range = afterStop.position - beforeStop.position;
       const factor = range === 0 ? 0 : (position - beforeStop.position) / range;
 
-      const toHex = (input: string): string | null => {
-        const resolved = resolveCSSColor(input);
-        if (!resolved) return null;
-        if (resolved.startsWith('#')) return resolved;
-        // Convert rgb/rgba to hex
-        const m = resolved.match(
-          /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([0-9.]+))?\s*\)/i
-        );
-        if (m) {
-          const r = Math.max(0, Math.min(255, parseInt(m[1], 10)));
-          const g = Math.max(0, Math.min(255, parseInt(m[2], 10)));
-          const b = Math.max(0, Math.min(255, parseInt(m[3], 10)));
-          return this.rgbToHex(r, g, b);
-        }
-        return null;
-      };
+      // Use the updated interpolateColor method which preserves alpha
+      return this.interpolateColor(beforeStop.color, afterStop.color, factor);
+    };
 
-      const beforeHex = toHex(beforeStop.color);
-      const afterHex = toHex(afterStop.color);
+    // Determine bar direction for all styles
+    const fillDirection = (barModule as any).bar_direction || 'left-to-right';
 
-      if (beforeHex && afterHex) {
-        return this.interpolateColor(beforeHex, afterHex, factor);
+    const resolveFontSize = (value: any, fallback: number): string => {
+      if (value === undefined || value === null || value === '') {
+        return `${fallback}px`;
+      }
+      if (typeof value === 'number') {
+        return `${value}px`;
+      }
+      const trimmed = String(value).trim();
+      if (trimmed === '') {
+        return `${fallback}px`;
+      }
+      const specialValues = ['inherit', 'initial', 'unset', 'auto'];
+      if (specialValues.includes(trimmed.toLowerCase())) {
+        return `${fallback}px`;
+      }
+      if (/^[0-9.]+$/.test(trimmed)) {
+        return `${trimmed}px`;
+      }
+      return trimmed;
+    };
+
+    const percentageFontSize = (() => {
+      const designSize = designProperties.font_size ?? moduleWithDesign.font_size;
+      if (designSize !== undefined && designSize !== null && designSize !== '') {
+        return resolveFontSize(designSize, barModule.percentage_text_size ?? 14);
+      }
+      return resolveFontSize(barModule.percentage_text_size ?? 14, 14);
+    })();
+
+    const followFillTransform =
+      fillDirection === 'right-to-left'
+        ? 'translate(-100%, -50%) translateX(4px)'
+        : 'translate(-100%, -50%) translateX(-4px)';
+
+    const showPercentageText = barModule.show_percentage !== false;
+    const percentageTextAlignment = barModule.percentage_text_alignment || 'center';
+
+    // Calculate the display text for the bar
+    // Store percentage in a separate const to ensure it's captured correctly
+    const displayPercentage = Math.round(percentage);
+    
+    const percentageDisplayText = (() => {
+      if (!showPercentageText) {
+        return '';
       }
 
-      // Fallback: choose the nearer stop color if we can't resolve both
-      return resolveCSSColor(factor < 0.5 ? beforeStop.color : afterStop.color);
-    };
+      if (barModule.show_value) {
+        if (isPreviewMode) {
+          return '65 kWh';
+        }
+
+        const pctType = (barModule as any).percentage_type || 'entity';
+
+        if (pctType === 'difference') {
+          const currentEntity = (barModule as any).percentage_current_entity;
+          if (currentEntity && hass?.states[currentEntity]) {
+            const currentState = hass.states[currentEntity];
+            try {
+              return formatEntityState(hass, currentEntity, {
+                includeUnit: true,
+              });
+            } catch (_e) {
+              return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
+            }
+          }
+        } else if (pctType === 'template') {
+          const template = (barModule as any).percentage_template;
+          if (template && hass) {
+            if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+            const key = `bar_percentage_${barModule.id}_${this._hashString(template)}`;
+            const rendered = hass.__uvc_template_strings?.[key];
+            if (rendered !== undefined) {
+              return String(rendered);
+            }
+          }
+        }
+
+        const entityState = hass?.states[barModule.entity];
+        if (entityState) {
+          try {
+            return formatEntityState(hass, barModule.entity, {
+              includeUnit: true,
+            });
+          } catch (_e) {
+            return `${entityState.state}${entityState.attributes?.unit_of_measurement || ''}`;
+          }
+        }
+        return 'N/A';
+      }
+
+      // Use the pre-calculated displayPercentage
+      return `${displayPercentage}%`;
+    })();
 
     if (barModule.use_gradient) {
       // Ensure gradient stops exist, create defaults if needed
@@ -2925,7 +4173,6 @@ export class UltraBarModule extends BaseUltraModule {
           : createDefaultGradientStops();
 
       // Determine gradient direction based on bar direction
-      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
       const gradientDirection = fillDirection === 'right-to-left' ? 'to left' : 'to right';
 
       // Build gradient string with resolved colors so CSS variables work reliably in all modes
@@ -3079,144 +4326,108 @@ export class UltraBarModule extends BaseUltraModule {
         }
         break;
       case 'neon-glow':
-        const glowColor = getGlowColorFromGradient(barFillBackground);
-        fillStyleCSS = `
-          box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor};
-          filter: brightness(1.2);
-        `;
-        barStyleCSS = `
-          box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        `;
+        // For neon glow, we'll add the glow as a separate element positioned at the percentage
+        // The glow element is added in the HTML template after the bar fill
+        {
+          // Get the base color for the glow effect (handles gradients intelligently)
+          const glowColor = getGlowColorFromGradient(barFillBackground);
+
+          // Helper to convert color to rgba with specific opacity
+          const toRgbaWithOpacity = (color: string, opacity: number): string => {
+            // If already rgba, replace the alpha value
+            if (color.startsWith('rgba(')) {
+              return color.replace(/,\s*[\d.]+\s*\)$/, `, ${opacity})`);
+            }
+            // If rgb, convert to rgba
+            if (color.startsWith('rgb(')) {
+              return color.replace('rgb(', 'rgba(').replace(')', `, ${opacity})`);
+            }
+            // For hex colors, CSS variables, or named colors, use color-mix (modern CSS)
+            // Fallback: just use the color as-is (browsers will handle it)
+            return color.includes('#') || color.startsWith('var(') || color.match(/^[a-z]+$/i)
+              ? `color-mix(in srgb, ${color} ${opacity * 100}%, transparent)`
+              : color;
+          };
+
+          fillStyleCSS = `
+            filter: brightness(1.2);
+            box-shadow: 
+              0 0 7px 2px ${toRgbaWithOpacity(glowColor, 0.7)},
+              0 0 14px 6px ${toRgbaWithOpacity(glowColor, 0.5)},
+              0 0 20px 10px ${toRgbaWithOpacity(glowColor, 0.3)},
+              inset 0 0 10px rgba(255, 255, 255, 0.8);
+          `;
+
+          barStyleCSS = `
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            overflow: hidden;
+          `;
+        }
         break;
       case 'outline':
         {
-          // Build layered backgrounds so border matches gradient and supports radius.
-          const hasGradient =
-            !!barModule.use_gradient &&
-            !!barModule.gradient_stops &&
-            (barModule.gradient_display_mode === 'full' ||
-              barModule.gradient_display_mode === 'cropped' ||
-              barModule.gradient_display_mode === 'value-based');
-
-          const stops =
-            barModule.gradient_stops && barModule.gradient_stops.length > 0
-              ? [...barModule.gradient_stops].sort((a, b) => a.position - b.position)
-              : createDefaultGradientStops();
-          const lastStop = stops[stops.length - 1];
-          const lastColor = lastStop
-            ? resolveCSSColor(lastStop.color)
-            : barModule.bar_color || 'var(--primary-color)';
-
-          // Determine gradient direction based on bar direction
-          const fillDirection = (barModule as any).bar_direction || 'left-to-right';
-          const gradientDirection = fillDirection === 'right-to-left' ? 'to left' : 'to right';
-          const gradStr = stops.map(s => `${resolveCSSColor(s.color)} ${s.position}%`).join(', ');
-
-          const pct = Math.max(0, Math.min(100, percentage));
-
-          // For cropped/value-based modes, determine the color at the current percentage
-          const getColorAtPercentage = (pos: number): string => {
-            // Use the same logic as interpolateColorAtPosition to handle CSS variables
-            return resolveCSSColor(interpolateColorAtPosition(stops, pos));
-          };
-
-          // Determine which color to extend based on gradient mode
-          let extendColor = lastColor;
-          if (
-            barModule.gradient_display_mode === 'cropped' ||
-            barModule.gradient_display_mode === 'value-based'
-          ) {
-            extendColor = getColorAtPercentage(pct);
-          }
-          // Layer order is important: first is topmost
-          // 1) Transparent layer clips the inner area (padding-box)
-          // 2) Gradient layer sized to the filled percent (border-box)
-          // 3) Base layer with the last color for the remaining ring (border-box)
-          // Determine the track background (gap color) so the gap is visible
-          const trackBg = trackBackground;
-
-          // Use the actual barFillBackground for border so it matches exactly
-          const gradientMode = barModule.gradient_display_mode || 'full';
-          const isRightToLeft = fillDirection === 'right-to-left';
-
-          let borderLayers = '';
-          let sizeRule = '';
-
-          if (hasGradient) {
-            if (gradientMode === 'value-based') {
-              // Value-based: solid color border matching fill
-              borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-              sizeRule = `background-size: 100% 100%, 100% 100%;`;
-            } else if (gradientMode === 'cropped') {
-              // Cropped: gradient up to percentage, then extend last color
-              if (isRightToLeft) {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 ${barFillBackground} border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;
-                           background-position: 0 0, ${100 - pct}% 0, 0 0;`;
-              } else {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 ${barFillBackground} border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
-              }
-            } else {
-              // Full: show full gradient for fill portion, extend last color for remaining border
-              if (isRightToLeft) {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 linear-gradient(${gradientDirection}, ${gradStr}) border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;
-                           background-position: 0 0, ${100 - pct}% 0, 0 0;`;
-              } else {
-                borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-                 linear-gradient(${gradientDirection}, ${gradStr}) border-box,
-                 linear-gradient(${gradientDirection}, ${extendColor}, ${extendColor}) border-box`;
-                sizeRule = `background-size: 100% 100%, ${pct}% 100%, 100% 100%;`;
-              }
-            }
-          } else {
-            // No gradient: solid color border
-            borderLayers = `linear-gradient(${trackBg}, ${trackBg}) padding-box,
-               linear-gradient(${gradientDirection}, ${barFillBackground}, ${barFillBackground}) border-box`;
-            sizeRule = `background-size: 100% 100%, 100% 100%;`;
-          }
+          // Outline style: Use same code for both solid and gradient modes
+          const trackColor = trackBackground || 'rgba(255, 255, 255, 0.1)';
+          const gapSize = 4;
+          const borderWidth = 2;
+          const outlineColor = resolveCSSColor(barModule.bar_color || 'var(--primary-color)');
 
           barStyleCSS = `
-            border: 2px solid transparent;
+            border: ${borderWidth}px solid ${outlineColor};
             border-radius: ${borderRadius}px;
-            padding: 4px;
-            background: ${borderLayers};
-            ${sizeRule}
-            background-repeat: no-repeat;
+            background: ${trackColor};
+            padding: ${gapSize}px;
           `;
 
           fillStyleCSS = `
             background: ${barFillBackground};
             border: none;
+            box-sizing: border-box;
             position: relative;
             margin: 0;
+            width: ${percentage}%;
+            transition: width 0.3s ease;
           `;
         }
         break;
       case 'glass':
-        barStyleCSS = `
-          backdrop-filter: blur(10px);
-          background-color: rgba(255,255,255,0.1) !important;
-          border: 1px solid rgba(255,255,255,0.2);
-        `;
-        if (barModule.use_gradient) {
-          fillOverlayCSS = `
-            backdrop-filter: blur(5px);
-            background-image: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+        {
+          // Liquid Glass effect inspired by iOS 16
+          // Creates a frosted glass appearance with subtle depth and translucency
+          const glassOpacity = 0.15;
+          const glassBorderOpacity = 0.25;
+          const glassBlur = barModule.glass_blur_amount || 8;
+
+          barStyleCSS = `
+            backdrop-filter: blur(${glassBlur}px) saturate(180%);
+            background: linear-gradient(
+              135deg,
+              rgba(255, 255, 255, ${glassOpacity * 0.8}) 0%,
+              rgba(255, 255, 255, ${glassOpacity * 0.4}) 50%,
+              rgba(255, 255, 255, ${glassOpacity}) 100%
+            );
+            border: 1px solid rgba(255, 255, 255, ${glassBorderOpacity});
+            border-radius: ${borderRadius}px;
+            box-shadow: 
+              0 8px 32px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+            position: relative;
           `;
-        } else {
-          fillStyleCSS = `
-            backdrop-filter: blur(5px);
-            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)) !important;
-          `;
+
+          // Fill should be solid, not glass - only the track background has glass effect
+          if (barModule.use_gradient) {
+            fillOverlayCSS = `
+              background: ${barFillBackground};
+              border-radius: ${Math.max(0, borderRadius - 2)}px;
+            `;
+          } else {
+            fillStyleCSS = `
+              background: ${barFillBackground};
+              border-radius: ${Math.max(0, borderRadius - 2)}px;
+              position: relative;
+            `;
+          }
         }
         break;
       case 'metallic':
@@ -3253,7 +4464,6 @@ export class UltraBarModule extends BaseUltraModule {
         const segmentWidth = 12;
         const gapWidth = 4;
         const totalWidth = segmentWidth + gapWidth;
-        const fillDirection = (barModule as any).bar_direction || 'left-to-right';
         const isRightToLeft = fillDirection === 'right-to-left';
 
         if (percentage >= 99.5) {
@@ -3500,6 +4710,78 @@ export class UltraBarModule extends BaseUltraModule {
       }
     }
 
+    let normalizedWidthValue = Number(barModule.bar_width ?? 100);
+    if (Number.isNaN(normalizedWidthValue)) {
+      const normalizedBarWidth = this.normalizeSizeValue(barModule.bar_width ?? 100);
+      if (normalizedBarWidth && normalizedBarWidth.unit === '%') {
+        normalizedWidthValue = normalizedBarWidth.value;
+      } else {
+        normalizedWidthValue = 100;
+      }
+    }
+    const normalizedWidth = Math.max(1, Math.min(100, normalizedWidthValue));
+    const normalizedBarWidthForGrow = this.normalizeSizeValue(
+      barModule.bar_width !== undefined && barModule.bar_width !== null ? barModule.bar_width : 100
+    );
+
+    const explicitWidthValue =
+      designProperties.width !== undefined &&
+      designProperties.width !== null &&
+      String(designProperties.width).trim() !== ''
+        ? designProperties.width
+        : moduleWithDesign.width;
+    const normalizedExplicitWidth =
+      explicitWidthValue !== undefined &&
+      explicitWidthValue !== null &&
+      String(explicitWidthValue).trim() !== ''
+        ? this.normalizeSizeValue(explicitWidthValue)
+        : null;
+
+    let shouldGrow = false;
+    if (normalizedExplicitWidth) {
+      shouldGrow = normalizedExplicitWidth.unit === '%' && normalizedExplicitWidth.value >= 100;
+    } else if (normalizedBarWidthForGrow) {
+      shouldGrow = normalizedBarWidthForGrow.unit === '%' && normalizedBarWidthForGrow.value >= 100;
+    } else {
+      shouldGrow = true;
+    }
+
+    const maxWidthCandidate =
+      designProperties.max_width !== undefined &&
+      designProperties.max_width !== null &&
+      String(designProperties.max_width).trim() !== ''
+        ? designProperties.max_width
+        : moduleWithDesign.max_width;
+    const normalizedMaxWidth =
+      maxWidthCandidate !== undefined &&
+      maxWidthCandidate !== null &&
+      String(maxWidthCandidate).trim() !== ''
+        ? this.normalizeSizeValue(maxWidthCandidate)
+        : null;
+
+    if (shouldGrow && normalizedMaxWidth) {
+      if (normalizedMaxWidth.unit === '%') {
+        shouldGrow = normalizedMaxWidth.value >= 100;
+      } else {
+        shouldGrow = false;
+      }
+    }
+
+    // Use the actual bar_width setting from the module
+    const barWidth = `${normalizedWidth}%`;
+    let barContainerAlignment = 'flex-start';
+    switch (barModule.bar_alignment) {
+      case 'left':
+        barContainerAlignment = 'flex-start';
+        break;
+      case 'center':
+        barContainerAlignment = 'center';
+        break;
+      case 'right':
+        barContainerAlignment = 'flex-end';
+        break;
+    }
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -3546,12 +4828,14 @@ export class UltraBarModule extends BaseUltraModule {
       right: designProperties.right || moduleWithDesign.right || 'auto',
       zIndex: designProperties.z_index || moduleWithDesign.z_index || 'auto',
       width: containerWidth,
-      height: designProperties.height || moduleWithDesign.height || 'auto',
+      height: designProperties.height || moduleWithDesign.height || totalContainerHeightPx,
       maxWidth: designProperties.max_width || moduleWithDesign.max_width || '100%',
       maxHeight: designProperties.max_height || moduleWithDesign.max_height || 'none',
-      minWidth: designProperties.min_width || moduleWithDesign.min_width || 'none',
+      minWidth:
+        designProperties.min_width || moduleWithDesign.min_width || (shouldGrow ? '0' : 'auto'),
       minHeight: designProperties.min_height || moduleWithDesign.min_height || 'auto',
       overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
+      boxSizing: 'border-box',
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || 'none',
       backdropFilter:
         designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || 'none',
@@ -3561,7 +4845,6 @@ export class UltraBarModule extends BaseUltraModule {
           : moduleWithDesign.box_shadow_h && moduleWithDesign.box_shadow_v
             ? `${moduleWithDesign.box_shadow_h || '0'} ${moduleWithDesign.box_shadow_v || '0'} ${moduleWithDesign.box_shadow_blur || '0'} ${moduleWithDesign.box_shadow_spread || '0'} ${moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
             : 'none',
-      boxSizing: 'border-box',
       color: designProperties.color || moduleWithDesign.color || 'var(--primary-text-color)',
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
       fontSize: (() => {
@@ -3590,23 +4873,6 @@ export class UltraBarModule extends BaseUltraModule {
             : 'none',
     };
 
-    // Calculate bar container alignment and width
-    const normalizedWidth = Math.max(1, Math.min(100, Number(barModule.bar_width || 100)));
-    // Use the actual bar_width setting from the module
-    const barWidth = `${normalizedWidth}%`;
-    let barContainerAlignment = 'flex-start';
-    switch (barModule.bar_alignment) {
-      case 'left':
-        barContainerAlignment = 'flex-start';
-        break;
-      case 'center':
-        barContainerAlignment = 'center';
-        break;
-      case 'right':
-        barContainerAlignment = 'flex-end';
-        break;
-    }
-
     // Gesture handling variables
     let clickTimeout: any = null;
     let holdTimeout: any = null;
@@ -3627,7 +4893,9 @@ export class UltraBarModule extends BaseUltraModule {
             barModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (barModule as any).entity,
+            barModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -3665,7 +4933,8 @@ export class UltraBarModule extends BaseUltraModule {
             hass,
             e.target as HTMLElement,
             config,
-            (barModule as any).entity
+            (barModule as any).entity,
+            barModule
           );
         }
       } else {
@@ -3684,7 +4953,8 @@ export class UltraBarModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (barModule as any).entity
+              (barModule as any).entity,
+              barModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows
@@ -3699,20 +4969,45 @@ export class UltraBarModule extends BaseUltraModule {
       <style>
         ${this.getStyles()}
       </style>
-      <div class="bar-module-preview" style=${this.styleObjectToCss(containerStyles)}>
+      <div
+        class="bar-module-preview"
+        data-layout-grow="${shouldGrow ? 'true' : 'false'}"
+        style=${this.styleObjectToCss(containerStyles)}
+        ${ref((el?: Element) => {
+          if (!el) return;
+          
+          // After render, check if parent wrapper has flex constraint
+          // If constrained, ensure bar uses 100% to fill the constrained wrapper
+          setTimeout(() => {
+            const parent = el.parentElement;
+            const isFlexConstrained = parent?.getAttribute('data-flex-constrained') === 'true';
+            
+            if (isFlexConstrained) {
+              const barContainer = el.querySelector('.bar-container') as HTMLElement;
+              if (barContainer) {
+                // Parent wrapper has fixed width constraint (e.g., 80%)
+                // Set bar to 100% to fill that constrained space
+                barContainer.style.width = '100%';
+              }
+            }
+          }, 0);
+        })}
+      >
         <!-- Bar Container -->
-        <div style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0;">
+        <div 
+          class="bar-flex-wrapper"
+          style="display: flex; justify-content: ${barContainerAlignment}; width: 100%; min-height: ${barHeight}; align-items: center; min-width: 0; overflow: visible;">
           <div
             class="bar-container ${hoverEffectClass}"
             style="
-            width: ${barWidth};
+            width: ${shouldGrow ? '100%' : barWidth};
             max-width: 100%;
-            flex: ${normalizedWidth < 100 ? '0 0 auto' : '1 1 auto'};
+            flex: ${shouldGrow ? '1 1 0' : '0 0 auto'};
             height: ${barHeight}; 
             background: ${trackBackground};
-            min-width: 80px;
+            ${shouldGrow ? 'min-width: 0;' : 'min-width: 80px;'}
             border-radius: ${borderRadius}px;
-            overflow: ${barModule.bar_style === 'minimal' ? 'visible' : 'hidden'};
+            overflow: 'visible';
             position: relative;
             transition: ${barModule.animation !== false ? 'all 0.3s ease' : 'none'};
             border: ${
@@ -3737,7 +5032,6 @@ export class UltraBarModule extends BaseUltraModule {
             ${
               barModule.bar_style === 'minimal'
                 ? (() => {
-                    const fillDirection = (barModule as any).bar_direction || 'left-to-right';
                     const isRightToLeft = fillDirection === 'right-to-left';
                     const dotPosition = isRightToLeft ? 100 - percentage : percentage;
 
@@ -3894,27 +5188,126 @@ export class UltraBarModule extends BaseUltraModule {
                             ></div>
                           `}
 
-                      <!-- Dot indicator -->
-                      <div
-                        class="minimal-dot ${animationClass}"
-                        style="
-                          position: absolute;
-                          top: 50%;
-                          left: ${dotPosition}%;
-                          width: ${dotSize}px;
-                          height: ${dotSize}px;
-                          background: ${dotColor};
-                          border: 2px solid var(--card-background-color);
-                          border-radius: 50%;
-                          transform: translate(-50%, -50%);
-                          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                          transition: ${barModule.animation !== false
-                          ? 'left 0.3s ease, background 0.3s ease'
-                          : 'none'};
-                          z-index: 3;
-                          will-change: left, background;
-                        "
-                      ></div>
+                      <!-- Dot/Icon indicator -->
+                      ${(() => {
+                        // Calculate icon size based on auto-scale setting
+                        const iconSize =
+                          barModule.minimal_icon_size_auto !== false
+                            ? Math.max(16, Math.min(32, Math.max(24, barHeightValue * 1.2)))
+                            : barModule.minimal_icon_size || 24;
+
+                        // Determine icon color (dot color or custom color)
+                        const iconColor =
+                          barModule.minimal_icon_use_dot_color !== false
+                            ? dotColor
+                            : barModule.minimal_icon_color || dotColor;
+
+                        // Render based on mode
+                        const mode = barModule.minimal_icon_mode || 'icon-in-dot';
+                        const hasIcon = barModule.minimal_icon_enabled && barModule.minimal_icon;
+
+                        if (mode === 'icon-only' && hasIcon) {
+                          // Icon only mode - replace dot with icon
+                          return html`
+                            <div
+                              class="minimal-icon ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${dotPosition}%;
+                                width: ${iconSize}px;
+                                height: ${iconSize}px;
+                                transform: translate(-50%, -50%);
+                                transition: ${barModule.animation !== false
+                                ? 'left 0.3s ease, color 0.3s ease'
+                                : 'none'};
+                                z-index: 3;
+                                will-change: left, color;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                              "
+                            >
+                              <ha-icon
+                                icon="${barModule.minimal_icon}"
+                                style="
+                                  color: ${iconColor};
+                                  width: ${iconSize}px;
+                                  height: ${iconSize}px;
+                                  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                "
+                              ></ha-icon>
+                            </div>
+                          `;
+                        } else if (mode === 'icon-in-dot' && hasIcon) {
+                          // Icon in dot mode - show dot with icon inside
+                          return html`
+                            <div
+                              class="minimal-dot ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${dotPosition}%;
+                                width: ${dotSize}px;
+                                height: ${dotSize}px;
+                                background: ${dotColor};
+                                border: 2px solid var(--card-background-color);
+                                border-radius: 50%;
+                                transform: translate(-50%, -50%);
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                transition: ${barModule.animation !== false
+                                ? 'left 0.3s ease, background 0.3s ease'
+                                : 'none'};
+                                z-index: 3;
+                                will-change: left, background;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                              "
+                            >
+                              <ha-icon
+                                icon="${barModule.minimal_icon}"
+                                style="
+                                  color: ${iconColor};
+                                  width: ${Math.max(8, iconSize - 4)}px;
+                                  height: ${Math.max(8, iconSize - 4)}px;
+                                  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+                                  display: flex;
+                                  align-items: center;
+                                  justify-content: center;
+                                "
+                              ></ha-icon>
+                            </div>
+                          `;
+                        } else {
+                          // Dot only mode (default) - show just the dot
+                          return html`
+                            <div
+                              class="minimal-dot ${animationClass}"
+                              style="
+                                position: absolute;
+                                top: 50%;
+                                left: ${dotPosition}%;
+                                width: ${dotSize}px;
+                                height: ${dotSize}px;
+                                background: ${dotColor};
+                                border: 2px solid var(--card-background-color);
+                                border-radius: 50%;
+                                transform: translate(-50%, -50%);
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                transition: ${barModule.animation !== false
+                                ? 'left 0.3s ease, background 0.3s ease'
+                                : 'none'};
+                                z-index: 3;
+                                will-change: left, background;
+                              "
+                            ></div>
+                          `;
+                        }
+                      })()}
                     `;
                   })()
                 : barModule.bar_style === 'dots'
@@ -3923,7 +5316,6 @@ export class UltraBarModule extends BaseUltraModule {
                       const barH = ((barModule as any).height ?? 20) as number;
                       const dotSize = Math.max(6, Math.floor(barH - 8));
                       const trackBg = trackBackground;
-                      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
                       const stops =
                         barModule.use_gradient &&
                         (barModule as any).gradient_stops &&
@@ -4013,9 +5405,9 @@ export class UltraBarModule extends BaseUltraModule {
                       </div>`;
                     })()
                   : (() => {
-                      const fillDirection = (barModule as any).bar_direction || 'left-to-right';
                       const isRightToLeft = fillDirection === 'right-to-left';
 
+                      // Default rendering for all other styles
                       // Calculate border radius based on direction and percentage
                       let fillBorderRadius = '';
                       if (percentage >= 99.5) {
@@ -4099,99 +5491,64 @@ export class UltraBarModule extends BaseUltraModule {
             }
 
             <!-- Percentage Text (Inside Bar) -->
-            ${
-              barModule.show_percentage
-                ? html`
-                    <div
-                      class="percentage-text"
-                      style="
-                    position: ${barModule.bar_style === 'minimal' ? 'relative' : 'absolute'};
-                    top: ${barModule.bar_style === 'minimal' ? 'auto' : '50%'};
-                    left: ${barModule.bar_style === 'minimal'
-                        ? 'auto'
-                        : barModule.percentage_text_alignment === 'left'
-                          ? '8px'
-                          : barModule.percentage_text_alignment === 'right'
-                            ? 'calc(100% - 32px)'
-                            : '50%'};
-                    transform: ${barModule.bar_style === 'minimal'
-                        ? 'none'
-                        : barModule.percentage_text_alignment === 'center'
-                          ? 'translate(-50%, -50%)'
-                          : 'translate(0, -50%)'};
-                    text-align: ${barModule.percentage_text_alignment || 'center'};
-                    font-size: ${designProperties.font_size
-                        ? `${designProperties.font_size}px`
-                        : `${barModule.percentage_text_size || 14}px`};
-                    color: ${barModule.percentage_text_color ||
-                      designProperties.color ||
-                      moduleWithDesign.color ||
-                      'white'};
-                    font-weight: 600;
-                    z-index: ${barModule.bar_style === 'minimal' ? '2' : '10'};
-                    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-                    white-space: nowrap;
-                    ${barModule.bar_style === 'minimal'
-                        ? 'margin-top: 8px; position: relative; display: block;'
-                        : ''}
-                  "
-                    >
-                      ${(() => {
-                        if (barModule.show_value) {
-                          // Show entity value instead of percentage based on percentage_type
-                          if (isPreviewMode) {
-                            return '65 kWh'; // Demo value for preview
-                          }
+            <div
+              class="percentage-text"
+              style="
+                display: ${showPercentageText ? 'block' : 'none'};
+                position: absolute;
+                top: 50%;
+                left: ${
+                  percentageTextAlignment === 'left'
+                    ? '8px'
+                    : percentageTextAlignment === 'right'
+                      ? 'calc(100% - 32px)'
+                      : percentageTextAlignment === 'follow-fill'
+                        ? `${Math.min(percentage, 100)}%`
+                        : '50%'
+                };
+                transform: ${
+                  percentageTextAlignment === 'center'
+                    ? 'translate(-50%, -50%)'
+                    : percentageTextAlignment === 'follow-fill'
+                      ? followFillTransform
+                      : 'translate(0, -50%)'
+                };
+                text-align: ${percentageTextAlignment === 'follow-fill' ? 'right' : percentageTextAlignment};
+                font-size: ${percentageFontSize};
+                color: ${
+                  barModule.percentage_text_color ||
+                  designProperties.color ||
+                  moduleWithDesign.color ||
+                  'white'
+                };
+                font-weight: ${barModule.percentage_text_bold ? 'bold' : '600'};
+                font-style: ${barModule.percentage_text_italic ? 'italic' : 'normal'};
+                text-decoration: ${barModule.percentage_text_strikethrough ? 'line-through' : 'none'};
+                z-index: 10;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+              "
+            >
+              ${(() => {
+                if (!showPercentageText) return '';
 
-                          const pctType = (barModule as any).percentage_type || 'entity';
+                // If a manual min/max range is set, the bar fill no longer represents the raw entity value.
+                // In that case, always show the calculated percent so the text matches the fill.
+                const hasManualRange =
+                  barModule.percentage_min !== undefined ||
+                  barModule.percentage_max !== undefined ||
+                  (barModule.percentage_min_template_mode && !!barModule.percentage_min_template) ||
+                  (barModule.percentage_max_template_mode && !!barModule.percentage_max_template);
 
-                          if (pctType === 'difference') {
-                            // For difference mode, show the current value from percentage_current_entity
-                            const currentEntity = (barModule as any).percentage_current_entity;
-                            if (currentEntity && hass?.states[currentEntity]) {
-                              const currentState = hass.states[currentEntity];
-                              try {
-                                return formatEntityState(hass, currentEntity, {
-                                  includeUnit: true,
-                                });
-                              } catch (_e) {
-                                return `${currentState.state}${currentState.attributes?.unit_of_measurement || ''}`;
-                              }
-                            }
-                          } else if (pctType === 'template') {
-                            // For template mode, show the template result (raw value)
-                            const template = (barModule as any).percentage_template;
-                            if (template && hass) {
-                              if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
-                              const key = `bar_percentage_${barModule.id}_${this._hashString(template)}`;
-                              const rendered = hass.__uvc_template_strings?.[key];
-                              if (rendered !== undefined) {
-                                return String(rendered);
-                              }
-                            }
-                          }
+                if (hasManualRange) return `${displayPercentage}%`;
 
-                          // Fallback to main entity
-                          const entityState = hass?.states[barModule.entity];
-                          if (entityState) {
-                            try {
-                              return formatEntityState(hass, barModule.entity, {
-                                includeUnit: true,
-                              });
-                            } catch (_e) {
-                              return `${entityState.state}${entityState.attributes?.unit_of_measurement || ''}`;
-                            }
-                          }
-                          return 'N/A';
-                        } else {
-                          // Show percentage (default behavior)
-                          return `${Math.round(percentage)}%`;
-                        }
-                      })()}
-                    </div>
-                  `
-                : ''
-            }
+                // Legacy behavior: allow showing the raw value in the bar text.
+                return barModule.show_value ? percentageDisplayText : `${displayPercentage}%`;
+              })()}
+            </div>
           </div>
 
           ${
@@ -4208,6 +5565,8 @@ export class UltraBarModule extends BaseUltraModule {
           }
         </div>
 
+        
+
         <!-- Left and Right Side Labels (Below Bar) -->
         ${
           barModule.left_enabled || barModule.right_enabled
@@ -4215,20 +5574,108 @@ export class UltraBarModule extends BaseUltraModule {
                 <div
                   class="bar-labels-below"
                   style="display: flex; justify-content: ${barModule.label_alignment ||
-                  'space-between'}; align-items: center; margin-top: 8px; gap: 16px; width: 100%;"
+                  'space-between'}; align-items: center; margin-top: 8px; gap: 16px; width: 100%; overflow: hidden; box-sizing: border-box;"
                 >
                   ${barModule.left_enabled
-                    ? html`
-                        <div class="left-side-below" style="text-align: left;">
+                    ? (() => {
+                        // Left side action handling
+                        let leftHoldTimeout: ReturnType<typeof setTimeout> | null = null;
+                        let leftIsHolding = false;
+                        let leftClickCount = 0;
+                        let leftLastClickTime = 0;
+                        let leftClickTimeout: ReturnType<typeof setTimeout> | null = null;
+                        const leftEntity = barModule.left_entity || barModule.entity;
+
+                        const leftHandlePointerDown = () => {
+                          leftIsHolding = false;
+                          leftHoldTimeout = setTimeout(() => {
+                            leftIsHolding = true;
+                            // Execute hold action
+                            if (barModule.left_hold_action && barModule.left_hold_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.left_hold_action as any,
+                                hass,
+                                document.body,
+                                config,
+                                leftEntity,
+                                barModule
+                              );
+                            }
+                          }, 500);
+                        };
+
+                        const leftHandlePointerUp = (e: Event) => {
+                          e.stopPropagation();
+                          if (leftHoldTimeout) {
+                            clearTimeout(leftHoldTimeout);
+                            leftHoldTimeout = null;
+                          }
+                          if (leftIsHolding) {
+                            leftIsHolding = false;
+                            return;
+                          }
+
+                          const now = Date.now();
+                          const timeSinceLastClick = now - leftLastClickTime;
+
+                          if (timeSinceLastClick < 300 && leftClickCount === 1) {
+                            // Double click
+                            if (leftClickTimeout) {
+                              clearTimeout(leftClickTimeout);
+                              leftClickTimeout = null;
+                            }
+                            leftClickCount = 0;
+                            if (barModule.left_double_tap_action && barModule.left_double_tap_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.left_double_tap_action as any,
+                                hass,
+                                e.target as HTMLElement,
+                                config,
+                                leftEntity,
+                                barModule
+                              );
+                            }
+                          } else {
+                            // Single click (wait to see if double click follows)
+                            leftClickCount = 1;
+                            leftLastClickTime = now;
+                            leftClickTimeout = setTimeout(() => {
+                              leftClickCount = 0;
+                              // Execute tap action
+                              if (!barModule.left_tap_action || barModule.left_tap_action.action !== 'nothing') {
+                                UltraLinkComponent.handleAction(
+                                  (barModule.left_tap_action as any) || { action: 'default' },
+                                  hass,
+                                  e.target as HTMLElement,
+                                  config,
+                                  leftEntity,
+                                  barModule
+                                );
+                              }
+                            }, 300);
+                          }
+                        };
+
+                        return html`
+                        <div
+                          class="left-side-below"
+                          style="text-align: left; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
+                          @pointerdown=${leftHandlePointerDown}
+                          @pointerup=${leftHandlePointerUp}
+                          @pointercancel=${() => {
+                            if (leftHoldTimeout) clearTimeout(leftHoldTimeout);
+                            leftIsHolding = false;
+                          }}
+                        >
                           ${barModule.left_title && barModule.left_title.trim()
                             ? html`
                                 <span
                                   style="font-size: ${designProperties.font_size
-                                    ? `${designProperties.font_size}px`
-                                    : `${barModule.left_title_size || 14}px`}; color: ${designProperties.color ||
+                                    ? `${Math.min(designProperties.font_size, 16)}px`
+                                    : `${Math.min(barModule.left_title_size || 14, 16)}px`}; color: ${designProperties.color ||
                                   barModule.left_title_color ||
                                   moduleWithDesign.color ||
-                                  'var(--primary-text-color)'};"
+                                  'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 >
                                   ${barModule.left_title}:
                                 </span>
@@ -4236,32 +5683,121 @@ export class UltraBarModule extends BaseUltraModule {
                             : ''}
                           <span
                             style="font-size: ${designProperties.font_size
-                              ? `${designProperties.font_size}px`
-                              : `${barModule.left_value_size || 14}px`}; font-weight: 600; color: ${designProperties.color ||
+                              ? `${Math.min(designProperties.font_size, 16)}px`
+                              : `${Math.min(barModule.left_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
                             barModule.left_value_color ||
                             moduleWithDesign.color ||
                             'var(--primary-text-color)'}; margin-left: ${barModule.left_title &&
                             barModule.left_title.trim()
                               ? '4px'
-                              : '0'};"
+                              : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                           >
                             ${leftDisplay}
                           </span>
                         </div>
-                      `
+                      `;
+                      })()
                     : html`<div></div>`}
                   ${barModule.right_enabled
-                    ? html`
-                        <div class="right-side-below" style="text-align: right;">
+                    ? (() => {
+                        // Right side action handling
+                        let rightHoldTimeout: ReturnType<typeof setTimeout> | null = null;
+                        let rightIsHolding = false;
+                        let rightClickCount = 0;
+                        let rightLastClickTime = 0;
+                        let rightClickTimeout: ReturnType<typeof setTimeout> | null = null;
+                        const rightEntity = barModule.right_entity || barModule.entity;
+
+                        const rightHandlePointerDown = () => {
+                          rightIsHolding = false;
+                          rightHoldTimeout = setTimeout(() => {
+                            rightIsHolding = true;
+                            // Execute hold action
+                            if (barModule.right_hold_action && barModule.right_hold_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.right_hold_action as any,
+                                hass,
+                                document.body,
+                                config,
+                                rightEntity,
+                                barModule
+                              );
+                            }
+                          }, 500);
+                        };
+
+                        const rightHandlePointerUp = (e: Event) => {
+                          e.stopPropagation();
+                          if (rightHoldTimeout) {
+                            clearTimeout(rightHoldTimeout);
+                            rightHoldTimeout = null;
+                          }
+                          if (rightIsHolding) {
+                            rightIsHolding = false;
+                            return;
+                          }
+
+                          const now = Date.now();
+                          const timeSinceLastClick = now - rightLastClickTime;
+
+                          if (timeSinceLastClick < 300 && rightClickCount === 1) {
+                            // Double click
+                            if (rightClickTimeout) {
+                              clearTimeout(rightClickTimeout);
+                              rightClickTimeout = null;
+                            }
+                            rightClickCount = 0;
+                            if (barModule.right_double_tap_action && barModule.right_double_tap_action.action !== 'nothing') {
+                              UltraLinkComponent.handleAction(
+                                barModule.right_double_tap_action as any,
+                                hass,
+                                e.target as HTMLElement,
+                                config,
+                                rightEntity,
+                                barModule
+                              );
+                            }
+                          } else {
+                            // Single click (wait to see if double click follows)
+                            rightClickCount = 1;
+                            rightLastClickTime = now;
+                            rightClickTimeout = setTimeout(() => {
+                              rightClickCount = 0;
+                              // Execute tap action
+                              if (!barModule.right_tap_action || barModule.right_tap_action.action !== 'nothing') {
+                                UltraLinkComponent.handleAction(
+                                  (barModule.right_tap_action as any) || { action: 'default' },
+                                  hass,
+                                  e.target as HTMLElement,
+                                  config,
+                                  rightEntity,
+                                  barModule
+                                );
+                              }
+                            }, 300);
+                          }
+                        };
+
+                        return html`
+                        <div
+                          class="right-side-below"
+                          style="text-align: right; flex: 1; min-width: 0; overflow: hidden; cursor: pointer;"
+                          @pointerdown=${rightHandlePointerDown}
+                          @pointerup=${rightHandlePointerUp}
+                          @pointercancel=${() => {
+                            if (rightHoldTimeout) clearTimeout(rightHoldTimeout);
+                            rightIsHolding = false;
+                          }}
+                        >
                           ${barModule.right_title && barModule.right_title.trim()
                             ? html`
                                 <span
                                   style="font-size: ${designProperties.font_size
-                                    ? `${designProperties.font_size}px`
-                                    : `${barModule.right_title_size || 14}px`}; color: ${designProperties.color ||
+                                    ? `${Math.min(designProperties.font_size, 16)}px`
+                                    : `${Math.min(barModule.right_title_size || 14, 16)}px`}; color: ${designProperties.color ||
                                   barModule.right_title_color ||
                                   moduleWithDesign.color ||
-                                  'var(--primary-text-color)'};"
+                                  'var(--primary-text-color)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 >
                                   ${barModule.right_title}:
                                 </span>
@@ -4269,19 +5805,20 @@ export class UltraBarModule extends BaseUltraModule {
                             : ''}
                           <span
                             style="font-size: ${designProperties.font_size
-                              ? `${designProperties.font_size}px`
-                              : `${barModule.right_value_size || 14}px`}; font-weight: 600; color: ${designProperties.color ||
+                              ? `${Math.min(designProperties.font_size, 16)}px`
+                              : `${Math.min(barModule.right_value_size || 14, 16)}px`}; font-weight: 600; color: ${designProperties.color ||
                             barModule.right_value_color ||
                             moduleWithDesign.color ||
                             'var(--primary-text-color)'}; margin-left: ${barModule.right_title &&
                             barModule.right_title.trim()
                               ? '4px'
-                              : '0'};"
+                              : '0'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                           >
                             ${rightDisplay}
                           </span>
                         </div>
-                      `
+                      `;
+                      })()
                     : html`<div></div>`}
                 </div>
               `
@@ -4308,9 +5845,8 @@ export class UltraBarModule extends BaseUltraModule {
     const barModule = module as BarModule;
     const errors = [...baseValidation.errors];
 
-    if (!barModule.entity || barModule.entity.trim() === '') {
-      errors.push('Entity ID is required');
-    }
+    // LENIENT VALIDATION: Allow empty entity - UI will show placeholder
+    // Only validate for truly breaking errors
 
     if (barModule.height && (barModule.height < 5 || barModule.height > 200)) {
       errors.push('Bar height must be between 5 and 200 pixels');
@@ -4320,7 +5856,7 @@ export class UltraBarModule extends BaseUltraModule {
       errors.push('Border radius must be between 0 and 100 pixels');
     }
 
-    // Validate limit entity if provided
+    // Validate limit entity if provided (only if it has content)
     if (barModule.limit_entity && barModule.limit_entity.trim() !== '') {
       // Basic entity ID format validation
       if (!barModule.limit_entity.includes('.')) {
@@ -4345,6 +5881,12 @@ export class UltraBarModule extends BaseUltraModule {
         min-width: 80px; /* keep a visible track inside flex rows */
         position: relative;
         z-index: 0; /* Establish stacking context */
+      }
+      
+      /* When parent wrapper is flex-constrained, bar flex wrapper should be auto width */
+      /* so justify-content: center/flex-end can position the bar correctly */
+      [data-flex-constrained="true"] .bar-module-preview .bar-flex-wrapper {
+        width: auto !important;
       }
       
       .bar-container {
@@ -4709,8 +6251,9 @@ export class UltraBarModule extends BaseUltraModule {
 
       /* Fix input field containers */
       .settings-section input[type="number"] {
-        min-width: 60px;
-        max-width: 80px;
+        width: 72px !important;
+        max-width: 72px !important;
+        min-width: 72px !important;
         flex-shrink: 0;
       }
 
@@ -4874,9 +6417,9 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       .gap-input {
-        width: 48px !important;
-        max-width: 48px !important;
-        min-width: 48px !important;
+        width: 72px !important;
+        max-width: 72px !important;
+        min-width: 72px !important;
         padding: 4px 6px !important;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
@@ -4890,6 +6433,39 @@ export class UltraBarModule extends BaseUltraModule {
       }
 
       .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      /* Range input styling for number-range-control */
+      .number-range-control {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .range-slider {
+        flex: 1;
+      }
+
+      .range-input {
+        width: 72px !important;
+        max-width: 72px !important;
+        min-width: 72px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .range-input:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
@@ -5025,8 +6601,30 @@ export class UltraBarModule extends BaseUltraModule {
       .bar-fill.bar-anim-glow { box-shadow: 0 0 10px currentColor, 0 0 20px currentColor; animation: bar-glow 1.5s ease-in-out infinite; }
       @keyframes bar-glow { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.4); } }
 
-      .bar-fill.bar-anim-rainbow::after { content:''; position:absolute; inset:0; pointer-events:none; background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet); background-size: 400% 100%; mix-blend-mode: overlay; opacity: 0.9; animation: rainbow-shift 3s linear infinite; }
-      @keyframes rainbow-shift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+      .bar-fill.bar-anim-rainbow::after { 
+        content:''; 
+        position:absolute; 
+        inset:0; 
+        pointer-events:none; 
+        background: linear-gradient(90deg, 
+          red 0%, 
+          orange 14.28%, 
+          yellow 28.57%, 
+          green 42.85%, 
+          cyan 57.14%, 
+          blue 71.42%, 
+          violet 85.71%, 
+          red 100%
+        ); 
+        background-size: 200% 100%; 
+        mix-blend-mode: overlay; 
+        opacity: 0.9; 
+        animation: rainbow-shift 4s linear infinite; 
+      }
+      @keyframes rainbow-shift { 
+        0% { background-position: 0% 0%; } 
+        100% { background-position: 200% 0%; } 
+      }
 
       /* Bubbles: two extended layers with discrete bubbles, animated bottom -> top */
       .bar-fill.bar-anim-bubbles::before,
@@ -5177,9 +6775,35 @@ export class UltraBarModule extends BaseUltraModule {
     `;
   }
 
+  private normalizeSizeValue(value: string | number): { value: number; unit: '%' | 'px' } | null {
+    if (typeof value === 'number') {
+      return { value, unit: '%' };
+    }
+
+    const str = String(value).trim();
+
+    if (!str) {
+      return null;
+    }
+
+    if (str.endsWith('%')) {
+      const numeric = parseFloat(str.slice(0, -1));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
+    }
+
+    if (str.endsWith('px')) {
+      const numeric = parseFloat(str.slice(0, -2));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: 'px' };
+    }
+
+    const numeric = parseFloat(str);
+    return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
+  }
+
   // Helper method to convert style object to CSS string
-  private styleObjectToCss(styles: Record<string, string | number>): string {
+  private styleObjectToCss(styles: Record<string, string | number | undefined>): string {
     return Object.entries(styles)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
       .join('; ');
   }
@@ -5286,42 +6910,164 @@ export class UltraBarModule extends BaseUltraModule {
     return 'round';
   }
 
-  // Helper method to interpolate between two colors
+  // Helper method to interpolate between two colors with alpha preservation
   private interpolateColor(color1: string, color2: string, factor: number): string {
-    // Convert colors to RGB
-    const rgb1 = this.hexToRgb(color1);
-    const rgb2 = this.hexToRgb(color2);
+    // Parse both colors to RGBA format
+    const rgba1 = this.parseColorToRGBA(color1);
+    const rgba2 = this.parseColorToRGBA(color2);
 
-    if (!rgb1 || !rgb2) return color1;
+    if (!rgba1 || !rgba2) return color1;
 
-    const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * factor);
-    const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * factor);
-    const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * factor);
+    // Interpolate RGB components
+    const r = Math.round(rgba1.r + (rgba2.r - rgba1.r) * factor);
+    const g = Math.round(rgba1.g + (rgba2.g - rgba1.g) * factor);
+    const b = Math.round(rgba1.b + (rgba2.b - rgba1.b) * factor);
 
-    return this.rgbToHex(r, g, b);
+    // Interpolate alpha channel
+    const a = rgba1.a + (rgba2.a - rgba1.a) * factor;
+
+    // Return rgba() format to preserve alpha channel
+    return `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
   }
 
-  // Helper method to convert hex color to RGB
-  private hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  // Helper method to convert hex color to RGB with alpha support
+  private hexToRgb(hex: string): { r: number; g: number; b: number; a: number } | null {
     // Handle CSS variables and non-hex colors
     if (!hex.startsWith('#')) {
       // For CSS variables, return null to fallback to original color
       return null;
     }
 
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
+    // Support both 6-digit (#RRGGBB) and 8-digit (#RRGGBBAA) hex colors
+    const result6 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const result8 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
+    if (result8) {
+      // 8-digit hex with alpha
+      return {
+        r: parseInt(result8[1], 16),
+        g: parseInt(result8[2], 16),
+        b: parseInt(result8[3], 16),
+        a: parseInt(result8[4], 16) / 255, // Convert 0-255 to 0-1
+      };
+    } else if (result6) {
+      // 6-digit hex without alpha
+      return {
+        r: parseInt(result6[1], 16),
+        g: parseInt(result6[2], 16),
+        b: parseInt(result6[3], 16),
+        a: 1, // Default to fully opaque
+      };
+    }
+
+    return null;
   }
 
-  // Helper method to convert RGB to hex
-  private rgbToHex(r: number, g: number, b: number): string {
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  // Helper method to convert RGB to hex with optional alpha support
+  private rgbToHex(r: number, g: number, b: number, a?: number): string {
+    const rInt = Math.round(Math.max(0, Math.min(255, r)));
+    const gInt = Math.round(Math.max(0, Math.min(255, g)));
+    const bInt = Math.round(Math.max(0, Math.min(255, b)));
+
+    if (a !== undefined && a < 1) {
+      // Include alpha channel for transparency
+      const aInt = Math.round(Math.max(0, Math.min(255, a * 255)));
+      return `#${((1 << 24) + (rInt << 16) + (gInt << 8) + bInt).toString(16).slice(1)}${aInt.toString(16).padStart(2, '0')}`;
+    } else {
+      // Standard 6-digit hex for opaque colors
+      return `#${((1 << 24) + (rInt << 16) + (gInt << 8) + bInt).toString(16).slice(1)}`;
+    }
+  }
+
+  // Helper method to parse any color format to RGBA with alpha preservation
+  private parseColorToRGBA(color: string): { r: number; g: number; b: number; a: number } | null {
+    if (!color) return null;
+
+    // First resolve CSS variables using the existing resolveCSSColor function
+    const resolvedColor = this.resolveCSSColor(color);
+
+    // Handle rgba() format
+    const rgbaMatch = resolvedColor.match(
+      /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/i
+    );
+    if (rgbaMatch) {
+      return {
+        r: parseInt(rgbaMatch[1], 10),
+        g: parseInt(rgbaMatch[2], 10),
+        b: parseInt(rgbaMatch[3], 10),
+        a: parseFloat(rgbaMatch[4]),
+      };
+    }
+
+    // Handle rgb() format (assume alpha = 1)
+    const rgbMatch = resolvedColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+    if (rgbMatch) {
+      return {
+        r: parseInt(rgbMatch[1], 10),
+        g: parseInt(rgbMatch[2], 10),
+        b: parseInt(rgbMatch[3], 10),
+        a: 1,
+      };
+    }
+
+    // Handle hex colors (including 8-digit with alpha)
+    const hexRgba = this.hexToRgb(resolvedColor);
+    if (hexRgba) {
+      return hexRgba;
+    }
+
+    // Handle transparent keyword
+    if (resolvedColor.toLowerCase() === 'transparent') {
+      return { r: 0, g: 0, b: 0, a: 0 };
+    }
+
+    // Fallback: try to resolve as CSS variable again and extract from computed style
+    try {
+      const probe = document.createElement('span');
+      probe.style.color = resolvedColor;
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).color;
+      probe.remove();
+
+      if (computed && computed !== 'rgba(0, 0, 0, 0)') {
+        const computedRgba = computed.match(
+          /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\s*\)/i
+        );
+        if (computedRgba) {
+          return {
+            r: parseInt(computedRgba[1], 10),
+            g: parseInt(computedRgba[2], 10),
+            b: parseInt(computedRgba[3], 10),
+            a: computedRgba[4] ? parseFloat(computedRgba[4]) : 1,
+          };
+        }
+      }
+    } catch {
+      // Ignore errors and fall through to default
+    }
+
+    // Default fallback
+    return { r: 128, g: 128, b: 128, a: 1 };
+  }
+
+  // Helper method to resolve CSS color (extracted from existing resolveCSSColor function)
+  private resolveCSSColor(inputColor: string): string {
+    if (!inputColor) return inputColor;
+    const trimmed = String(inputColor).trim();
+    // Fast-path: hex or rgb/rgba are already concrete colors
+    if (trimmed.startsWith('#') || trimmed.startsWith('rgb')) return trimmed;
+    // Attempt to resolve CSS variables or named colors via a temporary element
+    try {
+      const probe = document.createElement('span');
+      probe.style.backgroundColor = trimmed; // Use backgroundColor to preserve alpha
+      // Use body for widest variable scope (HA themes apply at document level)
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).backgroundColor; // Preserves RGBA
+      probe.remove();
+      return computed && computed !== 'rgba(0, 0, 0, 0)' ? computed : trimmed;
+    } catch {
+      return trimmed;
+    }
   }
 
   // Helper method to ensure border radius values have proper units

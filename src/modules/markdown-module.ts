@@ -9,12 +9,15 @@ import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { getImageUrl } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { marked } from 'marked';
 
 export class UltraMarkdownModule extends BaseUltraModule {
   private _templateService: TemplateService | null = null;
   private _renderedContentCache: Map<string, string> = new Map();
   private _templateInputDebounce: any = null;
+  private _templateUpdateListener: (() => void) | null = null;
 
   // Hash function for template caching
   private _hashString(str: string): string {
@@ -38,6 +41,29 @@ export class UltraMarkdownModule extends BaseUltraModule {
     } else {
       // Clear all cache
       this._renderedContentCache.clear();
+    }
+  }
+
+  // Cleanup method to remove event listeners
+  cleanup(): void {
+    if (this._templateUpdateListener) {
+      window.removeEventListener('ultra-card-template-update', this._templateUpdateListener);
+      this._templateUpdateListener = null;
+    }
+
+    // Clear template service subscriptions
+    if (this._templateService) {
+      // The template service will handle its own cleanup
+      this._templateService = null;
+    }
+
+    // Clear caches
+    this._renderedContentCache.clear();
+
+    // Clear any pending timers
+    if (this._templateInputDebounce) {
+      clearTimeout(this._templateInputDebounce);
+      this._templateInputDebounce = null;
     }
   }
 
@@ -78,6 +104,8 @@ All standard markdown features are automatically enabled!`,
       enable_code_highlighting: true,
       // Template configuration
       template_mode: false,
+      unified_template_mode: false,
+      unified_template: '',
       template: '',
       // Global action configuration
       tap_action: { action: 'nothing' },
@@ -86,7 +114,6 @@ All standard markdown features are automatically enabled!`,
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -114,27 +141,40 @@ All standard markdown features are automatically enabled!`,
             ${localize('editor.markdown.content.title', lang, 'Markdown Content')}
           </div>
           <div class="field-group">
-            <ha-form
-              .hass=${hass}
-              .data=${{ markdown_content: markdownModule.markdown_content || '' }}
-              .schema=${[
-                {
-                  name: 'markdown_content',
-                  label: localize('editor.markdown.content.label', lang, 'Content'),
-                  description: localize(
-                    'editor.markdown.content.desc',
-                    lang,
-                    'Enter your markdown content with full formatting support'
-                  ),
-                  selector: { text: { multiline: true } },
-                },
-              ]}
-              .computeLabel=${(schema: any) => schema.label || schema.name}
-              .computeDescription=${(schema: any) => schema.description || ''}
-              @value-changed=${(e: CustomEvent) => {
-                updateModule({ markdown_content: e.detail.value.markdown_content });
+            <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
+              ${localize('editor.markdown.content.label', lang, 'Content')}
+            </div>
+            <div
+              class="field-description"
+              style="font-size: 12px; margin-bottom: 8px; color: var(--secondary-text-color);"
+            >
+              ${localize(
+                'editor.markdown.content.desc',
+                lang,
+                'Enter your markdown content with full formatting support'
+              )}
+            </div>
+            <div
+              @mousedown=${(e: Event) => {
+                // Only stop propagation for drag operations, not clicks on the editor
+                const target = e.target as HTMLElement;
+                if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                  e.stopPropagation();
+                }
               }}
-            ></ha-form>
+              @dragstart=${(e: Event) => e.stopPropagation()}
+            >
+              <ultra-template-editor
+                .hass=${hass}
+                .value=${markdownModule.markdown_content || ''}
+                .placeholder=${'# Welcome\n\nEnter your **markdown** content here with full formatting support...\n\n- Lists\n- **Bold** and *italic*\n- Tables, code blocks, and more!'}
+                .minHeight=${200}
+                .maxHeight=${400}
+                @value-changed=${(e: CustomEvent) => {
+                  updateModule({ markdown_content: e.detail.value });
+                }}
+              ></ultra-template-editor>
+            </div>
           </div>
         </div>
 
@@ -238,16 +278,27 @@ All standard markdown features are automatically enabled!`,
                       'Enter markdown content with Jinja2 templates that will be processed dynamically'
                     )}
                   </div>
-                  <ultra-template-editor
-                    .hass=${hass}
-                    .value=${markdownModule.template || markdownModule.markdown_content || ''}
-                    .placeholder=${"# Welcome Home\n\nToday is **{{ now().strftime('%A, %B %d') }}**\n\nCurrent temperature: {{ states('sensor.temperature') }}°F"}
-                    .minHeight=${200}
-                    .maxHeight=${400}
-                    @value-changed=${(e: CustomEvent) => {
-                      updateModule({ template: e.detail.value });
+                  <div
+                    @mousedown=${(e: Event) => {
+                      // Only stop propagation for drag operations, not clicks on the editor
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                        e.stopPropagation();
+                      }
                     }}
-                  ></ultra-template-editor>
+                    @dragstart=${(e: Event) => e.stopPropagation()}
+                  >
+                    <ultra-template-editor
+                      .hass=${hass}
+                      .value=${markdownModule.template || markdownModule.markdown_content || ''}
+                      .placeholder=${"# Welcome Home\n\nToday is **{{ now().strftime('%A, %B %d') }}**\n\nCurrent temperature: {{ states('sensor.temperature') }}°F"}
+                      .minHeight=${200}
+                      .maxHeight=${400}
+                      @value-changed=${(e: CustomEvent) => {
+                        updateModule({ template: e.detail.value });
+                      }}
+                    ></ultra-template-editor>
+                  </div>
                 </div>
 
                 <div class="template-examples">
@@ -344,9 +395,29 @@ All standard markdown features are automatically enabled!`,
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const markdownModule = module as MarkdownModule;
+
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    if (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '') {
+      return this.renderGradientErrorState(
+        'Add Markdown Content',
+        'Enter markdown content in the General tab',
+        'mdi:language-markdown-outline'
+      );
+    }
+
+    // Set up template update listener if not already set up
+    if (!this._templateUpdateListener && typeof window !== 'undefined') {
+      this._templateUpdateListener = () => {
+        // Clear cache when template updates occur to force re-render
+        this._renderedContentCache.clear();
+        // Trigger a preview update
+        this.triggerPreviewUpdate();
+      };
+      window.addEventListener('ultra-card-template-update', this._templateUpdateListener);
+    }
 
     // Apply design properties with priority - design properties override module properties
     const moduleWithDesign = markdownModule as any;
@@ -367,6 +438,7 @@ All standard markdown features are automatically enabled!`,
       letter_spacing:
         (markdownModule as any).letter_spacing || designFromDesignObject.letter_spacing,
       text_align: (markdownModule as any).text_align || designFromDesignObject.text_align,
+      white_space: (markdownModule as any).white_space || designFromDesignObject.white_space,
       text_shadow_h: (markdownModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
       text_shadow_v: (markdownModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
       text_shadow_blur:
@@ -429,6 +501,53 @@ All standard markdown features are automatically enabled!`,
         (markdownModule as any).box_shadow_color || designFromDesignObject.box_shadow_color,
     };
 
+    // Check if module has a template-based container background color (needs to be parsed from template strings)
+    // This needs to happen BEFORE containerStyles are built
+    let templateContainerBg = '';
+    if (markdownModule.unified_template_mode && markdownModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (hass) {
+        if (!hass.__uvc_template_strings) {
+          hass.__uvc_template_strings = {};
+        }
+        const templateHash = this._hashString(markdownModule.unified_template);
+        const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
+
+        // Subscribe to template if not already subscribed (needed for template evaluation)
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            markdown_content: markdownModule.markdown_content,
+          });
+          this._templateService.subscribeToTemplate(
+            markdownModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        // Check if we already have the rendered template result
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed) && parsed.container_background_color) {
+            templateContainerBg = parsed.container_background_color;
+          }
+        }
+      }
+    }
+
     const containerStyles = {
       padding:
         designProperties.padding_top ||
@@ -454,11 +573,13 @@ All standard markdown features are automatically enabled!`,
           ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
           : '0',
       background:
-        designProperties.background_color && designProperties.background_color !== 'transparent'
-          ? designProperties.background_color
-          : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
-            ? moduleWithDesign.background_color
-            : 'transparent',
+        templateContainerBg && templateContainerBg !== 'transparent'
+          ? templateContainerBg
+          : designProperties.background_color && designProperties.background_color !== 'transparent'
+            ? designProperties.background_color
+            : moduleWithDesign.background_color && moduleWithDesign.background_color !== 'transparent'
+              ? moduleWithDesign.background_color
+              : 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
         hass
@@ -545,6 +666,10 @@ All standard markdown features are automatically enabled!`,
         moduleWithDesign.letter_spacing ||
         markdownModule.letter_spacing ||
         'normal',
+      whiteSpace:
+        designProperties.white_space ||
+        moduleWithDesign.white_space ||
+        'normal',
       // Remove default padding - let CSS handle it
       padding: '0',
       maxHeight:
@@ -583,7 +708,7 @@ All standard markdown features are automatically enabled!`,
       // Process Jinja templates first if they exist in the content
       let processedContent = content;
 
-      // Check if content contains Jinja templates
+      // Check if content contains Jinja templates (both {{ }} and {% %} syntax)
       const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(content);
 
       if (hasTemplates && hass) {
@@ -619,8 +744,10 @@ All standard markdown features are automatically enabled!`,
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined) {
           processedContent = String(rendered);
+        } else {
+          // For initial render, show a placeholder instead of raw template
+          processedContent = 'Template processing...';
         }
-        // If no rendered result yet, the WebSocket subscription will trigger an update when ready
       }
 
       // Configure marked.js options like Home Assistant
@@ -655,11 +782,58 @@ All standard markdown features are automatically enabled!`,
     };
 
     // Create a cache key for this content
-    // Use template content if template mode is enabled, otherwise use markdown content
-    const sourceContent =
-      markdownModule.template_mode && markdownModule.template
-        ? markdownModule.template
-        : markdownModule.markdown_content || '';
+    // PRIORITY 1: Unified template
+    let sourceContent = '';
+    let contentColor: string | undefined;
+
+    if (markdownModule.unified_template_mode && markdownModule.unified_template) {
+      if (!this._templateService && hass) {
+        this._templateService = new TemplateService(hass);
+      }
+      if (hass) {
+        if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
+        const templateHash = this._hashString(markdownModule.unified_template);
+        const templateKey = `unified_markdown_${markdownModule.id}_${templateHash}`;
+
+        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
+          const context = buildEntityContext('', hass, {
+            markdown_content: markdownModule.markdown_content,
+          });
+          this._templateService.subscribeToTemplate(
+            markdownModule.unified_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
+        }
+
+        const unifiedResult = hass.__uvc_template_strings?.[templateKey];
+        if (unifiedResult && String(unifiedResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(unifiedResult);
+          if (!hasTemplateError(parsed)) {
+            if (parsed.content !== undefined) sourceContent = parsed.content;
+            if (parsed.color) contentColor = parsed.color;
+          }
+        }
+      }
+    }
+    // PRIORITY 2: Legacy template mode
+    else if (markdownModule.template_mode && markdownModule.template) {
+      sourceContent = markdownModule.template;
+    }
+    // PRIORITY 3: Regular markdown content
+    else {
+      sourceContent = markdownModule.markdown_content || '';
+    }
 
     const contentKey = `${markdownModule.id}_${this._hashString(sourceContent)}`;
 
@@ -690,7 +864,7 @@ All standard markdown features are automatically enabled!`,
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined) {
           // Re-process with the latest template result
-          const result = renderMarkdown(sourceContent);
+          const result = renderMarkdown(String(rendered));
           this._renderedContentCache.set(contentKey, result);
           renderedContent = result;
         }
@@ -719,7 +893,9 @@ All standard markdown features are automatically enabled!`,
             markdownModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (markdownModule as any).entity,
+            markdownModule
           );
         }
       }, 500); // 500ms hold threshold
@@ -762,7 +938,8 @@ All standard markdown features are automatically enabled!`,
             hass,
             e.target as HTMLElement,
             config,
-            (markdownModule as any).entity
+            (markdownModule as any).entity,
+            markdownModule
           );
         }
       } else {
@@ -781,7 +958,8 @@ All standard markdown features are automatically enabled!`,
               hass,
               e.target as HTMLElement,
               config,
-              (markdownModule as any).entity
+              (markdownModule as any).entity,
+              markdownModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows
@@ -828,9 +1006,8 @@ All standard markdown features are automatically enabled!`,
     const markdownModule = module as MarkdownModule;
     const errors = [...baseValidation.errors];
 
-    if (!markdownModule.markdown_content || markdownModule.markdown_content.trim() === '') {
-      errors.push('Markdown content is required');
-    }
+    // LENIENT VALIDATION: Allow empty markdown - UI will show placeholder
+    // Only validate for truly breaking errors
 
     if (
       markdownModule.font_size &&
@@ -839,7 +1016,7 @@ All standard markdown features are automatically enabled!`,
       errors.push('Font size must be between 1 and 200 pixels');
     }
 
-    // Validate link format if provided
+    // Validate link format if provided (only if it has content)
     if (markdownModule.link && markdownModule.link.trim() !== '') {
       try {
         new URL(markdownModule.link);
@@ -902,6 +1079,11 @@ All standard markdown features are automatically enabled!`,
       .markdown-content del {
         text-decoration: line-through !important;
         color: var(--primary-text-color) !important;
+      }
+
+      /* Underline - ensure u tag renders correctly in HA dashboard */
+      .markdown-content u {
+        text-decoration: underline !important;
       }
 
       .markdown-content code {

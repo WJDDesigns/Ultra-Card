@@ -77,8 +77,6 @@ class UcSnapshotService {
       throw new Error('Pro subscription required to create manual snapshots');
     }
 
-    console.log('📸 Creating manual dashboard snapshot...');
-
     try {
       // Scan dashboard for all Ultra Cards
       const dashboardSnapshot = await ucDashboardScannerService.scanDashboard();
@@ -99,8 +97,6 @@ class UcSnapshotService {
           snapshot_data: dashboardSnapshot,
         }),
       });
-
-      console.log('✅ Manual snapshot created successfully:', response);
 
       return {
         id: response.snapshot_id,
@@ -143,8 +139,6 @@ class UcSnapshotService {
           snapshot_data: dashboardSnapshot,
         }),
       });
-
-      console.log(`✅ Auto snapshot created: ${dashboardSnapshot.card_count} cards backed up`);
     } catch (error) {
       console.error('❌ Auto snapshot failed:', error);
       // Don't throw - auto snapshots should fail silently
@@ -169,7 +163,6 @@ class UcSnapshotService {
         method: 'GET',
       });
 
-      console.log(`✅ Snapshot list received:`, response);
       return response as SnapshotListItem[];
     } catch (error) {
       console.error('❌ Failed to list snapshots:', error);
@@ -299,8 +292,6 @@ class UcSnapshotService {
         method: 'PUT',
         body: JSON.stringify(settings),
       });
-
-      console.log('✅ Snapshot settings updated:', settings);
     } catch (error) {
       console.error('Failed to update snapshot settings:', error);
       throw error;

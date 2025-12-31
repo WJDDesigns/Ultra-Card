@@ -19,10 +19,18 @@ export * from './camera-module';
 export * from './graphs-module';
 export * from './dropdown-module';
 export * from './light-module';
+export * from './map-module';
 export * from './animated-clock-module';
 export * from './animated-weather-module';
 export * from './animated-forecast-module';
 export * from './external-card-module';
+export * from './background-module';
+export * from './status-summary-module';
+export * from './toggle-module';
+export * from './calendar-module';
+export * from './calendar-module-views';
+export * from './grid-module';
+export * from './badge-of-honor-module';
 
 // Export convenience functions
 export { getModuleRegistry } from './module-registry';

@@ -185,6 +185,55 @@ class LightColorUtils {
   static miredToKelvin(mired: number): number {
     return Math.round(1000000 / mired);
   }
+
+  /**
+   * Convert Mired to RGB
+   */
+  static miredToRgb(mired: number): number[] {
+    const kelvin = this.miredToKelvin(mired);
+    return this.kelvinToRgb(kelvin);
+  }
+
+  /**
+   * Convert Kelvin to RGB
+   */
+  static kelvinToRgb(kelvin: number): number[] {
+    // Algorithm based on Tanner Helland's method
+    let r, g, b;
+    const temp = kelvin / 100;
+
+    // Red calculation
+    if (temp <= 66) {
+      r = 255;
+    } else {
+      r = temp - 60;
+      r = 329.698727446 * Math.pow(r, -0.1332047592);
+      r = Math.max(0, Math.min(255, r));
+    }
+
+    // Green calculation
+    if (temp <= 66) {
+      g = temp;
+      g = 99.4708025861 * Math.log(g) - 161.1195681661;
+    } else {
+      g = temp - 60;
+      g = 288.1221695283 * Math.pow(g, -0.0755148492);
+    }
+    g = Math.max(0, Math.min(255, g));
+
+    // Blue calculation
+    if (temp >= 66) {
+      b = 255;
+    } else if (temp <= 19) {
+      b = 0;
+    } else {
+      b = temp - 10;
+      b = 138.5177312231 * Math.log(b) - 305.0447927307;
+      b = Math.max(0, Math.min(255, b));
+    }
+
+    return [Math.round(r), Math.round(g), Math.round(b)];
+  }
 }
 
 @customElement('uc-light-color-picker')
@@ -204,18 +253,21 @@ export class UcLightColorPicker extends LitElement {
   @property() public max_mireds = 500; // ~2000K
   @property({ type: Boolean }) public disabled = false;
   @property({ type: Boolean }) public rgbww_mode = false; // Enable RGBWW combined mode
+  @property({ type: Boolean }) public enable_color = true; // Controls whether color values are sent
+  @property({ type: Boolean }) public enable_color_temp = true; // Controls whether color_temp is sent
 
   @state() private _isDragging = false;
   @state() private _currentRgb: number[] = [255, 255, 255];
   @state() private _currentHs: number[] = [0, 0];
   @state() private _currentXy: number[] = [0.3127, 0.329];
   @state() private _currentColorTemp = 333; // ~3000K
-  @state() private _showColorPicker = false;
   @state() private _ignoringNextEffectChange = false;
   @state() private _processingEffectChange = false;
   @state() private _effectDropdownOpen = false;
   @state() private _effectSearchTerm = '';
   @state() private _filteredEffects: string[] = [];
+  @state() private _focusedInput: string | null = null; // Track which input is focused to prevent value resets
+  @state() private _lastChangedMode: 'rgb' | 'hs' | 'xy' | null = null; // Track which mode was last changed to prevent drift
 
   protected firstUpdated(): void {
     this.updateCurrentValues();
@@ -230,11 +282,11 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleClickOutside = (e: Event): void => {
-    const target = e.target as Node;
-    const container = this.shadowRoot?.querySelector('.custom-select-container');
+    const path = e.composedPath();
+    const effectContainer = this.shadowRoot?.querySelector('.custom-select-container');
 
-    if (container && !container.contains(target) && !this.contains(target)) {
-      console.log('🎯 Click outside detected, closing dropdown');
+    // Close effect dropdown if clicking outside
+    if (effectContainer && !path.includes(effectContainer)) {
       this._effectDropdownOpen = false;
       this._effectSearchTerm = '';
       this.requestUpdate();
@@ -250,41 +302,106 @@ export class UcLightColorPicker extends LitElement {
     ) {
       this.updateCurrentValues();
     }
+
+    // Auto-switch mode if current mode becomes unavailable
+    if (changedProperties.has('enable_color') || changedProperties.has('enable_color_temp')) {
+      // If Color tab is hidden and we're on a color mode, switch
+      if (!this.enable_color && (this.mode === 'hs' || this.mode === 'rgb' || this.mode === 'xy')) {
+        if (this.enable_color_temp && !this.rgbww_mode) {
+          this.mode = 'color_temp';
+        } else {
+          this.mode = 'effect';
+        }
+      }
+      // If White tab is hidden and we're on color_temp mode, switch
+      if (!this.enable_color_temp && this.mode === 'color_temp' && !this.rgbww_mode) {
+        if (this.enable_color) {
+          this.mode = 'hs';
+        } else {
+          this.mode = 'effect';
+        }
+      }
+    }
   }
 
   private updateCurrentValues(): void {
+    // Don't recalculate the color space that was just manually edited to prevent drift
+    // Only skip recalculation if we're currently editing that mode
+    const skipXy =
+      this._lastChangedMode === 'xy' &&
+      (this._focusedInput === 'xy-x' || this._focusedInput === 'xy-y');
+    const skipHs =
+      this._lastChangedMode === 'hs' &&
+      (this._focusedInput === 'hs-hue' || this._focusedInput === 'hs-sat');
+
     if (this.rgb_color) {
       this._currentRgb = [...this.rgb_color];
-      this._currentHs = LightColorUtils.rgbToHs(
-        this.rgb_color[0],
-        this.rgb_color[1],
-        this.rgb_color[2]
-      );
-      this._currentXy = LightColorUtils.rgbToXy(
-        this.rgb_color[0],
-        this.rgb_color[1],
-        this.rgb_color[2]
-      );
+      if (!skipHs) {
+        this._currentHs = LightColorUtils.rgbToHs(
+          this.rgb_color[0],
+          this.rgb_color[1],
+          this.rgb_color[2]
+        );
+      }
+      if (!skipXy) {
+        this._currentXy = LightColorUtils.rgbToXy(
+          this.rgb_color[0],
+          this.rgb_color[1],
+          this.rgb_color[2]
+        );
+      }
     } else if (this.hs_color) {
-      this._currentHs = [...this.hs_color];
-      this._currentRgb = LightColorUtils.hsToRgb(this.hs_color[0], this.hs_color[1]);
-      this._currentXy = LightColorUtils.rgbToXy(
-        this._currentRgb[0],
-        this._currentRgb[1],
-        this._currentRgb[2]
-      );
+      if (!skipHs) {
+        this._currentHs = [...this.hs_color];
+      }
+      this._currentRgb = LightColorUtils.hsToRgb(this._currentHs[0], this._currentHs[1]);
+      if (!skipXy) {
+        this._currentXy = LightColorUtils.rgbToXy(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
     } else if (this.xy_color) {
-      this._currentXy = [...this.xy_color];
-      this._currentRgb = LightColorUtils.xyToRgb(this.xy_color[0], this.xy_color[1]);
-      this._currentHs = LightColorUtils.rgbToHs(
-        this._currentRgb[0],
-        this._currentRgb[1],
-        this._currentRgb[2]
-      );
+      if (!skipXy) {
+        this._currentXy = [...this.xy_color];
+      }
+      this._currentRgb = LightColorUtils.xyToRgb(this._currentXy[0], this._currentXy[1]);
+      if (!skipHs) {
+        this._currentHs = LightColorUtils.rgbToHs(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
+    } else if (this.color_temp) {
+      // Handle color_temp-only presets by converting to RGB/HS/XY
+      this._currentRgb = LightColorUtils.miredToRgb(this.color_temp);
+      if (!skipHs) {
+        this._currentHs = LightColorUtils.rgbToHs(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
+      if (!skipXy) {
+        this._currentXy = LightColorUtils.rgbToXy(
+          this._currentRgb[0],
+          this._currentRgb[1],
+          this._currentRgb[2]
+        );
+      }
     }
 
     if (this.color_temp) {
       this._currentColorTemp = this.color_temp;
+    }
+
+    // If color is disabled, force RGB to white
+    if (!this.enable_color) {
+      this._currentRgb = [255, 255, 255];
+      this._currentHs = [0, 0];
+      this._currentXy = [0.3127, 0.329];
     }
   }
 
@@ -295,30 +412,125 @@ export class UcLightColorPicker extends LitElement {
       effectiveMode = 'rgbww';
     }
 
+    // Build detail object with only relevant properties to prevent conflicts
+    // Home Assistant requires mutually exclusive color descriptors
+    const detail: any = {
+      mode: effectiveMode,
+      rgbww_mode: this.rgbww_mode,
+    };
+
+    // Include properties based on mode to prevent "two or more values in the same group of exclusion" error
+    if (effectiveMode === 'effect') {
+      // Effect mode - only effect, no color descriptors
+      detail.effect = this.effect;
+    } else if (effectiveMode === 'rgbww') {
+      // RGBWW mode - allow both color and color_temp, but respect toggles
+      if (this.enable_color) {
+        detail.rgb_color = this._currentRgb;
+        detail.hs_color = this._currentHs;
+        detail.xy_color = this._currentXy;
+      } else {
+        // When color is disabled, force white RGB
+        detail.rgb_color = [255, 255, 255];
+        detail.hs_color = [0, 0];
+        detail.xy_color = [0.3127, 0.329];
+      }
+      if (this.enable_color_temp) {
+        detail.color_temp = this._currentColorTemp;
+      }
+      detail.effect = ''; // Clear effect
+    } else if (effectiveMode === 'color_temp') {
+      // Color temperature only - respect toggle
+      if (this.enable_color_temp) {
+        detail.color_temp = this._currentColorTemp;
+      }
+      // When color_temp mode but color is disabled, still need white RGB
+      if (!this.enable_color) {
+        detail.rgb_color = [255, 255, 255];
+        detail.hs_color = [0, 0];
+        detail.xy_color = [0.3127, 0.329];
+      }
+      detail.effect = ''; // Clear effect
+    } else if (effectiveMode === 'hs' || effectiveMode === 'rgb' || effectiveMode === 'xy') {
+      // Color modes - respect toggle
+      if (this.enable_color) {
+        detail.rgb_color = this._currentRgb;
+        detail.hs_color = this._currentHs;
+        detail.xy_color = this._currentXy;
+      } else {
+        // When color is disabled, force white RGB
+        detail.rgb_color = [255, 255, 255];
+        detail.hs_color = [0, 0];
+        detail.xy_color = [0.3127, 0.329];
+      }
+      // Don't include color_temp unless explicitly enabled
+      if (this.enable_color_temp && this.rgbww_mode) {
+        detail.color_temp = this._currentColorTemp;
+      }
+      detail.effect = ''; // Clear effect
+    }
+
+    // Apply any explicit updates (these override the defaults)
+    Object.assign(detail, updates);
+
+    // Final cleanup: remove color values if toggle is off (unless forced white)
+    if (!this.enable_color && !detail.rgb_color) {
+      // Only force white if we're in a mode that needs it
+      if (effectiveMode === 'color_temp' || (this.enable_color_temp && !this.enable_color)) {
+        detail.rgb_color = [255, 255, 255];
+        detail.hs_color = [0, 0];
+        detail.xy_color = [0.3127, 0.329];
+      } else {
+        delete detail.rgb_color;
+        delete detail.hs_color;
+        delete detail.xy_color;
+      }
+    } else if (!this.enable_color && detail.rgb_color) {
+      // Keep forced white values
+      detail.rgb_color = [255, 255, 255];
+      detail.hs_color = [0, 0];
+      detail.xy_color = [0.3127, 0.329];
+    }
+
+    // Remove color_temp if toggle is off
+    if (!this.enable_color_temp) {
+      delete detail.color_temp;
+    }
+
     const event = new CustomEvent('color-changed', {
-      detail: {
-        rgb_color: this._currentRgb,
-        hs_color: this._currentHs,
-        xy_color: this._currentXy,
-        color_temp: this._currentColorTemp,
-        effect: this.effect,
-        mode: effectiveMode,
-        rgbww_mode: this.rgbww_mode,
-        ...updates,
-      },
+      detail,
     });
     this.dispatchEvent(event);
   }
 
-  private openColorPicker(): void {
-    if (this.disabled) return;
-    this._showColorPicker = !this._showColorPicker;
-  }
-
   private handleUltraColorPickerChange(e: CustomEvent): void {
+    if (this.disabled || !this.enable_color) return;
     const newColor = e.detail.value;
-    this.handleHexChange(newColor);
-    this._showColorPicker = false;
+
+    // Handle both HEX and RGBA values from ultra-color-picker
+    if (newColor.startsWith('rgba') || newColor.startsWith('rgb')) {
+      // Parse RGBA/RGB value
+      const match = newColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+      if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+
+        this._currentRgb = [r, g, b];
+        this._currentHs = LightColorUtils.rgbToHs(r, g, b);
+        this._currentXy = LightColorUtils.rgbToXy(r, g, b);
+
+        this.fireColorChanged({
+          rgb_color: this._currentRgb,
+          hs_color: this._currentHs,
+          xy_color: this._currentXy,
+          mode: 'rgb',
+        });
+      }
+    } else {
+      // Handle HEX value
+      this.handleHexChange(newColor);
+    }
   }
 
   private handleTestPreset() {
@@ -339,7 +551,7 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleColorWheelClick(e: MouseEvent): void {
-    if (this.disabled) return;
+    if (this.disabled || !this.enable_color) return;
 
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const centerX = rect.width / 2;
@@ -379,7 +591,7 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleRgbChange(component: number, value: number): void {
-    if (this.disabled) return;
+    if (this.disabled || !this.enable_color) return;
 
     const newRgb = [...this._currentRgb];
     newRgb[component] = Math.max(0, Math.min(255, value));
@@ -397,7 +609,7 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleHexChange(hex: string): void {
-    if (this.disabled) return;
+    if (this.disabled || !this.enable_color) return;
 
     const rgb = LightColorUtils.hexToRgb(hex);
     if (rgb) {
@@ -414,8 +626,67 @@ export class UcLightColorPicker extends LitElement {
     }
   }
 
+  private handleHsChange(component: number, value: number): void {
+    if (this.disabled || !this.enable_color) return;
+
+    const newHs = [...this._currentHs];
+
+    if (component === 0) {
+      // Hue: 0-360 degrees
+      newHs[0] = Math.max(0, Math.min(360, value));
+    } else {
+      // Saturation: 0-100 percent
+      newHs[1] = Math.max(0, Math.min(100, value));
+    }
+
+    this._currentHs = newHs;
+    this._currentRgb = LightColorUtils.hsToRgb(newHs[0], newHs[1]);
+    this._currentXy = LightColorUtils.rgbToXy(
+      this._currentRgb[0],
+      this._currentRgb[1],
+      this._currentRgb[2]
+    );
+
+    // Track that HS was the last changed mode
+    this._lastChangedMode = 'hs';
+
+    this.fireColorChanged({
+      rgb_color: this._currentRgb,
+      hs_color: this._currentHs,
+      xy_color: this._currentXy,
+      mode: 'hs',
+    });
+  }
+
+  private handleXyChange(component: number, value: number): void {
+    if (this.disabled || !this.enable_color) return;
+
+    const newXy = [...this._currentXy];
+
+    // XY values typically range from 0 to 1
+    newXy[component] = Math.max(0, Math.min(1, value));
+
+    this._currentXy = newXy;
+    this._currentRgb = LightColorUtils.xyToRgb(newXy[0], newXy[1]);
+    this._currentHs = LightColorUtils.rgbToHs(
+      this._currentRgb[0],
+      this._currentRgb[1],
+      this._currentRgb[2]
+    );
+
+    // Track that XY was the last changed mode
+    this._lastChangedMode = 'xy';
+
+    this.fireColorChanged({
+      rgb_color: this._currentRgb,
+      hs_color: this._currentHs,
+      xy_color: this._currentXy,
+      mode: 'xy',
+    });
+  }
+
   private handleColorTempChange(mired: number): void {
-    if (this.disabled) return;
+    if (this.disabled || !this.enable_color_temp) return;
 
     this._currentColorTemp = Math.max(this.min_mireds, Math.min(this.max_mireds, mired));
 
@@ -437,26 +708,16 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private handleEffectsTabClick(): void {
-    console.log('🎯 Effects tab clicked!');
-    console.log('🎯 Component disabled:', this.disabled);
-    console.log('🎯 Effect list length:', this.effect_list?.length || 0);
-    console.log('🎯 Current mode before:', this.mode);
-
     if (this.disabled) {
-      console.log('🎯 Tab click blocked - component is disabled');
       return;
     }
 
     this.mode = 'effect';
-    console.log('🎯 Current mode after:', this.mode);
     this.requestUpdate();
   }
 
   private handleEffectSelectionSimple(effectValue: string): void {
-    console.log('🎆 Simple effect selection:', effectValue);
-
     if (this.disabled) {
-      console.log('🎆 Component disabled, ignoring');
       return;
     }
 
@@ -466,18 +727,15 @@ export class UcLightColorPicker extends LitElement {
 
     // Update local property
     this.effect = effectValue;
-    console.log('🎆 Updated this.effect to:', this.effect);
 
     // Fire the color-changed event directly
     if (!effectValue || effectValue.trim() === '') {
-      console.log('🎆 No effect selected, clearing and switching to hs mode');
       this.mode = 'hs';
       this.fireColorChanged({
         effect: '',
         mode: 'hs',
       });
     } else {
-      console.log('🎆 Effect selected, switching to effect mode and firing event');
       this.mode = 'effect';
       this.fireColorChanged({
         effect: effectValue,
@@ -488,14 +746,10 @@ export class UcLightColorPicker extends LitElement {
 
   private updateFilteredEffects(): void {
     const searchTerm = this._effectSearchTerm.toLowerCase();
-    console.log('🔍 Filtering effects with search term:', searchTerm);
-    console.log('🔍 Total effect list length:', this.effect_list?.length || 0);
 
     this._filteredEffects = (this.effect_list || []).filter(effect =>
       effect.toLowerCase().includes(searchTerm)
     );
-
-    console.log('🔍 Filtered effects count:', this._filteredEffects.length);
   }
 
   private handleEffectSearch(e: Event): void {
@@ -505,28 +759,20 @@ export class UcLightColorPicker extends LitElement {
   }
 
   private toggleEffectDropdown(): void {
-    console.log('🎯 Toggle dropdown clicked! Current state:', this._effectDropdownOpen);
-    console.log('🎯 Component disabled:', this.disabled);
-
     if (this.disabled) {
-      console.log('🎯 Component is disabled, not opening dropdown');
       return;
     }
 
     this._effectDropdownOpen = !this._effectDropdownOpen;
-    console.log('🎯 New dropdown state:', this._effectDropdownOpen);
 
     if (this._effectDropdownOpen) {
       this.updateFilteredEffects();
-      console.log('🎯 Updated filtered effects, count:', this._filteredEffects.length);
       // Focus search input after dropdown opens
       setTimeout(() => {
         const searchInput = this.shadowRoot?.querySelector('.effect-search') as HTMLInputElement;
         if (searchInput) {
           searchInput.focus();
-          console.log('🎯 Focused search input');
         } else {
-          console.log('🎯 Could not find search input');
         }
       }, 100);
     }
@@ -537,18 +783,14 @@ export class UcLightColorPicker extends LitElement {
   private handleEffectChange(effect: string): void {
     if (this.disabled) return;
 
-    console.log('🎬 handleEffectChange called with:', effect);
-
     // Ignore automatic events triggered by mode changes
     if (this._ignoringNextEffectChange) {
-      console.log('🎬 Ignoring automatic effect change event');
       this._ignoringNextEffectChange = false;
       return;
     }
 
     // Prevent concurrent processing that could cause loops
     if (this._processingEffectChange) {
-      console.log('🎬 Already processing effect change, skipping');
       return;
     }
 
@@ -559,17 +801,13 @@ export class UcLightColorPicker extends LitElement {
       const effectValue = effect || '';
       this.effect = effectValue; // Update local property
 
-      console.log('🎬 Updated this.effect to:', this.effect);
-
       // If effect is empty, clear effect and switch to color mode
       if (!effectValue || effectValue.trim() === '') {
-        console.log('🎬 Effect is empty, clearing effect');
         this.fireColorChanged({
           effect: '',
           mode: 'hs',
         });
       } else {
-        console.log('🎬 Setting effect to:', effectValue);
         // Fire event with effect
         this.fireColorChanged({
           effect: effectValue,
@@ -609,36 +847,225 @@ export class UcLightColorPicker extends LitElement {
       <div class="light-color-picker ${this.disabled ? 'disabled' : ''}">
         <!-- Debug Info -->
 
-        <!-- Color Mode Tabs -->
-        <div class="color-mode-tabs">
-          <button
-            class="mode-tab ${this.mode === 'hs' ? 'active' : ''}"
-            @click=${() => (this.mode = 'hs')}
-            .disabled=${this.disabled}
+        <!-- Color Control Toggles (moved above tabs) -->
+        <div
+          class="color-control-toggles"
+          style="background: rgba(var(--rgb-primary-color), 0.05); border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(var(--rgb-primary-color), 0.1);"
+        >
+          <div style="font-weight: 600; margin-bottom: 16px; color: var(--primary-text-color); font-size: 16px;">
+            Color Control Options
+          </div>
+
+          <!-- Send Color Values Toggle -->
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
           >
-            Color
-          </button>
-          <button
-            class="mode-tab ${this.mode === 'color_temp' ? 'active' : ''}"
-            @click=${() => (this.mode = 'color_temp')}
-            .disabled=${this.disabled}
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <ha-icon icon="mdi:palette" style="color: var(--primary-color); --mdc-icon-size: 20px;"></ha-icon>
+                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
+                  Send Color Values
+                </div>
+              </div>
+              <div style="font-size: 12px; color: var(--secondary-text-color); margin-left: 28px; line-height: 1.4;">
+                Choose specific colors (red, blue, green, etc.)
+              </div>
+            </div>
+            <ha-switch
+              .checked=${this.enable_color}
+              @change=${(e: Event) => {
+                const target = e.target as any;
+                const newValue = target.checked;
+                this.enable_color = newValue;
+                // Fire event to update parent
+                this.dispatchEvent(
+                  new CustomEvent('enable-color-changed', {
+                    detail: { value: newValue },
+                    bubbles: true,
+                    composed: true,
+                  })
+                );
+                // Update current values if disabling color
+                if (!newValue) {
+                  this._currentRgb = [255, 255, 255];
+                  this._currentHs = [0, 0];
+                  this._currentXy = [0.3127, 0.329];
+                  // Switch to a visible tab if Color tab becomes hidden
+                  if (this.mode === 'hs' || this.mode === 'rgb' || this.mode === 'xy') {
+                    if (this.enable_color_temp && !this.rgbww_mode) {
+                      this.mode = 'color_temp';
+                    } else {
+                      this.mode = 'effect';
+                    }
+                }
+                }
+                this.requestUpdate();
+                this.fireColorChanged({});
+              }}
+            ></ha-switch>
+          </div>
+
+          <!-- Send Temperature Toggle -->
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;"
           >
-            White
-          </button>
-          <button
-            class="mode-tab ${this.mode === 'effect' ? 'active' : ''}"
-            @click=${() => {
-              console.log('🎯 Effects tab clicked!');
-              console.log('🎯 Current mode before:', this.mode);
-              this.mode = 'effect';
-              console.log('🎯 Current mode after:', this.mode);
-            }}
-            .disabled=${this.disabled}
-            style="position: relative; z-index: 10;"
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <ha-icon icon="mdi:thermometer" style="color: var(--primary-color); --mdc-icon-size: 20px;"></ha-icon>
+                <div style="font-size: 14px; font-weight: 500; color: var(--primary-text-color);">
+                  Send Temperature
+                </div>
+              </div>
+              <div style="font-size: 12px; color: var(--secondary-text-color); margin-left: 28px; line-height: 1.4;">
+                Choose warm white or cool white light
+              </div>
+            </div>
+            <ha-switch
+              .checked=${this.enable_color_temp}
+              @change=${(e: Event) => {
+                const target = e.target as any;
+                const newValue = target.checked;
+                this.enable_color_temp = newValue;
+                // Fire event to update parent
+                this.dispatchEvent(
+                  new CustomEvent('enable-color-temp-changed', {
+                    detail: { value: newValue },
+                    bubbles: true,
+                    composed: true,
+                  })
+                );
+                // Switch to a visible tab if White tab becomes hidden
+                if (!newValue && this.mode === 'color_temp') {
+                  if (this.enable_color) {
+                    this.mode = 'hs';
+                  } else {
+                    this.mode = 'effect';
+                  }
+                }
+                this.requestUpdate();
+                this.fireColorChanged({});
+              }}
+            ></ha-switch>
+          </div>
+
+          <!-- What Will Be Sent Preview -->
+          <div
+            style="background: rgba(var(--rgb-primary-color), 0.08); border-radius: 6px; padding: 12px; margin-top: 12px; border-top: 1px solid rgba(var(--rgb-primary-color), 0.1);"
           >
-            Effects
-          </button>
+            <div style="font-size: 12px; font-weight: 500; color: var(--primary-text-color); margin-bottom: 8px;">
+              What will be sent:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              ${this.enable_color
+                ? html`
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--primary-text-color);">
+                      <ha-icon icon="mdi:check-circle" style="color: var(--success-color); --mdc-icon-size: 16px;"></ha-icon>
+                      <span>Color values (RGB/HS/XY)</span>
+                    </div>
+                  `
+                : html`
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--secondary-text-color); opacity: 0.6;">
+                      <ha-icon icon="mdi:close-circle" style="--mdc-icon-size: 16px;"></ha-icon>
+                      <span>Color values (RGB will be white)</span>
+                    </div>
+                  `}
+              ${this.enable_color_temp
+                ? html`
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--primary-text-color);">
+                      <ha-icon icon="mdi:check-circle" style="color: var(--success-color); --mdc-icon-size: 16px;"></ha-icon>
+                      <span>Temperature (MIRED)</span>
+                    </div>
+                  `
+                : html`
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--secondary-text-color); opacity: 0.6;">
+                      <ha-icon icon="mdi:close-circle" style="--mdc-icon-size: 16px;"></ha-icon>
+                      <span>Temperature (not sent)</span>
+                    </div>
+                  `}
+            </div>
+          </div>
+
+          <!-- Empty State Message -->
+          ${!this.enable_color && !this.enable_color_temp
+            ? html`
+                <div
+                  style="background: rgba(var(--rgb-warning-color), 0.1); border-radius: 6px; padding: 12px; margin-top: 12px; border: 1px solid rgba(var(--rgb-warning-color), 0.2);"
+                >
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--warning-color);">
+                    <ha-icon icon="mdi:information" style="--mdc-icon-size: 16px;"></ha-icon>
+                    <span>Enable at least one option above to configure light settings</span>
+                  </div>
+                </div>
+              `
+            : ''}
         </div>
+
+        <!-- Color Mode Tabs (shown based on toggle states) -->
+        ${this.enable_color || this.enable_color_temp || this.mode === 'effect'
+          ? html`
+              <div class="color-mode-tabs">
+                ${this.enable_color
+                  ? html`
+                      <button
+                        class="mode-tab ${this.mode === 'hs' || this.mode === 'rgb' || this.mode === 'xy' ? 'active' : ''}"
+                        @click=${() => {
+                          if (this.mode !== 'hs' && this.mode !== 'rgb' && this.mode !== 'xy') {
+                            this.mode = 'hs';
+                            // Fire color-changed event to clear conflicting descriptors
+                            this.fireColorChanged({
+                              rgb_color: this._currentRgb,
+                              hs_color: this._currentHs,
+                              xy_color: this._currentXy,
+                              mode: 'hs',
+                            });
+                          }
+                        }}
+                        .disabled=${this.disabled}
+                      >
+                        Color
+                      </button>
+                    `
+                  : ''}
+                ${this.enable_color_temp && !this.rgbww_mode
+                  ? html`
+                      <button
+                        class="mode-tab ${this.mode === 'color_temp' ? 'active' : ''}"
+                        @click=${() => {
+                          if (this.mode !== 'color_temp') {
+                            this.mode = 'color_temp';
+                            // Fire color-changed event to clear conflicting descriptors
+                            this.fireColorChanged({
+                              color_temp: this._currentColorTemp,
+                              mode: 'color_temp',
+                            });
+                          }
+                        }}
+                        .disabled=${this.disabled}
+                      >
+                        White
+                      </button>
+                    `
+                  : ''}
+                <button
+                  class="mode-tab ${this.mode === 'effect' ? 'active' : ''}"
+                  @click=${() => {
+                    if (this.mode !== 'effect') {
+                      this.mode = 'effect';
+                      // Fire color-changed event to clear conflicting descriptors
+                      this.fireColorChanged({
+                        effect: this.effect,
+                        mode: 'effect',
+                      });
+                    }
+                  }}
+                  .disabled=${this.disabled}
+                  style="position: relative; z-index: 10;"
+                >
+                  Effects
+                </button>
+              </div>
+            `
+          : ''}
 
         <!-- Color Controls -->
         ${this.mode === 'hs'
@@ -648,15 +1075,16 @@ export class UcLightColorPicker extends LitElement {
                 <div class="color-wheel-section">
                   <div
                     class="color-wheel"
+                    style="${!this.enable_color ? 'opacity: 0.5; pointer-events: none;' : ''}"
                     @click=${this.handleColorWheelClick}
                     @mousedown=${(e: MouseEvent) => {
-                      if (!this.disabled) {
+                      if (!this.disabled && this.enable_color) {
                         this._isDragging = true;
                         this.handleColorWheelClick(e);
                       }
                     }}
                     @mousemove=${(e: MouseEvent) => {
-                      if (this._isDragging && !this.disabled) {
+                      if (this._isDragging && !this.disabled && this.enable_color) {
                         this.handleColorWheelClick(e);
                       }
                     }}
@@ -679,101 +1107,531 @@ export class UcLightColorPicker extends LitElement {
                       <div class="rgb-input-group">
                         <label>Red</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           min="0"
                           max="255"
-                          .value=${this._currentRgb[0]}
-                          .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          .value=${this._focusedInput === 'rgb-0'
+                            ? undefined
+                            : this._currentRgb[0].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'rgb-0';
                             const target = e.target as HTMLInputElement;
-                            this.handleRgbChange(0, parseInt(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseInt(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(255, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleRgbChange(0, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey = e.key >= '0' && e.key <= '9';
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                       </div>
                       <div class="rgb-input-group">
                         <label>Green</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           min="0"
                           max="255"
-                          .value=${this._currentRgb[1]}
-                          .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          .value=${this._focusedInput === 'rgb-1'
+                            ? undefined
+                            : this._currentRgb[1].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'rgb-1';
                             const target = e.target as HTMLInputElement;
-                            this.handleRgbChange(1, parseInt(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseInt(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(255, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleRgbChange(1, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey = e.key >= '0' && e.key <= '9';
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                       </div>
                       <div class="rgb-input-group">
                         <label>Blue</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           min="0"
                           max="255"
-                          .value=${this._currentRgb[2]}
-                          .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          .value=${this._focusedInput === 'rgb-2'
+                            ? undefined
+                            : this._currentRgb[2].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'rgb-2';
                             const target = e.target as HTMLInputElement;
-                            this.handleRgbChange(2, parseInt(target.value) || 0);
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseInt(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(255, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleRgbChange(2, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey = e.key >= '0' && e.key <= '9';
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                       </div>
                     </div>
                   </div>
 
-                  <!-- HEX Value -->
-                  <div class="hex-section">
-                    <div class="hex-input-group">
-                      <label>HEX</label>
-                      <div class="hex-input-container">
-                        <input
-                          type="text"
-                          .value=${currentHex}
-                          .disabled=${this.disabled}
-                          @input=${(e: Event) => {
-                            const target = e.target as HTMLInputElement;
-                            this.handleHexChange(target.value);
-                          }}
-                          placeholder="#ffffff"
-                        />
-                        <div
-                          class="color-preview clickable"
-                          style="background-color: ${currentHex};"
-                          @click=${this.openColorPicker}
-                          title="Click to open color picker"
-                        ></div>
-                      </div>
-
-                      <!-- Ultra Color Picker -->
-                      ${this._showColorPicker
-                        ? html`
-                            <div class="color-picker-dropdown">
-                              <ultra-color-picker
-                                .hass=${this.hass}
-                                .value=${currentHex}
-                                @value-changed=${this.handleUltraColorPickerChange}
-                              ></ultra-color-picker>
-                            </div>
-                          `
-                        : ''}
-                    </div>
+                  <!-- Color Picker -->
+                  <div class="color-picker-section">
+                    <div class="section-title">Color Picker</div>
+                    <ultra-color-picker
+                      .hass=${this.hass}
+                      .value=${currentHex}
+                      .disabled=${!this.enable_color}
+                      @value-changed=${this.handleUltraColorPickerChange}
+                    ></ultra-color-picker>
                   </div>
 
                   <!-- HS Values -->
                   <div class="hs-section">
                     <div class="section-title">HS Values</div>
-                    <div class="hs-values-display">
-                      <span>H: ${this._currentHs[0]}°</span>
-                      <span>S: ${this._currentHs[1]}%</span>
+                    <div class="hs-inputs">
+                      <div class="hs-input-group">
+                        <label>H (Hue)</label>
+                        <input
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          min="0"
+                          max="360"
+                          .value=${this._focusedInput === 'hs-hue'
+                            ? undefined
+                            : this._currentHs[0].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'hs-hue';
+                            // Preserve current value when focusing
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(360, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(0, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(360, numValue));
+                            const target = e.target as HTMLInputElement;
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(0, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                        <span class="unit">°</span>
+                      </div>
+                      <div class="hs-input-group">
+                        <label>S (Sat)</label>
+                        <input
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
+                          min="0"
+                          max="100"
+                          .value=${this._focusedInput === 'hs-sat'
+                            ? undefined
+                            : this._currentHs[1].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'hs-sat';
+                            // Preserve current value when focusing
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(100, numValue));
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(1, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(100, numValue));
+                            const target = e.target as HTMLInputElement;
+                            target.value = clampedValue.toString();
+                            this.handleHsChange(1, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                        <span class="unit">%</span>
+                      </div>
                     </div>
                   </div>
 
                   <!-- XY Values -->
                   <div class="xy-section">
                     <div class="section-title">XY Values</div>
-                    <div class="xy-values-display">
-                      <span>X: ${this._currentXy[0]}</span>
-                      <span>Y: ${this._currentXy[1]}</span>
+                    <div class="xy-inputs">
+                      <div class="xy-input-group">
+                        <label>X</label>
+                        <input
+                          type="text"
+                          inputmode="decimal"
+                          pattern="[0-9.]*"
+                          min="0"
+                          max="1"
+                          step="0.0001"
+                          .value=${this._focusedInput === 'xy-x'
+                            ? undefined
+                            : this._currentXy[0].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'xy-x';
+                            // Preserve current value when focusing
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            // Format to preserve reasonable decimal precision (up to 4 decimal places)
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(0, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            const target = e.target as HTMLInputElement;
+                            // Format to preserve reasonable decimal precision
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(0, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                      </div>
+                      <div class="xy-input-group">
+                        <label>Y</label>
+                        <input
+                          type="text"
+                          inputmode="decimal"
+                          pattern="[0-9.]*"
+                          min="0"
+                          max="1"
+                          step="0.0001"
+                          .value=${this._focusedInput === 'xy-y'
+                            ? undefined
+                            : this._currentXy[1].toString()}
+                          .disabled=${this.disabled || !this.enable_color}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'xy-y';
+                            // Preserve current value when focusing
+                            const target = e.target as HTMLInputElement;
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            // Clear the last changed mode after blur so normal updates work
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                            // State will be updated on blur/change
+                            // This prevents re-renders that interfere with typing
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseFloat(target.value) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            // Format to preserve reasonable decimal precision (up to 4 decimal places)
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(1, clampedValue);
+                          }}
+                          @paste=${(e: ClipboardEvent) => {
+                            e.preventDefault();
+                            const pastedText = e.clipboardData?.getData('text') || '';
+                            const numValue = parseFloat(pastedText) || 0;
+                            const clampedValue = Math.max(0, Math.min(1, numValue));
+                            const target = e.target as HTMLInputElement;
+                            // Format to preserve reasonable decimal precision
+                            const formattedValue = clampedValue.toFixed(4).replace(/\.?0+$/, '');
+                            target.value = formattedValue;
+                            this.handleXyChange(1, clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            // Allow navigation, deletion, and numeric input
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey =
+                              (e.key >= '0' && e.key <= '9') || e.key === '-' || e.key === '.';
+
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -800,13 +1658,13 @@ export class UcLightColorPicker extends LitElement {
                           max=${this.max_mireds}
                           step="1"
                           .value=${this._currentColorTemp}
-                          .disabled=${this.disabled}
+                          .disabled=${this.disabled || !this.enable_color_temp}
                           @input=${(e: Event) => {
                             const target = e.target as HTMLInputElement;
                             this.handleColorTempChange(parseInt(target.value));
                           }}
                           class="color-temp-slider"
-                          style="direction: rtl;"
+                          style="direction: rtl; ${!this.enable_color_temp ? 'opacity: 0.5;' : ''}"
                         />
                         <div class="kelvin-markers">
                           <span>2000K</span>
@@ -821,16 +1679,64 @@ export class UcLightColorPicker extends LitElement {
                       <div class="mired-input-group">
                         <label>Mired</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           min=${this.min_mireds}
                           max=${this.max_mireds}
-                          .value=${this._currentColorTemp}
-                          .disabled=${this.disabled}
-                          @input=${(e: Event) => {
+                          .value=${this._focusedInput === 'mired-rgbww'
+                            ? undefined
+                            : this._currentColorTemp.toString()}
+                          .disabled=${this.disabled || !this.enable_color_temp}
+                          @focus=${(e: Event) => {
+                            this._focusedInput = 'mired-rgbww';
                             const target = e.target as HTMLInputElement;
-                            this.handleColorTempChange(
-                              parseInt(target.value) || this._currentColorTemp
+                            const currentValue = target.value;
+                            requestAnimationFrame(() => {
+                              target.value = currentValue;
+                            });
+                          }}
+                          @blur=${() => {
+                            this._focusedInput = null;
+                            setTimeout(() => {
+                              this._lastChangedMode = null;
+                            }, 100);
+                          }}
+                          @input=${(e: Event) => {
+                            // Don't update state during typing - just allow free input
+                          }}
+                          @change=${(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            const numValue = parseInt(target.value) || this._currentColorTemp;
+                            const clampedValue = Math.max(
+                              this.min_mireds,
+                              Math.min(this.max_mireds, numValue)
                             );
+                            target.value = clampedValue.toString();
+                            this.handleColorTempChange(clampedValue);
+                          }}
+                          @keydown=${(e: KeyboardEvent) => {
+                            const allowedKeys = [
+                              'Backspace',
+                              'Delete',
+                              'ArrowLeft',
+                              'ArrowRight',
+                              'ArrowUp',
+                              'ArrowDown',
+                              'Tab',
+                              'Enter',
+                              'Home',
+                              'End',
+                            ];
+                            const isNumberKey = e.key >= '0' && e.key <= '9';
+                            if (
+                              !allowedKeys.includes(e.key) &&
+                              !isNumberKey &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
                           }}
                         />
                       </div>
@@ -858,13 +1764,13 @@ export class UcLightColorPicker extends LitElement {
                       max=${this.max_mireds}
                       step="1"
                       .value=${this._currentColorTemp}
-                      .disabled=${this.disabled}
+                      .disabled=${this.disabled || !this.enable_color_temp}
                       @input=${(e: Event) => {
                         const target = e.target as HTMLInputElement;
                         this.handleColorTempChange(parseInt(target.value));
                       }}
                       class="color-temp-slider"
-                      style="direction: rtl;"
+                      style="direction: rtl; ${!this.enable_color_temp ? 'opacity: 0.5;' : ''}"
                     />
                     <div class="kelvin-markers">
                       <span>2000K</span>
@@ -879,16 +1785,64 @@ export class UcLightColorPicker extends LitElement {
                   <div class="mired-input-group">
                     <label>Mired</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
                       min=${this.min_mireds}
                       max=${this.max_mireds}
-                      .value=${this._currentColorTemp}
-                      .disabled=${this.disabled}
-                      @input=${(e: Event) => {
+                      .value=${this._focusedInput === 'mired'
+                        ? undefined
+                        : this._currentColorTemp.toString()}
+                      .disabled=${this.disabled || !this.enable_color_temp}
+                      @focus=${(e: Event) => {
+                        this._focusedInput = 'mired';
                         const target = e.target as HTMLInputElement;
-                        this.handleColorTempChange(
-                          parseInt(target.value) || this._currentColorTemp
+                        const currentValue = target.value;
+                        requestAnimationFrame(() => {
+                          target.value = currentValue;
+                        });
+                      }}
+                      @blur=${() => {
+                        this._focusedInput = null;
+                        setTimeout(() => {
+                          this._lastChangedMode = null;
+                        }, 100);
+                      }}
+                      @input=${(e: Event) => {
+                        // Don't update state during typing - just allow free input
+                      }}
+                      @change=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const numValue = parseInt(target.value) || this._currentColorTemp;
+                        const clampedValue = Math.max(
+                          this.min_mireds,
+                          Math.min(this.max_mireds, numValue)
                         );
+                        target.value = clampedValue.toString();
+                        this.handleColorTempChange(clampedValue);
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        const allowedKeys = [
+                          'Backspace',
+                          'Delete',
+                          'ArrowLeft',
+                          'ArrowRight',
+                          'ArrowUp',
+                          'ArrowDown',
+                          'Tab',
+                          'Enter',
+                          'Home',
+                          'End',
+                        ];
+                        const isNumberKey = e.key >= '0' && e.key <= '9';
+                        if (
+                          !allowedKeys.includes(e.key) &&
+                          !isNumberKey &&
+                          !e.ctrlKey &&
+                          !e.metaKey
+                        ) {
+                          e.preventDefault();
+                        }
                       }}
                     />
                   </div>
@@ -1194,85 +2148,59 @@ export class UcLightColorPicker extends LitElement {
         border-color: var(--primary-color);
       }
 
-      .hex-input-group {
+      .color-picker-section {
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .hs-inputs,
+      .xy-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .hs-input-group,
+      .xy-input-group {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        position: relative;
       }
 
-      .hex-input-group label {
+      .hs-input-group label,
+      .xy-input-group label {
         font-size: 12px;
         color: var(--secondary-text-color);
         font-weight: 500;
       }
 
-      .hex-input-container {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .hex-input-container input {
-        flex: 1;
+      .hs-input-group input,
+      .xy-input-group input {
         padding: 6px 8px;
         border: 1px solid var(--divider-color);
         border-radius: 4px;
         background: var(--secondary-background-color);
         color: var(--primary-text-color);
-        font-family: monospace;
         font-size: 12px;
-        text-transform: uppercase;
+        text-align: center;
+        font-family: monospace;
       }
 
-      .hex-input-container input:focus {
+      .hs-input-group input:focus,
+      .xy-input-group input:focus {
         outline: none;
         border-color: var(--primary-color);
       }
 
-      .color-preview {
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        border: 1px solid var(--divider-color);
-        flex-shrink: 0;
-        transition: all 0.2s ease;
-      }
-
-      .color-preview.clickable {
-        cursor: pointer;
-      }
-
-      .color-preview.clickable:hover {
-        transform: scale(1.1);
-        border-color: var(--primary-color);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      }
-
-      .color-picker-dropdown {
+      .hs-input-group .unit {
         position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: ${Z_INDEX.DROPDOWN_MENU};
-        margin-top: 8px;
-        background: var(--card-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 16px;
-      }
-
-      .hex-input-group {
-        position: relative;
-      }
-
-      .hs-values-display,
-      .xy-values-display {
-        display: flex;
-        gap: 16px;
-        font-size: 12px;
+        right: 8px;
+        bottom: 10px;
+        font-size: 10px;
         color: var(--secondary-text-color);
-        font-family: monospace;
+        pointer-events: none;
       }
 
       .color-temp-controls {

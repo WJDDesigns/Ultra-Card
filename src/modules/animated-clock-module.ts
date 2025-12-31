@@ -3,15 +3,16 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedClockModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedClockModuleEditor } from './animated-clock-module-editor';
 import { clockUpdateService } from '../services/clock-update-service';
 import { getImageUrl } from '../utils/image-upload';
-import { getSmartScalingStyles } from '../utils/uc-smart-scaling';
 
 export class UltraAnimatedClockModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'animated_clock',
-    title: 'Animated Clock (PRO)',
+    title: 'Animated Clock',
     description: 'Beautiful flip clock with smooth animations',
     author: 'WJD Designs',
     version: '1.0.0',
@@ -161,7 +162,6 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -178,15 +178,11 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const clockModule = module as AnimatedClockModule;
     const moduleWithDesign = clockModule as any;
     const designProperties = moduleWithDesign.design || {};
-
-    // Get smart scaling setting (default true)
-    const smartScaling = clockModule.smart_scaling !== false;
-    const scalingStyles = getSmartScalingStyles(smartScaling);
 
     // Register this clock with the update service
     const updateFrequency = parseInt(clockModule.update_frequency || '1');
@@ -247,6 +243,97 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       default:
         clockContent = this._renderFlipClock(hours, minutes, ampm, clockModule);
     }
+
+    // Action handlers for tap, hold, and double-tap
+    let holdTimeout: any = null;
+    let clickTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      isHolding = false;
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (!clockModule.hold_action || clockModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (clockModule.hold_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config,
+            (clockModule as any).entity,
+            clockModule
+          );
+        }
+      }, 500); // 500ms hold threshold
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      // Clear hold timer
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      // If this was a hold gesture, don't process as click
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      // Double click detection (within 300ms)
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        // This is a double click
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (!clockModule.double_tap_action || clockModule.double_tap_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (clockModule.double_tap_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config,
+            (clockModule as any).entity,
+            clockModule
+          );
+        }
+      } else {
+        // This might be a single click, but wait to see if double click follows
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          // This is a single click
+          clickCount = 0;
+
+          // Execute tap action
+          if (!clockModule.tap_action || clockModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              (clockModule.tap_action as any) || ({ action: 'default' } as any),
+              hass,
+              e.target as HTMLElement,
+              config,
+              (clockModule as any).entity,
+              clockModule
+            );
+          }
+        }, 300); // Wait 300ms to see if double click follows
+      }
+    };
+
+    // Determine if actions are configured to show cursor pointer
+    const hasActions =
+      (clockModule.tap_action && clockModule.tap_action.action !== 'nothing') ||
+      (clockModule.hold_action && clockModule.hold_action.action !== 'nothing') ||
+      (clockModule.double_tap_action && clockModule.double_tap_action.action !== 'nothing');
 
     // Container styles for design system integration - properly handle global design properties
     const containerStyles = {
@@ -310,22 +397,26 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       backdropFilter:
         designProperties.backdrop_filter || moduleWithDesign.backdrop_filter || undefined,
       clipPath: designProperties.clip_path || moduleWithDesign.clip_path || undefined,
-      overflow: designProperties.overflow || moduleWithDesign.overflow || scalingStyles.overflow,
+      overflow: designProperties.overflow || moduleWithDesign.overflow || 'visible',
       // Flexbox for proper centering and responsive behavior
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'column',
-      boxSizing: scalingStyles.boxSizing,
-      // Apply smart scaling constraints
-      ...(smartScaling ? { maxWidth: scalingStyles.maxWidth } : {}),
+      boxSizing: 'border-box',
+      // Add cursor pointer when actions are configured
+      cursor: hasActions ? 'pointer' : 'default',
     };
 
     return html`
       <style>
         ${this.getStyles()}
       </style>
-      <div style=${this.objectToStyleString(containerStyles)}>
+      <div
+        style=${this.objectToStyleString(containerStyles)}
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
+      >
         <div
           class="animated-clock-module-container"
           style="
@@ -1450,8 +1541,8 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .flip-unit {
         position: relative;
-        width: min(calc(56px * var(--clock-scale)), 12vw);
-        height: min(calc(77px * var(--clock-scale)), 16vw);
+        width: calc(56px * var(--clock-scale));
+        height: calc(77px * var(--clock-scale));
         background: var(--flip-tile-color, rgba(0, 0, 0, 0.5));
         border-radius: calc(8px * var(--clock-scale));
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1469,7 +1560,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: min(calc(48px * var(--clock-scale)), 8vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: 700;
         color: var(--clock-color);
         line-height: 1;
@@ -1489,7 +1580,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       }
 
       .flip-separator {
-        font-size: min(calc(48px * var(--clock-scale)), 8vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: 700;
         color: var(--clock-color);
         animation: blink 1s ease-in-out infinite;
@@ -1503,7 +1594,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       }
 
       .flip-ampm {
-        font-size: min(calc(19px * var(--clock-scale)), 3vw);
+        font-size: calc(19px * var(--clock-scale));
         font-weight: 600;
         color: var(--clock-color);
         opacity: 0.9;
@@ -1542,7 +1633,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .digital-time {
         font-family: 'Courier New', monospace;
-        font-size: clamp(36px, calc(64px * var(--clock-scale)), 12vw);
+        font-size: calc(64px * var(--clock-scale));
         font-weight: bold;
         color: #ff3333;
         text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;
@@ -1551,7 +1642,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .digital-ampm {
         font-family: 'Courier New', monospace;
-        font-size: clamp(16px, calc(26px * var(--clock-scale)), 5vw);
+        font-size: calc(26px * var(--clock-scale));
         font-weight: bold;
         color: #33ff33;
         text-shadow: 0 0 8px #00ff00, 0 0 16px #00ff00;
@@ -1569,8 +1660,6 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         position: relative;
         width: calc(192px * var(--clock-scale));
         height: calc(192px * var(--clock-scale));
-        max-width: 100%;
-        max-height: 100%;
         box-sizing: border-box;
         overflow: hidden;
         border-radius: 50%;
@@ -1826,7 +1915,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .retro-digit, .retro-colon {
         font-family: 'Courier New', monospace;
-        font-size: clamp(24px, calc(48px * var(--clock-scale)), 10vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: bold;
         color: #ffa500;
         text-shadow: 0 0 5px #ff8800, 0 0 10px #ff6600;
@@ -1866,21 +1955,21 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .text-word {
         font-family: Georgia, serif;
-        font-size: clamp(24px, calc(48px * var(--clock-scale)), 10vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: 600;
         line-height: 1.4;
         text-transform: capitalize;
       }
 
       .text-prefix {
-        font-size: clamp(20px, calc(38px * var(--clock-scale)), 8vw);
+        font-size: calc(38px * var(--clock-scale));
         font-weight: 400;
         opacity: 0.7;
         text-transform: lowercase;
       }
 
       .text-ampm {
-        font-size: clamp(14px, calc(24px * var(--clock-scale)), 5vw);
+        font-size: calc(24px * var(--clock-scale));
         opacity: 0.8;
         text-transform: uppercase;
       }
@@ -1908,20 +1997,20 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .neon-digit {
         font-family: 'Arial Black', sans-serif;
-        font-size: clamp(24px, calc(48px * var(--clock-scale)), 10vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: 900;
         animation: neon-flicker 3s ease-in-out infinite;
       }
 
       .neon-separator {
         font-family: 'Arial Black', sans-serif;
-        font-size: clamp(24px, calc(48px * var(--clock-scale)), 10vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: 900;
       }
 
       .neon-ampm {
         font-family: 'Arial Black', sans-serif;
-        font-size: clamp(14px, calc(19px * var(--clock-scale)), 4vw);
+        font-size: calc(19px * var(--clock-scale));
         font-weight: 900;
       }
 
@@ -1957,7 +2046,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .material-time {
         font-family: 'Roboto', sans-serif;
-        font-size: clamp(28px, calc(48px * var(--clock-scale)), 10vw);
+        font-size: calc(48px * var(--clock-scale));
         font-weight: 300;
         color: var(--clock-color);
         letter-spacing: -1px;
@@ -1965,7 +2054,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .material-seconds {
         font-family: 'Roboto', sans-serif;
-        font-size: clamp(14px, calc(19px * var(--clock-scale)), 4vw);
+        font-size: calc(19px * var(--clock-scale));
         font-weight: 400;
         color: var(--clock-color);
         opacity: 0.7;
@@ -1992,6 +2081,7 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
 
       .terminal-output {
         font-weight: 600;
+        font-size: calc(38px * var(--clock-scale));
       }
 
       .terminal-cursor {
@@ -2005,126 +2095,12 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       }
 
       /* ========== RESPONSIVE SIZING ========== */
-      /* Improved responsive behavior with better viewport constraints */
+      /* Container-based uniform scaling instead of breakpoint layout changes */
       @media (max-width: 768px) {
         .animated-clock-module-container {
-          --clock-scale: min(calc(var(--clock-size-value) / 115), calc(100vw / 300));
-        }
-        
-        .digital-time {
-          font-size: clamp(32px, 6vw, calc(96px * var(--clock-scale)));
-        }
-        
-        .flip-unit {
-          width: min(calc(56px * var(--clock-scale)), 12vw);
-          height: min(calc(77px * var(--clock-scale)), 16vw);
-        }
-        
-        .flip-digit-display {
-          font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .analog-clock-dial {
-          width: min(calc(192px * var(--clock-scale)), 50vw);
-          height: min(calc(192px * var(--clock-scale)), 50vw);
-        }
-        
-        .retro-digit, .retro-colon {
-          font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .neon-digit {
-          font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .material-time {
-          font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .terminal-output {
-          font-size: clamp(18px, 4vw, calc(38px * var(--clock-scale)));
-        }
-        
-        .text-word {
-          font-size: clamp(24px, 5vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .binary-dot {
-          width: min(calc(19px * var(--clock-scale)), 4vw);
-          height: min(calc(19px * var(--clock-scale)), 4vw);
-        }
-        
-        .digital-display {
-          padding: calc(16px * var(--clock-scale)) calc(20px * var(--clock-scale));
-        }
-        
-        .material-card {
-          padding: calc(16px * var(--clock-scale)) calc(24px * var(--clock-scale));
-        }
-        
-        .terminal-clock {
-          padding: calc(16px * var(--clock-scale));
-        }
-      }
-
-      @media (max-width: 480px) {
-        .animated-clock-module-container {
-          --clock-scale: min(calc(var(--clock-size-value) / 115), calc(100vw / 200));
-        }
-        
-        .digital-time {
-          font-size: clamp(24px, 5vw, calc(64px * var(--clock-scale)));
-        }
-        
-        .digital-display {
-          padding: calc(12px * var(--clock-scale)) calc(16px * var(--clock-scale));
-        }
-
-        .flip-unit {
-          width: min(calc(56px * var(--clock-scale)), 15vw);
-          height: min(calc(77px * var(--clock-scale)), 20vw);
-        }
-        
-        .flip-digit-display {
-          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .analog-clock-dial {
-          width: min(calc(192px * var(--clock-scale)), 60vw);
-          height: min(calc(192px * var(--clock-scale)), 60vw);
-        }
-        
-        .retro-digit, .retro-colon {
-          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .neon-digit {
-          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .material-time {
-          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .terminal-output {
-          font-size: clamp(14px, 3vw, calc(38px * var(--clock-scale)));
-        }
-        
-        .text-word {
-          font-size: clamp(18px, 4vw, calc(48px * var(--clock-scale)));
-        }
-        
-        .binary-dot {
-          width: min(calc(19px * var(--clock-scale)), 5vw);
-          height: min(calc(19px * var(--clock-scale)), 5vw);
-        }
-        
-        .material-card {
-          padding: calc(12px * var(--clock-scale)) calc(20px * var(--clock-scale));
-        }
-        
-        .terminal-clock {
-          padding: calc(12px * var(--clock-scale));
+          --container-scale: min(1, calc(100vw / 600));
+          transform: scale(var(--container-scale));
+          transform-origin: center center;
         }
       }
 

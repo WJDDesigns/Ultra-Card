@@ -6,6 +6,121 @@ import { uploadImage } from '../utils/image-upload';
 import { localize } from '../localize/localize';
 import { Z_INDEX } from '../utils/uc-z-index';
 
+// Web-safe fonts that don't require loading
+const WEB_SAFE_FONTS = [
+  { value: 'Arial, sans-serif', label: 'Arial', category: 'websafe' },
+  { value: 'Helvetica, sans-serif', label: 'Helvetica', category: 'websafe' },
+  { value: 'Times New Roman, serif', label: 'Times New Roman', category: 'websafe' },
+  { value: 'Georgia, serif', label: 'Georgia', category: 'websafe' },
+  { value: 'Verdana, sans-serif', label: 'Verdana', category: 'websafe' },
+  { value: 'Courier New, monospace', label: 'Courier New', category: 'websafe' },
+  { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS', category: 'websafe' },
+  { value: 'Impact, sans-serif', label: 'Impact', category: 'websafe' },
+  { value: 'Comic Sans MS, cursive', label: 'Comic Sans MS', category: 'websafe' },
+  { value: 'Palatino, serif', label: 'Palatino', category: 'websafe' },
+];
+
+// Popular Google Fonts (loaded dynamically from Google CDN)
+const GOOGLE_FONTS = [
+  { value: 'Roboto', label: 'Roboto', category: 'google' },
+  { value: 'Open Sans', label: 'Open Sans', category: 'google' },
+  { value: 'Lato', label: 'Lato', category: 'google' },
+  { value: 'Montserrat', label: 'Montserrat', category: 'google' },
+  { value: 'Oswald', label: 'Oswald', category: 'google' },
+  { value: 'Raleway', label: 'Raleway', category: 'google' },
+  { value: 'PT Sans', label: 'PT Sans', category: 'google' },
+  { value: 'Merriweather', label: 'Merriweather', category: 'google' },
+  { value: 'Ubuntu', label: 'Ubuntu', category: 'google' },
+  { value: 'Playfair Display', label: 'Playfair Display', category: 'google' },
+  { value: 'Poppins', label: 'Poppins', category: 'google' },
+  { value: 'Nunito', label: 'Nunito', category: 'google' },
+  { value: 'Rubik', label: 'Rubik', category: 'google' },
+  { value: 'Work Sans', label: 'Work Sans', category: 'google' },
+  { value: 'Inter', label: 'Inter', category: 'google' },
+  { value: 'Noto Sans', label: 'Noto Sans', category: 'google' },
+  { value: 'Fira Sans', label: 'Fira Sans', category: 'google' },
+  { value: 'Mukta', label: 'Mukta', category: 'google' },
+  { value: 'Quicksand', label: 'Quicksand', category: 'google' },
+  { value: 'Karla', label: 'Karla', category: 'google' },
+  { value: 'Barlow', label: 'Barlow', category: 'google' },
+  { value: 'Source Sans Pro', label: 'Source Sans Pro', category: 'google' },
+  { value: 'IBM Plex Sans', label: 'IBM Plex Sans', category: 'google' },
+  { value: 'DM Sans', label: 'DM Sans', category: 'google' },
+  { value: 'Titillium Web', label: 'Titillium Web', category: 'google' },
+  { value: 'Hind', label: 'Hind', category: 'google' },
+  { value: 'Oxygen', label: 'Oxygen', category: 'google' },
+  { value: 'Cabin', label: 'Cabin', category: 'google' },
+  { value: 'Bitter', label: 'Bitter', category: 'google' },
+  { value: 'Crimson Text', label: 'Crimson Text', category: 'google' },
+  { value: 'Libre Baskerville', label: 'Libre Baskerville', category: 'google' },
+  { value: 'Libre Franklin', label: 'Libre Franklin', category: 'google' },
+  { value: 'Noto Serif', label: 'Noto Serif', category: 'google' },
+  { value: 'Arvo', label: 'Arvo', category: 'google' },
+  { value: 'Josefin Sans', label: 'Josefin Sans', category: 'google' },
+  { value: 'Anton', label: 'Anton', category: 'google' },
+  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'google' },
+  { value: 'Dancing Script', label: 'Dancing Script', category: 'google' },
+  { value: 'Pacifico', label: 'Pacifico', category: 'google' },
+  { value: 'Lobster', label: 'Lobster', category: 'google' },
+  { value: 'Caveat', label: 'Caveat', category: 'google' },
+  { value: 'Shadows Into Light', label: 'Shadows Into Light', category: 'google' },
+  { value: 'Indie Flower', label: 'Indie Flower', category: 'google' },
+  { value: 'Cinzel', label: 'Cinzel', category: 'google' },
+  { value: 'EB Garamond', label: 'EB Garamond', category: 'google' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', category: 'google' },
+  { value: 'Abril Fatface', label: 'Abril Fatface', category: 'google' },
+  { value: 'Righteous', label: 'Righteous', category: 'google' },
+  { value: 'Satisfy', label: 'Satisfy', category: 'google' },
+  { value: 'Great Vibes', label: 'Great Vibes', category: 'google' },
+  { value: 'Permanent Marker', label: 'Permanent Marker', category: 'google' },
+  { value: 'Exo 2', label: 'Exo 2', category: 'google' },
+  { value: 'Roboto Condensed', label: 'Roboto Condensed', category: 'google' },
+  { value: 'Roboto Slab', label: 'Roboto Slab', category: 'google' },
+  { value: 'Roboto Mono', label: 'Roboto Mono', category: 'google' },
+  { value: 'PT Serif', label: 'PT Serif', category: 'google' },
+  { value: 'Slabo 27px', label: 'Slabo 27px', category: 'google' },
+  { value: 'Inconsolata', label: 'Inconsolata', category: 'google' },
+  { value: 'Source Code Pro', label: 'Source Code Pro', category: 'google' },
+  { value: 'Overpass', label: 'Overpass', category: 'google' },
+  { value: 'Alegreya', label: 'Alegreya', category: 'google' },
+  { value: 'Alegreya Sans', label: 'Alegreya Sans', category: 'google' },
+  { value: 'Zilla Slab', label: 'Zilla Slab', category: 'google' },
+  { value: 'Manrope', label: 'Manrope', category: 'google' },
+  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'google' },
+  { value: 'Heebo', label: 'Heebo', category: 'google' },
+  { value: 'Archivo', label: 'Archivo', category: 'google' },
+  { value: 'Archivo Narrow', label: 'Archivo Narrow', category: 'google' },
+  { value: 'Teko', label: 'Teko', category: 'google' },
+  { value: 'Yanone Kaffeesatz', label: 'Yanone Kaffeesatz', category: 'google' },
+  { value: 'Abel', label: 'Abel', category: 'google' },
+  { value: 'Asap', label: 'Asap', category: 'google' },
+  { value: 'Assistant', label: 'Assistant', category: 'google' },
+  { value: 'Comfortaa', label: 'Comfortaa', category: 'google' },
+  { value: 'Dosis', label: 'Dosis', category: 'google' },
+  { value: 'Fjalla One', label: 'Fjalla One', category: 'google' },
+  { value: 'Kanit', label: 'Kanit', category: 'google' },
+  { value: 'Prompt', label: 'Prompt', category: 'google' },
+  { value: 'Varela Round', label: 'Varela Round', category: 'google' },
+  { value: 'Maven Pro', label: 'Maven Pro', category: 'google' },
+  { value: 'Catamaran', label: 'Catamaran', category: 'google' },
+  { value: 'Signika', label: 'Signika', category: 'google' },
+  { value: 'ABeeZee', label: 'ABeeZee', category: 'google' },
+  { value: 'Exo', label: 'Exo', category: 'google' },
+  { value: 'Merriweather Sans', label: 'Merriweather Sans', category: 'google' },
+  { value: 'Archivo Black', label: 'Archivo Black', category: 'google' },
+  { value: 'Saira', label: 'Saira', category: 'google' },
+  { value: 'Red Hat Display', label: 'Red Hat Display', category: 'google' },
+  { value: 'Public Sans', label: 'Public Sans', category: 'google' },
+  { value: 'Spectral', label: 'Spectral', category: 'google' },
+  { value: 'Lora', label: 'Lora', category: 'google' },
+  { value: 'Noticia Text', label: 'Noticia Text', category: 'google' },
+  { value: 'Old Standard TT', label: 'Old Standard TT', category: 'google' },
+  { value: 'Cardo', label: 'Cardo', category: 'google' },
+  { value: 'Domine', label: 'Domine', category: 'google' },
+  { value: 'Crete Round', label: 'Crete Round', category: 'google' },
+  { value: 'Volkhov', label: 'Volkhov', category: 'google' },
+];
+
 export interface DesignProperties {
   color?: string;
   text_align?: 'left' | 'center' | 'right' | 'justify';
@@ -16,11 +131,11 @@ export interface DesignProperties {
   font_weight?: string;
   text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   font_style?: 'normal' | 'italic' | 'oblique';
+  white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
   background_color?: string;
   background_image?: string;
   background_image_type?: 'none' | 'upload' | 'entity' | 'url';
   background_image_entity?: string;
-  smart_scaling?: boolean;
   background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
   background_position?:
     | 'left top'
@@ -120,6 +235,9 @@ export interface DesignProperties {
     | 'ease-out'
     | 'ease-in-out'
     | 'cubic-bezier(0.25,0.1,0.25,1)';
+  extra_class?: string;
+  element_id?: string;
+  css_variable_prefix?: string;
 }
 
 @customElement('ultra-global-design-tab')
@@ -275,6 +393,13 @@ export class GlobalDesignTab extends LitElement {
     side: 'top' | 'bottom' | 'left' | 'right',
     value: string
   ): void {
+    console.log('📏 [UPDATE SPACING]', {
+      type,
+      side,
+      value,
+      currentDesignProperties: { ...this.designProperties },
+      hasOnUpdate: !!this.onUpdate,
+    });
     // Get current lock state and ensure it's boolean
     const isSpacingLocked =
       type === 'margin' ? Boolean(this._marginLocked) : Boolean(this._paddingLocked);
@@ -286,24 +411,42 @@ export class GlobalDesignTab extends LitElement {
       return;
     }
 
+    // Normalize empty strings to undefined for proper deletion
+    const normalizeValue = (val: string): any => {
+      if (val === '' || val === null || (typeof val === 'string' && val.trim() === '')) {
+        return undefined;
+      }
+      return val;
+    };
+
+    const normalizedValue = normalizeValue(value);
+
     let updates: Partial<DesignProperties>;
 
     if (isSpacingLocked) {
       // When locked, apply to all sides (user expects mirrored behavior)
       // This should only happen when updating from the top field
       updates = {
-        [`${type}_top`]: value,
-        [`${type}_bottom`]: value,
-        [`${type}_left`]: value,
-        [`${type}_right`]: value,
+        [`${type}_top`]: normalizedValue,
+        [`${type}_bottom`]: normalizedValue,
+        [`${type}_left`]: normalizedValue,
+        [`${type}_right`]: normalizedValue,
       };
     } else {
       // When unlocked, apply to specific side only (default behavior)
-      updates = { [`${type}_${side}`]: value };
+      updates = { [`${type}_${side}`]: normalizedValue };
     }
 
-    // Update local designProperties immediately
-    this.designProperties = { ...(this.designProperties || {}), ...updates } as any;
+    // Update local designProperties immediately, removing properties set to undefined
+    const newDesignProperties = { ...(this.designProperties || {}) };
+    for (const [key, val] of Object.entries(updates)) {
+      if (val === undefined) {
+        delete (newDesignProperties as any)[key];
+      } else {
+        (newDesignProperties as any)[key] = val;
+      }
+    }
+    this.designProperties = newDesignProperties as any;
 
     // For locked spacing fields, force immediate UI update to sync all fields
     const isSpacingUpdate = Object.keys(updates).some(
@@ -334,6 +477,41 @@ export class GlobalDesignTab extends LitElement {
       });
       this.dispatchEvent(event);
     }
+  }
+
+  private _createSpacingInputHandler(
+    type: 'margin' | 'padding',
+    side: 'top' | 'bottom' | 'left' | 'right'
+  ): (e: Event) => void {
+    return (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const value = target.value;
+      // Store cursor position
+      const cursorPosition = target.selectionStart;
+      const cursorEnd = target.selectionEnd;
+
+      // Update property
+      this._updateSpacing(type, side, value);
+
+      // Preserve user input and cursor position - use multiple attempts to ensure it works
+      const preserveValueAndCursor = () => {
+        if (target) {
+          // If the input value was reset by reactive update, restore user input
+          if (target.value !== value) {
+            target.value = value;
+          }
+          // Restore cursor position
+          if (typeof cursorPosition === 'number') {
+            target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
+          }
+        }
+      };
+
+      // Try multiple times to catch delayed re-renders
+      requestAnimationFrame(preserveValueAndCursor);
+      setTimeout(preserveValueAndCursor, 0);
+      setTimeout(preserveValueAndCursor, 10);
+    };
   }
 
   private _createRobustInputHandler(
@@ -490,8 +668,6 @@ export class GlobalDesignTab extends LitElement {
   }
 
   private _resetSection(section: string): void {
-    // Add debugging to help track reset actions
-
     // Create a reset object that explicitly removes properties
     const resetProperties: Record<string, undefined> = {};
 
@@ -506,6 +682,7 @@ export class GlobalDesignTab extends LitElement {
         resetProperties.font_weight = undefined;
         resetProperties.text_transform = undefined;
         resetProperties.font_style = undefined;
+        resetProperties.white_space = undefined;
         break;
       case 'background':
         resetProperties.background_color = undefined;
@@ -581,7 +758,12 @@ export class GlobalDesignTab extends LitElement {
     }
 
     // Update local state immediately so UI reflects the reset
-    this.designProperties = { ...(this.designProperties || {}), ...resetProperties } as any;
+    // IMPORTANT: Delete properties rather than setting to undefined for proper Lit change detection
+    const newDesignProperties = { ...(this.designProperties || {}) };
+    Object.keys(resetProperties).forEach(key => {
+      delete (newDesignProperties as any)[key];
+    });
+    this.designProperties = newDesignProperties as any;
     this.requestUpdate();
 
     // Use callback if provided (module integration), otherwise use event (row/column integration)
@@ -598,7 +780,7 @@ export class GlobalDesignTab extends LitElement {
         bubbles: true,
         composed: true,
       });
-      const dispatched = this.dispatchEvent(event);
+      this.dispatchEvent(event);
     }
 
     // Force component re-render to update UI indicators after a small delay
@@ -664,6 +846,7 @@ export class GlobalDesignTab extends LitElement {
       font_weight: undefined,
       text_transform: undefined,
       font_style: undefined,
+      white_space: undefined,
       // Background properties
       background_color: undefined,
       background_image: undefined,
@@ -724,6 +907,11 @@ export class GlobalDesignTab extends LitElement {
       animation_timing: undefined,
     };
 
+    // Update local state immediately so UI reflects the reset
+    // IMPORTANT: Create a clean empty object rather than setting properties to undefined
+    this.designProperties = {} as any;
+    this.requestUpdate();
+
     // Use callback if provided (module integration), otherwise use event (row/column integration)
     if (this.onUpdate) {
       try {
@@ -767,6 +955,10 @@ export class GlobalDesignTab extends LitElement {
         background_image: imagePath,
         background_image_type: 'upload' as const,
       };
+
+      // Update local state immediately so UI reflects the change (matches _updateProperty behavior)
+      this.designProperties = { ...(this.designProperties || {}), ...updates } as any;
+      this.requestUpdate();
 
       // Use callback if provided (module integration), otherwise use event (row/column integration)
       if (this.onUpdate) {
@@ -877,7 +1069,8 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.font_family) ||
           hasValue(props.font_weight) ||
           hasValue(props.text_transform) ||
-          hasValue(props.font_style)
+          hasValue(props.font_style) ||
+          hasValue(props.white_space)
         );
       case 'background':
         return !!(
@@ -926,39 +1119,61 @@ export class GlobalDesignTab extends LitElement {
           hasValue(props.right) ||
           hasValue(props.z_index)
         );
-      case 'text-shadow':
+      case 'shadows':
         return !!(
           hasValue(props.text_shadow_h) ||
           hasValue(props.text_shadow_v) ||
           hasValue(props.text_shadow_blur) ||
-          hasValue(props.text_shadow_color)
-        );
-      case 'box-shadow':
-        return !!(
+          hasValue(props.text_shadow_color) ||
           hasValue(props.box_shadow_h) ||
           hasValue(props.box_shadow_v) ||
           hasValue(props.box_shadow_blur) ||
           hasValue(props.box_shadow_spread) ||
           hasValue(props.box_shadow_color)
         );
-      case 'overflow':
+      case 'effects':
         return !!(hasValue(props.overflow) || hasValue(props.clip_path));
       case 'animations':
         return !!(
-          (hasValue(props.animation_type) && props.animation_type !== 'none') ||
+          hasValue(props.animation_type) ||
           hasValue(props.animation_entity) ||
           hasValue(props.animation_trigger_type) ||
           hasValue(props.animation_attribute) ||
           hasValue(props.animation_state) ||
-          (hasValue(props.intro_animation) && props.intro_animation !== 'none') ||
-          (hasValue(props.outro_animation) && props.outro_animation !== 'none') ||
+          hasValue(props.intro_animation) ||
+          hasValue(props.outro_animation) ||
           hasValue(props.animation_duration) ||
           hasValue(props.animation_delay) ||
-          (hasValue(props.animation_timing) && props.animation_timing !== 'ease')
+          hasValue(props.animation_timing)
         );
+      case 'custom_targeting':
+        return !!hasValue(props.css_variable_prefix);
       default:
         return false;
     }
+  }
+
+  private _loadGoogleFont(fontFamily?: string): void {
+    if (!fontFamily || fontFamily === '') {
+      return; // Don't load fonts for default/empty selection
+    }
+
+    // Check if it's a web-safe font (contains comma)
+    if (WEB_SAFE_FONTS.some(font => font.value === fontFamily)) {
+      return; // Don't load Google Fonts for web-safe fonts
+    }
+
+    // Check if font is already loaded
+    const existingLink = document.querySelector(`link[href*="${fontFamily.replace(/\s+/g, '+')}"]`);
+    if (existingLink) {
+      return;
+    }
+
+    // Create and append Google Fonts link
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, '+')}:wght@300;400;500;600;700&display=swap`;
+    document.head.appendChild(link);
   }
 
   private _renderAccordion(
@@ -1242,105 +1457,225 @@ export class GlobalDesignTab extends LitElement {
 
             <div class="property-group">
               <label>${localize('editor.design.font', lang, 'Font')}:</label>
-              <select
-                .value=${this.designProperties.font_family || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('font_family', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="Arial, sans-serif">Arial</option>
-                <option value="Helvetica, sans-serif">Helvetica</option>
-                <option value="Times New Roman, serif">Times New Roman</option>
-                <option value="Georgia, serif">Georgia</option>
-                <option value="Verdana, sans-serif">Verdana</option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.font_family || ''}
+                  @change=${(e: Event) => {
+                    const value = (e.target as HTMLSelectElement).value;
+                    this._updateProperty('font_family', value);
+                    this._loadGoogleFont(value);
+                  }}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <optgroup label="Web-safe Fonts">
+                    ${WEB_SAFE_FONTS.map(
+                      font => html`
+                        <option value="${font.value}">${font.label}</option>
+                      `
+                    )}
+                  </optgroup>
+                  <optgroup label="Google Fonts">
+                    ${GOOGLE_FONTS.map(
+                      font => html`
+                        <option value="${font.value}">${font.label}</option>
+                      `
+                    )}
+                  </optgroup>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_family', '')}
+                  title="${localize(
+                    'editor.design.reset_font',
+                    lang,
+                    'Reset font to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+              ${this.designProperties.font_family && GOOGLE_FONTS.some(font => font.value === this.designProperties.font_family)
+                ? html`
+                    <div class="google-fonts-info-box">
+                      <ha-icon icon="mdi:information-outline"></ha-icon>
+                      <span>
+                        ${localize(
+                          'editor.design.google_fonts_warning',
+                          lang,
+                          'Google Fonts load dynamically from Google\'s CDN and require an internet connection. They will not be available on local/offline installations.'
+                        )}
+                      </span>
+                    </div>
+                  `
+                : ''}
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.font_weight', lang, 'Font Weight')}:</label>
-              <select
-                .value=${this.designProperties.font_weight || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="100">
-                  ${localize('editor.design.weight_thin', lang, '100 - Thin')}
-                </option>
-                <option value="300">
-                  ${localize('editor.design.weight_light', lang, '300 - Light')}
-                </option>
-                <option value="400">
-                  ${localize('editor.design.weight_normal', lang, '400 - Normal')}
-                </option>
-                <option value="500">
-                  ${localize('editor.design.weight_medium', lang, '500 - Medium')}
-                </option>
-                <option value="600">
-                  ${localize('editor.design.weight_semi_bold', lang, '600 - Semi Bold')}
-                </option>
-                <option value="700">
-                  ${localize('editor.design.weight_bold', lang, '700 - Bold')}
-                </option>
-                <option value="900">
-                  ${localize('editor.design.weight_black', lang, '900 - Black')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.font_weight || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('font_weight', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="100">
+                    ${localize('editor.design.weight_thin', lang, '100 - Thin')}
+                  </option>
+                  <option value="300">
+                    ${localize('editor.design.weight_light', lang, '300 - Light')}
+                  </option>
+                  <option value="400">
+                    ${localize('editor.design.weight_normal', lang, '400 - Normal')}
+                  </option>
+                  <option value="500">
+                    ${localize('editor.design.weight_medium', lang, '500 - Medium')}
+                  </option>
+                  <option value="600">
+                    ${localize('editor.design.weight_semi_bold', lang, '600 - Semi Bold')}
+                  </option>
+                  <option value="700">
+                    ${localize('editor.design.weight_bold', lang, '700 - Bold')}
+                  </option>
+                  <option value="900">
+                    ${localize('editor.design.weight_black', lang, '900 - Black')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_weight', '')}
+                  title="${localize(
+                    'editor.design.reset_font_weight',
+                    lang,
+                    'Reset font weight to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.text_transform', lang, 'Text Transform')}:</label>
-              <select
-                .value=${this.designProperties.text_transform || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="none">
-                  ${localize('editor.design.transform_none', lang, 'None')}
-                </option>
-                <option value="uppercase">
-                  ${localize('editor.design.transform_uppercase', lang, 'UPPERCASE')}
-                </option>
-                <option value="lowercase">
-                  ${localize('editor.design.transform_lowercase', lang, 'lowercase')}
-                </option>
-                <option value="capitalize">
-                  ${localize('editor.design.transform_capitalize', lang, 'Capitalize')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.text_transform || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('text_transform', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="none">
+                    ${localize('editor.design.transform_none', lang, 'None')}
+                  </option>
+                  <option value="uppercase">
+                    ${localize('editor.design.transform_uppercase', lang, 'UPPERCASE')}
+                  </option>
+                  <option value="lowercase">
+                    ${localize('editor.design.transform_lowercase', lang, 'lowercase')}
+                  </option>
+                  <option value="capitalize">
+                    ${localize('editor.design.transform_capitalize', lang, 'Capitalize')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('text_transform', '')}
+                  title="${localize(
+                    'editor.design.reset_text_transform',
+                    lang,
+                    'Reset text transform to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
 
             <div class="property-group">
               <label>${localize('editor.design.font_style', lang, 'Font Style')}:</label>
-              <select
-                .value=${this.designProperties.font_style || ''}
-                @change=${(e: Event) =>
-                  this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
-                class="property-select"
-              >
-                <option value="">
-                  ${localize('editor.design.default_option', lang, '– Default –')}
-                </option>
-                <option value="normal">
-                  ${localize('editor.design.style_normal', lang, 'Normal')}
-                </option>
-                <option value="italic">
-                  ${localize('editor.design.style_italic', lang, 'Italic')}
-                </option>
-                <option value="oblique">
-                  ${localize('editor.design.style_oblique', lang, 'Oblique')}
-                </option>
-              </select>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.font_style || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('font_style', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="normal">
+                    ${localize('editor.design.style_normal', lang, 'Normal')}
+                  </option>
+                  <option value="italic">
+                    ${localize('editor.design.style_italic', lang, 'Italic')}
+                  </option>
+                  <option value="oblique">
+                    ${localize('editor.design.style_oblique', lang, 'Oblique')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('font_style', '')}
+                  title="${localize(
+                    'editor.design.reset_font_style',
+                    lang,
+                    'Reset font style to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="property-group">
+              <label>${localize('editor.design.white_space', lang, 'White Space')}:</label>
+              <div class="input-with-reset">
+                <select
+                  .value=${this.designProperties.white_space || ''}
+                  @change=${(e: Event) =>
+                    this._updateProperty('white_space', (e.target as HTMLSelectElement).value)}
+                  class="property-select"
+                >
+                  <option value="">
+                    ${localize('editor.design.default_option', lang, '– Default –')}
+                  </option>
+                  <option value="normal">
+                    ${localize('editor.design.white_space_normal', lang, 'Normal')}
+                  </option>
+                  <option value="nowrap">
+                    ${localize('editor.design.white_space_nowrap', lang, 'No Wrap')}
+                  </option>
+                  <option value="pre">
+                    ${localize('editor.design.white_space_pre', lang, 'Pre')}
+                  </option>
+                  <option value="pre-wrap">
+                    ${localize('editor.design.white_space_pre_wrap', lang, 'Pre Wrap')}
+                  </option>
+                  <option value="pre-line">
+                    ${localize('editor.design.white_space_pre_line', lang, 'Pre Line')}
+                  </option>
+                </select>
+                <button
+                  class="reset-btn"
+                  @click=${() => this._updateProperty('white_space', '')}
+                  title="${localize(
+                    'editor.design.reset_white_space',
+                    lang,
+                    'Reset white space to default'
+                  )}"
+                >
+                  <ha-icon icon="mdi:refresh"></ha-icon>
+                </button>
+              </div>
             </div>
           `,
           'text'
@@ -1896,23 +2231,7 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="8px, auto, 1rem"
                     .value=${this.designProperties.margin_top || ''}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'top', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'top')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_top',
                       () => this.designProperties.margin_top || '',
@@ -1934,23 +2253,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_right || ''}
                     .disabled=${this._marginLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'right', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'right')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_right',
                       () => this.designProperties.margin_right || '',
@@ -1972,23 +2275,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_bottom || ''}
                     .disabled=${this._marginLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'bottom', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'bottom')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_bottom',
                       () => this.designProperties.margin_bottom || '',
@@ -2010,23 +2297,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.margin_top || ''
                       : this.designProperties.margin_left || ''}
                     .disabled=${this._marginLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('margin', 'left', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('margin', 'left')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'margin_left',
                       () => this.designProperties.margin_left || '',
@@ -2063,23 +2334,7 @@ export class GlobalDesignTab extends LitElement {
                     type="text"
                     placeholder="0px, 1rem, 5%"
                     .value=${this.designProperties.padding_top || ''}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'top', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'top')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_top',
                       () => this.designProperties.padding_top || '',
@@ -2101,23 +2356,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_right || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'right', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'right')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_right',
                       () => this.designProperties.padding_right || '',
@@ -2139,23 +2378,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_bottom || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'bottom', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'bottom')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_bottom',
                       () => this.designProperties.padding_bottom || '',
@@ -2177,23 +2400,7 @@ export class GlobalDesignTab extends LitElement {
                       ? this.designProperties.padding_top || ''
                       : this.designProperties.padding_left || ''}
                     .disabled=${this._paddingLocked}
-                    @input=${(e: Event) => {
-                      const target = e.target as HTMLInputElement;
-                      const value = target.value;
-                      // Store cursor position
-                      const cursorPosition = target.selectionStart;
-                      const cursorEnd = target.selectionEnd;
-
-                      // Update property without immediate re-render
-                      this._updateSpacing('padding', 'left', value);
-
-                      // Restore cursor position after update
-                      requestAnimationFrame(() => {
-                        if (target && typeof cursorPosition === 'number') {
-                          target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                        }
-                      });
-                    }}
+                    @input=${this._createSpacingInputHandler('padding', 'left')}
                     @keydown=${this._createProtectedKeydownHandler(
                       'padding_left',
                       () => this.designProperties.padding_left || '',
@@ -2220,23 +2427,10 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.border_radius || ''}
-                  @input=${(e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const value = target.value;
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart;
-                    const cursorEnd = target.selectionEnd;
-
-                    // Update property without immediate re-render
-                    this._updateProperty('border_radius', value);
-
-                    // Restore cursor position after update
-                    requestAnimationFrame(() => {
-                      if (target && typeof cursorPosition === 'number') {
-                        target.setSelectionRange(cursorPosition, cursorEnd || cursorPosition);
-                      }
-                    });
-                  }}
+                  @input=${this._createRobustInputHandler(
+                    'border_radius',
+                    (value: string) => this._updateProperty('border_radius', value)
+                  )}
                   @keydown=${(e: KeyboardEvent) =>
                     this._handleNumericKeydown(
                       e,
@@ -2245,6 +2439,10 @@ export class GlobalDesignTab extends LitElement {
                     )}
                   placeholder="5px, 50%, 0.3em, 12px 0"
                   class="property-input"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
                 />
                 <button
                   class="reset-btn"
@@ -2844,7 +3042,7 @@ export class GlobalDesignTab extends LitElement {
                 <input
                   type="text"
                   .value=${this.designProperties.animation_duration || '2s'}
-                  @input=${(e: Event) =>
+                  @change=${(e: Event) =>
                     this._updateProperty(
                       'animation_duration',
                       (e.target as HTMLInputElement).value
@@ -3194,7 +3392,7 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     .value=${this.designProperties.animation_duration || ''}
-                    @input=${(e: Event) =>
+                    @change=${(e: Event) =>
                       this._updateProperty(
                         'animation_duration',
                         (e.target as HTMLInputElement).value
@@ -3215,7 +3413,7 @@ export class GlobalDesignTab extends LitElement {
                   <input
                     type="text"
                     .value=${this.designProperties.animation_delay || ''}
-                    @input=${(e: Event) =>
+                    @change=${(e: Event) =>
                       this._updateProperty('animation_delay', (e.target as HTMLInputElement).value)}
                     placeholder="0s, 100ms"
                     class="property-input"
@@ -3254,40 +3452,32 @@ export class GlobalDesignTab extends LitElement {
           `,
           'animations'
         )}
-
-        <!-- Smart Scaling Section -->
-        <div
-          class="smart-scaling-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 8px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
-        >
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <ha-icon icon="mdi:fit-to-screen" style="color: var(--primary-color);"></ha-icon>
-            <span style="font-size: 16px; font-weight: 600; color: var(--primary-text-color);">
-              ${localize('editor.design.smart_scaling', lang, 'Smart Scaling')}
-            </span>
-          </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-          >
-            ${localize(
-              'editor.design.smart_scaling_description',
-              lang,
-              'When enabled, content automatically scales to fit within the card boundaries. Disable to allow overflow effects like glows and shadows to extend beyond bounds.'
-            )}
-          </div>
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 14px; color: var(--primary-text-color);">
-              ${localize('editor.design.enable_smart_scaling', lang, 'Enable Smart Scaling')}
-            </span>
-            <ha-switch
-              .checked=${this.designProperties.smart_scaling !== false}
-              @change=${(e: Event) => {
-                const target = e.target as any;
-                this._updateProperty('smart_scaling', target.checked);
-              }}
-            ></ha-switch>
-          </div>
-        </div>
+        ${this._renderAccordion(
+          localize('editor.design.custom_targeting_section', lang, 'Custom Targeting'),
+          html`
+            <div class="property-group">
+              <label
+                >${localize('editor.design.css_var_prefix', lang, 'CSS Variable Prefix')}:</label
+              >
+              <input
+                type="text"
+                .value=${this.designProperties.css_variable_prefix || ''}
+                @input=${(e: Event) =>
+                  this._updateProperty('css_variable_prefix', (e.target as HTMLInputElement).value)}
+                placeholder="my-row"
+                class="property-input"
+              />
+              <div class="field-description">
+                ${localize(
+                  'editor.design.css_var_prefix_desc',
+                  lang,
+                  'Prefix for CSS variables (e.g., "my-row" creates --my-row-bg-color, --my-row-text-color). Override with card-mod: style: | :host { --my-row-bg-color: red; }'
+                )}
+              </div>
+            </div>
+          `,
+          'custom_targeting'
+        )}
       </div>
     `;
   }
@@ -3722,6 +3912,44 @@ export class GlobalDesignTab extends LitElement {
         .spacing-fields-desktop {
           grid-template-columns: 1fr 1fr;
           gap: 8px;
+        }
+      }
+
+      .google-fonts-info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 8px;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(var(--rgb-primary-color, 3, 169, 244), 0.1), rgba(var(--rgb-primary-color, 3, 169, 244), 0.05));
+        border-left: 3px solid var(--primary-color);
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        animation: fadeIn 0.3s ease-in-out;
+      }
+
+      .google-fonts-info-box ha-icon {
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 2px;
+        --mdc-icon-size: 20px;
+      }
+
+      .google-fonts-info-box span {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--primary-text-color);
+        opacity: 0.9;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
 
@@ -4541,7 +4769,8 @@ export class GlobalDesignTab extends LitElement {
         width: 100%;
       }
 
-      .input-with-reset .property-input {
+      .input-with-reset .property-input,
+      .input-with-reset .property-select {
         flex: 1;
       }
 
@@ -4570,6 +4799,18 @@ export class GlobalDesignTab extends LitElement {
 
       .reset-btn ha-icon {
         font-size: 16px;
+      }
+
+      /* Field description styling */
+      .field-description {
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
+        border-left: 3px solid var(--primary-color, #03a9f4);
+        border-radius: 4px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--secondary-text-color);
       }
     `;
   }

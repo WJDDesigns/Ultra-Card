@@ -7,6 +7,8 @@ export declare class LogicService {
     private static instance;
     private hass;
     private templateService;
+    private loggedEntityErrors;
+    private loggedAttributeErrors;
     private constructor();
     static getInstance(): LogicService;
     setHass(hass: HomeAssistant): void;

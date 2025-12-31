@@ -5,6 +5,7 @@ import { CardModule, CameraModule, UltraCardConfig } from '../types';
 import '../components/ultra-template-editor';
 export declare class UltraCameraModule extends BaseUltraModule {
     private _templateInputDebounce;
+    private _templateService?;
     private _lastRenderedEntity;
     private _renderDebounce;
     private _webrtcUpdateTimer;
@@ -13,6 +14,10 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private _lastAppliedLive?;
     private _huiImageRef;
     private _cameraStableKeys;
+    private _audioOverrides;
+    private _lastAudioStates;
+    private _audioObservers;
+    private _snapshotRefreshTimers;
     metadata: ModuleMetadata;
     private clickTimeout;
     private holdTimeout;
@@ -20,7 +25,7 @@ export declare class UltraCameraModule extends BaseUltraModule {
     createDefault(id?: string, hass?: HomeAssistant): CameraModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: any, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
@@ -50,8 +55,16 @@ export declare class UltraCameraModule extends BaseUltraModule {
     private getFullscreenIconPositionStyles;
     private getAdjustedPositionForCollision;
     private getCameraNamePositionStyles;
+    private _hashString;
     private hasActiveLink;
+    private _isAudioActive;
+    private _toggleDashboardAudio;
+    private _ensureAudioState;
+    private _applyAudioState;
+    private _watchAudioTargets;
     private refreshCamera;
+    private _setupSnapshotRefresh;
+    private _clearSnapshotRefresh;
     private getCameraImageUrl;
     private getCameraImageBlob;
     private getCameraImageViaWebSocket;

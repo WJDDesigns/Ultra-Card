@@ -166,7 +166,6 @@ class UcCloudBackupService {
       }
 
       const backup: CloudBackup = await response.json();
-      console.log(`✅ Snapshot created: ${name}`);
 
       this._status.lastBackup = new Date();
       this._saveLastBackupTime();
@@ -251,7 +250,6 @@ class UcCloudBackupService {
       console.warn('Failed to track restore:', error);
     }
 
-    console.log(`✅ Backup restored: ${backup.snapshot_name || `v${backup.version_number}`}`);
     return backup.config;
   }
 
@@ -277,8 +275,6 @@ class UcCloudBackupService {
     if (!response.ok) {
       throw new Error(`Failed to update snapshot: ${response.statusText}`);
     }
-
-    console.log(`✅ Snapshot updated: ${name}`);
   }
 
   /**
@@ -299,8 +295,6 @@ class UcCloudBackupService {
     if (!response.ok) {
       throw new Error(`Failed to delete snapshot: ${response.statusText}`);
     }
-
-    console.log(`✅ Snapshot deleted`);
   }
 
   /**
@@ -404,8 +398,6 @@ class UcCloudBackupService {
       const backup: CloudBackup = await response.json();
       this._status.lastBackup = new Date(backup.created);
       this._saveLastBackupTime();
-
-      console.log(`✅ Auto-backup saved: v${backup.version_number}`);
     } catch (error) {
       console.error('❌ Auto-save failed:', error);
       this._status.error = error instanceof Error ? error.message : 'Auto-save failed';

@@ -150,8 +150,8 @@ export const Z_INDEX = {
   /** Dropdown menu overlay - ABOVE all tabs and popups (z-index: 5001) */
   DROPDOWN_MENU: 5001,
 
-  /** Color picker container - ABOVE all tabs and popups (z-index: 5002) */
-  COLOR_PICKER_CONTAINER: 5002,
+  /** Color picker container - Base layer (z-index: 0) */
+  COLOR_PICKER_CONTAINER: 0,
 
   /** Color picker palette dropdown - ABOVE all tabs and popups (z-index: 5003) */
   COLOR_PICKER_PALETTE: 5003,

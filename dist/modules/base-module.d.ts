@@ -2,6 +2,7 @@ import { TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
+import { TapActionConfig } from '../components/ultra-link';
 export interface ModuleMetadata {
     type: string;
     title: string;
@@ -20,7 +21,7 @@ export interface UltraModule {
     renderOtherTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderDesignTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderYamlTab?(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];
@@ -32,7 +33,7 @@ export declare abstract class BaseUltraModule implements UltraModule {
     abstract metadata: ModuleMetadata;
     abstract createDefault(id?: string, hass?: HomeAssistant): CardModule;
     abstract renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    abstract renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    abstract renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void, updateConfig?: (updates: Partial<UltraCardConfig>) => void): TemplateResult;
     renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderDesignTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
@@ -41,6 +42,19 @@ export declare abstract class BaseUltraModule implements UltraModule {
         errors: string[];
     };
     protected generateId(prefix: string): string;
+    /**
+     * Centralized action handler for all modules
+     * This ensures confirmation dialogs work consistently across all modules
+     * Modules should use this method instead of calling UltraLinkComponent.handleAction directly
+     *
+     * @param action The action to execute
+     * @param hass Home Assistant instance
+     * @param element The element that triggered the action
+     * @param config Ultra Card config
+     * @param moduleEntity The module's entity (if any)
+     * @param module The module instance (required for confirmation dialogs)
+     */
+    handleModuleAction(action: TapActionConfig | undefined, hass: HomeAssistant, element?: HTMLElement, config?: UltraCardConfig, moduleEntity?: string, module?: CardModule): Promise<void>;
     protected renderFormField(label: string, input: TemplateResult, description?: string): TemplateResult;
     protected renderColorPicker(label: string, value: string, onChange: (color: string) => void, description?: string): TemplateResult;
     protected renderNumberInput(label: string, value: number, onChange: (value: number) => void, options?: {
@@ -159,6 +173,34 @@ export declare abstract class BaseUltraModule implements UltraModule {
      *
      * This dispatches a global event that both the editor popup preview
      * and the actual card listen for to trigger re-renders.
+     *
+     * @param immediate - If true, triggers update immediately without debouncing
      */
-    protected triggerPreviewUpdate(): void;
+    protected triggerPreviewUpdate(immediate?: boolean): void;
+    /**
+     * Render a beautiful gradient error state for incomplete module configuration
+     * Matches the website's gradient aesthetic (purple → pink → blue)
+     *
+     * @param title - Main error title (e.g., "Configure Entities")
+     * @param subtitle - Helpful subtitle text (e.g., "Select an entity in the General tab")
+     * @param icon - Icon to display (defaults to alert circle)
+     * @returns TemplateResult with gradient error state
+     */
+    protected renderGradientErrorState(title: string, subtitle: string, icon?: string): TemplateResult;
+    /**
+     * Render a compact warning banner for partial configuration issues
+     * Shows when some items are valid but others need configuration
+     *
+     * @param message - Warning message to display
+     * @param count - Optional count to display (e.g., "2 items need configuration")
+     * @returns TemplateResult with gradient warning banner
+     */
+    protected renderGradientWarningBanner(message: string, count?: number): TemplateResult;
+    /**
+     * Get shared CSS styles for gradient error states
+     * Called by renderGradientErrorState and renderGradientWarningBanner
+     *
+     * @returns CSS string with gradient error state styles
+     */
+    protected getGradientErrorStateStyles(): string;
 }

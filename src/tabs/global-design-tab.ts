@@ -53,6 +53,26 @@ export class GlobalDesignTab {
         }
       }
 
+      // Mirror size properties to top-level for reactive updates
+      // This ensures modules that prioritize top-level properties get immediate updates
+      const sizeProperties = ['width', 'height', 'max_width', 'max_height', 'min_width', 'min_height'];
+      sizeProperties.forEach(prop => {
+        if (Object.prototype.hasOwnProperty.call(updates, prop)) {
+          const propValue = updates[prop];
+          if (
+            propValue === '' ||
+            propValue === undefined ||
+            propValue === null ||
+            (typeof propValue === 'string' && propValue.trim() === '')
+          ) {
+            (combined as any)[prop] = undefined;
+            delete (combined as any)[prop];
+          } else {
+            (combined as any)[prop] = propValue;
+          }
+        }
+      });
+
       // Debug logging for font_size updates
       if (updates.hasOwnProperty('font_size')) {
         console.log('🔧 GlobalDesignTab: Font size update', {
@@ -102,8 +122,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.padding_top || ''}
-                  @input=${(e: Event) =>
+                  value="${d.padding_top || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ padding_top: (e.target as HTMLInputElement).value })}
                   placeholder="0px, 1rem, 5%"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -116,8 +136,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.padding_right || ''}
-                  @input=${(e: Event) =>
+                  value="${d.padding_right || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ padding_right: (e.target as HTMLInputElement).value })}
                   placeholder="0px, 1rem, 5%"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -130,8 +150,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.padding_bottom || ''}
-                  @input=${(e: Event) =>
+                  value="${d.padding_bottom || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ padding_bottom: (e.target as HTMLInputElement).value })}
                   placeholder="0px, 1rem, 5%"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -144,8 +164,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.padding_left || ''}
-                  @input=${(e: Event) =>
+                  value="${d.padding_left || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ padding_left: (e.target as HTMLInputElement).value })}
                   placeholder="0px, 1rem, 5%"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -272,8 +292,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.width || ''}
-                  @input=${(e: Event) =>
+                  value="${d.width || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ width: (e.target as HTMLInputElement).value })}
                   placeholder="auto, 200px, 100%, 14rem, 10vw"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -286,8 +306,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.height || ''}
-                  @input=${(e: Event) =>
+                  value="${d.height || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ height: (e.target as HTMLInputElement).value })}
                   placeholder="auto, 200px, 15rem, 10vh"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -300,8 +320,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.max_width || ''}
-                  @input=${(e: Event) =>
+                  value="${d.max_width || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ max_width: (e.target as HTMLInputElement).value })}
                   placeholder="200px, 100%, 14rem, 10vw"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -314,8 +334,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.max_height || ''}
-                  @input=${(e: Event) =>
+                  value="${d.max_height || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ max_height: (e.target as HTMLInputElement).value })}
                   placeholder="200px, 15rem, 10vh"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -328,8 +348,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.min_width || ''}
-                  @input=${(e: Event) =>
+                  value="${d.min_width || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ min_width: (e.target as HTMLInputElement).value })}
                   placeholder="200px, 100%, 14rem, 10vw"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -342,8 +362,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.min_height || ''}
-                  @input=${(e: Event) =>
+                  value="${d.min_height || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ min_height: (e.target as HTMLInputElement).value })}
                   placeholder="200px, 15rem, 10vh"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -376,8 +396,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.color || ''}
-                  @input=${(e: Event) =>
+                  value="${d.color || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ color: (e.target as HTMLInputElement).value })}
                   placeholder="var(--primary-text-color), #fff, red"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -390,8 +410,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.font_size || ''}
-                  @input=${(e: Event) =>
+                  value="${d.font_size || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ font_size: (e.target as HTMLInputElement).value })}
                   placeholder="16px, 1.2rem, 1.5em"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -404,8 +424,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.font_family || ''}
-                  @input=${(e: Event) =>
+                  value="${d.font_family || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ font_family: (e.target as HTMLInputElement).value })}
                   placeholder="Arial, sans-serif"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -418,8 +438,8 @@ export class GlobalDesignTab {
                 >
                 <input
                   type="text"
-                  .value=${d.font_weight || ''}
-                  @input=${(e: Event) =>
+                  value="${d.font_weight || ''}"
+                  @change=${(e: Event) =>
                     updateDesign({ font_weight: (e.target as HTMLInputElement).value })}
                   placeholder="400, 600, bold"
                   style="width: 100%; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color);"
@@ -486,37 +506,6 @@ export class GlobalDesignTab {
             ],
             (e: CustomEvent) => updateDesign(e.detail.value)
           )}
-        </div>
-
-        <!-- Smart Scaling Section -->
-        <div
-          class="settings-section"
-          style="background: var(--secondary-background-color); border-radius: 8px; padding: 16px; margin-top: 16px; border: 1px solid rgba(var(--rgb-primary-color), 0.12);"
-        >
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <ha-icon icon="mdi:fit-to-screen" style="color: var(--primary-color);"></ha-icon>
-            <span style="font-size: 16px; font-weight: 600; color: var(--primary-text-color);">
-              Smart Scaling
-            </span>
-          </div>
-          <div
-            style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 12px; opacity: 0.8; line-height: 1.4;"
-          >
-            When enabled, content automatically scales to fit within the card boundaries. Disable to
-            allow overflow effects like glows and shadows to extend beyond bounds.
-          </div>
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 14px; color: var(--primary-text-color);"
-              >Enable Smart Scaling</span
-            >
-            <ha-switch
-              .checked="${module.smart_scaling !== false}"
-              @change="${(e: Event) => {
-                const target = e.target as any;
-                updateModule({ smart_scaling: target.checked } as Partial<M>);
-              }}"
-            ></ha-switch>
-          </div>
         </div>
       </div>
       ${(() => {

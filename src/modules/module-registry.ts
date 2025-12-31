@@ -11,16 +11,32 @@ import { UltraSpinboxModule } from './spinbox-module';
 import { UltraMarkdownModule } from './markdown-module';
 import { UltraHorizontalModule } from './horizontal-module';
 import { UltraVerticalModule } from './vertical-module';
+import { UltraAccordionModule } from './accordion-module';
+import { UltraPopupModule } from './popup-module';
 import { UltraSliderModule } from './slider-module';
+import { UltraSliderControlModule } from './slider-control-module';
 import { UltraPageBreakModule } from './pagebreak-module';
 import { UltraCameraModule } from './camera-module';
 import { UltraGraphsModule } from './graphs-module';
 import { UltraDropdownModule } from './dropdown-module';
 import { UltraLightModule } from './light-module';
+import { UltraMapModule } from './map-module';
 import { UltraAnimatedClockModule } from './animated-clock-module';
 import { UltraAnimatedWeatherModule } from './animated-weather-module';
 import { UltraAnimatedForecastModule } from './animated-forecast-module';
 import { UltraExternalCardModule } from './external-card-module';
+import { UltraNativeCardModule } from './native-card-module';
+import { UltraVideoBgModule } from './video-bg-module';
+import { UltraClimateModule } from './climate-module';
+import { UltraDynamicWeatherModule } from './dynamic-weather-module';
+import { UltraBackgroundModule } from './background-module';
+import { UltraStatusSummaryModule } from './status-summary-module';
+import { UltraToggleModule } from './toggle-module';
+import { UltraTabsModule } from './tabs-module';
+import { UltraCalendarModule } from './calendar-module';
+import { UltraSportsScoreModule } from './sports-score-module';
+import { UltraGridModule } from './grid-module';
+import { UltraBadgeOfHonorModule } from './badge-of-honor-module';
 import { CardModule } from '../types';
 
 // Module registry class for managing all available modules
@@ -55,16 +71,44 @@ export class ModuleRegistry {
     this.registerModule(new UltraMarkdownModule());
     this.registerModule(new UltraHorizontalModule());
     this.registerModule(new UltraVerticalModule());
+    this.registerModule(new UltraAccordionModule());
+    this.registerModule(new UltraPopupModule());
     this.registerModule(new UltraSliderModule());
+    this.registerModule(new UltraSliderControlModule());
     this.registerModule(new UltraPageBreakModule());
     this.registerModule(new UltraCameraModule());
     this.registerModule(new UltraGraphsModule());
     this.registerModule(new UltraDropdownModule());
     this.registerModule(new UltraLightModule());
+    this.registerModule(new UltraMapModule());
     this.registerModule(new UltraAnimatedClockModule());
     this.registerModule(new UltraAnimatedWeatherModule());
     this.registerModule(new UltraAnimatedForecastModule());
+    // Register external card module for handling existing cards, but hide from selector
     this.registerModule(new UltraExternalCardModule());
+    this.registerModule(new UltraNativeCardModule());
+    // Register video background module (Pro feature)
+    this.registerModule(new UltraVideoBgModule());
+    // Register climate module (Pro feature)
+    this.registerModule(new UltraClimateModule());
+    // Register dynamic weather module (Pro feature)
+    this.registerModule(new UltraDynamicWeatherModule());
+    // Register background module
+    this.registerModule(new UltraBackgroundModule());
+    // Register status summary module
+    this.registerModule(new UltraStatusSummaryModule());
+    // Register toggle module
+    this.registerModule(new UltraToggleModule());
+    // Register tabs module
+    this.registerModule(new UltraTabsModule());
+    // Register calendar module (Pro feature)
+    this.registerModule(new UltraCalendarModule());
+    // Register sports score module (Pro feature)
+    this.registerModule(new UltraSportsScoreModule());
+    // Register badge of honor module (Pro feature)
+    this.registerModule(new UltraBadgeOfHonorModule());
+    // Register grid module
+    this.registerModule(new UltraGridModule());
   }
 
   // Register a new module (for core modules or third-party modules)

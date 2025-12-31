@@ -22,7 +22,7 @@ export declare class UltraIconModule extends BaseUltraModule {
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
     private _renderSimpleIconGrid;
     private _renderSingleIconPreview;
@@ -45,6 +45,11 @@ export declare class UltraIconModule extends BaseUltraModule {
      */
     private _getStateMappings;
     private _evaluateIconState;
+    /**
+     * Build entity context for unified templates
+     * Provides access to entity data, attributes, and helper functions
+     */
+    private _getEntityContext;
     getStyles(): string;
     private _addIcon;
     private _removeIcon;
@@ -55,7 +60,6 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _debouncedUpdateIconWithLockSync;
     private getBackgroundImageCSS;
     private styleObjectToCss;
-    private addPixelUnit;
     private _renderSizeControl;
     private _renderFieldWithLock;
     private _renderSizeControlWithLock;
@@ -63,6 +67,12 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _getInlineAnimation;
     private _applyAnimationDirectly;
     private _injectKeyframesForAllSplitPreviewIcons;
+    /**
+     * Helper method to add pixel unit if needed
+     * Handles edge cases like "20x" -> "20px" and validates unit strings
+     * Supports both string and number types for flexibility
+     */
+    private addPixelUnit;
     /**
      * Format entity state value with units if show_units is enabled
      */

@@ -482,15 +482,26 @@ export class GlobalLogicTab {
                                     >
                                       Jinja2 template that should evaluate to true/false.
                                     </div>
-                                    <ultra-template-editor
-                                      .hass=${hass}
-                                      .value=${(cond as any).template || ''}
-                                      .placeholder=${"{% if states('sensor.example') | int > 50 %}true{% else %}false{% endif %}"}
-                                      .minHeight=${100}
-                                      .maxHeight=${300}
-                                      @value-changed=${(e: CustomEvent) =>
-                                        onChange({ template: e.detail.value })}
-                                    ></ultra-template-editor>
+                                    <div
+                                      @mousedown=${(e: Event) => {
+                                        // Only stop propagation for drag operations, not clicks on the editor
+                                        const target = e.target as HTMLElement;
+                                        if (!target.closest('ultra-template-editor') && !target.closest('.cm-editor')) {
+                                          e.stopPropagation();
+                                        }
+                                      }}
+                                      @dragstart=${(e: Event) => e.stopPropagation()}
+                                    >
+                                      <ultra-template-editor
+                                        .hass=${hass}
+                                        .value=${(cond as any).template || ''}
+                                        .placeholder=${"{% if states('sensor.example') | int > 50 %}true{% else %}false{% endif %}"}
+                                        .minHeight=${100}
+                                        .maxHeight=${300}
+                                        @value-changed=${(e: CustomEvent) =>
+                                          onChange({ template: e.detail.value })}
+                                      ></ultra-template-editor>
+                                    </div>
                                   </div>
                                 `;
                               })()}

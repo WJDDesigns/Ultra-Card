@@ -14,7 +14,7 @@ export declare class UltraInfoModule extends BaseUltraModule {
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private renderSingleActionConfig;
     renderSplitPreview(module: CardModule, hass: HomeAssistant): TemplateResult;
-    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, isEditorPreview?: boolean): TemplateResult;
+    renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];

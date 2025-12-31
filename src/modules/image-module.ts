@@ -84,7 +84,6 @@ export class UltraImageModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -804,9 +803,34 @@ export class UltraImageModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const imageModule = module as ImageModule;
+
+    // GRACEFUL RENDERING: Check for incomplete configuration
+    // Only show error for non-default types that have no image configured
+    const needsConfig =
+      (imageModule.image_type === 'url' &&
+        (!imageModule.image_url || imageModule.image_url.trim() === '')) ||
+      (imageModule.image_type === 'upload' &&
+        (!imageModule.image_url || imageModule.image_url.trim() === '')) ||
+      (imageModule.image_type === 'entity' &&
+        (!imageModule.image_entity || imageModule.image_entity.trim() === '')) ||
+      (imageModule.image_type === 'attribute' &&
+        (!imageModule.image_entity || imageModule.image_entity.trim() === ''));
+
+    if (needsConfig) {
+      const subtitle =
+        imageModule.image_type === 'url'
+          ? 'Enter an image URL in the General tab'
+          : imageModule.image_type === 'upload'
+            ? 'Upload an image in the General tab'
+            : imageModule.image_type === 'entity'
+              ? 'Select an image entity in the General tab'
+              : 'Select an entity and attribute in the General tab';
+
+      return this.renderGradientErrorState('Configure Image Source', subtitle, 'mdi:image-outline');
+    }
 
     // Determine image source based on type
     let imageUrl = '';
@@ -1048,7 +1072,12 @@ export class UltraImageModule extends BaseUltraModule {
       maxHeight: designProperties.max_height || 'none',
       minWidth: designProperties.min_width || 'none',
       minHeight: designProperties.min_height || 'auto',
-      overflow: designProperties.overflow || 'visible',
+      // When rendered in a layout context, force overflow hidden to prevent image blowup past card bounds
+      // Otherwise use the design property or default to visible for standalone modules
+      overflow:
+        previewContext === 'live'
+          ? designProperties.overflow || 'hidden'
+          : designProperties.overflow || 'visible',
       clipPath: designProperties.clip_path || 'none',
       backdropFilter: designProperties.backdrop_filter || 'none',
       boxShadow:
@@ -1071,7 +1100,7 @@ export class UltraImageModule extends BaseUltraModule {
         isHolding = true;
         const holdAction = (imageModule.hold_action as any) || ({ action: 'nothing' } as any);
         if (holdAction && holdAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement, config);
+          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
         }
       }, 500);
     };
@@ -1097,7 +1126,7 @@ export class UltraImageModule extends BaseUltraModule {
         clickCount = 0;
         const dblAction = (imageModule.double_tap_action as any) || ({ action: 'nothing' } as any);
         if (dblAction && dblAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement, config);
+          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
         }
       } else {
         // Possible single tap; wait to confirm not a double
@@ -1107,7 +1136,7 @@ export class UltraImageModule extends BaseUltraModule {
           clickCount = 0;
           const tapAction = (imageModule.tap_action as any) || ({ action: 'nothing' } as any);
           if (tapAction && tapAction.action !== 'nothing') {
-            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement, config);
+            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
           }
         }, 300);
       }
@@ -1132,8 +1161,57 @@ export class UltraImageModule extends BaseUltraModule {
                     src="${imageUrl}"
                     @error=${(e: Event) => {
                       const img = e.currentTarget as HTMLImageElement;
-                      if (img && img.src !== DEFAULT_VEHICLE_IMAGE_FALLBACK) {
-                        img.src = DEFAULT_VEHICLE_IMAGE_FALLBACK; // swap to fallback if primary not accessible
+                      const container = img.closest('.image-module-preview');
+                      if (container) {
+                        // Replace the broken image with a clean error message
+                        container.innerHTML = `
+                          <div style="
+                            width: ${designProperties.width || imageModule.width || '100%'};
+                            height: ${containerHeight};
+                            aspect-ratio: ${containerAspectRatio};
+                            background: var(--secondary-background-color);
+                            border: 2px dashed var(--divider-color);
+                            border-radius: ${imageBorderRadius};
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: var(--secondary-text-color);
+                            font-size: 14px;
+                            margin-left: ${marginLeft};
+                            margin-right: ${marginRight};
+                            padding: 16px;
+                            box-sizing: border-box;
+                            overflow: visible;
+                            min-height: 80px;
+                          ">
+                            <div style="
+                              text-align: center;
+                              max-width: 100%;
+                              word-wrap: break-word;
+                              overflow-wrap: break-word;
+                              white-space: normal;
+                              line-height: 1.4;
+                            ">
+                              <ha-icon
+                                icon="mdi:image-off"
+                                style="font-size: 32px; margin-bottom: 8px; opacity: 0.5; display: block;"
+                              ></ha-icon>
+                              <div style="
+                                font-size: 12px;
+                                font-weight: 500;
+                                max-width: 100%;
+                                word-break: break-word;
+                                hyphens: auto;
+                              ">
+                                ${localize(
+                                  'editor.image.load_error',
+                                  hass?.locale?.language || 'en',
+                                  'Image failed to load'
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        `;
                       }
                     }}
                     alt="${localize('editor.image.alt', hass?.locale?.language || 'en', 'Image')}"
@@ -1153,7 +1231,7 @@ export class UltraImageModule extends BaseUltraModule {
                       aspect-ratio: ${containerAspectRatio};
                       background: var(--secondary-background-color);
                       border: 2px dashed var(--divider-color);
-                      border-radius: 0;
+                      border-radius: ${imageBorderRadius};
                       display: flex;
                       align-items: center;
                       justify-content: center;
@@ -1161,14 +1239,35 @@ export class UltraImageModule extends BaseUltraModule {
                       font-size: 14px;
                       margin-left: ${marginLeft};
                       margin-right: ${marginRight};
+                      padding: 16px;
+                      box-sizing: border-box;
+                      overflow: visible;
+                      min-height: 80px;
                     "
                   >
-                    <div style="text-align: center;">
+                    <div
+                      style="
+                      text-align: center;
+                      max-width: 100%;
+                      word-wrap: break-word;
+                      overflow-wrap: break-word;
+                      white-space: normal;
+                      line-height: 1.4;
+                    "
+                    >
                       <ha-icon
                         icon="mdi:image-off"
-                        style="font-size: 48px; margin-bottom: 8px; opacity: 0.5;"
+                        style="font-size: 32px; margin-bottom: 8px; opacity: 0.5; display: block;"
                       ></ha-icon>
-                      <div>
+                      <div
+                        style="
+                        font-size: 12px;
+                        font-weight: 500;
+                        max-width: 100%;
+                        word-break: break-word;
+                        hyphens: auto;
+                      "
+                      >
                         ${localize(
                           'editor.image.no_source',
                           hass?.locale?.language || 'en',
@@ -1234,32 +1333,29 @@ export class UltraImageModule extends BaseUltraModule {
     const imageModule = module as ImageModule;
     const errors = [...baseValidation.errors];
 
-    // Validate based on image_type
+    // LENIENT VALIDATION: Allow incomplete configuration - UI will show placeholder
+    // Only validate for truly breaking errors
+
+    // Validate based on image_type (only if content is partially configured)
     switch (imageModule.image_type) {
       case 'url':
-        if (!imageModule.image_url || imageModule.image_url.trim() === '') {
-          errors.push('Image URL is required when using URL type');
-        }
+        // Allow empty - UI will handle
         break;
 
       case 'upload':
-        if (!imageModule.image_url || imageModule.image_url.trim() === '') {
-          errors.push('Uploaded image is required when using upload type');
-        }
+        // Allow empty - UI will handle
         break;
 
       case 'entity':
-        if (!imageModule.image_entity || imageModule.image_entity.trim() === '') {
-          errors.push('Image entity is required when using entity type');
-        }
+        // Allow empty - UI will handle
         break;
 
       case 'attribute':
-        if (!imageModule.image_entity || imageModule.image_entity.trim() === '') {
-          errors.push('Entity is required when using attribute type');
-        }
-        if (!imageModule.image_attribute || imageModule.image_attribute.trim() === '') {
-          errors.push('Attribute name is required when using attribute type');
+        // If entity is set but attribute is missing, that's an error
+        if (imageModule.image_entity && imageModule.image_entity.trim() !== '') {
+          if (!imageModule.image_attribute || imageModule.image_attribute.trim() === '') {
+            errors.push('Attribute name is required when using attribute type');
+          }
         }
         break;
 
@@ -1273,7 +1369,8 @@ export class UltraImageModule extends BaseUltraModule {
         break;
     }
 
-    if (imageModule.link_enabled && !imageModule.link_url) {
+    // Only validate link if link is enabled and has no URL
+    if (imageModule.link_enabled && imageModule.link_url && imageModule.link_url.trim() === '') {
       errors.push('Link URL is required when link is enabled');
     }
 

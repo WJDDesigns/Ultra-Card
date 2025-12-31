@@ -10,6 +10,7 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
 import { ucCloudAuthService } from '../services/uc-cloud-auth-service';
+import { generateCSSVariables } from '../utils/css-variable-utils';
 // Use the existing HorizontalModule and VerticalModule interfaces from types
 import { HorizontalModule, VerticalModule } from '../types';
 
@@ -30,8 +31,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return {
       id: id || this.generateId('horizontal'),
       type: 'horizontal',
-      alignment: 'center', // Default horizontal alignment to center
-      vertical_alignment: 'center', // Default vertical alignment to center
+      alignment: 'center', // Default to center alignment for better UX
+      vertical_alignment: undefined, // No default - let flexbox work naturally
       gap: 0.7,
       wrap: false,
       modules: [],
@@ -98,7 +99,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
               ],
               onChange: (e: CustomEvent) => {
                 const next = e.detail.value.alignment;
-                const prev = horizontalModule.alignment || 'center';
+                const prev = horizontalModule.alignment;
                 if (next === prev) return;
 
                 updateModule(e.detail.value);
@@ -209,7 +210,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 min="-50"
                 max="50"
                 step="0.1"
-                .value="${horizontalModule.gap || 0.7}"
+                .value="${horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -221,7 +222,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                 class="gap-input"
                 style="width: 50px !important; max-width: 50px !important; min-width: 50px !important; padding: 4px 6px !important; font-size: 13px !important;"
                 step="0.1"
-                .value="${horizontalModule.gap || 0.7}"
+                .value="${horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7}"
                 @input=${(e: Event) => {
                   const target = e.target as HTMLInputElement;
                   const value = parseFloat(target.value);
@@ -233,7 +234,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                     e.preventDefault();
                     const target = e.target as HTMLInputElement;
-                    const currentValue = parseFloat(target.value) || 0.7;
+                    const currentValue = parseFloat(target.value) || 0;
                     const increment = e.key === 'ArrowUp' ? 0.1 : -0.1;
                     const newValue = currentValue + increment;
                     const roundedValue = Math.round(newValue * 10) / 10;
@@ -263,9 +264,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const horizontalModule = module as HorizontalModule;
+    // Store config and previewContext for child rendering
+    (this as any)._currentConfig = config;
+    (this as any)._currentPreviewContext = previewContext;
     const lang = hass?.locale?.language || 'en';
     const moduleWithDesign = horizontalModule as any;
     // Merge global design properties over module props for container rendering
@@ -274,16 +278,24 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Wrapping should use flexbox wrap, not force column mode
 
     // Container styles for positioning and effects
-    const gapValue = horizontalModule.gap || 0.7;
-    // Prefer centered horizontal alignment by default
-    const horizontalAlign =
-      horizontalModule.alignment !== undefined && horizontalModule.alignment !== null
-        ? horizontalModule.alignment
-        : 'center';
+    const gapValue = horizontalModule.gap !== undefined ? horizontalModule.gap : 0.7;
+    // Only use alignment if user explicitly sets it - let flexbox work naturally
+    const horizontalAlign = horizontalModule.alignment;
 
-    const containerStyles = {
+    // Width: only set if user explicitly controls it, otherwise let flexbox handle sizing naturally
+    // Default behavior: fill container (100% width) like WPBakery columns
+    const width =
+      (effective as any).width !== undefined &&
+      (effective as any).width !== null &&
+      (effective as any).width !== ''
+        ? (effective as any).width
+        : undefined; // No default - let flexbox handle it naturally
+
+    // Calculate margins - only use user-set margins, no auto-positioning logic
+    const contentMargin = this.getMarginCSS(effective);
+
+    const containerStyles: any = {
       padding: this.getPaddingCSS(effective),
-      margin: this.getMarginCSS(effective),
       background: this.getBackgroundCSS(effective),
       backgroundImage: this.getBackgroundImageCSS(effective, hass),
       backgroundSize: effective.background_size || 'cover',
@@ -296,7 +308,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
       position: (effective as any).position || ((effective as any).z_index ? 'relative' : 'static'),
       zIndex: (effective as any).z_index || 'auto',
       // Respect sizing controls from design/global design
-      width: (effective as any).width || '100%',
+      // Only set width if user explicitly controls it, otherwise let flexbox handle sizing
+      width: width,
       height: (effective as any).height || undefined,
       maxWidth: (effective as any).max_width || undefined,
       minWidth: (effective as any).min_width || undefined,
@@ -307,23 +320,29 @@ export class UltraHorizontalModule extends BaseUltraModule {
       display: 'flex',
       // Always use row direction for horizontal layout
       flexDirection: 'row',
-      // Use horizontal alignment for main axis (justify-content)
-      justifyContent: this.getJustifyContent(horizontalAlign || 'center'),
+      // Only apply justify-content if user explicitly sets alignment
+      justifyContent: horizontalAlign ? this.getJustifyContent(horizontalAlign) : undefined,
       // Only use gap for positive values, use negative margins for negative values
       gap: gapValue >= 0 ? `${gapValue}rem` : '0',
       // Enable wrapping when wrap option is true
       flexWrap: horizontalModule.wrap ? 'wrap' : 'nowrap',
-      // Use vertical alignment for cross-axis (align-items)
-      alignItems: this.getAlignItems(horizontalModule.vertical_alignment || 'center'),
+      // Only apply align-items if user explicitly sets vertical alignment
+      alignItems: horizontalModule.vertical_alignment
+        ? this.getAlignItems(horizontalModule.vertical_alignment)
+        : undefined,
       // width is set above via design props with sensible default
       // Allow fully collapsed layouts when designers set 0 padding/margin
       // Only set min-height if explicitly specified by user, otherwise let content determine height
       minHeight: (effective as any).min_height || 'auto',
-      // Allow overlaps (e.g., negative margins) to render across siblings
-      overflowX: 'visible',
-      overflowY: 'visible',
+      // Respect overflow settings from design properties (defaults to visible for negative margin overlaps)
+      overflow: (effective as any).overflow || 'visible',
       boxSizing: 'border-box',
     };
+
+    // Only add margin to containerStyles if user explicitly set it
+    if (contentMargin !== undefined && contentMargin !== '0') {
+      containerStyles.margin = contentMargin;
+    }
 
     // Gesture handling variables
     let clickTimeout: any = null;
@@ -334,6 +353,25 @@ export class UltraHorizontalModule extends BaseUltraModule {
 
     // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
+      // CRITICAL FIX: Don't handle events from nested module editor controls
+      // This prevents parent container gestures from interfering with nested module editing
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.layout-child-actions') ||
+        target.closest('.layout-child-drag-handle') ||
+        target.closest('.nested-layout-drag-handle') ||
+        target.closest('.layout-module-drag-handle') ||
+        target.closest('.layout-child-simplified-module') ||
+        target.closest('.nested-layout-module-container') ||
+        target.closest('.layout-module-container') ||
+        target.closest('.layout-module-actions') ||
+        target.closest('.module-settings-popup') ||
+        target.closest('.popup-content')
+      ) {
+        // This event is on a nested module's editor controls - don't handle it
+        return;
+      }
+
       e.preventDefault();
       isHolding = false;
 
@@ -345,13 +383,34 @@ export class UltraHorizontalModule extends BaseUltraModule {
             horizontalModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (horizontalModule as any).entity,
+            horizontalModule
           );
         }
       }, 500); // 500ms hold threshold
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      // CRITICAL FIX: Don't handle events from nested module editor controls
+      // This prevents parent container gestures from interfering with nested module editing
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('.layout-child-actions') ||
+        target.closest('.layout-child-drag-handle') ||
+        target.closest('.nested-layout-drag-handle') ||
+        target.closest('.layout-module-drag-handle') ||
+        target.closest('.layout-child-simplified-module') ||
+        target.closest('.nested-layout-module-container') ||
+        target.closest('.layout-module-container') ||
+        target.closest('.layout-module-actions') ||
+        target.closest('.module-settings-popup') ||
+        target.closest('.popup-content')
+      ) {
+        // This event is on a nested module's editor controls - don't handle it
+        return;
+      }
+
       e.preventDefault();
       // Clear hold timer
       if (holdTimeout) {
@@ -385,7 +444,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
             horizontalModule.double_tap_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (horizontalModule as any).entity,
+            horizontalModule
           );
         }
       } else {
@@ -404,7 +465,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
               hass,
               e.target as HTMLElement,
               config,
-              (horizontalModule as any).entity
+              (horizontalModule as any).entity,
+              horizontalModule
             );
           }
         }, 300); // Wait 300ms to see if double click follows
@@ -415,11 +477,23 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const hoverEffect = (horizontalModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    // Extract CSS variable prefix for Shadow DOM styling
+    const cssVarPrefix = (horizontalModule as any).design?.css_variable_prefix;
+
+    // Apply CSS variables if prefix is provided (allows Shadow DOM override)
+    if (cssVarPrefix) {
+      const cssVars = generateCSSVariables(cssVarPrefix, (horizontalModule as any).design);
+      Object.assign(containerStyles, cssVars);
+    }
+
     return html`
       <style>
         ${this.getStyles()}
       </style>
-      <div class="horizontal-module-preview">
+      <div
+        class="horizontal-module-preview"
+        style="${containerStyles.width ? `width: ${containerStyles.width};` : ''}"
+      >
         <div
           class="horizontal-preview-content ${hoverEffectClass}"
           style="${this.styleObjectToCss(
@@ -452,35 +526,34 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   const childMargin = gapValue < 0 && index > 0 ? `0 0 0 ${gapValue}rem` : '0';
                   const isNegativeGap = gapValue < 0;
 
-                  // In horizontal layouts we want bars and horizontal separators to take remaining width while
-                  // icons and other modules keep their natural width. If alignment is
-                  // 'justify' then allow all children to grow evenly.
-                  const isBar = (childModule as any)?.type === 'bar';
-                  const isHorizontalSeparator =
-                    (childModule as any)?.type === 'separator' &&
-                    ((childModule as any)?.orientation === 'horizontal' ||
-                      !(childModule as any)?.orientation);
-                  const isExternalCard = (childModule as any)?.type === 'external_card';
-                  const allowGrowForAll = horizontalModule.alignment === 'justify';
-                  const shouldGrow =
-                    isBar || isHorizontalSeparator || isExternalCard || allowGrowForAll;
-                  const flexGrow = shouldGrow ? 1 : 0;
-                  const flexShrink = shouldGrow ? 1 : 0;
-                  const flexBasis = shouldGrow ? '0' : 'content';
-                  // Ensure bars and separators remain visible
-                  const minWidth = isBar ? '80px' : isHorizontalSeparator ? '20px' : '0';
-                  const alignSelf = 'auto';
+                  // Only apply flex-grow when user explicitly sets 'justify' alignment
+                  const layoutShouldGrow = horizontalModule.alignment === 'justify';
+                  const childShouldGrow = this.childShouldFillAvailableSpace(childModule);
 
-                  // Build style string - external cards don't get explicit width
+                  // Get preferred width for modules (bars, separators, etc.)
+                  // getChildPreferredWidth handles the logic:
+                  // - Bars < 100%: returns preferred width (fixed sizing)
+                  // - Bars >= 100%: returns null (allows grow flex)
+                  // - Other modules: applies similar logic
+                  const childPreferredWidth =
+                    !layoutShouldGrow && !childShouldGrow
+                      ? this.getChildPreferredWidth(childModule)
+                      : null;
+
+                  const flexSegments = [
+                    layoutShouldGrow ? 'flex-grow: 1; flex-shrink: 1; flex-basis: 0;' : '',
+                    childShouldGrow
+                      ? 'flex-grow: 1; flex-shrink: 1; flex-basis: auto; min-width: 10%;'
+                      : '',
+                    !layoutShouldGrow && !childShouldGrow && childPreferredWidth
+                      ? `flex: 0 0 ${childPreferredWidth}; max-width: ${childPreferredWidth}; width: ${childPreferredWidth};`
+                      : '',
+                  ].filter(Boolean);
+
+                  // Build style string - let flexbox handle sizing naturally
                   const baseStyles = `
                     overflow: visible;
-                    flex-grow: ${flexGrow};
-                    flex-shrink: ${flexShrink};
-                    flex-basis: ${flexBasis};
-                    min-width: ${minWidth};
-                    ${!isExternalCard ? `width: auto;` : ''}
-                    ${isExternalCard ? `max-width: 100%;` : ''}
-                    align-self: ${alignSelf};
+                    ${flexSegments.join(' ')}
                     box-sizing: border-box;
                     margin: ${childMargin};
                   `;
@@ -491,9 +564,16 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   return html`
                     <div
                       class="child-module-preview ${isNegativeGap ? 'negative-gap' : ''}"
+                      data-flex-constrained="${childPreferredWidth ? 'true' : 'false'}"
                       style="${baseStyles} ${negativeGapStyles}"
                     >
-                      ${this._renderChildModulePreview(childModule, hass, moduleWithDesign)}
+                      ${this._renderChildModulePreview(
+                        childModule,
+                        hass,
+                        moduleWithDesign,
+                        (this as any)._currentConfig,
+                        (this as any)._currentPreviewContext
+                      )}
                     </div>
                   `;
                 });
@@ -524,7 +604,9 @@ export class UltraHorizontalModule extends BaseUltraModule {
   private _renderChildModulePreview(
     childModule: CardModule,
     hass: HomeAssistant,
-    layoutDesign?: any
+    layoutDesign?: any,
+    config?: UltraCardConfig,
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     // Apply layout design properties to child modules by creating a merged module
     let moduleToRender = childModule;
@@ -590,7 +672,12 @@ export class UltraHorizontalModule extends BaseUltraModule {
     const shouldShowProOverlay = isProModule && !hasProAccess;
 
     if (moduleHandler) {
-      const moduleContent = moduleHandler.renderPreview(moduleToRender, hass);
+      const moduleContent = moduleHandler.renderPreview(
+        moduleToRender,
+        hass,
+        config,
+        previewContext
+      );
 
       // If this is a pro module and user doesn't have access, show overlay
       if (shouldShowProOverlay) {
@@ -714,6 +801,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     if (layoutDesign.letter_spacing) mergedModule.letter_spacing = layoutDesign.letter_spacing;
     if (layoutDesign.text_transform) mergedModule.text_transform = layoutDesign.text_transform;
     if (layoutDesign.font_style) mergedModule.font_style = layoutDesign.font_style;
+    if (layoutDesign.white_space) mergedModule.white_space = layoutDesign.white_space;
 
     // Do NOT propagate container background styling to children.
     // Backgrounds belong to the container surface. If we pass them down,
@@ -765,10 +853,10 @@ export class UltraHorizontalModule extends BaseUltraModule {
     if (layoutDesign.animation_timing)
       mergedModule.animation_timing = layoutDesign.animation_timing;
 
-    // Apply alignment inheritance - horizontal layout alignment overrides child module alignment
-    if (layoutDesign.alignment) {
-      mergedModule.alignment = layoutDesign.alignment;
-    }
+    // NOTE: We intentionally do NOT inherit alignment from parent to child layout modules.
+    // The child module's alignment controls its own internal content distribution (e.g., left/center/right/justify).
+    // The parent's alignment controls the parent's own content distribution, which is a different concept.
+    // Inheriting these would incorrectly override the child's own alignment settings and break features like negative gap.
 
     return mergedModule;
   }
@@ -803,14 +891,14 @@ export class UltraHorizontalModule extends BaseUltraModule {
     // Validate nested modules - allow 2 levels of nesting but prevent deeper nesting
     if (horizontalModule.modules && horizontalModule.modules.length > 0) {
       for (const childModule of horizontalModule.modules) {
-        // Allow both horizontal and vertical modules at level 1
-        if (childModule.type === 'horizontal' || childModule.type === 'vertical') {
+        // Allow horizontal, vertical, and accordion modules at level 1
+        if (childModule.type === 'horizontal' || childModule.type === 'vertical' || childModule.type === 'accordion') {
           const layoutChild = childModule as HorizontalModule | VerticalModule;
 
           // Check level 2 nesting - allow layout modules but prevent level 3
           if (layoutChild.modules && layoutChild.modules.length > 0) {
             for (const nestedModule of layoutChild.modules) {
-              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical') {
+              if (nestedModule.type === 'horizontal' || nestedModule.type === 'vertical' || nestedModule.type === 'accordion') {
                 const deepLayoutModule = nestedModule as HorizontalModule | VerticalModule;
 
                 // Check level 3 nesting - prevent any layout modules at this level
@@ -818,7 +906,8 @@ export class UltraHorizontalModule extends BaseUltraModule {
                   for (const deepNestedModule of deepLayoutModule.modules) {
                     if (
                       deepNestedModule.type === 'horizontal' ||
-                      deepNestedModule.type === 'vertical'
+                      deepNestedModule.type === 'vertical' ||
+                      deepNestedModule.type === 'accordion'
                     ) {
                       errors.push(
                         'Layout modules cannot be nested more than 2 levels deep. Remove layout modules from the third level.'
@@ -841,14 +930,244 @@ export class UltraHorizontalModule extends BaseUltraModule {
   }
 
   // Helper methods for style conversion and design properties
-  private styleObjectToCss(styles: Record<string, string>): string {
+  private styleObjectToCss(styles: Record<string, string | undefined>): string {
     return Object.entries(styles)
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => `${this.camelToKebab(key)}: ${value}`)
       .join('; ');
   }
 
   private camelToKebab(str: string): string {
     return str.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+  }
+
+  private childShouldFillAvailableSpace(childModule: CardModule): boolean {
+    if (childModule.type === 'separator') {
+      const separator = childModule as any;
+      const orientation = separator.orientation || 'horizontal';
+
+      if (orientation === 'vertical') {
+        return false;
+      }
+
+      const sizeCandidates = [
+        separator.width_percent,
+        separator.width,
+        separator?.design?.width,
+        separator?.design?.width_percent,
+      ];
+
+      for (const candidate of sizeCandidates) {
+        if (candidate === undefined || candidate === null || candidate === '') {
+          continue;
+        }
+
+        const normalized = this.normalizeSizeValue(candidate);
+
+        if (!normalized) {
+          continue;
+        }
+
+        if (normalized.unit === '%') {
+          if (normalized.value >= 100) {
+            return true;
+          }
+        } else if (normalized.unit === 'px') {
+          // Explicit pixel width - treat as fixed-sized spacer
+          return false;
+        }
+      }
+
+      // Default separator width is 100%, so grow when no explicit width is provided
+      const hasExplicitWidth =
+        separator.width_percent !== undefined ||
+        separator.width !== undefined ||
+        (separator.design &&
+          (separator.design.width !== undefined || separator.design.width_percent !== undefined));
+
+      return !hasExplicitWidth;
+    }
+
+    if (childModule.type === 'bar') {
+      const bar = childModule as any;
+
+      const widthCandidates = [
+        bar?.design?.width,
+        bar?.design?.width_percent,
+        bar?.width,
+        bar?.width_percent,
+      ];
+      const explicitWidthValue = widthCandidates.find(
+        candidate =>
+          candidate !== undefined &&
+          candidate !== null &&
+          String(candidate).trim() !== ''
+      );
+
+      if (explicitWidthValue !== undefined && explicitWidthValue !== null) {
+        const normalizedExplicit = this.normalizeSizeValue(explicitWidthValue);
+
+        if (normalizedExplicit) {
+          if (normalizedExplicit.unit === '%' && normalizedExplicit.value >= 100) {
+            const maxWidthCandidate = bar?.design?.max_width ?? bar?.max_width;
+            const normalizedMaxWidth =
+              maxWidthCandidate !== undefined &&
+              maxWidthCandidate !== null &&
+              String(maxWidthCandidate).trim() !== ''
+                ? this.normalizeSizeValue(maxWidthCandidate)
+                : null;
+
+            if (!normalizedMaxWidth) {
+              return true;
+            }
+
+            if (normalizedMaxWidth.unit === '%' && normalizedMaxWidth.value >= 100) {
+              return true;
+            }
+
+            return false;
+          }
+
+          return false;
+        }
+      }
+
+      const normalizedBarWidth = this.normalizeSizeValue(
+        bar.bar_width !== undefined && bar.bar_width !== null ? bar.bar_width : 100
+      );
+
+      if (!normalizedBarWidth) {
+        return true;
+      }
+
+      if (normalizedBarWidth.unit === '%' && normalizedBarWidth.value >= 100) {
+        const maxWidthCandidate = bar?.design?.max_width ?? bar?.max_width;
+        const normalizedMaxWidth =
+          maxWidthCandidate !== undefined &&
+          maxWidthCandidate !== null &&
+          String(maxWidthCandidate).trim() !== ''
+            ? this.normalizeSizeValue(maxWidthCandidate)
+            : null;
+
+        if (!normalizedMaxWidth) {
+          return true;
+        }
+
+        if (normalizedMaxWidth.unit === '%' && normalizedMaxWidth.value >= 100) {
+          return true;
+        }
+
+        return false;
+      }
+
+      return false;
+    }
+
+    return false;
+  }
+
+  private getChildPreferredWidth(childModule: CardModule): string | null {
+    if (childModule.type === 'bar') {
+      const bar = childModule as any;
+
+      const widthCandidates = [
+        bar?.design?.width,
+        bar?.design?.width_percent,
+        bar?.width,
+        bar?.width_percent,
+      ];
+
+      for (const candidate of widthCandidates) {
+        if (candidate === undefined || candidate === null || String(candidate).trim() === '') {
+          continue;
+        }
+
+        const normalized = this.normalizeSizeValue(candidate);
+        if (!normalized) {
+          continue;
+        }
+
+        if (normalized.unit === '%' && normalized.value < 100) {
+          const clamped = Math.max(1, Math.min(100, normalized.value));
+          return `${clamped}%`;
+        }
+
+        if (normalized.unit === 'px') {
+          return `${Math.max(0, normalized.value)}px`;
+        }
+      }
+
+      const normalizedBarWidth = this.normalizeSizeValue(bar.bar_width ?? 100);
+      if (normalizedBarWidth) {
+        if (normalizedBarWidth.unit === '%' && normalizedBarWidth.value < 100) {
+          const clamped = Math.max(1, Math.min(100, normalizedBarWidth.value));
+          return `${clamped}%`;
+        }
+
+        if (normalizedBarWidth.unit === 'px') {
+          return `${Math.max(0, normalizedBarWidth.value)}px`;
+        }
+      }
+    }
+
+    if (childModule.type === 'separator') {
+      const separator = childModule as any;
+
+      // Check design width first
+      const widthCandidates = [
+        separator?.design?.width,
+        separator?.width_percent,
+      ];
+
+      for (const candidate of widthCandidates) {
+        if (candidate === undefined || candidate === null || String(candidate).trim() === '') {
+          continue;
+        }
+
+        const normalized = this.normalizeSizeValue(candidate);
+        if (!normalized) {
+          continue;
+        }
+
+        if (normalized.unit === '%' && normalized.value < 100) {
+          const clamped = Math.max(1, Math.min(100, normalized.value));
+          return `${clamped}%`;
+        }
+
+        if (normalized.unit === 'px') {
+          return `${Math.max(0, normalized.value)}px`;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeSizeValue(
+    value: string | number
+  ): { value: number; unit: '%' | 'px' } | null {
+    if (typeof value === 'number') {
+      return { value, unit: '%' };
+    }
+
+    const str = String(value).trim();
+
+    if (!str) {
+      return null;
+    }
+
+    if (str.endsWith('%')) {
+      const numeric = parseFloat(str.slice(0, -1));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
+    }
+
+    if (str.endsWith('px')) {
+      const numeric = parseFloat(str.slice(0, -2));
+      return Number.isNaN(numeric) ? null : { value: numeric, unit: 'px' };
+    }
+
+    const numeric = parseFloat(str);
+    return Number.isNaN(numeric) ? null : { value: numeric, unit: '%' };
   }
 
   private addPixelUnit(value: string | undefined): string | undefined {
@@ -989,7 +1308,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
     return `
       /* Horizontal Module Styles */
       .horizontal-module-preview {
-        width: 100%;
+        /* Let flexbox handle width naturally - no forced width */
         /* No forced min-height - let content and user design properties control height */
       }
 
@@ -1006,8 +1325,7 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border-radius: 4px;
         padding: 0;
         transition: all 0.2s ease, transform 0.3s ease;
-        /* Ensure modules maintain readable size */
-        min-width: max-content;
+        /* Child modules should respect parent container bounds */
         min-height: 0;
         overflow: visible;
         box-sizing: border-box;
@@ -1060,36 +1378,48 @@ export class UltraHorizontalModule extends BaseUltraModule {
         font-style: italic;
       }
 
-      /* Ensure module defaults play nicely in a horizontal row */
+      /* Icon modules - let them size naturally, only prevent overflow */
       .child-module-preview .icon-module-preview {
-        /* Icon modules should size to content in rows */
-        width: auto !important;
-        max-width: 100% !important;
+        max-width: 100%;
       }
 
       .child-module-preview .icon-module-container {
-        /* Override any inline width from icon module when inside horizontal rows */
-        width: auto !important;
-        max-width: 100% !important;
-        flex: 0 0 auto !important;
+        /* Let flexbox handle sizing naturally */
+        max-width: 100%;
       }
 
       .child-module-preview .bar-module-preview {
-        /* Bars should expand to available space in rows */
-        width: 100% !important;
-        max-width: 100% !important;
+        /* Bars expand via flex-grow, only prevent overflow */
+        max-width: 100%;
       }
 
-      /* When wrapping is enabled, allow items to maintain their natural size */
+      /* When wrapping is enabled, allow items to shrink naturally */
+      /* flex-shrink: 1 is already the default, so we don't need to set it */
       .horizontal-preview-content[data-wrap="true"] .child-module-preview {
-        flex-shrink: 1;
-        min-width: 0;
+        min-width: 0; /* Allow text truncation */
       }
 
-      /* When wrapping is disabled, compress items to fit in one line */
+      /* When wrapping is disabled, items can shrink to fit */
+      /* flex-shrink: 1 is already the default, so we don't need to set it */
       .horizontal-preview-content:not([data-wrap="true"]) .child-module-preview {
-        flex-shrink: 1;
-        min-width: 0;
+        min-width: 0; /* Allow text truncation */
+      }
+
+      /* CRITICAL: Minimal constraints for nested layout modules - prevent overflow only */
+      /* Like WPBakery, we only use max-width: 100% to prevent overflow, let flexbox handle sizing */
+      .child-module-preview .horizontal-module-preview,
+      .child-module-preview .vertical-module-preview,
+      .child-module-preview .slider-module {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Ensure images and media elements don't overflow (like WPBakery does) */
+      .child-module-preview img,
+      .child-module-preview .image-module-container,
+      .child-module-preview .image-module-preview {
+        max-width: 100%;
+        box-sizing: border-box;
       }
 
       /* Standard field styling */

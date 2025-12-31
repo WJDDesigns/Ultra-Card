@@ -3,13 +3,14 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { BaseUltraModule, ModuleMetadata } from './base-module';
 import { CardModule, AnimatedForecastModule, UltraCardConfig } from '../types';
 import '../components/ultra-color-picker';
+import { GlobalActionsTab } from '../tabs/global-actions-tab';
+import { UltraLinkComponent } from '../components/ultra-link';
 import { renderAnimatedForecastModuleEditor } from './animated-forecast-module-editor';
-import { getSmartScalingStyles } from '../utils/uc-smart-scaling';
 
 export class UltraAnimatedForecastModule extends BaseUltraModule {
   metadata: ModuleMetadata = {
     type: 'animated_forecast',
-    title: 'Animated Forecast (PRO)',
+    title: 'Animated Forecast',
     description: 'Multi-day weather forecast with animated icons',
     author: 'WJD Designs',
     version: '1.0.0',
@@ -32,6 +33,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
       // Configuration
       forecast_days: 5,
+      allow_wrap: true, // Allow forecast days to wrap to new rows
 
       // Styling - Text Sizes
       forecast_day_size: 14,
@@ -56,7 +58,6 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       double_tap_action: { action: 'nothing' },
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -85,40 +86,255 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const forecastModule = module as AnimatedForecastModule;
+    const moduleWithDesign = forecastModule as any;
+    const designFromDesignObject = (forecastModule as any).design || {};
+
+    // Create merged design properties object that prioritizes top-level properties (where Global Design saves)
+    // over design object properties, and includes all properties needed by the container styles
+    const designProperties = {
+      // Text properties - prioritize top-level (where Global Design saves them)
+      color: (forecastModule as any).color || designFromDesignObject.color,
+      // Container properties - also check both locations
+      background_color:
+        (forecastModule as any).background_color || designFromDesignObject.background_color,
+      background_image:
+        (forecastModule as any).background_image || designFromDesignObject.background_image,
+      background_image_type:
+        (forecastModule as any).background_image_type ||
+        designFromDesignObject.background_image_type,
+      background_image_entity:
+        (forecastModule as any).background_image_entity ||
+        designFromDesignObject.background_image_entity,
+      background_image_upload:
+        (forecastModule as any).background_image_upload ||
+        designFromDesignObject.background_image_upload,
+      background_image_url:
+        (forecastModule as any).background_image_url || designFromDesignObject.background_image_url,
+      background_size:
+        (forecastModule as any).background_size || designFromDesignObject.background_size,
+      background_position:
+        (forecastModule as any).background_position || designFromDesignObject.background_position,
+      background_repeat:
+        (forecastModule as any).background_repeat || designFromDesignObject.background_repeat,
+      padding_top:
+        designFromDesignObject.padding_top !== undefined
+          ? designFromDesignObject.padding_top
+          : (forecastModule as any).padding_top,
+      padding_bottom:
+        designFromDesignObject.padding_bottom !== undefined
+          ? designFromDesignObject.padding_bottom
+          : (forecastModule as any).padding_bottom,
+      padding_left:
+        designFromDesignObject.padding_left !== undefined
+          ? designFromDesignObject.padding_left
+          : (forecastModule as any).padding_left,
+      padding_right:
+        designFromDesignObject.padding_right !== undefined
+          ? designFromDesignObject.padding_right
+          : (forecastModule as any).padding_right,
+      margin_top:
+        designFromDesignObject.margin_top !== undefined
+          ? designFromDesignObject.margin_top
+          : (forecastModule as any).margin_top,
+      margin_bottom:
+        designFromDesignObject.margin_bottom !== undefined
+          ? designFromDesignObject.margin_bottom
+          : (forecastModule as any).margin_bottom,
+      margin_left:
+        designFromDesignObject.margin_left !== undefined
+          ? designFromDesignObject.margin_left
+          : (forecastModule as any).margin_left,
+      margin_right:
+        designFromDesignObject.margin_right !== undefined
+          ? designFromDesignObject.margin_right
+          : (forecastModule as any).margin_right,
+      border_radius:
+        (forecastModule as any).border_radius || designFromDesignObject.border_radius,
+      border_style:
+        (forecastModule as any).border_style || designFromDesignObject.border_style,
+      border_width:
+        (forecastModule as any).border_width || designFromDesignObject.border_width,
+      border_color:
+        (forecastModule as any).border_color || designFromDesignObject.border_color,
+    };
+
     const weatherData = this._getWeatherData(hass, forecastModule);
     const iconStyle = forecastModule.icon_style || 'fill';
 
-    // Get smart scaling setting (default true)
-    const smartScaling = forecastModule.smart_scaling !== false;
-    const scalingStyles = getSmartScalingStyles(smartScaling);
-
     // Get temperature unit from weather entity (no conversion needed)
     const tempUnit = weatherData.temperatureUnit;
+
+    // Action handlers for tap, hold, and double-tap
+    let holdTimeout: any = null;
+    let clickTimeout: any = null;
+    let isHolding = false;
+    let clickCount = 0;
+    let lastClickTime = 0;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      isHolding = false;
+      holdTimeout = setTimeout(() => {
+        isHolding = true;
+        if (!forecastModule.hold_action || forecastModule.hold_action.action !== 'nothing') {
+          UltraLinkComponent.handleAction(
+            (forecastModule.hold_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config,
+            (forecastModule as any).entity,
+            forecastModule
+          );
+        }
+      }, 500);
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault();
+      if (holdTimeout) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+      }
+
+      if (isHolding) {
+        isHolding = false;
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLastClick = now - lastClickTime;
+
+      if (timeSinceLastClick < 300 && clickCount === 1) {
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+        }
+        clickCount = 0;
+
+        if (
+          !forecastModule.double_tap_action ||
+          forecastModule.double_tap_action.action !== 'nothing'
+        ) {
+          UltraLinkComponent.handleAction(
+            (forecastModule.double_tap_action as any) || ({ action: 'default' } as any),
+            hass,
+            e.target as HTMLElement,
+            config,
+            (forecastModule as any).entity,
+            forecastModule
+          );
+        }
+      } else {
+        clickCount = 1;
+        lastClickTime = now;
+
+        clickTimeout = setTimeout(() => {
+          clickCount = 0;
+
+          if (!forecastModule.tap_action || forecastModule.tap_action.action !== 'nothing') {
+            UltraLinkComponent.handleAction(
+              (forecastModule.tap_action as any) || ({ action: 'default' } as any),
+              hass,
+              e.target as HTMLElement,
+              config,
+              (forecastModule as any).entity,
+              forecastModule
+            );
+          }
+        }, 300);
+      }
+    };
+
+    const hasActions =
+      (forecastModule.tap_action && forecastModule.tap_action.action !== 'nothing') ||
+      (forecastModule.hold_action && forecastModule.hold_action.action !== 'nothing') ||
+      (forecastModule.double_tap_action && forecastModule.double_tap_action.action !== 'nothing');
+
+    // Apply text color override from global design - if set, override all text colors
+    const globalTextColor = designProperties.color;
+    const forecastDayColor = globalTextColor || forecastModule.forecast_day_color || 'var(--primary-text-color)';
+    const forecastTempColor = globalTextColor || forecastModule.forecast_temp_color || 'var(--primary-text-color)';
+
+    // Container styles for design system integration - properly handle global design properties
+    const containerStyles = {
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
+        moduleWithDesign.padding_top ||
+        moduleWithDesign.padding_bottom ||
+        moduleWithDesign.padding_left ||
+        moduleWithDesign.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : undefined,
+      // Standard 8px top/bottom margin for proper web design spacing
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
+        moduleWithDesign.margin_top ||
+        moduleWithDesign.margin_bottom ||
+        moduleWithDesign.margin_left ||
+        moduleWithDesign.margin_right
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '8px 0',
+      background:
+        designProperties.background_color || moduleWithDesign.background_color || 'transparent',
+      backgroundImage: this.getBackgroundImageCSS(
+        { ...moduleWithDesign, ...designProperties },
+        hass
+      ),
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position ||
+        moduleWithDesign.background_position ||
+        'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      border:
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
+          : undefined,
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || undefined,
+      boxSizing: 'border-box',
+      // Add cursor pointer when actions are configured
+      cursor: hasActions ? 'pointer' : 'default',
+    };
 
     return html`
       <style>
         ${this.getStyles()}
       </style>
       <div
-        class="animated-forecast-module-container"
-        style="
-          --forecast-days: ${forecastModule.forecast_days || 5};
-          --forecast-day-size: ${forecastModule.forecast_day_size || 14}px;
-          --forecast-temp-size: ${forecastModule.forecast_temp_size || 14}px;
-          --forecast-icon-size: ${forecastModule.forecast_icon_size || 48}px;
-          --forecast-day-color: ${forecastModule.forecast_day_color || 'var(--primary-text-color)'};
-          --forecast-temp-color: ${forecastModule.forecast_temp_color ||
-        'var(--primary-text-color)'};
-          --forecast-background: ${forecastModule.forecast_background ||
-        'rgba(var(--rgb-primary-text-color), 0.05)'};
-          overflow: ${scalingStyles.overflow};
-          max-width: ${scalingStyles.maxWidth};
-          box-sizing: ${scalingStyles.boxSizing};
-        "
+        style=${this.objectToStyleString(containerStyles)}
+        @pointerdown=${handlePointerDown}
+        @pointerup=${handlePointerUp}
       >
+        <div
+          class="animated-forecast-module-container"
+          style="
+            --forecast-days: ${forecastModule.forecast_days || 5};
+            --forecast-day-size: ${forecastModule.forecast_day_size || 14}px;
+            --forecast-temp-size: ${forecastModule.forecast_temp_size || 14}px;
+            --forecast-icon-size: ${forecastModule.forecast_icon_size || 48}px;
+            --forecast-day-color: ${forecastDayColor};
+            --forecast-temp-color: ${forecastTempColor};
+            --forecast-background: ${forecastModule.forecast_background ||
+        'rgba(var(--rgb-primary-text-color), 0.05)'};
+            --forecast-allow-wrap: ${forecastModule.allow_wrap === false ? 'column' : 'row'};
+            overflow: visible;
+            max-width: 100%;
+            box-sizing: border-box;
+          "
+        >
         <div class="weather-forecast">
           ${weatherData.forecast && weatherData.forecast.length > 0
             ? weatherData.forecast.slice(0, forecastModule.forecast_days || 5).map((day: any) => {
@@ -151,6 +367,55 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Helper method to convert style object to CSS string
+   */
+  private objectToStyleString(styles: Record<string, any>): string {
+    return Object.entries(styles)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+      .join('; ');
+  }
+
+  /**
+   * Helper method to add pixel unit if needed
+   */
+  private addPixelUnit(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    if (
+      typeof value === 'string' &&
+      (value.includes('px') ||
+        value.includes('%') ||
+        value.includes('em') ||
+        value.includes('rem') ||
+        value.includes('vh') ||
+        value.includes('vw'))
+    ) {
+      return value;
+    }
+    return `${value}px`;
+  }
+
+  /**
+   * Helper method to get background image CSS
+   */
+  private getBackgroundImageCSS(moduleWithDesign: any, hass?: HomeAssistant): string {
+    const backgroundType = moduleWithDesign.background_image_type || 'none';
+
+    if (backgroundType === 'entity' && moduleWithDesign.background_image_entity && hass) {
+      const entity = hass.states[moduleWithDesign.background_image_entity];
+      if (entity && entity.attributes.entity_picture) {
+        return `url('${entity.attributes.entity_picture}')`;
+      }
+    } else if (backgroundType === 'upload' && moduleWithDesign.background_image_upload) {
+      return `url('${moduleWithDesign.background_image_upload}')`;
+    } else if (backgroundType === 'url' && moduleWithDesign.background_image_url) {
+      return `url('${moduleWithDesign.background_image_url}')`;
+    }
+
+    return '';
   }
 
   /**
@@ -275,6 +540,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
       .weather-forecast {
         display: grid;
         grid-template-columns: repeat(var(--forecast-days, 5), 1fr);
+        grid-auto-flow: var(--forecast-allow-wrap, row);
         gap: 16px;
         padding: 20px 16px 16px 16px;
         background: var(--forecast-background);
@@ -326,36 +592,9 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
 
       /* ========== RESPONSIVE ========== */
       @media (max-width: 768px) {
-        .weather-forecast {
-          gap: clamp(10px, 2%, 12px);
-        }
-
-        .forecast-icon {
-          width: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 40px));
-          height: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 40px));
-        }
-      }
-
-      @media (max-width: 480px) {
         .animated-forecast-module-container {
-          padding: clamp(12px, 3%, 16px);
-        }
-
-        .weather-forecast {
-          gap: clamp(6px, 1.5%, 8px);
-        }
-
-        .forecast-day-name {
-          font-size: min(var(--forecast-day-size), 12px);
-        }
-
-        .forecast-temps {
-          font-size: min(var(--forecast-temp-size), 12px);
-        }
-
-        .forecast-icon {
-          width: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 30px));
-          height: min(var(--forecast-icon-size), calc(100vw / var(--forecast-days, 5) - 30px));
+          transform: scale(min(1, calc(100vw / 600)));
+          transform-origin: top center;
         }
       }
     `;

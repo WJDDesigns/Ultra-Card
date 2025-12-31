@@ -190,7 +190,6 @@ class UcCloudAuthService {
           hass?.user ? 'exists' : 'missing'
         );
       } else {
-        console.log('✅ HA user ID found:', userId);
       }
 
       return userId;
@@ -247,7 +246,6 @@ class UcCloudAuthService {
     const cloudUser = await ucSessionSyncService.getCurrentSession(haUserId, storedUser?.token);
 
     if (cloudUser) {
-      console.log('✅ Found active cloud session, syncing authentication');
       this._setCurrentUser(cloudUser);
       this._saveToStorage();
       this._setupAutoRefresh();
@@ -752,6 +750,11 @@ class UcCloudAuthService {
     }
   }
 
+  // Track if we've already logged the quota error (to avoid spam)
+  private static _quotaErrorLogged = false;
+  // Track last saved JSON to avoid redundant saves
+  private _lastSavedJson: string | null = null;
+
   /**
    * Save user to localStorage
    */
@@ -759,11 +762,29 @@ class UcCloudAuthService {
     try {
       if (this._currentUser) {
         const userJson = JSON.stringify(this._currentUser);
+        
+        // Skip if already saved with same data
+        if (userJson === this._lastSavedJson) {
+          return;
+        }
+        
         localStorage.setItem(UcCloudAuthService.STORAGE_KEY, userJson);
+        this._lastSavedJson = userJson;
+        UcCloudAuthService._quotaErrorLogged = false; // Reset on success
       } else {
         this._clearStorage();
+        this._lastSavedJson = null;
       }
     } catch (error) {
+      // Handle QuotaExceededError gracefully - only log once to avoid spam
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        if (!UcCloudAuthService._quotaErrorLogged) {
+          console.warn('⚠️ localStorage quota exceeded. Auth state will be kept in memory only.');
+          UcCloudAuthService._quotaErrorLogged = true;
+        }
+        // Auth still works in memory, just won't persist across page reloads
+        return;
+      }
       console.error('❌ Failed to save auth to storage:', error);
     }
   }

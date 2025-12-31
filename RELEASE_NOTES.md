@@ -1,577 +1,820 @@
-# Release Notes
+# 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
 
-## Version 2.0-beta21
-
-### 🐛 Bug Fixes
-
-- **Refactored and fixed the actions tab** - Refactored the actions tab to use the native ui-actions of Home Assistant for improved compatibility and functionality
-
-## Version 2.0-beta20
-
-### 🐛 Bug Fixes
-
-- **Fixed Separator line color issue** - Resolved color rendering problems with separator module lines
-- **Fixed bug in automation toggle** - Corrected toggle functionality issues in automation actions
-- **Fixed Z Index across card** - Improved layering and stacking order throughout the card interface
+## Version 2.2.0-beta14
 
 ### 🚀 New Features
 
-- **Collapsable Row support** - Rows can now be collapsed and expanded for better editor organization
-- **New Row naming and header layout** - Enhanced row headers with improved naming and layout options
-- **Added Toggle Entity field in Actions** - New entity field for toggle actions providing better control
-
-### 🎨 UI/UX Improvements
-
-- **Improved Color Picker UI/Function** - Enhanced color picker interface with better usability and functionality
-- **Better 3rd party module scanning** - Improved detection and integration of third-party card modules
-
-### 🧹 Code Quality
-
-- **Remove logging** - Cleaned up debug console logging for cleaner console output and better performance
-
-## Version 2.0-beta19
+- **Image Icons for Grid Module Entities** - Added the ability to use image icons for entities within the grid module for enhanced visual customization.
+- **Accordion Module Customization** - Added comprehensive customization options to the accordion module including styling, colors, and behavior settings.
+- **Entity-Triggered Popups** - Added the ability to use entities to trigger popups. To use this feature:
+  1. Create a popup module with your desired content
+  2. In the popup settings, select an entity as the trigger
+  3. Configure the trigger condition (e.g., state equals "on", numeric threshold, etc.)
+  4. The popup will automatically open when the entity meets the trigger condition
+  5. You can also configure the popup to auto-close when the condition is no longer met
 
 ### 🐛 Bug Fixes
 
-- **Fix for 3rd party editor yaml issue** - Resolved YAML editing issues in the 3rd party editor
-- **Improved 3rd party non pro mechanism** - Enhanced the mechanism for non-Pro users interacting with 3rd party cards
+- **Fixed Sports Score Module Update Issue** - Resolved an issue where the sports score module was not properly updating when scores changed.
+- **Fixed Background Image Visibility in Rows/Columns** - Corrected visibility issues with background images in row and column layouts.
+- **Fixed Popup Edit Mode Issues** - Resolved visibility and interaction problems with popups when in edit mode, ensuring proper display and functionality.
 
-## Version 2.0-beta18
+---
 
-### 🐛 Bug Fixes
-
-- **Z-index fixes** - Resolved z-index layering issues to improve UI stacking order
-- **Fixed scrolling issues in 3rd party modules** - Addressed scrolling behavior problems when using 3rd party card modules
-- **Fixed YAML editing to allow enter** - YAML editor now properly supports Enter key for line breaks
-
-## Version 2.0-beta17
-
-### 🐛 Bug Fixes
-
-- **Possible fix for mobile issues with 3rd party editing** - Addressed scrolling behavior where the editor would unexpectedly scroll to the top when editing 3rd party cards on mobile devices
-
-## Version 2.0-beta16
-
-### 🎁 Pro Features
-
-- **Removed pro lock on 3rd party tab** - The 3rd party cards tab is now fully accessible to all users without Pro subscription requirements
-
-## Version 2.0-beta15
-
-### 🎁 Pro Features
-
-- **3rd Party Module Limits** - Free users can now add up to 5 third-party cards, while Pro users enjoy unlimited third-party card integration
-
-## Version 2.0-beta14
-
-### 🐛 Bug Fixes
-
-- **Fixed issue with 3rd party cards being squished** - 3rd party cards now render properly without layout constraints
+## Version 2.2.0-beta10
 
 ### 🚀 New Features
 
-- **Added new transparency slider in color picker** - Color pickers now include a transparency/alpha slider for full RGBA control
-- **Added auto for bulbs that support both RGBWW/RGBCCT** - Automatic detection and support for dual white temperature bulbs
+- **Added bar module min/max values**
+- **Added the ability to change layout direction in info module without icon**
 
-## Version 2.0-beta9
+### 🚀 Improvements
+
+- **Improved nested layout rendering issues in builder**
 
 ### 🐛 Bug Fixes
 
-- **Fixed Background Filter Blurring Content** - Background filters now only blur the background layer, keeping icons and text sharp and readable
-- **Fixed Animated Clock Module Smart Sizing** - Animated Clock module now properly responds to Smart Scaling feature
-- **Reduced Console Logging** - Removed excess debug logging for cleaner console output
+- **Fixed WebRTC card initial play issue**
+- **Fixed toggle functionality and sensing state changes from other modules**
 
-## Version 2.0-beta8
+---
 
-### 🔐 Critical Authentication Fixes
+## Version 2.2.0-beta8
 
-- **Fixed users being logged out after page refresh** - Resolved critical bug where valid authentication sessions were incorrectly treated as expired, causing users to be logged out on every page refresh
-- **Improved token validation logic** - Separated actual token expiry checks from proactive refresh checks, ensuring users stay logged in with valid tokens
-- **Added retry mechanism for token refresh** - Implemented exponential backoff (3 retries) for token refresh failures to handle temporary network issues gracefully
-- **Fixed race conditions** - Replaced static flags with instance-level authentication tracking to prevent conflicts when multiple editor instances are created/destroyed
-- **Enhanced error handling** - Network errors during token refresh no longer log users out; the system now distinguishes between connection issues and invalid credentials
-- **Reduced console logging** - Minimized verbose success messages, keeping only essential errors and warnings for cleaner console output
+### 🔧 Maintenance
 
-### 🛡️ Security & Reliability
+- **Bumped for new version issues** - Version number correction and release asset fixes.
 
-- Token refresh now retries up to 3 times with exponential backoff before failing
-- Users remain logged in during temporary network issues as long as token is still valid
-- Invalid refresh tokens (4xx errors) immediately logout, while server errors (5xx) trigger retries
-- Each editor instance manages authentication independently to prevent conflicts
-- Session persistence is now bulletproof and reliable
+---
 
-### 📝 Technical Details
-
-For developers: See `ULTRA_PRO_AUTH_FIXES.md` for detailed technical documentation including:
-
-- Token validation improvements
-- Retry logic implementation
-- Session restoration flow
-- Testing scenarios
-
-## Version 2.0-beta4
+## Version 2.0.0-beta7
 
 ### 🚀 New Features
 
-- **Ultra Card Pro Integration** - Added comprehensive Pro tier system with enhanced features and cloud sync capabilities. Register at [ultracard.io](https://ultracard.io) to unlock Pro features.
-- **New PRO Modules (Requires Pro Account)**:
-  - **Animated Clock** - Beautiful flip clock with smooth animations and customizable styles
-  - **Animated Weather** - Current weather display with animated weather icons
-  - **Animated Forecast** - Multi-day weather forecast with animated icons and detailed information
-- **Pro Tab in Editor** - New dedicated Pro tab showing account status, cloud sync features, auto-snapshot status, and backup management
-- **Smart Scaling (Experimental)** - New responsive scaling feature that intelligently adapts card content to fit tighter columns or edit panels. The card automatically scales down when space is limited (edit mode, narrow columns) while maintaining readability and layout. Can be enabled/disabled in card settings under Behavior section.
-- **Auto Dashboard Snapshots (Pro)** - Automatic daily snapshots of all Ultra Cards across your entire dashboard with 30-day retention
-- **Manual Card Backups (Pro)** - Create named backups of individual cards with up to 30 backups total
-- **Smart Replace Restore** - Enhanced snapshot restore that matches cards by custom name or position for accurate recovery
+- **New Pro Calendar Module** - Added a new calendar module for Ultra Card Pro members, providing integrated calendar functionality with customizable views and event display options.
+
+### 🐛 Bug Fixes
+
+- **Fixed Toggle Module Functionality Issue** - Resolved an issue where the toggle module was not properly responding to user interactions or updating entity states correctly.
+- **Fixed Info Module Templating Issue** - Corrected template evaluation problems in the info module that were causing incorrect or missing dynamic content display.
+- **Fixed Popup Modules Nesting Issue** - Resolved layout conflicts when popup modules were nested within other modules, ensuring proper rendering and z-index handling.
+- **Possible Fix for WebRTC Camera Card** - Potential fix for compatibility issues when using WebRTC camera cards as 3rd party card integrations within Ultra Card layouts.
+
+---
+
+## Version 2.2.0-beta5
+
+### 🚀 New Features
+
+- **Added support for native home assistant cards** - Native Home Assistant cards can now be integrated directly into Ultra Card layouts alongside 3rd party cards.
+- **New toggle module** - Added a new toggle module for quick on/off controls with customizable styling.
+- **New status module** - Added a new status module for displaying entity status information with enhanced visual feedback.
+
+### 🚀 Improvements
+
+- **Changed 3rd party tab to cards tab and merged native with 3rd party** - The 3rd party tab has been renamed to "Cards" tab and now includes both native Home Assistant cards and 3rd party cards in a unified interface.
+- **Improved 3rd party card stability** - Enhanced stability and reliability for 3rd party card integration with better error handling and caching.
+- **Improved popup display logic** - Enhanced popup rendering and positioning logic for better user experience across all modules.
+- **Improved iPad user interface issues** - Fixed various UI issues specific to iPad devices including touch interactions and layout rendering.
+- **Added min and max values in graphs** - Graph modules now support configurable min and max value ranges for better data visualization control.
+- **Added settable slider direction for slider module** - Slider module now supports configurable direction (horizontal/vertical) for flexible layout options.
+
+### 🐛 Bug Fixes
+
+- **Fixed border placement in modules as well as background color based on state** - Resolved border positioning issues and ensured background colors properly reflect entity states across all modules.
+- **Fixed text color issue on text module** - Resolved text color rendering issues in the text module to ensure proper color display.
+
+---
+
+## Version 2.2.0-beta4
+
+### 🚀 New Features
+
+- **Icon size to button module** - Added icon size configuration option to the button module for better control over icon display.
+
+### 🚀 Improvements
+
+- **Added distribution options in info module** - Enhanced info module with new distribution options for better layout control.
+- **Adjusted audio tweaks to camera module** - Improved audio handling and controls in the camera module.
+
+### 🐛 Bug Fixes
+
+- **Possible fix for mushroom template when adding as 3rd party module** - Potential fix for template handling issues when mushroom cards are added as 3rd party modules.
+- **Fix z-index issue in gauge modules and popups** - Resolved z-index conflicts in gauge modules and their popup dialogs.
+- **Possible fix for spinbox module keeping focus on mobile** - Potential fix for focus retention issues in spinbox module on mobile devices.
+- **Possible fix for dropdown not closing when swiping out on mobile** - Potential fix for dropdown menu behavior when swiping on mobile devices.
+- **Fixed z-index for climate module and popups** - Resolved z-index issues affecting climate module and its popup dialogs.
+
+---
+
+## Version 2.2.0-beta3
+
+### 🚀 New Features
+
+- **Google Font support** - Added comprehensive Google Fonts integration with 30+ popular font families. Fonts are dynamically loaded from Google CDN when selected, providing access to professional typography options throughout the card.
+
+### 🚀 Improvements
+
+- **Improved dropdown behavior** - Enhanced dropdown module to ensure only one dropdown can be open at a time across all instances, preventing UI conflicts and improving user experience.
+- **Improved CSS for Card Mod targeting** - Enhanced CSS variable generation system with better prefix support and more comprehensive variable coverage. All design properties now generate CSS custom properties (e.g., --my-row-bg-color, --my-row-text-color) that can be easily overridden using card-mod, making it easier to style Ultra Cards from external CSS.
+- **Exporting allows for glyphs** - Enhanced export functionality to properly preserve Unicode characters including empty character glyphs (zero-width spaces, non-breaking spaces, etc.) during clipboard and file export operations.
+
+### 🐛 Bug Fixes
+
+- **Fix transform origin issue in some cards** - Resolved transform origin problems that were causing incorrect scaling and rotation behavior in certain card configurations, particularly affecting cards with responsive scaling enabled.
+
+---
+
+## Version 2.2.0-beta2
+
+### 🚀 Improvements
+
+- **Camera module parity with HA** - Updated camera module layout and controls to mirror native Home Assistant behavior, including a new playback mode selector.
+- **Dropdown header customization** - Added configurable icon and title controls so dropdown headers can better reflect their context.
+- **Removed legacy background module** - Eliminated the all-in-one background module to avoid conflicts with core Home Assistant view behavior.
+- **Improved dropdown synchronization** - Tightened dropdown syncing logic to ensure selections remain aligned across editor previews and rendered cards.
+
+### 🐛 Bug Fixes
+
+- **Dynamic Weather module instance handling** - Resolved an issue where dynamic weather changes were not scoped per module instance.
+- **Camera audio reliability** - Fixed lingering audio playback problems inside the camera module.
+
+---
+
+## Version 2.2.0-beta1
+
+### 🚀 New Features
+
+- **Added new Dynamic Weather Module** - New Dynamic Weather Module with enhanced weather visualization capabilities
+- **Added New Background Module** - New Background Module for advanced background customization
+
+### 🐛 Bug Fixes
+
+- **Possible Fix for Camera Module Audio** - Potential fix for audio issues in Camera Module
+- **Possible Fix for Dropdown Module duplicates causing conflicts** - Potential fix for duplicate dropdown modules causing conflicts
+- **Possible Fix for mobile buttons not deselecting after being pressed (spinbox module)** - Potential fix for mobile button deselection issues in Spinbox Module
+
+---
+
+## Version 2.1.0
+
+## 🚀 Major Features
+
+### Unified Template System
+- **Revolutionary new template system** - Replaces multiple template boxes with one powerful unified template
+  - Control multiple properties from a single template (icon, color, name, state text, and their colors)
+  - Uses entity context variables (state, entity, attributes, name) for seamless entity remapping
+  - Returns JSON objects for multi-property control or simple strings for single properties
+  - Fully implemented in 5 core modules: Icon, Info, Text, Bar, and Markdown
+  - Basic structure added to Graphs, Spinbox, and Camera modules
+  - See UNIFIED_TEMPLATES.md for complete documentation and examples
+
+### New Modules
+- **Map Module** - Interactive map functionality for visualizing locations
+- **Climate Module** (Pro) - New Climate Module added for Ultra Card Pro members
+- **Slider Control Module** - Powerful new module for controlling numeric values with sliders, offering flexible configuration and real-time updates
+
+### Enhanced Module Features
+- **Gauge Module Enhancements**
+  - Added color templating and value templating support
+  - Added Icon Pointers for Gauge Module - Icons can now be used as pointers inside the track
+- **Template Mode Support**
+  - Added Template mode to Graphs Module
+  - Spinbox Module templating support
+  - Camera Module templating support
+  - Background templating added to icon and info modules
+
+## 🐛 Bug Fixes
+
+### Critical Fixes
+- **Fixed Migration Quote Bug** - Migration now properly wraps template code in quotes for valid JSON
+- **Fixed Migration Whitespace** - Normalized whitespace to prevent parsing errors from newlines and tabs
+- **Fixed Template Object Parsing** - Fixed critical bug where Home Assistant returned templates as objects instead of strings
+- **Fixed Template Boolean Parsing** - Templates are no longer incorrectly interpreted as boolean values
+
+### Module-Specific Fixes
+- **Fixed icon templates conflicting with animations** - Resolved conflicts between icon templates and animation systems
+- **Fixed separator CSS spacing** - Resolved separator spacing issues across various alignment configurations
+- **Fixed dropdown module issues in slider** - Resolved issues with dropdown module functionality when used within slider modules
+- **Fixed dropdown clipping** - Resolved issue where dropdowns in slider modules were being clipped by container boundaries
+- **Fixed slider update issues** - Resolved problems with slider module updates
+- **Fixed slider auto play** - Corrected auto play functionality in slider modules to work reliably
+- **Fixed light module issues** - Corrected various problems affecting the light module functionality
+- **Fixed light module color settings** - Corrected color setting functionality in the light module
+- **Fixed input limitation on light module** - Resolved input constraints in light module for XY and HS color modes
+- **Fixed spinbox module hover button on mobile** - Fixed hover button behavior on mobile devices for spinbox module
+- **Fixed nowrap in modules** - Fixed potential issues with nowrap functionality in modules
+
+### UI & Display Fixes
+- **Fixed gradient opacity issues in bar module**
+- **Fixed clock visibility on smaller displays**
+- **Fixed field cursor jump issues**
+- **Fixed video background bug**
+- **Fixed animation alignment issues**
+- **Fixed odd card panel heights** - Corrected card panel height issues across various viewport sizes
+- **Fixed color pick and button style issues** - Resolved color picker and button styling problems
+- **Fixed clipboard issue on some browsers** - Fixed clipboard functionality issues on certain browsers
+
+### Editor & Configuration Fixes
+- **Fixed modules without entities** - Added entity selection capability to action tab for modules without entities
+- **Improved module config error handling** - Enhanced error handling for module configuration issues
+
+## 🚀 Improvements
+
+### Template System
+- **Improved template migration to unified template mode** - Enhanced template migration process with cleaner output
+- **Improved template mode input box recognition** - Enhanced template mode input box recognition for better user experience
+- **Improved template mode field** - Enhanced template mode field functionality
+- **Improved template mode in some modules** - Enhanced template mode functionality in various modules
+- **Cleaner Migration Output** - Single-line JSON format for better readability and reliability
+
+### CSS & Layout Improvements
+- **Improved CSS standardized CSS** - Enhanced and standardized CSS across the card
+- **Improved CSS for nested layouts** - Enhanced CSS handling for nested layout structures
+- **Improved nested layout logic** - Enhanced nested layout system with automatic scaling and better layout handling for complex card structures
+- **Improved CSS handling of bar modules and separator modules** - Enhanced CSS handling to better accommodate space constraints
+- **Improved word wrap** - Enhanced word wrap functionality and added individual reset controls for text items in the design tab
+
+### Module Improvements
+- **Improved Slider Module based on swiper** - Enhanced slider module with better performance and features using Swiper library (Note: vertical slider is still not complete)
+- **Improved dropdown module** - Enhanced dropdown module with automatic up/down detection, arrow click behavior, and padding conflict resolution
+- **Improved whitespace for modules** - Better whitespace handling across modules
+- **Improved popup header for Safari browsers** - Enhanced popup header compatibility for Safari browsers
+- **Updated alignment options in info module** - Improved alignment options available in the info module
+- **Added alignments to column** - New alignment options for column modules
+
+### Design Tab Enhancements
+- **Added white space to design tab** - White space controls added to design tab (works with some modules)
+- **Added separate reset values to text items** - Individual reset controls for text items in the design tab
+- **Adjusted z-index and spacing** - Improved z-index handling and spacing adjustments across modules
+
+### Light Module Enhancements
+- **Enhanced light module** - New features and functionality added
+- **Improved light module navigation** - Enhanced navigation and user experience within the light module
+
+### Performance & Developer Experience
+- **Reduced flooding of console warnings** - Reduced excessive console warning messages
+- **Removed debug logging** - Cleaned up console output for production use
+- **Removed Smart Scaling** - Removed smart scaling feature as it wasn't working as expected
+
+---
+
+## 🙏 Special Thanks
+
+A huge thank you to the Ultra Card Discord community for their invaluable bug reports, feature requests, and continuous feedback that helped shape this release. Your contributions make Ultra Card better with every update!
+
+---
+
+## Version 2.1.0-beta21
+
+### 🐛 Bug Fixes
+
+- **Possible fix to clipboard issue on some browsers** - Fixed clipboard functionality issues on certain browsers
+
+---
+
+## Version 2.1.0-beta20
+
+### 🐛 Bug Fixes
+
+- **Fix spinbox module hover button on mobile** - Fixed hover button behavior on mobile devices for spinbox module
+- **Fix modules that do not have an entity to add entity selection for action tab** - Added entity selection capability to action tab for modules without entities
+
+### 🚀 Improvements
+
+- **Improved template migration to unified template mode** - Enhanced template migration process for unified template mode
+- **Dropdown module improvements and features** - Various improvements and new features for dropdown module
+
+---
+
+## Version 2.1.0-beta19
+
+### 🚀 Improvements
+
+- **Improved dropdown module with automatic up/down detection, arrow click behavior and padding conflicts** - Enhanced dropdown module with better detection and interaction handling
+- **Improved popup header for safari based browsers** - Enhanced popup header compatibility for Safari browsers
+- **Improved whitespace for modules** - Better whitespace handling across modules
+- **Improved template mode field** - Enhanced template mode field functionality
+- **Reduce flooding of console warnings** - Reduced excessive console warning messages
+
+---
+
+## Version 2.1.0-beta18
+
+### 🐛 Bug Fixes
+
+- **Possible fix for nowrap in modules** - Fixed potential issues with nowrap functionality in modules
+
+---
+
+## Version 2.1.0-beta17
+
+### 🚀 Improvements
+
+- **Improved word wrap and added separate reset values to text items in design tab** - Enhanced word wrap functionality and added individual reset controls for text items in the design tab
+
+---
+
+## Version 2.1.0-beta16
+
+### 🚀 Improvements
+
+- **Improved template mode input box recognition** - Enhanced template mode input box recognition for better user experience
+- **Built a hut out of popscicle sticks** - Added popscicle stick hut functionality
+
+---
+
+## Version 2.1.0-beta15
+
+### 🚀 Improvements
+
+- **Added color templating and value templating to Gauge Module** - Gauge Module now supports dynamic color and value templating for enhanced customization
+
+### 🐛 Bug Fixes
+
+- **Fixed issue where icon templates were conflicting with animations** - Resolved conflicts between icon templates and animation systems
+
+---
+
+## Version 2.1.0-beta14
+
+### 🚀 Improvements
+
+- **Added new Climate Module for pro members** - New Climate Module added for Ultra Card Pro members
+- **Added white space to design tab** - White space controls added to design tab (works with some modules)
+- **Adjusted z-index and spacing** - Improved z-index handling and spacing adjustments across modules
+- **Improved template mode in some modules** - Enhanced template mode functionality in various modules
+- **Added background templating to icon and info module** - Background templating support added to icon and info modules
+
+---
+
+## Version 2.1.0-beta13
+
+### 🚀 Improvements
+
+- **Improved css handling of bar modules and separator modules to allow for space constraints** - Enhanced CSS handling for bar and separator modules to better accommodate space constraints
+
+---
+
+## Version 2.1.0-beta12
+
+### 🐛 Bug Fixes
+
+- **Fixed separator css to make sure it creates space in different alignment settings** - Resolved separator spacing issues across various alignment configurations
+
+---
+
+## Version 2.1.0-beta11
+
+### 🚀 Improvements
+
+- **Improved CSS standardized CSS** - Enhanced and standardized CSS across the card
+- **Added Template mode to Graphs Module** - Template mode support added to the Graphs module
+- **Spinbox Module** - New Spinbox module added
+- **Camera Module** - New Camera module added
+
+---
+
+## Version 2.1.0-beta10
+
+### 🚀 Improvements
+
+- **Improved CSS for nested layouts** - Enhanced CSS handling for nested layout structures
+- **Added alignments to column** - New alignment options for column modules
+
+---
+
+## Version 2.1.0-beta9
+
+### 🐛 Bug Fixes
+
+- **Improved and fixed nested layout css** - Enhanced CSS handling for nested layouts
+- **Fixed slider update issues** - Resolved problems with slider module updates
+- **Fixed issues with light module color settings** - Corrected color setting functionality in the light module
+
+---
+
+## Version 2.1.0-beta8
+
+### 🚀 Major Improvements
+
+- **Improved Slider Module based on swiper** - Enhanced slider module with better performance and features using Swiper library (Note: vertical slider is still not complete)
+- **Removed Smart Scaling** - Removed smart scaling feature as it wasn't working as expected
+
+### 🐛 Bug Fixes
+
+- **Fixed input limitation on light module in xy and hs** - Resolved input constraints in light module for XY and HS color modes
+- **Fixed odd card panel heights in different viewport sizing** - Corrected card panel height issues across various viewport sizes
+- **Fixed color pick and button style issues** - Resolved color picker and button styling problems
+- **Improved module config error handling** - Enhanced error handling for module configuration issues
+- **Updated alignment options in info module** - Improved alignment options available in the info module
+
+---
+
+## Version 2.1.0-beta7
+
+### 🐛 Bug Fixes
+
+- **Fixed dropdown module issues in slider** - Resolved issues with dropdown module functionality when used within slider modules
+- **Fixed light module issues** - Corrected various problems affecting the light module functionality
+- **Improved light module navigation** - Enhanced navigation and user experience within the light module
+
+---
+
+## Version 2.1.0-beta6
+
+### 🐛 Critical Migration Fixes
+
+- **Fixed Migration Quote Bug** - Migration now properly wraps template code in quotes for valid JSON
+- **Fixed Migration Whitespace** - Normalized whitespace to prevent parsing errors from newlines and tabs
+- **Cleaner Migration Output** - Single-line JSON format for better readability and reliability
+
+### 📋 What Was Fixed
+
+The "Migrate to Unified Template" button now generates properly formatted JSON:
+
+**Before (Broken)**:
+
+- icon_color property was missing quotes around template code
+- Multi-line format with excessive whitespace
+- Result: Invalid JSON that wouldn't parse
+
+**After (Fixed)**:
+
+- Template code properly wrapped in quotes for valid JSON
+- Clean single-line format
+- Result: Valid JSON that parses correctly
+
+Thanks LightningManGTS and Konijntje for reporting!
+
+---
+
+## Version 2.1.0-beta5
+
+### 🚀 Major Features
+
+- **Unified Template System** - Revolutionary new template system that replaces multiple template boxes with one powerful unified template
+  - Control multiple properties from a single template (icon, color, name, state text, and their colors)
+  - Uses entity context variables (state, entity, attributes, name) for seamless entity remapping
+  - Returns JSON objects for multi-property control or simple strings for single properties
+  - Fully implemented in 5 core modules: Icon, Info, Text, Bar, and Markdown
+  - Basic structure added to Graphs, Spinbox, and Camera modules
+  - See UNIFIED_TEMPLATES.md for complete documentation and examples
+
+### 🐛 Bug Fixes
+
+- **Fixed Template Object Parsing** - Fixed critical bug where Home Assistant returned templates as objects instead of strings
+- **Fixed Template Boolean Parsing** - Templates are no longer incorrectly interpreted as boolean values
+- **Removed Debug Logging** - Cleaned up console output for production use
+
+### 📋 Module Support
+
+**Fully Supported (6 Properties)**:
+
+- Icon Module: icon, icon_color, name, name_color, state_text, state_color
+- Info Module: icon, icon_color, name, name_color, state_text, state_color
+
+**Fully Supported (Content + Color)**:
+
+- Text Module: content, color
+- Bar Module: value, color
+- Markdown Module: content, color
+
+**Basic Structure Added**:
+
+- Graphs Module (fields added, rendering TBD)
+- Spinbox Module (fields added, rendering TBD)
+- Camera Module (fields added, rendering TBD)
+
+---
+
+## Version 2.1.0-beta4
+
+### 🧪 Experimental Features
+
+- **New Template System for Testing** - Experimental template evaluation system for advanced testing and validation
+
+---
+
+## Version 2.1.0-beta3
 
 ### 🐛 Bug Fixes & Improvements
 
-- **Fixed inactive icon picker visual bug** - Resolved display issues with the inactive icon picker component
-- **Fixed intensity gauge display issue** - Corrected rendering problems with the intensity gauge module
-- **Fixed background filters not affecting images** - CSS filters now properly apply to background images
-- **Fixed custom background option for cards** - Implemented ability to set custom backgrounds at the card level
-- **Fixed intensity gauge formatting and resizing** - Improved layout and sizing behavior of intensity gauge module
-- **Improved template fields with CodeMirror** - Enhanced template input fields with better code editing experience and syntax highlighting
-- **Improved template function and console logging** - Enhanced template evaluation system with better error logging and debugging
-- **Fixed clock module styling** - Enhanced clock module with additional styling options and improved appearance
-- **Enhanced snapshot Smart Replace feature** - Smart Replace now works with both custom and auto-generated card names, matching by name for custom cards and by position for auto-generated cards
-- **Fixed Vaadin component deprecation warnings** - Addressed deprecation warnings and CORS-related issues
+- **Improved Nested Layout Logic** - Enhanced nested layout system with automatic scaling and better layout handling for complex card structures
+- **Fixed Dropdown Clipping** - Resolved issue where dropdowns in slider modules were being clipped by container boundaries
+- **Fixed Slider Auto Play** - Corrected auto play functionality in slider modules to work reliably
 
-### 🎨 UI/UX Improvements
+---
 
-- Improved camera module responsiveness and display options
-- Enhanced slider module autoplay timing and interaction
-- Better mobile menu visibility and overflow handling
-- Professional Pro/Free tier banners and visual indicators
-- Modernized Pro tab interface matching Home Assistant design patterns
+## Version 2.0.0
 
-## Version 2.0-beta3
+Ultra Card 2.0 represents a complete transformation of the Home Assistant card experience, featuring a complete TypeScript rewrite, revolutionary new modules, and professional-grade features that set the new standard for dashboard customization.
 
-### 🐛 Bug Fixes & Improvements
+## 🌟 General Improvements
 
-- **Improved pinch to zoom** - Enhanced touch gesture handling for better zoom functionality on mobile devices
-- **Remove gap field limits for vertical layout module** - Removed restrictive limits on gap field values for more flexible vertical layouts
-- **Fix mobile overflow menu visibility** - Resolved issues with overflow menus not displaying properly on mobile devices
-- **Add card shadow options in settings** - New shadow customization options available in card settings
-- **Fix dropdown module display issue** - Resolved display problems with dropdown modules
-- **Fix slider autoplay timing** - Corrected timing issues with slider autoplay functionality
+### ⚡ Performance & Reliability
 
-## Version 2.0-beta2
+- **Complete TypeScript Rewrite** - Improved reliability, type safety, and maintainability
+- **Smart Versioning System** - Version numbers embedded in filenames for better cache management
+- **Optimized Rendering** - Enhanced update mechanism for 3rd party cards matching native Home Assistant behavior
+- **Memory Management** - Optimized preset loading and caching system
+- **Clean Console Output** - Removed debug logging for professional, noise-free experience
 
-### 🐛 Bug Fixes
+### 🎨 Global Design System
 
-- **Fixed CORS issues with presets** - Resolved cross-origin resource sharing problems affecting preset loading and marketplace functionality
+- **Professional Spacing Defaults** - Consistent 8px margins across all modules
+- **Global Design Controls** - Complete control over margins, padding, and spacing
+- **Responsive Text Scaling** - Text modules scale appropriately on different screen sizes
+- **Font Weight Consistency** - Proper bold/normal weight rendering across all elements
+- **Transparency Slider** - Color pickers include transparency/alpha slider for full RGBA control
+- **Card Shadow Options** - Customizable shadow options in card settings
+- **Border Customization** - Comprehensive border customization options
+- **Theme Compatibility** - Seamless integration with both light and dark Home Assistant themes
 
-## Version 2.0-beta1
+### 📱 Mobile & Responsive Design
 
-### 🚀 New Features
+- **Responsive by Default** - All modules use responsive design principles
+- **Touch Gesture Support** - Enhanced pinch to zoom and swipe gestures
+- **Mobile Menu Visibility** - Improved overflow menu handling on mobile devices
+- **Container-Friendly Design** - Modules stay within their containers across all screen sizes
 
-- **New Slider Module** - Interactive slider control for numeric inputs and adjustable values
-- **Enhanced Camera Module** - Added audio toggle control for camera feeds with audio support
-- **Forecast Controls for Graphs Module** - New forecast display options and controls for weather and prediction graphs
-- **Vertical and Horizontal Info Controls** - New layout options for info module items with flexible orientation
+### 🎯 Smart Features
 
-### 🎨 UI/UX Improvements
+- **Haptic Feedback** - Global tactile feedback option for all interactions
+- **Auto Action Linking** - Automatic action linking for icon and info modules
+- **Entity Image Support** - Rich visual displays with entity image integration
 
-- **Improved Live Preview** - Enhanced real-time preview functionality with better responsiveness and accuracy
-- **Ultra Card Pro Integration** - Added dedicated Pro tab for Ultra Card Pro features and settings
+### 🎨 Design & Layout Enhancements
 
-### 🐛 Bug Fixes
+- **Export & Paste Row Functionality** - Copy complete row configurations and import from clipboard
+- **Collapsible Rows** - Better editor organization with expandable/collapsible rows
+- **Row Naming & Headers** - Enhanced row headers with improved naming and layout options
+- **Module Nesting Support** - Layout modules can contain other layout modules (1 level deep)
 
-- **Fixed gauge styling issues** - Resolved visual inconsistencies and display problems with gauge modules
-- **Fixed gauge padding** - Corrected padding and spacing issues affecting gauge module layouts
+### 🔗 Action System Enhancements
 
-## Version 1.2.0-beta16
+- **Toggle Entity Field** - New entity field for toggle actions providing better control
+- **Enhanced Action System** - Improved integration with Home Assistant's native action system
+- **Entity Source Support** - Dropdown module supports select and input_select entities
+- **Smart Action Linking** - Automatic action linking for new modules
 
-### 🚀 New Features
+## 🆓 Free Features
 
-- **Added Spinbox Module** - New module type for numeric input with increment/decrement controls
-- **Added pinning to live preview window** - Pin the preview window to keep it visible while editing other modules. Click the pin icon in the preview window header to toggle pinning.
-- **Enhanced Dropdown Module** - Improved functionality and user experience for dropdown selections
-- **Added new Gauge Module (work in progress)** - New module type for displaying gauge-style data visualizations
+### 🎛️ New Free Modules
 
-### 🔧 Miscellaneous
+- **Interactive Slider Module** - Numeric input controls with smooth animations and customizable styling
+- **Smart Spinbox Module** - Increment/decrement controls for precise numeric adjustments
+- **Dynamic Dropdown Module** - Interactive selectors with Home Assistant actions and entity source support
+- **Professional Gauge Module** - Beautiful gauge-style data visualizations with customizable ranges
+- **Enhanced Separator Module** - Both horizontal and vertical orientations with multiple styling options
 
-- **Various improvements** - Additional enhancements and refinements
+### 🎥 Camera Module Revolution
 
-## Version 1.2.0-beta15
+- **Fullscreen Toggle** - Immersive camera viewing with one-click fullscreen mode
+- **Pinch to Zoom** - Enhanced touch gesture handling for better zoom functionality
+- **Audio Toggle Control** - Camera feeds with audio support and controls
+- **Responsive Design** - Automatically adapts to different screen sizes and layouts
 
-### 🎨 UI/UX Improvements
+### 📊 Bar Module Enhancements
 
-- **Fixed responsiveness issues** - Improved card layout and display across different screen sizes and devices
-- **Enhanced display when using built in home assistant resizing settings** - Better integration with Home Assistant's native resizing controls
-- **Fixed icon spacing between devices** - Corrected spacing issues that affected icon alignment and visual consistency
+- **Minimal Bar Style** - Sleek minimal progress bar with thin line and dot indicator
+- **Dynamic Line Thickness** - Controlled by bar height setting with proportional dot scaling
+- **Full Gradient Support** - Complete gradient mode support (Full, Cropped, Value-Based)
 
-### 🐛 Bug Fixes
+### 💡 Light Module Improvements
 
-- **Possible fix for clipping issues** - Addressed various clipping problems that affected module display and interaction
+- **On/Off Toggle** - Convenient toggle control for quick on/off switching
+- **Auto Bulb Detection** - Automatic detection for bulbs supporting both RGBWW/RGBCCT
+- **Enhanced Color Control** - Better color picker integration and control
 
-### 🚀 New Features
+### 📝 Text & Content Modules
 
-- **Automatic action linking** - When adding icon module or info module item will automatically link to more info inside the action tab
-- **Dropdown Module Entity Source Support** - Dropdown module now supports `select` and `input_select` entities as a data source. Choose between:
-  - **Manual Mode**: Define custom options with individual actions, icons, and colors (existing functionality)
-  - **Entity Source Mode**: Automatically populate options from a `select` or `input_select` entity. The dropdown displays the entity's current state and updates the entity when an option is selected. Options are automatically synced with entity changes for fully reactive behavior.
-- **Entity image support** - Added entity image support inside icon and info modules for richer visual displays
+- **CodeMirror Editor** - Modern markdown module with syntax highlighting and better editing experience
+- **Template Support** - Enhanced template input fields with better code editing
+- **YAML Support** - Improved YAML configuration and editing capabilities
 
-### 🔧 Miscellaneous
+## 💎 Pro Features
 
-- **Various improvements** - More stuff that I likely forgot about...
+### 🎬 Video Background Module
 
-## Version 1.2.0-beta14
+- **Professional Video Backgrounds** - Add stunning video backgrounds to any card for enhanced visual appeal
+- **Glass Blur Effects** - Advanced glass styling with adjustable blur intensity for perfect translucent appearances
+- **Seamless Integration** - Works with all card layouts and responsive designs
 
-### 🎨 UI/UX Improvements
+### 🎨 Pro Animation Modules
 
-- **Updated presets UI** - Enhanced preset interface for better user experience
-- **Fixed responsive module box issue** - Resolved layout problems with module containers on different screen sizes
-- **Fixed icon module entity field issue** - Corrected entity field handling in icon module configuration
+- **Animated Clock** - Beautiful flip clock with smooth animations and customizable styles
+- **Animated Weather** - Current weather display with animated weather icons
+- **Animated Forecast** - Multi-day weather forecast with animated icons and detailed information
 
-## Version 1.2.0-beta13
+### ☁️ Cloud Integration & Sync
 
-### 🐛 Bug Fixes
+- **Ultra Card Pro Cloud Integration** - Seamless cloud sync capabilities with HACS integration
+- **Auto Dashboard Snapshots** - Automatic daily snapshots of all Ultra Cards with 30-day retention
+- **Manual Card Backups** - Create named backups of individual cards with up to 30 backups total
+- **Smart Replace Restore** - Enhanced snapshot restore that matches cards by custom name or position
 
-- **Fixed icon inactive/active fields** - Resolved issues with icon module inactive/active field handling and display
-- **Fixed hover animations dropdown freeze** - Eliminated dropdown freezing issues in hover animation controls that prevented proper selection
-- **Fixed Module popup clipping** - Resolved popup clipping issues that prevented proper module editing and configuration
-- **Enhanced fix for CORS issues for presets** - Improved CORS handling for better preset functionality and loading
+### 🎴 3rd Party Card Integration
 
-## Version 1.2.0-beta11
+- **Native Card Support** - Integrate ANY Home Assistant custom card directly into Ultra Card layouts
+- **Click-to-Add Interface** - Simply click any card to add it to your layout
+- **Native Configuration** - Configure cards using their own native editors
+- **Live Preview** - See exactly how cards will look before adding them
+- **Smart Caching** - No flashing or reloading with intelligent card element caching
 
-### 🚀 New Features
+### 📊 Pro Bar Module Features
 
-- **Added haptic feedback option in card settings** - Global toggle for tactile feedback on all interactions
-- **Added pinch to zoom to camera module** - Enhanced camera viewing with zoom and pan controls
-- **Added exported code privacy protection** - Automatically removes sensitive data from exported configurations
+- **Glass Blur Slider** - Enhanced glass effect customization with adjustable blur intensity
 
-## Version 1.2.0-beta9
+## 🛍️ Misc Features
 
-### 🚀 New Features
+### 🌐 Preset Marketplace
 
-#### 📹 Camera Module Fullscreen Toggle
+- **Integrated Marketplace** - Browse curated community-created card presets directly from the editor
+- **One-Click Installation** - Install presets instantly without manual JSON copying
+- **Category Filtering** - Browse by category (Dashboards, Vehicles, Weather, etc.)
+- **Preview Before Install** - See preset screenshots and descriptions before applying
 
-- **Enhanced Camera Experience**: Camera modules now include a fullscreen toggle button for immersive viewing
-- **One-Click Fullscreen**: Easily expand camera feeds to fullscreen mode with a single click
-- **Improved User Interface**: Seamless integration with existing camera module controls
-- **Better Mobile Experience**: Optimized fullscreen viewing for mobile devices and tablets
+### ⭐ Favorites System
 
-### 🎨 Design & Layout Improvements
+- **Mark Favorite Presets** - Star your most-used presets for quick access
+- **Favorites Tab** - Dedicated section for your starred presets
+- **Smart Recommendations** - System learns from your favorites to suggest similar presets
+- **Persistent Storage** - Favorites sync across browser sessions
 
-#### 🏠 Default Home Assistant Styling
+### 🛠️ Developer Experience
 
-- **Native HA Integration**: New cards now inherit default background and border styles from Home Assistant theme
-- **Consistent Look & Feel**: Cards automatically match your Home Assistant dashboard styling
-- **Enhanced Border Control**: Added comprehensive border customization options for fine-tuning appearance
-- **Theme Compatibility**: Seamless integration with both light and dark Home Assistant themes
+- **Enhanced Error Handling** - Better error messages and recovery for marketplace operations
+- **Improved Mobile Support** - Enhanced touch interactions and responsive design
+- **Accessibility Improvements** - Better keyboard navigation and screen reader support
 
-### 🐛 Bug Fixes
+## 📋 Complete Module Reference
 
-#### 🔧 Dialog Box Z-Index Issues
+### 🆓 Free Modules
 
-- **Fixed Row Header Dialogs**: Resolved z-index conflicts where overflow row header dialog boxes appeared underneath column content
-- **Improved Layer Management**: Enhanced stacking order for all dialog boxes and modal overlays
-- **Better User Experience**: Dialog boxes now consistently appear above all other content as expected
-- **Cross-Browser Compatibility**: Fixed rendering issues across different browsers and devices
+**🏠 Icon Module**
 
-_Includes all improvements from v1.2.0-beta8 below._
+- Display entity states with customizable icons, colors, and labels
+- Support for active/inactive states with different icons and colors
+- Template-based dynamic icon and color selection
+- Hover animations and click actions
 
-## Version 1.2.0-beta8
+**📊 Bar Module**
 
-### 🚀 Major New Features
+- Visual progress bars for numeric entity values
+- Multiple styles: Standard, Minimal (thin line with dot), Glass
+- Gradient support with Full, Cropped, and Value-Based modes
+- Customizable colors, animations, and sizing
 
-#### 📤 Export & Paste Icons in Row Headers
+**📝 Text Module**
 
-- **Export Row Configuration**: New export icon in row headers allows you to copy the complete configuration of any row (including all modules and settings) to your clipboard as JSON
-- **Paste Row Configuration**: New paste icon enables you to quickly duplicate rows or import row configurations from other cards
-- **Row Management Icons**: Row headers now feature a complete set of management tools:
-  - **🗂️ Collapse/Expand**: Toggle row visibility in the editor (leftmost icon)
-  - **📤 Export**: Copy row configuration to clipboard (JSON format)
-  - **📋 Paste**: Import row configuration from clipboard
-  - **🗑️ Delete**: Remove the row and all its contents
-  - **⚙️ Settings**: Access row-specific configuration options
+- Display custom text content with rich formatting
+- Template support for dynamic content
+- Multiple text sizes and styling options
+- Perfect for labels, descriptions, and custom information
 
-#### 🌐 Integrated Online Preset Marketplace
+**ℹ️ Info Module**
 
-- **Browse Presets Online**: Access a curated marketplace of community-created card presets directly from the editor
-- **One-Click Installation**: Install presets instantly without manual JSON copying
-- **Category Filtering**: Browse presets by category (Dashboards, Vehicles, Weather, etc.)
-- **Preview Before Install**: See preset screenshots and descriptions before applying
-- **Community Contributions**: Submit your own presets to share with the community
-- **Auto-Updates**: Marketplace content updates automatically with new community submissions
+- Display entity information in organized rows
+- Support for multiple info items per module
+- Template-based dynamic content
+- Customizable labels, values, and formatting
 
-#### ⭐ Favorites System
+**📷 Camera Module**
 
-- **Mark Favorite Presets**: Star your most-used presets for quick access
-- **Favorites Tab**: Dedicated section for your starred presets in the marketplace
-- **Quick Access**: Favorite presets appear at the top of relevant categories
-- **Persistent Storage**: Your favorites are saved locally and sync across browser sessions
-- **Smart Recommendations**: System learns from your favorites to suggest similar presets
+- Display camera feeds with fullscreen support
+- Pinch to zoom and pan controls
+- Audio toggle for cameras with audio support
+- Responsive design that adapts to container sizes
 
-#### 📹 Camera Module Fullscreen Support
+**🎛️ Slider Module**
 
-- **Fullscreen Toggle**: New fullscreen button in camera modules for immersive viewing
-- **Touch/Click to Expand**: Tap any camera feed to enter fullscreen mode
-- **Gesture Support**: Pinch to zoom, swipe to exit on touch devices
-- **Keyboard Navigation**: ESC key to exit, arrow keys for multi-camera navigation
-- **Maintains Aspect Ratio**: Fullscreen mode respects original camera proportions
-- **Works with Live Feeds**: Full support for both static images and live camera streams
+- Interactive slider controls for numeric inputs
+- Smooth animations and customizable styling
+- Perfect for dimmers, volume controls, and adjustable values
+- Auto-play functionality with customizable timing
 
-### 🎨 Design & Layout Improvements
+**🔢 Spinbox Module**
 
-#### 🔧 Global Design Formatting Fixes
+- Numeric input with increment/decrement controls
+- Precise value adjustment for any numeric entity
+- Customizable step values and ranges
+- Ideal for temperature controls and precise adjustments
 
-- **Text Module Font Sizing**: Fixed inconsistent text size applications in text modules
-- **Proper CSS Inheritance**: Text size settings now properly cascade through nested elements
-- **Responsive Text Scaling**: Text modules now scale appropriately on different screen sizes
-- **Font Weight Consistency**: Fixed bold/normal weight rendering across all text elements
-- **Line Height Optimization**: Improved line spacing for better text readability
-- **Color Inheritance**: Fixed text color inheritance issues in nested layouts
+**📋 Dropdown Module**
 
-#### 📐 Module Nesting Support (1 Layer)
+- Interactive dropdown selectors with custom options
+- Support for Home Assistant actions (More Info, Toggle, Navigate, etc.)
+- Entity source mode for select and input_select entities
+- Drag & drop option reordering
 
-- **Layout Module Nesting**: Layout modules (Row, Column, Horizontal) can now contain other layout modules
-- **Single-Level Deep**: Supports one level of nesting (e.g., Row → Column → Modules)
-- **Flexible Arrangements**: Create complex layouts like rows within columns or columns within rows
-- **Visual Hierarchy**: Nested layouts maintain proper spacing and alignment
-- **Editor Support**: Full drag-and-drop support for creating and managing nested layouts
-- **Performance Optimized**: Nesting doesn't impact rendering performance
+**📊 Gauge Module**
 
-### 🛠️ Technical Improvements
+- Beautiful gauge-style data visualizations
+- Customizable ranges, colors, and needle styles
+- Perfect for temperature, pressure, and percentage displays
+- Smooth animations and responsive design
 
-- **Enhanced Error Handling**: Better error messages and recovery for marketplace operations
-- **Improved Memory Management**: Optimized preset loading and caching system
-- **Faster Rendering**: Performance optimizations for complex nested layouts
-- **Better Mobile Support**: Enhanced touch interactions for fullscreen camera mode
-- **Accessibility Improvements**: Better keyboard navigation and screen reader support
+**📏 Separator Module**
 
-### 🐛 Bug Fixes
+- Horizontal and vertical separators for layout organization
+- Multiple styles: line, double line, dotted, shadow, blank space
+- Customizable colors, thickness, and positioning
+- Perfect for visual organization and section breaks
 
-- Fixed Global Design text size not applying correctly to text modules
-- Resolved layout calculation issues with nested modules
-- Fixed camera module aspect ratio preservation in fullscreen
-- Corrected row export/import handling of complex module configurations
-- Fixed marketplace connection issues on slower networks
-- Resolved favorites synchronization across browser tabs
+**🖼️ Image Module**
 
-_Includes all improvements from v1.2.0-beta7 below._
+- Display images with unlimited height support
+- Customizable aspect ratios and cropping
+- Support for local and remote images
+- Responsive design with container adaptation
 
-## Version 1.2.0-beta7
+**📈 Graph Module**
 
-### 🧹 Production Polish
+- Display entity history graphs and statistics
+- Forecast controls for weather and prediction data
+- Customizable time ranges and data points
+- Integration with Home Assistant's history system
 
-- **Removed Debug Logging**: Cleaned up all debug console.log statements from the spacing improvements for a professional, noise-free experience
-- **Optimized Performance**: Eliminated console overhead for better runtime performance
-- **Clean Console**: No more debug messages cluttering the browser console while maintaining full functionality
+**🎯 Light Module**
 
-_Includes all improvements from v1.2.0-beta6 below._
+- Specialized light controls with on/off toggle
+- Auto-detection for RGBWW/RGBCCT bulbs
+- Enhanced color picker integration
+- Smart default actions for lighting control
 
-## Version 1.2.0-beta6
+### 💎 Pro Modules
 
-### 🎛️ Major Global Design Spacing Improvements
+**🎬 Video Background Module**
 
-We've completely overhauled the spacing controls in the Global Design tab to fix several critical issues and improve the user experience:
+- Add stunning video backgrounds to any card
+- Professional video integration with responsive design
+- Glass blur effects with adjustable intensity
+- Perfect for creating immersive dashboard experiences
 
-#### 🚫 Fixed Auto-Fill Behavior
+**🕐 Animated Clock Module**
 
-- **No More Unwanted Auto-Fill**: When unlocked, typing in one margin/padding field no longer automatically fills all other fields
-- **Individual Field Control**: Each spacing field now operates independently by default
-- **Precise Control**: You can now set different values for top, right, bottom, and left margins/padding without interference
+- Beautiful flip clock with smooth animations
+- Multiple clock styles and customization options
+- Real-time updates with smooth transitions
+- Perfect for dashboard centerpieces and time displays
 
-#### 🔒 Enhanced Lock Functionality
+**🌤️ Animated Weather Module**
 
-- **Perfect Value Mirroring**: When locked, the top field value (including units) is now correctly mirrored to all other fields in real-time
-- **Unit Preservation**: Typing "10px" in a locked top field now correctly copies "10px" to all sides (not just "10")
-- **Smart Lock Behavior**: Lock only affects the intended spacing type (margin lock doesn't affect padding and vice versa)
+- Current weather display with animated weather icons
+- Dynamic weather representations
+- Smooth animations that respond to weather changes
+- Professional weather visualization
 
-#### 📝 Improved Input Handling
+**📅 Animated Forecast Module**
 
-- **Full Unit Support**: All CSS units now work properly - px, rem, em, %, vh, vw, etc.
-- **No More Input Blocking**: Fixed issue where certain characters couldn't be typed in spacing fields
-- **Preserved Formatting**: Values you type are preserved exactly as entered (no more automatic conversion or stripping)
+- Multi-day weather forecast with animated icons
+- Detailed weather information and predictions
+- Smooth transitions between forecast periods
+- Comprehensive weather data visualization
 
-#### 🔧 Technical Fixes
+**🎨 Layout Modules**
 
-- **Removed Hardcoded Padding**: Eliminated fixed 4px padding from info module entities - users now have complete control via Global Design
-- **Fixed Value Processing**: Removed `parseFloat()` calls that were stripping units from spacing values
-- **Resolved Template Conflicts**: Fixed reactive update conflicts that were overriding user input
-- **Better State Management**: Enhanced lock state initialization and management to prevent edge cases
+- **Row Module**: Horizontal layout container for organizing modules
+- **Column Module**: Vertical layout container for stacked modules
+- **Horizontal Module**: Specialized horizontal arrangement
+- **Grid Module**: Grid-based layout system
+- **Slider Module**: Carousel-style module container
 
-#### 💡 How It Works Now
+### 🔧 System Modules
 
-- **Unlocked Mode (Default)**: Each margin/padding field works independently - perfect for asymmetric spacing
-- **Locked Mode**: Click the lock icon to enable synchronized editing - typing in the top field mirrors to all sides
-- **Global Design Integration**: All spacing values now properly apply to module rendering with correct units
+**🎴 3rd Party Card Module**
 
-These improvements make the Global Design spacing controls much more intuitive and reliable across all modules.
+- Integrate ANY Home Assistant custom card
+- Native configuration using each card's own editor
+- Live preview and smart caching
+- Seamless integration with Ultra Card layouts
 
-## Version 1.2.0-beta5
+**⚙️ Action System**
 
-### 🖼️ Image Module Improvements
+- Comprehensive action support for all modules
+- More Info, Toggle, Navigate, URL, Perform Action, Assist
+- Entity picker integration
+- Smart default actions for new modules
 
-- **Unlimited Image Heights**: Removed the 800px height restriction on image modules
-  - Users can now set images to any height they need (previously limited to 800px max)
-  - Removed both UI form constraints and validation limits
-  - Only maintains sensible minimum of 1px to prevent invalid configurations
-  - Perfect for large banners, full-height images, or any custom sizing needs
+## 🎉 What's New in 2.0
 
-## Version 1.2.0-beta4
+Ultra Card 2.0 represents the culmination of months of development, user feedback, and innovation. This release transforms the Home Assistant dashboard experience with:
 
-### 📱 Camera Module Responsive Improvements
+- **Complete TypeScript Foundation** for reliability and performance
+- **Revolutionary Module System** with 15+ new module types
+- **Professional Pro Features** for power users and organizations
+- **3rd Party Card Integration** breaking down barriers between card ecosystems
+- **Advanced Design System** with professional spacing and responsive controls
+- **Preset Marketplace** for community-driven card sharing
+- **Smart Features** that adapt to your workflow and preferences
 
-We've made the camera module much more responsive and container-friendly:
+## 🚀 Getting Started
 
-- **Responsive by Default**: Camera modules now use 100% width by default instead of fixed pixel sizes
-- **Stays Within Containers**: No more cameras overflowing their card boundaries
-- **Smart Sizing**: Automatically adapts to different screen sizes and layouts
-- **Global Design Integration**: Full compatibility with the Design tab for custom dimensions
-- **Maintains All Features**: Cropping, aspect ratios, and all existing functionality still work perfectly
+Ultra Card 2.0 is available now with both free and Pro tiers. Pro users get access to advanced modules, cloud sync, 3rd party card integration, and priority support.
 
-**💡 How It Works**: The camera module now respects its container size while giving you complete control through the Global Design tab. The pixel dimension controls in the General tab are now fallbacks for specific use cases.
+**Upgrade to Ultra Card Pro**: [ultracard.io](https://ultracard.io)
 
-## Version 1.2.0-beta3
+---
 
-### 🎯 Enhanced Module Spacing & Defaults
-
-We've implemented consistent, professional spacing defaults across all modules to improve the overall visual experience:
-
-- **Standard 8px top/bottom margins** applied to all modules for proper web design spacing
-- **Improved visual hierarchy** and readability throughout the card
-- **Better mobile and responsive layout** behavior across all devices
-- **Consistent spacing** between modules regardless of type
-
-**💡 Important**: You have **complete control** over these defaults! Use the **Global Design Tab** to:
-
-- Override margins and padding for any individual module
-- Set custom spacing values per module or globally
-- **Remove default spacing entirely** if you prefer custom layouts
-- Apply your own spacing preferences to match your dashboard design
-
-### 🔧 Bar Module Improvements
-
-- **Fixed Left/Right Side Labels**: Cleaned up the display when title fields are empty
-  - **Removed orphaned colons** (":") that appeared when no title was specified
-  - Now displays clean "Value" instead of awkward ": Value"
-  - **Improved spacing** between title and value elements for better readability
-  - Only shows the colon separator when there's actually a title present
-
-### 🛠️ Technical Improvements
-
-- Enhanced conditional rendering logic for bar module labels
-- Better default spacing system implementation across all module types
-- Improved CSS organization for consistent spacing behavior
-- More robust template handling for cleaner UI displays
-
-## Version 1.2.0-beta1
-
-### New Features
-
-- **New Dropdown Module**: Interactive dropdown selector with Home Assistant actions
-  - Support for More Info, Toggle, Navigate, URL, Perform Action, and Assist actions
-  - Entity picker integration for More Info and Toggle actions
-  - "Keep Selection State" option for scene selectors
-  - Icon support with custom colors or entity state colors
-  - Drag & drop option reordering
-  - Full Global Design Tab compatibility
-
-### Improvements
-
-- Enhanced action system integration
-- Improved editor event handling
-- Better z-index management for dropdown layering
-
-## Version 1.1.0-beta3 (Separator Module Enhancements)
-
-### New Features
-
-- **🔄 Vertical Separator Support**: Separator modules now support both horizontal and vertical orientations
-  - New "Orientation" toggle in separator configuration
-  - Horizontal separators: Use percentage-based width (10-100%)
-  - Vertical separators: Use pixel-based height (50-1000px) for better control
-  - Proper centering and alignment for both orientations
-  - All separator styles work in both orientations (line, double line, dotted, shadow, blank space)
-
-### Bug Fixes
-
-- **Fixed separator visibility**: Improved default colors and thickness for better visibility
-- **Fixed vertical separator centering**: Vertical separators now properly center horizontally
-- **Fixed height limitations**: Vertical separators can now be up to 1000px tall
-- **Fixed container dimensions**: Better minimum dimensions ensure separators are always visible
-
-### Technical Improvements
-
-- Added `height_px` property to SeparatorModule interface for vertical separator sizing
-- Enhanced validation for both horizontal and vertical separator constraints
-- Improved CSS styling for vertical separator layouts
-- Better default values and ranges for separator controls
-
-## Version 1.1.0-beta1 (New Minimal Bar Style & Improvements)
-
-### New Features
-
-- **🎨 New "Minimal" Bar Style**: Added a sleek minimal progress bar style featuring a thin line with a dot indicator
-
-  - Dynamic line thickness controlled by bar height setting
-  - Proportional dot scaling that maintains visual balance
-  - Full gradient mode support (Full, Cropped, Value-Based)
-  - Custom dot color picker for complete customization
-  - Smooth animations including pulse, glow, blink, shimmer, and more
-  - Smart container height adjustment to prevent dot cutoff at low heights
-
-- **🔧 Bar Module Improvements**:
-  - Fixed bar width control in General tab - now works alongside Global Design Tab
-  - Improved UI organization - Bar Style selection now appears above Fill Direction
-  - Enhanced gradient rendering for all gradient modes with proper color interpolation
-  - Better animation support across all bar styles
-
-### Bug Fixes
-
-- **Fixed bar width slider**: General tab width control now properly affects bar width instead of being overridden by flex properties
-- **Fixed Bar Style dropdown**: Converted from FormUtils to direct ha-form implementation for better reliability
-- **Fixed gradient color resolution**: Improved CSS variable handling and color interpolation for gradients
-- **Fixed minimal style container height**: Automatically adjusts container height to accommodate dot size at low bar heights
-- **Fixed dot scaling**: Implemented reasonable size limits to prevent oversized dots at high bar heights
-
-### Technical Improvements
-
-- Enhanced gradient calculation logic with proper CSS variable resolution
-- Improved color interpolation for smooth gradient transitions
-- Better responsive design for minimal bar style
-- Optimized rendering performance for all bar styles
-- Added comprehensive animation support for minimal style elements
-
-## Version 2.0-beta1 (TypeScript Rewrite)
-
-### Major Changes
-
-- **Complete TypeScript Rewrite**: The entire codebase has been rewritten in TypeScript for improved reliability, type safety, and maintainability.
-- **New Versioning System**: Added a smart versioning system that embeds the version number in filenames for better cache management.
-- **Performance Improvements**: Optimized rendering and updated animations for smoother performance.
-
-### New Features
-
-- **Enhanced Gradient System**: More customization options for gradient bars with better previews.
-- **Expanded Animation Options**: Added new animation types including bubbles, fill, and rainbow effects.
-- **Section Ordering**: Ability to rearrange sections in the card via drag and drop.
-- **Bar Size Options**: Choose from thin, regular, thick or "thiccc" bar sizes.
-- **Advanced Icon Customization**: Added text size control and vertical alignment options.
-- **Default Inactive States**: Automatically recognize common inactive states like 'off', 'unavailable', 'idle', etc. without requiring manual configuration.
-- **Improved Responsive Design**: Better support for various screen sizes and mobile devices.
-
-### Bug Fixes
-
-- Fixed inconsistent gradient rendering in some browsers
-- Improved animation performance on lower-end devices
-- Fixed text overflow issues in icon labels
-
-### Upgrading from Version 1.x
-
-Users upgrading from version 1.x should note that this is a major update with significant changes to the underlying codebase. While we've maintained backward compatibility with your existing configurations, we recommend:
-
-1. Backing up your configuration before upgrading
-2. Testing the new version in a development environment first
-3. Checking the console for any warnings or errors after upgrading
-
-Please report any issues on GitHub or in our Discord community.
-
-## Previous Versions
-
-For information about previous releases, please visit our [GitHub releases page](https://github.com/WJDDesigns/Ultra-Card/releases).
+_Ultra Card 2.0 - Redefining what's possible with Home Assistant dashboards._

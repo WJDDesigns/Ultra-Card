@@ -59,8 +59,8 @@ class UcModulePreviewService {
     const isLogicHidden = !shouldShow || !globalLogicVisible;
 
     // Get module content from module handler
-    // Pass isEditorPreview=true to prevent lock overlays in Live Preview
-    const moduleContent = this._getModuleContent(module, hass, config, true);
+    // Pass 'live' context to prevent lock overlays and use separate DOM element
+    const moduleContent = this._getModuleContent(module, hass, config, 'live');
 
     // Get animation data for preview
     const animationData = this._getPreviewAnimationData(moduleWithDesign);
@@ -74,11 +74,11 @@ class UcModulePreviewService {
         <div class="card-container" style="${cardStyle}">
           <div
             class="card-row"
-            style="display: grid; grid-template-columns: 1fr; gap: 16px; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
+            style="display: grid; grid-template-columns: 1fr; gap: 16px; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: auto; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
           >
             <div
               class="card-column"
-              style="display: flex; flex-direction: column; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: 100%; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
+              style="display: flex; flex-direction: column; background: transparent; background-image: none; border: none; border-radius: 0; position: inherit; top: auto; bottom: auto; left: auto; right: auto; z-index: auto; width: auto; height: auto; max-width: none; max-height: none; min-width: none; min-height: auto; overflow: visible; clip-path: none; backdrop-filter: none; box-shadow: none; box-sizing: border-box"
             >
               ${animationData.class
                 ? html`
@@ -130,13 +130,15 @@ class UcModulePreviewService {
       introAnimation?: string;
       outroAnimation?: string;
       shouldTriggerStateAnimation?: boolean;
+      isHaPreview?: boolean; // Explicitly mark as HA Preview rendering (not dashboard)
     }
   ): TemplateResult {
     const moduleWithDesign = module as any;
 
     // Get module content from module handler
-    // Pass isEditorPreview=false for dashboard rendering (show locks if needed)
-    const moduleContent = this._getModuleContent(module, hass, config, false);
+    // Use explicit flag if provided, otherwise assume dashboard context
+    const previewContext = options?.isHaPreview ? 'ha-preview' : undefined;
+    const moduleContent = this._getModuleContent(module, hass, config, previewContext);
 
     // Get hover effect configuration
     const hoverEffect = moduleWithDesign.design?.hover_effect;
@@ -187,13 +189,13 @@ class UcModulePreviewService {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const registry = getModuleRegistry();
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler) {
-      return moduleHandler.renderPreview(module, hass, config, isEditorPreview);
+      return moduleHandler.renderPreview(module, hass, config, previewContext);
     }
 
     // Fallback for unknown module types

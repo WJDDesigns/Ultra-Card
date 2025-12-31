@@ -432,8 +432,34 @@ export class UltraTemplateEditor extends LitElement {
 
   public focus(): void {
     if (this._editor) {
+      // Prevent scroll-into-view behavior when focusing
+      const scrollContainer = this._findScrollContainer();
+      const scrollTop = scrollContainer?.scrollTop ?? 0;
+      
       this._editor.focus();
+      
+      // Restore scroll position immediately after focus to prevent view shift
+      if (scrollContainer) {
+        requestAnimationFrame(() => {
+          scrollContainer.scrollTop = scrollTop;
+        });
+      }
     }
+  }
+
+  private _findScrollContainer(): HTMLElement | null {
+    // Find the nearest scrollable parent container
+    let element: HTMLElement | null = this;
+    while (element) {
+      const style = window.getComputedStyle(element);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll' || 
+          style.overflow === 'auto' || style.overflow === 'scroll') {
+        return element;
+      }
+      element = element.parentElement;
+    }
+    // Fallback to window/document scrolling
+    return document.documentElement;
   }
 
   private _handleKeyDown(e: KeyboardEvent): void {
@@ -455,6 +481,50 @@ export class UltraTemplateEditor extends LitElement {
         class="editor-container"
         @keydown=${this._handleKeyDown}
         @keypress=${this._handleKeyPress}
+        @click=${(e: MouseEvent) => {
+          // Focus CodeMirror when clicking anywhere in the editor container
+          // This ensures clicks work even if they don't hit the exact CodeMirror content area
+          if (this._editor) {
+            // Prevent scroll-into-view by storing and restoring scroll position
+            const scrollContainer = this._findScrollContainer();
+            const scrollTop = scrollContainer?.scrollTop ?? 0;
+            
+            // Small delay to let CodeMirror handle the click first, then ensure focus
+            requestAnimationFrame(() => {
+              if (this._editor && !this._editor.hasFocus) {
+                this._editor.focus();
+                // Restore scroll position to prevent view shift
+                if (scrollContainer) {
+                  requestAnimationFrame(() => {
+                    scrollContainer.scrollTop = scrollTop;
+                  });
+                }
+              }
+            });
+          }
+        }}
+        @mousedown=${(e: MouseEvent) => {
+          // Focus CodeMirror on mousedown to ensure cursor positioning works
+          // This is critical for clicks that don't directly hit the CodeMirror content
+          if (this._editor) {
+            // Prevent scroll-into-view by storing and restoring scroll position
+            const scrollContainer = this._findScrollContainer();
+            const scrollTop = scrollContainer?.scrollTop ?? 0;
+            
+            // Let the event propagate to CodeMirror first, then focus
+            setTimeout(() => {
+              if (this._editor && !this._editor.hasFocus) {
+                this._editor.focus();
+                // Restore scroll position to prevent view shift
+                if (scrollContainer) {
+                  requestAnimationFrame(() => {
+                    scrollContainer.scrollTop = scrollTop;
+                  });
+                }
+              }
+            }, 0);
+          }
+        }}
       ></div>
     `;
   }

@@ -11,11 +11,11 @@ export interface DesignProperties {
     font_weight?: string;
     text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
     font_style?: 'normal' | 'italic' | 'oblique';
+    white_space?: 'normal' | 'nowrap' | 'pre' | 'pre-wrap' | 'pre-line';
     background_color?: string;
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';
     background_image_entity?: string;
-    smart_scaling?: boolean;
     background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
     background_position?: 'left top' | 'left center' | 'left bottom' | 'center top' | 'center center' | 'center bottom' | 'right top' | 'right center' | 'right bottom';
     background_size?: 'cover' | 'contain' | 'auto' | string;
@@ -66,6 +66,9 @@ export interface DesignProperties {
     animation_duration?: string;
     animation_delay?: string;
     animation_timing?: 'ease' | 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier(0.25,0.1,0.25,1)';
+    extra_class?: string;
+    element_id?: string;
+    css_variable_prefix?: string;
 }
 export declare class GlobalDesignTab extends LitElement {
     hass: HomeAssistant;
@@ -87,6 +90,7 @@ export declare class GlobalDesignTab extends LitElement {
     private _toggleSection;
     private _updateProperty;
     private _updateSpacing;
+    private _createSpacingInputHandler;
     private _createRobustInputHandler;
     private _createProtectedKeydownHandler;
     private _handleNumericKeydown;
@@ -102,6 +106,7 @@ export declare class GlobalDesignTab extends LitElement {
     private _getAttributeNameHint;
     private _getAttributeValueHint;
     private _hasModifiedProperties;
+    private _loadGoogleFont;
     private _renderAccordion;
     protected render(): TemplateResult;
     static get styles(): import("lit").CSSResult;

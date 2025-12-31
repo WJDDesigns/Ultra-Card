@@ -36,8 +36,13 @@ export class UltraButtonModule extends BaseUltraModule {
       icon: '',
       icon_position: 'before',
       show_icon: false,
+      icon_size: '24px',
       background_color: 'var(--primary-color)',
       text_color: 'white',
+      // Entity-based background color
+      use_entity_color: false,
+      background_color_entity: '',
+      background_state_colors: {},
       // Additional action configuration for future upgrade
       tap_action: { action: 'nothing' },
       hold_action: { action: 'nothing' },
@@ -45,7 +50,6 @@ export class UltraButtonModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
     };
   }
 
@@ -220,6 +224,93 @@ export class UltraButtonModule extends BaseUltraModule {
                     }
                   )}
                 </div>
+
+                <div class="field-container" style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.button.icon_size', lang, 'Icon Size')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.button.icon_size_desc',
+                      lang,
+                      'Size of the icon in pixels'
+                    )}
+                  </div>
+                  <div
+                    class="gap-control-container"
+                    style="display: flex; align-items: center; gap: 12px;"
+                  >
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="12"
+                      max="64"
+                      step="1"
+                      .value="${String(
+                        typeof buttonModule.icon_size === 'number'
+                          ? buttonModule.icon_size
+                          : parseInt(String(buttonModule.icon_size || '24').replace('px', '')) || 24
+                      )}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = Number(target.value);
+                        updateModule({ icon_size: `${value}px` });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="12"
+                      max="64"
+                      step="1"
+                      .value="${String(
+                        typeof buttonModule.icon_size === 'number'
+                          ? buttonModule.icon_size
+                          : parseInt(String(buttonModule.icon_size || '24').replace('px', '')) || 24
+                      )}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = Number(target.value);
+                        if (!isNaN(value)) {
+                          updateModule({ icon_size: `${value}px` });
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          const target = e.target as HTMLInputElement;
+                          const currentValue = Number(target.value) || 24;
+                          const increment = e.key === 'ArrowUp' ? 1 : -1;
+                          const newValue = Math.max(12, Math.min(64, currentValue + increment));
+                          updateModule({ icon_size: `${newValue}px` });
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }
+                      }}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${() => {
+                        updateModule({ icon_size: '24px' });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      title="${localize(
+                        'editor.fields.reset_default_value',
+                        lang,
+                        'Reset to default ({value})'
+                      ).replace('{value}', '24')}"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
+                </div>
               `
             : ''}
         </div>
@@ -228,16 +319,96 @@ export class UltraButtonModule extends BaseUltraModule {
         <div class="settings-section">
           <div class="section-title">${localize('editor.button.colors.title', lang, 'Colors')}</div>
 
-          <div class="color-controls">
-            <ultra-color-picker
-              .label=${localize('editor.button.colors.background', lang, 'Background Color')}
-              .value=${buttonModule.background_color || 'var(--primary-color)'}
-              .defaultValue=${'var(--primary-color)'}
-              .hass=${hass}
-              @value-changed=${(e: CustomEvent) =>
-                updateModule({ background_color: e.detail.value })}
-            ></ultra-color-picker>
+          <!-- Entity-based Background Color Toggle -->
+          <div class="field-group" style="margin-top: 16px; margin-bottom: 16px;">
+            ${this.renderFieldSection(
+              localize('editor.button.use_entity_color', lang, 'Use Entity Color'),
+              localize(
+                'editor.button.use_entity_color_desc',
+                lang,
+                'Change button background color based on entity state'
+              ),
+              hass,
+              { use_entity_color: buttonModule.use_entity_color || false },
+              [this.booleanField('use_entity_color')],
+              (e: CustomEvent) => {
+                const enabled = e.detail.value.use_entity_color;
+                updateModule({
+                  use_entity_color: enabled,
+                  // Clear entity if disabling
+                  background_color_entity: enabled ? buttonModule.background_color_entity : '',
+                });
+                setTimeout(() => this.triggerPreviewUpdate(), 50);
+              }
+            )}
+          </div>
 
+          ${buttonModule.use_entity_color
+            ? html`
+                <!-- Entity Picker -->
+                <div class="field-group" style="margin-bottom: 16px;">
+                  ${this.renderFieldSection(
+                    localize('editor.button.background_color_entity', lang, 'Entity'),
+                    localize(
+                      'editor.button.background_color_entity_desc',
+                      lang,
+                      'Entity to watch for color changes'
+                    ),
+                    hass,
+                    { background_color_entity: buttonModule.background_color_entity || '' },
+                    [this.entityField('background_color_entity')],
+                    (e: CustomEvent) => {
+                      updateModule(e.detail.value);
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+
+                <!-- State Colors Mapping -->
+                <div class="field-group" style="margin-bottom: 16px;">
+                  <div
+                    class="field-title"
+                    style="font-size: 16px !important; font-weight: 600 !important; margin-bottom: 8px;"
+                  >
+                    ${localize('editor.button.state_colors', lang, 'State Colors')}
+                  </div>
+                  <div
+                    class="field-description"
+                    style="font-size: 13px !important; font-weight: 400 !important; margin-bottom: 12px; color: var(--secondary-text-color);"
+                  >
+                    ${localize(
+                      'editor.button.state_colors_desc',
+                      lang,
+                      'Optional: Map specific entity states to colors (e.g., on: green, off: gray). If not set, will use entity RGB color or state-based defaults.'
+                    )}
+                  </div>
+                  ${this.renderStateColorsEditor(
+                    buttonModule.background_state_colors || {},
+                    hass,
+                    lang,
+                    (stateColors: { [state: string]: string }) => {
+                      updateModule({ background_state_colors: stateColors });
+                      setTimeout(() => this.triggerPreviewUpdate(), 50);
+                    }
+                  )}
+                </div>
+              `
+            : html`
+                <!-- Static Background Color -->
+                <div class="color-controls">
+                  <ultra-color-picker
+                    .label=${localize('editor.button.colors.background', lang, 'Background Color')}
+                    .value=${buttonModule.background_color || 'var(--primary-color)'}
+                    .defaultValue=${'var(--primary-color)'}
+                    .hass=${hass}
+                    @value-changed=${(e: CustomEvent) =>
+                      updateModule({ background_color: e.detail.value })}
+                  ></ultra-color-picker>
+                </div>
+              `}
+
+          <!-- Text Color (always visible) -->
+          <div class="color-controls" style="margin-top: 16px;">
             <ultra-color-picker
               .label=${localize('editor.button.colors.text', lang, 'Text Color')}
               .value=${buttonModule.text_color || 'white'}
@@ -248,7 +419,38 @@ export class UltraButtonModule extends BaseUltraModule {
           </div>
         </div>
 
-        <!-- Link Action removed: use global Tap/Hold/Double-Tap actions instead -->
+        <!-- Actions Setup Guide -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.button.actions.title', lang, 'Button Actions')}
+          </div>
+          <div
+            class="section-description"
+            style="margin-bottom: 16px; color: var(--secondary-text-color); font-size: 14px;"
+          >
+            ${localize(
+              'editor.button.actions.desc',
+              lang,
+              'Configure what happens when users tap, hold, or double-tap this button.'
+            )}
+          </div>
+          <ha-button
+            raised
+            style="width: 100%; --mdc-theme-primary: var(--primary-color);"
+            @click=${() => {
+              // Dispatch a custom event to switch to actions tab
+              const event = new CustomEvent('switch-to-actions-tab', {
+                bubbles: true,
+                composed: true,
+                detail: { tab: 'actions' },
+              });
+              document.dispatchEvent(event);
+            }}
+          >
+            <ha-icon icon="mdi:gesture-tap" slot="icon"></ha-icon>
+            ${localize('editor.button.actions.setup', lang, 'Set up button actions')}
+          </ha-button>
+        </div>
       </div>
     `;
   }
@@ -473,123 +675,283 @@ export class UltraButtonModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const buttonModule = module as ButtonModule;
 
-    // Apply design properties with priority - global design overrides module-specific props
     const moduleWithDesign = buttonModule as any;
     const designProperties = (buttonModule as any).design || {};
 
-    // Resolve text and background styles
-    const textColor = designProperties.color || buttonModule.text_color || 'white';
-    const fontSize = designProperties.font_size || '14px';
-    const backgroundColor =
+    const mirroredFontSize =
+      typeof moduleWithDesign.font_size === 'string' ? moduleWithDesign.font_size : undefined;
+    const rawFontSize =
+      (typeof designProperties.font_size === 'string' && designProperties.font_size.trim() !== ''
+        ? designProperties.font_size
+        : mirroredFontSize) || '14px';
+    const fontSize = this.addPixelUnit(rawFontSize) || '14px';
+
+    // Resolve background color - check entity-based color first if enabled
+    let backgroundColor =
       designProperties.background_color || buttonModule.background_color || 'var(--primary-color)';
+    
+    if (buttonModule.use_entity_color && buttonModule.background_color_entity && hass) {
+      const entityState = hass.states[buttonModule.background_color_entity];
+      if (entityState) {
+        // Check state colors mapping first
+        if (
+          buttonModule.background_state_colors &&
+          Object.keys(buttonModule.background_state_colors).length > 0
+        ) {
+          const stateColor = buttonModule.background_state_colors[entityState.state];
+          if (stateColor) {
+            backgroundColor = stateColor;
+          } else {
+            // Fallback to entity color extraction
+            const entityColor = this.getEntityStateColor(entityState);
+            if (entityColor) {
+              backgroundColor = entityColor;
+            }
+          }
+        } else {
+          // No state colors mapping, use entity color extraction
+          const entityColor = this.getEntityStateColor(entityState);
+          if (entityColor) {
+            backgroundColor = entityColor;
+          }
+        }
+      }
+    }
 
-    // Map style to visual treatment
+    const hasCustomTextColor =
+      !!designProperties.color ||
+      !!moduleWithDesign.color ||
+      !!buttonModule.text_color ||
+      !!moduleWithDesign.text_color;
+
+    const textColor =
+      designProperties.color ||
+      moduleWithDesign.color ||
+      buttonModule.text_color ||
+      moduleWithDesign.text_color ||
+      'white';
+
+    const fontWeight = designProperties.font_weight || moduleWithDesign.font_weight || '500';
+    const fontFamily = designProperties.font_family || moduleWithDesign.font_family || 'inherit';
+    const fontStyle = designProperties.font_style || moduleWithDesign.font_style || 'normal';
+    const textTransform =
+      designProperties.text_transform || moduleWithDesign.text_transform || 'none';
+    const letterSpacingRaw =
+      designProperties.letter_spacing || moduleWithDesign.letter_spacing || undefined;
+    const letterSpacing =
+      letterSpacingRaw !== undefined &&
+      letterSpacingRaw !== null &&
+      `${letterSpacingRaw}`.trim() !== ''
+        ? `${letterSpacingRaw}`
+        : undefined;
+    const lineHeightRaw = designProperties.line_height || moduleWithDesign.line_height;
+    const lineHeight =
+      lineHeightRaw !== undefined && lineHeightRaw !== null && `${lineHeightRaw}`.trim() !== ''
+        ? `${lineHeightRaw}`
+        : undefined;
+
+    const moduleAlignment = buttonModule.alignment || 'center';
+    const containerJustify = this.getFlexJustify(moduleAlignment);
+
+    const textAlignValue =
+      designProperties.text_align || moduleWithDesign.text_align || moduleAlignment;
+    const contentJustify = this.getFlexJustify(textAlignValue, true);
+
+    const textShadow = this.resolveTextShadow(designProperties, moduleWithDesign);
+
     const styleClass = buttonModule.style || 'flat';
-    const buttonBaseStyle = `
-      color: ${textColor};
-      padding: 12px 24px;
-      font-size: ${fontSize};
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 40px;
-    `;
 
-    const styleOverrides: Record<string, string> = {
-      flat: `background: ${backgroundColor}; border: none; box-shadow: none;`,
-      glossy: `background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)) , ${backgroundColor}; border: none;`,
-      embossed: `background: ${backgroundColor}; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15);`,
-      inset: `background: ${backgroundColor}; border: none; box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);`,
-      'gradient-overlay': `background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${backgroundColor}; border: none;`,
-      'neon-glow': `background: ${backgroundColor}; border: none; box-shadow: 0 0 10px ${backgroundColor}, 0 0 20px ${backgroundColor};`,
-      outline: `background: transparent; border: 2px solid ${backgroundColor}; color: ${backgroundColor};`,
-      glass: `background: ${backgroundColor}; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25);`,
-      metallic: `background: linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7); color: #333; border: 1px solid #bbb;`,
+    const baseButtonStyle: Record<string, string> = {
+      color: textColor,
+      padding: '12px 24px',
+      fontSize,
+      fontWeight: String(fontWeight),
+      fontFamily,
+      fontStyle,
+      textTransform,
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) ||
+        '8px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: contentJustify,
+      gap: '8px',
+      minHeight: '40px',
+      textShadow,
     };
 
-    const buttonStyle = `${buttonBaseStyle} ${styleOverrides[styleClass] || styleOverrides.flat}`;
+    if (letterSpacing) {
+      baseButtonStyle.letterSpacing = letterSpacing;
+    }
 
-    const alignment = `
-      display: flex;
-      justify-content: ${
-        buttonModule.alignment === 'left'
-          ? 'flex-start'
-          : buttonModule.alignment === 'right'
-            ? 'flex-end'
-            : 'center'
-      };
-    `;
+    if (lineHeight) {
+      baseButtonStyle.lineHeight = lineHeight;
+    }
 
-    // Container honors global design (padding/margin/background/border, etc.)
+    const styleOverrides: Record<string, Record<string, string>> = {
+      flat: {
+        background: backgroundColor,
+        border: 'none',
+        boxShadow: 'none',
+      },
+      glossy: {
+        background: `linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0)), ${backgroundColor}`,
+        border: 'none',
+      },
+      embossed: {
+        background: backgroundColor,
+        border: '1px solid rgba(0,0,0,0.15)',
+        boxShadow: 'inset 0 2px 2px rgba(255,255,255,0.2), inset 0 -2px 2px rgba(0,0,0,0.15)',
+      },
+      inset: {
+        background: backgroundColor,
+        border: 'none',
+        boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)',
+      },
+      'gradient-overlay': {
+        background: `linear-gradient(135deg, rgba(255,255,255,0.15), rgba(0,0,0,0.15)), ${backgroundColor}`,
+        border: 'none',
+      },
+      'neon-glow': {
+        background: backgroundColor,
+        border: 'none',
+        boxShadow: `0 0 10px ${backgroundColor}, 0 0 20px ${backgroundColor}`,
+      },
+      outline: {
+        background: 'transparent',
+        border: `2px solid ${backgroundColor}`,
+      },
+      glass: {
+        background: backgroundColor,
+        backdropFilter: 'blur(6px)',
+        border: '1px solid rgba(255,255,255,0.25)',
+      },
+      metallic: {
+        background: 'linear-gradient(90deg, #d7d7d7, #f0f0f0 50%, #d7d7d7)',
+        border: '1px solid #bbb',
+      },
+    };
+
+    if (!hasCustomTextColor) {
+      styleOverrides.outline.color = backgroundColor;
+      styleOverrides.metallic.color = '#333';
+    }
+
+    const mergedButtonStyle: Record<string, string> = {
+      ...baseButtonStyle,
+      ...(styleOverrides[styleClass] || styleOverrides.flat),
+    };
+
+    const dimensions = [
+      ['width', designProperties.width ?? moduleWithDesign.width],
+      ['height', designProperties.height ?? moduleWithDesign.height],
+      ['maxWidth', designProperties.max_width ?? moduleWithDesign.max_width],
+      ['maxHeight', designProperties.max_height ?? moduleWithDesign.max_height],
+      ['minWidth', designProperties.min_width ?? moduleWithDesign.min_width],
+      ['minHeight', designProperties.min_height ?? moduleWithDesign.min_height],
+    ] as Array<[string, unknown]>;
+
+    dimensions.forEach(([key, value]) => {
+      const normalized = this.addPixelUnit(value as string | number | undefined | null);
+      if (normalized) {
+        mergedButtonStyle[key] = normalized;
+      }
+    });
+
+    if (!mergedButtonStyle.width && moduleAlignment === 'justify') {
+      mergedButtonStyle.width = '100%';
+    }
+
+    const alignmentStyles: Record<string, string> = {
+      display: 'flex',
+      justifyContent: containerJustify,
+      alignItems: 'center',
+      width: '100%',
+    };
+
+    const paddingTop = this.addPixelUnit(
+      designProperties.padding_top || moduleWithDesign.padding_top
+    );
+    const paddingRight = this.addPixelUnit(
+      designProperties.padding_right || moduleWithDesign.padding_right
+    );
+    const paddingBottom = this.addPixelUnit(
+      designProperties.padding_bottom || moduleWithDesign.padding_bottom
+    );
+    const paddingLeft = this.addPixelUnit(
+      designProperties.padding_left || moduleWithDesign.padding_left
+    );
+    const hasPadding = paddingTop || paddingRight || paddingBottom || paddingLeft;
+
+    const marginTop = this.addPixelUnit(designProperties.margin_top || moduleWithDesign.margin_top);
+    const marginRight = this.addPixelUnit(
+      designProperties.margin_right || moduleWithDesign.margin_right
+    );
+    const marginBottom = this.addPixelUnit(
+      designProperties.margin_bottom || moduleWithDesign.margin_bottom
+    );
+    const marginLeft = this.addPixelUnit(
+      designProperties.margin_left || moduleWithDesign.margin_left
+    );
+    const hasMargin = marginTop || marginRight || marginBottom || marginLeft;
+
     const containerStyles = {
-      // Keep container fluid so module sizing doesn't affect layout siblings
       width: '100%',
       height: 'auto',
       maxWidth: 'none',
       maxHeight: 'none',
       minWidth: 'auto',
       minHeight: 'auto',
-      // Only apply padding if explicitly set by user
-      padding:
-        designProperties.padding_top ||
-        designProperties.padding_bottom ||
-        designProperties.padding_left ||
-        designProperties.padding_right
-          ? `${designProperties.padding_top || '0px'} ${designProperties.padding_right || '0px'} ${designProperties.padding_bottom || '0px'} ${designProperties.padding_left || '0px'}`
-          : '0',
-      // Standard 8px top/bottom margin for proper web design spacing
-      margin:
-        designProperties.margin_top ||
-        designProperties.margin_bottom ||
-        designProperties.margin_left ||
-        designProperties.margin_right
-          ? `${designProperties.margin_top || '8px'} ${designProperties.margin_right || '0px'} ${designProperties.margin_bottom || '8px'} ${designProperties.margin_left || '0px'}`
-          : '8px 0',
+      padding: hasPadding
+        ? `${paddingTop || '0'} ${paddingRight || '0'} ${paddingBottom || '0'} ${paddingLeft || '0'}`
+        : '0',
+      margin: hasMargin
+        ? `${marginTop || '8px'} ${marginRight || '0'} ${marginBottom || '8px'} ${marginLeft || '0'}`
+        : '8px 0',
       background: designProperties.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
         { ...moduleWithDesign, ...designProperties },
         hass
       ),
-      'background-size': 'cover',
-      'background-position': 'center',
-      'background-repeat': 'no-repeat',
-      'border-radius': designProperties.border_radius || '8px',
+      backgroundSize:
+        designProperties.background_size || moduleWithDesign.background_size || 'cover',
+      backgroundPosition:
+        designProperties.background_position || moduleWithDesign.background_position || 'center',
+      backgroundRepeat:
+        designProperties.background_repeat || moduleWithDesign.background_repeat || 'no-repeat',
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) ||
+        '8px',
       border:
         designProperties.border_style && designProperties.border_style !== 'none'
-          ? `${designProperties.border_width || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
+          ? `${this.addPixelUnit(designProperties.border_width) || '1px'} ${designProperties.border_style} ${designProperties.border_color || 'var(--divider-color)'}`
           : 'none',
-      'box-shadow':
+      boxShadow:
         designProperties.box_shadow_h ||
         designProperties.box_shadow_v ||
         designProperties.box_shadow_blur ||
         designProperties.box_shadow_spread
-          ? `${designProperties.box_shadow_h || '0px'} ${designProperties.box_shadow_v || '0px'} ${designProperties.box_shadow_blur || '0px'} ${designProperties.box_shadow_spread || '0px'} ${designProperties.box_shadow_color || 'rgba(0,0,0,.2)'}`
+          ? `${this.addPixelUnit(designProperties.box_shadow_h) || '0px'} ${this.addPixelUnit(designProperties.box_shadow_v) || '0px'} ${this.addPixelUnit(designProperties.box_shadow_blur) || '0px'} ${this.addPixelUnit(designProperties.box_shadow_spread) || '0px'} ${designProperties.box_shadow_color || 'rgba(0,0,0,.2)'}`
           : 'none',
-      'box-sizing': 'border-box',
+      boxSizing: 'border-box',
     } as Record<string, string>;
 
-    // Gesture handling variables
     let clickTimeout: any = null;
     let holdTimeout: any = null;
     let isHolding = false;
     let clickCount = 0;
     let lastClickTime = 0;
 
-    // Handle gesture events for tap, hold, double-tap actions
     const handlePointerDown = (e: PointerEvent) => {
       e.preventDefault();
       isHolding = false;
 
-      // Start hold timer
       holdTimeout = setTimeout(() => {
         isHolding = true;
         if (buttonModule.hold_action && buttonModule.hold_action.action !== 'nothing') {
@@ -597,21 +959,21 @@ export class UltraButtonModule extends BaseUltraModule {
             buttonModule.hold_action as any,
             hass,
             e.target as HTMLElement,
-            config
+            config,
+            (buttonModule as any).entity,
+            buttonModule
           );
         }
-      }, 500); // 500ms hold threshold
+      }, 500);
     };
 
     const handlePointerUp = (e: PointerEvent) => {
       e.preventDefault();
-      // Clear hold timer
       if (holdTimeout) {
         clearTimeout(holdTimeout);
         holdTimeout = null;
       }
 
-      // If this was a hold gesture, don't process as click
       if (isHolding) {
         isHolding = false;
         return;
@@ -620,9 +982,7 @@ export class UltraButtonModule extends BaseUltraModule {
       const now = Date.now();
       const timeSinceLastClick = now - lastClickTime;
 
-      // Double click detection (within 300ms)
       if (timeSinceLastClick < 300 && clickCount === 1) {
-        // This is a double click
         if (clickTimeout) {
           clearTimeout(clickTimeout);
           clickTimeout = null;
@@ -638,78 +998,63 @@ export class UltraButtonModule extends BaseUltraModule {
             hass,
             e.target as HTMLElement,
             config,
-            (buttonModule as any).entity
+            (buttonModule as any).entity,
+            buttonModule
           );
         }
       } else {
-        // This might be a single click, but wait to see if double click follows
         clickCount = 1;
         lastClickTime = now;
 
         clickTimeout = setTimeout(() => {
-          // This is a single click
           clickCount = 0;
 
-          // Execute tap action or fall back to legacy action
           if (!buttonModule.tap_action || buttonModule.tap_action.action !== 'nothing') {
             UltraLinkComponent.handleAction(
               (buttonModule.tap_action as any) || ({ action: 'default' } as any),
               hass,
               e.target as HTMLElement,
               config,
-              (buttonModule as any).entity
+              (buttonModule as any).entity,
+              buttonModule
             );
           } else if (buttonModule.action) {
-            // Legacy support
             linkService.setHass(hass);
             linkService.executeAction(buttonModule.action);
           }
-        }, 300); // Wait 300ms to see if double click follows
+        }, 300);
       }
     };
 
-    // Get hover effect configuration from module design
     const hoverEffect = (buttonModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
+    // Calculate icon size
+    const iconSize = this.addPixelUnit(buttonModule.icon_size) || '24px';
+
     return html`
-      <div class="button-module-container" style=${this.styleObjectToCss(containerStyles)}>
-        <div class="button-module-preview" style="${alignment}">
+      <div class="button-module-container" style="${this.styleObjectToCss(containerStyles)}">
+        <div class="button-module-preview" style="${this.styleObjectToCss(alignmentStyles)}">
           <button
-            class="ultra-button ${styleClass} ${buttonModule.alignment === 'justify'
+            class="ultra-button ${styleClass} ${moduleAlignment === 'justify'
               ? 'justify'
               : ''} ${hoverEffectClass}"
-            style="${buttonStyle} ${buttonModule.alignment === 'justify'
-              ? 'width: 100%;'
-              : designProperties.width || (moduleWithDesign as any).width
-                ? `width: ${designProperties.width || (moduleWithDesign as any).width};`
-                : ''} ${designProperties.height || (moduleWithDesign as any).height
-              ? `height: ${designProperties.height || (moduleWithDesign as any).height};`
-              : ''} ${designProperties.max_width || (moduleWithDesign as any).max_width
-              ? `max-width: ${designProperties.max_width || (moduleWithDesign as any).max_width};`
-              : ''} ${designProperties.max_height || (moduleWithDesign as any).max_height
-              ? `max-height: ${designProperties.max_height || (moduleWithDesign as any).max_height};`
-              : ''} ${designProperties.min_width || (moduleWithDesign as any).min_width
-              ? `min-width: ${designProperties.min_width || (moduleWithDesign as any).min_width};`
-              : ''} ${designProperties.min_height || (moduleWithDesign as any).min_height
-              ? `min-height: ${designProperties.min_height || (moduleWithDesign as any).min_height};`
-              : ''} ${designProperties.text_align
-              ? `text-align:${designProperties.text_align};`
-              : ''} ${designProperties.text_shadow_h ||
-            designProperties.text_shadow_v ||
-            designProperties.text_shadow_blur ||
-            designProperties.text_shadow_color
-              ? `text-shadow:${designProperties.text_shadow_h || '0px'} ${designProperties.text_shadow_v || '0px'} ${designProperties.text_shadow_blur || '0px'} ${designProperties.text_shadow_color || 'rgba(0,0,0,.2)'};`
-              : ''}"
+            style="${this.styleObjectToCss(mergedButtonStyle)}"
             @pointerdown=${handlePointerDown}
             @pointerup=${handlePointerUp}
           >
             ${buttonModule.show_icon && buttonModule.icon && buttonModule.icon_position === 'before'
-              ? html`<ha-icon icon="${buttonModule.icon}"></ha-icon>`
+              ? html`<ha-icon
+                  icon="${buttonModule.icon}"
+                  style="--mdc-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};"
+                ></ha-icon>`
               : ''}
             ${buttonModule.label ?? ''}
             ${buttonModule.show_icon && buttonModule.icon && buttonModule.icon_position === 'after'
-              ? html`<ha-icon icon="${buttonModule.icon}"></ha-icon>`
+              ? html`<ha-icon
+                  icon="${buttonModule.icon}"
+                  style="--mdc-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};"
+                ></ha-icon>`
               : ''}
           </button>
         </div>
@@ -723,7 +1068,240 @@ export class UltraButtonModule extends BaseUltraModule {
       .join('; ');
   }
 
+  private getFlexJustify(
+    alignment: string | undefined,
+    allowSpaceBetween: boolean = false
+  ): string {
+    switch (alignment) {
+      case 'left':
+        return 'flex-start';
+      case 'right':
+        return 'flex-end';
+      case 'justify':
+        return allowSpaceBetween ? 'space-between' : 'center';
+      default:
+        return 'center';
+    }
+  }
+
+  private resolveTextShadow(
+    design: Record<string, any>,
+    moduleWithDesign: Record<string, any>
+  ): string {
+    const designHasShadow = [
+      'text_shadow_h',
+      'text_shadow_v',
+      'text_shadow_blur',
+      'text_shadow_color',
+    ].some(key => {
+      const value = design[key];
+      return value !== undefined && value !== null && `${value}`.trim() !== '';
+    });
+
+    if (designHasShadow) {
+      return `${this.addPixelUnit(design.text_shadow_h) || '0px'} ${this.addPixelUnit(design.text_shadow_v) || '0px'} ${this.addPixelUnit(design.text_shadow_blur) || '0px'} ${design.text_shadow_color || 'rgba(0,0,0,.2)'}`;
+    }
+
+    const moduleHasShadow = [
+      'text_shadow_h',
+      'text_shadow_v',
+      'text_shadow_blur',
+      'text_shadow_color',
+    ].some(key => {
+      const value = moduleWithDesign[key];
+      return value !== undefined && value !== null && `${value}`.trim() !== '';
+    });
+
+    if (moduleHasShadow) {
+      return `${this.addPixelUnit(moduleWithDesign.text_shadow_h) || '0px'} ${this.addPixelUnit(moduleWithDesign.text_shadow_v) || '0px'} ${this.addPixelUnit(moduleWithDesign.text_shadow_blur) || '0px'} ${moduleWithDesign.text_shadow_color || 'rgba(0,0,0,.2)'}`;
+    }
+
+    return 'none';
+  }
+
+  private addPixelUnit(value: string | number | undefined | null): string | undefined {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    const str = String(value).trim();
+    if (!str) {
+      return undefined;
+    }
+
+    if (/^-?\d+(?:\.\d+)?$/.test(str)) {
+      return `${str}px`;
+    }
+
+    if (/^(?:-?\d+(?:\.\d+)?\s+)+-?\d+(?:\.\d+)?$/.test(str)) {
+      return str
+        .split(/\s+/)
+        .map(part => (/^-?\d+(?:\.\d+)?$/.test(part) ? `${part}px` : part))
+        .join(' ');
+    }
+
+    return str;
+  }
+
   // Trigger preview update for reactive UI
+
+  // Render state colors editor
+  private renderStateColorsEditor(
+    stateColors: { [state: string]: string },
+    hass: HomeAssistant,
+    lang: string,
+    onUpdate: (stateColors: { [state: string]: string }) => void
+  ): TemplateResult {
+    return html`
+      <div class="state-color-editor">
+        ${Object.entries(stateColors).map(
+          ([state, color]) => html`
+            <div
+              class="state-color-row"
+              style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; overflow: hidden;"
+            >
+              <input
+                type="text"
+                class="state-color-input"
+                placeholder="State (e.g., on, off)"
+                .value=${state}
+                style="flex: 0 0 120px; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--secondary-background-color); color: var(--primary-text-color); flex-shrink: 0;"
+                @input=${(e: Event) => {
+                  const newState = (e.target as HTMLInputElement).value;
+                  const updated = { ...stateColors };
+                  delete updated[state];
+                  if (newState.trim()) {
+                    updated[newState.trim()] = color;
+                  }
+                  onUpdate(updated);
+                }}
+              />
+              <div style="flex: 1; min-width: 0; overflow: hidden;">
+                <ultra-color-picker
+                  .label=${''}
+                  .value=${color}
+                  .defaultValue=${'gray'}
+                  .hass=${hass}
+                  style="width: 100%;"
+                  @value-changed=${(e: CustomEvent) => {
+                    const updated = { ...stateColors, [state]: e.detail.value };
+                    onUpdate(updated);
+                  }}
+                ></ultra-color-picker>
+              </div>
+              <ha-icon
+                icon="mdi:delete"
+                style="cursor: pointer; color: var(--error-color); margin-left: 8px; flex-shrink: 0;"
+                @click=${() => {
+                  const updated = { ...stateColors };
+                  delete updated[state];
+                  onUpdate(updated);
+                }}
+              ></ha-icon>
+            </div>
+          `
+        )}
+        <button
+          class="add-state-color-btn"
+          style="margin-top: 8px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+          @click=${() => {
+            const updated = { ...stateColors, new_state: 'gray' };
+            onUpdate(updated);
+          }}
+        >
+          <ha-icon icon="mdi:plus" style="margin-right: 4px;"></ha-icon>
+          ${localize('editor.button.add_state_color', lang, 'Add State Color')}
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Extract color from entity state attributes
+   */
+  private getEntityStateColor(entityState: any): string | null {
+    if (!entityState || !entityState.attributes) return null;
+
+    // Check for RGB color attributes (most common for lights)
+    if (entityState.attributes.rgb_color && Array.isArray(entityState.attributes.rgb_color)) {
+      return `rgb(${entityState.attributes.rgb_color.join(',')})`;
+    }
+
+    // Check for HS color attributes and convert to RGB
+    if (entityState.attributes.hs_color && Array.isArray(entityState.attributes.hs_color)) {
+      const [h, s] = entityState.attributes.hs_color;
+      const rgb = this.hsToRgb(h / 360, s / 100, 1);
+      return `rgb(${rgb.join(',')})`;
+    }
+
+    // Check for color name attribute
+    if (entityState.attributes.color_name) {
+      return entityState.attributes.color_name;
+    }
+
+    // Check for hex color attribute
+    if (entityState.attributes.color && typeof entityState.attributes.color === 'string') {
+      return entityState.attributes.color;
+    }
+
+    // For binary sensors or switches, use state-based colors
+    if (entityState.entity_id) {
+      const domain = entityState.entity_id.split('.')[0];
+      const state = entityState.state;
+      
+      switch (domain) {
+        case 'light':
+          return state === 'on' ? '#FFA500' : '#666666'; // Orange when on, gray when off
+        case 'switch':
+          return state === 'on' ? '#4CAF50' : '#666666'; // Green when on, gray when off
+        case 'binary_sensor':
+          return state === 'on' ? '#F44336' : '#4CAF50'; // Red when on, green when off
+        default:
+          return state === 'on' || state === 'open' || state === 'active'
+            ? 'var(--primary-color)'
+            : '#666666';
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert HSV to RGB
+   */
+  private hsToRgb(h: number, s: number, v: number): number[] {
+    let r: number, g: number, b: number;
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - s);
+    const q = v * (1 - f * s);
+    const t = v * (1 - (1 - f) * s);
+
+    switch (i % 6) {
+      case 0:
+        (r = v), (g = t), (b = p);
+        break;
+      case 1:
+        (r = q), (g = v), (b = p);
+        break;
+      case 2:
+        (r = p), (g = v), (b = t);
+        break;
+      case 3:
+        (r = p), (g = q), (b = v);
+        break;
+      case 4:
+        (r = t), (g = p), (b = v);
+        break;
+      case 5:
+        (r = v), (g = p), (b = q);
+        break;
+      default:
+        (r = 0), (g = 0), (b = 0);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
 
   // Resolve background images from global design (upload/url/entity)
   private getBackgroundImageCSS(moduleWithDesign: any, hass: HomeAssistant): string {
@@ -776,5 +1354,127 @@ export class UltraButtonModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     return GlobalLogicTab.render(module as any, hass, updates => updateModule(updates));
+  }
+
+  getStyles(): string {
+    return `
+      /* State color editor styles */
+      .state-color-editor {
+        width: 100%;
+      }
+
+      .state-color-row {
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .state-color-row ultra-color-picker {
+        min-width: 0;
+        flex: 1;
+      }
+
+      /* Gap control styles for sliders */
+      .gap-control-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .gap-slider {
+        flex: 1;
+        height: 6px;
+        background: var(--divider-color);
+        border-radius: 3px;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .gap-slider::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .gap-slider:hover {
+        background: var(--primary-color);
+        opacity: 0.7;
+      }
+
+      .gap-slider:hover::-webkit-slider-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-slider:hover::-moz-range-thumb {
+        transform: scale(1.1);
+      }
+
+      .gap-input {
+        width: 48px !important;
+        max-width: 48px !important;
+        min-width: 48px !important;
+        padding: 4px 6px !important;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        box-sizing: border-box;
+      }
+
+      .gap-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .reset-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .reset-btn:hover {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .reset-btn ha-icon {
+        font-size: 16px;
+      }
+    `;
   }
 }

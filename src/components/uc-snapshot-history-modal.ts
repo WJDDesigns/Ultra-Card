@@ -54,11 +54,9 @@ export class UcSnapshotHistoryModal extends LitElement {
       if (this._activeTab === 'snapshots') {
         console.log('📋 Requesting snapshot list...');
         this._snapshots = await ucSnapshotService.listSnapshots(30);
-        console.log(`✅ Loaded ${this._snapshots.length} snapshots`);
       } else {
         console.log('💾 Requesting card backups...');
         this._cardBackups = await ucCardBackupService.listBackups(30);
-        console.log(`✅ Loaded ${this._cardBackups.length} card backups`);
       }
     } catch (error) {
       console.error('❌ Failed to load data:', error);
@@ -186,7 +184,6 @@ export class UcSnapshotHistoryModal extends LitElement {
                 // Find matching card in snapshot
                 const snapshotCard = snapshotCardsForView.find(sc => sc.card_index === cardIndex);
                 if (snapshotCard && snapshotCard.config) {
-                  console.log(`    ✅ Restored card at index ${cardIndex}`);
                   totalRestored++;
                   return snapshotCard.config;
                 }
@@ -203,7 +200,6 @@ export class UcSnapshotHistoryModal extends LitElement {
             // Find matching card in snapshot
             const snapshotCard = snapshotCardsForView.find(sc => sc.card_index === cardIndex);
             if (snapshotCard && snapshotCard.config) {
-              console.log(`    ✅ Restored card at index ${cardIndex}`);
               totalRestored++;
               return snapshotCard.config;
             }
@@ -212,8 +208,6 @@ export class UcSnapshotHistoryModal extends LitElement {
         });
       }
     });
-
-    console.log(`✅ Total cards restored: ${totalRestored}`);
 
     if (totalRestored === 0) {
       throw new Error(
@@ -298,7 +292,6 @@ export class UcSnapshotHistoryModal extends LitElement {
                     customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
 
                   if (snapshotCard) {
-                    console.log(`  ✅ Name match: "${cardName}" in ${view.title || viewPath}`);
                   }
                 } else {
                   // Use position-based match for auto-generated names
@@ -343,7 +336,6 @@ export class UcSnapshotHistoryModal extends LitElement {
               snapshotCard = customNameIndex[nameKey] || customNameIndex[`${viewId}::${cardName}`];
 
               if (snapshotCard) {
-                console.log(`  ✅ Name match: "${cardName}" in ${view.title || viewPath}`);
               }
             } else {
               // Use position-based match for auto-generated names
@@ -374,8 +366,6 @@ export class UcSnapshotHistoryModal extends LitElement {
         });
       }
     });
-
-    console.log(`✅ Smart restore complete: ${restored} replaced, ${skipped} skipped`);
 
     if (restored === 0) {
       throw new Error('No matching cards found. Check that your dashboard structure matches.');
@@ -541,8 +531,6 @@ export class UcSnapshotHistoryModal extends LitElement {
         });
       }
     });
-
-    console.log(`✅ Clean restore complete: ${deleted} deleted, ${restored} restored`);
 
     await this._saveLovelaceConfig(lovelaceConfig);
     return { restored, deleted, skipped: 0 };

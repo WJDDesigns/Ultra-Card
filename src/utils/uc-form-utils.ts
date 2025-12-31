@@ -56,6 +56,43 @@ export class UcFormUtils {
     schema: any[],
     onChange: (e: CustomEvent) => void
   ): TemplateResult {
+    // Check if this is a boolean field (toggle)
+    const isBooleanField = schema.length === 1 && schema[0].selector?.boolean !== undefined;
+
+    if (isBooleanField) {
+      // For boolean fields, put title and toggle on the same line
+      return html`
+        <div class="field-section boolean-field" style="margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px;">
+            <div style="flex: 1;">
+              ${title
+                ? html`<div
+                    class="field-title"
+                    style="font-size: 16px; font-weight: 600; color: var(--primary-text-color); margin-bottom: ${description
+                      ? '4px'
+                      : '0'};"
+                  >
+                    ${title}
+                  </div>`
+                : ''}
+              ${description
+                ? html`<div
+                    class="field-description"
+                    style="font-size: 13px; color: var(--secondary-text-color); margin-bottom: 0; opacity: 0.8; line-height: 1.4;"
+                  >
+                    ${description}
+                  </div>`
+                : ''}
+            </div>
+            <div style="flex-shrink: 0;">
+              ${UcFormUtils.renderForm(hass, data, schema, onChange, false)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // For non-boolean fields, use the original vertical layout
     return html`
       <div class="field-section" style="margin-bottom: 16px;">
         ${title
@@ -275,6 +312,21 @@ export class UcFormUtils {
       ha-form ha-icon-picker {
         width: 100%;
         --mdc-theme-primary: var(--primary-color);
+      }
+
+      /* Boolean fields - inline layout with title and toggle on same line */
+      .boolean-field ha-form {
+        width: auto;
+        display: inline-block;
+      }
+
+      .boolean-field ha-formfield {
+        display: inline-flex !important;
+        align-items: center !important;
+      }
+
+      .boolean-field ha-switch {
+        --mdc-theme-secondary: var(--primary-color);
       }
 
       /* Gap control styles - Standardized Slider Pattern */

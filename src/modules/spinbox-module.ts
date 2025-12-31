@@ -8,12 +8,15 @@ import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { TemplateService } from '../services/template-service';
+import { buildEntityContext } from '../utils/template-context';
+import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import '../components/ultra-color-picker';
 import { getImageUrl } from '../utils/image-upload';
 
 export class UltraSpinboxModule extends BaseUltraModule {
   private _templateService?: TemplateService;
   private _templateInputDebounce: any = null;
+  private _lastTouchTime: number = 0;
 
   metadata: ModuleMetadata = {
     type: 'spinbox',
@@ -57,7 +60,6 @@ export class UltraSpinboxModule extends BaseUltraModule {
       // Logic (visibility) defaults
       display_mode: 'always',
       display_conditions: [],
-      smart_scaling: true,
       // Template support
       template_mode: false,
       template: '',
@@ -699,54 +701,98 @@ export class UltraSpinboxModule extends BaseUltraModule {
     module: CardModule,
     hass: HomeAssistant,
     config?: UltraCardConfig,
-    isEditorPreview?: boolean
+    previewContext?: 'live' | 'ha-preview' | 'dashboard'
   ): TemplateResult {
     const spinboxModule = module as SpinboxModule;
 
-    // Get current value (from entity, template, or default)
-    let currentValue = spinboxModule.value ?? 50;
-    let entityDomain = '';
+    // Template mode (if enabled)
+    let templateValue: number | undefined;
+    let templateButtonBackgroundColor: string | undefined;
+    let templateButtonTextColor: string | undefined;
+    let templateValueColor: string | undefined;
 
     if (spinboxModule.template_mode && spinboxModule.template) {
-      // Initialize template service
       if (!this._templateService && hass) {
         this._templateService = new TemplateService(hass);
       }
 
-      // Ensure template string cache exists on hass
       if (hass) {
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
         const templateHash = this._hashString(spinboxModule.template);
-        const templateKey = `spinbox_value_${spinboxModule.id}_${templateHash}`;
+        const templateKey = `spinbox_${spinboxModule.id}_${templateHash}`;
 
-        // Subscribe if needed
-        if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(spinboxModule.template, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
-              }
-            }
+        if (
+          this._templateService &&
+          !this._templateService.hasTemplateSubscription(templateKey)
+        ) {
+          const context = buildEntityContext(spinboxModule.entity || '', hass, {
+            value: spinboxModule.value,
+            min_value: spinboxModule.min_value,
+            max_value: spinboxModule.max_value,
           });
+
+          this._templateService.subscribeToTemplate(
+            spinboxModule.template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent('ultra-card-template-update', {
+                        bubbles: true,
+                        composed: true,
+                      })
+                    );
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            },
+            context
+          );
         }
 
-        // Use latest rendered string if available
-        const rendered = hass.__uvc_template_strings?.[templateKey];
-        if (rendered !== undefined) {
-          const parsed = parseFloat(String(rendered));
-          if (!isNaN(parsed)) {
-            currentValue = parsed;
+        const templateResult = hass.__uvc_template_strings?.[templateKey];
+        if (templateResult && String(templateResult).trim() !== '') {
+          const parsed = parseUnifiedTemplate(templateResult);
+          if (!hasTemplateError(parsed)) {
+            // Extract value
+            if (parsed.value !== undefined) {
+              const num =
+                typeof parsed.value === 'number'
+                  ? parsed.value
+                  : parseFloat(String(parsed.value));
+              if (!isNaN(num)) {
+                templateValue = num;
+              }
+            }
+
+            // Extract colors
+            if (parsed.button_background_color) {
+              templateButtonBackgroundColor = parsed.button_background_color;
+            }
+            if (parsed.button_text_color) {
+              templateButtonTextColor = parsed.button_text_color;
+            }
+            if (parsed.value_color) {
+              templateValueColor = parsed.value_color;
+            }
           }
         }
       }
-    } else if (spinboxModule.entity && hass) {
-      // Get value from entity
+    }
+
+    // Get current value (from template, entity, or default)
+    let currentValue = templateValue !== undefined 
+      ? templateValue 
+      : spinboxModule.value ?? 50;
+    let entityDomain = '';
+
+    if (templateValue === undefined && spinboxModule.entity && hass) {
+      // Get value from entity (only if template didn't provide value)
       const entityState = hass.states[spinboxModule.entity];
       entityDomain = spinboxModule.entity.split('.')[0];
 
@@ -786,13 +832,17 @@ export class UltraSpinboxModule extends BaseUltraModule {
     const moduleWithDesign = spinboxModule as any;
     const designProperties = (spinboxModule as any).design || {};
 
-    // Button styling
+    // Button styling - apply template colors if provided
     const buttonBackground =
+      templateButtonBackgroundColor ||
       designProperties.button_background_color ||
       spinboxModule.button_background_color ||
       'var(--primary-color)';
     const buttonTextColor =
-      designProperties.button_text_color || spinboxModule.button_text_color || 'white';
+      templateButtonTextColor ||
+      designProperties.button_text_color ||
+      spinboxModule.button_text_color ||
+      'white';
 
     const styleClass = spinboxModule.button_style || 'flat';
     const buttonSize = spinboxModule.button_size ?? 40;
@@ -839,9 +889,12 @@ export class UltraSpinboxModule extends BaseUltraModule {
 
     const buttonStyle = `${buttonBaseStyle} ${styleOverrides[styleClass] || styleOverrides.flat}`;
 
-    // Value display styling
+    // Value display styling - apply template color if provided
     const valueColor =
-      designProperties.value_color || spinboxModule.value_color || 'var(--primary-text-color)';
+      templateValueColor ||
+      designProperties.value_color ||
+      spinboxModule.value_color ||
+      'var(--primary-text-color)';
     const valueFontSize = designProperties.value_font_size || spinboxModule.value_font_size || 18;
     const valueStyle = `
       color: ${valueColor};
@@ -901,21 +954,63 @@ export class UltraSpinboxModule extends BaseUltraModule {
     // Handle increment/decrement
     const handleIncrement = (e: Event) => {
       e.stopPropagation();
-      e.preventDefault();
+      
+      // Prevent double-firing on touch devices (touchend followed by synthetic click)
+      if (e.type === 'click' && e.timeStamp - (this._lastTouchTime || 0) < 500) {
+        return;
+      }
+      if (e.type === 'touchend') {
+        this._lastTouchTime = e.timeStamp;
+        e.preventDefault(); // Prevent synthetic click
+      }
+      
+      const target = e.target as HTMLElement;
+      const button = target.closest('.spinbox-button') as HTMLButtonElement;
+      
       if (spinboxModule.entity && hass) {
         // Call service to update entity
         const newValue = Math.min(spinboxModule.max_value, currentValue + spinboxModule.step);
         this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
       }
+      
+      // Blur immediately to remove focus state
+      if (button) {
+        button.blur();
+        // Force blur again after a tiny delay to ensure it sticks
+        requestAnimationFrame(() => {
+          button.blur();
+        });
+      }
     };
 
     const handleDecrement = (e: Event) => {
       e.stopPropagation();
-      e.preventDefault();
+      
+      // Prevent double-firing on touch devices (touchend followed by synthetic click)
+      if (e.type === 'click' && e.timeStamp - (this._lastTouchTime || 0) < 500) {
+        return;
+      }
+      if (e.type === 'touchend') {
+        this._lastTouchTime = e.timeStamp;
+        e.preventDefault(); // Prevent synthetic click
+      }
+      
+      const target = e.target as HTMLElement;
+      const button = target.closest('.spinbox-button') as HTMLButtonElement;
+      
       if (spinboxModule.entity && hass) {
         // Call service to update entity
         const newValue = Math.max(spinboxModule.min_value, currentValue - spinboxModule.step);
         this.callEntityService(spinboxModule.entity, newValue, hass, entityDomain);
+      }
+      
+      // Blur immediately to remove focus state
+      if (button) {
+        button.blur();
+        // Force blur again after a tiny delay to ensure it sticks
+        requestAnimationFrame(() => {
+          button.blur();
+        });
       }
     };
 
@@ -946,6 +1041,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
         class="spinbox-button decrement ${hoverEffectClass}"
         style="${buttonStyle}"
         @click=${handleDecrement}
+        @touchend=${handleDecrement}
         ?disabled=${currentValue <= spinboxModule.min_value}
       >
         <ha-icon icon="${spinboxModule.decrement_icon || 'mdi:minus'}"></ha-icon>
@@ -957,6 +1053,7 @@ export class UltraSpinboxModule extends BaseUltraModule {
         class="spinbox-button increment ${hoverEffectClass}"
         style="${buttonStyle}"
         @click=${handleIncrement}
+        @touchend=${handleIncrement}
         ?disabled=${currentValue >= spinboxModule.max_value}
       >
         <ha-icon icon="${spinboxModule.increment_icon || 'mdi:plus'}"></ha-icon>
@@ -1067,14 +1164,61 @@ export class UltraSpinboxModule extends BaseUltraModule {
       <style>
         .spinbox-button {
           flex-shrink: 0;
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+          -webkit-user-select: none;
+          user-select: none;
+          outline: none;
         }
         .spinbox-button:disabled {
           opacity: 0.4;
           cursor: not-allowed;
         }
-        .spinbox-button:not(:disabled):hover {
+        /* Hover effects only on devices that support hover */
+        @media (hover: hover) {
+          .spinbox-button:not(:disabled):hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+        /* Active state for touch feedback on mobile */
+        .spinbox-button:not(:disabled):active {
           opacity: 0.8;
           transform: scale(1.05);
+        }
+        /* Aggressively remove focus state on mobile/touch devices */
+        @media (hover: none) {
+          .spinbox-button:not(:disabled):focus {
+            outline: none !important;
+            opacity: 1 !important;
+            transform: scale(1) !important;
+          }
+          .spinbox-button:not(:disabled):focus:active {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+          /* Ensure hover state is cleared on touch devices */
+          .spinbox-button:not(:disabled):hover {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        /* Clear focus state after touch ends - global rule */
+        .spinbox-button:not(:disabled):focus:not(:active) {
+          opacity: 1 !important;
+          transform: scale(1) !important;
+        }
+        /* Prevent sticky focus on touch end */
+        .spinbox-button:focus-visible {
+          outline: none;
+        }
+        /* Ensure no visual changes on focus for touch devices */
+        @media (pointer: coarse) {
+          .spinbox-button:focus {
+            outline: none !important;
+            opacity: 1 !important;
+            transform: scale(1) !important;
+          }
         }
       </style>
       <div class="spinbox-module-container" style=${this.styleObjectToCss(containerStyles)}>

@@ -9,11 +9,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 export declare class EntityIconService {
     /**
      * Get the icon for an entity, using Home Assistant's native computation when possible
-     * @param entityId The entity ID
+     * @param entityId The entity ID or entity state object
      * @param hass The Home Assistant instance
      * @returns The computed icon string, or null if no icon could be determined
      */
-    static getEntityIcon(entityId: string, hass: HomeAssistant): string | null;
+    static getEntityIcon(entityId: string | any, hass: HomeAssistant): string | null;
     /**
      * Get the icon that Home Assistant would naturally compute for this entity
      * This attempts to use the same logic as the entity picker

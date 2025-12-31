@@ -1,4 +1,4 @@
-import { ExportData, CardRow, LayoutConfig, CardModule } from '../types';
+import { ExportData, CardRow, LayoutConfig, CardModule, CardColumn } from '../types';
 import { VERSION } from '../version';
 import { ucPrivacyService } from './uc-privacy-service';
 
@@ -113,7 +113,8 @@ class UcExportImportService {
 
       let jsonData: string;
       try {
-        jsonData = atob(encodedData);
+        // Use proper Unicode-aware decoding to preserve empty character glyphs
+        jsonData = this._decodeFromBase64(encodedData);
       } catch (decodeError) {
         throw new Error('Invalid base64 encoding in shortcode');
       }
@@ -257,11 +258,68 @@ class UcExportImportService {
   }
 
   /**
+   * Encode a Unicode string to base64, properly handling all Unicode characters
+   * including empty character glyphs (zero-width spaces, non-breaking spaces, etc.)
+   */
+  private _encodeToBase64(str: string): string {
+    try {
+      // Use TextEncoder to properly handle Unicode characters
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(str);
+      // Convert bytes to binary string for btoa
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    } catch (error) {
+      // Fallback: use encodeURIComponent if TextEncoder fails
+      console.warn('TextEncoder failed, using fallback encoding:', error);
+      return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(parseInt(p1, 16));
+      }));
+    }
+  }
+
+  /**
+   * Decode base64 string back to Unicode, properly handling all Unicode characters
+   */
+  private _decodeFromBase64(str: string): string {
+    try {
+      // Decode base64 to binary string
+      const binary = atob(str);
+      // Convert binary string to bytes
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      // Use TextDecoder to properly decode Unicode
+      const decoder = new TextDecoder();
+      return decoder.decode(bytes);
+    } catch (error) {
+      // Fallback: use decodeURIComponent if TextDecoder fails
+      console.warn('TextDecoder failed, using fallback decoding:', error);
+      try {
+        const binary = atob(str);
+        let result = '';
+        for (let i = 0; i < binary.length; i++) {
+          result += '%' + ('00' + binary.charCodeAt(i).toString(16)).slice(-2);
+        }
+        return decodeURIComponent(result);
+      } catch (fallbackError) {
+        throw new Error('Failed to decode base64 string');
+      }
+    }
+  }
+
+  /**
    * Generate Ultra Card shortcode format
    */
   private _generateShortcode(exportData: ExportData): string {
     const jsonString = JSON.stringify(exportData);
-    const encodedData = btoa(jsonString);
+    // Properly handle Unicode characters (including empty character glyphs)
+    // by encoding to UTF-8 before base64 encoding
+    const encodedData = this._encodeToBase64(jsonString);
     return `[ultra_card]${encodedData}[/ultra_card]`;
   }
 
@@ -370,6 +428,374 @@ class UcExportImportService {
   private _regenerateModuleIds(module: CardModule): CardModule {
     module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     return module;
+  }
+
+  // ========== LOCAL STORAGE CLIPBOARD METHODS ==========
+  // These methods provide quick copy/paste functionality for modules
+  // using localStorage for cross-card persistence without privacy dialogs
+
+  private readonly CLIPBOARD_KEY = 'ultra-card-module-clipboard';
+  private readonly CLIPBOARD_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+  
+  // In-memory fallback when localStorage is full
+  private _memoryClipboard: { version: string; timestamp: number; module: CardModule } | null = null;
+
+  /**
+   * Copy a module to localStorage for quick paste across cards
+   * Falls back to sessionStorage or memory if localStorage quota is exceeded
+   */
+  copyModuleToLocalStorage(module: CardModule): void {
+    // Deep clone the module to avoid reference issues
+    const clonedModule = JSON.parse(JSON.stringify(module));
+    
+    const clipboardData = {
+      version: VERSION,
+      timestamp: Date.now(),
+      module: clonedModule,
+    };
+
+    const dataString = JSON.stringify(clipboardData);
+
+    // Try localStorage first
+    try {
+      // Clear any existing clipboard data first to free space
+      localStorage.removeItem(this.CLIPBOARD_KEY);
+      localStorage.setItem(this.CLIPBOARD_KEY, dataString);
+      this._memoryClipboard = null; // Clear memory fallback
+      return;
+    } catch (e) {
+      // localStorage quota exceeded or not available
+      console.warn('localStorage quota exceeded, trying sessionStorage...');
+    }
+
+    // Try sessionStorage as fallback
+    try {
+      sessionStorage.removeItem(this.CLIPBOARD_KEY);
+      sessionStorage.setItem(this.CLIPBOARD_KEY, dataString);
+      this._memoryClipboard = null;
+      return;
+    } catch (e) {
+      // sessionStorage also full or not available
+      console.warn('sessionStorage also full, using memory fallback');
+    }
+
+    // Use memory as final fallback
+    this._memoryClipboard = clipboardData;
+  }
+
+  /**
+   * Get a module from clipboard (checks localStorage, sessionStorage, then memory)
+   * Returns null if clipboard is empty or expired
+   */
+  getModuleFromLocalStorage(): CardModule | null {
+    let clipboardData: { version: string; timestamp: number; module: CardModule } | null = null;
+
+    // Try localStorage first
+    try {
+      const stored = localStorage.getItem(this.CLIPBOARD_KEY);
+      if (stored) {
+        clipboardData = JSON.parse(stored);
+      }
+    } catch (e) {
+      // localStorage not available
+    }
+
+    // Try sessionStorage if localStorage didn't have it
+    if (!clipboardData) {
+      try {
+        const stored = sessionStorage.getItem(this.CLIPBOARD_KEY);
+        if (stored) {
+          clipboardData = JSON.parse(stored);
+        }
+      } catch (e) {
+        // sessionStorage not available
+      }
+    }
+
+    // Try memory fallback
+    if (!clipboardData && this._memoryClipboard) {
+      clipboardData = this._memoryClipboard;
+    }
+
+    if (!clipboardData) return null;
+
+    // Check if clipboard data has expired
+    if (Date.now() - clipboardData.timestamp > this.CLIPBOARD_EXPIRY_MS) {
+      this.clearModuleClipboard();
+      return null;
+    }
+
+    // Validate module exists
+    if (!clipboardData.module || !clipboardData.module.type) {
+      return null;
+    }
+
+    // Deep clone and regenerate IDs to avoid conflicts
+    const clonedModule = JSON.parse(JSON.stringify(clipboardData.module));
+    return this._regenerateModuleIds(clonedModule);
+  }
+
+  /**
+   * Check if there's a valid module in the clipboard (localStorage, sessionStorage, or memory)
+   */
+  hasModuleInLocalStorage(): boolean {
+    let clipboardData: { version: string; timestamp: number; module: CardModule } | null = null;
+
+    // Try localStorage first
+    try {
+      const stored = localStorage.getItem(this.CLIPBOARD_KEY);
+      if (stored) {
+        clipboardData = JSON.parse(stored);
+      }
+    } catch (e) {
+      // localStorage not available
+    }
+
+    // Try sessionStorage
+    if (!clipboardData) {
+      try {
+        const stored = sessionStorage.getItem(this.CLIPBOARD_KEY);
+        if (stored) {
+          clipboardData = JSON.parse(stored);
+        }
+      } catch (e) {
+        // sessionStorage not available
+      }
+    }
+
+    // Try memory fallback
+    if (!clipboardData && this._memoryClipboard) {
+      clipboardData = this._memoryClipboard;
+    }
+
+    if (!clipboardData) return false;
+
+    // Check if clipboard data has expired
+    if (Date.now() - clipboardData.timestamp > this.CLIPBOARD_EXPIRY_MS) {
+      this.clearModuleClipboard();
+      return false;
+    }
+
+    // Validate module exists
+    return !!(clipboardData.module && clipboardData.module.type);
+  }
+
+  /**
+   * Get the type/name of the module currently in clipboard
+   * Useful for showing what will be pasted
+   */
+  getClipboardModuleType(): string | null {
+    let clipboardData: { version: string; timestamp: number; module: CardModule } | null = null;
+
+    // Try localStorage first
+    try {
+      const stored = localStorage.getItem(this.CLIPBOARD_KEY);
+      if (stored) {
+        clipboardData = JSON.parse(stored);
+      }
+    } catch (e) {
+      // localStorage not available
+    }
+
+    // Try sessionStorage
+    if (!clipboardData) {
+      try {
+        const stored = sessionStorage.getItem(this.CLIPBOARD_KEY);
+        if (stored) {
+          clipboardData = JSON.parse(stored);
+        }
+      } catch (e) {
+        // sessionStorage not available
+      }
+    }
+
+    // Try memory fallback
+    if (!clipboardData && this._memoryClipboard) {
+      clipboardData = this._memoryClipboard;
+    }
+
+    if (!clipboardData) return null;
+
+    // Check if clipboard data has expired
+    if (Date.now() - clipboardData.timestamp > this.CLIPBOARD_EXPIRY_MS) {
+      return null;
+    }
+
+    return clipboardData.module?.type || null;
+  }
+
+  /**
+   * Clear the clipboard from all storage locations
+   */
+  clearModuleClipboard(): void {
+    try {
+      localStorage.removeItem(this.CLIPBOARD_KEY);
+    } catch (e) {
+      // localStorage not available
+    }
+    try {
+      sessionStorage.removeItem(this.CLIPBOARD_KEY);
+    } catch (e) {
+      // sessionStorage not available
+    }
+    this._memoryClipboard = null;
+  }
+
+  // ========== COLUMN CLIPBOARD METHODS ==========
+  // These methods provide quick copy/paste functionality for columns
+
+  private readonly COLUMN_CLIPBOARD_KEY = 'ultra-card-column-clipboard';
+  
+  // In-memory fallback when localStorage is full
+  private _memoryColumnClipboard: { version: string; timestamp: number; column: CardColumn } | null = null;
+
+  /**
+   * Copy a column to localStorage for quick paste across cards
+   */
+  copyColumnToLocalStorage(column: CardColumn): void {
+    const clonedColumn = JSON.parse(JSON.stringify(column));
+    
+    const clipboardData = {
+      version: VERSION,
+      timestamp: Date.now(),
+      column: clonedColumn,
+    };
+
+    const dataString = JSON.stringify(clipboardData);
+
+    try {
+      localStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);
+      localStorage.setItem(this.COLUMN_CLIPBOARD_KEY, dataString);
+      this._memoryColumnClipboard = null;
+      return;
+    } catch (e) {
+      console.warn('localStorage quota exceeded for column, trying sessionStorage...');
+    }
+
+    try {
+      sessionStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);
+      sessionStorage.setItem(this.COLUMN_CLIPBOARD_KEY, dataString);
+      this._memoryColumnClipboard = null;
+      return;
+    } catch (e) {
+      console.warn('sessionStorage also full, using memory fallback for column');
+    }
+
+    this._memoryColumnClipboard = clipboardData;
+  }
+
+  /**
+   * Get a column from clipboard
+   */
+  getColumnFromLocalStorage(): CardColumn | null {
+    let clipboardData: { version: string; timestamp: number; column: CardColumn } | null = null;
+
+    try {
+      const stored = localStorage.getItem(this.COLUMN_CLIPBOARD_KEY);
+      if (stored) {
+        clipboardData = JSON.parse(stored);
+      }
+    } catch (e) {
+      // localStorage not available
+    }
+
+    if (!clipboardData) {
+      try {
+        const stored = sessionStorage.getItem(this.COLUMN_CLIPBOARD_KEY);
+        if (stored) {
+          clipboardData = JSON.parse(stored);
+        }
+      } catch (e) {
+        // sessionStorage not available
+      }
+    }
+
+    if (!clipboardData && this._memoryColumnClipboard) {
+      clipboardData = this._memoryColumnClipboard;
+    }
+
+    if (!clipboardData) return null;
+
+    if (Date.now() - clipboardData.timestamp > this.CLIPBOARD_EXPIRY_MS) {
+      this.clearColumnClipboard();
+      return null;
+    }
+
+    if (!clipboardData.column) {
+      return null;
+    }
+
+    const clonedColumn = JSON.parse(JSON.stringify(clipboardData.column));
+    return this._regenerateColumnIds(clonedColumn);
+  }
+
+  /**
+   * Check if there's a valid column in the clipboard
+   */
+  hasColumnInLocalStorage(): boolean {
+    let clipboardData: { version: string; timestamp: number; column: CardColumn } | null = null;
+
+    try {
+      const stored = localStorage.getItem(this.COLUMN_CLIPBOARD_KEY);
+      if (stored) {
+        clipboardData = JSON.parse(stored);
+      }
+    } catch (e) {
+      // localStorage not available
+    }
+
+    if (!clipboardData) {
+      try {
+        const stored = sessionStorage.getItem(this.COLUMN_CLIPBOARD_KEY);
+        if (stored) {
+          clipboardData = JSON.parse(stored);
+        }
+      } catch (e) {
+        // sessionStorage not available
+      }
+    }
+
+    if (!clipboardData && this._memoryColumnClipboard) {
+      clipboardData = this._memoryColumnClipboard;
+    }
+
+    if (!clipboardData) return false;
+
+    if (Date.now() - clipboardData.timestamp > this.CLIPBOARD_EXPIRY_MS) {
+      this.clearColumnClipboard();
+      return false;
+    }
+
+    return !!clipboardData.column;
+  }
+
+  /**
+   * Clear the column clipboard
+   */
+  clearColumnClipboard(): void {
+    try {
+      localStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);
+    } catch (e) {
+      // localStorage not available
+    }
+    try {
+      sessionStorage.removeItem(this.COLUMN_CLIPBOARD_KEY);
+    } catch (e) {
+      // sessionStorage not available
+    }
+    this._memoryColumnClipboard = null;
+  }
+
+  /**
+   * Regenerate IDs for a column and its modules
+   */
+  private _regenerateColumnIds(column: CardColumn): CardColumn {
+    column.id = `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    column.modules = column.modules.map((module, moduleIndex) => ({
+      ...module,
+      id: `${module.type}-${Date.now()}-${moduleIndex}-${Math.random().toString(36).substr(2, 9)}`,
+    }));
+    return column;
   }
 }
 

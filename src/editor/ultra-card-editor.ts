@@ -84,6 +84,12 @@ export class UltraCardEditor extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    try {
+      (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = true;
+      window.dispatchEvent(
+        new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: true } })
+      );
+    } catch {}
     this.addEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.addEventListener('keydown', this._handleKeyDown as EventListener);
 
@@ -112,6 +118,12 @@ export class UltraCardEditor extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    try {
+      (window as any).__UC_PREVIEW_SUPPRESS_LOCKS = false;
+      window.dispatchEvent(
+        new CustomEvent('uc-preview-suppress-locks-changed', { detail: { suppressed: false } })
+      );
+    } catch {}
     this.removeEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.removeEventListener('keydown', this._handleKeyDown as EventListener);
 
@@ -1173,43 +1185,6 @@ export class UltraCardEditor extends LitElement {
                     const enabled = (e.detail as any)?.value?.haptic_feedback;
                     if (enabled !== undefined) {
                       this._updateConfig({ haptic_feedback: enabled });
-                    }
-                  }}
-                ></ha-form>
-              </div>
-
-              <div class="setting-item setting-inline">
-                <label>
-                  ${localize('editor.behavior.responsive_scaling', lang, 'Smart Scaling')}
-                </label>
-                <div class="setting-description">
-                  ${localize(
-                    'editor.behavior.responsive_scaling_desc',
-                    lang,
-                    'Intelligently scales content to fit tighter columns or edit panels (experimental)'
-                  )}
-                  <br /><small style="opacity: 0.7;"
-                    >⚠️ Experimental: Smart Scaling adapts the card when space is tight (edit mode,
-                    small columns). Disable if you prefer fixed sizing.</small
-                  >
-                </div>
-                <ha-form
-                  .hass=${this.hass}
-                  .data=${{ responsive_scaling: this.config.responsive_scaling !== false }}
-                  .schema=${[
-                    {
-                      name: 'responsive_scaling',
-                      label: '',
-                      selector: {
-                        boolean: {},
-                      },
-                    },
-                  ]}
-                  .computeLabel=${() => ''}
-                  @value-changed=${(e: CustomEvent) => {
-                    const enabled = (e.detail as any)?.value?.responsive_scaling;
-                    if (enabled !== undefined) {
-                      this._updateConfig({ responsive_scaling: enabled });
                     }
                   }}
                 ></ha-form>
@@ -3530,7 +3505,6 @@ export class UltraCardEditor extends LitElement {
     // Priority 1: Check for integration auth (cross-device)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
     if (integrationUser) {
-      console.log('✅ Using Ultra Card Pro Cloud integration for authentication');
       this._cloudUser = integrationUser;
     } else {
       // Priority 2: Fall back to card-based auth (single device)
@@ -3850,7 +3824,9 @@ export class UltraCardEditor extends LitElement {
               <h5>📋 Quick Install (2 minutes):</h5>
               <ol>
                 <li>Click <strong>"Install via HACS"</strong> below</li>
-                <li>In HACS: Search "<strong>Ultra Card Pro Cloud</strong>"</li>
+                <li>
+                  In HACS: Search "<strong>Ultra Card Pro Cloud</strong>" (now available in HACS!)
+                </li>
                 <li>Click <strong>Download</strong></li>
                 <li>Restart Home Assistant</li>
                 <li>Go to Settings → Integrations → Add Integration</li>
@@ -3861,7 +3837,7 @@ export class UltraCardEditor extends LitElement {
 
             <div class="status-actions">
               <a
-                href="https://github.com/WJDDesigns/ultra-card-pro-cloud"
+                href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
                 target="_blank"
                 class="integration-button integration-button-primary"
               >
@@ -3970,13 +3946,13 @@ export class UltraCardEditor extends LitElement {
           <h4>Ultra Card Pro Authentication</h4>
           <p>
             To unlock Pro features, install the <strong>Ultra Card Pro Cloud</strong> integration
-            from HACS and sign in there. Authentication is managed through the integration for
-            seamless cross-device sync.
+            (now available in HACS!) from HACS and sign in there. Authentication is managed through
+            the integration for seamless cross-device sync.
           </p>
           ${!isIntegrationInstalled
             ? html`
                 <a
-                  href="https://github.com/WJDDesigns/ultra-card-pro-cloud"
+                  href="https://my.home-assistant.io/redirect/hacs_repository/?owner=WJDDesigns&repository=ultra-card-pro-cloud&category=integration"
                   target="_blank"
                   rel="noopener"
                   class="install-integration-link"
@@ -5133,7 +5109,6 @@ export class UltraCardEditor extends LitElement {
 
   private _handleSnapshotRestored(e: CustomEvent) {
     // Snapshot has been automatically restored to the dashboard
-    console.log('✅ Snapshot restored - page will reload');
   }
 
   private _handleCardBackupRestored(e: CustomEvent) {
@@ -5143,7 +5118,6 @@ export class UltraCardEditor extends LitElement {
   }
 
   private async _handleSnapshotSettingsSaved() {
-    console.log('✅ Snapshot settings saved');
     // Refresh scheduler status
     this._updateSnapshotSchedulerStatus();
   }
@@ -5166,7 +5140,6 @@ export class UltraCardEditor extends LitElement {
 
     try {
       this._isCreatingManualSnapshot = true;
-      console.log('📸 Starting manual dashboard snapshot...');
 
       // Create the snapshot
       await ucSnapshotService.createSnapshot();
@@ -5187,8 +5160,6 @@ export class UltraCardEditor extends LitElement {
         composed: true,
       });
       this.dispatchEvent(event);
-
-      console.log('✅ Manual snapshot completed successfully');
     } catch (error) {
       console.error('❌ Manual snapshot failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -5554,12 +5525,10 @@ export class UltraCardEditor extends LitElement {
   private async _handleSyncNow(): Promise<void> {
     try {
       const results = await ucCloudSyncService.syncAll();
-      console.log('✅ Sync completed:', results);
 
       // Show success message (could be enhanced with toast notification)
       const totalSynced = results.favorites.synced + results.colors.synced + results.reviews.synced;
       if (totalSynced > 0) {
-        console.log(`Synced ${totalSynced} items successfully`);
       }
     } catch (error) {
       console.error('❌ Sync failed:', error);
@@ -5576,7 +5545,6 @@ export class UltraCardEditor extends LitElement {
 
     try {
       await ucCloudSyncService.setSyncEnabled(enabled);
-      console.log(`✅ Sync ${enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
       console.error('❌ Failed to toggle sync:', error);
       // Revert checkbox state
@@ -5590,7 +5558,6 @@ export class UltraCardEditor extends LitElement {
   private async _resolveConflict(conflict: any, resolution: 'local' | 'remote'): Promise<void> {
     try {
       await ucCloudSyncService.resolveConflict(conflict, resolution);
-      console.log(`✅ Conflict resolved: ${resolution}`);
     } catch (error) {
       console.error('❌ Failed to resolve conflict:', error);
     }
