@@ -237,6 +237,7 @@ export class LayoutTab extends LitElement {
   @state() private _openMoreMenuRowIndex: number = -1;
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
+  @state() private _hasCardClipboard = false;
 
   // Flag to prevent double-processing of drops in tabs sections
   private _tabsSectionDropHandled = false;
@@ -320,6 +321,23 @@ export class LayoutTab extends LitElement {
     // Check for module and column clipboard on load
     this._hasModuleClipboard = ucExportImportService.hasModuleInLocalStorage();
     this._hasColumnClipboard = ucExportImportService.hasColumnInLocalStorage();
+    
+    // Check for card data in system clipboard
+    this._checkCardClipboard();
+    
+    // Listen for focus/visibility changes to re-check clipboard when user returns
+    this._visibilityChangeListener = () => {
+      if (document.visibilityState === 'visible') {
+        this._checkCardClipboard();
+      }
+    };
+    document.addEventListener('visibilitychange', this._visibilityChangeListener);
+    
+    // Also check when window gains focus (user switches tabs/apps)
+    this._windowFocusListener = () => {
+      this._checkCardClipboard();
+    };
+    window.addEventListener('focus', this._windowFocusListener);
 
     // Add keyboard shortcuts for undo/redo
     this._keydownListener = (e: KeyboardEvent) => {
@@ -754,6 +772,8 @@ export class LayoutTab extends LitElement {
 
   private _windowResizeListener: (() => void) | null = null;
   private _resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _visibilityChangeListener: (() => void) | null = null;
+  private _windowFocusListener: (() => void) | null = null;
 
   // Component lifecycle
   disconnectedCallback() {
@@ -792,6 +812,16 @@ export class LayoutTab extends LitElement {
     if (this._keydownListener) {
       document.removeEventListener('keydown', this._keydownListener);
       this._keydownListener = undefined;
+    }
+    // Remove visibility change listener
+    if (this._visibilityChangeListener) {
+      document.removeEventListener('visibilitychange', this._visibilityChangeListener);
+      this._visibilityChangeListener = null;
+    }
+    // Remove window focus listener
+    if (this._windowFocusListener) {
+      window.removeEventListener('focus', this._windowFocusListener);
+      this._windowFocusListener = null;
     }
     // Clear template update timer
     if (this._templateUpdateTimer) {
@@ -2341,6 +2371,9 @@ export class LayoutTab extends LitElement {
       this._showToast('Exporting row to clipboard...', 'info');
       await ucExportImportService.exportRowToClipboard(row, `Row ${rowIndex + 1}`);
       this._showToast('Row exported to clipboard!', 'success');
+      
+      // Update clipboard state to light up import button
+      this._hasCardClipboard = true;
     } catch (error) {
       console.error('Failed to export row:', error);
       if (error instanceof Error && error.message === 'Export cancelled by user') {
@@ -2724,6 +2757,122 @@ export class LayoutTab extends LitElement {
     } catch (error) {
       console.error('Failed to paste column:', error);
       this._showToast(localize('editor.layout.column_paste_failed', lang, 'Failed to paste column'), 'error');
+    }
+  }
+
+  /**
+   * Check if there's Ultra Card export data available in clipboard
+   */
+  private _checkCardClipboard(): void {
+    const hasExport = ucExportImportService.hasExportInClipboard();
+    if (this._hasCardClipboard !== hasExport) {
+      this._hasCardClipboard = hasExport;
+      this.requestUpdate();
+    }
+  }
+
+  /**
+   * Export entire card configuration to clipboard
+   */
+  private async _exportCard(): Promise<void> {
+    const lang = this.hass?.locale?.language || 'en';
+    
+    try {
+      this._showToast(localize('editor.layout.card_exporting', lang, 'Exporting card...'), 'info');
+      await ucExportImportService.exportCardToClipboard(this.config, this.config.card_name || 'Ultra Card');
+      this._showToast(localize('editor.layout.card_exported', lang, 'Card exported to clipboard'), 'success');
+      
+      // Update clipboard state to light up import button
+      this._hasCardClipboard = true;
+    } catch (error) {
+      console.error('Failed to export card:', error);
+      if (error instanceof Error && error.message === 'Export cancelled by user') {
+        // User cancelled, don't show error
+        return;
+      }
+      this._showToast(localize('editor.layout.card_export_failed', lang, 'Failed to export card'), 'error');
+    }
+  }
+
+  /**
+   * Import card configuration from clipboard
+   */
+  private async _importCard(): Promise<void> {
+    const lang = this.hass?.locale?.language || 'en';
+    
+    try {
+      const importData = await ucExportImportService.importFromClipboard();
+      
+      if (!importData) {
+        this._showToast(localize('editor.layout.no_card_to_import', lang, 'No valid card data found in clipboard'), 'error');
+        return;
+      }
+
+      // Handle full card import
+      if (importData.type === 'ultra-card-full') {
+        // Confirm before replacing entire card config
+        if (!confirm(localize('editor.layout.confirm_import_card', lang, 'This will replace your entire card configuration. Are you sure?'))) {
+          return;
+        }
+
+        const cardConfig = importData.data as UltraCardConfig;
+        
+        // Preserve the card type
+        cardConfig.type = 'custom:ultra-card';
+        
+        // Fire config-changed event with the new full config
+        const event = new CustomEvent('config-changed', {
+          detail: { config: cardConfig, isInternal: true },
+          bubbles: true,
+          composed: true,
+        });
+        this.dispatchEvent(event);
+        
+        this._showToast(localize('editor.layout.card_imported', lang, `Card "${importData.metadata?.name || 'Imported Card'}" imported successfully!`), 'success');
+        
+        // Clear clipboard tracking after successful import
+        ucExportImportService.clearExportClipboard();
+        this._hasCardClipboard = false;
+      } else if (importData.type === 'ultra-card-layout') {
+        // Handle layout import - replace layout
+        if (!confirm('This will replace your entire layout. Are you sure?')) {
+          return;
+        }
+        
+        const newLayout = importData.data as { rows: CardRow[] };
+        this._updateLayout(newLayout);
+        this._showToast(`Layout "${importData.metadata?.name || 'Imported Layout'}" imported successfully!`, 'success');
+        
+        // Clear clipboard tracking after successful import
+        ucExportImportService.clearExportClipboard();
+        this._hasCardClipboard = false;
+      } else if (importData.type === 'ultra-card-row') {
+        // Handle row import - add as new row
+        const rowData = importData.data as CardRow;
+        const entityReferences = entityDetector.scanRow(rowData);
+
+        if (entityReferences.length > 0) {
+          this._showRowImportMappingDialog(
+            rowData,
+            entityReferences,
+            importData.metadata?.name || 'Imported Row'
+          );
+        } else {
+          this._addImportedRow(rowData, importData.metadata?.name || 'Imported Row');
+        }
+        
+        // Clear clipboard tracking after successful import
+        ucExportImportService.clearExportClipboard();
+        this._hasCardClipboard = false;
+      } else if (importData.type === 'ultra-card-module') {
+        // Handle module import - show message that modules should be imported via column
+        this._showToast('Module exports should be imported using the Paste button on a column.', 'info');
+      } else {
+        this._showToast('Unsupported import type. Please use Export Card to export full configurations.', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to import card:', error);
+      this._showToast(localize('editor.layout.card_import_failed', lang, 'Failed to import card'), 'error');
     }
   }
 
@@ -15788,7 +15937,7 @@ export class LayoutTab extends LitElement {
           <h3>${localize('editor.tabs.layout', lang, 'Layout Builder')}</h3>
           <div class="header-buttons">
             <button
-              class="undo-btn"
+              class="header-btn icon-only undo-btn"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._undo();
@@ -15797,10 +15946,9 @@ export class LayoutTab extends LitElement {
               title="${localize('editor.layout.undo_tooltip', lang, 'Undo last change (Ctrl+Z)')}"
             >
               <ha-icon icon="mdi:undo"></ha-icon>
-              <span>${localize('editor.layout.undo', lang, 'Undo')}</span>
             </button>
             <button
-              class="redo-btn"
+              class="header-btn icon-only redo-btn"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._redo();
@@ -15813,10 +15961,9 @@ export class LayoutTab extends LitElement {
               )}"
             >
               <ha-icon icon="mdi:redo"></ha-icon>
-              <span>${localize('editor.layout.redo', lang, 'Redo')}</span>
             </button>
             <button
-              class="add-row-btn"
+              class="header-btn with-text add-row-btn"
               @click=${(e: Event) => {
                 e.stopPropagation();
                 this._addRow();
@@ -15828,7 +15975,38 @@ export class LayoutTab extends LitElement {
               )}"
             >
               <ha-icon icon="mdi:plus"></ha-icon>
-              ${localize('editor.layout.add_row', lang, 'Add Row')}
+              <span>${localize('editor.layout.add_row', lang, 'Add Row')}</span>
+            </button>
+            <button
+              class="header-btn with-text export-card-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._exportCard();
+              }}
+              title="${localize(
+                'editor.layout.export_card_tooltip',
+                lang,
+                'Export entire card configuration to clipboard'
+              )}"
+            >
+              <ha-icon icon="mdi:export"></ha-icon>
+              <span>${localize('editor.layout.export_card', lang, 'Export Card')}</span>
+            </button>
+            <button
+              class="header-btn with-text import-card-btn ${this._hasCardClipboard ? 'has-clipboard' : ''}"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._importCard();
+              }}
+              @mouseenter=${() => this._checkCardClipboard()}
+              title="${localize(
+                'editor.layout.import_card_tooltip',
+                lang,
+                'Import card configuration from clipboard'
+              )}"
+            >
+              <ha-icon icon="mdi:clipboard-text"></ha-icon>
+              <span>${localize('editor.layout.import_card', lang, 'Import Card')}</span>
             </button>
           </div>
         </div>
@@ -19295,81 +19473,49 @@ export class LayoutTab extends LitElement {
       .header-buttons {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
       }
 
-      .undo-btn,
-      .redo-btn,
-      .add-row-btn {
+      .header-btn {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
+        justify-content: center;
+        height: 36px;
+        padding: 0;
         background: var(--primary-color);
         color: white;
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        white-space: nowrap;
         font-weight: 500;
         transition: all 0.2s ease;
-        min-height: 40px;
+        white-space: nowrap;
       }
 
-      /* Mobile optimization for undo/redo buttons */
-      @media (max-width: 768px) {
-        .header-buttons {
-          gap: 6px;
-        }
-
-        .undo-btn,
-        .redo-btn {
-          padding: 10px 12px;
-          gap: 6px;
-        }
-
-        /* Hide text labels on mobile for undo/redo buttons to save space */
-        .undo-btn span,
-        .redo-btn span {
-          display: none;
-        }
-
-        /* Ensure disabled buttons are visible on mobile with proper contrast */
-        .undo-btn:disabled,
-        .redo-btn:disabled {
-          background: var(--disabled-color, #ccc) !important;
-          color: var(--text-color, #999) !important;
-          cursor: not-allowed !important;
-          transform: none !important;
-          box-shadow: none !important;
-          opacity: 1 !important;
-          display: flex !important;
-        }
-
-        .undo-btn:disabled ha-icon,
-        .redo-btn:disabled ha-icon {
-          opacity: 1 !important;
-          --mdc-icon-size: 20px;
-          color: var(--text-color, #999) !important;
-        }
-
-        /* Keep add row button text visible as it's the primary action */
-        .add-row-btn {
-          padding: 10px 16px;
-        }
+      /* Icon-only buttons (undo/redo) */
+      .header-btn.icon-only {
+        width: 36px;
+        padding: 0;
       }
 
-      .undo-btn:hover,
-      .redo-btn:hover,
-      .add-row-btn:hover {
+      /* Buttons with text (add row, export, import) */
+      .header-btn.with-text {
+        padding: 0 12px;
+        gap: 6px;
+      }
+
+      .header-btn ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .header-btn:hover {
         background: var(--primary-color-dark, var(--primary-color));
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
-      .undo-btn:disabled,
-      .redo-btn:disabled {
+      .header-btn:disabled {
         background: var(--disabled-color, #ccc);
         color: var(--text-color, #999);
         cursor: not-allowed;
@@ -19378,11 +19524,75 @@ export class LayoutTab extends LitElement {
         opacity: 1;
       }
 
-      .undo-btn:disabled:hover,
-      .redo-btn:disabled:hover {
+      .header-btn:disabled:hover {
         background: var(--disabled-color, #ccc);
         transform: none;
         box-shadow: none;
+      }
+
+      /* Import button uses secondary/accent color */
+      .import-card-btn {
+        background: var(--secondary-text-color, #888);
+      }
+
+      .import-card-btn:hover {
+        background: var(--text-primary-color, #666);
+      }
+
+      /* Import button "lights up" when clipboard has valid card data */
+      .import-card-btn.has-clipboard {
+        background: var(--success-color, #4caf50);
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+
+      .import-card-btn.has-clipboard:hover {
+        background: var(--success-color-dark, #388e3c);
+        animation: none;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% {
+          box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+        50% {
+          box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+        }
+      }
+
+      /* Mobile optimization */
+      @media (max-width: 768px) {
+        .header-buttons {
+          gap: 4px;
+        }
+
+        .header-btn {
+          height: 32px;
+        }
+
+        .header-btn.icon-only {
+          width: 32px;
+        }
+
+        .header-btn.with-text {
+          padding: 0 10px;
+          gap: 4px;
+          font-size: 12px;
+        }
+
+        .header-btn ha-icon {
+          --mdc-icon-size: 18px;
+        }
+      }
+
+      /* Hide text on very small screens */
+      @media (max-width: 480px) {
+        .header-btn.with-text span {
+          display: none;
+        }
+        .header-btn.with-text {
+          width: 32px;
+          padding: 0;
+        }
       }
 
       .row-builder {

@@ -4144,9 +4144,9 @@ export interface FavoriteRow {
 
 // Export/Import system types
 export interface ExportData {
-  type: 'ultra-card-row' | 'ultra-card-layout' | 'ultra-card-module';
+  type: 'ultra-card-row' | 'ultra-card-layout' | 'ultra-card-module' | 'ultra-card-full';
   version: string;
-  data: CardRow | LayoutConfig | CardModule;
+  data: CardRow | LayoutConfig | CardModule | UltraCardConfig;
   metadata: {
     exported: string;
     name?: string;

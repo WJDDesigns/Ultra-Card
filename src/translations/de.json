@@ -186,7 +186,18 @@
       "column_copy_failed": "Failed to copy column",
       "no_column_to_paste": "No column to paste",
       "column_paste_failed": "Failed to paste column",
-      "max_columns_reached": "Maximum 6 columns allowed"
+      "max_columns_reached": "Maximum 6 columns allowed",
+      "export_card": "Export",
+      "export_card_tooltip": "Export entire card configuration to clipboard",
+      "import_card": "Import",
+      "import_card_tooltip": "Import card configuration from clipboard",
+      "card_exporting": "Exporting card...",
+      "card_exported": "Card exported to clipboard",
+      "card_export_failed": "Failed to export card",
+      "card_imported": "Card imported successfully",
+      "card_import_failed": "Failed to import card",
+      "no_card_to_import": "No valid card data found in clipboard",
+      "confirm_import_card": "This will replace your entire card configuration. Are you sure?"
     },
     "layout_logic": {
       "display_title": "Dieses Element anzeigen",

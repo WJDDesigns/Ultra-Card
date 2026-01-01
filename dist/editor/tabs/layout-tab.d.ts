@@ -44,6 +44,7 @@ export declare class LayoutTab extends LitElement {
     private _openMoreMenuRowIndex;
     private _hasModuleClipboard;
     private _hasColumnClipboard;
+    private _hasCardClipboard;
     private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
@@ -91,6 +92,8 @@ export declare class LayoutTab extends LitElement {
     private _popupResizeState;
     private _windowResizeListener;
     private _resizeTimeout;
+    private _visibilityChangeListener;
+    private _windowFocusListener;
     disconnectedCallback(): void;
     /**
      * Perform template update with single requestUpdate() call
@@ -154,6 +157,18 @@ export declare class LayoutTab extends LitElement {
     private _pasteModule;
     private _copyColumn;
     private _pasteColumn;
+    /**
+     * Check if there's Ultra Card export data available in clipboard
+     */
+    private _checkCardClipboard;
+    /**
+     * Export entire card configuration to clipboard
+     */
+    private _exportCard;
+    /**
+     * Import card configuration from clipboard
+     */
+    private _importCard;
     private _showToast;
     private _countExternalCardModules;
     /**

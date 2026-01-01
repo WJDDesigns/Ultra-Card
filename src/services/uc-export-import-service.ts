@@ -1,4 +1,4 @@
-import { ExportData, CardRow, LayoutConfig, CardModule, CardColumn } from '../types';
+import { ExportData, CardRow, LayoutConfig, CardModule, CardColumn, UltraCardConfig } from '../types';
 import { VERSION } from '../version';
 import { ucPrivacyService } from './uc-privacy-service';
 
@@ -33,6 +33,9 @@ class UcExportImportService {
 
     const shortcode = this._generateShortcode(exportData);
     await this._copyToClipboard(shortcode);
+    
+    // Mark that export data is available in clipboard
+    this.markExportedToClipboard('ultra-card-row');
   }
 
   /**
@@ -61,6 +64,9 @@ class UcExportImportService {
 
     const shortcode = this._generateShortcode(exportData);
     await this._copyToClipboard(shortcode);
+    
+    // Mark that export data is available in clipboard
+    this.markExportedToClipboard('ultra-card-layout');
   }
 
   /**
@@ -89,6 +95,40 @@ class UcExportImportService {
 
     const shortcode = this._generateShortcode(exportData);
     await this._copyToClipboard(shortcode);
+    
+    // Mark that export data is available in clipboard
+    this.markExportedToClipboard('ultra-card-module');
+  }
+
+  /**
+   * Export full card configuration to clipboard with privacy protection
+   */
+  async exportCardToClipboard(config: UltraCardConfig, name?: string): Promise<void> {
+    // Scan for privacy issues
+    const privacyScan = ucPrivacyService.scanAndSanitize(config);
+
+    // Show privacy dialog if issues found
+    const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
+    if (!userConsent) {
+      throw new Error('Export cancelled by user');
+    }
+
+    const exportData: ExportData = {
+      type: 'ultra-card-full',
+      version: VERSION,
+      data: privacyScan.sanitizedData, // Use sanitized data
+      metadata: {
+        exported: new Date().toISOString(),
+        name: name || config.card_name || 'Exported Card',
+        privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
+      },
+    };
+
+    const shortcode = this._generateShortcode(exportData);
+    await this._copyToClipboard(shortcode);
+    
+    // Mark that export data is available in clipboard
+    this.markExportedToClipboard('ultra-card-full');
   }
 
   /**
@@ -351,7 +391,7 @@ class UcExportImportService {
     return (
       data &&
       typeof data.type === 'string' &&
-      ['ultra-card-row', 'ultra-card-layout', 'ultra-card-module'].includes(data.type) &&
+      ['ultra-card-row', 'ultra-card-layout', 'ultra-card-module', 'ultra-card-full'].includes(data.type) &&
       typeof data.version === 'string' &&
       data.data &&
       data.metadata &&
@@ -400,6 +440,8 @@ class UcExportImportService {
         return this._regenerateLayoutIds(cloned);
       case 'ultra-card-module':
         return this._regenerateModuleIds(cloned);
+      case 'ultra-card-full':
+        return this._regenerateCardIds(cloned);
       default:
         return cloned;
     }
@@ -423,6 +465,14 @@ class UcExportImportService {
   private _regenerateLayoutIds(layout: LayoutConfig): LayoutConfig {
     layout.rows = layout.rows.map(row => this._regenerateRowIds(row));
     return layout;
+  }
+
+  private _regenerateCardIds(config: UltraCardConfig): UltraCardConfig {
+    // Regenerate all layout IDs
+    if (config.layout) {
+      config.layout = this._regenerateLayoutIds(config.layout);
+    }
+    return config;
   }
 
   private _regenerateModuleIds(module: CardModule): CardModule {
@@ -796,6 +846,84 @@ class UcExportImportService {
       id: `${module.type}-${Date.now()}-${moduleIndex}-${Math.random().toString(36).substr(2, 9)}`,
     }));
     return column;
+  }
+
+  // ========== CARD/EXPORT CLIPBOARD TRACKING ==========
+  // Track when Ultra Card data is exported to clipboard using localStorage
+  // This is more reliable than the Clipboard API which requires permission
+
+  private readonly EXPORT_CLIPBOARD_KEY = 'ultra-card-export-clipboard';
+  private readonly EXPORT_CLIPBOARD_EXPIRY_MS = 60 * 60 * 1000; // 1 hour expiry
+
+  /**
+   * Mark that Ultra Card data was exported to clipboard
+   * Called after successful export operations
+   */
+  markExportedToClipboard(type: ExportData['type']): void {
+    try {
+      const clipboardData = {
+        type,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(this.EXPORT_CLIPBOARD_KEY, JSON.stringify(clipboardData));
+    } catch (e) {
+      // localStorage not available - ignore
+    }
+  }
+
+  /**
+   * Check if there's recent Ultra Card export data available
+   */
+  hasExportInClipboard(): boolean {
+    try {
+      const stored = localStorage.getItem(this.EXPORT_CLIPBOARD_KEY);
+      if (!stored) return false;
+
+      const clipboardData = JSON.parse(stored);
+      
+      // Check if expired
+      if (Date.now() - clipboardData.timestamp > this.EXPORT_CLIPBOARD_EXPIRY_MS) {
+        this.clearExportClipboard();
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Get the type of export in clipboard
+   */
+  getExportClipboardType(): ExportData['type'] | null {
+    try {
+      const stored = localStorage.getItem(this.EXPORT_CLIPBOARD_KEY);
+      if (!stored) return null;
+
+      const clipboardData = JSON.parse(stored);
+      
+      // Check if expired
+      if (Date.now() - clipboardData.timestamp > this.EXPORT_CLIPBOARD_EXPIRY_MS) {
+        this.clearExportClipboard();
+        return null;
+      }
+
+      return clipboardData.type;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Clear the export clipboard tracking
+   */
+  clearExportClipboard(): void {
+    try {
+      localStorage.removeItem(this.EXPORT_CLIPBOARD_KEY);
+    } catch (e) {
+      // localStorage not available - ignore
+    }
   }
 }
 
