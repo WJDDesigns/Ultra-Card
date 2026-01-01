@@ -814,6 +814,42 @@ export class UltraCardEditor extends LitElement {
                 </div>
               </div>
 
+              <!-- Card Overflow Setting -->
+              <div class="setting-item">
+                <label>
+                  ${localize('editor.fields.card_overflow', lang, 'Content Overflow')}
+                </label>
+                <div class="setting-description">
+                  ${localize(
+                    'editor.fields.card_overflow_desc',
+                    lang,
+                    'How to handle content that extends beyond the card boundaries'
+                  )}
+                </div>
+                <ha-select
+                  .value=${this.config.card_overflow || 'visible'}
+                  @selected=${(e: CustomEvent) => {
+                    const value = (e.target as any).value;
+                    this._updateConfig({ card_overflow: value === 'visible' ? undefined : value });
+                  }}
+                  @closed=${(e: Event) => e.stopPropagation()}
+                  style="width: 100%;"
+                >
+                  <mwc-list-item value="visible">
+                    ${localize('editor.fields.overflow_visible', lang, 'Visible (default)')}
+                  </mwc-list-item>
+                  <mwc-list-item value="hidden">
+                    ${localize('editor.fields.overflow_hidden', lang, 'Hidden (clip content)')}
+                  </mwc-list-item>
+                  <mwc-list-item value="scroll">
+                    ${localize('editor.fields.overflow_scroll', lang, 'Scroll')}
+                  </mwc-list-item>
+                  <mwc-list-item value="auto">
+                    ${localize('editor.fields.overflow_auto', lang, 'Auto')}
+                  </mwc-list-item>
+                </ha-select>
+              </div>
+
               <!-- Card Shadow Settings -->
               <div class="setting-item" style="grid-column: 1 / -1;">
                 <div

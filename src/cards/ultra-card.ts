@@ -1063,6 +1063,11 @@ export class UltraCard extends LitElement {
       styles.push(`margin: ${this.config.card_margin}px`);
     }
 
+    // Apply overflow (clips content that extends beyond card boundaries)
+    if (this.config.card_overflow) {
+      styles.push(`overflow: ${this.config.card_overflow}`);
+    }
+
     // Apply custom shadow
     if (this.config.card_shadow_enabled) {
       const shadowColor = this.config.card_shadow_color || 'rgba(0, 0, 0, 0.15)';

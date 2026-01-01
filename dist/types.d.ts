@@ -592,6 +592,7 @@ export interface GaugeModule extends BaseModule {
 }
 export interface IconConfig {
     id: string;
+    icon_mode?: 'entity' | 'static';
     entity: string;
     name?: string;
     icon_inactive?: string;
@@ -662,6 +663,10 @@ export interface IconConfig {
     inactive_icon_background?: 'none' | 'rounded-square' | 'circle';
     active_icon_background_color?: string;
     inactive_icon_background_color?: string;
+    icon_background_padding?: number;
+    active_icon_background_padding?: number;
+    inactive_icon_background_padding?: number;
+    active_icon_background_padding_locked?: boolean;
     inactive_icon_animation?: 'none' | 'pulse' | 'spin' | 'bounce' | 'flash' | 'shake' | 'vibrate' | 'rotate-left' | 'rotate-right' | 'fade' | 'scale' | 'tada';
     active_icon_animation?: 'none' | 'pulse' | 'spin' | 'bounce' | 'flash' | 'shake' | 'vibrate' | 'rotate-left' | 'rotate-right' | 'fade' | 'scale' | 'tada';
     vertical_alignment?: 'top' | 'center' | 'bottom';
@@ -2280,6 +2285,7 @@ export interface UltraCardConfig {
     card_border_width?: number;
     card_padding?: number;
     card_margin?: number;
+    card_overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
     card_shadow_enabled?: boolean;
     card_shadow_color?: string;
     card_shadow_horizontal?: number;

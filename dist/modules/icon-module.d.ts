@@ -19,6 +19,11 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _highlightJinja2;
     createDefault(id?: string, hass?: HomeAssistant): IconModule;
     renderGeneralTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
+    /**
+     * Render simplified settings for static icons (no entity connection)
+     * Static icons show only: icon, size, color, background, animation, hover
+     */
+    private _renderStaticIconSettings;
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderOtherTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
@@ -61,6 +66,7 @@ export declare class UltraIconModule extends BaseUltraModule {
     private getBackgroundImageCSS;
     private styleObjectToCss;
     private _renderSizeControl;
+    private _renderBackgroundPaddingControl;
     private _renderFieldWithLock;
     private _renderSizeControlWithLock;
     private _updateIconAnimationClasses;

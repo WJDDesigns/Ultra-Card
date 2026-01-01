@@ -1038,6 +1038,7 @@ export interface GaugeModule extends BaseModule {
 // Icon Configuration
 export interface IconConfig {
   id: string;
+  icon_mode?: 'entity' | 'static'; // 'entity' = connected to HA entity, 'static' = standalone icon
   entity: string;
   name?: string;
 
@@ -1149,6 +1150,12 @@ export interface IconConfig {
   inactive_icon_background?: 'none' | 'rounded-square' | 'circle';
   active_icon_background_color?: string;
   inactive_icon_background_color?: string;
+
+  // Icon background padding (distance from icon to background edge)
+  icon_background_padding?: number;
+  active_icon_background_padding?: number;
+  inactive_icon_background_padding?: number;
+  active_icon_background_padding_locked?: boolean;
 
   // Animations (extended with design tab animations)
   inactive_icon_animation?:
@@ -4159,6 +4166,7 @@ export interface UltraCardConfig {
   card_border_width?: number;
   card_padding?: number;
   card_margin?: number;
+  card_overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
   // Card shadow properties
   card_shadow_enabled?: boolean;
   card_shadow_color?: string;

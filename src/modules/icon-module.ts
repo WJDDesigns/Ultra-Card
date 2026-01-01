@@ -183,6 +183,7 @@ export class UltraIconModule extends BaseUltraModule {
       icons: [
         {
           id: this.generateId('icon-item'),
+          icon_mode: 'entity', // 'entity' = connected to HA entity, 'static' = standalone icon
           entity: 'weather.forecast_home',
           name: '',
           icon_inactive: 'mdi:weather-partly-cloudy',
@@ -269,6 +270,12 @@ export class UltraIconModule extends BaseUltraModule {
           use_entity_color_for_icon_background: false,
           icon_background_color: 'transparent',
 
+          // Icon background padding (distance from icon to background edge)
+          icon_background_padding: 8,
+          inactive_icon_background_padding: 8,
+          active_icon_background_padding: 8,
+          active_icon_background_padding_locked: true,
+
           // Animations
           inactive_icon_animation: 'none',
           active_icon_animation: 'none',
@@ -339,6 +346,79 @@ export class UltraIconModule extends BaseUltraModule {
         ${iconModule.icons.map(
           (icon, index) => html`
             <div class="icon-settings-container">
+              <!-- Icon Mode Selector -->
+              <div class="settings-section" style="margin-bottom: 24px;">
+                <div class="section-title">
+                  ${localize('editor.icon.icon_mode.title', lang, 'ICON MODE')}
+                </div>
+                <div
+                  class="section-description"
+                  style="margin-bottom: 16px; font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;"
+                >
+                  ${localize(
+                    'editor.icon.icon_mode.desc',
+                    lang,
+                    'Choose between an entity-connected icon or a static standalone icon'
+                  )}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button
+                    style="
+                      flex: 1;
+                      padding: 12px 16px;
+                      border: 2px solid ${(icon.icon_mode || 'entity') === 'entity' ? 'var(--primary-color)' : 'var(--divider-color)'};
+                      border-radius: 8px;
+                      background: ${(icon.icon_mode || 'entity') === 'entity' ? 'var(--primary-color)' : 'transparent'};
+                      color: ${(icon.icon_mode || 'entity') === 'entity' ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                      font-weight: 500;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 8px;
+                    "
+                    @click=${() => {
+                      this._updateIcon(iconModule, index, { icon_mode: 'entity' }, updateModule);
+                      setTimeout(() => this._triggerPreviewUpdate(), 50);
+                    }}
+                  >
+                    <ha-icon icon="mdi:link-variant" style="--mdc-icon-size: 20px;"></ha-icon>
+                    ${localize('editor.icon.icon_mode.entity', lang, 'Entity-Based')}
+                  </button>
+                  <button
+                    style="
+                      flex: 1;
+                      padding: 12px 16px;
+                      border: 2px solid ${icon.icon_mode === 'static' ? 'var(--primary-color)' : 'var(--divider-color)'};
+                      border-radius: 8px;
+                      background: ${icon.icon_mode === 'static' ? 'var(--primary-color)' : 'transparent'};
+                      color: ${icon.icon_mode === 'static' ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                      font-weight: 500;
+                      cursor: pointer;
+                      transition: all 0.2s ease;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 8px;
+                    "
+                    @click=${() => {
+                      this._updateIcon(iconModule, index, { icon_mode: 'static' }, updateModule);
+                      setTimeout(() => this._triggerPreviewUpdate(), 50);
+                    }}
+                  >
+                    <ha-icon icon="mdi:image-outline" style="--mdc-icon-size: 20px;"></ha-icon>
+                    ${localize('editor.icon.icon_mode.static', lang, 'Static')}
+                  </button>
+                </div>
+              </div>
+
+              ${icon.icon_mode === 'static'
+                ? html`
+                    <!-- Static Icon Configuration -->
+                    ${this._renderStaticIconSettings(icon, index, iconModule, hass, lang, updateModule)}
+                  `
+                : html`
               <!-- Entity Configuration -->
               ${this.renderSettingsSection(
                 localize('editor.icon.entity_config.title', lang, 'ENTITY CONFIGURATION'),
@@ -791,6 +871,33 @@ export class UltraIconModule extends BaseUltraModule {
                               ></ultra-color-picker>
                             </div>
 
+                            <div class="field-container" style="margin-bottom: 16px;">
+                              <div class="field-title">
+                                ${localize(
+                                  'editor.icon.inactive_icon_background_padding',
+                                  lang,
+                                  'Inactive Background Padding'
+                                )}
+                              </div>
+                              <div class="field-description">
+                                ${localize(
+                                  'editor.icon.background_padding_inactive',
+                                  lang,
+                                  'Padding between icon and background when inactive'
+                                )}
+                              </div>
+                              ${this._renderSizeControl(
+                                iconModule,
+                                index,
+                                updateModule,
+                                'inactive_icon_background_padding',
+                                icon.inactive_icon_background_padding ?? 8,
+                                0,
+                                50,
+                                8
+                              )}
+                            </div>
+
                             <div class="field-container">
                               <div class="field-title">
                                 ${localize(
@@ -813,7 +920,7 @@ export class UltraIconModule extends BaseUltraModule {
                                 'inactive_icon_size',
                                 icon.inactive_icon_size || 26,
                                 0,
-                                50,
+                                200,
                                 26
                               )}
                             </div>
@@ -987,6 +1094,35 @@ export class UltraIconModule extends BaseUltraModule {
                               )}
                             </div>
 
+                            <div class="field-container" style="margin-bottom: 16px;">
+                              <div class="field-title">
+                                ${localize(
+                                  'editor.icon.active_icon_background_padding',
+                                  lang,
+                                  'Active Background Padding'
+                                )}
+                              </div>
+                              <div class="field-description">
+                                ${localize(
+                                  'editor.icon.background_padding_active',
+                                  lang,
+                                  'Padding between icon and background when active'
+                                )}
+                              </div>
+                              ${this._renderSizeControlWithLock(
+                                iconModule,
+                                index,
+                                updateModule,
+                                'active_icon_background_padding_locked',
+                                'active_icon_background_padding',
+                                'inactive_icon_background_padding',
+                                icon.active_icon_background_padding ?? 8,
+                                0,
+                                50,
+                                8
+                              )}
+                            </div>
+
                             <div class="field-container">
                               <div class="field-title">
                                 ${localize(
@@ -1011,7 +1147,7 @@ export class UltraIconModule extends BaseUltraModule {
                                 'inactive_icon_size',
                                 icon.active_icon_size || 26,
                                 0,
-                                50,
+                                200,
                                 26
                               )}
                             </div>
@@ -2290,9 +2426,280 @@ export class UltraIconModule extends BaseUltraModule {
                   },
                 ]
               )}
+                  `}
             </div>
           `
         )}
+      </div>
+    `;
+  }
+
+  /**
+   * Render simplified settings for static icons (no entity connection)
+   * Static icons show only: icon, size, color, background, animation, hover
+   */
+  private _renderStaticIconSettings(
+    icon: IconConfig,
+    index: number,
+    iconModule: IconModule,
+    hass: HomeAssistant,
+    lang: string,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return html`
+      <!-- Static Icon Settings -->
+      <div class="settings-section" style="margin-bottom: 24px;">
+        <div class="section-title">
+          ${localize('editor.icon.static_icon_settings.title', lang, 'ICON SETTINGS')}
+        </div>
+        <div
+          class="section-description"
+          style="margin-bottom: 16px; font-size: 13px; color: var(--secondary-text-color); opacity: 0.8;"
+        >
+          ${localize(
+            'editor.icon.static_icon_settings.desc',
+            lang,
+            'Configure the appearance of this static icon'
+          )}
+        </div>
+
+        <!-- Icon Picker -->
+        <div class="field-container" style="margin-bottom: 16px;">
+          <div class="field-title">
+            ${localize('editor.icon.icon', lang, 'Icon')}
+          </div>
+          <div class="field-description">
+            ${localize('editor.icon.icon_desc', lang, 'Select an MDI icon')}
+          </div>
+          ${this.renderUcForm(
+            hass,
+            { icon_inactive: icon.icon_inactive || 'mdi:star' },
+            [this.iconField('icon_inactive')],
+            (e: CustomEvent) => {
+              const newIcon = e.detail.value.icon_inactive;
+              // For static icons, sync both active and inactive icons
+              this._updateIcon(
+                iconModule,
+                index,
+                { icon_inactive: newIcon, icon_active: newIcon },
+                updateModule
+              );
+              setTimeout(() => this._triggerPreviewUpdate(), 50);
+            },
+            false
+          )}
+        </div>
+
+        <!-- Icon Size -->
+        <div class="field-container" style="margin-bottom: 16px;">
+          <div class="field-title">
+            ${localize('editor.icon.icon_size', lang, 'Icon Size')}
+          </div>
+          <div class="field-description">
+            ${localize('editor.icon.icon_size_desc', lang, 'Size of the icon in pixels')}
+          </div>
+          ${this._renderSizeControl(
+            iconModule,
+            index,
+            updateModule,
+            'inactive_icon_size',
+            icon.inactive_icon_size || 26,
+            0,
+            100,
+            26
+          )}
+        </div>
+
+        <!-- Icon Color -->
+        <div class="field-container" style="margin-bottom: 16px;">
+          <div class="field-title">
+            ${localize('editor.icon.icon_color', lang, 'Icon Color')}
+          </div>
+          <div class="field-description">
+            ${localize('editor.icon.icon_color_desc', lang, 'Color of the icon')}
+          </div>
+          <ultra-color-picker
+            .value=${icon.inactive_icon_color || 'var(--primary-color)'}
+            @value-changed=${(e: CustomEvent) => {
+              // For static icons, sync both active and inactive colors
+              this._updateIcon(
+                iconModule,
+                index,
+                {
+                  inactive_icon_color: e.detail.value,
+                  active_icon_color: e.detail.value,
+                },
+                updateModule
+              );
+              setTimeout(() => this._triggerPreviewUpdate(), 50);
+            }}
+          ></ultra-color-picker>
+        </div>
+
+        <!-- Background Shape -->
+        <div class="field-container" style="margin-bottom: 16px;">
+          <div class="field-title">
+            ${localize('editor.icon.background_shape', lang, 'Background Shape')}
+          </div>
+          <div class="field-description">
+            ${localize('editor.icon.background_shape_desc', lang, 'Shape behind the icon')}
+          </div>
+          ${this.renderUcForm(
+            hass,
+            { inactive_icon_background: icon.inactive_icon_background || 'none' },
+            [
+              this.selectField('inactive_icon_background', [
+                { value: 'none', label: localize('editor.icon.shape_none', lang, 'None') },
+                { value: 'circle', label: localize('editor.icon.shape_circle', lang, 'Circle') },
+                { value: 'square', label: localize('editor.icon.shape_square', lang, 'Square') },
+                {
+                  value: 'rounded-square',
+                  label: localize('editor.icon.shape_rounded', lang, 'Rounded Square'),
+                },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.inactive_icon_background;
+              const prev = iconModule.icons[index].inactive_icon_background || 'none';
+              if (next === prev) return;
+              // For static icons, sync both active and inactive backgrounds
+              const updates: Partial<IconConfig> = {
+                inactive_icon_background: next,
+                active_icon_background: next,
+              };
+              if (next && next !== 'none') {
+                updates.inactive_icon_background_color = 'var(--divider-color)';
+                updates.active_icon_background_color = 'var(--divider-color)';
+              }
+              this._updateIcon(iconModule, index, updates, updateModule);
+              setTimeout(() => this._triggerPreviewUpdate(), 50);
+            },
+            false
+          )}
+        </div>
+
+        <!-- Background Color (only show if background shape is not 'none') -->
+        ${icon.inactive_icon_background && icon.inactive_icon_background !== 'none'
+          ? html`
+              <div class="field-container" style="margin-bottom: 16px;">
+                <div class="field-title">
+                  ${localize('editor.icon.background_color', lang, 'Background Color')}
+                </div>
+                <div class="field-description">
+                  ${localize('editor.icon.background_color_desc', lang, 'Color of the background shape')}
+                </div>
+                <ultra-color-picker
+                  .value=${icon.inactive_icon_background_color || 'var(--divider-color)'}
+                  @value-changed=${(e: CustomEvent) => {
+                    // For static icons, sync both active and inactive background colors
+                    this._updateIcon(
+                      iconModule,
+                      index,
+                      {
+                        inactive_icon_background_color: e.detail.value,
+                        active_icon_background_color: e.detail.value,
+                      },
+                      updateModule
+                    );
+                    setTimeout(() => this._triggerPreviewUpdate(), 50);
+                  }}
+                ></ultra-color-picker>
+              </div>
+
+              <!-- Background Padding -->
+              <div class="field-container" style="margin-bottom: 16px;">
+                <div class="field-title">
+                  ${localize('editor.icon.background_padding', lang, 'Background Padding')}
+                </div>
+                <div class="field-description">
+                  ${localize(
+                    'editor.icon.background_padding_desc',
+                    lang,
+                    'Distance from the icon to the background edge'
+                  )}
+                </div>
+                ${this._renderBackgroundPaddingControl(
+                  iconModule,
+                  index,
+                  updateModule,
+                  icon.inactive_icon_background_padding ?? 8
+                )}
+              </div>
+            `
+          : ''}
+
+        <!-- Animation -->
+        <div class="field-container" style="margin-bottom: 16px;">
+          <div class="field-title">
+            ${localize('editor.icon.animation', lang, 'Animation')}
+          </div>
+          <div class="field-description">
+            ${localize('editor.icon.animation_desc', lang, 'Continuous animation for the icon')}
+          </div>
+          ${this.renderUcForm(
+            hass,
+            { inactive_icon_animation: icon.inactive_icon_animation || 'none' },
+            [
+              this.selectField('inactive_icon_animation', [
+                { value: 'none', label: localize('editor.icon.animation_none', lang, 'None') },
+                { value: 'pulse', label: localize('editor.icon.animation_pulse', lang, 'Pulse') },
+                { value: 'spin', label: localize('editor.icon.animation_spin', lang, 'Spin') },
+                { value: 'bounce', label: localize('editor.icon.animation_bounce', lang, 'Bounce') },
+                { value: 'flash', label: localize('editor.icon.animation_flash', lang, 'Flash') },
+                { value: 'shake', label: localize('editor.icon.animation_shake', lang, 'Shake') },
+                { value: 'vibrate', label: localize('editor.icon.animation_vibrate', lang, 'Vibrate') },
+                {
+                  value: 'rotate-left',
+                  label: localize('editor.icon.animation_rotate_left', lang, 'Rotate Left'),
+                },
+                {
+                  value: 'rotate-right',
+                  label: localize('editor.icon.animation_rotate_right', lang, 'Rotate Right'),
+                },
+                { value: 'fade', label: localize('editor.icon.animation_fade', lang, 'Fade') },
+                { value: 'scale', label: localize('editor.icon.animation_scale', lang, 'Scale') },
+                { value: 'tada', label: localize('editor.icon.animation_tada', lang, 'Tada') },
+              ]),
+            ],
+            (e: CustomEvent) => {
+              const next = e.detail.value.inactive_icon_animation;
+              const prev = iconModule.icons[index].inactive_icon_animation || 'none';
+              if (next === prev) return;
+              // For static icons, sync both active and inactive animations
+              this._updateIcon(
+                iconModule,
+                index,
+                { inactive_icon_animation: next, active_icon_animation: next },
+                updateModule
+              );
+              setTimeout(() => this._triggerPreviewUpdate(), 50);
+            },
+            false
+          )}
+        </div>
+
+        <!-- Hover Effect -->
+        <div class="field-container">
+          <div class="field-title">
+            ${localize('editor.icon.hover_effect', lang, 'Hover Effect')}
+          </div>
+          <div class="field-description">
+            ${localize('editor.icon.hover_effect_desc', lang, 'Enable hover animation on mouse over')}
+          </div>
+          <ha-switch
+            .checked=${icon.enable_hover_effect || false}
+            @change=${(e: Event) => {
+              const target = e.target as any;
+              this._updateIcon(
+                iconModule,
+                index,
+                { enable_hover_effect: target.checked },
+                updateModule
+              );
+              setTimeout(() => this._triggerPreviewUpdate(), 50);
+            }}
+          ></ha-switch>
+        </div>
       </div>
     `;
   }
@@ -2567,9 +2974,14 @@ export class UltraIconModule extends BaseUltraModule {
     this._localStylesInjected = true;
 
     // GRACEFUL RENDERING: Check for incomplete configuration
-    const validIcons = (iconModule.icons || []).filter(i => i.entity && i.entity.trim() !== '');
+    // Static icons are always valid (no entity required)
+    // Entity-based icons need an entity to be valid
+    const validIcons = (iconModule.icons || []).filter(
+      i => i.icon_mode === 'static' || (i.entity && i.entity.trim() !== '')
+    );
+    // Only entity-based icons without entities are incomplete
     const incompleteIcons = (iconModule.icons || []).filter(
-      i => !i.entity || i.entity.trim() === ''
+      i => i.icon_mode !== 'static' && (!i.entity || i.entity.trim() === '')
     );
 
     if (!iconModule.icons || iconModule.icons.length === 0) {
@@ -2617,24 +3029,34 @@ export class UltraIconModule extends BaseUltraModule {
           "
           >
             ${validIcons.slice(0, 6).map(icon => {
-              const entityState = hass?.states[icon.entity];
+              // Static icons have no entity - use fallback values
+              const isStaticIcon = icon.icon_mode === 'static';
+              const entityState = isStaticIcon ? undefined : hass?.states[icon.entity];
               const currentState = entityState?.state || 'unknown';
 
-              const isActive = this._evaluateIconState(icon, hass);
+              // Static icons are always in "inactive" state (single state, no active/inactive distinction)
+              const isActive = isStaticIcon ? false : this._evaluateIconState(icon, hass);
 
               // Store template results in local variables (icons may be read-only)
               let templateContainerBgColor: string | undefined;
 
               // Determine what to show based on state
-              const shouldShowIcon = isActive
-                ? icon.show_icon_when_active !== false
-                : icon.show_icon_when_inactive !== false;
-              const shouldShowName = isActive
-                ? icon.show_name_when_active !== false
-                : icon.show_name_when_inactive !== false;
-              const shouldShowState = isActive
-                ? icon.show_state_when_active !== false
-                : icon.show_state_when_inactive !== false;
+              // Static icons: always show icon, never show name/state (pure icon only)
+              const shouldShowIcon = isStaticIcon
+                ? true
+                : isActive
+                  ? icon.show_icon_when_active !== false
+                  : icon.show_icon_when_inactive !== false;
+              const shouldShowName = isStaticIcon
+                ? false
+                : isActive
+                  ? icon.show_name_when_active !== false
+                  : icon.show_name_when_inactive !== false;
+              const shouldShowState = isStaticIcon
+                ? false
+                : isActive
+                  ? icon.show_state_when_active !== false
+                  : icon.show_state_when_inactive !== false;
 
               // Get display values based on state - priority cascade for templates
               let displayIcon = isActive
@@ -2953,6 +3375,10 @@ export class UltraIconModule extends BaseUltraModule {
                 ? icon.active_icon_background_color || icon.icon_background_color
                 : icon.inactive_icon_background_color || icon.icon_background_color;
 
+              const iconBackgroundPadding = isActive
+                ? icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8
+                : icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8;
+
               const iconBackgroundStyle = (() => {
                 if (iconBackground === 'none') {
                   return {};
@@ -2977,7 +3403,7 @@ export class UltraIconModule extends BaseUltraModule {
                       : iconBackground === 'rounded-square'
                         ? '8px'
                         : '0',
-                  padding: '8px',
+                  padding: `${iconBackgroundPadding}px`,
                 };
               })();
 
@@ -3936,6 +4362,10 @@ export class UltraIconModule extends BaseUltraModule {
       ? icon.active_icon_background_color || icon.icon_background_color
       : icon.inactive_icon_background_color || icon.icon_background_color;
 
+    const iconBackgroundPadding = isActiveState
+      ? icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8
+      : icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8;
+
     const iconBackgroundStyle = (() => {
       if (iconBackground === 'none') {
         return {};
@@ -3956,7 +4386,7 @@ export class UltraIconModule extends BaseUltraModule {
         ...backgroundStyles,
         borderRadius:
           iconBackground === 'circle' ? '50%' : iconBackground === 'rounded-square' ? '8px' : '0',
-        padding: '8px',
+        padding: `${iconBackgroundPadding}px`,
       };
     })();
 
@@ -4386,6 +4816,10 @@ export class UltraIconModule extends BaseUltraModule {
             ? icon.active_icon_background_color || icon.icon_background_color
             : icon.inactive_icon_background_color || icon.icon_background_color;
 
+          const iconBackgroundPadding = isActive
+            ? icon.active_icon_background_padding ?? icon.icon_background_padding ?? 8
+            : icon.inactive_icon_background_padding ?? icon.icon_background_padding ?? 8;
+
           const iconBackgroundStyle = (() => {
             if (iconBackground === 'none') {
               return {};
@@ -4410,7 +4844,7 @@ export class UltraIconModule extends BaseUltraModule {
                   : iconBackground === 'rounded-square'
                     ? '8px'
                     : '0',
-              padding: '8px',
+              padding: `${iconBackgroundPadding}px`,
             };
           })();
 
@@ -4637,10 +5071,13 @@ export class UltraIconModule extends BaseUltraModule {
     // Only validate icons that have been started
     if (iconModule.icons && iconModule.icons.length > 0) {
       iconModule.icons.forEach((icon, index) => {
-        // Only validate icons that have some content
-        const hasContent =
-          (icon.entity && icon.entity.trim() !== '') ||
-          (icon.icon_inactive && icon.icon_inactive.trim() !== '');
+        // Static icons are always valid (no entity required, just need an icon)
+        // Entity-based icons need an entity to be fully valid
+        const isStaticIcon = icon.icon_mode === 'static';
+        const hasContent = isStaticIcon
+          ? icon.icon_inactive && icon.icon_inactive.trim() !== ''
+          : (icon.entity && icon.entity.trim() !== '') ||
+            (icon.icon_inactive && icon.icon_inactive.trim() !== '');
 
         if (hasContent) {
           // Only validate truly critical errors
@@ -4922,6 +5359,12 @@ export class UltraIconModule extends BaseUltraModule {
 
   // Helper method to properly evaluate icon state (matches logic from actual card)
   private _evaluateIconState(icon: IconConfig, hass: HomeAssistant): boolean {
+    // Static icons have no entity and no active/inactive distinction
+    // Always return false (use inactive/single-state properties)
+    if (icon.icon_mode === 'static') {
+      return false;
+    }
+
     const entityState = hass?.states[icon.entity];
     if (!entityState) {
       return false;
@@ -6307,6 +6750,7 @@ export class UltraIconModule extends BaseUltraModule {
   ): void {
     const newIcon: IconConfig = {
       id: this.generateId('icon-item'),
+      icon_mode: 'entity', // 'entity' = connected to HA entity, 'static' = standalone icon
       entity: 'weather.forecast_home',
       name: '',
       icon_inactive: 'mdi:weather-partly-cloudy',
@@ -6379,6 +6823,12 @@ export class UltraIconModule extends BaseUltraModule {
       inactive_icon_background: 'none',
       active_icon_background_color: 'transparent',
       inactive_icon_background_color: 'transparent',
+
+      // Icon background padding
+      icon_background_padding: 8,
+      inactive_icon_background_padding: 8,
+      active_icon_background_padding: 8,
+      active_icon_background_padding_locked: true,
 
       // Individual size lock mechanism
       icon_size_locked: true,
@@ -6673,6 +7123,81 @@ export class UltraIconModule extends BaseUltraModule {
             this._updateIconWithLockSync(iconModule, index, property, defaultValue, updateModule);
           }}
           title="Reset to default (${defaultValue})"
+        >
+          <ha-icon icon="mdi:refresh"></ha-icon>
+        </button>
+      </div>
+    `;
+  }
+
+  // Background padding control for static icons (syncs both active and inactive)
+  private _renderBackgroundPaddingControl(
+    iconModule: IconModule,
+    index: number,
+    updateModule: (updates: Partial<CardModule>) => void,
+    value: number
+  ): TemplateResult {
+    const min = 0;
+    const max = 50;
+    const defaultValue = 8;
+
+    const updateBothPaddings = (newValue: number) => {
+      this._updateIcon(
+        iconModule,
+        index,
+        {
+          inactive_icon_background_padding: newValue,
+          active_icon_background_padding: newValue,
+          icon_background_padding: newValue,
+        },
+        updateModule
+      );
+      setTimeout(() => this._triggerPreviewUpdate(), 50);
+    };
+
+    return html`
+      <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+        <input
+          type="range"
+          class="gap-slider"
+          min="${min}"
+          max="${max}"
+          step="1"
+          .value="${value}"
+          @input=${(e: Event) => {
+            const target = e.target as HTMLInputElement;
+            updateBothPaddings(Number(target.value));
+          }}
+        />
+        <input
+          type="number"
+          class="gap-input"
+          min="${min}"
+          max="${max}"
+          step="1"
+          .value="${value}"
+          @input=${(e: Event) => {
+            const target = e.target as HTMLInputElement;
+            const newValue = Number(target.value);
+            if (!isNaN(newValue) && newValue >= min && newValue <= max) {
+              updateBothPaddings(newValue);
+            }
+          }}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              const target = e.target as HTMLInputElement;
+              const currentValue = Number(target.value) || defaultValue;
+              const increment = e.key === 'ArrowUp' ? 1 : -1;
+              const newValue = Math.max(min, Math.min(max, currentValue + increment));
+              updateBothPaddings(newValue);
+            }
+          }}
+        />
+        <button
+          class="reset-btn"
+          @click=${() => updateBothPaddings(defaultValue)}
+          title="Reset to default (${defaultValue}px)"
         >
           <ha-icon icon="mdi:refresh"></ha-icon>
         </button>
