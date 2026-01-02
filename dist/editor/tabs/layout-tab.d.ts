@@ -45,6 +45,8 @@ export declare class LayoutTab extends LitElement {
     private _hasModuleClipboard;
     private _hasColumnClipboard;
     private _hasCardClipboard;
+    private _moduleSearchQuery;
+    private _cardSearchQuery;
     private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
@@ -507,7 +509,31 @@ export declare class LayoutTab extends LitElement {
     protected render(): TemplateResult;
     private _renderModuleSelector;
     private _formatCategoryTitle;
+    /**
+     * Focus the search input based on the active tab
+     */
+    private _focusSearchInput;
+    /**
+     * Filter modules based on search query
+     */
+    private _filterModulesBySearch;
+    /**
+     * Filter cards based on search query
+     */
+    private _filterCardsBySearch;
+    /**
+     * Render module search bar
+     */
+    private _renderModuleSearchBar;
+    /**
+     * Render card search bar
+     */
+    private _renderCardSearchBar;
     private _renderModulesTab;
+    /**
+     * Render module search results in a single column list view
+     */
+    private _renderModuleSearchResults;
     /**
      * Render PRO upgrade prompt for non-Pro users
      */
@@ -528,6 +554,10 @@ export declare class LayoutTab extends LitElement {
      * Render the new Cards tab with both native and 3rd party cards
      */
     private _renderCardsTab;
+    /**
+     * Render card search results in a single column list view
+     */
+    private _renderCardSearchResults;
     private _addCardFromTab;
     private _renderFavoriteDialog;
     private _renderImportDialog;

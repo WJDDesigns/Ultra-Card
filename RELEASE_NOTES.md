@@ -1,5 +1,13 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta1
+
+### 🚀 New Features
+
+- **Added new live search for modules and cards** - A powerful live search feature that allows you to quickly find and add modules and cards in the editor. Simply start typing and the interface will filter available options in real-time for faster workflow.
+
+---
+
 ## Version 2.2.0 🚀
 
 Welcome to **Ultra Card 2.2.0** — our biggest update since 2.0! This release packs a whole weather system, new modules galore, typography freedom, and enough bug fixes to make your dashboard smoother than butter on a hot pan. Let's dive in!

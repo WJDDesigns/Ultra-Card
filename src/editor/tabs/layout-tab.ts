@@ -238,6 +238,10 @@ export class LayoutTab extends LitElement {
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
   @state() private _hasCardClipboard = false;
+  
+  // Search state
+  @state() private _moduleSearchQuery = '';
+  @state() private _cardSearchQuery = '';
 
   // Flag to prevent double-processing of drops in tabs sections
   private _tabsSectionDropHandled = false;
@@ -1660,6 +1664,11 @@ export class LayoutTab extends LitElement {
     this._selectedNestedChildIndex = -1; // Reset nested child index
     this._selectedNestedNestedChildIndex = -1; // Reset deep nested child index
     this._showModuleSelector = true;
+
+    // Auto-focus search input after popup renders
+    requestAnimationFrame(() => {
+      this._focusSearchInput();
+    });
   }
   private _addModule(type: string): void {
     // Enforce non-pro third-party limit (pre-check)
@@ -16682,6 +16691,8 @@ export class LayoutTab extends LitElement {
             this._showModuleSelector = false;
             this._selectedLayoutModuleIndex = -1;
             this._selectedNestedChildIndex = -1;
+            this._moduleSearchQuery = '';
+            this._cardSearchQuery = '';
           }}
         ></div>
         <div class="selector-content draggable-popup" id="module-selector-popup">
@@ -16703,6 +16714,8 @@ export class LayoutTab extends LitElement {
                     this._showModuleSelector = false;
                     this._selectedLayoutModuleIndex = -1;
                     this._selectedNestedChildIndex = -1;
+                    this._moduleSearchQuery = '';
+                    this._cardSearchQuery = '';
                   }}
                 >
                   ×
@@ -16720,14 +16733,20 @@ export class LayoutTab extends LitElement {
             <div class="module-selector-tabs">
               <button
                 class="tab-button ${this._activeModuleSelectorTab === 'modules' ? 'active' : ''}"
-                @click=${() => (this._activeModuleSelectorTab = 'modules')}
+                @click=${() => {
+                  this._activeModuleSelectorTab = 'modules';
+                  this._focusSearchInput();
+                }}
               >
                 <ha-icon icon="mdi:puzzle"></ha-icon>
                 <span>Modules</span>
               </button>
               <button
                 class="tab-button ${this._activeModuleSelectorTab === 'cards' ? 'active' : ''}"
-                @click=${() => (this._activeModuleSelectorTab = 'cards')}
+                @click=${() => {
+                  this._activeModuleSelectorTab = 'cards';
+                  this._focusSearchInput();
+                }}
               >
                 <ha-icon icon="mdi:card-multiple"></ha-icon>
                 <span>Cards</span>
@@ -16782,6 +16801,148 @@ export class LayoutTab extends LitElement {
     return category.charAt(0).toUpperCase() + category.slice(1);
   }
 
+  /**
+   * Focus the search input based on the active tab
+   */
+  private _focusSearchInput(): void {
+    requestAnimationFrame(() => {
+      const inputId = this._activeModuleSelectorTab === 'cards' 
+        ? 'card-search-input' 
+        : 'module-search-input';
+      
+      const input = this.shadowRoot?.getElementById(inputId) as HTMLInputElement;
+      if (input) {
+        input.focus();
+      }
+    });
+  }
+
+  /**
+   * Filter modules based on search query
+   */
+  private _filterModulesBySearch(modules: any[], query: string): any[] {
+    if (!query || query.trim() === '') {
+      return modules;
+    }
+
+    const searchLower = query.toLowerCase().trim();
+    
+    return modules.filter(module => {
+      const metadata = module.metadata;
+      const name = metadata.title?.toLowerCase() || '';
+      const description = metadata.description?.toLowerCase() || '';
+      const type = metadata.type?.toLowerCase() || '';
+      const tags = (metadata.tags || []).join(' ').toLowerCase();
+      
+      return (
+        name.includes(searchLower) ||
+        description.includes(searchLower) ||
+        type.includes(searchLower) ||
+        tags.includes(searchLower)
+      );
+    });
+  }
+
+  /**
+   * Filter cards based on search query
+   */
+  private _filterCardsBySearch(
+    cards: Array<{ type: string; name: string; icon?: string; description?: string }>,
+    query: string
+  ): Array<{ type: string; name: string; icon?: string; description?: string }> {
+    if (!query || query.trim() === '') {
+      return cards;
+    }
+
+    const searchLower = query.toLowerCase().trim();
+    
+    return cards.filter(card => {
+      const name = card.name?.toLowerCase() || '';
+      const description = card.description?.toLowerCase() || '';
+      const type = card.type?.toLowerCase() || '';
+      
+      return (
+        name.includes(searchLower) ||
+        description.includes(searchLower) ||
+        type.includes(searchLower)
+      );
+    });
+  }
+
+  /**
+   * Render module search bar
+   */
+  private _renderModuleSearchBar(): TemplateResult {
+    return html`
+      <div class="search-bar-container">
+        <div class="search-bar">
+          <ha-icon icon="mdi:magnify"></ha-icon>
+          <input
+            id="module-search-input"
+            type="text"
+            placeholder="Search modules..."
+            .value=${this._moduleSearchQuery}
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              this._moduleSearchQuery = target.value;
+            }}
+          />
+          ${this._moduleSearchQuery
+            ? html`
+                <button
+                  class="clear-search-btn"
+                  @click=${() => {
+                    this._moduleSearchQuery = '';
+                    this._focusSearchInput();
+                  }}
+                  title="Clear search"
+                >
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render card search bar
+   */
+  private _renderCardSearchBar(): TemplateResult {
+    return html`
+      <div class="search-bar-container">
+        <div class="search-bar">
+          <ha-icon icon="mdi:magnify"></ha-icon>
+          <input
+            id="card-search-input"
+            type="text"
+            placeholder="Search cards..."
+            .value=${this._cardSearchQuery}
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              this._cardSearchQuery = target.value;
+            }}
+          />
+          ${this._cardSearchQuery
+            ? html`
+                <button
+                  class="clear-search-btn"
+                  @click=${() => {
+                    this._cardSearchQuery = '';
+                    this._focusSearchInput();
+                  }}
+                  title="Clear search"
+                >
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderModulesTab(allModules: any[], isAddingToLayoutModule: boolean): TemplateResult {
     // Check integration auth only (no card auth fallback)
     const integrationUser = ucCloudAuthService.checkIntegrationAuth(this.hass);
@@ -16790,13 +16951,19 @@ export class LayoutTab extends LitElement {
       integrationUser?.subscription?.status === 'active';
     const isLoggedIn = !!integrationUser;
 
+    // If there's a search query, show search results instead
+    const hasSearchQuery = this._moduleSearchQuery.trim() !== '';
+
     // Filter modules by PRO status
     const standardModules = allModules.filter(m => !m.metadata.tags?.includes('pro'));
     const proModules = allModules.filter(m => m.metadata.tags?.includes('pro'));
 
-    // Apply active category filter
-    const filteredModules =
-      this._activeModuleCategoryTab === 'standard' ? standardModules : proModules;
+    // Apply active category filter (or search filter if searching)
+    const filteredModules = hasSearchQuery
+      ? this._filterModulesBySearch(allModules, this._moduleSearchQuery)
+      : this._activeModuleCategoryTab === 'standard'
+        ? standardModules
+        : proModules;
 
     const layoutModules = filteredModules.filter(
       m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak'
@@ -16888,28 +17055,34 @@ export class LayoutTab extends LitElement {
     }
 
     return html`
-      <!-- PRO/Standard Tab Navigation -->
-      <div class="module-category-tabs">
-        <button
-          class="category-tab ${this._activeModuleCategoryTab === 'standard' ? 'active' : ''}"
-          @click=${() => (this._activeModuleCategoryTab = 'standard')}
-        >
-          <ha-icon icon="mdi:puzzle"></ha-icon>
-          <span>Standard</span>
-        </button>
-        <button
-          class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro' ? 'active' : ''}"
-          @click=${() => (this._activeModuleCategoryTab = 'pro')}
-        >
-          <ha-icon icon="mdi:star-circle"></ha-icon>
-          <span>PRO</span>
-          <span class="pro-badge-mini">⭐</span>
-        </button>
-      </div>
+      <!-- Search Bar -->
+      ${this._renderModuleSearchBar()}
 
-      ${this._activeModuleCategoryTab === 'pro' && !isPro
-        ? this._renderProUpgradePrompt(isLoggedIn)
+      ${hasSearchQuery
+        ? this._renderModuleSearchResults(filteredModules, isPro, isAddingToLayoutModule)
         : html`
+            <!-- PRO/Standard Tab Navigation -->
+            <div class="module-category-tabs">
+              <button
+                class="category-tab ${this._activeModuleCategoryTab === 'standard' ? 'active' : ''}"
+                @click=${() => (this._activeModuleCategoryTab = 'standard')}
+              >
+                <ha-icon icon="mdi:puzzle"></ha-icon>
+                <span>Standard</span>
+              </button>
+              <button
+                class="category-tab pro-tab ${this._activeModuleCategoryTab === 'pro' ? 'active' : ''}"
+                @click=${() => (this._activeModuleCategoryTab = 'pro')}
+              >
+                <ha-icon icon="mdi:star-circle"></ha-icon>
+                <span>PRO</span>
+                <span class="pro-badge-mini">⭐</span>
+              </button>
+            </div>
+
+            ${this._activeModuleCategoryTab === 'pro' && !isPro
+              ? this._renderProUpgradePrompt(isLoggedIn)
+              : html`
             ${allowedLayoutModules.length > 0
               ? html`
                   <div class="module-category layout-containers">
@@ -16972,7 +17145,78 @@ export class LayoutTab extends LitElement {
                   </div>
                 `
               : ''}
-          `}
+              `}
+        `}
+    `;
+  }
+
+  /**
+   * Render module search results in a single column list view
+   */
+  private _renderModuleSearchResults(
+    modules: any[],
+    isPro: boolean,
+    isAddingToLayoutModule: boolean
+  ): TemplateResult {
+    if (modules.length === 0) {
+      return html`
+        <div class="search-results-empty">
+          <ha-icon icon="mdi:magnify-close"></ha-icon>
+          <p>No modules found matching "${this._moduleSearchQuery}"</p>
+          <button
+            class="clear-search-btn-large"
+            @click=${() => {
+              this._moduleSearchQuery = '';
+            }}
+          >
+            Clear Search
+          </button>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="search-results-container">
+        <div class="search-results-header">
+          <span>${modules.length} module${modules.length !== 1 ? 's' : ''} found</span>
+        </div>
+        <div class="search-results-list">
+          ${modules.map(module => {
+            const metadata = module.metadata;
+            const isProModule = metadata.tags?.includes('pro') || false;
+            const hasAccess = !isProModule || isPro;
+            const tierLabel = isProModule ? 'PRO' : 'Standard';
+
+            return html`
+              <div
+                class="search-result-item ${!hasAccess ? 'locked' : ''}"
+                @click=${() => {
+                  if (hasAccess) {
+                    this._addModule(metadata.type);
+                    this._moduleSearchQuery = '';
+                  }
+                }}
+              >
+                <div class="search-result-icon">
+                  <ha-icon icon="${metadata.icon}"></ha-icon>
+                </div>
+                <div class="search-result-content">
+                  <div class="search-result-header-row">
+                    <span class="search-result-title">${metadata.title}</span>
+                    <span class="search-result-tier ${isProModule ? 'pro' : 'standard'}">
+                      ${isProModule ? '⭐ ' : ''}${tierLabel}
+                    </span>
+                  </div>
+                  <p class="search-result-description">${metadata.description}</p>
+                </div>
+                ${!hasAccess
+                  ? html`<ha-icon class="lock-icon" icon="mdi:lock"></ha-icon>`
+                  : html`<ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>`}
+              </div>
+            `;
+          })}
+        </div>
+      </div>
     `;
   }
 
@@ -18179,6 +18423,29 @@ export class LayoutTab extends LitElement {
     // Refresh global count when tab is rendered
     this._refreshGlobalExternalCardCount();
 
+    // Check if there's a search query
+    const hasSearchQuery = this._cardSearchQuery.trim() !== '';
+
+    // Filter cards if searching
+    const filteredNativeCards = hasSearchQuery
+      ? this._filterCardsBySearch(nativeCards, this._cardSearchQuery)
+      : nativeCards;
+    
+    const filteredAvailableCards = hasSearchQuery
+      ? this._filterCardsBySearch(
+          availableCards.map(c => ({
+            type: c.type,
+            name: c.name,
+            description: c.type,
+          })),
+          this._cardSearchQuery
+        )
+      : availableCards.map(c => ({
+          type: c.type,
+          name: c.name,
+          description: c.type,
+        }));
+
     return html`
       <div class="cards-tab-container">
         <div class="cards-header">
@@ -18188,6 +18455,17 @@ export class LayoutTab extends LitElement {
             <span>Refresh</span>
           </button>
         </div>
+
+        <!-- Search Bar -->
+        ${this._renderCardSearchBar()}
+
+        ${hasSearchQuery
+          ? this._renderCardSearchResults(
+              filteredNativeCards,
+              filteredAvailableCards,
+              isPro
+            )
+          : html`
 
         <!-- SECTION 1: Native Home Assistant Cards (Unlimited) -->
         <div class="cards-section native-section">
@@ -18818,6 +19096,108 @@ export class LayoutTab extends LitElement {
           opacity: 0.9;
         }
       </style>
+          `}
+    `;
+  }
+
+  /**
+   * Render card search results in a single column list view
+   */
+  private _renderCardSearchResults(
+    nativeCards: Array<{ type: string; name: string; icon?: string; description?: string }>,
+    thirdPartyCards: Array<{ type: string; name: string; description?: string }>,
+    isPro: boolean
+  ): TemplateResult {
+    const totalResults = nativeCards.length + thirdPartyCards.length;
+
+    if (totalResults === 0) {
+      return html`
+        <div class="search-results-empty">
+          <ha-icon icon="mdi:magnify-close"></ha-icon>
+          <p>No cards found matching "${this._cardSearchQuery}"</p>
+          <button
+            class="clear-search-btn-large"
+            @click=${() => {
+              this._cardSearchQuery = '';
+            }}
+          >
+            Clear Search
+          </button>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="search-results-container">
+        <div class="search-results-header">
+          <span>${totalResults} card${totalResults !== 1 ? 's' : ''} found</span>
+        </div>
+        <div class="search-results-list">
+          ${nativeCards.length > 0
+            ? html`
+                <div class="search-category-header">
+                  <ha-icon icon="mdi:home-assistant"></ha-icon>
+                  <span>Native Home Assistant Cards</span>
+                </div>
+                ${nativeCards.map(card => html`
+                  <div
+                    class="search-result-item"
+                    @click=${async () => await this._addNativeCard(card.type)}
+                  >
+                    <div class="search-result-icon">
+                      <ha-icon icon="${card.icon || 'mdi:home-assistant'}"></ha-icon>
+                    </div>
+                    <div class="search-result-content">
+                      <div class="search-result-header-row">
+                        <span class="search-result-title">${card.name}</span>
+                        <span class="search-result-tier standard">Native</span>
+                      </div>
+                      <p class="search-result-description">${card.description || card.type}</p>
+                    </div>
+                    <ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>
+                  </div>
+                `)}
+              `
+            : ''}
+          ${thirdPartyCards.length > 0
+            ? html`
+                <div class="search-category-header">
+                  <ha-icon icon="mdi:puzzle"></ha-icon>
+                  <span>Community & 3rd Party Cards</span>
+                </div>
+                ${thirdPartyCards.map(card => {
+                  const actualCard = ucExternalCardsService
+                    .getAvailableCards()
+                    .find(c => c.type === card.type);
+                  
+                  return html`
+                    <div
+                      class="search-result-item"
+                      @click=${async () => await this._addCardFromTab(card.type)}
+                    >
+                      <div class="search-result-icon">
+                        <ha-icon icon="mdi:card-bulleted"></ha-icon>
+                      </div>
+                      <div class="search-result-content">
+                        <div class="search-result-header-row">
+                          <span class="search-result-title">${card.name}</span>
+                          <span class="search-result-tier ${isPro ? 'pro' : 'standard'}">
+                            ${isPro ? '⭐ Pro' : '3rd Party'}
+                          </span>
+                        </div>
+                        <p class="search-result-description">${card.description}</p>
+                        ${actualCard?.version
+                          ? html`<p class="search-result-version">v${actualCard.version}</p>`
+                          : ''}
+                      </div>
+                      <ha-icon class="add-icon" icon="mdi:plus-circle"></ha-icon>
+                    </div>
+                  `;
+                })}
+              `
+            : ''}
+        </div>
+      </div>
     `;
   }
 
@@ -24404,6 +24784,263 @@ export class LayoutTab extends LitElement {
           align-items: center;
           justify-content: center;
         }
+      }
+
+      /* Search Bar Styles */
+      .search-bar-container {
+        padding: 16px;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .search-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+
+      .search-bar:focus-within {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      .search-bar ha-icon {
+        color: var(--secondary-text-color);
+        --mdc-icon-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .search-bar input {
+        flex: 1;
+        border: none;
+        background: none;
+        outline: none;
+        font-size: 14px;
+        font-family: inherit;
+        color: var(--primary-text-color);
+      }
+
+      .search-bar input::placeholder {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+      }
+
+      .clear-search-btn {
+        padding: 4px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+      }
+
+      .clear-search-btn:hover {
+        background: var(--divider-color);
+      }
+
+      .clear-search-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      /* Search Results Styles */
+      .search-results-container {
+        padding: 16px;
+      }
+
+      .search-results-header {
+        margin-bottom: 16px;
+        padding: 8px 12px;
+        background: var(--secondary-background-color);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+      }
+
+      .search-category-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        margin: 16px 0 8px 0;
+        background: var(--secondary-background-color);
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .search-category-header ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--primary-color);
+      }
+
+      .search-results-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: var(--card-background-color);
+        border: 2px solid var(--divider-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .search-result-item:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .search-result-item.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .search-result-item.locked:hover {
+        border-color: var(--divider-color);
+        transform: none;
+      }
+
+      .search-result-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+
+      .search-result-icon ha-icon {
+        --mdc-icon-size: 28px;
+      }
+
+      .search-result-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .search-result-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        gap: 12px;
+      }
+
+      .search-result-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .search-result-tier {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+      }
+
+      .search-result-tier.standard {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .search-result-tier.pro {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .search-result-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        margin: 0;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .search-result-version {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin: 4px 0 0 0;
+        opacity: 0.7;
+      }
+
+      .add-icon,
+      .lock-icon {
+        --mdc-icon-size: 24px;
+        flex-shrink: 0;
+        color: var(--primary-color);
+      }
+
+      .lock-icon {
+        color: var(--secondary-text-color);
+      }
+
+      .search-results-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        text-align: center;
+      }
+
+      .search-results-empty ha-icon {
+        --mdc-icon-size: 64px;
+        color: var(--secondary-text-color);
+        opacity: 0.5;
+        margin-bottom: 16px;
+      }
+
+      .search-results-empty p {
+        font-size: 15px;
+        color: var(--secondary-text-color);
+        margin: 0 0 20px 0;
+      }
+
+      .clear-search-btn-large {
+        padding: 12px 24px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      .clear-search-btn-large:hover {
+        background: var(--primary-color-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
     `;
   }

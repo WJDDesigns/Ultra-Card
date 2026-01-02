@@ -1,7 +1,7 @@
 /**
  * Ultra Card Version
  * This is the single source of truth for version information
- * Build timestamp: 2026-01-01
+ * Build timestamp: 2026-01-02
  */
 
-export const VERSION = '2.2.0';
+export const VERSION = '2.3.0-beta1';
