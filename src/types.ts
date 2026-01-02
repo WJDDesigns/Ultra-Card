@@ -3731,6 +3731,10 @@ export interface TogglePoint {
   match_entity?: string;
   match_state?: string | string[]; // Can match multiple states
   
+  // Template-based matching (for advanced conditions like ranges)
+  match_template_mode?: boolean; // Enable template mode instead of simple entity/state matching
+  match_template?: string; // Jinja2 template that evaluates to true/false
+  
   // Styling
   background_color?: string;
   text_color?: string;
@@ -4415,6 +4419,7 @@ export interface CalendarModule extends BaseModule {
   compact_auto_fit_height?: boolean;  // Enable height-based fitting instead of count
   compact_height?: string;            // Container height (e.g., "300px", "50vh")
   compact_overflow?: 'scroll' | 'hidden';  // Overflow behavior
+  compact_show_nav_buttons?: boolean; // Show scroll navigation buttons when overflow is hidden
 
   // Month view
   show_week_numbers?: WeekNumberFormat;
@@ -4652,6 +4657,7 @@ export interface SportsScoreModule extends BaseModule {
   loss_color?: string;
   in_progress_color?: string;
   scheduled_color?: string;
+  text_color?: string; // Custom text color override for better readability
   
   // Font sizes
   team_name_font_size?: string;

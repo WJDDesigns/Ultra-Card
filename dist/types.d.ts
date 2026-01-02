@@ -2053,6 +2053,8 @@ export interface TogglePoint {
     tap_action?: ModuleActionConfig;
     match_entity?: string;
     match_state?: string | string[];
+    match_template_mode?: boolean;
+    match_template?: string;
     background_color?: string;
     text_color?: string;
     active_background_color?: string;
@@ -2447,6 +2449,7 @@ export interface CalendarModule extends BaseModule {
     compact_auto_fit_height?: boolean;
     compact_height?: string;
     compact_overflow?: 'scroll' | 'hidden';
+    compact_show_nav_buttons?: boolean;
     show_week_numbers?: WeekNumberFormat;
     first_day_of_week?: FirstDayOfWeek;
     month_show_event_count?: boolean;
@@ -2588,6 +2591,7 @@ export interface SportsScoreModule extends BaseModule {
     loss_color?: string;
     in_progress_color?: string;
     scheduled_color?: string;
+    text_color?: string;
     team_name_font_size?: string;
     score_font_size?: string;
     detail_font_size?: string;

@@ -184,6 +184,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
       loss_color: '#f44336',
       in_progress_color: '#ff9800',
       scheduled_color: 'var(--primary-text-color)',
+      text_color: '', // Empty = use default theme colors
 
       // Font sizes
       team_name_font_size: '16px',
@@ -693,6 +694,25 @@ export class UltraSportsScoreModule extends BaseUltraModule {
             },
           },
         ])}
+
+        <!-- Text Color Override -->
+        <div style="margin-top: 16px;">
+          <div class="field-title" style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">
+            ${localize('editor.sports.text_color', lang, 'Text Color')}
+          </div>
+          <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 8px;">
+            ${localize('editor.sports.text_color_desc', lang, 'Override the default text color for better readability')}
+          </div>
+          <ultra-color-picker
+            .value=${module.text_color || ''}
+            .defaultValue=${''}
+            .hass=${hass}
+            @value-changed=${(e: CustomEvent) => {
+              updateModule({ text_color: e.detail.value });
+              setTimeout(() => this.triggerPreviewUpdate(), 50);
+            }}
+          ></ultra-color-picker>
+        </div>
 
         <!-- Status Colors -->
         <div style="margin-top: 16px;">
@@ -1487,6 +1507,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const logoSize = module.logo_size || '48px';
     const scoreFontSize = module.score_font_size || '32px';
     const nameFontSize = module.team_name_font_size || '16px';
+    const textColor = module.text_color || 'var(--secondary-text-color)';
 
     if (this._currentLoading) {
       return this.renderLoadingState();
@@ -1500,7 +1521,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const statusColor = isLive
       ? module.in_progress_color || '#ff9800'
       : data.status === 'final'
-      ? 'var(--secondary-text-color)'
+      ? textColor
       : module.scheduled_color || 'var(--primary-text-color)';
 
     const homeColor = module.use_team_colors && data.homeTeam.color ? data.homeTeam.color : 'inherit';
@@ -1539,7 +1560,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         }
         .sports-scorecard .team-record {
           font-size: 12px;
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .sports-scorecard .score-container {
           display: flex;
@@ -1563,7 +1584,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           padding-top: 12px;
           border-top: 1px solid var(--divider-color);
           font-size: 12px;
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .live-indicator {
           display: inline-flex;
@@ -1648,6 +1669,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const logoSize = module.logo_size || '48px';
     const nameFontSize = module.team_name_font_size || '16px';
     const detailFontSize = module.detail_font_size || '12px';
+    const textColor = module.text_color || 'var(--secondary-text-color)';
 
     if (this._currentLoading) {
       return this.renderLoadingState();
@@ -1679,23 +1701,24 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         .sports-upcoming .vs {
           font-size: calc(${nameFontSize} * 1.25);
           font-weight: 700;
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .sports-upcoming .game-time {
           text-align: center;
           font-size: calc(${nameFontSize} * 1.125);
           font-weight: 600;
-          color: var(--primary-color);
+          color: ${module.scheduled_color || 'var(--primary-color)'};
           margin-bottom: 8px;
         }
         .sports-upcoming .details {
           text-align: center;
           font-size: ${detailFontSize};
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .sports-upcoming .team-name-abbr {
           font-size: ${nameFontSize};
           font-weight: 600;
+          color: ${textColor};
         }
       </style>
 
@@ -1734,17 +1757,18 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const logoSize = module.logo_size || '20px';
     const scoreFontSize = module.score_font_size || '14px';
     const nameFontSize = module.team_name_font_size || '14px';
+    const textColor = module.text_color || 'var(--secondary-text-color)';
 
     if (this._currentLoading) {
       return html`<div style="padding: 8px; text-align: center; font-size: 12px;">Loading...</div>`;
     }
 
     if (this._currentError || !data) {
-      return html`<div style="padding: 8px; text-align: center; font-size: 12px; color: var(--secondary-text-color);">No game data</div>`;
+      return html`<div style="padding: 8px; text-align: center; font-size: 12px; color: ${textColor};">No game data</div>`;
     }
 
     const isLive = SportsDataService.isLive(data.status);
-    const statusColor = isLive ? module.in_progress_color || '#ff9800' : 'var(--secondary-text-color)';
+    const statusColor = isLive ? module.in_progress_color || '#ff9800' : textColor;
 
     return html`
       <style>
@@ -1797,6 +1821,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const scoreFontSize = module.score_font_size || '36px';
     const nameFontSize = module.team_name_font_size || '15px';
     const detailFontSize = module.detail_font_size || '12px';
+    const textColor = module.text_color || 'var(--secondary-text-color)';
 
     if (this._currentLoading) {
       return this.renderLoadingState();
@@ -1850,7 +1875,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         .sports-detailed .league-info {
           font-size: ${detailFontSize};
           font-weight: 600;
-          color: var(--secondary-text-color);
+          color: ${textColor};
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
@@ -1889,7 +1914,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         }
         .sports-detailed .team-record {
           font-size: ${detailFontSize};
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .sports-detailed .score-center {
           display: flex;
@@ -1905,7 +1930,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         .sports-detailed .score-vs {
           font-size: calc(${scoreFontSize} * 0.67);
           font-weight: 600;
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .sports-detailed .live-indicator {
           font-size: ${detailFontSize};
@@ -1931,7 +1956,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
           color: var(--primary-text-color);
         }
         .sports-detailed .info-item ha-icon {
-          color: var(--secondary-text-color);
+          color: ${textColor};
           --mdi-icon-size: 16px;
         }
         @keyframes pulse {
@@ -2017,13 +2042,14 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const data = this._currentGameData;
     const logoSize = module.logo_size || '32px';
     const scoreFontSize = module.score_font_size || '16px';
+    const textColor = module.text_color || 'var(--secondary-text-color)';
 
     if (this._currentLoading) {
       return html`<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;"><ha-circular-progress indeterminate size="small"></ha-circular-progress></div>`;
     }
 
     if (this._currentError || !data) {
-      return html`<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--secondary-text-color);">No data</div>`;
+      return html`<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: ${textColor};">No data</div>`;
     }
 
     const isLive = SportsDataService.isLive(data.status);
@@ -2091,6 +2117,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
     const logoSize = module.logo_size || '40px';
     const scoreFontSize = module.score_font_size || '18px';
     const nameFontSize = module.team_name_font_size || '11px';
+    const textColor = module.text_color || 'var(--secondary-text-color)';
     
     // Logo BG specific options
     const showLogoBg = module.show_logo_background !== false;
@@ -2194,7 +2221,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         .sports-logo-bg .vs-display {
           font-size: calc(${scoreFontSize} * 0.7);
           font-weight: 600;
-          color: var(--secondary-text-color);
+          color: ${textColor};
         }
         .sports-logo-bg .status-line {
           font-size: 9px;
@@ -2216,7 +2243,7 @@ export class UltraSportsScoreModule extends BaseUltraModule {
         }
         .sports-logo-bg .game-time-line {
           font-size: 9px;
-          color: var(--secondary-text-color);
+          color: ${textColor};
           margin-top: 2px;
           white-space: nowrap;
         }

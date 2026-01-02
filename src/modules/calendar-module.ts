@@ -24,6 +24,7 @@ import {
   renderTableView,
   renderGridView,
   CalendarViewContext,
+  ScrollState,
 } from './calendar-module-views';
 import { CalendarService } from '../services/calendar-service';
 
@@ -60,6 +61,12 @@ export class UltraCalendarModule extends BaseUltraModule {
   private _expandedState: boolean = false;
   private _hass: HomeAssistant | null = null;
   private _refreshInterval: ReturnType<typeof setInterval> | null = null;
+  
+  // Scroll navigation state for hidden overflow mode
+  private _scrollContainer: HTMLElement | null = null;
+  private _scrollState: ScrollState = { canScrollUp: false, canScrollDown: false };
+  private _scrollAmount: number = 100; // Pixels to scroll per button click
+  private _scrollContainerId: string = `cal-scroll-${Math.random().toString(36).substring(2, 9)}`;
 
   createDefault(id?: string, hass?: HomeAssistant): CardModule {
     // Create a default calendar entity
@@ -95,6 +102,7 @@ export class UltraCalendarModule extends BaseUltraModule {
       compact_events_to_show: 5,
       compact_show_all_day_events: true,
       compact_hide_empty_days: false,
+      compact_show_nav_buttons: true, // Show scroll buttons when overflow is hidden
 
       // Month view options
       show_week_numbers: 'none',
@@ -570,6 +578,20 @@ export class UltraCalendarModule extends BaseUltraModule {
                       setTimeout(() => this.triggerPreviewUpdate(), 50);
                     }
                   )}
+
+                  ${module.compact_overflow === 'hidden'
+                    ? this.renderFieldSection(
+                        'Show Navigation Buttons',
+                        'Display up/down buttons to scroll through clipped events',
+                        hass,
+                        { compact_show_nav_buttons: module.compact_show_nav_buttons !== false },
+                        [this.booleanField('compact_show_nav_buttons')],
+                        (e: CustomEvent) => {
+                          updateModule({ compact_show_nav_buttons: e.detail.value.compact_show_nav_buttons });
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }
+                      )
+                    : ''}
                 </div>
               </div>
             `
@@ -1637,6 +1659,16 @@ export class UltraCalendarModule extends BaseUltraModule {
     // Fetch events if needed
     this.fetchEventsIfNeeded(calendarModule, hass);
 
+    // Check if we need scroll navigation (hidden overflow mode with nav buttons enabled)
+    const needsScrollNav = calendarModule.compact_auto_fit_height && 
+      calendarModule.compact_overflow === 'hidden' && 
+      calendarModule.compact_show_nav_buttons !== false;
+
+    // Schedule container lookup after render (for scroll nav)
+    if (needsScrollNav) {
+      setTimeout(() => this.findAndSetupScrollContainer(), 50);
+    }
+
     // Create view context
     const context: CalendarViewContext = {
       module: calendarModule,
@@ -1649,6 +1681,13 @@ export class UltraCalendarModule extends BaseUltraModule {
       onExpandToggle: () => this.handleExpandToggle(),
       formatTime: (date: Date) => this.formatTime(date, calendarModule),
       formatDate: (date: Date) => this.formatDate(date, calendarModule, hass),
+      // Scroll navigation props (only when needed)
+      ...(needsScrollNav ? {
+        scrollState: this._scrollState,
+        onScrollUp: () => this.handleScrollUp(),
+        onScrollDown: () => this.handleScrollDown(),
+        scrollContainerId: this._scrollContainerId,
+      } : {}),
     };
 
     return html`
@@ -1820,6 +1859,56 @@ export class UltraCalendarModule extends BaseUltraModule {
   private handleExpandToggle(): void {
     this._expandedState = !this._expandedState;
     this.triggerPreviewUpdate();
+  }
+
+  // Scroll navigation handlers for hidden overflow mode
+  private findAndSetupScrollContainer(): void {
+    // Find the scroll container by its unique ID
+    const container = document.querySelector(
+      `[data-calendar-scroll-container="${this._scrollContainerId}"]`
+    ) as HTMLElement | null;
+    if (container && container !== this._scrollContainer) {
+      this._scrollContainer = container;
+      // Set up scroll listener to update button visibility
+      container.addEventListener('scroll', () => this.updateScrollState());
+      // Check initial scroll state
+      this.updateScrollState();
+    }
+  }
+
+  private updateScrollState(): void {
+    if (!this._scrollContainer) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = this._scrollContainer;
+    const canScrollUp = scrollTop > 0;
+    const canScrollDown = scrollTop + clientHeight < scrollHeight - 1; // -1 for rounding
+
+    // Only trigger update if state actually changed
+    if (canScrollUp !== this._scrollState.canScrollUp || 
+        canScrollDown !== this._scrollState.canScrollDown) {
+      this._scrollState = { canScrollUp, canScrollDown };
+      this.triggerPreviewUpdate();
+    }
+  }
+
+  private handleScrollUp(): void {
+    if (!this._scrollContainer) return;
+    this._scrollContainer.scrollBy({
+      top: -this._scrollAmount,
+      behavior: 'smooth'
+    });
+    // Update state after scroll animation
+    setTimeout(() => this.updateScrollState(), 200);
+  }
+
+  private handleScrollDown(): void {
+    if (!this._scrollContainer) return;
+    this._scrollContainer.scrollBy({
+      top: this._scrollAmount,
+      behavior: 'smooth'
+    });
+    // Update state after scroll animation
+    setTimeout(() => this.updateScrollState(), 200);
   }
 
   private formatTime(date: Date, module: CalendarModule): string {
@@ -2097,6 +2186,71 @@ export class UltraCalendarModule extends BaseUltraModule {
 
       .uc-calendar-expand-btn:hover {
         opacity: 0.9;
+      }
+
+      /* Scroll Navigation Wrapper and Buttons */
+      .uc-calendar-compact-wrapper {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .uc-calendar-compact-wrapper.with-nav-buttons {
+        /* Ensure buttons don't overlap content */
+      }
+
+      .uc-calendar-nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 8px;
+        background: linear-gradient(
+          to bottom,
+          rgba(var(--rgb-primary-color, 3, 169, 244), 0.15),
+          rgba(var(--rgb-primary-color, 3, 169, 244), 0.05)
+        );
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--primary-color);
+        margin: 4px 0;
+      }
+
+      .uc-calendar-nav-up {
+        background: linear-gradient(
+          to bottom,
+          rgba(var(--rgb-primary-color, 3, 169, 244), 0.05),
+          rgba(var(--rgb-primary-color, 3, 169, 244), 0.15)
+        );
+        margin-bottom: 8px;
+      }
+
+      .uc-calendar-nav-down {
+        margin-top: 8px;
+      }
+
+      .uc-calendar-nav-btn:hover {
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.25);
+        transform: scale(1.01);
+      }
+
+      .uc-calendar-nav-btn:active {
+        transform: scale(0.98);
+      }
+
+      .uc-calendar-nav-btn ha-icon {
+        --mdc-icon-size: 24px;
+        transition: transform 0.2s ease;
+      }
+
+      .uc-calendar-nav-btn:hover ha-icon {
+        transform: translateY(-2px);
+      }
+
+      .uc-calendar-nav-down:hover ha-icon {
+        transform: translateY(2px);
       }
 
       /* Month View Styles */

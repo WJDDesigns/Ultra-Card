@@ -1,4 +1,256 @@
-# 🎉 Ultra Card 2.0 - The Ultimate Home Assistant Card Experience
+# 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
+
+## Version 2.2.0 🚀
+
+Welcome to **Ultra Card 2.2.0** — our biggest update since 2.0! This release packs a whole weather system, new modules galore, typography freedom, and enough bug fixes to make your dashboard smoother than butter on a hot pan. Let's dive in!
+
+---
+
+### 🌦️ Dynamic Weather Module — Rain or Shine, Your Dashboard Shines!
+
+Say hello to the **Dynamic Weather Module**, a gorgeous new way to visualize weather conditions right on your dashboard! This module brings weather to life with:
+
+- **GPU-accelerated effects** for rain, snow, fog, and sun beams — no more micro-stutters
+- **Instance-scoped rendering** — each weather module operates independently
+- **Seamless integration** with your weather entities
+
+**How to use:** Add a new module, select "Dynamic Weather", pick your weather entity, and watch the magic happen. Customize effects intensity and let your dashboard match the sky outside!
+
+---
+
+### 🆕 New Modules — Your Dashboard's New Best Friends
+
+**🔘 Toggle Module**
+A sleek new toggle for quick on/off controls! Perfect for lights, switches, and automations.
+- Customizable styling and colors
+- Match state templating for dynamic icons based on entity state
+- Just add a Toggle module, select your entity, and tap away!
+
+**📊 Status Module**
+Display entity status information with enhanced visual feedback. Great for showing device states, connection status, or any entity that needs a quick visual indicator.
+
+**🏀 Sports Score Module**
+Live sports scores on your dashboard? Yes, please! 
+- Display real-time game scores and information
+- **New in 2.2.0:** Extended text color customization options
+- Keep your eye on the game while managing your smart home
+
+**📅 Pro Calendar Module** *(Pro Feature)*
+A beautiful calendar module with customizable views and event display. 
+- Drag-and-drop list for reordering items when clipped
+- Height display option for compact list view
+- Perfect for keeping track of your schedule at a glance
+
+**📐 Grid Module**
+Create flexible grid-based layouts with ease!
+- **Image icons for entities** — use custom images instead of standard icons
+- Perfect for photo galleries, device grids, or custom dashboards
+
+**🎹 Accordion Module**
+Collapsible sections for organized content!
+- Comprehensive styling, colors, and behavior settings
+- Keep your dashboard tidy while packing in more information
+
+---
+
+### 🎨 Typography & Design — Express Yourself!
+
+**Google Fonts Integration** 
+Access **30+ beautiful font families** directly from Google Fonts! No more boring Arial — pick from:
+- Space Grotesk, Poppins, Montserrat, Playfair Display, and many more
+- Fonts load dynamically from Google CDN when selected
+- Apply different fonts across your entire card or per-module
+
+**Enhanced Card Mod Support**
+All design properties now generate CSS custom properties that you can override with card-mod:
+```yaml
+style: |
+  :host {
+    --my-row-bg-color: red;
+    --my-row-text-color: white;
+  }
+```
+
+---
+
+### 🎴 Cards Tab — Native Meets 3rd Party
+
+The **3rd Party tab** has evolved into the **Cards tab**! Now you can add:
+- **Native Home Assistant cards** (button, entity, gauge, etc.)
+- **3rd party custom cards** (Mushroom, Mini Graph, etc.)
+- **YAML cards** — perfect for WebRTC or other YAML-based configurations
+
+All cards live together harmoniously in one unified interface. Simply click to add!
+
+---
+
+### 📷 Camera Module — Hollywood Upgrade
+
+Your camera feeds just got a serious upgrade:
+- **Parity with HA** — layout and controls now mirror native Home Assistant behavior
+- **Playback mode selector** — choose how your camera streams
+- **Fixed audio reliability** — no more lingering audio issues
+- **WebRTC compatibility** — fixed initial play issues
+
+---
+
+### 🪟 Popup Module — Now with Entity Triggers!
+
+**Entity-Triggered Popups** — Automate your popup displays!
+
+**How to use:**
+1. Create a popup module with your desired content
+2. In popup settings, select an entity as the trigger
+3. Configure the trigger condition (state equals "on", numeric threshold, etc.)
+4. The popup automatically opens when conditions are met
+5. Optionally configure auto-close when conditions clear
+
+Perfect for alerts, notifications, or context-sensitive information!
+
+---
+
+### 📊 Charts & Gauges — More Control, Better Visuals
+
+**Graph Module Enhancements:**
+- **Min/Max values** — set custom ranges for better data visualization
+- No more auto-scaling surprises!
+
+**Bar Module Improvements:**
+- **Min/Max values** — constrain your bars to meaningful ranges
+- Horizontal flip for arc and speedometer styles
+
+**Chart Module:**
+- Now displays bar count correctly
+- Apex Chart display improvements
+
+**Dropdown Module:**
+- Specify visible items count
+- Header customization with configurable icon and title
+- Only one dropdown open at a time — no more UI conflicts
+
+---
+
+### 🎛️ Module Improvements — The Little Things Matter
+
+**Icon Module:**
+- Choose between **static icon** or **entity-based** icons
+- Background padding slider for perfect spacing
+
+**Info Module:**
+- New **distribution options** for layout control
+- Change layout direction even without an icon
+
+**Button Module:**
+- **Icon size configuration** — make those icons as big or small as you want
+
+**Slider Module:**
+- **Settable slider direction** — horizontal or vertical, your choice!
+- Reduced lag in climate module sliders
+
+**Climate Module:**
+- Improved interaction handling and responsiveness
+- Removed the extra "custom name" field that was causing confusion
+
+**Spinbox Module:**
+- Fixed mobile button deselection issues
+- No more focus retention problems on mobile
+
+---
+
+### 📋 Module Management — Copy, Paste, Export, Import!
+
+**Module Copy/Paste System**
+Copy any module and paste it elsewhere — complete with all its settings!
+
+**Card Export/Import**
+Export your entire card configuration (including all settings) and import it anywhere. Share your creations with the community!
+
+**Export Glyph Support**
+Unicode characters, zero-width spaces, and special glyphs are now preserved during export operations.
+
+---
+
+### 🐛 Bug Fixes — Squashed 'Em All!
+
+**Layout & Display:**
+- Fixed transform origin issues causing incorrect scaling in responsive cards
+- Fixed border placement and background colors based on entity state
+- Fixed text color issues in text module
+- Fixed background image visibility in rows/columns
+- Fixed overflow behavior in layout modules
+- Fixed vertical module design tab configuration
+- Fixed row arrange drag and drop functionality
+- Fixed nested layout rendering issues
+
+**Module-Specific:**
+- Fixed toggle module functionality and state change sensing
+- Fixed info module templating issues
+- Fixed popup modules nesting and z-index conflicts
+- Fixed popup edit mode visibility issues
+- Fixed sports score module update issues
+- Fixed gauge and climate module z-index problems
+- Fixed markdown module underscore rendering
+- Fixed chart module bar count display
+
+**Mobile & Touch:**
+- Fixed mobile button deselection in spinbox module
+- Fixed dropdown not closing when swiping on mobile
+- Fixed spinbox focus retention on mobile
+- Improved iPad user interface issues
+
+**3rd Party Integration:**
+- Possible fix for mushroom template issues as 3rd party module
+- Fixed WebRTC camera card compatibility
+- Improved 3rd party card stability
+
+**Camera:**
+- Fixed audio playback issues
+- Fixed WebRTC initial play problems
+
+**Dropdown:**
+- Fixed duplicate dropdown conflicts
+- Improved synchronization across editor and rendered cards
+
+---
+
+### 🎨 UI/UX Improvements
+
+- Improved popup display logic and positioning
+- Added overlay toggle option for popups
+- Migration tool improvements
+- Pro Cards naming standardization
+- Calendar module height display option for compact list view
+- Better nested layout rendering in builder
+
+---
+
+### 📝 A Note on the Background Module
+
+The legacy all-in-one background module has been **removed** to avoid conflicts with core Home Assistant view behavior. If you were using it, you can achieve similar effects with the card's built-in background options or the Video Background module (Pro).
+
+---
+
+### 🙏 Special Thanks
+
+A massive thank you to the Ultra Card Discord community! Your bug reports, feature requests, and continuous feedback made this release possible. Every crash log, every "hey this is weird" message, and every "wouldn't it be cool if..." helped shape Ultra Card 2.2.0.
+
+You're the real MVPs! 🏆
+
+---
+
+### 🚀 Getting Started
+
+Already using Ultra Card? Just update through HACS and enjoy the new features!
+
+New to Ultra Card? Check out [ultracard.io](https://ultracard.io) to get started.
+
+**Pro tip:** After updating, do a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) to ensure you're running the latest version!
+
+---
+
+_Ultra Card 2.2.0 — Because your smart home deserves a smarter dashboard._
+
+---
 
 ## Version 2.2.0-beta14
 

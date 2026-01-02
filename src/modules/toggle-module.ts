@@ -7,6 +7,7 @@ import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
+import { TemplateService } from '../services/template-service';
 import '../components/ultra-color-picker';
 
 export class UltraToggleModule extends BaseUltraModule {
@@ -26,6 +27,8 @@ export class UltraToggleModule extends BaseUltraModule {
   private _hass?: HomeAssistant;
   private _activeTogglePointId?: string;
   private _actionFormChangeGuard: boolean = false;
+  private _templateService: TemplateService | null = null;
+  private _templateMatchCache: Map<string, boolean> = new Map();
 
   createDefault(id?: string, hass?: HomeAssistant): ToggleModule {
     // Create two default toggle points
@@ -689,49 +692,140 @@ export class UltraToggleModule extends BaseUltraModule {
 
       <div style="margin-top: 16px; margin-bottom: 16px;">
         <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">
-          ${localize('editor.toggle.point_entity_matching', lang, 'Entity State Matching')}
+          ${localize('editor.toggle.point_auto_select', lang, 'Auto-Select Conditions')}
         </div>
         <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 12px;">
           ${localize(
-            'editor.toggle.point_entity_matching_desc',
+            'editor.toggle.point_auto_select_desc',
             lang,
-            'Automatically select this point when the entity matches this state'
+            'Automatically select this toggle point based on entity state or template conditions'
           )}
         </div>
 
-        ${UcFormUtils.renderFieldSection(
-          localize('editor.toggle.point_match_entity', lang, 'Match Entity'),
-          localize('editor.toggle.point_match_entity_desc', lang, 'Entity to match (optional)'),
-          hass,
-          { match_entity: point.match_entity || '' },
-          [UcFormUtils.entity('match_entity')],
-          (e: CustomEvent) =>
-            this.updateTogglePoint(
-              index,
-              { match_entity: e.detail.value.match_entity },
-              module,
-              updateModule
-            )
-        )}
-
-        ${UcFormUtils.renderFieldSection(
-          localize('editor.toggle.point_match_state', lang, 'Match State'),
+        <!-- Match Mode Selector -->
+        ${this.renderFieldSection(
+          localize('editor.toggle.point_match_mode', lang, 'Match Mode'),
           localize(
-            'editor.toggle.point_match_state_desc',
+            'editor.toggle.point_match_mode_desc',
             lang,
-            'State value to match (e.g., "on", "off", "heat")'
+            'Choose how to determine when this toggle point should be active'
           ),
           hass,
-          { match_state: typeof point.match_state === 'string' ? point.match_state : '' },
-          [UcFormUtils.text('match_state')],
-          (e: CustomEvent) =>
-            this.updateTogglePoint(
-              index,
-              { match_state: e.detail.value.match_state },
-              module,
-              updateModule
-            )
+          { match_mode: point.match_template_mode ? 'template' : 'entity' },
+          [
+            this.selectField('match_mode', [
+              { value: 'entity', label: localize('editor.toggle.match_mode_entity', lang, 'Entity State') },
+              { value: 'template', label: localize('editor.toggle.match_mode_template', lang, 'Template (Advanced)') },
+            ]),
+          ],
+          (e: CustomEvent) => {
+            const mode = e.detail.value.match_mode;
+            const isCurrentlyTemplate = point.match_template_mode || false;
+            if ((mode === 'template') === isCurrentlyTemplate) return;
+            
+            // Update the point based on selected mode
+            if (mode === 'entity') {
+              this.updateTogglePoint(
+                index,
+                { match_template_mode: false, match_template: '' },
+                module,
+                updateModule
+              );
+            } else if (mode === 'template') {
+              this.updateTogglePoint(
+                index,
+                { match_template_mode: true, match_entity: '', match_state: '' },
+                module,
+                updateModule
+              );
+            }
+            setTimeout(() => this.triggerPreviewUpdate(), 50);
+          }
         )}
+
+        ${point.match_template_mode
+          ? html`
+              <!-- Template Mode UI -->
+              <div style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;">
+                ${UcFormUtils.renderFieldSection(
+                  localize('editor.toggle.point_match_template', lang, 'Match Template'),
+                  localize(
+                    'editor.toggle.point_match_template_desc',
+                    lang,
+                    'Jinja2 template that evaluates to true when this point should be active'
+                  ),
+                  hass,
+                  { match_template: point.match_template || '' },
+                  [UcFormUtils.text('match_template', true)],
+                  (e: CustomEvent) =>
+                    this.updateTogglePoint(
+                      index,
+                      { match_template: e.detail.value.match_template },
+                      module,
+                      updateModule
+                    )
+                )}
+                <div
+                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 8px; padding: 8px; background: var(--card-background-color); border-radius: 4px;"
+                >
+                  <strong>${localize('editor.toggle.template_examples', lang, 'Examples')}:</strong
+                  ><br />
+                  • ${localize('editor.toggle.template_example_range', lang, 'Range')}:
+                  <code style="font-size: 10px;"
+                    >{{ state_attr('cover.garage', 'current_position') | int >= 15 and
+                    state_attr('cover.garage', 'current_position') | int &lt;= 25 }}</code
+                  ><br />
+                  • ${localize('editor.toggle.template_example_brightness', lang, 'Brightness')}:
+                  <code style="font-size: 10px;"
+                    >{{ state_attr('light.living_room', 'brightness') | int > 200 }}</code
+                  ><br />
+                  • ${localize('editor.toggle.template_example_multi', lang, 'Multiple conditions')}:
+                  <code style="font-size: 10px;"
+                    >{{ states('climate.hvac') == 'heat' and state_attr('climate.hvac',
+                    'temperature') > 20 }}</code
+                  >
+                </div>
+              </div>
+            `
+          : html`
+              <!-- Entity State Mode UI -->
+              <div style="border-left: 3px solid var(--primary-color); padding-left: 12px; margin-top: 12px;">
+                ${UcFormUtils.renderFieldSection(
+                  localize('editor.toggle.point_match_entity', lang, 'Match Entity'),
+                  localize('editor.toggle.point_match_entity_desc', lang, 'Entity to match'),
+                  hass,
+                  { match_entity: point.match_entity || '' },
+                  [UcFormUtils.entity('match_entity')],
+                  (e: CustomEvent) =>
+                    this.updateTogglePoint(
+                      index,
+                      { match_entity: e.detail.value.match_entity },
+                      module,
+                      updateModule
+                    )
+                )}
+
+                ${UcFormUtils.renderFieldSection(
+                  localize('editor.toggle.point_match_state', lang, 'Match State'),
+                  localize(
+                    'editor.toggle.point_match_state_desc',
+                    lang,
+                    'State value to match (e.g., "on", "off", "heat")'
+                  ),
+                  hass,
+                  { match_state: typeof point.match_state === 'string' ? point.match_state : '' },
+                  [UcFormUtils.text('match_state')],
+                  (e: CustomEvent) =>
+                    this.updateTogglePoint(
+                      index,
+                      { match_state: e.detail.value.match_state },
+                      module,
+                      updateModule
+                    )
+                )}
+              </div>
+            `
+        }
       </div>
 
       <div style="margin-top: 16px; margin-bottom: 16px;">
@@ -891,6 +985,7 @@ export class UltraToggleModule extends BaseUltraModule {
     }
   }
 
+
   // Drag and drop methods
   private handleDragStart(e: DragEvent, point: TogglePoint): void {
     this._draggedItem = point;
@@ -940,13 +1035,24 @@ export class UltraToggleModule extends BaseUltraModule {
     const toggleModule = module as ToggleModule;
     this._hass = hass;
 
+    // Initialize template service if needed
+    if (!this._templateService && hass) {
+      this._templateService = new TemplateService(hass);
+    }
+
+    // Subscribe to any template-based toggle points
+    this._subscribeToToggleTemplates(toggleModule, hass);
+
     // Determine active toggle point
     // Priority: Always check entity state first, then fall back to clicked state
     let activePointId: string | undefined;
     
-    // Check if any entity tracking is configured
+    // Check if any entity tracking is configured (including template mode)
     const hasEntityTracking = toggleModule.tracking_entity || 
-      toggleModule.toggle_points.some(p => p.match_entity && p.match_state);
+      toggleModule.toggle_points.some(p => 
+        (p.match_entity && p.match_state) || 
+        (p.match_template_mode && p.match_template)
+      );
     
     if (hasEntityTracking) {
       // When entity tracking is configured, always determine from entity state
@@ -982,13 +1088,84 @@ export class UltraToggleModule extends BaseUltraModule {
     }
   }
 
+  /**
+   * Subscribe to templates for toggle points that use template-based matching
+   */
+  private _subscribeToToggleTemplates(module: ToggleModule, hass: HomeAssistant): void {
+    if (!this._templateService || !hass) return;
+
+    // Ensure template string cache exists
+    if (!hass.__uvc_template_strings) {
+      hass.__uvc_template_strings = {};
+    }
+
+    for (const point of module.toggle_points) {
+      if (point.match_template_mode && point.match_template) {
+        const templateHash = this._hashString(point.match_template);
+        const templateKey = `toggle_match_${module.id}_${point.id}_${templateHash}`;
+
+        if (!this._templateService.hasTemplateSubscription(templateKey)) {
+          this._templateService.subscribeToTemplate(
+            point.match_template,
+            templateKey,
+            () => {
+              // When template result changes, trigger a preview update
+              if (typeof window !== 'undefined') {
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
+              }
+            }
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Simple string hash for template caching
+   */
+  private _hashString(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
   private determineActiveTogglePoint(module: ToggleModule, hass: HomeAssistant): string | undefined {
-    // If tracking entity is set, check for matching toggle points
+    // PRIORITY 1: Check template-based matching first
+    // Templates allow for more complex conditions (ranges, attributes, etc.)
+    for (const point of module.toggle_points) {
+      if (point.match_template_mode && point.match_template) {
+        const templateHash = this._hashString(point.match_template);
+        const templateKey = `toggle_match_${module.id}_${point.id}_${templateHash}`;
+        
+        // Check the rendered template result
+        const renderedResult = hass.__uvc_template_strings?.[templateKey];
+        if (renderedResult !== undefined) {
+          const isMatch = this._parseTemplateResultAsBoolean(renderedResult);
+          if (isMatch) {
+            return point.id;
+          }
+        }
+      }
+    }
+
+    // PRIORITY 2: If tracking entity is set, check for simple matching toggle points
     if (module.tracking_entity && hass.states[module.tracking_entity]) {
       const entityState = hass.states[module.tracking_entity].state;
 
       // Find first toggle point that matches the entity state
       const matchingPoint = module.toggle_points.find(point => {
+        // Skip template-mode points (already checked above)
+        if (point.match_template_mode) return false;
+        
         if (point.match_entity === module.tracking_entity) {
           if (Array.isArray(point.match_state)) {
             return point.match_state.includes(entityState);
@@ -1004,8 +1181,11 @@ export class UltraToggleModule extends BaseUltraModule {
       }
     }
 
-    // Check each toggle point's individual match_entity
+    // PRIORITY 3: Check each toggle point's individual match_entity (simple mode)
     for (const point of module.toggle_points) {
+      // Skip template-mode points (already checked above)
+      if (point.match_template_mode) continue;
+      
       if (point.match_entity && hass.states[point.match_entity]) {
         const entityState = hass.states[point.match_entity].state;
         if (Array.isArray(point.match_state)) {
@@ -1022,6 +1202,38 @@ export class UltraToggleModule extends BaseUltraModule {
 
     // Default to first toggle point if no match
     return module.toggle_points[0]?.id;
+  }
+
+  /**
+   * Parse template result as boolean for match evaluation
+   */
+  private _parseTemplateResultAsBoolean(result: any): boolean {
+    if (result === undefined || result === null) {
+      return false;
+    }
+
+    // Direct boolean
+    if (typeof result === 'boolean') {
+      return result;
+    }
+
+    // Number values
+    if (typeof result === 'number') {
+      return result !== 0;
+    }
+
+    // String values (case-insensitive)
+    if (typeof result === 'string') {
+      const lowerResult = result.toLowerCase().trim();
+      return (
+        lowerResult === 'true' ||
+        lowerResult === 'on' ||
+        lowerResult === 'yes' ||
+        lowerResult === '1'
+      );
+    }
+
+    return false;
   }
 
   private handleTogglePointClick(

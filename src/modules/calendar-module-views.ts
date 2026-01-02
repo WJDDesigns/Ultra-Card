@@ -4,6 +4,14 @@ import { CalendarModule, ProcessedCalendarEvent } from '../types';
 import { CalendarService } from '../services/calendar-service';
 
 /**
+ * Scroll state for navigation buttons
+ */
+export interface ScrollState {
+  canScrollUp: boolean;
+  canScrollDown: boolean;
+}
+
+/**
  * Calendar View Context
  * Contains all data and handlers needed by view renderers
  */
@@ -18,6 +26,11 @@ export interface CalendarViewContext {
   onExpandToggle: () => void;
   formatTime: (date: Date) => string;
   formatDate: (date: Date) => string;
+  // Scroll navigation for hidden overflow mode
+  scrollState?: ScrollState;
+  onScrollUp?: () => void;
+  onScrollDown?: () => void;
+  scrollContainerId?: string; // Unique ID for this module's scroll container
 }
 
 // ==========================================
@@ -29,7 +42,18 @@ export interface CalendarViewContext {
  * Shows events grouped by day with a clean, minimal layout
  */
 export function renderCompactListView(context: CalendarViewContext): TemplateResult {
-  const { module, events, expanded, onEventClick, onExpandToggle, formatTime } = context;
+  const { 
+    module, 
+    events, 
+    expanded, 
+    onEventClick, 
+    onExpandToggle, 
+    formatTime,
+    scrollState,
+    onScrollUp,
+    onScrollDown,
+    scrollContainerId
+  } = context;
   
   if (events.length === 0) {
     return renderEmptyState('No upcoming events');
@@ -89,41 +113,76 @@ export function renderCompactListView(context: CalendarViewContext): TemplateRes
     ? `height: ${module.compact_height}; overflow-y: ${module.compact_overflow || 'scroll'};`
     : '';
 
-  return html`
-    <div class="uc-calendar-compact ${useAutoFit ? 'auto-fit-height' : ''}" style="${containerStyle}">
-      ${daysToRender.map(({ dateKey, events: dayEvents }) => {
-        const date = new Date(dateKey + 'T00:00:00');
-        const isToday = CalendarService.isToday(date);
+  // Check if nav buttons should be shown (hidden overflow + enabled)
+  const showNavButtons = useAutoFit && 
+    module.compact_overflow === 'hidden' && 
+    module.compact_show_nav_buttons;
 
-        return html`
-          <div class="uc-calendar-day-row ${isToday ? 'today' : ''}">
-            <div class="uc-calendar-date-col">
-              <span class="uc-calendar-weekday">
-                ${date.toLocaleDateString(module.language || undefined, { weekday: 'short' })}
-              </span>
-              <span class="uc-calendar-day-num">${date.getDate()}</span>
-              ${module.show_month
-                ? html`
-                    <span class="uc-calendar-month">
-                      ${date.toLocaleDateString(module.language || undefined, { month: 'short' })}
-                    </span>
-                  `
-                : ''}
-            </div>
-            <div class="uc-calendar-events-col">
-              ${dayEvents.length > 0
-                ? dayEvents.map(event => renderCompactEvent(event, module, formatTime, onEventClick))
-                : html`<div class="uc-calendar-no-events-day">No events</div>`}
-            </div>
-          </div>
-        `;
-      })}
-      
-      ${!useAutoFit && module.tap_action_expand && hasMore
+  return html`
+    <div class="uc-calendar-compact-wrapper ${showNavButtons ? 'with-nav-buttons' : ''}">
+      ${showNavButtons && scrollState?.canScrollUp
         ? html`
-            <button class="uc-calendar-expand-btn" @click=${onExpandToggle}>
-              <ha-icon icon="${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
-              ${expanded ? 'Show less' : 'Show more'}
+            <button 
+              class="uc-calendar-nav-btn uc-calendar-nav-up" 
+              @click=${onScrollUp}
+              aria-label="Scroll up"
+            >
+              <ha-icon icon="mdi:chevron-up"></ha-icon>
+            </button>
+          `
+        : ''}
+      
+      <div 
+        class="uc-calendar-compact ${useAutoFit ? 'auto-fit-height' : ''}" 
+        style="${containerStyle}"
+        data-calendar-scroll-container="${scrollContainerId || ''}"
+      >
+        ${daysToRender.map(({ dateKey, events: dayEvents }) => {
+          const date = new Date(dateKey + 'T00:00:00');
+          const isToday = CalendarService.isToday(date);
+
+          return html`
+            <div class="uc-calendar-day-row ${isToday ? 'today' : ''}">
+              <div class="uc-calendar-date-col">
+                <span class="uc-calendar-weekday">
+                  ${date.toLocaleDateString(module.language || undefined, { weekday: 'short' })}
+                </span>
+                <span class="uc-calendar-day-num">${date.getDate()}</span>
+                ${module.show_month
+                  ? html`
+                      <span class="uc-calendar-month">
+                        ${date.toLocaleDateString(module.language || undefined, { month: 'short' })}
+                      </span>
+                    `
+                  : ''}
+              </div>
+              <div class="uc-calendar-events-col">
+                ${dayEvents.length > 0
+                  ? dayEvents.map(event => renderCompactEvent(event, module, formatTime, onEventClick))
+                  : html`<div class="uc-calendar-no-events-day">No events</div>`}
+              </div>
+            </div>
+          `;
+        })}
+        
+        ${!useAutoFit && module.tap_action_expand && hasMore
+          ? html`
+              <button class="uc-calendar-expand-btn" @click=${onExpandToggle}>
+                <ha-icon icon="${expanded ? 'mdi:chevron-up' : 'mdi:chevron-down'}"></ha-icon>
+                ${expanded ? 'Show less' : 'Show more'}
+              </button>
+            `
+          : ''}
+      </div>
+
+      ${showNavButtons && scrollState?.canScrollDown
+        ? html`
+            <button 
+              class="uc-calendar-nav-btn uc-calendar-nav-down" 
+              @click=${onScrollDown}
+              aria-label="Scroll down"
+            >
+              <ha-icon icon="mdi:chevron-down"></ha-icon>
             </button>
           `
         : ''}
