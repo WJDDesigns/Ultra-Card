@@ -548,9 +548,9 @@ export interface GaugeModule extends BaseModule {
     tick_color?: string;
     show_tick_labels?: boolean;
     tick_label_font_size?: number;
-    animation_enabled?: boolean;
-    animation_duration?: string;
-    animation_easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce';
+    gauge_animation_enabled?: boolean;
+    gauge_animation_duration?: string;
+    gauge_animation_easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce';
     zones?: Array<{
         id: string;
         from: number;
@@ -2199,7 +2199,8 @@ export interface CardRow {
     id: string;
     name?: string;
     columns: CardColumn[];
-    column_layout?: '1-col' | '1-2-1-2' | '1-3-2-3' | '2-3-1-3' | '2-5-3-5' | '3-5-2-5' | '1-3-1-3-1-3' | '1-4-1-2-1-4' | '1-5-3-5-1-5' | '1-6-2-3-1-6' | '1-4-1-4-1-4-1-4' | '1-5-1-5-1-5-1-5' | '1-6-1-6-1-6-1-6' | '1-8-1-4-1-4-1-8' | '1-5-1-5-1-5-1-5-1-5' | '1-6-1-6-1-3-1-6-1-6' | '1-8-1-4-1-4-1-4-1-8' | '1-6-1-6-1-6-1-6-1-6-1-6' | '50-50' | '30-70' | '70-30' | '40-60' | '60-40' | '33-33-33' | '25-50-25' | '20-60-20' | '25-25-25-25';
+    column_layout?: '1-col' | '1-2-1-2' | '1-3-2-3' | '2-3-1-3' | '2-5-3-5' | '3-5-2-5' | '1-3-1-3-1-3' | '1-4-1-2-1-4' | '1-5-3-5-1-5' | '1-6-2-3-1-6' | '1-4-1-4-1-4-1-4' | '1-5-1-5-1-5-1-5' | '1-6-1-6-1-6-1-6' | '1-8-1-4-1-4-1-8' | '1-5-1-5-1-5-1-5-1-5' | '1-6-1-6-1-3-1-6-1-6' | '1-8-1-4-1-4-1-4-1-8' | '1-6-1-6-1-6-1-6-1-6-1-6' | '50-50' | '30-70' | '70-30' | '40-60' | '60-40' | '33-33-33' | '25-50-25' | '20-60-20' | '25-25-25-25' | 'custom';
+    custom_column_sizing?: string;
     gap?: number;
     column_alignment?: 'top' | 'middle' | 'bottom';
     content_alignment?: 'start' | 'end' | 'center' | 'stretch';
@@ -2226,6 +2227,19 @@ export interface FavoriteColor {
     name: string;
     color: string;
     order: number;
+}
+export interface CustomVariable {
+    id: string;
+    name: string;
+    entity: string;
+    value_type: 'entity_id' | 'state' | 'full_object';
+    order: number;
+    created?: string;
+}
+export interface CustomVariablesExportData {
+    variables: CustomVariable[];
+    version: string;
+    exported: string;
 }
 export interface EntityReference {
     entityId: string;
@@ -2276,6 +2290,7 @@ export interface ExportData {
         description?: string;
         privacyProtected?: boolean;
     };
+    customVariables?: CustomVariable[];
 }
 export interface UltraCardConfig {
     type: string;

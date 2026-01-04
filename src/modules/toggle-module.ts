@@ -29,6 +29,7 @@ export class UltraToggleModule extends BaseUltraModule {
   private _actionFormChangeGuard: boolean = false;
   private _templateService: TemplateService | null = null;
   private _templateMatchCache: Map<string, boolean> = new Map();
+  private _quickSetupEntity?: string;
 
   createDefault(id?: string, hass?: HomeAssistant): ToggleModule {
     // Create two default toggle points
@@ -176,6 +177,11 @@ export class UltraToggleModule extends BaseUltraModule {
         .toggle-point-row:hover {
           background: var(--primary-color);
           opacity: 0.9;
+        }
+
+        .toggle-point-row.currently-active {
+          border-left: 4px solid var(--success-color);
+          background: rgba(var(--rgb-success-color), 0.1);
         }
 
         .toggle-point-row.dragging {
@@ -459,25 +465,80 @@ export class UltraToggleModule extends BaseUltraModule {
           </div>
         </div>
 
+        <!-- Quick Setup Section -->
+        <div class="settings-section">
+          <div class="section-title">
+            ${localize('editor.toggle.quick_setup', lang, 'QUICK SETUP')}
+          </div>
+          <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 16px;">
+            ${localize(
+              'editor.toggle.quick_setup_desc',
+              lang,
+              'Automatically create toggle points based on an entity type (replaces existing points)'
+            )}
+          </div>
+
+          ${UcFormUtils.renderFieldSection(
+            localize('editor.toggle.quick_setup_entity', lang, 'Select Entity'),
+            localize(
+              'editor.toggle.quick_setup_entity_desc',
+              lang,
+              'Choose an entity to automatically create appropriate toggle points'
+            ),
+            hass,
+            { quick_setup_entity: this._quickSetupEntity || '' },
+            [UcFormUtils.entity('quick_setup_entity')],
+            (e: CustomEvent) => {
+              const entityId = e.detail.value.quick_setup_entity;
+              this._quickSetupEntity = entityId;
+              // Don't update the module yet, just store the selection
+            }
+          )}
+
+          ${this._quickSetupEntity
+            ? html`
+                <button
+                  class="add-toggle-point-btn"
+                  style="margin-top: 12px; background: var(--success-color);"
+                  @click=${() => {
+                    this.quickSetupFromEntity(this._quickSetupEntity!, toggleModule, hass, updateModule);
+                    this._quickSetupEntity = undefined;
+                  }}
+                >
+                  <ha-icon icon="mdi:auto-fix"></ha-icon>
+                  ${localize('editor.toggle.create_toggle_points', lang, 'Create Toggle Points')}
+                </button>
+                <div style="font-size: 11px; color: var(--warning-color); margin-top: 8px; padding: 8px; background: rgba(var(--rgb-warning-color), 0.1); border-radius: 4px;">
+                  <ha-icon icon="mdi:alert" style="--mdc-icon-size: 14px;"></ha-icon>
+                  ${localize(
+                    'editor.toggle.quick_setup_warning',
+                    lang,
+                    'This will replace all existing toggle points with auto-generated ones based on the entity type.'
+                  )}
+                </div>
+              `
+            : ''}
+        </div>
+
         <!-- Entity Tracking Section -->
         <div class="settings-section">
           <div class="section-title">
-            ${localize('editor.toggle.entity_tracking', lang, 'ENTITY TRACKING')}
+            ${localize('editor.toggle.entity_tracking', lang, 'ADVANCED TRACKING')}
           </div>
           <div style="font-size: 12px; color: var(--secondary-text-color); margin-bottom: 16px;">
             ${localize(
               'editor.toggle.entity_tracking_desc',
               lang,
-              'Optional: Track an entity state to auto-select matching toggle points'
+              'Optional: Override entity for all toggle points (only needed if different from individual point entities)'
             )}
           </div>
 
           ${UcFormUtils.renderFieldSection(
-            localize('editor.toggle.tracking_entity', lang, 'Tracking Entity'),
+            localize('editor.toggle.tracking_entity', lang, 'Global Tracking Entity'),
             localize(
               'editor.toggle.tracking_entity_desc',
               lang,
-              'When set, the toggle will automatically select the point that matches the entity state'
+              'When set, toggle points with matching entity will use this entity state. Leave empty to use per-point entities.'
             ),
             hass,
             { tracking_entity: toggleModule.tracking_entity || '' },
@@ -627,9 +688,12 @@ export class UltraToggleModule extends BaseUltraModule {
     const isExpanded = this._expandedTogglePoints.has(point.id);
     const lang = hass?.locale?.language || 'en';
 
+    // Check if this point is currently active based on entity state
+    const isActive = this.determineActiveTogglePoint(module, hass) === point.id;
+
     return html`
       <div
-        class="toggle-point-row ${this._draggedItem?.id === point.id ? 'dragging' : ''}"
+        class="toggle-point-row ${this._draggedItem?.id === point.id ? 'dragging' : ''} ${isActive ? 'currently-active' : ''}"
         draggable="true"
         @dragstart=${(e: DragEvent) => this.handleDragStart(e, point)}
         @dragend=${() => this.handleDragEnd()}
@@ -637,8 +701,17 @@ export class UltraToggleModule extends BaseUltraModule {
         @drop=${(e: DragEvent) => this.handleDrop(e, index, module, updateModule)}
       >
         <ha-icon icon="mdi:drag" class="drag-handle"></ha-icon>
+        ${isActive 
+          ? html`<ha-icon icon="mdi:check-circle" style="color: var(--success-color); flex-shrink: 0;"></ha-icon>`
+          : html`<ha-icon icon="mdi:circle-outline" style="color: var(--disabled-text-color); flex-shrink: 0; opacity: 0.5;"></ha-icon>`
+        }
         <div class="toggle-point-info ${!point.label ? 'no-label' : ''}">
           ${point.label || 'No label set'}
+          ${point.match_entity 
+            ? html`<div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 2px;">
+                ${point.match_entity} = ${Array.isArray(point.match_state) ? point.match_state.join(', ') : point.match_state || 'any'}
+              </div>`
+            : ''}
         </div>
         <ha-icon
           icon="mdi:chevron-down"
@@ -810,19 +883,34 @@ export class UltraToggleModule extends BaseUltraModule {
                   localize(
                     'editor.toggle.point_match_state_desc',
                     lang,
-                    'State value to match (e.g., "on", "off", "heat")'
+                    'State value to match (e.g., "on", "off", "heat", "cool")'
                   ),
                   hass,
-                  { match_state: typeof point.match_state === 'string' ? point.match_state : '' },
+                  { 
+                    match_state: Array.isArray(point.match_state) 
+                      ? point.match_state.join(', ') 
+                      : (point.match_state || '')
+                  },
                   [UcFormUtils.text('match_state')],
-                  (e: CustomEvent) =>
+                  (e: CustomEvent) => {
+                    const value = e.detail.value.match_state;
+                    // Support comma-separated values for multiple states
+                    const stateValue = value.includes(',') 
+                      ? value.split(',').map((s: string) => s.trim()).filter(Boolean)
+                      : value;
                     this.updateTogglePoint(
                       index,
-                      { match_state: e.detail.value.match_state },
+                      { match_state: stateValue },
                       module,
                       updateModule
-                    )
+                    );
+                  }
                 )}
+                <div
+                  style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px; padding: 8px; background: var(--card-background-color); border-radius: 4px;"
+                >
+                  <strong>Tip:</strong> Use comma-separated values to match multiple states (e.g., "on, open")
+                </div>
               </div>
             `
         }
@@ -950,6 +1038,244 @@ export class UltraToggleModule extends BaseUltraModule {
     this._expandedTogglePoints.add(newPoint.id);
   }
 
+  /**
+   * Quick setup: Auto-create toggle points based on entity type
+   */
+  private quickSetupFromEntity(
+    entityId: string,
+    module: ToggleModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<ToggleModule>) => void
+  ): void {
+    if (!entityId || !hass.states[entityId]) {
+      return;
+    }
+
+    const domain = entityId.split('.')[0];
+    const entityState = hass.states[entityId];
+    let newPoints: TogglePoint[] = [];
+
+    // Create appropriate toggle points based on entity domain
+    switch (domain) {
+      case 'light':
+      case 'switch':
+      case 'input_boolean':
+      case 'fan':
+        // Binary on/off entities
+        newPoints = [
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Off',
+            icon: domain === 'light' ? 'mdi:lightbulb-off' : domain === 'fan' ? 'mdi:fan-off' : 'mdi:power-off',
+            match_entity: entityId,
+            match_state: 'off',
+            tap_action: { action: 'toggle', entity: entityId },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--disabled-text-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'On',
+            icon: domain === 'light' ? 'mdi:lightbulb-on' : domain === 'fan' ? 'mdi:fan' : 'mdi:power',
+            match_entity: entityId,
+            match_state: 'on',
+            tap_action: { action: 'toggle', entity: entityId },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--primary-color)',
+            active_text_color: 'white',
+          },
+        ];
+        break;
+
+      case 'climate':
+        // Climate modes
+        newPoints = [
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Off',
+            icon: 'mdi:power-off',
+            match_entity: entityId,
+            match_state: 'off',
+            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'off' } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--disabled-text-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Heat',
+            icon: 'mdi:fire',
+            match_entity: entityId,
+            match_state: 'heat',
+            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'heat' } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--error-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Cool',
+            icon: 'mdi:snowflake',
+            match_entity: entityId,
+            match_state: 'cool',
+            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'cool' } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--info-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Auto',
+            icon: 'mdi:autorenew',
+            match_entity: entityId,
+            match_state: 'auto',
+            tap_action: { action: 'perform-action', perform_action: 'climate.set_hvac_mode', data: { entity_id: entityId, hvac_mode: 'auto' } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--primary-color)',
+            active_text_color: 'white',
+          },
+        ];
+        break;
+
+      case 'cover':
+        // Cover positions
+        newPoints = [
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Closed',
+            icon: 'mdi:window-shutter',
+            match_entity: entityId,
+            match_state: 'closed',
+            tap_action: { action: 'perform-action', perform_action: 'cover.close_cover', data: { entity_id: entityId } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--disabled-text-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Open',
+            icon: 'mdi:window-shutter-open',
+            match_entity: entityId,
+            match_state: 'open',
+            tap_action: { action: 'perform-action', perform_action: 'cover.open_cover', data: { entity_id: entityId } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--primary-color)',
+            active_text_color: 'white',
+          },
+        ];
+        break;
+
+      case 'media_player':
+        // Media player states
+        newPoints = [
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Off',
+            icon: 'mdi:power-off',
+            match_entity: entityId,
+            match_state: 'off',
+            tap_action: { action: 'perform-action', perform_action: 'media_player.turn_off', data: { entity_id: entityId } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--disabled-text-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Playing',
+            icon: 'mdi:play',
+            match_entity: entityId,
+            match_state: 'playing',
+            tap_action: { action: 'perform-action', perform_action: 'media_player.media_play', data: { entity_id: entityId } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--primary-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Paused',
+            icon: 'mdi:pause',
+            match_entity: entityId,
+            match_state: 'paused',
+            tap_action: { action: 'perform-action', perform_action: 'media_player.media_pause', data: { entity_id: entityId } },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--warning-color)',
+            active_text_color: 'white',
+          },
+        ];
+        break;
+
+      case 'input_select':
+        // Create toggle points from input_select options
+        const options = entityState.attributes.options || [];
+        newPoints = options.map((option: string, index: number) => ({
+          id: this.generateId('toggle_point'),
+          label: option,
+          icon: '',
+          match_entity: entityId,
+          match_state: option,
+          tap_action: { action: 'perform-action', perform_action: 'input_select.select_option', data: { entity_id: entityId, option } },
+          background_color: module.default_background_color,
+          text_color: module.default_text_color,
+          active_background_color: index === 0 ? 'var(--primary-color)' : index === 1 ? 'var(--info-color)' : 'var(--success-color)',
+          active_text_color: 'white',
+        }));
+        break;
+
+      default:
+        // Generic binary states for unknown entities
+        newPoints = [
+          {
+            id: this.generateId('toggle_point'),
+            label: 'Off',
+            icon: 'mdi:circle-outline',
+            match_entity: entityId,
+            match_state: 'off',
+            tap_action: { action: 'more-info', entity: entityId },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--disabled-text-color)',
+            active_text_color: 'white',
+          },
+          {
+            id: this.generateId('toggle_point'),
+            label: 'On',
+            icon: 'mdi:circle',
+            match_entity: entityId,
+            match_state: 'on',
+            tap_action: { action: 'more-info', entity: entityId },
+            background_color: module.default_background_color,
+            text_color: module.default_text_color,
+            active_background_color: 'var(--primary-color)',
+            active_text_color: 'white',
+          },
+        ];
+    }
+
+    // Update module with new toggle points
+    updateModule({ 
+      toggle_points: newPoints,
+      tracking_entity: entityId
+    });
+
+    // Expand all newly created points for immediate configuration
+    newPoints.forEach(point => this._expandedTogglePoints.add(point.id));
+    
+    // Trigger preview update
+    setTimeout(() => this.triggerPreviewUpdate(), 50);
+  }
+
   private deleteTogglePoint(
     index: number,
     module: ToggleModule,
@@ -1069,6 +1395,14 @@ export class UltraToggleModule extends BaseUltraModule {
       this._activeTogglePointId = activePointId;
     }
 
+    // Log active state for debugging (only in development)
+    if (hasEntityTracking && console.debug) {
+      const activePoint = toggleModule.toggle_points.find(p => p.id === activePointId);
+      if (activePoint) {
+        console.debug(`[Toggle Module] Active point: "${activePoint.label}" (entity tracking enabled)`);
+      }
+    }
+
     // Render based on visual style
     switch (toggleModule.visual_style) {
       case 'ios_toggle':
@@ -1167,11 +1501,7 @@ export class UltraToggleModule extends BaseUltraModule {
         if (point.match_template_mode) return false;
         
         if (point.match_entity === module.tracking_entity) {
-          if (Array.isArray(point.match_state)) {
-            return point.match_state.includes(entityState);
-          } else if (point.match_state) {
-            return point.match_state === entityState;
-          }
+          return this._matchesState(point.match_state, entityState);
         }
         return false;
       });
@@ -1188,20 +1518,31 @@ export class UltraToggleModule extends BaseUltraModule {
       
       if (point.match_entity && hass.states[point.match_entity]) {
         const entityState = hass.states[point.match_entity].state;
-        if (Array.isArray(point.match_state)) {
-          if (point.match_state.includes(entityState)) {
-            return point.id;
-          }
-        } else if (point.match_state) {
-          if (point.match_state === entityState) {
-            return point.id;
-          }
+        if (this._matchesState(point.match_state, entityState)) {
+          return point.id;
         }
       }
     }
 
     // Default to first toggle point if no match
     return module.toggle_points[0]?.id;
+  }
+
+  /**
+   * Check if a match_state configuration matches the current entity state
+   */
+  private _matchesState(matchState: string | string[] | undefined, entityState: string): boolean {
+    if (!matchState) {
+      return false;
+    }
+
+    // Handle array of possible states
+    if (Array.isArray(matchState)) {
+      return matchState.some(state => String(state).toLowerCase() === String(entityState).toLowerCase());
+    }
+
+    // Handle single state (case-insensitive comparison)
+    return String(matchState).toLowerCase() === String(entityState).toLowerCase();
   }
 
   /**

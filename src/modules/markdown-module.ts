@@ -11,6 +11,7 @@ import { localize } from '../localize/localize';
 import { TemplateService } from '../services/template-service';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import { marked } from 'marked';
 
 export class UltraMarkdownModule extends BaseUltraModule {
@@ -708,8 +709,14 @@ All standard markdown features are automatically enabled!`,
       // Process Jinja templates first if they exist in the content
       let processedContent = content;
 
+      // Preprocess custom variables ($variable_name) before Jinja evaluation
+      let templateContent = content;
+      if (hass) {
+        templateContent = preprocessTemplateVariables(content, hass);
+      }
+
       // Check if content contains Jinja templates (both {{ }} and {% %} syntax)
-      const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(content);
+      const hasTemplates = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/.test(templateContent);
 
       if (hasTemplates && hass) {
         // Initialize template service if needed
@@ -722,12 +729,12 @@ All standard markdown features are automatically enabled!`,
           hass.__uvc_template_strings = {};
         }
 
-        const templateHash = this._hashString(content);
+        const templateHash = this._hashString(templateContent);
         const templateKey = `state_text_markdown_${markdownModule.id}_${templateHash}`;
 
         // Subscribe to template if needed
         if (!this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(content, templateKey, () => {
+          this._templateService.subscribeToTemplate(templateContent, templateKey, () => {
             if (typeof window !== 'undefined') {
               // Use global debounced update
               if (!window._ultraCardUpdateTimer) {

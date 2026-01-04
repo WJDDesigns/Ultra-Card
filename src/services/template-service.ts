@@ -1,4 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 
 /**
  * Extended HomeAssistant interface to store template string results
@@ -87,6 +88,10 @@ export class TemplateService {
       return; // Subscription already exists, don't create a duplicate
     }
 
+    // Preprocess custom variables ($variable_name) before sending to Home Assistant
+    // This allows users to use {{ $my_variable }} syntax to reference entity states
+    const processedTemplate = preprocessTemplateVariables(template, this.hass);
+
     try {
       // Create a subscription to the template
       const unsubFunc = this.hass.connection.subscribeMessage(
@@ -122,7 +127,7 @@ export class TemplateService {
         },
         {
           type: 'render_template',
-          template: template,
+          template: processedTemplate,
           variables: variables || {}, // Pass entity context variables to HA
         }
       );

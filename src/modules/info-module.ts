@@ -21,6 +21,7 @@ import {
   migrateToUnified,
   shouldShowMigrationPrompt,
 } from '../utils/template-migration';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 
 export class UltraInfoModule extends BaseUltraModule {
   metadata: ModuleMetadata = {

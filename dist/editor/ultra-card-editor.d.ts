@@ -5,6 +5,8 @@ import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
 import '../components/uc-favorite-colors-manager';
+import '../components/uc-custom-variables-manager';
+import '../components/uc-variable-mapping-dialog';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
 import '../components/uc-snapshot-history-modal';
@@ -31,6 +33,9 @@ export declare class UltraCardEditor extends LitElement {
     private _newerBackupAvailable;
     private _showSyncNotification;
     private _isCreatingManualSnapshot;
+    private _showVariableMappingDialog;
+    private _missingVariables;
+    private _pendingImportConfig;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
@@ -137,6 +142,8 @@ export declare class UltraCardEditor extends LitElement {
     private _handleCardNameChange;
     private _handleExport;
     private _handleImport;
+    private _handleVariableMappingConfirm;
+    private _handleVariableMappingCancel;
     private _handleSnapshotImport;
     private _handleCreateBackup;
     private _handleExportDashboard;

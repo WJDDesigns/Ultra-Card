@@ -1742,7 +1742,12 @@ export class UltraCard extends LitElement {
   /**
    * Convert column layout ID to CSS grid template columns
    */
-  private _getGridTemplateColumns(layout: string, columnCount: number): string {
+  private _getGridTemplateColumns(layout: string, columnCount: number, customSizing?: string): string {
+    // Handle custom layout - return the custom CSS value directly
+    if (layout === 'custom' && customSizing) {
+      return customSizing;
+    }
+
     const layouts: Record<string, string> = {
       // 1 Column
       '1-col': '1fr',
@@ -1856,7 +1861,8 @@ export class UltraCard extends LitElement {
       display: 'grid',
       gridTemplateColumns: this._getGridTemplateColumns(
         row.column_layout || '1-col',
-        row.columns.length
+        row.columns.length,
+        row.custom_column_sizing
       ),
       gap: `${row.gap ?? 16}px`,
       // Standard 8px top/bottom padding for proper web design spacing

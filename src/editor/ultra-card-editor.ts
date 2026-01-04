@@ -11,6 +11,7 @@ import { ucCloudBackupService, BackupStatus } from '../services/uc-cloud-backup-
 import { ucSnapshotService } from '../services/uc-snapshot-service';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-service';
+import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 import {
   ucSnapshotSchedulerService,
   SnapshotSchedulerStatus,
@@ -22,8 +23,11 @@ import './tabs/about-tab';
 import './tabs/layout-tab';
 import '../components/ultra-color-picker';
 import '../components/uc-favorite-colors-manager';
+import '../components/uc-custom-variables-manager';
+import '../components/uc-variable-mapping-dialog';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
+import { findMissingVariables } from '../utils/uc-template-processor';
 import '../components/uc-snapshot-history-modal';
 import '../components/uc-snapshot-settings-dialog';
 import '../components/uc-manual-backup-dialog';
@@ -56,6 +60,11 @@ export class UltraCardEditor extends LitElement {
   @state() private _newerBackupAvailable: any = null;
   @state() private _showSyncNotification: boolean = false;
   @state() private _isCreatingManualSnapshot: boolean = false;
+
+  // Variable mapping dialog state
+  @state() private _showVariableMappingDialog: boolean = false;
+  @state() private _missingVariables: string[] = [];
+  @state() private _pendingImportConfig: any = null;
 
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
@@ -333,6 +342,20 @@ export class UltraCardEditor extends LitElement {
                 ? this._renderProTab()
                 : html`<ultra-about-tab .hass=${this.hass}></ultra-about-tab>`}
         </div>
+
+        <!-- Variable Mapping Dialog for Import -->
+        ${this._showVariableMappingDialog
+          ? html`
+              <uc-variable-mapping-dialog
+                .hass=${this.hass}
+                .missingVariables=${this._missingVariables}
+                .open=${this._showVariableMappingDialog}
+                @confirm=${this._handleVariableMappingConfirm}
+                @cancel=${this._handleVariableMappingCancel}
+                @skip=${this._handleVariableMappingCancel}
+              ></uc-variable-mapping-dialog>
+            `
+          : ''}
       </div>
     `;
   }
@@ -1242,6 +1265,22 @@ export class UltraCardEditor extends LitElement {
             </div>
 
             <uc-favorite-colors-manager .hass=${this.hass}></uc-favorite-colors-manager>
+          </div>
+
+          <!-- Custom Variables Section -->
+          <div class="settings-section">
+            <div class="section-header">
+              <h4>${localize('editor.custom_variables.title', lang, 'Custom Variables')}</h4>
+              <p>
+                ${localize(
+                  'editor.custom_variables.description',
+                  lang,
+                  'Create reusable variables that reference entities. Use them in templates with {{ $variable_name }}. These variables sync across all your Ultra Cards.'
+                )}
+              </p>
+            </div>
+
+            <uc-custom-variables-manager .hass=${this.hass}></uc-custom-variables-manager>
           </div>
         </div>
       </div>
@@ -4882,15 +4921,37 @@ export class UltraCardEditor extends LitElement {
     this._updateConfig(newConfig);
   }
 
-  private _handleExport() {
+  private async _handleExport() {
+    const lang = this.hass?.locale?.language || 'en';
+    
+    // Check if user has custom variables
+    const variables = ucCustomVariablesService.getVariables();
+    let includeVariables = false;
+    
+    if (variables.length > 0) {
+      // Show dialog asking if they want to include variables
+      includeVariables = confirm(
+        localize(
+          'editor.export_import.include_variables',
+          lang,
+          `You have ${variables.length} custom variable(s). Include them in the export?`
+        )
+      );
+    }
+    
     try {
+      // Create export config with optional variables
+      const exportConfig = { ...this.config };
+      if (includeVariables) {
+        (exportConfig as any)._customVariables = variables;
+      }
+      
       // Use new encoded format (compressed + Base64)
       UcConfigEncoder.exportToFile(
-        this.config,
+        exportConfig,
         `${(this.config.card_name || 'ultra-card').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.txt`
       );
 
-      const lang = 'en';
       alert(localize('editor.ultra_card_pro.export_success', lang, 'Card configuration exported!'));
     } catch (error) {
       console.error('Export failed:', error);
@@ -4902,6 +4963,7 @@ export class UltraCardEditor extends LitElement {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.txt,.json'; // Accept both encoded (.txt) and plain JSON
+    const lang = this.hass?.locale?.language || 'en';
 
     input.onchange = async (e: Event) => {
       try {
@@ -4933,12 +4995,48 @@ export class UltraCardEditor extends LitElement {
           throw new Error('Invalid Ultra Card configuration file');
         }
 
-        if (confirm('Import this card configuration? Your current config will be replaced.')) {
-          this._updateConfig(config);
-          const lang = 'en';
-          alert(
-            localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
+        // Check for custom variables in import
+        const importedVariables = config._customVariables;
+        let shouldImportVariables = false;
+        
+        if (importedVariables && Array.isArray(importedVariables) && importedVariables.length > 0) {
+          // Ask user if they want to import the variables
+          shouldImportVariables = confirm(
+            localize(
+              'editor.export_import.import_variables',
+              lang,
+              `This card includes ${importedVariables.length} custom variable(s). Import them?`
+            )
           );
+        }
+
+        if (confirm('Import this card configuration? Your current config will be replaced.')) {
+          // Remove the _customVariables from config before saving (it's metadata, not card config)
+          const cleanConfig = { ...config };
+          delete cleanConfig._customVariables;
+          
+          this._updateConfig(cleanConfig);
+          
+          // Import variables if user confirmed
+          if (shouldImportVariables && importedVariables) {
+            ucCustomVariablesService.importVariables(importedVariables, true); // Merge with existing
+          }
+          
+          // Scan imported config for variables that are used but not yet defined
+          // This handles cases where the user received a config that uses variables
+          // but didn't have the variable definitions included in the export
+          const missingVars = findMissingVariables(cleanConfig);
+          
+          if (missingVars.length > 0) {
+            // Show the variable mapping dialog to let user create missing variables
+            this._missingVariables = missingVars;
+            this._pendingImportConfig = cleanConfig;
+            this._showVariableMappingDialog = true;
+          } else {
+            alert(
+              localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
+            );
+          }
         }
       } catch (error) {
         console.error('Import failed:', error);
@@ -4950,6 +5048,26 @@ export class UltraCardEditor extends LitElement {
     };
 
     input.click();
+  }
+
+  private _handleVariableMappingConfirm(): void {
+    const lang = this.hass?.locale?.language || 'en';
+    this._showVariableMappingDialog = false;
+    this._missingVariables = [];
+    this._pendingImportConfig = null;
+    alert(
+      localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported! Variables have been created.')
+    );
+  }
+
+  private _handleVariableMappingCancel(): void {
+    const lang = this.hass?.locale?.language || 'en';
+    this._showVariableMappingDialog = false;
+    this._missingVariables = [];
+    this._pendingImportConfig = null;
+    alert(
+      localize('editor.ultra_card_pro.import_success', lang, 'Card configuration imported!')
+    );
   }
 
   private _handleSnapshotImport(snapshotData: any) {

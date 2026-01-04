@@ -48,6 +48,8 @@ import {
   EntityReference,
 } from '../../types';
 import '../../components/uc-favorite-dialog';
+import '../../components/uc-variable-mapping-dialog';
+import { findMissingVariables } from '../../utils/uc-template-processor';
 import '../../components/uc-import-dialog';
 import { simpleEntityMapper } from '../../components/uc-simple-entity-mapper';
 import { entityDetector } from '../../services/uc-entity-detector';
@@ -204,6 +206,11 @@ export class LayoutTab extends LitElement {
   @state() private _showColumnLayoutSelector = false;
   @state() private _selectedRowForLayout = -1;
 
+  // Custom column sizing state
+  @state() private _customSizingInput = '';
+  @state() private _customSizingValid = false;
+  @state() private _customSizingError = '';
+
   // Collapsible preview in headers - now tracks per module
   @state() private _collapsedPreviewModules: Set<string> = new Set();
   // Global preview state for row/column settings (open by default)
@@ -239,9 +246,14 @@ export class LayoutTab extends LitElement {
   @state() private _hasColumnClipboard = false;
   @state() private _hasCardClipboard = false;
   
+  // Variable mapping dialog state for imports
+  @state() private _showVariableMappingDialog = false;
+  @state() private _missingVariables: string[] = [];
+  
   // Search state
   @state() private _moduleSearchQuery = '';
   @state() private _cardSearchQuery = '';
+  @state() private _presetSearchQuery = '';
 
   // Flag to prevent double-processing of drops in tabs sections
   private _tabsSectionDropHandled = false;
@@ -1151,6 +1163,85 @@ export class LayoutTab extends LitElement {
     return migrations[layoutId] || layoutId;
   }
 
+  // Custom column sizing validation methods
+  private _validateCustomColumnSizing(
+    value: string,
+    expectedColumnCount: number
+  ): { valid: boolean; error?: string; parsedCount?: number } {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return { valid: false, error: 'Custom sizing cannot be empty' };
+    }
+
+    // Parse sizing values
+    const values = this._parseGridTemplateColumns(trimmed);
+
+    if (values.length !== expectedColumnCount) {
+      return {
+        valid: false,
+        error: `Expected ${expectedColumnCount} sizing value${expectedColumnCount !== 1 ? 's' : ''}, found ${values.length}`,
+        parsedCount: values.length,
+      };
+    }
+
+    // Validate each value is valid CSS grid sizing
+    for (const val of values) {
+      if (!this._isValidGridSizing(val)) {
+        return { valid: false, error: `Invalid grid sizing: ${val}` };
+      }
+    }
+
+    return { valid: true, parsedCount: values.length };
+  }
+
+  private _parseGridTemplateColumns(value: string): string[] {
+    // Parse while respecting parentheses in minmax(), fit-content(), etc.
+    const parts: string[] = [];
+    let current = '';
+    let parenDepth = 0;
+
+    for (const char of value) {
+      if (char === '(') parenDepth++;
+      else if (char === ')') parenDepth--;
+
+      if (char === ' ' && parenDepth === 0) {
+        if (current.trim()) {
+          parts.push(current.trim());
+          current = '';
+        }
+      } else {
+        current += char;
+      }
+    }
+
+    if (current.trim()) parts.push(current.trim());
+    return parts;
+  }
+
+  private _isValidGridSizing(value: string): boolean {
+    // Match valid CSS grid sizing values:
+    // - fr units: 1fr, 2.5fr
+    // - px/em/rem/%/vh/vw: 100px, 10em, 5rem, 50%, 10vh, 20vw
+    // - auto, min-content, max-content
+    // - minmax(min, max)
+    // - fit-content(size)
+    const validPattern =
+      /^(\d+(\.\d+)?(fr|px|em|rem|%|vh|vw)|auto|min-content|max-content|minmax\(.+\)|fit-content\(.+\))$/i;
+    return validPattern.test(value.trim());
+  }
+
+  private _getCustomSizingPlaceholder(columnCount: number): string {
+    const examples: Record<number, string> = {
+      1: '1fr',
+      2: '1fr 1fr',
+      3: '1fr 1fr 100px',
+      4: '1fr 1fr 1fr 200px',
+      5: '1fr 1fr 1fr 1fr 100px',
+      6: '1fr 1fr 1fr 1fr 1fr 100px',
+    };
+    return examples[columnCount] || Array(columnCount).fill('1fr').join(' ');
+  }
+
   // Initialize layout if it doesn't exist
   private _ensureLayout(): LayoutConfig {
     if (!this.config.layout || !this.config.layout.rows) {
@@ -1377,8 +1468,10 @@ export class LayoutTab extends LitElement {
     const newLayout = {
       rows: layout.rows.map((r, index) => {
         if (index === rowIndex) {
+          // Clear custom sizing when column count changes
+          const { custom_column_sizing, ...restRow } = r;
           return {
-            ...r,
+            ...restRow,
             columns: [...r.columns, newColumn],
             column_layout: newColumnLayout as CardRow['column_layout'],
           };
@@ -1420,8 +1513,10 @@ export class LayoutTab extends LitElement {
         if (index === rowIndex) {
           const newColumns = [...r.columns];
           newColumns.splice(columnIndex + 1, 0, newColumn);
+          // Clear custom sizing when column count changes
+          const { custom_column_sizing, ...restRow } = r;
           return {
-            ...r,
+            ...restRow,
             columns: newColumns,
             column_layout: newColumnLayout as CardRow['column_layout'],
           };
@@ -1471,6 +1566,8 @@ export class LayoutTab extends LitElement {
     const newLayout = JSON.parse(JSON.stringify(layout));
     newLayout.rows[rowIndex].columns.splice(columnIndex + 1, 0, duplicatedColumn);
     newLayout.rows[rowIndex].column_layout = newColumnLayout;
+    // Clear custom sizing when column count changes
+    delete newLayout.rows[rowIndex].custom_column_sizing;
     this._updateLayout(newLayout);
   }
 
@@ -1499,8 +1596,10 @@ export class LayoutTab extends LitElement {
     const newLayout = {
       rows: layout.rows.map((r, index) => {
         if (index === rowIndex) {
+          // Clear custom sizing when column count changes
+          const { custom_column_sizing, ...restRow } = r;
           return {
-            ...r,
+            ...restRow,
             columns: r.columns.filter((_, colIndex) => colIndex !== columnIndex),
             column_layout: newColumnLayout as CardRow['column_layout'],
           };
@@ -1515,6 +1614,20 @@ export class LayoutTab extends LitElement {
   private _openColumnLayoutSelector(rowIndex: number): void {
     this._selectedRowForLayout = rowIndex;
     this._showColumnLayoutSelector = true;
+
+    // Initialize custom sizing input from current row's custom sizing if it exists
+    const layout = this._ensureLayout();
+    const row = layout.rows[rowIndex];
+    if (row?.custom_column_sizing && row.column_layout === 'custom') {
+      this._customSizingInput = row.custom_column_sizing;
+      this._customSizingValid = true;
+      this._customSizingError = '';
+    } else {
+      // Reset custom sizing state
+      this._customSizingInput = '';
+      this._customSizingValid = false;
+      this._customSizingError = '';
+    }
   }
 
   private _changeColumnLayout(layoutId: string): void {
@@ -1533,6 +1646,9 @@ export class LayoutTab extends LitElement {
     // Create new layout
     const newLayout = JSON.parse(JSON.stringify(layout));
     const targetRow = newLayout.rows[this._selectedRowForLayout];
+
+    // Clear custom sizing when switching to a predefined layout
+    delete targetRow.custom_column_sizing;
 
     if (targetColumnCount === currentColumnCount) {
       // Same number of columns, just change the layout proportions
@@ -1612,6 +1728,11 @@ export class LayoutTab extends LitElement {
   private _getCurrentLayoutText(row: CardRow): string {
     const layoutId = row.column_layout;
 
+    // Handle custom layout
+    if (layoutId === 'custom') {
+      return row.custom_column_sizing || 'Custom';
+    }
+
     // Find matching predefined layout and return its name
     const predefinedLayout = this.COLUMN_LAYOUTS.find(l => l.id === layoutId);
     if (predefinedLayout) {
@@ -1625,6 +1746,11 @@ export class LayoutTab extends LitElement {
   private _getCurrentLayoutDisplay(row: CardRow): string {
     const columnCount = row.columns.length;
     const layoutId = row.column_layout;
+
+    // Handle custom layout - show a custom icon
+    if (layoutId === 'custom') {
+      return '⚙';
+    }
 
     // Find matching predefined layout
     const predefinedLayout = this.COLUMN_LAYOUTS.find(l => l.id === layoutId);
@@ -2486,6 +2612,13 @@ export class LayoutTab extends LitElement {
         `Row added successfully from "${sourceName}"! Check below the current row.`,
         'success'
       );
+
+      // Check for missing variables in the imported row
+      const missingVars = findMissingVariables(clonedRow);
+      if (missingVars.length > 0) {
+        this._missingVariables = missingVars;
+        this._showVariableMappingDialog = true;
+      }
     } catch (error) {
       console.error('Failed to paste row from clipboard:', error);
       if (error instanceof Error && error.name === 'NotAllowedError') {
@@ -2842,6 +2975,13 @@ export class LayoutTab extends LitElement {
         // Clear clipboard tracking after successful import
         ucExportImportService.clearExportClipboard();
         this._hasCardClipboard = false;
+        
+        // Check for missing variables in the imported card
+        const missingVars = findMissingVariables(cardConfig);
+        if (missingVars.length > 0) {
+          this._missingVariables = missingVars;
+          this._showVariableMappingDialog = true;
+        }
       } else if (importData.type === 'ultra-card-layout') {
         // Handle layout import - replace layout
         if (!confirm('This will replace your entire layout. Are you sure?')) {
@@ -2855,6 +2995,13 @@ export class LayoutTab extends LitElement {
         // Clear clipboard tracking after successful import
         ucExportImportService.clearExportClipboard();
         this._hasCardClipboard = false;
+        
+        // Check for missing variables in the imported layout
+        const missingVars = findMissingVariables(newLayout);
+        if (missingVars.length > 0) {
+          this._missingVariables = missingVars;
+          this._showVariableMappingDialog = true;
+        }
       } else if (importData.type === 'ultra-card-row') {
         // Handle row import - add as new row
         const rowData = importData.data as CardRow;
@@ -4737,8 +4884,9 @@ export class LayoutTab extends LitElement {
     const sourceColumn = layout.rows[source.rowIndex].columns[source.columnIndex];
     layout.rows[source.rowIndex].columns.splice(source.columnIndex, 1);
 
-    // Update source row's column layout after removal
+    // Update source row's column layout after removal and clear custom sizing
     const sourceRowNewColumnCount = layout.rows[source.rowIndex].columns.length;
+    delete layout.rows[source.rowIndex].custom_column_sizing;
     if (sourceRowNewColumnCount > 0) {
       const sourceDefaultLayout = this._getLayoutsForColumnCount(sourceRowNewColumnCount)[0];
       layout.rows[source.rowIndex].column_layout = sourceDefaultLayout
@@ -4754,8 +4902,9 @@ export class LayoutTab extends LitElement {
       layout.rows[target.rowIndex].columns.push(sourceColumn);
     }
 
-    // Update target row's column layout after addition
+    // Update target row's column layout after addition and clear custom sizing
     const targetRowNewColumnCount = layout.rows[target.rowIndex].columns.length;
+    delete layout.rows[target.rowIndex].custom_column_sizing;
     const targetDefaultLayout = this._getLayoutsForColumnCount(targetRowNewColumnCount)[0];
     layout.rows[target.rowIndex].column_layout = targetDefaultLayout
       ? targetDefaultLayout.id
@@ -16535,7 +16684,7 @@ export class LayoutTab extends LitElement {
         ${this._showRowSettings ? this._renderRowSettings() : ''}
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
-        ${this._renderFavoriteDialog()} ${this._renderImportDialog()}
+        ${this._renderFavoriteDialog()} ${this._renderImportDialog()} ${this._renderVariableMappingDialog()}
       </div>
     `;
   }
@@ -16693,6 +16842,7 @@ export class LayoutTab extends LitElement {
             this._selectedNestedChildIndex = -1;
             this._moduleSearchQuery = '';
             this._cardSearchQuery = '';
+            this._presetSearchQuery = '';
           }}
         ></div>
         <div class="selector-content draggable-popup" id="module-selector-popup">
@@ -16716,6 +16866,7 @@ export class LayoutTab extends LitElement {
                     this._selectedNestedChildIndex = -1;
                     this._moduleSearchQuery = '';
                     this._cardSearchQuery = '';
+                    this._presetSearchQuery = '';
                   }}
                 >
                   ×
@@ -16757,6 +16908,7 @@ export class LayoutTab extends LitElement {
                   this._activeModuleSelectorTab = 'presets';
                   // Refresh WordPress presets when presets tab is opened
                   ucPresetsService.refreshWordPressPresets();
+                  this._focusSearchInput();
                 }}
               >
                 <ha-icon icon="mdi:palette"></ha-icon>
@@ -16806,9 +16958,13 @@ export class LayoutTab extends LitElement {
    */
   private _focusSearchInput(): void {
     requestAnimationFrame(() => {
-      const inputId = this._activeModuleSelectorTab === 'cards' 
-        ? 'card-search-input' 
-        : 'module-search-input';
+      let inputId = 'module-search-input';
+      
+      if (this._activeModuleSelectorTab === 'cards') {
+        inputId = 'card-search-input';
+      } else if (this._activeModuleSelectorTab === 'presets') {
+        inputId = 'preset-search-input';
+      }
       
       const input = this.shadowRoot?.getElementById(inputId) as HTMLInputElement;
       if (input) {
@@ -16865,6 +17021,31 @@ export class LayoutTab extends LitElement {
         name.includes(searchLower) ||
         description.includes(searchLower) ||
         type.includes(searchLower)
+      );
+    });
+  }
+
+  /**
+   * Filter presets based on search query
+   */
+  private _filterPresetsBySearch(presets: any[], query: string): any[] {
+    if (!query || query.trim() === '') {
+      return presets;
+    }
+
+    const searchLower = query.toLowerCase().trim();
+    
+    return presets.filter(preset => {
+      const name = preset.name?.toLowerCase() || '';
+      const description = preset.description?.toLowerCase() || '';
+      const author = preset.author?.toLowerCase() || '';
+      const category = preset.category?.toLowerCase() || '';
+      
+      return (
+        name.includes(searchLower) ||
+        description.includes(searchLower) ||
+        author.includes(searchLower) ||
+        category.includes(searchLower)
       );
     });
   }
@@ -16930,6 +17111,43 @@ export class LayoutTab extends LitElement {
                   class="clear-search-btn"
                   @click=${() => {
                     this._cardSearchQuery = '';
+                    this._focusSearchInput();
+                  }}
+                  title="Clear search"
+                >
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              `
+            : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render preset search bar
+   */
+  private _renderPresetSearchBar(): TemplateResult {
+    return html`
+      <div class="search-bar-container">
+        <div class="search-bar">
+          <ha-icon icon="mdi:magnify"></ha-icon>
+          <input
+            id="preset-search-input"
+            type="text"
+            placeholder="Search presets..."
+            .value=${this._presetSearchQuery}
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              this._presetSearchQuery = target.value;
+            }}
+          />
+          ${this._presetSearchQuery
+            ? html`
+                <button
+                  class="clear-search-btn"
+                  @click=${() => {
+                    this._presetSearchQuery = '';
                     this._focusSearchInput();
                   }}
                   title="Clear search"
@@ -17457,15 +17675,28 @@ export class LayoutTab extends LitElement {
   }
   private _renderPresetsTab(): TemplateResult {
     const categories = ['all', 'badges', 'layouts', 'widgets', 'custom'] as const;
-    const presets = ucPresetsService.getPresetsByCategory(this._selectedPresetCategory);
+    const allPresets = ucPresetsService.getPresetsByCategory(this._selectedPresetCategory);
     const wpStatus = ucPresetsService.getWordPressStatus();
     const wpCount = ucPresetsService.getWordPressPresetsCount();
 
+    // Check if there's a search query
+    const hasSearchQuery = this._presetSearchQuery.trim() !== '';
+    
+    // Filter presets if searching
+    const presets = hasSearchQuery
+      ? this._filterPresetsBySearch(allPresets, this._presetSearchQuery)
+      : allPresets;
+
     return html`
       <div class="presets-container">
-        <!-- Header with WordPress status -->
-        <div class="presets-header">
-          <div class="preset-categories">
+        <!-- Search Bar -->
+        ${this._renderPresetSearchBar()}
+
+        ${!hasSearchQuery
+          ? html`
+              <!-- Header with WordPress status -->
+              <div class="presets-header">
+                <div class="preset-categories">
             ${categories.map(
               category => html`
                 <button
@@ -17489,24 +17720,31 @@ export class LayoutTab extends LitElement {
             )}
           </div>
 
-          ${wpStatus.error
-            ? html`
-                <div class="wordpress-status">
-                  <div class="status-item error">
-                    <ha-icon icon="mdi:alert-circle"></ha-icon>
-                    <span>Failed to load presets</span>
-                    <button
-                      class="retry-btn"
-                      @click=${() => ucPresetsService.refreshWordPressPresets()}
-                      title="Retry loading presets"
-                    >
-                      <ha-icon icon="mdi:refresh"></ha-icon>
-                    </button>
-                  </div>
-                </div>
-              `
-            : ''}
-        </div>
+                ${wpStatus.error
+                  ? html`
+                      <div class="wordpress-status">
+                        <div class="status-item error">
+                          <ha-icon icon="mdi:alert-circle"></ha-icon>
+                          <span>Failed to load presets</span>
+                          <button
+                            class="retry-btn"
+                            @click=${() => ucPresetsService.refreshWordPressPresets()}
+                            title="Retry loading presets"
+                          >
+                            <ha-icon icon="mdi:refresh"></ha-icon>
+                          </button>
+                        </div>
+                      </div>
+                    `
+                  : ''}
+              </div>
+            `
+          : html`
+              <!-- Search Results Header -->
+              <div class="search-results-header">
+                <span>${presets.length} preset${presets.length !== 1 ? 's' : ''} found</span>
+              </div>
+            `}
 
         <!-- Presets Grid -->
         <div class="presets-grid">
@@ -17560,13 +17798,39 @@ export class LayoutTab extends LitElement {
                             >`
                           : ''}
                         ${isCommunity && preset.metadata?.rating && preset.metadata.rating > 0
-                          ? html`<span class="stat"
-                              ><ha-icon icon="mdi:star"></ha-icon>${preset.metadata.rating.toFixed(
-                                1
-                              )}${wpPreset.rating_count && wpPreset.rating_count > 1
-                                ? ` (${wpPreset.rating_count})`
-                                : ''}</span
-                            >`
+                          ? html`
+                              <div
+                                class="preset-rating-stars"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation();
+                                  if (wpPreset.preset_url) {
+                                    window.open(wpPreset.preset_url, '_blank');
+                                  }
+                                }}
+                                title="Click to rate this preset (${preset.metadata.rating.toFixed(1)}/5${wpPreset.rating_count ? ` - ${wpPreset.rating_count} ${wpPreset.rating_count === 1 ? 'review' : 'reviews'}` : ''})"
+                                style="cursor: pointer; display: flex; align-items: center; gap: 4px;"
+                              >
+                                ${[1, 2, 3, 4, 5].map(
+                                  starNum => html`
+                                    <ha-icon
+                                      icon="mdi:star${starNum <= Math.floor(preset.metadata.rating)
+                                        ? ''
+                                        : starNum - 0.5 <= preset.metadata.rating
+                                          ? '-half-full'
+                                          : '-outline'}"
+                                      style="color: ${starNum <= preset.metadata.rating ? '#ffc107' : '#e0e0e0'}; --mdc-icon-size: 16px;"
+                                    ></ha-icon>
+                                  `
+                                )}
+                                ${wpPreset.rating_count && wpPreset.rating_count > 1
+                                  ? html`<span
+                                      class="rating-count"
+                                      style="font-size: 11px; color: var(--secondary-text-color); margin-left: 2px;"
+                                      >(${wpPreset.rating_count})</span
+                                    >`
+                                  : ''}
+                              </div>
+                            `
                           : ''}
                       </div>
                     </div>
@@ -17642,31 +17906,47 @@ export class LayoutTab extends LitElement {
                   </div>
                 `;
               })
-            : html`<div class="empty-state">
-                <ha-icon icon="mdi:palette-outline"></ha-icon>
-                <p>No presets available in this category</p>
-                ${wpStatus.error
-                  ? html`<div class="error-details">
-                      <p class="error-hint">
-                        ${wpStatus.error.includes('CORS') ||
-                        wpStatus.error.includes('Failed to fetch')
-                          ? html`
-                              <strong>Connection Issue:</strong> Unable to load presets from
-                              ultracard.io.<br />
-                              This usually happens when accessing Home Assistant via IP address
-                              instead of homeassistant.local.<br /><br />
-                              <strong>Solutions:</strong><br />
-                              • Access HA via <code>http://homeassistant.local:8123</code> instead
-                              of IP address<br />
-                              • Or wait for the server CORS configuration to be updated<br />
-                              • Check your internet connection
-                            `
-                          : html`Error: ${wpStatus.error}<br />Check your internet connection and
-                              try refreshing.`}
-                      </p>
-                    </div>`
-                  : ''}
-              </div>`}
+            : hasSearchQuery
+              ? html`
+                  <div class="search-results-empty">
+                    <ha-icon icon="mdi:magnify-close"></ha-icon>
+                    <p>No presets found matching "${this._presetSearchQuery}"</p>
+                    <button
+                      class="clear-search-btn-large"
+                      @click=${() => {
+                        this._presetSearchQuery = '';
+                        this._focusSearchInput();
+                      }}
+                    >
+                      Clear Search
+                    </button>
+                  </div>
+                `
+              : html`<div class="empty-state">
+                  <ha-icon icon="mdi:palette-outline"></ha-icon>
+                  <p>No presets available in this category</p>
+                  ${wpStatus.error
+                    ? html`<div class="error-details">
+                        <p class="error-hint">
+                          ${wpStatus.error.includes('CORS') ||
+                          wpStatus.error.includes('Failed to fetch')
+                            ? html`
+                                <strong>Connection Issue:</strong> Unable to load presets from
+                                ultracard.io.<br />
+                                This usually happens when accessing Home Assistant via IP address
+                                instead of homeassistant.local.<br /><br />
+                                <strong>Solutions:</strong><br />
+                                • Access HA via <code>http://homeassistant.local:8123</code> instead
+                                of IP address<br />
+                                • Or wait for the server CORS configuration to be updated<br />
+                                • Check your internet connection
+                              `
+                            : html`Error: ${wpStatus.error}<br />Check your internet connection and
+                                try refreshing.`}
+                        </p>
+                      </div>`
+                    : ''}
+                </div>`}
         </div>
 
         <!-- Reload Button at Bottom -->
@@ -19268,6 +19548,33 @@ export class LayoutTab extends LitElement {
     `;
   }
 
+  private _renderVariableMappingDialog(): TemplateResult {
+    if (!this._showVariableMappingDialog || this._missingVariables.length === 0) {
+      return html``;
+    }
+
+    return html`
+      <uc-variable-mapping-dialog
+        .hass=${this.hass}
+        .missingVariables=${this._missingVariables}
+        .open=${this._showVariableMappingDialog}
+        @confirm=${() => {
+          this._showVariableMappingDialog = false;
+          this._missingVariables = [];
+          this._showToast('Variables created successfully!', 'success');
+        }}
+        @cancel=${() => {
+          this._showVariableMappingDialog = false;
+          this._missingVariables = [];
+        }}
+        @skip=${() => {
+          this._showVariableMappingDialog = false;
+          this._missingVariables = [];
+        }}
+      ></uc-variable-mapping-dialog>
+    `;
+  }
+
   private _renderImportDialog(): TemplateResult {
     return html`
       <uc-import-dialog
@@ -19360,6 +19667,13 @@ export class LayoutTab extends LitElement {
 
     this._updateLayout(layout);
     this._showToast(`Row "${rowName}" imported successfully!`, 'success');
+    
+    // Check for missing variables in the imported row
+    const missingVars = findMissingVariables(newRow);
+    if (missingVars.length > 0) {
+      this._missingVariables = missingVars;
+      this._showVariableMappingDialog = true;
+    }
   }
 
   private _addImportedRowWithMappings(
@@ -19383,6 +19697,13 @@ export class LayoutTab extends LitElement {
       `Row "${rowName}" imported successfully with ${mappings.length} entity mapping(s)!`,
       'success'
     );
+    
+    // Check for missing variables in the imported row
+    const missingVars = findMissingVariables(newRow);
+    if (missingVars.length > 0) {
+      this._missingVariables = missingVars;
+      this._showVariableMappingDialog = true;
+    }
   }
 
   // Layout Module Rules - centralized logic for layout module behavior
@@ -19746,6 +20067,7 @@ export class LayoutTab extends LitElement {
     // Get the current layout ID, considering migration
     const currentLayoutId = currentRow?.column_layout || '1-col';
     const migratedLayoutId = this._migrateLegacyLayoutId(currentLayoutId);
+    const isCustomLayout = currentLayoutId === 'custom';
 
     // Show only layouts for the current column count
     const availableLayouts = this._getLayoutsForColumnCount(currentColumnCount);
@@ -19772,27 +20094,67 @@ export class LayoutTab extends LitElement {
           <div class="selector-body">
             <div class="layout-options">
               ${availableLayouts.map(
-                layout => html`
+                layoutOpt => html`
                   <button
-                    class="layout-option-btn ${layout.id === currentLayoutId ||
-                    layout.id === migratedLayoutId
+                    class="layout-option-btn ${layoutOpt.id === currentLayoutId ||
+                    layoutOpt.id === migratedLayoutId
                       ? 'current'
                       : ''}"
-                    @click=${() => this._changeColumnLayout(layout.id)}
-                    title="${layout.name}"
+                    @click=${() => this._changeColumnLayout(layoutOpt.id)}
+                    title="${layoutOpt.name}"
                   >
                     <div class="layout-visual">
                       <div class="layout-icon-large">
-                        ${unsafeHTML(this._createColumnIconHTML(layout.proportions))}
+                        ${unsafeHTML(this._createColumnIconHTML(layoutOpt.proportions))}
                       </div>
                     </div>
-                    <div class="layout-name">${layout.name}</div>
-                    ${layout.id === currentLayoutId || layout.id === migratedLayoutId
+                    <div class="layout-name">${layoutOpt.name}</div>
+                    ${layoutOpt.id === currentLayoutId || layoutOpt.id === migratedLayoutId
                       ? html`<div class="current-badge">Current</div>`
                       : ''}
                   </button>
                 `
               )}
+            </div>
+
+            <!-- Custom Sizing Section -->
+            <div class="custom-sizing-section">
+              <div class="custom-sizing-title">Custom Sizing</div>
+              <div class="custom-sizing-description">
+                Enter custom CSS grid sizing (e.g., "${this._getCustomSizingPlaceholder(
+                  currentColumnCount
+                )}").
+                Must have exactly ${currentColumnCount} value${currentColumnCount !== 1 ? 's' : ''}.
+              </div>
+
+              <input
+                type="text"
+                class="custom-sizing-input ${this._customSizingError ? 'has-error' : ''}"
+                placeholder="${this._getCustomSizingPlaceholder(currentColumnCount)}"
+                .value="${this._customSizingInput || currentRow?.custom_column_sizing || ''}"
+                @input=${(e: Event) => this._onCustomSizingInput(e)}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter' && this._customSizingValid) {
+                    this._applyCustomSizing();
+                  }
+                }}
+              />
+
+              ${this._customSizingError
+                ? html` <div class="validation-error">${this._customSizingError}</div> `
+                : ''}
+
+              <button
+                class="apply-custom-btn"
+                ?disabled="${!this._customSizingValid}"
+                @click=${() => this._applyCustomSizing()}
+              >
+                Apply Custom Sizing
+              </button>
+
+              ${isCustomLayout
+                ? html`<div class="current-custom-badge">Currently using custom sizing</div>`
+                : ''}
             </div>
           </div>
 
@@ -19810,6 +20172,39 @@ export class LayoutTab extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _onCustomSizingInput(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    this._customSizingInput = input.value;
+
+    const layout = this._ensureLayout();
+    const row = layout.rows[this._selectedRowForLayout];
+    const columnCount = row?.columns.length || 1;
+
+    const validation = this._validateCustomColumnSizing(input.value, columnCount);
+    this._customSizingValid = validation.valid;
+    this._customSizingError = validation.error || '';
+  }
+
+  private _applyCustomSizing(): void {
+    if (!this._customSizingValid || !this._customSizingInput.trim()) return;
+
+    const layout = this._ensureLayout();
+    const newLayout = JSON.parse(JSON.stringify(layout));
+    const targetRow = newLayout.rows[this._selectedRowForLayout];
+
+    targetRow.column_layout = 'custom';
+    targetRow.custom_column_sizing = this._customSizingInput.trim();
+
+    this._updateLayout(newLayout);
+    this._showColumnLayoutSelector = false;
+    this._selectedRowForLayout = -1;
+
+    // Reset custom sizing state
+    this._customSizingInput = '';
+    this._customSizingValid = false;
+    this._customSizingError = '';
   }
   static get styles() {
     return css`
@@ -21329,6 +21724,101 @@ export class LayoutTab extends LitElement {
         font-weight: 500;
         color: var(--primary-text-color);
         line-height: 1.2;
+      }
+
+      /* Custom Sizing Section Styles */
+      .custom-sizing-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 2px solid var(--divider-color);
+      }
+
+      .custom-sizing-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        margin-bottom: 8px;
+      }
+
+      .custom-sizing-description {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+        margin-bottom: 12px;
+        line-height: 1.4;
+      }
+
+      .custom-sizing-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 4px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 14px;
+        font-family: monospace;
+        margin-bottom: 8px;
+        box-sizing: border-box;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .custom-sizing-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--rgb-primary-color), 0.2);
+      }
+
+      .custom-sizing-input.has-error {
+        border-color: var(--error-color, #f44336);
+      }
+
+      .custom-sizing-input.has-error:focus {
+        box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+      }
+
+      .validation-error {
+        color: var(--error-color, #f44336);
+        font-size: 12px;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: rgba(244, 67, 54, 0.1);
+        border-radius: 4px;
+        border-left: 3px solid var(--error-color, #f44336);
+      }
+
+      .apply-custom-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+      }
+
+      .apply-custom-btn:hover:not(:disabled) {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .apply-custom-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--disabled-color, #9e9e9e);
+      }
+
+      .current-custom-badge {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--primary-color);
+        padding: 8px;
+        background: var(--primary-color-light, rgba(33, 150, 243, 0.1));
+        border-radius: 4px;
       }
 
       .module-placeholder {
@@ -24243,6 +24733,38 @@ export class LayoutTab extends LitElement {
 
       .preset-stats .stat ha-icon {
         --mdc-icon-size: 12px;
+      }
+
+      /* Preset rating stars (clickable) */
+      .preset-rating-stars {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(255, 193, 7, 0.1);
+        transition: all 0.2s ease;
+      }
+
+      .preset-rating-stars:hover {
+        background: rgba(255, 193, 7, 0.2);
+        transform: scale(1.05);
+      }
+
+      .preset-rating-stars ha-icon {
+        --mdc-icon-size: 16px;
+        transition: transform 0.2s ease;
+      }
+
+      .preset-rating-stars:hover ha-icon {
+        transform: scale(1.1);
+      }
+
+      .preset-rating-stars .rating-count {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin-left: 2px;
+        font-weight: 500;
       }
 
       /* Error hint for empty states */

@@ -9,6 +9,7 @@ import '../components/uc-gradient-editor';
 import '../components/ultra-template-editor';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
+import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { TemplateService } from '../services/template-service';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
 import { buildEntityContext } from '../utils/template-context';
@@ -105,10 +106,10 @@ export class UltraGaugeModule extends BaseUltraModule {
       show_tick_labels: false,
       tick_label_font_size: 10,
 
-      // Animation
-      animation_enabled: true,
-      animation_duration: '1000ms',
-      animation_easing: 'ease-out',
+      // Gauge Animation (needle/value animation - named to avoid Design tab conflict)
+      gauge_animation_enabled: true,
+      gauge_animation_duration: '1000ms',
+      gauge_animation_easing: 'ease-out',
 
       // Segments (default for segments mode)
       segments: [
@@ -1721,7 +1722,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     hass: HomeAssistant,
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
-    const animationEnabled = gaugeModule.animation_enabled !== false;
+    const animationEnabled = gaugeModule.gauge_animation_enabled !== false;
 
     return html`
       <div class="settings-section">
@@ -1734,7 +1735,7 @@ export class UltraGaugeModule extends BaseUltraModule {
           <ha-switch
             .checked=${animationEnabled}
             @change=${(e: Event) =>
-              updateModule({ animation_enabled: (e.target as HTMLInputElement).checked })}
+              updateModule({ gauge_animation_enabled: (e.target as HTMLInputElement).checked })}
           ></ha-switch>
         </div>
         <div class="field-description" style="margin-bottom: 16px;">
@@ -1753,11 +1754,11 @@ export class UltraGaugeModule extends BaseUltraModule {
                     '',
                     '',
                     hass,
-                    { animation_duration: gaugeModule.animation_duration || '1000ms' },
-                    [FormUtils.createSchemaItem('animation_duration', { text: {} })],
+                    { gauge_animation_duration: gaugeModule.gauge_animation_duration || '1000ms' },
+                    [FormUtils.createSchemaItem('gauge_animation_duration', { text: {} })],
                     (e: CustomEvent) => {
-                      const value = e.detail.value.animation_duration;
-                      updateModule({ animation_duration: value === '' ? undefined : value });
+                      const value = e.detail.value.gauge_animation_duration;
+                      updateModule({ gauge_animation_duration: value === '' ? undefined : value });
                     }
                   )}
                 </div>
@@ -1767,9 +1768,9 @@ export class UltraGaugeModule extends BaseUltraModule {
                   <div class="field-description">Easing function for the animation.</div>
                   ${this.renderUcForm(
                     hass,
-                    { animation_easing: gaugeModule.animation_easing || 'ease-out' },
+                    { gauge_animation_easing: gaugeModule.gauge_animation_easing || 'ease-out' },
                     [
-                      this.selectField('animation_easing', [
+                      this.selectField('gauge_animation_easing', [
                         { value: 'linear', label: 'Linear' },
                         { value: 'ease-in', label: 'Ease In' },
                         { value: 'ease-out', label: 'Ease Out' },
@@ -1778,10 +1779,10 @@ export class UltraGaugeModule extends BaseUltraModule {
                       ]),
                     ],
                     (e: CustomEvent) => {
-                      const next = e.detail.value.animation_easing;
-                      const prev = gaugeModule.animation_easing || 'ease-out';
+                      const next = e.detail.value.gauge_animation_easing;
+                      const prev = gaugeModule.gauge_animation_easing || 'ease-out';
                       if (next === prev) return;
-                      updateModule({ animation_easing: next });
+                      updateModule({ gauge_animation_easing: next });
                       setTimeout(() => this.triggerPreviewUpdate(), 50);
                     },
                     false
@@ -1801,6 +1802,15 @@ export class UltraGaugeModule extends BaseUltraModule {
     updateModule: (updates: Partial<CardModule>) => void
   ): TemplateResult {
     return GlobalActionsTab.render(module as GaugeModule, hass, updates => updateModule(updates));
+  }
+
+  renderDesignTab(
+    module: CardModule,
+    hass: HomeAssistant,
+    config: UltraCardConfig,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    return GlobalDesignTab.render(module as GaugeModule, hass, updates => updateModule(updates));
   }
 
   // Split preview for module settings popup - delegate to layout tab's wrapper
@@ -1836,11 +1846,80 @@ export class UltraGaugeModule extends BaseUltraModule {
       );
     }
 
+    // Apply design properties with priority - design properties override module properties
+    const moduleWithDesign = gaugeModule as any;
+    const designProperties = (gaugeModule as any).design || {};
+
+    // Container styles for design system with proper priority
+    const containerStyles = {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      overflow: 'visible',
+      boxSizing: 'border-box',
+      // Apply design properties - padding (no default padding - SVG has overflow:visible for labels)
+      padding:
+        designProperties.padding_top ||
+        designProperties.padding_bottom ||
+        designProperties.padding_left ||
+        designProperties.padding_right ||
+        moduleWithDesign.padding_top ||
+        moduleWithDesign.padding_bottom ||
+        moduleWithDesign.padding_left ||
+        moduleWithDesign.padding_right
+          ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
+          : '0',
+      // Apply design properties - margin
+      margin:
+        designProperties.margin_top ||
+        designProperties.margin_bottom ||
+        designProperties.margin_left ||
+        designProperties.margin_right ||
+        moduleWithDesign.margin_top ||
+        moduleWithDesign.margin_bottom ||
+        moduleWithDesign.margin_left ||
+        moduleWithDesign.margin_right
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '0',
+      // Apply design properties - background
+      background:
+        designProperties.background_color ||
+        moduleWithDesign.background_color ||
+        'transparent',
+      // Apply design properties - border
+      border:
+        (designProperties.border_style || moduleWithDesign.border_style) &&
+        (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+          ? `${this.addPixelUnit(designProperties.border_width || moduleWithDesign.border_width) || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
+          : 'none',
+      // Apply design properties - border radius
+      borderRadius:
+        this.addPixelUnit(designProperties.border_radius || moduleWithDesign.border_radius) || '0',
+      // Apply design properties - box shadow
+      boxShadow:
+        (designProperties.box_shadow_h || moduleWithDesign.box_shadow_h) &&
+        (designProperties.box_shadow_v || moduleWithDesign.box_shadow_v)
+          ? `${designProperties.box_shadow_h || moduleWithDesign.box_shadow_h || '0'} ${designProperties.box_shadow_v || moduleWithDesign.box_shadow_v || '0'} ${designProperties.box_shadow_blur || moduleWithDesign.box_shadow_blur || '0'} ${designProperties.box_shadow_spread || moduleWithDesign.box_shadow_spread || '0'} ${designProperties.box_shadow_color || moduleWithDesign.box_shadow_color || 'rgba(0,0,0,0.1)'}`
+          : 'none',
+    };
+
+    // Convert containerStyles object to CSS string
+    const containerStyleStr = Object.entries(containerStyles)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([key, value]) => {
+        // Convert camelCase to kebab-case
+        const kebabKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        return `${kebabKey}: ${value}`;
+      })
+      .join('; ');
+
     const value = this.calculateGaugeValue(gaugeModule, hass);
     const displayName = this.getDisplayName(gaugeModule, hass);
 
     return html`
-      <div class="uc-gauge-container" style="${this.getContainerStyles(gaugeModule)}">
+      <div class="uc-gauge-container" style="${containerStyleStr}">
         ${gaugeModule.show_name && gaugeModule.name_position === 'top'
           ? html`
               <div class="uc-gauge-name" style="${this.getNameStyles(gaugeModule)}">
@@ -1862,9 +1941,9 @@ export class UltraGaugeModule extends BaseUltraModule {
             : ''}
           <svg
             class="uc-gauge-svg"
-            viewBox="0 0 ${gaugeModule.gauge_size || 200} ${gaugeModule.gauge_size || 200}"
+            viewBox="${this.getSvgViewBox(gaugeModule)}"
             width="${gaugeModule.gauge_size || 200}"
-            height="${gaugeModule.gauge_size || 200}"
+            height="${this.getSvgHeight(gaugeModule)}"
             style="overflow: visible;"
           >
             ${this.renderGaugeByStyle(gaugeModule, value, hass)}
@@ -2131,10 +2210,10 @@ export class UltraGaugeModule extends BaseUltraModule {
                 clampedPercentage,
                 'round',
                 `transition: stroke-dashoffset ${
-                  gaugeModule.animation_enabled !== false
-                    ? gaugeModule.animation_duration || '1000ms'
+                  gaugeModule.gauge_animation_enabled !== false
+                    ? gaugeModule.gauge_animation_duration || '1000ms'
                     : '0ms'
-                } ${gaugeModule.animation_easing || 'ease-out'};`,
+                } ${gaugeModule.gauge_animation_easing || 'ease-out'};`,
                 backgroundArc,
                 centerX,
                 centerY,
@@ -2150,10 +2229,10 @@ export class UltraGaugeModule extends BaseUltraModule {
                 stroke-width="${thickness}"
                 stroke-linecap="round"
                 style="transition: stroke-dashoffset ${
-                  gaugeModule.animation_enabled !== false
-                    ? gaugeModule.animation_duration || '1000ms'
+                  gaugeModule.gauge_animation_enabled !== false
+                    ? gaugeModule.gauge_animation_duration || '1000ms'
                     : '0ms'
-                } ${gaugeModule.animation_easing || 'ease-out'};"
+                } ${gaugeModule.gauge_animation_easing || 'ease-out'};"
               />
             `
       }
@@ -3445,10 +3524,10 @@ export class UltraGaugeModule extends BaseUltraModule {
                 stroke-width="${thickness}"
                 stroke-linecap="butt"
                 style="transition: stroke-dashoffset ${
-                  gaugeModule.animation_enabled !== false
-                    ? gaugeModule.animation_duration || '1000ms'
+                  gaugeModule.gauge_animation_enabled !== false
+                    ? gaugeModule.gauge_animation_duration || '1000ms'
                     : '0ms'
-                } ${gaugeModule.animation_easing || 'ease-out'};"
+                } ${gaugeModule.gauge_animation_easing || 'ease-out'};"
               />
               ${this.renderNeonGlowAtEnd(
                 gaugeModule,
@@ -3483,10 +3562,10 @@ export class UltraGaugeModule extends BaseUltraModule {
                 stroke-width="${thickness}"
                 stroke-linecap="butt"
                 style="transition: stroke-dashoffset ${
-                  gaugeModule.animation_enabled !== false
-                    ? gaugeModule.animation_duration || '1000ms'
+                  gaugeModule.gauge_animation_enabled !== false
+                    ? gaugeModule.gauge_animation_duration || '1000ms'
                     : '0ms'
-                } ${gaugeModule.animation_easing || 'ease-out'};"
+                } ${gaugeModule.gauge_animation_easing || 'ease-out'};"
               />
               ${this.renderNeonGlowAtEnd(
                 gaugeModule,
@@ -4691,6 +4770,109 @@ export class UltraGaugeModule extends BaseUltraModule {
     };
   }
 
+  // Calculate SVG viewBox based on gauge style to tightly fit content
+  private getSvgViewBox(gaugeModule: GaugeModule): string {
+    const size = gaugeModule.gauge_size || 200;
+    const style = gaugeModule.gauge_style || 'modern';
+    const thickness = gaugeModule.gauge_thickness || 15;
+    const center = size / 2;
+    const radius = size / 2 - thickness - 10;
+    const hasLabels = gaugeModule.show_min_max !== false || gaugeModule.show_tick_labels;
+    
+    // For full circle gauges, use full viewBox
+    if (['radial', 'minimal'].includes(style)) {
+      return `0 0 ${size} ${size}`;
+    }
+    
+    // For digital gauge, full size
+    if (style === 'digital') {
+      return `0 0 ${size} ${size}`;
+    }
+    
+    // Calculate bounds based on arc angles
+    let startAngle: number, endAngle: number;
+    
+    if (style === 'arc') {
+      startAngle = -180; endAngle = 0; // Semi-circle
+    } else if (style === 'speedometer') {
+      startAngle = -225; endAngle = 45; // 270° arc
+    } else {
+      startAngle = -120; endAngle = 120; // 240° arc (modern, basic, 3d, etc.)
+    }
+    
+    // Calculate the actual bounds of the arc
+    const labelOffset = hasLabels ? 25 : 5;
+    const outerRadius = radius + thickness / 2 + labelOffset;
+    
+    // Convert angles to radians and find min/max Y
+    const startRad = (startAngle - 90) * Math.PI / 180;
+    const endRad = (endAngle - 90) * Math.PI / 180;
+    
+    // Top of arc (always at top for these gauge types)
+    const minY = center - outerRadius;
+    
+    // Bottom of arc - find the lowest point
+    const startY = center + outerRadius * Math.sin(startRad);
+    const endY = center + outerRadius * Math.sin(endRad);
+    const maxY = Math.max(startY, endY, center); // Include center for pointer hub
+    
+    // Add small padding
+    const padding = 5;
+    const viewMinY = Math.max(0, minY - padding);
+    const viewHeight = maxY - viewMinY + padding;
+    
+    return `0 ${viewMinY} ${size} ${viewHeight}`;
+  }
+  
+  // Calculate SVG height based on gauge style to remove empty space
+  private getSvgHeight(gaugeModule: GaugeModule): number {
+    const size = gaugeModule.gauge_size || 200;
+    const style = gaugeModule.gauge_style || 'modern';
+    const thickness = gaugeModule.gauge_thickness || 15;
+    const center = size / 2;
+    const radius = size / 2 - thickness - 10;
+    const hasLabels = gaugeModule.show_min_max !== false || gaugeModule.show_tick_labels;
+    
+    // For full circle gauges, use full height
+    if (['radial', 'minimal'].includes(style)) {
+      return size;
+    }
+    
+    // For digital gauge, full height
+    if (style === 'digital') {
+      return size;
+    }
+    
+    // Calculate bounds based on arc angles
+    let startAngle: number, endAngle: number;
+    
+    if (style === 'arc') {
+      startAngle = -180; endAngle = 0;
+    } else if (style === 'speedometer') {
+      startAngle = -225; endAngle = 45;
+    } else {
+      startAngle = -120; endAngle = 120;
+    }
+    
+    const labelOffset = hasLabels ? 25 : 5;
+    const outerRadius = radius + thickness / 2 + labelOffset;
+    
+    const startRad = (startAngle - 90) * Math.PI / 180;
+    const endRad = (endAngle - 90) * Math.PI / 180;
+    
+    const minY = center - outerRadius;
+    const startY = center + outerRadius * Math.sin(startRad);
+    const endY = center + outerRadius * Math.sin(endRad);
+    const maxY = Math.max(startY, endY, center);
+    
+    const padding = 5;
+    const viewMinY = Math.max(0, minY - padding);
+    const viewHeight = maxY - viewMinY + padding;
+    
+    // Scale height proportionally to viewBox
+    return viewHeight;
+  }
+
   private getGaugeViewBox(gaugeModule: GaugeModule): string {
     const size = gaugeModule.gauge_size || 200;
     const hasLabels = gaugeModule.show_min_max !== false || gaugeModule.show_tick_labels;
@@ -4888,6 +5070,30 @@ export class UltraGaugeModule extends BaseUltraModule {
         cursor: pointer;
       }
     `;
+  }
+
+  // Helper method to ensure values have proper units
+  private addPixelUnit(value: string | number | undefined): string | undefined {
+    if (!value && value !== 0) return value as string | undefined;
+
+    // Convert number to string
+    const valueStr = String(value);
+
+    // If value is just a number or contains only numbers, add px
+    if (/^\d+$/.test(valueStr)) {
+      return `${valueStr}px`;
+    }
+
+    // If value is a multi-value (like "5 10 15 20"), add px to each number
+    if (/^[\d\s]+$/.test(valueStr)) {
+      return valueStr
+        .split(' ')
+        .map(v => (v.trim() ? `${v}px` : v))
+        .join(' ');
+    }
+
+    // Otherwise return as-is (already has units like px, em, %, etc.)
+    return valueStr;
   }
 
   private _hashString(str: string): number {

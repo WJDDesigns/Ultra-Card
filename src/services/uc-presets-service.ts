@@ -452,6 +452,7 @@ class UcPresetsService {
       presetDefinition.preset_url = wpPreset.preset_url;
       presetDefinition.description_full = wpPreset.description_full;
       presetDefinition.gallery = wpPreset.gallery || [];
+      presetDefinition.rating_count = wpPreset.rating_count || wpPreset.reviews_count || 0;
 
       return presetDefinition;
     } catch (error) {

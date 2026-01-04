@@ -70,7 +70,13 @@
       "baseline": "Baseline",
       "custom_text": "Custom Text",
       "entity_state": "Entity State",
-      "apart": "Apart"
+      "apart": "Apart",
+      "add": "Add",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "reset": "Reset"
     },
     "horizontal": {
       "layout": {
@@ -2322,6 +2328,44 @@
       "match_mode_none": "None (Manual Only)",
       "match_mode_entity": "Entity State",
       "match_mode_template": "Template (Advanced)"
+    },
+    "custom_variables": {
+      "title": "Custom Variables",
+      "description": "Create reusable variables that reference entities. Use them in templates with {{ $variable_name }}. These variables sync across all your Ultra Cards.",
+      "add_variable": "Add Variable",
+      "add_new_variable": "Add New Variable",
+      "variable_name": "Variable Name",
+      "variable_name_placeholder": "my_variable_name",
+      "variable_usage": "Use in templates:",
+      "select_entity": "Select Entity",
+      "value_type": "Value Type",
+      "value_type_entity_id": "Entity ID",
+      "value_type_state": "State Value",
+      "value_type_full_object": "Full Object",
+      "value_type_entity_id_desc": "Entity ID (e.g., sensor.temperature)",
+      "value_type_state_desc": "State Value (e.g., 23.5)",
+      "value_type_full_object_desc": "Full Entity Object (JSON)",
+      "clear_all": "Clear All",
+      "confirm_delete": "Are you sure you want to delete this variable?",
+      "confirm_clear_all": "Are you sure you want to delete ALL variables? This cannot be undone.",
+      "edit_variable": "Edit Variable",
+      "delete_variable": "Delete Variable",
+      "drag_to_reorder": "Drag to reorder",
+      "empty_title": "No Custom Variables",
+      "empty_description": "Add your first variable to get started. Variables can be used in templates with {{ $variable_name }} syntax.",
+      "select_entity_placeholder": "Search entities..."
+    },
+    "export_import": {
+      "include_variables": "You have custom variable(s). Include them in the export?",
+      "import_variables": "This card includes custom variable(s). Import them?",
+      "variables_found": "Found {count} custom variables in import."
+    },
+    "variable_mapping": {
+      "title": "Map Missing Variables",
+      "description": "This card uses variables that are not in your system. Map them to entities to create them, or skip to import without them.",
+      "skip": "Skip All",
+      "create": "Create Variables",
+      "skipped": "Will not be created"
     }
   }
 }

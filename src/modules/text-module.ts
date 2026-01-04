@@ -12,6 +12,7 @@ import { computeBackgroundStyles } from '../utils/uc-color-utils';
 import { localize } from '../localize/localize';
 import { buildEntityContext } from '../utils/template-context';
 import { parseUnifiedTemplate, hasTemplateError } from '../utils/template-parser';
+import { preprocessTemplateVariables } from '../utils/uc-template-processor';
 import '../components/ultra-color-picker';
 import '../components/ultra-template-editor';
 
@@ -617,10 +618,13 @@ export class UltraTextModule extends BaseUltraModule {
       }
 
       if (hass) {
+        // Preprocess custom variables ($variable_name) before Jinja evaluation
+        const processedUnifiedTemplate = preprocessTemplateVariables(textModule.unified_template, hass);
+        
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const templateHash = this._hashString(textModule.unified_template);
+        const templateHash = this._hashString(processedUnifiedTemplate);
         const templateKey = `unified_text_${textModule.id}_${templateHash}`;
 
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
@@ -628,7 +632,7 @@ export class UltraTextModule extends BaseUltraModule {
             text: textModule.text,
           });
           this._templateService.subscribeToTemplate(
-            textModule.unified_template,
+            processedUnifiedTemplate,
             templateKey,
             () => {
               if (typeof window !== 'undefined') {
@@ -663,17 +667,20 @@ export class UltraTextModule extends BaseUltraModule {
 
       // Ensure template string cache exists on hass
       if (hass) {
+        // Preprocess custom variables ($variable_name) before Jinja evaluation
+        const processedLegacyTemplate = preprocessTemplateVariables(textModule.template, hass);
+        
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
         }
-        const templateHash = this._hashString(textModule.template);
+        const templateHash = this._hashString(processedLegacyTemplate);
         // Use only template hash for key to prevent subscription leaks when module ID changes
         // Module ID can change during editor updates, but template content is stable
         const templateKey = `state_text_text_${templateHash}`;
 
         // Subscribe if needed
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(textModule.template, templateKey, () => {
+          this._templateService.subscribeToTemplate(processedLegacyTemplate, templateKey, () => {
             if (typeof window !== 'undefined') {
               // Use global debounced update
               if (!window._ultraCardUpdateTimer) {

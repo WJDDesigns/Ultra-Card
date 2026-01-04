@@ -958,10 +958,10 @@ export interface GaugeModule extends BaseModule {
   show_tick_labels?: boolean;
   tick_label_font_size?: number;
 
-  // Animation
-  animation_enabled?: boolean;
-  animation_duration?: string; // Duration in milliseconds
-  animation_easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce';
+  // Gauge Animation (needle/value animation - named to avoid Design tab conflict)
+  gauge_animation_enabled?: boolean;
+  gauge_animation_duration?: string; // Duration in milliseconds
+  gauge_animation_easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce';
 
   // Zones/Ranges (visual indicators on gauge)
   zones?: Array<{
@@ -4064,7 +4064,10 @@ export interface CardRow {
     | '33-33-33'
     | '25-50-25'
     | '20-60-20'
-    | '25-25-25-25';
+    | '25-25-25-25'
+    // Custom sizing
+    | 'custom';
+  custom_column_sizing?: string; // Custom CSS grid template columns value (e.g., "1fr 1fr 100px")
   gap?: number;
   column_alignment?: 'top' | 'middle' | 'bottom';
   content_alignment?: 'start' | 'end' | 'center' | 'stretch';
@@ -4096,6 +4099,22 @@ export interface FavoriteColor {
   name: string;
   color: string;
   order: number;
+}
+
+// Custom Variables Configuration
+export interface CustomVariable {
+  id: string;
+  name: string; // Variable name (used as $name in templates)
+  entity: string; // Entity ID reference
+  value_type: 'entity_id' | 'state' | 'full_object'; // What the variable resolves to
+  order: number;
+  created?: string;
+}
+
+export interface CustomVariablesExportData {
+  variables: CustomVariable[];
+  version: string;
+  exported: string;
 }
 
 // Preset system types
@@ -4157,6 +4176,7 @@ export interface ExportData {
     description?: string;
     privacyProtected?: boolean; // Flag indicating if data was sanitized for privacy
   };
+  customVariables?: CustomVariable[]; // Optional: Custom variables to export/import with the card
 }
 
 // Main card configuration

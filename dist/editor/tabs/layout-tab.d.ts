@@ -4,6 +4,7 @@ import { UltraCardConfig } from '../../types';
 import '../../components/ultra-color-picker';
 import '../global-design-tab';
 import '../../components/uc-favorite-dialog';
+import '../../components/uc-variable-mapping-dialog';
 import '../../components/uc-import-dialog';
 export declare class LayoutTab extends LitElement {
     hass: HomeAssistant;
@@ -27,6 +28,9 @@ export declare class LayoutTab extends LitElement {
     private _activeTabsChildTab;
     private _showColumnLayoutSelector;
     private _selectedRowForLayout;
+    private _customSizingInput;
+    private _customSizingValid;
+    private _customSizingError;
     private _collapsedPreviewModules;
     private _isRowColumnPreviewCollapsed;
     private _collapsedConditionIds;
@@ -45,8 +49,11 @@ export declare class LayoutTab extends LitElement {
     private _hasModuleClipboard;
     private _hasColumnClipboard;
     private _hasCardClipboard;
+    private _showVariableMappingDialog;
+    private _missingVariables;
     private _moduleSearchQuery;
     private _cardSearchQuery;
+    private _presetSearchQuery;
     private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
@@ -119,6 +126,10 @@ export declare class LayoutTab extends LitElement {
     private readonly COLUMN_LAYOUTS;
     private _getLayoutsForColumnCount;
     private _migrateLegacyLayoutId;
+    private _validateCustomColumnSizing;
+    private _parseGridTemplateColumns;
+    private _isValidGridSizing;
+    private _getCustomSizingPlaceholder;
     private _ensureLayout;
     private _updateConfig;
     private _updateLayout;
@@ -522,6 +533,10 @@ export declare class LayoutTab extends LitElement {
      */
     private _filterCardsBySearch;
     /**
+     * Filter presets based on search query
+     */
+    private _filterPresetsBySearch;
+    /**
      * Render module search bar
      */
     private _renderModuleSearchBar;
@@ -529,6 +544,10 @@ export declare class LayoutTab extends LitElement {
      * Render card search bar
      */
     private _renderCardSearchBar;
+    /**
+     * Render preset search bar
+     */
+    private _renderPresetSearchBar;
     private _renderModulesTab;
     /**
      * Render module search results in a single column list view
@@ -560,6 +579,7 @@ export declare class LayoutTab extends LitElement {
     private _renderCardSearchResults;
     private _addCardFromTab;
     private _renderFavoriteDialog;
+    private _renderVariableMappingDialog;
     private _renderImportDialog;
     private _handleImport;
     private _showRowImportMappingDialog;
@@ -574,6 +594,8 @@ export declare class LayoutTab extends LitElement {
     private _shouldAutoOpenSettings;
     private _getLayoutModuleColor;
     private _renderColumnLayoutSelector;
+    private _onCustomSizingInput;
+    private _applyCustomSizing;
     static get styles(): import("lit").CSSResult;
     private _handleBackgroundImageUpload;
     private _truncatePath;

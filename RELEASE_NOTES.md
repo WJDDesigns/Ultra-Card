@@ -1,5 +1,24 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta2
+
+### 🚀 New Features
+
+- **Added new custom variables system** - Create and manage custom variables for dynamic card configuration
+- **Added custom sizing for columns** - More control over column widths and layout flexibility
+- **Added searching in modules/cards/presets** - Quickly find modules, cards, and presets with the new search functionality
+
+### 🚀 Improvements
+
+- **Added new toggle auto maker and adjusted behavior** - Enhanced toggle module with auto maker functionality and improved behavior
+
+### 🐛 Bug Fixes
+
+- **Fixed gauge module design issues** - Resolved design problems affecting gauge modules
+- **Fixed design tab not working with gauge modules** - Design tab now properly applies to gauge modules
+
+---
+
 ## Version 2.3.0-beta1
 
 ### 🚀 New Features

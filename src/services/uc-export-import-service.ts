@@ -1,6 +1,7 @@
-import { ExportData, CardRow, LayoutConfig, CardModule, CardColumn, UltraCardConfig } from '../types';
+import { ExportData, CardRow, LayoutConfig, CardModule, CardColumn, UltraCardConfig, CustomVariable } from '../types';
 import { VERSION } from '../version';
 import { ucPrivacyService } from './uc-privacy-service';
+import { ucCustomVariablesService } from './uc-custom-variables-service';
 
 /**
  * Service for exporting and importing Ultra Card configurations
@@ -102,8 +103,11 @@ class UcExportImportService {
 
   /**
    * Export full card configuration to clipboard with privacy protection
+   * @param config Card configuration to export
+   * @param name Optional name for the export
+   * @param includeVariables Whether to include custom variables in the export
    */
-  async exportCardToClipboard(config: UltraCardConfig, name?: string): Promise<void> {
+  async exportCardToClipboard(config: UltraCardConfig, name?: string, includeVariables?: boolean): Promise<void> {
     // Scan for privacy issues
     const privacyScan = ucPrivacyService.scanAndSanitize(config);
 
@@ -123,6 +127,11 @@ class UcExportImportService {
         privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
     };
+
+    // Include custom variables if requested
+    if (includeVariables) {
+      exportData.customVariables = ucCustomVariablesService.exportVariables();
+    }
 
     const shortcode = this._generateShortcode(exportData);
     await this._copyToClipboard(shortcode);
@@ -924,6 +933,41 @@ class UcExportImportService {
     } catch (e) {
       // localStorage not available - ignore
     }
+  }
+
+  // ========== CUSTOM VARIABLES EXPORT/IMPORT HELPERS ==========
+
+  /**
+   * Check if export data contains custom variables
+   */
+  hasCustomVariables(exportData: ExportData): boolean {
+    return !!(exportData.customVariables && exportData.customVariables.length > 0);
+  }
+
+  /**
+   * Get custom variables from export data
+   */
+  getCustomVariables(exportData: ExportData): CustomVariable[] {
+    return exportData.customVariables || [];
+  }
+
+  /**
+   * Import custom variables from export data
+   * @param exportData Export data containing variables
+   * @param merge If true, merge with existing variables; if false, replace all
+   */
+  importCustomVariables(exportData: ExportData, merge: boolean = true): void {
+    if (!this.hasCustomVariables(exportData)) {
+      return;
+    }
+    ucCustomVariablesService.importVariables(exportData.customVariables!, merge);
+  }
+
+  /**
+   * Get the count of custom variables that would be imported
+   */
+  getCustomVariablesCount(exportData: ExportData): number {
+    return exportData.customVariables?.length || 0;
   }
 }
 
