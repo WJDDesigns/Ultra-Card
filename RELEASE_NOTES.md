@@ -1,5 +1,13 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta5
+
+### 🐛 Bug Fixes
+
+- **Fixed card-specific variables not resolving after config save** - Variables with `isGlobal: false` now work correctly even after Home Assistant serialization
+
+---
+
 ## Version 2.3.0-beta4
 
 ### 🐛 Bug Fixes

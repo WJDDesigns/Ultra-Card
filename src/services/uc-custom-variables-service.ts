@@ -38,7 +38,7 @@ class UcCustomVariablesService {
   getVariablesForCard(cardConfig?: UltraCardConfig): CustomVariable[] {
     const globalVars = this.getVariables(); // Global only
     const cardVars = (cardConfig?._customVariables || [])
-      .filter(v => v.isGlobal === false) // Only card-specific
+      .filter(v => v.isGlobal !== true) // Only card-specific (handles undefined too)
       .sort((a, b) => a.order - b.order);
     
     return [...globalVars, ...cardVars];
@@ -46,10 +46,11 @@ class UcCustomVariablesService {
 
   /**
    * Get card-specific variables only (not global)
+   * Note: Use !== true to handle both false and undefined (can happen after serialization)
    */
   getCardSpecificVariables(cardConfig?: UltraCardConfig): CustomVariable[] {
     return (cardConfig?._customVariables || [])
-      .filter(v => v.isGlobal === false)
+      .filter(v => v.isGlobal !== true)
       .sort((a, b) => a.order - b.order);
   }
 
@@ -62,11 +63,12 @@ class UcCustomVariablesService {
 
   /**
    * Get a variable by name in card context (global + card-specific)
+   * Note: Use !== true to handle both false and undefined (can happen after serialization)
    */
   getVariableByNameInContext(name: string, cardConfig?: UltraCardConfig): CustomVariable | undefined {
     // First check card-specific (higher priority)
     const cardVars = cardConfig?._customVariables || [];
-    const cardMatch = cardVars.find(v => v.name.toLowerCase() === name.toLowerCase() && v.isGlobal === false);
+    const cardMatch = cardVars.find(v => v.name.toLowerCase() === name.toLowerCase() && v.isGlobal !== true);
     if (cardMatch) return cardMatch;
     
     // Then check global
@@ -306,7 +308,7 @@ class UcCustomVariablesService {
   getVariableNamesInContext(cardConfig?: UltraCardConfig): string[] {
     const globalNames = this.getVariableNames();
     const cardNames = (cardConfig?._customVariables || [])
-      .filter(v => v.isGlobal === false)
+      .filter(v => v.isGlobal !== true) // Handles undefined too
       .map(v => v.name);
     return [...globalNames, ...cardNames];
   }
@@ -477,9 +479,9 @@ class UcCustomVariablesService {
    * Check if a variable name exists in card context (global + card-specific)
    */
   hasVariableInContext(name: string, cardConfig?: UltraCardConfig): boolean {
-    // Check card-specific first
+    // Check card-specific first (isGlobal !== true handles undefined)
     const cardVars = cardConfig?._customVariables || [];
-    if (cardVars.some(v => v.name.toLowerCase() === name.toLowerCase() && v.isGlobal === false)) {
+    if (cardVars.some(v => v.name.toLowerCase() === name.toLowerCase() && v.isGlobal !== true)) {
       return true;
     }
     // Check global
