@@ -1475,7 +1475,8 @@ export class UltraCameraModule extends BaseUltraModule {
                 }
               }
             },
-            context
+            context,
+            config // Pass config for card-specific variable resolution
           );
         }
 

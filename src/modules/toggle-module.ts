@@ -1453,6 +1453,7 @@ export class UltraToggleModule extends BaseUltraModule {
                 }
               }
             }
+            // Note: cardConfig not available in _subscribeToToggleTemplates - only global variables will work here
           );
         }
       }

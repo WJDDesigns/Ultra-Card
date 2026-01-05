@@ -2869,7 +2869,8 @@ export class UltraIconModule extends BaseUltraModule {
                 }
               }
             },
-            context
+            context,
+            config // Pass config for card-specific variable resolution
           );
         }
 
@@ -3110,7 +3111,8 @@ export class UltraIconModule extends BaseUltraModule {
                         }
                       }
                     },
-                    context
+                    context,
+                    config // Pass config for card-specific variable resolution
                   );
                 }
 
@@ -3173,7 +3175,9 @@ export class UltraIconModule extends BaseUltraModule {
                           }, 50);
                         }
                       }
-                    }
+                    },
+                    undefined, // No context variables
+                    config // Pass config for card-specific variable resolution
                   );
                 }
 
@@ -3223,7 +3227,9 @@ export class UltraIconModule extends BaseUltraModule {
                           }, 50);
                         }
                       }
-                    }
+                    },
+                    undefined, // No context variables
+                    config // Pass config for card-specific variable resolution
                   );
                 }
 
@@ -3301,12 +3307,18 @@ export class UltraIconModule extends BaseUltraModule {
                   this._templateService &&
                   !this._templateService.hasTemplateSubscription(templateKey)
                 ) {
-                  this._templateService.subscribeToTemplate(icon.template, templateKey, () => {
-                    // Force re-render when template updates
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                    }
-                  });
+                  this._templateService.subscribeToTemplate(
+                    icon.template,
+                    templateKey,
+                    () => {
+                      // Force re-render when template updates
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      }
+                    },
+                    undefined, // No context variables
+                    config // Pass config for card-specific variable resolution
+                  );
                 }
 
                 // Get template result for state text
@@ -3835,12 +3847,17 @@ export class UltraIconModule extends BaseUltraModule {
 
         // Subscribe to template if not already subscribed
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(firstIcon.template, templateKey, () => {
-            // Force re-render when template updates
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+          this._templateService.subscribeToTemplate(
+            firstIcon.template,
+            templateKey,
+            () => {
+              // Force re-render when template updates
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              }
             }
-          });
+            // Note: cardConfig not available in renderSplitPreview - only global variables will work here
+          );
         }
 
         // Get template result and evaluate as boolean
@@ -4131,6 +4148,7 @@ export class UltraIconModule extends BaseUltraModule {
             }
           },
           context
+          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
         );
       }
 
@@ -4176,12 +4194,17 @@ export class UltraIconModule extends BaseUltraModule {
 
       // Subscribe to template if not already subscribed
       if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(icon.dynamic_icon_template, templateKey, () => {
-          // Force re-render when template updates
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+        this._templateService.subscribeToTemplate(
+          icon.dynamic_icon_template,
+          templateKey,
+          () => {
+            // Force re-render when template updates
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
           }
-        });
+          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
+        );
       }
 
       // Get template result for dynamic icon
@@ -4213,12 +4236,17 @@ export class UltraIconModule extends BaseUltraModule {
 
       // Subscribe to template if not already subscribed
       if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(icon.dynamic_color_template, templateKey, () => {
-          // Force re-render when template updates
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+        this._templateService.subscribeToTemplate(
+          icon.dynamic_color_template,
+          templateKey,
+          () => {
+            // Force re-render when template updates
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
           }
-        });
+          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
+        );
       }
 
       // Get template result for dynamic color
@@ -4304,12 +4332,17 @@ export class UltraIconModule extends BaseUltraModule {
 
       // Subscribe to template if not already subscribed
       if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(icon.template, templateKey, () => {
-          // Force re-render when template updates
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+        this._templateService.subscribeToTemplate(
+          icon.template,
+          templateKey,
+          () => {
+            // Force re-render when template updates
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
           }
-        });
+          // Note: cardConfig not available in _renderSingleIconPreview - only global variables will work here
+        );
       }
 
       // Get template result for state text
@@ -4702,6 +4735,7 @@ export class UltraIconModule extends BaseUltraModule {
                   }
                 },
                 context
+                // Note: cardConfig not available in renderIconGrid - only global variables will work here
               );
             }
 
@@ -5396,6 +5430,7 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       // Subscribe with entity context
+      // Note: config is not available in _evaluateIconState, so we pass undefined for card-specific variables
       if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
         const context = this._getEntityContext(icon, hass);
         this._templateService.subscribeToTemplate(
@@ -5407,6 +5442,7 @@ export class UltraIconModule extends BaseUltraModule {
             }
           },
           context
+          // Note: cardConfig not available in _evaluateIconState - only global variables will work here
         );
       }
 
@@ -5450,13 +5486,19 @@ export class UltraIconModule extends BaseUltraModule {
       }
 
       // Subscribe to template if not already subscribed
+      // Note: cardConfig not available in _evaluateIconState - only global variables will work here
       if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-        this._templateService.subscribeToTemplate(icon.template, templateKey, () => {
-          // Force re-render when template updates
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+        this._templateService.subscribeToTemplate(
+          icon.template,
+          templateKey,
+          () => {
+            // Force re-render when template updates
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+            }
           }
-        });
+          // Note: cardConfig not available in _evaluateIconState - only global variables will work here
+        );
       }
 
       // Get template result and evaluate for active state

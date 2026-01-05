@@ -644,7 +644,8 @@ export class UltraTextModule extends BaseUltraModule {
                 }
               }
             },
-            context
+            context,
+            config // Pass config for card-specific variable resolution
           );
         }
 
@@ -680,17 +681,23 @@ export class UltraTextModule extends BaseUltraModule {
 
         // Subscribe if needed
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(processedLegacyTemplate, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
+          this._templateService.subscribeToTemplate(
+            processedLegacyTemplate,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                // Use global debounced update
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
               }
-            }
-          });
+            },
+            undefined, // No context variables
+            config // Pass config for card-specific variable resolution
+          );
         }
 
         // Use latest rendered string if available from WebSocket subscription
@@ -769,7 +776,8 @@ export class UltraTextModule extends BaseUltraModule {
                 }
               }
             },
-            context
+            context,
+            config // Pass config for card-specific variable resolution
           );
         }
 

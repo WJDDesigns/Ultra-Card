@@ -3643,7 +3643,8 @@ export class UltraBarModule extends BaseUltraModule {
                 }
               }
             },
-            context
+            context,
+            config // Pass config for card-specific variable resolution
           );
         }
 
@@ -3692,16 +3693,22 @@ export class UltraBarModule extends BaseUltraModule {
           if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
           const key = `bar_min_${barModule.id}_${this._hashString(tpl)}`;
           if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-            this._templateService.subscribeToTemplate(tpl, key, () => {
-              if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
+            this._templateService.subscribeToTemplate(
+              tpl,
+              key,
+              () => {
+                if (typeof window !== 'undefined') {
+                  if (!window._ultraCardUpdateTimer) {
+                    window._ultraCardUpdateTimer = setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      window._ultraCardUpdateTimer = null;
+                    }, 50);
+                  }
                 }
-              }
-            });
+              },
+              undefined, // No context variables
+              config // Pass config for card-specific variable resolution
+            );
           }
           const rendered = hass.__uvc_template_strings?.[key];
           if (rendered !== undefined) {
@@ -3726,16 +3733,22 @@ export class UltraBarModule extends BaseUltraModule {
           if (!hass.__uvc_template_strings) hass.__uvc_template_strings = {};
           const key = `bar_max_${barModule.id}_${this._hashString(tpl)}`;
           if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-            this._templateService.subscribeToTemplate(tpl, key, () => {
-              if (typeof window !== 'undefined') {
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
+            this._templateService.subscribeToTemplate(
+              tpl,
+              key,
+              () => {
+                if (typeof window !== 'undefined') {
+                  if (!window._ultraCardUpdateTimer) {
+                    window._ultraCardUpdateTimer = setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      window._ultraCardUpdateTimer = null;
+                    }, 50);
+                  }
                 }
-              }
-            });
+              },
+              undefined, // No context variables
+              config // Pass config for card-specific variable resolution
+            );
           }
           const rendered = hass.__uvc_template_strings?.[key];
           if (rendered !== undefined) {
@@ -3776,17 +3789,23 @@ export class UltraBarModule extends BaseUltraModule {
           const tpl = (barModule as any).percentage_template as string;
           const key = `bar_percentage_${barModule.id}_${this._hashString(tpl)}`;
           if (this._templateService && !this._templateService.hasTemplateSubscription(key)) {
-            this._templateService.subscribeToTemplate(tpl, key, () => {
-              if (typeof window !== 'undefined') {
-                // Use global debounced update
-                if (!window._ultraCardUpdateTimer) {
-                  window._ultraCardUpdateTimer = setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                    window._ultraCardUpdateTimer = null;
-                  }, 50);
+            this._templateService.subscribeToTemplate(
+              tpl,
+              key,
+              () => {
+                if (typeof window !== 'undefined') {
+                  // Use global debounced update
+                  if (!window._ultraCardUpdateTimer) {
+                    window._ultraCardUpdateTimer = setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                      window._ultraCardUpdateTimer = null;
+                    }, 50);
+                  }
                 }
-              }
-            });
+              },
+              undefined, // No context variables
+              config // Pass config for card-specific variable resolution
+            );
           }
           const rendered = hass.__uvc_template_strings?.[key];
           if (rendered !== undefined) {
@@ -3883,17 +3902,23 @@ export class UltraBarModule extends BaseUltraModule {
         const templateHash = this._hashString(barModule.left_template);
         const templateKey = `bar_left_${barModule.id}_${templateHash}`;
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(barModule.left_template, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
+          this._templateService.subscribeToTemplate(
+            barModule.left_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                // Use global debounced update
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
               }
-            }
-          });
+            },
+            undefined, // No context variables
+            config // Pass config for card-specific variable resolution
+          );
         }
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined && String(rendered).trim() !== '') {
@@ -3921,17 +3946,23 @@ export class UltraBarModule extends BaseUltraModule {
         const templateHash = this._hashString(barModule.right_template);
         const templateKey = `bar_right_${barModule.id}_${templateHash}`;
         if (this._templateService && !this._templateService.hasTemplateSubscription(templateKey)) {
-          this._templateService.subscribeToTemplate(barModule.right_template, templateKey, () => {
-            if (typeof window !== 'undefined') {
-              // Use global debounced update
-              if (!window._ultraCardUpdateTimer) {
-                window._ultraCardUpdateTimer = setTimeout(() => {
-                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                  window._ultraCardUpdateTimer = null;
-                }, 50);
+          this._templateService.subscribeToTemplate(
+            barModule.right_template,
+            templateKey,
+            () => {
+              if (typeof window !== 'undefined') {
+                // Use global debounced update
+                if (!window._ultraCardUpdateTimer) {
+                  window._ultraCardUpdateTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                    window._ultraCardUpdateTimer = null;
+                  }, 50);
+                }
               }
-            }
-          });
+            },
+            undefined, // No context variables
+            config // Pass config for card-specific variable resolution
+          );
         }
         const rendered = hass.__uvc_template_strings?.[templateKey];
         if (rendered !== undefined && String(rendered).trim() !== '') {

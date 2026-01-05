@@ -1,5 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { preprocessTemplateVariables } from '../utils/uc-template-processor';
+import { UltraCardConfig } from '../types';
 
 /**
  * Extended HomeAssistant interface to store template string results
@@ -71,12 +72,14 @@ export class TemplateService {
    * @param templateKey The unique key to identify this template subscription
    * @param onResultChanged Optional callback when template result changes
    * @param variables Optional context variables to pass to the template (for entity context)
+   * @param cardConfig Optional card config for card-specific variable resolution
    */
   public async subscribeToTemplate(
     template: string,
     templateKey: string,
     onResultChanged?: () => void,
-    variables?: Record<string, any>
+    variables?: Record<string, any>,
+    cardConfig?: UltraCardConfig
   ): Promise<void> {
     if (!template || !this.hass) {
       return;
@@ -90,7 +93,8 @@ export class TemplateService {
 
     // Preprocess custom variables ($variable_name) before sending to Home Assistant
     // This allows users to use {{ $my_variable }} syntax to reference entity states
-    const processedTemplate = preprocessTemplateVariables(template, this.hass);
+    // Pass cardConfig to support card-specific (local) variables
+    const processedTemplate = preprocessTemplateVariables(template, this.hass, cardConfig);
 
     try {
       // Create a subscription to the template

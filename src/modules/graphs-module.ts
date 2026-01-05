@@ -2047,7 +2047,8 @@ export class UltraGraphsModule extends BaseUltraModule {
                 }
               }
             },
-            context
+            context,
+            config // Pass config for card-specific variable resolution
           );
         }
 

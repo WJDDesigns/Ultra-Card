@@ -1871,7 +1871,9 @@ export class UltraDropdownModule extends BaseUltraModule {
                 }, 50);
               }
             }
-          }
+          },
+          undefined, // No context variables
+          config // Pass config for card-specific variable resolution
         );
         
         // Try initial evaluation via API for immediate result

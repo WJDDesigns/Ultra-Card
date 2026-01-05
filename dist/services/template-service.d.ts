@@ -1,4 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
+import { UltraCardConfig } from '../types';
 /**
  * Extended HomeAssistant interface to store template string results
  * This is declared in the main file as well for backwards compatibility
@@ -42,8 +43,9 @@ export declare class TemplateService {
      * @param templateKey The unique key to identify this template subscription
      * @param onResultChanged Optional callback when template result changes
      * @param variables Optional context variables to pass to the template (for entity context)
+     * @param cardConfig Optional card config for card-specific variable resolution
      */
-    subscribeToTemplate(template: string, templateKey: string, onResultChanged?: () => void, variables?: Record<string, any>): Promise<void>;
+    subscribeToTemplate(template: string, templateKey: string, onResultChanged?: () => void, variables?: Record<string, any>, cardConfig?: UltraCardConfig): Promise<void>;
     /**
      * Helper method to parse template results consistently
      * @param result The raw result from the template evaluation

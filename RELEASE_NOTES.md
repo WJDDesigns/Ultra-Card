@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta4
+
+### 🐛 Bug Fixes
+
+- **Fixed local/card-specific variables not resolving in templates** - Card-specific variables now properly resolve when used in templates
+- **Fixed variable save button deleting variables on mobile** - Added safety check to prevent accidental deletion when state gets out of sync
+
+---
+
 ## Version 2.3.0-beta3
 
 ### 🚀 New Features

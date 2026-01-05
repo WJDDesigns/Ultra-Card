@@ -143,6 +143,15 @@ export class UcCustomVariablesManager extends LitElement {
     // Find the variable to check if it's global or card-specific
     const globalVar = this._globalVariables.find(v => v.id === this._editingId);
     const cardVar = this._cardVariables.find(v => v.id === this._editingId);
+    
+    // SAFETY CHECK: Ensure the variable exists in at least one list
+    // This prevents accidental deletion if state gets out of sync (especially on mobile)
+    if (!globalVar && !cardVar) {
+      console.warn(`[UC Variables] Variable ${this._editingId} not found in any list - aborting save to prevent data loss`);
+      this._nameError = 'Variable not found. Please cancel and try again.';
+      return;
+    }
+    
     const wasGlobal = !!globalVar;
     const wantsGlobal = this._editingIsGlobal;
 

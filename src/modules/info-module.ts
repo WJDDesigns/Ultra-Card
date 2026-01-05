@@ -2266,23 +2266,29 @@ export class UltraInfoModule extends BaseUltraModule {
                     this._templateService &&
                     !this._templateService.hasTemplateSubscription(templateKey)
                   ) {
-                    this._templateService.subscribeToTemplate(entity.template, templateKey, () => {
-                      if (typeof window !== 'undefined') {
-                        // Use global debounced update
-                        if (!window._ultraCardUpdateTimer) {
-                          window._ultraCardUpdateTimer = setTimeout(() => {
-                            // Use global debounced update
-                            if (!window._ultraCardUpdateTimer) {
-                              window._ultraCardUpdateTimer = setTimeout(() => {
-                                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
-                                window._ultraCardUpdateTimer = null;
-                              }, 50);
-                            }
-                            window._ultraCardUpdateTimer = null;
-                          }, 50);
+                    this._templateService.subscribeToTemplate(
+                      entity.template,
+                      templateKey,
+                      () => {
+                        if (typeof window !== 'undefined') {
+                          // Use global debounced update
+                          if (!window._ultraCardUpdateTimer) {
+                            window._ultraCardUpdateTimer = setTimeout(() => {
+                              // Use global debounced update
+                              if (!window._ultraCardUpdateTimer) {
+                                window._ultraCardUpdateTimer = setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+                                  window._ultraCardUpdateTimer = null;
+                                }, 50);
+                              }
+                              window._ultraCardUpdateTimer = null;
+                            }, 50);
+                          }
                         }
-                      }
-                    });
+                      },
+                      undefined, // No context variables
+                      config // Pass config for card-specific variable resolution
+                    );
                   }
 
                   // Use latest rendered string if available
@@ -2353,7 +2359,8 @@ export class UltraInfoModule extends BaseUltraModule {
                         }
                       }
                     },
-                    context
+                    context,
+                    config // Pass config for card-specific variable resolution
                   );
                 }
 
@@ -2412,7 +2419,9 @@ export class UltraInfoModule extends BaseUltraModule {
                           }, 50);
                         }
                       }
-                    }
+                    },
+                    undefined, // No context variables
+                    config // Pass config for card-specific variable resolution
                   );
                 }
 
@@ -2517,7 +2526,9 @@ export class UltraInfoModule extends BaseUltraModule {
                                         }, 50);
                                       }
                                     }
-                                  }
+                                  },
+                                  undefined, // No context variables
+                                  config // Pass config for card-specific variable resolution
                                 );
                               }
 

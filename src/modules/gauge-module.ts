@@ -2004,6 +2004,7 @@ export class UltraGaugeModule extends BaseUltraModule {
               }
             },
             context
+            // Note: cardConfig not available in calculateGaugeValue - only global variables will work here
           );
         }
 
@@ -2074,6 +2075,7 @@ export class UltraGaugeModule extends BaseUltraModule {
                 }
               }
             }
+            // Note: cardConfig not available in calculateGaugeValue - only global variables will work here
           );
         }
 
