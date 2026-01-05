@@ -266,29 +266,27 @@ class UcCustomVariablesService {
 
   /**
    * Internal method to resolve a variable value
+   * For state mode, returns a Jinja expression so HA's template engine handles reactivity
    */
   private _resolveVariableValue(variable: CustomVariable | undefined, hass: HomeAssistant): string | null {
     if (!variable) {
       return null;
     }
 
-    const entityState = hass.states[variable.entity];
-
     switch (variable.value_type) {
       case 'entity_id':
+        // Return the entity ID directly - user can wrap in states() if needed
         return variable.entity;
 
       case 'state':
-        if (!entityState) {
-          return 'unavailable';
-        }
-        return entityState.state;
+        // Return a Jinja states() call so HA's template engine tracks the entity
+        // This makes state mode variables reactive (update when entity changes)
+        return `states('${variable.entity}')`;
 
       case 'full_object':
-        if (!entityState) {
-          return JSON.stringify({ state: 'unavailable', attributes: {} });
-        }
-        return JSON.stringify(entityState);
+        // Return the entity ID for full_object - templates can access via state_attr()
+        // Full object as JSON doesn't work well in templates
+        return variable.entity;
 
       default:
         return variable.entity;

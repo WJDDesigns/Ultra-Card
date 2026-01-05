@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta6
+
+### 🐛 Bug Fixes
+
+- **Fixed UC card being pre-selected when adding new cards** - Removed automatic backup events that were interfering with HA's card picker
+- **Fixed state mode variables not updating in real-time** - State mode now outputs a Jinja expression so HA's template engine handles reactivity
+
+---
+
 ## Version 2.3.0-beta5
 
 ### 🐛 Bug Fixes

@@ -228,6 +228,15 @@ export class UltraCardEditor extends LitElement {
         finalConfig = configValidationService.fixDuplicateModuleIds(finalConfig);
       }
 
+      // Include global variables backup in config (for persistence across cache clears)
+      const globalVarsBackup = ucCustomVariablesService.getVariablesForBackup();
+      if (globalVarsBackup.variables.length > 0) {
+        finalConfig = {
+          ...finalConfig,
+          _globalVariablesBackup: globalVarsBackup,
+        };
+      }
+
       // Only log validation info when there are meaningful warnings
       // Suppress info logs for warnings
 

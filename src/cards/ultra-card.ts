@@ -359,6 +359,8 @@ export class UltraCard extends LitElement {
   /**
    * Setup custom variables backup/restore system
    * This ensures global variables survive browser cache clears by backing up to card config
+   * NOTE: Backup is only saved when user explicitly saves through the editor
+   * to avoid interfering with HA's card picker (automatic config-changed events were causing issues)
    */
   private _setupVariablesBackup(): void {
     // Skip for editor preview cards - they shouldn't manage backup
@@ -372,49 +374,14 @@ export class UltraCard extends LitElement {
       }
     }
 
-    // 2. Subscribe to backup requests - save changes to card config
-    this._variablesBackupUnsub = ucCustomVariablesService.subscribeToBackupRequests((backupData) => {
-      // Only save if version changed and we have a config
-      if (backupData.version > this._variablesBackupVersion && this.config) {
-        this._variablesBackupVersion = backupData.version;
-        
-        // Save backup to config (silently - don't trigger full config-changed)
-        const newConfig = {
-          ...this.config,
-          _globalVariablesBackup: backupData,
-        };
-        
-        // Dispatch config-changed event to persist the backup
-        const event = new CustomEvent('config-changed', {
-          detail: { config: newConfig },
-          bubbles: true,
-          composed: true,
-        });
-        this.dispatchEvent(event);
-      }
-    });
-
-    // 3. Initialize backup version from config
+    // 2. Initialize backup version from config (for tracking)
     if (this.config?._globalVariablesBackup?.version) {
       this._variablesBackupVersion = this.config._globalVariablesBackup.version;
     }
 
-    // 4. If we have variables but no backup in config, create initial backup
-    const currentBackup = ucCustomVariablesService.getVariablesForBackup();
-    if (currentBackup.variables.length > 0 && !this.config?._globalVariablesBackup && this.config) {
-      this._variablesBackupVersion = currentBackup.version;
-      const newConfig = {
-        ...this.config,
-        _globalVariablesBackup: currentBackup,
-      };
-      
-      const event = new CustomEvent('config-changed', {
-        detail: { config: newConfig },
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    }
+    // NOTE: We no longer dispatch config-changed events automatically for backup
+    // This was causing HA's card picker to pre-select UC card when adding new cards
+    // Backup is now only saved when user explicitly saves through the editor
   }
 
   protected willUpdate(changedProps: PropertyValues): void {

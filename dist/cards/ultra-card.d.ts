@@ -41,6 +41,8 @@ export declare class UltraCard extends LitElement {
     /**
      * Setup custom variables backup/restore system
      * This ensures global variables survive browser cache clears by backing up to card config
+     * NOTE: Backup is only saved when user explicitly saves through the editor
+     * to avoid interfering with HA's card picker (automatic config-changed events were causing issues)
      */
     private _setupVariablesBackup;
     protected willUpdate(changedProps: PropertyValues): void;
