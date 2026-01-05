@@ -1,19 +1,27 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import { UltraCardConfig } from '../types';
 
 /**
  * Template processor for Ultra Card custom variables
  * Preprocesses templates to replace $variable_name references with resolved values
  * Must be called BEFORE sending templates to Home Assistant for Jinja evaluation
+ * 
+ * Supports both global variables (synced across all cards) and card-specific variables
  */
 
 /**
  * Preprocess a template string, replacing all $variable references with their resolved values
  * @param template The template string containing $variable references
  * @param hass HomeAssistant instance for entity state lookup
+ * @param cardConfig Optional card config for card-specific variable resolution
  * @returns The processed template with variables replaced
  */
-export function preprocessTemplateVariables(template: string, hass: HomeAssistant): string {
+export function preprocessTemplateVariables(
+  template: string, 
+  hass: HomeAssistant, 
+  cardConfig?: UltraCardConfig
+): string {
   if (!template || typeof template !== 'string') {
     return template;
   }
@@ -36,7 +44,10 @@ export function preprocessTemplateVariables(template: string, hass: HomeAssistan
   }
 
   for (const { fullMatch, variableName } of uniqueMatches.values()) {
-    const resolvedValue = ucCustomVariablesService.resolveVariable(variableName, hass);
+    // Use context-aware resolution if card config is provided
+    const resolvedValue = cardConfig 
+      ? ucCustomVariablesService.resolveVariableInContext(variableName, hass, cardConfig)
+      : ucCustomVariablesService.resolveVariable(variableName, hass);
 
     if (resolvedValue !== null) {
       // Replace all occurrences of this variable
@@ -86,9 +97,13 @@ export function extractVariableNames(template: string): string[] {
 /**
  * Validate that all variables in a template are defined
  * @param template The template string to validate
+ * @param cardConfig Optional card config for card-specific variable validation
  * @returns Object with valid flag and list of undefined variables
  */
-export function validateTemplateVariables(template: string): {
+export function validateTemplateVariables(
+  template: string,
+  cardConfig?: UltraCardConfig
+): {
   valid: boolean;
   undefinedVariables: string[];
   definedVariables: string[];
@@ -98,7 +113,11 @@ export function validateTemplateVariables(template: string): {
   const undefinedVariables: string[] = [];
 
   for (const name of variableNames) {
-    if (ucCustomVariablesService.hasVariable(name)) {
+    const hasVar = cardConfig 
+      ? ucCustomVariablesService.hasVariableInContext(name, cardConfig)
+      : ucCustomVariablesService.hasVariable(name);
+    
+    if (hasVar) {
       definedVariables.push(name);
     } else {
       undefinedVariables.push(name);
@@ -115,10 +134,13 @@ export function validateTemplateVariables(template: string): {
 /**
  * Get suggestions for variable autocomplete
  * @param partial Partial variable name to match
+ * @param cardConfig Optional card config for card-specific variables
  * @returns Array of matching variable names
  */
-export function getVariableSuggestions(partial: string): string[] {
-  const allNames = ucCustomVariablesService.getVariableNames();
+export function getVariableSuggestions(partial: string, cardConfig?: UltraCardConfig): string[] {
+  const allNames = cardConfig 
+    ? ucCustomVariablesService.getVariableNamesInContext(cardConfig)
+    : ucCustomVariablesService.getVariableNames();
 
   if (!partial) {
     return allNames;
@@ -132,9 +154,14 @@ export function getVariableSuggestions(partial: string): string[] {
  * Create a template preview with variables highlighted
  * @param template The template string
  * @param hass HomeAssistant instance
+ * @param cardConfig Optional card config for card-specific variable resolution
  * @returns HTML string with variables highlighted and resolved values shown
  */
-export function createTemplatePreview(template: string, hass: HomeAssistant): string {
+export function createTemplatePreview(
+  template: string, 
+  hass: HomeAssistant,
+  cardConfig?: UltraCardConfig
+): string {
   if (!template || typeof template !== 'string') {
     return template;
   }
@@ -142,7 +169,9 @@ export function createTemplatePreview(template: string, hass: HomeAssistant): st
   const variablePattern = /(?<!\$)\$([a-zA-Z][a-zA-Z0-9_]*)/g;
 
   return template.replace(variablePattern, (match, variableName) => {
-    const resolvedValue = ucCustomVariablesService.resolveVariable(variableName, hass);
+    const resolvedValue = cardConfig 
+      ? ucCustomVariablesService.resolveVariableInContext(variableName, hass, cardConfig)
+      : ucCustomVariablesService.resolveVariable(variableName, hass);
 
     if (resolvedValue !== null) {
       return `<span class="uc-variable-resolved" title="$${variableName} → ${resolvedValue}">${resolvedValue}</span>`;
@@ -163,9 +192,6 @@ export function scanConfigForVariables(obj: any): string[] {
   function scanValue(value: any): void {
     if (typeof value === 'string') {
       const vars = extractVariableNames(value);
-      if (vars.length > 0) {
-        console.log('[UC Variable Scan] Found variables in string:', value, '->', vars);
-      }
       vars.forEach(v => allVariables.add(v));
     } else if (Array.isArray(value)) {
       value.forEach(item => scanValue(item));
@@ -175,30 +201,38 @@ export function scanConfigForVariables(obj: any): string[] {
   }
 
   scanValue(obj);
-  const result = Array.from(allVariables);
-  console.log('[UC Variable Scan] Total variables found:', result);
-  return result;
+  return Array.from(allVariables);
 }
 
 /**
  * Find variables used in a config that are not defined in the user's variables
  * @param config The card configuration to scan
+ * @param targetCardConfig Optional target card config to check card-specific variables against
  * @returns Array of variable names that are used but not defined
  */
-export function findMissingVariables(config: any): string[] {
-  console.log('[UC Variable Check] Scanning config for missing variables...');
-  console.log('[UC Variable Check] Currently defined variables:', ucCustomVariablesService.getVariableNames());
+export function findMissingVariables(config: any, targetCardConfig?: UltraCardConfig): string[] {
+  // Also check card-specific variables in the imported config itself
+  const importedCardVars = config?._customVariables || [];
+  const importedVarNames = importedCardVars.map((v: any) => v.name?.toLowerCase()).filter(Boolean);
+  
   const usedVariables = scanConfigForVariables(config);
   const missingVariables: string[] = [];
 
   for (const varName of usedVariables) {
-    const hasVar = ucCustomVariablesService.hasVariable(varName);
-    console.log(`[UC Variable Check] Variable "${varName}" exists:`, hasVar);
-    if (!hasVar) {
+    // Check if variable exists in:
+    // 1. Global variables
+    // 2. Target card's card-specific variables
+    // 3. Imported config's own card-specific variables (they come with the import)
+    const hasGlobal = ucCustomVariablesService.hasVariable(varName);
+    const hasInTargetCard = targetCardConfig 
+      ? ucCustomVariablesService.hasVariableInContext(varName, targetCardConfig)
+      : false;
+    const hasInImportedConfig = importedVarNames.includes(varName.toLowerCase());
+    
+    if (!hasGlobal && !hasInTargetCard && !hasInImportedConfig) {
       missingVariables.push(varName);
     }
   }
 
-  console.log('[UC Variable Check] Missing variables:', missingVariables);
   return missingVariables;
 }

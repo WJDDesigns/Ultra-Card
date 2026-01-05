@@ -2,24 +2,28 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
-import { CustomVariable } from '../types';
+import { CustomVariable, UltraCardConfig } from '../types';
 import { localize } from '../localize/localize';
 
 @customElement('uc-custom-variables-manager')
 export class UcCustomVariablesManager extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
+  @property({ attribute: false }) public config?: UltraCardConfig;
 
-  @state() private _customVariables: CustomVariable[] = [];
+  @state() private _globalVariables: CustomVariable[] = [];
+  @state() private _cardVariables: CustomVariable[] = [];
   @state() private _draggedItem?: CustomVariable;
   @state() private _dragOverIndex?: number;
   @state() private _editingId?: string;
   @state() private _editingName = '';
   @state() private _editingEntity = '';
   @state() private _editingValueType: 'entity_id' | 'state' | 'full_object' = 'state';
+  @state() private _editingIsGlobal = true;
   @state() private _showAddForm = false;
   @state() private _newVariableName = '';
   @state() private _newVariableEntity = '';
   @state() private _newVariableValueType: 'entity_id' | 'state' | 'full_object' = 'state';
+  @state() private _newVariableIsGlobal = true;
   @state() private _nameError = '';
 
   private _variablesUnsubscribe?: () => void;
@@ -27,9 +31,9 @@ export class UcCustomVariablesManager extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
 
-    // Subscribe to custom variables changes
+    // Subscribe to global custom variables changes
     this._variablesUnsubscribe = ucCustomVariablesService.subscribe(variables => {
-      this._customVariables = variables;
+      this._globalVariables = variables;
     });
   }
 
@@ -41,6 +45,19 @@ export class UcCustomVariablesManager extends LitElement {
       this._variablesUnsubscribe();
       this._variablesUnsubscribe = undefined;
     }
+  }
+
+  updated(changedProps: Map<string, any>): void {
+    super.updated(changedProps);
+    // Update card-specific variables when config changes
+    if (changedProps.has('config')) {
+      this._cardVariables = ucCustomVariablesService.getCardSpecificVariables(this.config);
+    }
+  }
+
+  // Get combined list for display (global first, then card-specific)
+  private get _allVariables(): CustomVariable[] {
+    return [...this._globalVariables, ...this._cardVariables];
   }
 
   private _handleDragStart(e: DragEvent, variable: CustomVariable): void {
@@ -69,17 +86,27 @@ export class UcCustomVariablesManager extends LitElement {
 
     if (!this._draggedItem) return;
 
-    const currentIndex = this._customVariables.findIndex(v => v.id === this._draggedItem!.id);
+    // Determine which list we're reordering
+    const isGlobal = this._draggedItem.isGlobal !== false;
+    const sourceList = isGlobal ? this._globalVariables : this._cardVariables;
+    
+    const currentIndex = sourceList.findIndex(v => v.id === this._draggedItem!.id);
     if (currentIndex === -1 || currentIndex === targetIndex) return;
 
     // Create new order based on drag and drop
-    const reorderedVariables = [...this._customVariables];
+    const reorderedVariables = [...sourceList];
     const [draggedItem] = reorderedVariables.splice(currentIndex, 1);
     reorderedVariables.splice(targetIndex, 0, draggedItem);
 
-    // Update service with new order
-    const orderedIds = reorderedVariables.map(v => v.id);
-    ucCustomVariablesService.reorderVariables(orderedIds);
+    if (isGlobal) {
+      // Update global variables service with new order
+      const orderedIds = reorderedVariables.map(v => v.id);
+      ucCustomVariablesService.reorderVariables(orderedIds);
+    } else {
+      // Update card-specific variables
+      reorderedVariables.forEach((v, i) => v.order = i);
+      this._updateCardVariables(reorderedVariables);
+    }
 
     this._draggedItem = undefined;
   }
@@ -89,6 +116,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._editingName = variable.name;
     this._editingEntity = variable.entity;
     this._editingValueType = variable.value_type;
+    this._editingIsGlobal = variable.isGlobal !== false;
     this._nameError = '';
   }
 
@@ -97,6 +125,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._editingName = '';
     this._editingEntity = '';
     this._editingValueType = 'state';
+    this._editingIsGlobal = true;
     this._nameError = '';
   }
 
@@ -109,23 +138,87 @@ export class UcCustomVariablesManager extends LitElement {
       return;
     }
 
-    const success = ucCustomVariablesService.updateVariable(this._editingId, {
-      name: this._editingName.trim(),
-      entity: this._editingEntity,
-      value_type: this._editingValueType,
-    });
+    const cleanName = this._editingName.trim();
+    
+    // Find the variable to check if it's global or card-specific
+    const globalVar = this._globalVariables.find(v => v.id === this._editingId);
+    const cardVar = this._cardVariables.find(v => v.id === this._editingId);
+    const wasGlobal = !!globalVar;
+    const wantsGlobal = this._editingIsGlobal;
 
-    if (success) {
-      this._cancelEdit();
-    } else {
+    // Check for duplicate names (excluding current variable)
+    const duplicateInGlobal = this._globalVariables.some(
+      v => v.id !== this._editingId && v.name.toLowerCase() === cleanName.toLowerCase()
+    );
+    const duplicateInCard = this._cardVariables.some(
+      v => v.id !== this._editingId && v.name.toLowerCase() === cleanName.toLowerCase()
+    );
+    
+    if (duplicateInGlobal || duplicateInCard) {
       this._nameError = 'A variable with this name already exists.';
+      return;
+    }
+
+    // Handle scope change
+    if (wasGlobal && !wantsGlobal) {
+      // Moving from Global to Card-specific
+      // Delete from global
+      ucCustomVariablesService.deleteVariable(this._editingId);
+      // Add to card
+      const newCardVar: CustomVariable = {
+        id: this._editingId,
+        name: cleanName,
+        entity: this._editingEntity,
+        value_type: this._editingValueType,
+        order: this._cardVariables.length,
+        isGlobal: false,
+        created: globalVar?.created || new Date().toISOString(),
+      };
+      this._updateCardVariables([...this._cardVariables, newCardVar]);
+      this._cancelEdit();
+    } else if (!wasGlobal && wantsGlobal) {
+      // Moving from Card-specific to Global
+      // Remove from card
+      const updatedCardVars = this._cardVariables.filter(v => v.id !== this._editingId);
+      this._updateCardVariables(updatedCardVars);
+      // Add to global
+      ucCustomVariablesService.addVariable(cleanName, this._editingEntity, this._editingValueType, true);
+      this._cancelEdit();
+    } else if (wasGlobal && wantsGlobal) {
+      // Stays Global - just update
+      const success = ucCustomVariablesService.updateVariable(this._editingId, {
+        name: cleanName,
+        entity: this._editingEntity,
+        value_type: this._editingValueType,
+      });
+      if (success) {
+        this._cancelEdit();
+      } else {
+        this._nameError = 'Failed to update variable.';
+      }
+    } else {
+      // Stays Card-specific - just update
+      const updatedCardVars = this._cardVariables.map(v => 
+        v.id === this._editingId 
+          ? { ...v, name: cleanName, entity: this._editingEntity, value_type: this._editingValueType }
+          : v
+      );
+      this._updateCardVariables(updatedCardVars);
+      this._cancelEdit();
     }
   }
 
-  private _deleteVariable(id: string): void {
+  private _deleteVariable(variable: CustomVariable): void {
     const lang = this.hass?.locale?.language || 'en';
     if (confirm(localize('editor.custom_variables.confirm_delete', lang, 'Are you sure you want to delete this variable?'))) {
-      ucCustomVariablesService.deleteVariable(id);
+      if (variable.isGlobal !== false) {
+        // Delete global variable
+        ucCustomVariablesService.deleteVariable(variable.id);
+      } else {
+        // Delete card-specific variable
+        const updatedCardVars = this._cardVariables.filter(v => v.id !== variable.id);
+        this._updateCardVariables(updatedCardVars);
+      }
     }
   }
 
@@ -134,6 +227,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._newVariableName = '';
     this._newVariableEntity = '';
     this._newVariableValueType = 'state';
+    this._newVariableIsGlobal = true;
     this._nameError = '';
   }
 
@@ -142,6 +236,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._newVariableName = '';
     this._newVariableEntity = '';
     this._newVariableValueType = 'state';
+    this._newVariableIsGlobal = true;
     this._nameError = '';
   }
 
@@ -154,24 +249,62 @@ export class UcCustomVariablesManager extends LitElement {
       return;
     }
 
-    const result = ucCustomVariablesService.addVariable(
-      this._newVariableName.trim(),
-      this._newVariableEntity,
-      this._newVariableValueType
-    );
+    if (this._newVariableIsGlobal) {
+      // Add global variable
+      const result = ucCustomVariablesService.addVariable(
+        this._newVariableName.trim(),
+        this._newVariableEntity,
+        this._newVariableValueType,
+        true
+      );
 
-    if (result) {
-      this._cancelAdd();
+      if (result) {
+        this._cancelAdd();
+      } else {
+        this._nameError = 'A variable with this name already exists.';
+      }
     } else {
-      this._nameError = 'A variable with this name already exists.';
+      // Add card-specific variable
+      const newVar = ucCustomVariablesService.createCardVariable(
+        this._newVariableName.trim(),
+        this._newVariableEntity,
+        this._newVariableValueType,
+        this._cardVariables
+      );
+
+      if (newVar) {
+        const updatedCardVars = [...this._cardVariables, newVar];
+        this._updateCardVariables(updatedCardVars);
+        this._cancelAdd();
+      } else {
+        this._nameError = 'A variable with this name already exists.';
+      }
     }
   }
 
   private _clearAllVariables(): void {
     const lang = this.hass?.locale?.language || 'en';
-    if (confirm(localize('editor.custom_variables.confirm_clear_all', lang, 'Are you sure you want to delete ALL variables? This cannot be undone.'))) {
+    if (confirm(localize('editor.custom_variables.confirm_clear_all', lang, 'Are you sure you want to delete ALL global variables? This cannot be undone.'))) {
       ucCustomVariablesService.clearAll();
     }
+  }
+
+  private _clearCardVariables(): void {
+    const lang = this.hass?.locale?.language || 'en';
+    if (confirm(localize('editor.custom_variables.confirm_clear_card', lang, 'Are you sure you want to delete all card-specific variables?'))) {
+      this._updateCardVariables([]);
+    }
+  }
+
+  private _updateCardVariables(variables: CustomVariable[]): void {
+    // Dispatch event to update card config
+    this.dispatchEvent(new CustomEvent('card-variables-changed', {
+      detail: { variables },
+      bubbles: true,
+      composed: true
+    }));
+    // Update local state
+    this._cardVariables = variables;
   }
 
   private _validateNameInput(name: string): void {
@@ -214,6 +347,9 @@ export class UcCustomVariablesManager extends LitElement {
 
   protected render(): TemplateResult {
     const lang = this.hass?.locale?.language || 'en';
+    const hasGlobalVariables = this._globalVariables.length > 0;
+    const hasCardVariables = this._cardVariables.length > 0;
+    const hasAnyVariables = hasGlobalVariables || hasCardVariables;
 
     return html`
       <div class="variables-manager">
@@ -229,18 +365,6 @@ export class UcCustomVariablesManager extends LitElement {
               <ha-icon icon="mdi:plus"></ha-icon>
               ${localize('editor.custom_variables.add_variable', lang, 'Add Variable')}
             </button>
-            ${this._customVariables.length > 0
-              ? html`
-                  <button
-                    class="clear-btn"
-                    @click=${this._clearAllVariables}
-                    title="${localize('editor.custom_variables.clear_all', lang, 'Clear all variables')}"
-                  >
-                    <ha-icon icon="mdi:delete-sweep"></ha-icon>
-                    ${localize('editor.custom_variables.clear_all', lang, 'Clear All')}
-                  </button>
-                `
-              : ''}
           </div>
         </div>
 
@@ -255,7 +379,8 @@ export class UcCustomVariablesManager extends LitElement {
         </div>
 
         ${this._showAddForm ? this._renderAddForm(lang) : ''}
-        ${this._customVariables.length === 0 && !this._showAddForm
+        
+        ${!hasAnyVariables && !this._showAddForm
           ? html`
               <div class="empty-state">
                 <ha-icon icon="mdi:variable"></ha-icon>
@@ -270,64 +395,122 @@ export class UcCustomVariablesManager extends LitElement {
               </div>
             `
           : ''}
-        ${this._customVariables.length > 0
+        
+        <!-- Global Variables Section -->
+        ${hasGlobalVariables
           ? html`
-              <div class="variables-list">
-                ${this._customVariables.map(
-                  (variable, index) => html`
-                    <div
-                      class="variable-item ${this._dragOverIndex === index ? 'drag-over' : ''}"
-                      draggable="true"
-                      @dragstart=${(e: DragEvent) => this._handleDragStart(e, variable)}
-                      @dragover=${(e: DragEvent) => this._handleDragOver(e, index)}
-                      @dragleave=${this._handleDragLeave}
-                      @drop=${(e: DragEvent) => this._handleDrop(e, index)}
-                    >
-                      <div class="drag-handle">
-                        <ha-icon icon="mdi:drag-vertical"></ha-icon>
-                      </div>
-
-                      <div class="variable-icon">
-                        <ha-icon icon="mdi:variable"></ha-icon>
-                      </div>
-
-                      ${this._editingId === variable.id
-                        ? this._renderEditForm(variable, lang)
-                        : html`
-                            <div class="variable-info">
-                              <div class="variable-name">$${variable.name}</div>
-                              <div class="variable-details">
-                                <span class="variable-entity">${variable.entity}</span>
-                                <span class="variable-type">${this._getValueTypeLabel(variable.value_type)}</span>
-                              </div>
-                              <div class="variable-preview">
-                                → ${this._getResolvedValue(variable)}
-                              </div>
-                            </div>
-
-                            <div class="variable-actions">
-                              <button
-                                class="edit-btn"
-                                @click=${() => this._startEdit(variable)}
-                                title="${localize('editor.custom_variables.edit_variable', lang, 'Edit variable')}"
-                              >
-                                <ha-icon icon="mdi:pencil"></ha-icon>
-                              </button>
-                              <button
-                                class="delete-btn"
-                                @click=${() => this._deleteVariable(variable.id)}
-                                title="${localize('editor.custom_variables.delete_variable', lang, 'Delete variable')}"
-                              >
-                                <ha-icon icon="mdi:delete"></ha-icon>
-                              </button>
-                            </div>
-                          `}
-                    </div>
-                  `
-                )}
+              <div class="variables-section">
+                <div class="section-header">
+                  <div class="section-title">
+                    <ha-icon icon="mdi:earth"></ha-icon>
+                    <span>${localize('editor.custom_variables.global_variables', lang, 'Global Variables')}</span>
+                    <span class="variable-count">(${this._globalVariables.length})</span>
+                  </div>
+                  <button
+                    class="clear-section-btn"
+                    @click=${this._clearAllVariables}
+                    title="${localize('editor.custom_variables.clear_global', lang, 'Clear global variables')}"
+                  >
+                    <ha-icon icon="mdi:delete-sweep"></ha-icon>
+                  </button>
+                </div>
+                <div class="variables-list">
+                  ${this._globalVariables.map(
+                    (variable, index) => this._renderVariableItem(variable, index, true, lang)
+                  )}
+                </div>
               </div>
             `
           : ''}
+        
+        <!-- Card-Specific Variables Section -->
+        ${hasCardVariables
+          ? html`
+              <div class="variables-section card-section">
+                <div class="section-header">
+                  <div class="section-title">
+                    <ha-icon icon="mdi:card-text"></ha-icon>
+                    <span>${localize('editor.custom_variables.card_variables', lang, 'This Card Only')}</span>
+                    <span class="variable-count">(${this._cardVariables.length})</span>
+                  </div>
+                  <button
+                    class="clear-section-btn"
+                    @click=${this._clearCardVariables}
+                    title="${localize('editor.custom_variables.clear_card', lang, 'Clear card variables')}"
+                  >
+                    <ha-icon icon="mdi:delete-sweep"></ha-icon>
+                  </button>
+                </div>
+                <div class="variables-list">
+                  ${this._cardVariables.map(
+                    (variable, index) => this._renderVariableItem(variable, index, false, lang)
+                  )}
+                </div>
+              </div>
+            `
+          : ''}
+      </div>
+    `;
+  }
+
+  private _renderVariableItem(variable: CustomVariable, index: number, isGlobal: boolean, lang: string): TemplateResult {
+    // If editing, show full edit form
+    if (this._editingId === variable.id) {
+      return this._renderEditForm(variable, lang);
+    }
+
+    return html`
+      <div
+        class="variable-item ${this._dragOverIndex === index ? 'drag-over' : ''} ${isGlobal ? 'global' : 'card-specific'}"
+        draggable="true"
+        @dragstart=${(e: DragEvent) => this._handleDragStart(e, variable)}
+        @dragover=${(e: DragEvent) => this._handleDragOver(e, index)}
+        @dragleave=${this._handleDragLeave}
+        @drop=${(e: DragEvent) => this._handleDrop(e, index)}
+      >
+        <div class="item-header">
+          <div class="item-left">
+            <div class="drag-handle">
+              <ha-icon icon="mdi:drag-vertical"></ha-icon>
+            </div>
+            <div class="variable-icon ${isGlobal ? 'global' : 'card-specific'}">
+              <ha-icon icon="${isGlobal ? 'mdi:earth' : 'mdi:card-text'}"></ha-icon>
+            </div>
+            <div class="variable-name-col">
+              <span class="variable-name">$${variable.name}</span>
+              <span class="variable-scope-badge ${isGlobal ? 'global' : 'card-specific'}">
+                ${isGlobal 
+                  ? localize('editor.custom_variables.global', lang, 'Global') 
+                  : localize('editor.custom_variables.this_card', lang, 'This Card')}
+              </span>
+            </div>
+          </div>
+          <div class="variable-actions">
+            <button
+              class="action-btn edit-btn"
+              @click=${() => this._startEdit(variable)}
+              title="${localize('editor.custom_variables.edit_variable', lang, 'Edit variable')}"
+            >
+              <ha-icon icon="mdi:pencil"></ha-icon>
+            </button>
+            <button
+              class="action-btn delete-btn"
+              @click=${() => this._deleteVariable(variable)}
+              title="${localize('editor.custom_variables.delete_variable', lang, 'Delete variable')}"
+            >
+              <ha-icon icon="mdi:delete"></ha-icon>
+            </button>
+          </div>
+        </div>
+        <div class="item-body">
+          <div class="variable-details">
+            <span class="variable-entity">${variable.entity}</span>
+            <span class="variable-type">${this._getValueTypeLabel(variable.value_type)}</span>
+          </div>
+          <div class="variable-preview">
+            → ${this._getResolvedValue(variable)}
+          </div>
+        </div>
       </div>
     `;
   }
@@ -401,6 +584,34 @@ export class UcCustomVariablesManager extends LitElement {
           </div>
         </div>
 
+        <!-- Global/Card-Specific Toggle -->
+        <div class="form-row">
+          <div class="form-field scope-field">
+            <label>${localize('editor.custom_variables.variable_scope', lang, 'Variable Scope')}</label>
+            <div class="scope-toggle">
+              <button
+                class="scope-btn ${this._newVariableIsGlobal ? 'active' : ''}"
+                @click=${() => { this._newVariableIsGlobal = true; }}
+              >
+                <ha-icon icon="mdi:earth"></ha-icon>
+                <span>${localize('editor.custom_variables.global', lang, 'Global')}</span>
+              </button>
+              <button
+                class="scope-btn ${!this._newVariableIsGlobal ? 'active' : ''}"
+                @click=${() => { this._newVariableIsGlobal = false; }}
+              >
+                <ha-icon icon="mdi:card-text"></ha-icon>
+                <span>${localize('editor.custom_variables.this_card', lang, 'This Card')}</span>
+              </button>
+            </div>
+            <div class="field-hint scope-hint">
+              ${this._newVariableIsGlobal 
+                ? localize('editor.custom_variables.global_hint', lang, 'Available in all Ultra Cards across your dashboard.')
+                : localize('editor.custom_variables.card_hint', lang, 'Only available in this specific card.')}
+            </div>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button
             class="save-btn"
@@ -421,9 +632,27 @@ export class UcCustomVariablesManager extends LitElement {
 
   private _renderEditForm(variable: CustomVariable, lang: string): TemplateResult {
     return html`
-      <div class="edit-form">
-        <div class="edit-fields">
-          <div class="edit-field-row">
+      <div class="edit-form-container">
+        <div class="edit-form-header">
+          <h4>${localize('editor.custom_variables.edit_variable', lang, 'Edit Variable')}</h4>
+          <div class="edit-form-actions">
+            <button
+              class="save-btn"
+              @click=${this._saveEdit}
+              ?disabled=${!this._editingName.trim() || !this._editingEntity || !!this._nameError}
+              title="Save"
+            >
+              <ha-icon icon="mdi:check"></ha-icon>
+            </button>
+            <button class="cancel-btn" @click=${this._cancelEdit} title="Cancel">
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+        </div>
+        
+        <div class="edit-form-body">
+          <div class="edit-field">
+            <label>${localize('editor.custom_variables.variable_name', lang, 'Variable Name')}</label>
             <input
               type="text"
               .value=${this._editingName}
@@ -431,9 +660,14 @@ export class UcCustomVariablesManager extends LitElement {
                 this._editingName = (e.target as HTMLInputElement).value;
                 this._validateNameInput(this._editingName);
               }}
-              placeholder="${localize('editor.custom_variables.variable_name', lang, 'Variable name')}"
+              placeholder="${localize('editor.custom_variables.variable_name_placeholder', lang, 'my_variable_name')}"
               maxlength="50"
             />
+            ${this._nameError ? html`<div class="field-error">${this._nameError}</div>` : ''}
+          </div>
+
+          <div class="edit-field">
+            <label>${localize('editor.custom_variables.select_entity', lang, 'Select Entity')}</label>
             <ha-form
               .hass=${this.hass}
               .data=${{ entity: this._editingEntity }}
@@ -449,6 +683,10 @@ export class UcCustomVariablesManager extends LitElement {
                 }
               }}
             ></ha-form>
+          </div>
+
+          <div class="edit-field">
+            <label>${localize('editor.custom_variables.value_type', lang, 'Value Type')}</label>
             <ha-select
               .value=${this._editingValueType}
               @selected=${(e: CustomEvent) => {
@@ -461,19 +699,26 @@ export class UcCustomVariablesManager extends LitElement {
               <mwc-list-item value="full_object">${localize('editor.custom_variables.value_type_full_object', lang, 'Full Object')}</mwc-list-item>
             </ha-select>
           </div>
-          ${this._nameError ? html`<div class="field-error">${this._nameError}</div>` : ''}
-        </div>
-        <div class="edit-actions">
-          <button
-            class="save-btn"
-            @click=${this._saveEdit}
-            ?disabled=${!this._editingName.trim() || !this._editingEntity || !!this._nameError}
-          >
-            <ha-icon icon="mdi:check"></ha-icon>
-          </button>
-          <button class="cancel-btn" @click=${this._cancelEdit}>
-            <ha-icon icon="mdi:close"></ha-icon>
-          </button>
+
+          <div class="edit-field">
+            <label>${localize('editor.custom_variables.variable_scope', lang, 'Variable Scope')}</label>
+            <div class="scope-toggle compact">
+              <button
+                class="scope-btn ${this._editingIsGlobal ? 'active' : ''}"
+                @click=${() => { this._editingIsGlobal = true; }}
+              >
+                <ha-icon icon="mdi:earth"></ha-icon>
+                <span>${localize('editor.custom_variables.global', lang, 'Global')}</span>
+              </button>
+              <button
+                class="scope-btn ${!this._editingIsGlobal ? 'active' : ''}"
+                @click=${() => { this._editingIsGlobal = false; }}
+              >
+                <ha-icon icon="mdi:card-text"></ha-icon>
+                <span>${localize('editor.custom_variables.this_card', lang, 'This Card')}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -559,6 +804,151 @@ export class UcCustomVariablesManager extends LitElement {
         color: var(--secondary-text-color);
         font-size: 14px;
         line-height: 1.4;
+      }
+
+      /* Variables Sections */
+      .variables-section {
+        margin-bottom: 20px;
+      }
+
+      .variables-section.card-section {
+        border-left: 3px solid var(--warning-color, #ff9800);
+        padding-left: 12px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: var(--secondary-background-color, #f0f0f0);
+        border-radius: 6px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+
+      .section-title ha-icon {
+        --mdc-icon-size: 18px;
+        color: var(--primary-color);
+      }
+
+      .variable-count {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        font-weight: normal;
+      }
+
+      .clear-section-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background: transparent;
+        color: var(--error-color);
+        transition: all 0.2s ease;
+      }
+
+      .clear-section-btn:hover {
+        background: rgba(var(--error-color-rgb, 244, 67, 54), 0.1);
+      }
+
+      .clear-section-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      /* Scope Toggle */
+      .scope-field {
+        margin-top: 8px;
+      }
+
+      .scope-toggle {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .scope-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border: 2px solid var(--divider-color);
+        border-radius: 8px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+
+      .scope-btn:hover {
+        border-color: var(--primary-color);
+      }
+
+      .scope-btn.active {
+        border-color: var(--primary-color);
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
+        color: var(--primary-color);
+      }
+
+      .scope-btn ha-icon {
+        --mdc-icon-size: 20px;
+      }
+
+      .scope-hint {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.05);
+        border-radius: 4px;
+        font-style: italic;
+      }
+
+      /* Variable Scope Badge */
+      .variable-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 2px;
+      }
+
+      .variable-scope-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .variable-scope-badge.global {
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.15);
+        color: var(--primary-color);
+      }
+
+      .variable-scope-badge.card-specific {
+        background: rgba(var(--warning-color-rgb, 255, 152, 0), 0.15);
+        color: var(--warning-color, #ff9800);
+      }
+
+      /* Variable Icon based on scope */
+      .variable-icon.global {
+        background: var(--primary-color);
+      }
+
+      .variable-icon.card-specific {
+        background: var(--warning-color, #ff9800);
       }
 
       .add-form {
@@ -720,16 +1110,13 @@ export class UcCustomVariablesManager extends LitElement {
         gap: 8px;
       }
 
+      /* Variable Item - Preview Mode */
       .variable-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px;
         background: var(--card-background-color, white);
         border: 1px solid var(--divider-color);
         border-radius: 8px;
         transition: all 0.2s ease;
-        cursor: move;
+        padding: 12px;
       }
 
       .variable-item:hover {
@@ -741,9 +1128,26 @@ export class UcCustomVariablesManager extends LitElement {
         background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.05);
       }
 
+      .item-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .item-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+      }
+
       .drag-handle {
         color: var(--secondary-text-color);
         cursor: grab;
+        flex-shrink: 0;
       }
 
       .drag-handle:active {
@@ -770,17 +1174,64 @@ export class UcCustomVariablesManager extends LitElement {
         --mdc-icon-size: 18px;
       }
 
-      .variable-info {
-        flex: 1;
+      .variable-name-col {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
         min-width: 0;
       }
 
       .variable-name {
         font-weight: 600;
         color: var(--primary-color);
-        margin-bottom: 2px;
         font-family: var(--code-font-family, monospace);
         font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .variable-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: transparent;
+      }
+
+      .action-btn.edit-btn {
+        color: var(--primary-color);
+      }
+
+      .action-btn.edit-btn:hover {
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.15);
+      }
+
+      .action-btn.delete-btn {
+        color: var(--error-color);
+      }
+
+      .action-btn.delete-btn:hover {
+        background: rgba(var(--error-color-rgb, 244, 67, 54), 0.15);
+      }
+
+      .action-btn ha-icon {
+        --mdc-icon-size: 18px;
+      }
+
+      .item-body {
+        padding-left: 60px; /* align with content after drag handle + icon */
       }
 
       .variable-details {
@@ -794,6 +1245,7 @@ export class UcCustomVariablesManager extends LitElement {
         font-size: 12px;
         color: var(--secondary-text-color);
         font-family: var(--code-font-family, monospace);
+        word-break: break-all;
       }
 
       .variable-type {
@@ -802,6 +1254,7 @@ export class UcCustomVariablesManager extends LitElement {
         background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
         padding: 1px 6px;
         border-radius: 4px;
+        white-space: nowrap;
       }
 
       .variable-preview {
@@ -813,45 +1266,104 @@ export class UcCustomVariablesManager extends LitElement {
         white-space: nowrap;
       }
 
-      .variable-actions {
-        display: flex;
-        gap: 4px;
+      /* Edit Form Container */
+      .edit-form-container {
+        background: var(--card-background-color, white);
+        border: 2px solid var(--primary-color);
+        border-radius: 8px;
+        overflow: hidden;
       }
 
-      .edit-btn,
-      .delete-btn {
+      .edit-form-header {
         display: flex;
         align-items: center;
-        justify-content: center;
-        padding: 6px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: transparent;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
+        border-bottom: 1px solid var(--divider-color);
       }
 
-      .edit-btn {
+      .edit-form-header h4 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
         color: var(--primary-color);
       }
 
-      .edit-btn:hover {
-        background: rgba(var(--primary-color-rgb, 33, 150, 243), 0.1);
+      .edit-form-actions {
+        display: flex;
+        gap: 8px;
       }
 
-      .delete-btn {
-        color: var(--error-color);
+      .edit-form-actions .save-btn,
+      .edit-form-actions .cancel-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      .delete-btn:hover {
-        background: rgba(var(--error-color-rgb, 244, 67, 54), 0.1);
+      .edit-form-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
 
-      .edit-btn ha-icon,
-      .delete-btn ha-icon {
+      .edit-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .edit-field label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+
+      .edit-field input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .edit-field input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 33, 150, 243), 0.2);
+      }
+
+      .edit-field ha-form {
+        display: block;
+        width: 100%;
+      }
+
+      .edit-field ha-select {
+        width: 100%;
+      }
+
+      .scope-toggle.compact {
+        margin-top: 0;
+      }
+
+      .scope-toggle.compact .scope-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .scope-toggle.compact .scope-btn ha-icon {
         --mdc-icon-size: 16px;
       }
 
+      /* Legacy edit form styles - kept for compatibility */
       .edit-form {
         display: flex;
         align-items: flex-start;

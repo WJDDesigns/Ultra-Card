@@ -4109,6 +4109,7 @@ export interface CustomVariable {
   value_type: 'entity_id' | 'state' | 'full_object'; // What the variable resolves to
   order: number;
   created?: string;
+  isGlobal?: boolean; // true = syncs across all cards (default), false = card-specific
 }
 
 export interface CustomVariablesExportData {
@@ -4216,6 +4217,13 @@ export interface UltraCardConfig {
   card_name?: string;
   // Responsive scaling configuration
   responsive_scaling?: boolean;
+  // Card-specific custom variables (non-global)
+  _customVariables?: CustomVariable[];
+  // Backup of global variables (survives browser cache clear)
+  _globalVariablesBackup?: {
+    variables: CustomVariable[];
+    version: number;
+  };
 }
 
 // Custom card interface for registration

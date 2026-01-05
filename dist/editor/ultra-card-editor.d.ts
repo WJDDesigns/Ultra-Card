@@ -47,6 +47,7 @@ export declare class UltraCardEditor extends LitElement {
     private _handleConfigChanged;
     private _handleKeyDown;
     private _updateConfig;
+    private _handleCardVariablesChanged;
     private _toggleFullScreen;
     protected render(): TemplateResult<1>;
     private _renderSettingsTab;

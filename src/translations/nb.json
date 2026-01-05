@@ -2353,7 +2353,17 @@
       "drag_to_reorder": "Drag to reorder",
       "empty_title": "No Custom Variables",
       "empty_description": "Add your first variable to get started. Variables can be used in templates with {{ $variable_name }} syntax.",
-      "select_entity_placeholder": "Search entities..."
+      "select_entity_placeholder": "Search entities...",
+      "variable_scope": "Variable Scope",
+      "global": "Global",
+      "this_card": "This Card",
+      "global_hint": "Available in all Ultra Cards across your dashboard.",
+      "card_hint": "Only available in this specific card.",
+      "global_variables": "Global Variables",
+      "card_variables": "This Card Only",
+      "clear_global": "Clear global variables",
+      "clear_card": "Clear card variables",
+      "confirm_clear_card": "Are you sure you want to delete all card-specific variables?"
     },
     "export_import": {
       "include_variables": "You have custom variable(s). Include them in the export?",

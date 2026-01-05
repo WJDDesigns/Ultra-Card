@@ -1,5 +1,31 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta3
+
+### 🚀 New Features
+
+- **Global/Card-Specific Variable Scope** - Custom variables now support two scopes:
+  - **Global**: Variables sync across all Ultra Cards on your dashboard (stored in localStorage + backup)
+  - **This Card**: Variables only available in the specific card (stored in card config)
+- **Variable Scope Toggle** - When adding or editing a variable, choose between Global or Card-specific scope with visual toggle buttons
+- **Scope Badges** - Variables now display scope badges (Global/This Card) for easy identification
+
+### 🐛 Bug Fixes
+
+- **Fixed variables lost on browser cache clear** - Global variables are now automatically backed up to card config and restored when localStorage is cleared. This ensures variables survive:
+  - Browser cache/data clearing
+  - Switching browsers
+  - Private/Incognito mode
+  - Works fully offline without cloud sync
+
+### 🎨 UI Improvements
+
+- **Redesigned Variable Item Layout** - Cleaner preview with header containing name, scope badge, and action buttons; body showing entity, type, and resolved value
+- **Redesigned Variable Edit Form** - Full-width stacked form that fits within the card, with all fields including the new scope toggle
+- **Better Variable Sections** - Separate sections for Global and Card-specific variables with clear headers and delete buttons
+
+---
+
 ## Version 2.3.0-beta2
 
 ### 🚀 New Features

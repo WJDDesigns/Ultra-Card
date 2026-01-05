@@ -245,6 +245,11 @@ export class UltraCardEditor extends LitElement {
     }, 100); // 100ms debounce delay
   }
 
+  private _handleCardVariablesChanged(e: CustomEvent): void {
+    const variables = e.detail.variables;
+    this._updateConfig({ _customVariables: variables });
+  }
+
   private _toggleFullScreen(): void {
     this._isFullScreen = !this._isFullScreen;
 
@@ -1280,7 +1285,11 @@ export class UltraCardEditor extends LitElement {
               </p>
             </div>
 
-            <uc-custom-variables-manager .hass=${this.hass}></uc-custom-variables-manager>
+            <uc-custom-variables-manager 
+              .hass=${this.hass}
+              .config=${this.config}
+              @card-variables-changed=${this._handleCardVariablesChanged}
+            ></uc-custom-variables-manager>
           </div>
         </div>
       </div>

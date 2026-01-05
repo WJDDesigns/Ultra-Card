@@ -2235,6 +2235,7 @@ export interface CustomVariable {
     value_type: 'entity_id' | 'state' | 'full_object';
     order: number;
     created?: string;
+    isGlobal?: boolean;
 }
 export interface CustomVariablesExportData {
     variables: CustomVariable[];
@@ -2321,6 +2322,11 @@ export interface UltraCardConfig {
     haptic_feedback?: boolean;
     card_name?: string;
     responsive_scaling?: boolean;
+    _customVariables?: CustomVariable[];
+    _globalVariablesBackup?: {
+        variables: CustomVariable[];
+        version: number;
+    };
 }
 export interface CustomCard {
     type: string;

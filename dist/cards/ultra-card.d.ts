@@ -26,6 +26,8 @@ export declare class UltraCard extends LitElement {
     private _isEditorPreviewCard;
     private _globalTransparencyListener?;
     private _globalTransparencyApplied;
+    private _variablesBackupUnsub?;
+    private _variablesBackupVersion;
     connectedCallback(): void;
     disconnectedCallback(): void;
     /**
@@ -36,6 +38,11 @@ export declare class UltraCard extends LitElement {
         columns: string;
         min_columns: number;
     };
+    /**
+     * Setup custom variables backup/restore system
+     * This ensures global variables survive browser cache clears by backing up to card config
+     */
+    private _setupVariablesBackup;
     protected willUpdate(changedProps: PropertyValues): void;
     setConfig(config: UltraCardConfig): void;
     /**
