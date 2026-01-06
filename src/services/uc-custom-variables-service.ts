@@ -284,9 +284,9 @@ class UcCustomVariablesService {
         return `states('${variable.entity}')`;
 
       case 'full_object':
-        // Return the entity ID for full_object - templates can access via state_attr()
-        // Full object as JSON doesn't work well in templates
-        return variable.entity;
+        // Return states['entity_id'] which gives access to the full state object
+        // User can then access .state, .attributes, .last_changed, etc.
+        return `states['${variable.entity}']`;
 
       default:
         return variable.entity;
