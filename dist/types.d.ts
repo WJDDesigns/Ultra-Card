@@ -2232,7 +2232,8 @@ export interface CustomVariable {
     id: string;
     name: string;
     entity: string;
-    value_type: 'entity_id' | 'state' | 'full_object';
+    value_type: 'entity_id' | 'state' | 'attribute';
+    attribute_name?: string;
     order: number;
     created?: string;
     isGlobal?: boolean;

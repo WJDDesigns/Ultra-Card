@@ -81,8 +81,9 @@ class UcCustomVariablesService {
   addVariable(
     name: string,
     entity: string,
-    valueType: 'entity_id' | 'state' | 'full_object' = 'state',
-    isGlobal: boolean = true
+    valueType: 'entity_id' | 'state' | 'attribute' = 'state',
+    isGlobal: boolean = true,
+    attributeName?: string
   ): CustomVariable | null {
     // Validate variable name
     const cleanName = this._sanitizeVariableName(name);
@@ -102,6 +103,7 @@ class UcCustomVariablesService {
       name: cleanName,
       entity: entity,
       value_type: valueType,
+      attribute_name: valueType === 'attribute' ? attributeName : undefined,
       order: this._getNextOrder(),
       created: new Date().toISOString(),
       isGlobal: isGlobal,
@@ -122,8 +124,9 @@ class UcCustomVariablesService {
   createCardVariable(
     name: string,
     entity: string,
-    valueType: 'entity_id' | 'state' | 'full_object' = 'state',
-    existingCardVars: CustomVariable[] = []
+    valueType: 'entity_id' | 'state' | 'attribute' = 'state',
+    existingCardVars: CustomVariable[] = [],
+    attributeName?: string
   ): CustomVariable | null {
     // Validate variable name
     const cleanName = this._sanitizeVariableName(name);
@@ -151,6 +154,7 @@ class UcCustomVariablesService {
       name: cleanName,
       entity: entity,
       value_type: valueType,
+      attribute_name: valueType === 'attribute' ? attributeName : undefined,
       order: maxOrder,
       created: new Date().toISOString(),
       isGlobal: false,
@@ -162,7 +166,7 @@ class UcCustomVariablesService {
    */
   updateVariable(
     id: string,
-    updates: Partial<Pick<CustomVariable, 'name' | 'entity' | 'value_type'>>
+    updates: Partial<Pick<CustomVariable, 'name' | 'entity' | 'value_type' | 'attribute_name'>>
   ): boolean {
     const index = this._variables.findIndex(v => v.id === id);
     if (index === -1) return false;
@@ -283,10 +287,13 @@ class UcCustomVariablesService {
         // This makes state mode variables reactive (update when entity changes)
         return `states('${variable.entity}')`;
 
-      case 'full_object':
-        // Return states['entity_id'] which gives access to the full state object
-        // User can then access .state, .attributes, .last_changed, etc.
-        return `states['${variable.entity}']`;
+      case 'attribute':
+        // Return state_attr() call for reactive attribute access
+        if (variable.attribute_name) {
+          return `state_attr('${variable.entity}', '${variable.attribute_name}')`;
+        }
+        // Fallback to entity_id if no attribute specified
+        return variable.entity;
 
       default:
         return variable.entity;
@@ -675,7 +682,7 @@ class UcCustomVariablesService {
       typeof v.name === 'string' &&
       typeof v.entity === 'string' &&
       typeof v.order === 'number' &&
-      ['entity_id', 'state', 'full_object'].includes(v.value_type) &&
+      ['entity_id', 'state', 'attribute', 'full_object'].includes(v.value_type) && // Include full_object for legacy support
       this.isValidVariableName(v.name)
     );
   }

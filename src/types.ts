@@ -4106,7 +4106,8 @@ export interface CustomVariable {
   id: string;
   name: string; // Variable name (used as $name in templates)
   entity: string; // Entity ID reference
-  value_type: 'entity_id' | 'state' | 'full_object'; // What the variable resolves to
+  value_type: 'entity_id' | 'state' | 'attribute'; // What the variable resolves to
+  attribute_name?: string; // For attribute mode - which attribute to return
   order: number;
   created?: string;
   isGlobal?: boolean; // true = syncs across all cards (default), false = card-specific

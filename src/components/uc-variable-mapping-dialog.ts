@@ -7,7 +7,8 @@ import { localize } from '../localize/localize';
 export interface VariableMapping {
   variableName: string;
   entity: string;
-  valueType: 'entity_id' | 'state' | 'full_object';
+  valueType: 'entity_id' | 'state' | 'attribute';
+  attributeName?: string;
   shouldCreate: boolean;
 }
 
@@ -56,7 +57,7 @@ export class UcVariableMappingDialog extends LitElement {
     }
   }
 
-  private _handleValueTypeChange(varName: string, valueType: 'entity_id' | 'state' | 'full_object'): void {
+  private _handleValueTypeChange(varName: string, valueType: 'entity_id' | 'state' | 'attribute'): void {
     const mapping = this._mappings.get(varName);
     if (mapping) {
       mapping.valueType = valueType;
@@ -208,7 +209,7 @@ export class UcVariableMappingDialog extends LitElement {
               >
                 <mwc-list-item value="entity_id">Entity ID</mwc-list-item>
                 <mwc-list-item value="state">State Value</mwc-list-item>
-                <mwc-list-item value="full_object">Full Object</mwc-list-item>
+                <mwc-list-item value="attribute">Attribute</mwc-list-item>
               </ha-select>
             </div>
           </div>

@@ -2363,7 +2363,10 @@
       "card_variables": "This Card Only",
       "clear_global": "Clear global variables",
       "clear_card": "Clear card variables",
-      "confirm_clear_card": "Are you sure you want to delete all card-specific variables?"
+      "confirm_clear_card": "Are you sure you want to delete all card-specific variables?",
+      "value_type_attribute": "Attribute",
+      "value_type_attribute_desc": "Attribute Value (e.g., temperature, friendly_name)",
+      "attribute_name": "Attribute Name"
     },
     "export_import": {
       "include_variables": "You have custom variable(s). Include them in the export?",

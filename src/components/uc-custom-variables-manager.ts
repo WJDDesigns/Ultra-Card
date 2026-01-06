@@ -17,12 +17,14 @@ export class UcCustomVariablesManager extends LitElement {
   @state() private _editingId?: string;
   @state() private _editingName = '';
   @state() private _editingEntity = '';
-  @state() private _editingValueType: 'entity_id' | 'state' | 'full_object' = 'state';
+  @state() private _editingValueType: 'entity_id' | 'state' | 'attribute' = 'state';
+  @state() private _editingAttributeName = '';
   @state() private _editingIsGlobal = true;
   @state() private _showAddForm = false;
   @state() private _newVariableName = '';
   @state() private _newVariableEntity = '';
-  @state() private _newVariableValueType: 'entity_id' | 'state' | 'full_object' = 'state';
+  @state() private _newVariableValueType: 'entity_id' | 'state' | 'attribute' = 'state';
+  @state() private _newVariableAttributeName = '';
   @state() private _newVariableIsGlobal = true;
   @state() private _nameError = '';
 
@@ -115,7 +117,10 @@ export class UcCustomVariablesManager extends LitElement {
     this._editingId = variable.id;
     this._editingName = variable.name;
     this._editingEntity = variable.entity;
-    this._editingValueType = variable.value_type;
+    // Handle legacy 'full_object' type migration
+    const valueType = variable.value_type as string;
+    this._editingValueType = valueType === 'full_object' ? 'attribute' : (variable.value_type || 'state');
+    this._editingAttributeName = variable.attribute_name || '';
     this._editingIsGlobal = variable.isGlobal !== false;
     this._nameError = '';
   }
@@ -179,6 +184,7 @@ export class UcCustomVariablesManager extends LitElement {
         name: cleanName,
         entity: this._editingEntity,
         value_type: this._editingValueType,
+        attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
         order: this._cardVariables.length,
         isGlobal: false,
         created: globalVar?.created || new Date().toISOString(),
@@ -199,6 +205,7 @@ export class UcCustomVariablesManager extends LitElement {
         name: cleanName,
         entity: this._editingEntity,
         value_type: this._editingValueType,
+        attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
       });
       if (success) {
         this._cancelEdit();
@@ -209,7 +216,13 @@ export class UcCustomVariablesManager extends LitElement {
       // Stays Card-specific - just update
       const updatedCardVars = this._cardVariables.map(v => 
         v.id === this._editingId 
-          ? { ...v, name: cleanName, entity: this._editingEntity, value_type: this._editingValueType }
+          ? { 
+              ...v, 
+              name: cleanName, 
+              entity: this._editingEntity, 
+              value_type: this._editingValueType,
+              attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
+            }
           : v
       );
       this._updateCardVariables(updatedCardVars);
@@ -236,6 +249,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._newVariableName = '';
     this._newVariableEntity = '';
     this._newVariableValueType = 'state';
+    this._newVariableAttributeName = '';
     this._newVariableIsGlobal = true;
     this._nameError = '';
   }
@@ -245,6 +259,7 @@ export class UcCustomVariablesManager extends LitElement {
     this._newVariableName = '';
     this._newVariableEntity = '';
     this._newVariableValueType = 'state';
+    this._newVariableAttributeName = '';
     this._newVariableIsGlobal = true;
     this._nameError = '';
   }
@@ -264,7 +279,8 @@ export class UcCustomVariablesManager extends LitElement {
         this._newVariableName.trim(),
         this._newVariableEntity,
         this._newVariableValueType,
-        true
+        true,
+        this._newVariableValueType === 'attribute' ? this._newVariableAttributeName : undefined
       );
 
       if (result) {
@@ -278,7 +294,8 @@ export class UcCustomVariablesManager extends LitElement {
         this._newVariableName.trim(),
         this._newVariableEntity,
         this._newVariableValueType,
-        this._cardVariables
+        this._cardVariables,
+        this._newVariableValueType === 'attribute' ? this._newVariableAttributeName : undefined
       );
 
       if (newVar) {
@@ -333,8 +350,12 @@ export class UcCustomVariablesManager extends LitElement {
         return variable.entity;
       case 'state':
         return entityState ? entityState.state : 'unavailable';
-      case 'full_object':
-        return entityState ? `{state: "${entityState.state}", ...}` : '{unavailable}';
+      case 'attribute':
+        if (variable.attribute_name && entityState?.attributes) {
+          const attrValue = entityState.attributes[variable.attribute_name];
+          return attrValue !== undefined ? String(attrValue) : 'undefined';
+        }
+        return 'no attribute';
       default:
         return variable.entity;
     }
@@ -347,8 +368,8 @@ export class UcCustomVariablesManager extends LitElement {
         return localize('editor.custom_variables.value_type_entity_id', lang, 'Entity ID');
       case 'state':
         return localize('editor.custom_variables.value_type_state', lang, 'State Value');
-      case 'full_object':
-        return localize('editor.custom_variables.value_type_full_object', lang, 'Full Object');
+      case 'attribute':
+        return localize('editor.custom_variables.value_type_attribute', lang, 'Attribute');
       default:
         return valueType;
     }
@@ -586,12 +607,28 @@ export class UcCustomVariablesManager extends LitElement {
               <mwc-list-item value="state">
                 ${localize('editor.custom_variables.value_type_state_desc', lang, 'State Value (e.g., 23.5)')}
               </mwc-list-item>
-              <mwc-list-item value="full_object">
-                ${localize('editor.custom_variables.value_type_full_object_desc', lang, 'Full Entity Object (JSON)')}
+              <mwc-list-item value="attribute">
+                ${localize('editor.custom_variables.value_type_attribute_desc', lang, 'Attribute Value (e.g., temperature, friendly_name)')}
               </mwc-list-item>
             </ha-select>
           </div>
         </div>
+
+        ${this._newVariableValueType === 'attribute' ? html`
+          <div class="form-row">
+            <div class="form-field">
+              <label>${localize('editor.custom_variables.attribute_name', lang, 'Attribute Name')}</label>
+              <input
+                type="text"
+                .value=${this._newVariableAttributeName}
+                @input=${(e: Event) => {
+                  this._newVariableAttributeName = (e.target as HTMLInputElement).value;
+                }}
+                placeholder="e.g., temperature, friendly_name"
+              />
+            </div>
+          </div>
+        ` : ''}
 
         <!-- Global/Card-Specific Toggle -->
         <div class="form-row">
@@ -705,9 +742,23 @@ export class UcCustomVariablesManager extends LitElement {
             >
               <mwc-list-item value="entity_id">${localize('editor.custom_variables.value_type_entity_id', lang, 'Entity ID')}</mwc-list-item>
               <mwc-list-item value="state">${localize('editor.custom_variables.value_type_state', lang, 'State')}</mwc-list-item>
-              <mwc-list-item value="full_object">${localize('editor.custom_variables.value_type_full_object', lang, 'Full Object')}</mwc-list-item>
+              <mwc-list-item value="attribute">${localize('editor.custom_variables.value_type_attribute', lang, 'Attribute')}</mwc-list-item>
             </ha-select>
           </div>
+
+          ${this._editingValueType === 'attribute' ? html`
+            <div class="edit-field">
+              <label>${localize('editor.custom_variables.attribute_name', lang, 'Attribute Name')}</label>
+              <input
+                type="text"
+                .value=${this._editingAttributeName}
+                @input=${(e: Event) => {
+                  this._editingAttributeName = (e.target as HTMLInputElement).value;
+                }}
+                placeholder="e.g., temperature, friendly_name"
+              />
+            </div>
+          ` : ''}
 
           <div class="edit-field">
             <label>${localize('editor.custom_variables.variable_scope', lang, 'Variable Scope')}</label>
