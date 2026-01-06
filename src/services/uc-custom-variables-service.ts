@@ -77,13 +77,15 @@ class UcCustomVariablesService {
 
   /**
    * Add a new global custom variable
+   * @param existingCardVars Optional card-specific variables to check for name conflicts
    */
   addVariable(
     name: string,
     entity: string,
     valueType: 'entity_id' | 'state' | 'attribute' = 'state',
     isGlobal: boolean = true,
-    attributeName?: string
+    attributeName?: string,
+    existingCardVars: CustomVariable[] = []
   ): CustomVariable | null {
     // Validate variable name
     const cleanName = this._sanitizeVariableName(name);
@@ -94,7 +96,13 @@ class UcCustomVariablesService {
 
     // Check for duplicate names in global variables
     if (this._variables.some(v => v.name.toLowerCase() === cleanName.toLowerCase())) {
-      console.error(`Variable with name "${cleanName}" already exists.`);
+      console.error(`Variable with name "${cleanName}" already exists as a global variable.`);
+      return null;
+    }
+
+    // Check for duplicate names in card-specific variables (prevent cross-scope duplicates)
+    if (existingCardVars.some(v => v.name.toLowerCase() === cleanName.toLowerCase())) {
+      console.error(`Variable with name "${cleanName}" already exists as a card-specific variable.`);
       return null;
     }
 
@@ -163,10 +171,12 @@ class UcCustomVariablesService {
 
   /**
    * Update an existing custom variable
+   * @param existingCardVars Optional card-specific variables to check for name conflicts when renaming
    */
   updateVariable(
     id: string,
-    updates: Partial<Pick<CustomVariable, 'name' | 'entity' | 'value_type' | 'attribute_name'>>
+    updates: Partial<Pick<CustomVariable, 'name' | 'entity' | 'value_type' | 'attribute_name'>>,
+    existingCardVars: CustomVariable[] = []
   ): boolean {
     const index = this._variables.findIndex(v => v.id === id);
     if (index === -1) return false;
@@ -179,12 +189,21 @@ class UcCustomVariablesService {
         return false;
       }
 
-      // Check for duplicate names (excluding current variable)
-      const isDuplicate = this._variables.some(
+      // Check for duplicate names in global variables (excluding current variable)
+      const isDuplicateGlobal = this._variables.some(
         v => v.id !== id && v.name.toLowerCase() === cleanName.toLowerCase()
       );
-      if (isDuplicate) {
-        console.error(`Variable with name "${cleanName}" already exists.`);
+      if (isDuplicateGlobal) {
+        console.error(`Variable with name "${cleanName}" already exists as a global variable.`);
+        return false;
+      }
+
+      // Check for duplicate names in card-specific variables (prevent cross-scope duplicates)
+      const isDuplicateCard = existingCardVars.some(
+        v => v.name.toLowerCase() === cleanName.toLowerCase()
+      );
+      if (isDuplicateCard) {
+        console.error(`Variable with name "${cleanName}" already exists as a card-specific variable.`);
         return false;
       }
 
@@ -345,40 +364,83 @@ class UcCustomVariablesService {
 
   /**
    * Import variables from export data
+   * @param existingCardVars Optional card-specific variables to check for name conflicts
+   * @returns Object with imported count and skipped variables info
    */
-  importVariables(variables: CustomVariable[], merge: boolean = true): void {
+  importVariables(
+    variables: CustomVariable[], 
+    merge: boolean = true,
+    existingCardVars: CustomVariable[] = []
+  ): { imported: number; skipped: { name: string; reason: string }[] } {
+    const result = { imported: 0, skipped: [] as { name: string; reason: string }[] };
+    
     if (!Array.isArray(variables) || variables.length === 0) {
-      return;
+      return result;
     }
 
     if (!merge) {
-      // Replace all variables
-      this._variables = variables
-        .filter(this._isValidVariable.bind(this))
-        .map((v, index) => ({
-          ...v,
-          id: v.id || this._generateId(),
-          order: index,
-        }));
+      // Replace all variables (still check card-specific for conflicts)
+      const cardVarNames = new Set(existingCardVars.map(v => v.name.toLowerCase()));
+      const validVariables = variables.filter(v => {
+        // Store name before type guard for error reporting (v might not be valid CustomVariable)
+        const varName = (v as any)?.name || 'unknown';
+        if (!this._isValidVariable(v)) {
+          result.skipped.push({ name: varName, reason: 'invalid' });
+          return false;
+        }
+        if (cardVarNames.has(v.name.toLowerCase())) {
+          result.skipped.push({ name: v.name, reason: 'card-conflict' });
+          return false;
+        }
+        return true;
+      });
+      
+      this._variables = validVariables.map((v, index) => ({
+        ...v,
+        id: v.id || this._generateId(),
+        order: index,
+      }));
+      result.imported = validVariables.length;
     } else {
-      // Merge with existing, avoiding duplicate names
-      const existingNames = new Set(this._variables.map(v => v.name.toLowerCase()));
+      // Merge with existing, avoiding duplicate names in both global AND card-specific
+      const existingGlobalNames = new Set(this._variables.map(v => v.name.toLowerCase()));
+      const existingCardNames = new Set(existingCardVars.map(v => v.name.toLowerCase()));
 
       variables.forEach(v => {
-        if (this._isValidVariable(v) && !existingNames.has(v.name.toLowerCase())) {
-          this._variables.push({
-            ...v,
-            id: v.id || this._generateId(),
-            order: this._getNextOrder(),
-          });
-          existingNames.add(v.name.toLowerCase());
+        // Store name before type guard for error reporting (v might not be valid CustomVariable)
+        const varName = (v as any)?.name || 'unknown';
+        if (!this._isValidVariable(v)) {
+          result.skipped.push({ name: varName, reason: 'invalid' });
+          return;
         }
+        
+        const nameLower = v.name.toLowerCase();
+        
+        if (existingGlobalNames.has(nameLower)) {
+          result.skipped.push({ name: v.name, reason: 'global-exists' });
+          return;
+        }
+        
+        if (existingCardNames.has(nameLower)) {
+          result.skipped.push({ name: v.name, reason: 'card-conflict' });
+          return;
+        }
+        
+        this._variables.push({
+          ...v,
+          id: v.id || this._generateId(),
+          order: this._getNextOrder(),
+        });
+        existingGlobalNames.add(nameLower);
+        result.imported++;
       });
     }
 
     this._saveToStorage();
     this._notifyListeners();
     this._broadcastChange();
+    
+    return result;
   }
 
   /**

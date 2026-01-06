@@ -193,27 +193,51 @@ export class UcCustomVariablesManager extends LitElement {
       this._cancelEdit();
     } else if (!wasGlobal && wantsGlobal) {
       // Moving from Card-specific to Global
+      // Check if name conflicts with existing global variable first
+      if (ucCustomVariablesService.hasVariable(cleanName)) {
+        this._nameError = 'A global variable with this name already exists.';
+        return;
+      }
+      // Check if name conflicts with other card variables (excluding current one being moved)
+      const otherCardVars = this._cardVariables.filter(v => v.id !== this._editingId);
       // Remove from card
-      const updatedCardVars = this._cardVariables.filter(v => v.id !== this._editingId);
-      this._updateCardVariables(updatedCardVars);
-      // Add to global
-      ucCustomVariablesService.addVariable(cleanName, this._editingEntity, this._editingValueType, true);
-      this._cancelEdit();
+      this._updateCardVariables(otherCardVars);
+      // Add to global - pass remaining card variables for cross-scope check
+      const result = ucCustomVariablesService.addVariable(cleanName, this._editingEntity, this._editingValueType, true, 
+        this._editingValueType === 'attribute' ? this._editingAttributeName : undefined, otherCardVars);
+      if (result) {
+        this._cancelEdit();
+      } else {
+        this._nameError = 'A variable with this name already exists.';
+      }
     } else if (wasGlobal && wantsGlobal) {
-      // Stays Global - just update
+      // Stays Global - just update (pass card variables for cross-scope name check)
       const success = ucCustomVariablesService.updateVariable(this._editingId, {
         name: cleanName,
         entity: this._editingEntity,
         value_type: this._editingValueType,
         attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
-      });
+      }, this._cardVariables);
       if (success) {
         this._cancelEdit();
       } else {
-        this._nameError = 'Failed to update variable.';
+        this._nameError = 'A variable with this name already exists.';
       }
     } else {
       // Stays Card-specific - just update
+      // Check if the new name conflicts with global variables
+      if (ucCustomVariablesService.hasVariable(cleanName)) {
+        this._nameError = 'A global variable with this name already exists.';
+        return;
+      }
+      // Check if name conflicts with other card variables (excluding current one)
+      const isDuplicateCard = this._cardVariables.some(
+        v => v.id !== this._editingId && v.name.toLowerCase() === cleanName.toLowerCase()
+      );
+      if (isDuplicateCard) {
+        this._nameError = 'A card variable with this name already exists.';
+        return;
+      }
       const updatedCardVars = this._cardVariables.map(v => 
         v.id === this._editingId 
           ? { 
@@ -274,13 +298,14 @@ export class UcCustomVariablesManager extends LitElement {
     }
 
     if (this._newVariableIsGlobal) {
-      // Add global variable
+      // Add global variable - pass card variables to check for cross-scope duplicates
       const result = ucCustomVariablesService.addVariable(
         this._newVariableName.trim(),
         this._newVariableEntity,
         this._newVariableValueType,
         true,
-        this._newVariableValueType === 'attribute' ? this._newVariableAttributeName : undefined
+        this._newVariableValueType === 'attribute' ? this._newVariableAttributeName : undefined,
+        this._cardVariables
       );
 
       if (result) {
@@ -335,8 +360,42 @@ export class UcCustomVariablesManager extends LitElement {
 
   private _validateNameInput(name: string): void {
     this._nameError = '';
-    if (name && !ucCustomVariablesService.isValidVariableName(name)) {
+    if (!name) return;
+    
+    if (!ucCustomVariablesService.isValidVariableName(name)) {
       this._nameError = 'Use only letters, numbers, and underscores. Must start with a letter.';
+      return;
+    }
+
+    const cleanName = name.trim().toLowerCase();
+    
+    // When adding a new variable, check both scopes
+    if (!this._editingId) {
+      if (ucCustomVariablesService.hasVariable(name)) {
+        this._nameError = 'A global variable with this name already exists.';
+        return;
+      }
+      if (this._cardVariables.some(v => v.name.toLowerCase() === cleanName)) {
+        this._nameError = 'A card variable with this name already exists.';
+        return;
+      }
+    } else {
+      // When editing, check both scopes but exclude current variable
+      const currentVar = this._globalVariables.find(v => v.id === this._editingId) || 
+                         this._cardVariables.find(v => v.id === this._editingId);
+      const currentName = currentVar?.name.toLowerCase();
+      
+      // Only validate if name changed
+      if (cleanName !== currentName) {
+        if (ucCustomVariablesService.hasVariable(name)) {
+          this._nameError = 'A global variable with this name already exists.';
+          return;
+        }
+        if (this._cardVariables.some(v => v.id !== this._editingId && v.name.toLowerCase() === cleanName)) {
+          this._nameError = 'A card variable with this name already exists.';
+          return;
+        }
+      }
     }
   }
 

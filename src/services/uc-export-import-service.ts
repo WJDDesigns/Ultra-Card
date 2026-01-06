@@ -2,6 +2,7 @@ import { ExportData, CardRow, LayoutConfig, CardModule, CardColumn, UltraCardCon
 import { VERSION } from '../version';
 import { ucPrivacyService } from './uc-privacy-service';
 import { ucCustomVariablesService } from './uc-custom-variables-service';
+import { scanConfigForVariables } from '../utils/uc-template-processor';
 
 /**
  * Service for exporting and importing Ultra Card configurations
@@ -10,8 +11,9 @@ import { ucCustomVariablesService } from './uc-custom-variables-service';
 class UcExportImportService {
   /**
    * Export a row to clipboard as Ultra Card shortcode with privacy protection
+   * @param cardConfig Optional card config to get card-specific variables from
    */
-  async exportRowToClipboard(row: CardRow, name?: string): Promise<void> {
+  async exportRowToClipboard(row: CardRow, name?: string, cardConfig?: UltraCardConfig): Promise<void> {
     // Scan for privacy issues
     const privacyScan = ucPrivacyService.scanAndSanitize(row);
 
@@ -19,6 +21,27 @@ class UcExportImportService {
     const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
     if (!userConsent) {
       throw new Error('Export cancelled by user');
+    }
+
+    // Scan for variables used in the row and include them in export
+    const usedVarNames = scanConfigForVariables(row);
+    const variablesToExport: CustomVariable[] = [];
+    
+    for (const varName of usedVarNames) {
+      // Check card-specific variables first (they take priority)
+      const cardVar = cardConfig?._customVariables?.find(
+        v => v.name.toLowerCase() === varName.toLowerCase()
+      );
+      if (cardVar) {
+        variablesToExport.push({ ...cardVar, isGlobal: false }); // Ensure isGlobal is set
+        continue;
+      }
+      
+      // Check global variables
+      const globalVar = ucCustomVariablesService.getVariableByName(varName);
+      if (globalVar) {
+        variablesToExport.push({ ...globalVar, isGlobal: true }); // Ensure isGlobal is set
+      }
     }
 
     const exportData: ExportData = {
@@ -30,6 +53,7 @@ class UcExportImportService {
         name: name || 'Exported Row',
         privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
+      customVariables: variablesToExport.length > 0 ? variablesToExport : undefined,
     };
 
     const shortcode = this._generateShortcode(exportData);
@@ -41,8 +65,9 @@ class UcExportImportService {
 
   /**
    * Export a layout to clipboard with privacy protection
+   * @param cardConfig Optional card config to get card-specific variables from
    */
-  async exportLayoutToClipboard(layout: LayoutConfig, name?: string): Promise<void> {
+  async exportLayoutToClipboard(layout: LayoutConfig, name?: string, cardConfig?: UltraCardConfig): Promise<void> {
     // Scan for privacy issues
     const privacyScan = ucPrivacyService.scanAndSanitize(layout);
 
@@ -50,6 +75,27 @@ class UcExportImportService {
     const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
     if (!userConsent) {
       throw new Error('Export cancelled by user');
+    }
+
+    // Scan for variables used in the layout and include them in export
+    const usedVarNames = scanConfigForVariables(layout);
+    const variablesToExport: CustomVariable[] = [];
+    
+    for (const varName of usedVarNames) {
+      // Check card-specific variables first (they take priority)
+      const cardVar = cardConfig?._customVariables?.find(
+        v => v.name.toLowerCase() === varName.toLowerCase()
+      );
+      if (cardVar) {
+        variablesToExport.push({ ...cardVar, isGlobal: false });
+        continue;
+      }
+      
+      // Check global variables
+      const globalVar = ucCustomVariablesService.getVariableByName(varName);
+      if (globalVar) {
+        variablesToExport.push({ ...globalVar, isGlobal: true });
+      }
     }
 
     const exportData: ExportData = {
@@ -61,6 +107,7 @@ class UcExportImportService {
         name: name || 'Exported Layout',
         privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
+      customVariables: variablesToExport.length > 0 ? variablesToExport : undefined,
     };
 
     const shortcode = this._generateShortcode(exportData);
@@ -72,8 +119,9 @@ class UcExportImportService {
 
   /**
    * Export a module to clipboard with privacy protection
+   * @param cardConfig Optional card config to get card-specific variables from
    */
-  async exportModuleToClipboard(module: CardModule, name?: string): Promise<void> {
+  async exportModuleToClipboard(module: CardModule, name?: string, cardConfig?: UltraCardConfig): Promise<void> {
     // Scan for privacy issues
     const privacyScan = ucPrivacyService.scanAndSanitize(module);
 
@@ -81,6 +129,27 @@ class UcExportImportService {
     const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
     if (!userConsent) {
       throw new Error('Export cancelled by user');
+    }
+
+    // Scan for variables used in the module and include them in export
+    const usedVarNames = scanConfigForVariables(module);
+    const variablesToExport: CustomVariable[] = [];
+    
+    for (const varName of usedVarNames) {
+      // Check card-specific variables first (they take priority)
+      const cardVar = cardConfig?._customVariables?.find(
+        v => v.name.toLowerCase() === varName.toLowerCase()
+      );
+      if (cardVar) {
+        variablesToExport.push({ ...cardVar, isGlobal: false });
+        continue;
+      }
+      
+      // Check global variables
+      const globalVar = ucCustomVariablesService.getVariableByName(varName);
+      if (globalVar) {
+        variablesToExport.push({ ...globalVar, isGlobal: true });
+      }
     }
 
     const exportData: ExportData = {
@@ -92,6 +161,7 @@ class UcExportImportService {
         name: name || 'Exported Module',
         privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
+      customVariables: variablesToExport.length > 0 ? variablesToExport : undefined,
     };
 
     const shortcode = this._generateShortcode(exportData);
@@ -103,11 +173,11 @@ class UcExportImportService {
 
   /**
    * Export full card configuration to clipboard with privacy protection
+   * Automatically includes all variables used in the config (both global and card-specific)
    * @param config Card configuration to export
    * @param name Optional name for the export
-   * @param includeVariables Whether to include custom variables in the export
    */
-  async exportCardToClipboard(config: UltraCardConfig, name?: string, includeVariables?: boolean): Promise<void> {
+  async exportCardToClipboard(config: UltraCardConfig, name?: string): Promise<void> {
     // Scan for privacy issues
     const privacyScan = ucPrivacyService.scanAndSanitize(config);
 
@@ -115,6 +185,27 @@ class UcExportImportService {
     const userConsent = await ucPrivacyService.showPrivacyDialog(privacyScan);
     if (!userConsent) {
       throw new Error('Export cancelled by user');
+    }
+
+    // Scan for variables used in the config and include them in export
+    const usedVarNames = scanConfigForVariables(config);
+    const variablesToExport: CustomVariable[] = [];
+    
+    for (const varName of usedVarNames) {
+      // Check card-specific variables first (they take priority)
+      const cardVar = config._customVariables?.find(
+        v => v.name.toLowerCase() === varName.toLowerCase()
+      );
+      if (cardVar) {
+        variablesToExport.push({ ...cardVar, isGlobal: false }); // Ensure isGlobal is set
+        continue;
+      }
+      
+      // Check global variables
+      const globalVar = ucCustomVariablesService.getVariableByName(varName);
+      if (globalVar) {
+        variablesToExport.push({ ...globalVar, isGlobal: true }); // Ensure isGlobal is set
+      }
     }
 
     const exportData: ExportData = {
@@ -126,12 +217,8 @@ class UcExportImportService {
         name: name || config.card_name || 'Exported Card',
         privacyProtected: privacyScan.found.length > 0, // Flag if sanitized
       },
+      customVariables: variablesToExport.length > 0 ? variablesToExport : undefined,
     };
-
-    // Include custom variables if requested
-    if (includeVariables) {
-      exportData.customVariables = ucCustomVariablesService.exportVariables();
-    }
 
     const shortcode = this._generateShortcode(exportData);
     await this._copyToClipboard(shortcode);
@@ -462,10 +549,7 @@ class UcExportImportService {
     row.columns = row.columns.map((column, colIndex) => ({
       ...column,
       id: `col-${Date.now()}-${colIndex}-${Math.random().toString(36).substr(2, 9)}`,
-      modules: column.modules.map((module, moduleIndex) => ({
-        ...module,
-        id: `${module.type}-${Date.now()}-${moduleIndex}-${Math.random().toString(36).substr(2, 9)}`,
-      })),
+      modules: column.modules.map((module) => this._regenerateModuleIds(module as any) as CardModule),
     }));
 
     return row;
@@ -484,8 +568,80 @@ class UcExportImportService {
     return config;
   }
 
-  private _regenerateModuleIds(module: CardModule): CardModule {
+  /**
+   * Comprehensively regenerate IDs for a module and all nested content
+   * Handles: info_entities, icons, dropdown options, slider bars, and nested layout modules
+   */
+  private _regenerateModuleIds(module: any): any {
+    // Generate new ID for the module itself
     module.id = `${module.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // If this is a layout module (horizontal/vertical/accordion/popup), regenerate IDs for all nested modules
+    if ((module.type === 'horizontal' || module.type === 'vertical' || module.type === 'accordion' || module.type === 'popup') && module.modules) {
+      module.modules.forEach((childModule: any) => {
+        this._regenerateModuleIds(childModule); // Recursive for nested layouts
+      });
+    }
+
+    // Handle info modules with entities
+    if (module.type === 'info' && module.info_entities) {
+      module.info_entities.forEach((entity: any) => {
+        entity.id = `info-entity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      });
+    }
+
+    // Handle icon modules with icons array
+    if (module.type === 'icon' && module.icons) {
+      module.icons.forEach((icon: any) => {
+        icon.id = `icon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      });
+    }
+
+    // Handle dropdown modules with options
+    if (module.type === 'dropdown' && module.options && Array.isArray(module.options)) {
+      module.options.forEach((option: any) => {
+        if (option.id) {
+          option.id = `dropdown-option-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      });
+    }
+
+    // Handle slider control modules with bars
+    if (module.type === 'slider_control' && module.bars && Array.isArray(module.bars)) {
+      module.bars.forEach((bar: any) => {
+        if (bar.id) {
+          bar.id = `slider-bar-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      });
+    }
+
+    // Handle graph modules with bars
+    if (module.type === 'graph' && module.bars && Array.isArray(module.bars)) {
+      module.bars.forEach((bar: any) => {
+        if (bar.id) {
+          bar.id = `graph-bar-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      });
+    }
+
+    // Handle button modules with buttons array
+    if (module.type === 'button' && module.buttons && Array.isArray(module.buttons)) {
+      module.buttons.forEach((button: any) => {
+        if (button.id) {
+          button.id = `button-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      });
+    }
+
+    // Handle image modules with images array
+    if (module.type === 'image' && module.images && Array.isArray(module.images)) {
+      module.images.forEach((image: any) => {
+        if (image.id) {
+          image.id = `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      });
+    }
+
     return module;
   }
 
@@ -952,15 +1108,100 @@ class UcExportImportService {
   }
 
   /**
-   * Import custom variables from export data
+   * Import custom variables from export data (global only - legacy method)
    * @param exportData Export data containing variables
    * @param merge If true, merge with existing variables; if false, replace all
+   * @param existingCardVars Optional card-specific variables to check for name conflicts
+   * @returns Object with imported count and skipped variables info
    */
-  importCustomVariables(exportData: ExportData, merge: boolean = true): void {
+  importCustomVariables(
+    exportData: ExportData, 
+    merge: boolean = true,
+    existingCardVars: CustomVariable[] = []
+  ): { imported: number; skipped: { name: string; reason: string }[] } {
     if (!this.hasCustomVariables(exportData)) {
-      return;
+      return { imported: 0, skipped: [] };
     }
-    ucCustomVariablesService.importVariables(exportData.customVariables!, merge);
+    return ucCustomVariablesService.importVariables(exportData.customVariables!, merge, existingCardVars);
+  }
+
+  /**
+   * Import custom variables - always as card-specific with auto-rename on conflict
+   * This provides the best UX: no prompts, user can change scope later
+   * @param exportData Export data containing variables
+   * @param existingCardVars Current card's card-specific variables
+   * @returns Object with cardVarsToAdd and summary info
+   */
+  importVariablesAsCardSpecific(
+    exportData: ExportData,
+    existingCardVars: CustomVariable[] = []
+  ): { 
+    cardVarsToAdd: CustomVariable[];
+    summary: { added: number; renamed: { from: string; to: string }[]; skipped: string[] };
+  } {
+    const result = {
+      cardVarsToAdd: [] as CustomVariable[],
+      summary: {
+        added: 0,
+        renamed: [] as { from: string; to: string }[],
+        skipped: [] as string[],
+      },
+    };
+
+    if (!this.hasCustomVariables(exportData)) {
+      return result;
+    }
+
+    const variables = exportData.customVariables!;
+    
+    // Build set of all existing names (global + card-specific + newly added)
+    const existingNames = new Set<string>();
+    ucCustomVariablesService.getVariables().forEach(v => existingNames.add(v.name.toLowerCase()));
+    existingCardVars.forEach(v => existingNames.add(v.name.toLowerCase()));
+
+    for (const variable of variables) {
+      const originalName = variable.name;
+      let finalName = originalName;
+      
+      // Check if name already exists
+      if (existingNames.has(finalName.toLowerCase())) {
+        // Check if it's the exact same variable (same entity and config)
+        const existingGlobal = ucCustomVariablesService.getVariableByName(finalName);
+        const existingCard = existingCardVars.find(v => v.name.toLowerCase() === finalName.toLowerCase());
+        const existing = existingGlobal || existingCard;
+        
+        if (existing && 
+            existing.entity === variable.entity && 
+            existing.value_type === variable.value_type &&
+            existing.attribute_name === variable.attribute_name) {
+          // Exact same variable - skip it
+          result.summary.skipped.push(originalName);
+          continue;
+        }
+        
+        // Different config - auto-rename
+        let suffix = 2;
+        while (existingNames.has(`${originalName}_${suffix}`.toLowerCase())) {
+          suffix++;
+        }
+        finalName = `${originalName}_${suffix}`;
+        result.summary.renamed.push({ from: originalName, to: finalName });
+      }
+      
+      // Add as card-specific variable
+      const newCardVar: CustomVariable = {
+        ...variable,
+        name: finalName,
+        id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        isGlobal: false,
+        order: existingCardVars.length + result.cardVarsToAdd.length,
+      };
+      result.cardVarsToAdd.push(newCardVar);
+      existingNames.add(finalName.toLowerCase());
+      result.summary.added++;
+    }
+
+    return result;
   }
 
   /**

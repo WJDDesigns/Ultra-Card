@@ -31,6 +31,7 @@ import { ucFavoritesService } from '../../services/uc-favorites-service';
 import { ThirdPartyLimitService, getCurrentDashboardId } from '../../pro/third-party-limit-service';
 import { isThirdParty } from '../../pro/is-third-party';
 import { ucExportImportService } from '../../services/uc-export-import-service';
+import { ucCustomVariablesService } from '../../services/uc-custom-variables-service';
 import { ucDashboardScannerService } from '../../services/uc-dashboard-scanner-service';
 import { ucModulePreviewService } from '../../services/uc-module-preview-service';
 import { ucCloudAuthService } from '../../services/uc-cloud-auth-service';
@@ -2504,7 +2505,8 @@ export class LayoutTab extends LitElement {
 
     try {
       this._showToast('Exporting row to clipboard...', 'info');
-      await ucExportImportService.exportRowToClipboard(row, `Row ${rowIndex + 1}`);
+      // Pass config to include card-specific variables in export
+      await ucExportImportService.exportRowToClipboard(row, `Row ${rowIndex + 1}`, this.config);
       this._showToast('Row exported to clipboard!', 'success');
       
       // Update clipboard state to light up import button
@@ -2593,6 +2595,34 @@ export class LayoutTab extends LitElement {
         }
       } catch {}
 
+      // Handle variables from export - always add as card-specific with auto-rename
+      if (ucExportImportService.hasCustomVariables(importData)) {
+        const currentCardVars = this.config._customVariables || [];
+        const varResult = ucExportImportService.importVariablesAsCardSpecific(importData, currentCardVars);
+        
+        // Add card-specific variables to card config
+        if (varResult.cardVarsToAdd.length > 0) {
+          const updatedCardVars = [...currentCardVars, ...varResult.cardVarsToAdd];
+          this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: { ...this.config, _customVariables: updatedCardVars } },
+            bubbles: true,
+            composed: true
+          }));
+          
+          // Show summary toast
+          const { summary } = varResult;
+          let message = `Added ${summary.added} variable(s) to this card`;
+          if (summary.renamed.length > 0) {
+            const renames = summary.renamed.map(r => `${r.from}→${r.to}`).join(', ');
+            message += ` (renamed: ${renames})`;
+          }
+          if (summary.skipped.length > 0) {
+            message += ` (${summary.skipped.length} already existed)`;
+          }
+          this._showToast(message, 'info');
+        }
+      }
+
       // Create a new layout object to ensure Lit detects the change
       const currentLayout = this._ensureLayout();
       const newLayout = {
@@ -2613,8 +2643,8 @@ export class LayoutTab extends LitElement {
         'success'
       );
 
-      // Check for missing variables in the imported row
-      const missingVars = findMissingVariables(clonedRow);
+      // Check for missing variables in the imported row (variables that weren't in the export)
+      const missingVars = findMissingVariables(clonedRow, this.config);
       if (missingVars.length > 0) {
         this._missingVariables = missingVars;
         this._showVariableMappingDialog = true;
@@ -2632,7 +2662,8 @@ export class LayoutTab extends LitElement {
   private async _exportFavorite(favorite: FavoriteRow): Promise<void> {
     try {
       this._showToast('Exporting favorite to clipboard...', 'info');
-      await ucExportImportService.exportRowToClipboard(favorite.row, favorite.name);
+      // Pass config to include card-specific variables in export
+      await ucExportImportService.exportRowToClipboard(favorite.row, favorite.name, this.config);
       this._showToast('Favorite exported to clipboard!', 'success');
     } catch (error) {
       console.error('Failed to export favorite:', error);
@@ -2961,6 +2992,32 @@ export class LayoutTab extends LitElement {
         
         // Preserve the card type
         cardConfig.type = 'custom:ultra-card';
+        
+        // Handle variables - always import as card-specific (local)
+        if (ucExportImportService.hasCustomVariables(importData)) {
+          const currentCardVars = this.config._customVariables || [];
+          const varResult = ucExportImportService.importVariablesAsCardSpecific(importData, currentCardVars);
+          
+          // Set imported variables as card-specific in the config
+          if (varResult.cardVarsToAdd.length > 0) {
+            cardConfig._customVariables = varResult.cardVarsToAdd;
+            
+            // Show summary toast
+            const { summary } = varResult;
+            let message = `Imported ${summary.added} variable(s) as card-specific`;
+            if (summary.renamed.length > 0) {
+              const renames = summary.renamed.map(r => `${r.from}→${r.to}`).join(', ');
+              message += ` (renamed: ${renames})`;
+            }
+            if (summary.skipped.length > 0) {
+              message += ` (${summary.skipped.length} already existed)`;
+            }
+            this._showToast(message, 'info');
+          }
+        } else {
+          // No variables in import - clear any existing card-specific vars
+          delete cardConfig._customVariables;
+        }
         
         // Fire config-changed event with the new full config
         const event = new CustomEvent('config-changed', {

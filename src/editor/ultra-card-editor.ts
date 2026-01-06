@@ -2,7 +2,7 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { UltraCardConfig, HoverEffectConfig } from '../types';
+import { UltraCardConfig, HoverEffectConfig, CustomVariable } from '../types';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
@@ -12,6 +12,7 @@ import { ucSnapshotService } from '../services/uc-snapshot-service';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import { ucExportImportService } from '../services/uc-export-import-service';
 import {
   ucSnapshotSchedulerService,
   SnapshotSchedulerStatus,
@@ -27,7 +28,7 @@ import '../components/uc-custom-variables-manager';
 import '../components/uc-variable-mapping-dialog';
 import '../components/uc-favorite-dialog';
 import '../components/uc-import-dialog';
-import { findMissingVariables } from '../utils/uc-template-processor';
+import { findMissingVariables, scanConfigForVariables } from '../utils/uc-template-processor';
 import '../components/uc-snapshot-history-modal';
 import '../components/uc-snapshot-settings-dialog';
 import '../components/uc-manual-backup-dialog';
@@ -4942,26 +4943,32 @@ export class UltraCardEditor extends LitElement {
   private async _handleExport() {
     const lang = this.hass?.locale?.language || 'en';
     
-    // Check if user has custom variables
-    const variables = ucCustomVariablesService.getVariables();
-    let includeVariables = false;
-    
-    if (variables.length > 0) {
-      // Show dialog asking if they want to include variables
-      includeVariables = confirm(
-        localize(
-          'editor.export_import.include_variables',
-          lang,
-          `You have ${variables.length} custom variable(s). Include them in the export?`
-        )
-      );
-    }
-    
     try {
-      // Create export config with optional variables
+      // Automatically scan for variables used in the config and include them
+      const usedVarNames = scanConfigForVariables(this.config);
+      const variablesToExport: CustomVariable[] = [];
+      
+      for (const varName of usedVarNames) {
+        // Check card-specific variables first (they take priority)
+        const cardVar = this.config._customVariables?.find(
+          v => v.name.toLowerCase() === varName.toLowerCase()
+        );
+        if (cardVar) {
+          variablesToExport.push({ ...cardVar, isGlobal: false });
+          continue;
+        }
+        
+        // Check global variables
+        const globalVar = ucCustomVariablesService.getVariableByName(varName);
+        if (globalVar) {
+          variablesToExport.push({ ...globalVar, isGlobal: true });
+        }
+      }
+      
+      // Create export config with variables automatically included
       const exportConfig = { ...this.config };
-      if (includeVariables) {
-        (exportConfig as any)._customVariables = variables;
+      if (variablesToExport.length > 0) {
+        (exportConfig as any)._customVariables = variablesToExport;
       }
       
       // Use new encoded format (compressed + Base64)
@@ -4970,7 +4977,11 @@ export class UltraCardEditor extends LitElement {
         `${(this.config.card_name || 'ultra-card').replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.txt`
       );
 
-      alert(localize('editor.ultra_card_pro.export_success', lang, 'Card configuration exported!'));
+      let successMsg = localize('editor.ultra_card_pro.export_success', lang, 'Card configuration exported!');
+      if (variablesToExport.length > 0) {
+        successMsg += ` (including ${variablesToExport.length} variable(s))`;
+      }
+      alert(successMsg);
     } catch (error) {
       console.error('Export failed:', error);
       alert('Failed to export card configuration');
@@ -5033,12 +5044,32 @@ export class UltraCardEditor extends LitElement {
           const cleanConfig = { ...config };
           delete cleanConfig._customVariables;
           
-          this._updateConfig(cleanConfig);
-          
-          // Import variables if user confirmed
+          // Import variables if user confirmed - always as card-specific (local)
+          // User can change to global later if needed
           if (shouldImportVariables && importedVariables) {
-            ucCustomVariablesService.importVariables(importedVariables, true); // Merge with existing
+            const currentCardVars: CustomVariable[] = [];
+            const exportData = { customVariables: importedVariables } as any;
+            const varResult = ucExportImportService.importVariablesAsCardSpecific(exportData, currentCardVars);
+            
+            // Add imported variables to the clean config as card-specific
+            if (varResult.cardVarsToAdd.length > 0) {
+              cleanConfig._customVariables = varResult.cardVarsToAdd;
+              
+              // Show summary
+              const { summary } = varResult;
+              let message = `Imported ${summary.added} variable(s) as card-specific`;
+              if (summary.renamed.length > 0) {
+                const renames = summary.renamed.map(r => `${r.from}→${r.to}`).join(', ');
+                message += ` (renamed: ${renames})`;
+              }
+              if (summary.skipped.length > 0) {
+                message += ` (${summary.skipped.length} skipped - already exist)`;
+              }
+              alert(message);
+            }
           }
+          
+          this._updateConfig(cleanConfig);
           
           // Scan imported config for variables that are used but not yet defined
           // This handles cases where the user received a config that uses variables
