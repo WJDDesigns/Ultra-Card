@@ -118,9 +118,16 @@ class UcCustomVariablesService {
     };
 
     this._variables.push(newVariable);
-    this._saveToStorage();
+    
+    const saveSuccess = this._saveToStorage();
     this._notifyListeners();
-    this._broadcastChange();
+    
+    // Only broadcast change if save succeeded - prevents reloading stale data from localStorage
+    if (!saveSuccess) {
+      console.warn('[UC Variables] Variable saved in memory only (localStorage full). Will be lost on page refresh.');
+    } else {
+      this._broadcastChange();
+    }
 
     return newVariable;
   }
@@ -656,25 +663,26 @@ class UcCustomVariablesService {
 
   /**
    * Save variables to localStorage
+   * @returns true if save succeeded, false otherwise
    */
-  private _saveToStorage(): void {
+  private _saveToStorage(): boolean {
     try {
       // Check if localStorage is available
       if (!this._isLocalStorageAvailable()) {
-        return;
+        return false;
       }
 
       const dataToSave = JSON.stringify(this._variables);
       localStorage.setItem(UcCustomVariablesService.STORAGE_KEY, dataToSave);
+      return true;
     } catch (error) {
-      console.error('Failed to save custom variables to storage:', error);
-
       // Check if it's a quota exceeded error
       if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
-        console.error(
-          'localStorage quota exceeded! Consider clearing old data or using fewer variables.'
-        );
+        console.error('localStorage quota exceeded. Run: localStorage.removeItem("ultra-card-pending-backup")');
+      } else {
+        console.error('Failed to save custom variables:', error);
       }
+      return false;
     }
   }
 
@@ -691,8 +699,17 @@ class UcCustomVariablesService {
 
     // Listen for custom events from same tab
     window.addEventListener(UcCustomVariablesService.SYNC_EVENT, () => {
-      this._loadFromStorage();
-      this._notifyListeners();
+      // Only reload if we can actually save (avoid overwriting memory with stale data)
+      try {
+        const testKey = '__uc_test__';
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        // If we can write, it's safe to reload
+        this._loadFromStorage();
+        this._notifyListeners();
+      } catch (e) {
+        // localStorage not writable, skip reload to preserve in-memory state
+      }
     });
   }
 

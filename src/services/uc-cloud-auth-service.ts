@@ -103,7 +103,6 @@ class UcCloudAuthService {
 
       // Check if authenticated
       if (sensorState.state !== 'connected' || !sensorState.attributes?.authenticated) {
-        console.log('📝 Integration installed but not authenticated');
         return null;
       }
 

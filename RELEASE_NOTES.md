@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta13
+
+### 🚀 Improvements
+
+- **Tightened up the sprocket looking thing** - Visual refinements to the sprocket UI element
+- **Improved logging so it doesn't take down the main site** - Optimized logging system to prevent performance issues affecting the main site
+
+### 🐛 Bug Fixes
+
+- **Fixed issue with global and local variables** - Resolved variable scope issues affecting both global and local variable functionality
+
+---
+
 ## Version 2.3.0-beta12
 
 ### 🚀 Improvements
