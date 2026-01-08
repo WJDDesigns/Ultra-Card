@@ -2691,6 +2691,8 @@ export interface GridEntity {
     metro_size?: MetroSize;
     state_colors?: Record<string, string>;
     hidden?: boolean;
+    display_mode?: 'always' | 'every' | 'any';
+    display_conditions?: DisplayCondition[];
 }
 export interface GridModule extends BaseModule {
     type: 'grid';

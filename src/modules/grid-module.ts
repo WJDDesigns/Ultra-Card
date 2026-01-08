@@ -13,12 +13,14 @@ import {
   MetroSize,
   UltraCardConfig,
   ModuleActionConfig,
+  DisplayCondition,
 } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { GlobalActionsTab } from '../tabs/global-actions-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UltraLinkComponent } from '../components/ultra-link';
 import { localize } from '../localize/localize';
+import { logicService } from '../services/logic-service';
 import '../components/ultra-color-picker';
 
 // Grid style preset configurations
@@ -374,6 +376,16 @@ export class UltraGridModule extends BaseUltraModule {
   private _animationStartTimes: Map<string, number> = new Map();
   // Store hass reference
   private _hass?: HomeAssistant;
+  // Track entity action states for proper form binding
+  private _entityActionStates: Map<string, { tap_action?: any; hold_action?: any; double_tap_action?: any }> = new Map();
+  // Track gesture state for each grid item (for hold and double-tap detection)
+  private _gestureState: Map<string, {
+    holdTimeout: any;
+    clickTimeout: any;
+    isHolding: boolean;
+    clickCount: number;
+    lastClickTime: number;
+  }> = new Map();
 
   createDefault(id?: string, hass?: HomeAssistant): GridModule {
     const moduleId = id || this.generateId('grid');
@@ -460,9 +472,9 @@ export class UltraGridModule extends BaseUltraModule {
       // Card style (style_11)
       card_shadow_color: 'rgba(0, 0, 0, 0.1)',
 
-      // Global Actions
-      tap_action: { action: 'more-info' },
-      hold_action: { action: 'nothing' },
+      // Global Actions - 'default' uses smart domain-based actions
+      tap_action: { action: 'default' },
+      hold_action: { action: 'more-info' },
       double_tap_action: { action: 'nothing' },
 
       // Hover
@@ -568,6 +580,20 @@ export class UltraGridModule extends BaseUltraModule {
 
     // Remove hidden entities
     entities = entities.filter(e => !e.hidden);
+
+    // Filter entities based on individual display conditions
+    entities = entities.filter(entity => {
+      // If no display_mode or it's 'always', show the entity
+      if (!entity.display_mode || entity.display_mode === 'always') {
+        return true;
+      }
+
+      // Evaluate display conditions using the logic service
+      return logicService.evaluateDisplayConditions(
+        entity.display_conditions || [],
+        entity.display_mode
+      );
+    });
 
     return entities;
   }
@@ -722,25 +748,206 @@ export class UltraGridModule extends BaseUltraModule {
     return module.global_off_color || module.global_icon_color || 'var(--primary-color)';
   }
 
-  // Handle item click
-  private handleItemClick(
-    event: Event,
+  // Get smart default action based on entity domain
+  private getSmartDefaultAction(entityId: string, hass: HomeAssistant): ModuleActionConfig {
+    const domain = entityId.split('.')[0];
+    const entityState = hass?.states?.[entityId];
+    
+    // Domains that support toggle
+    const toggleDomains = [
+      'light', 'switch', 'fan', 'input_boolean', 'automation', 
+      'script', 'scene', 'cover', 'lock', 'vacuum', 'media_player',
+      'climate', 'humidifier', 'water_heater'
+    ];
+    
+    if (toggleDomains.includes(domain)) {
+      return { action: 'toggle', entity: entityId };
+    }
+    
+    // Special handling for specific domains
+    switch (domain) {
+      case 'button':
+      case 'input_button':
+        return { action: 'perform-action', perform_action: 'button.press', target: { entity_id: entityId } };
+      case 'script':
+        return { action: 'perform-action', perform_action: 'script.turn_on', target: { entity_id: entityId } };
+      case 'scene':
+        return { action: 'perform-action', perform_action: 'scene.turn_on', target: { entity_id: entityId } };
+      case 'number':
+      case 'input_number':
+      case 'input_select':
+      case 'input_text':
+      case 'sensor':
+      case 'binary_sensor':
+      case 'weather':
+      case 'person':
+      case 'device_tracker':
+      case 'zone':
+      case 'sun':
+      case 'calendar':
+      default:
+        // For sensors and other non-controllable entities, show more-info
+        return { action: 'more-info', entity: entityId };
+    }
+  }
+
+  // Get or create gesture state for an entity
+  private getGestureState(entityId: string) {
+    if (!this._gestureState.has(entityId)) {
+      this._gestureState.set(entityId, {
+        holdTimeout: null,
+        clickTimeout: null,
+        isHolding: false,
+        clickCount: 0,
+        lastClickTime: 0,
+      });
+    }
+    return this._gestureState.get(entityId)!;
+  }
+
+  // Resolve action for a given action type (tap, hold, double_tap)
+  private resolveAction(
+    actionType: 'tap' | 'hold' | 'double_tap',
+    entity: GridEntity,
+    module: GridModule,
+    hass: HomeAssistant
+  ): ModuleActionConfig | null {
+    let action: ModuleActionConfig | undefined;
+    
+    // Check entity override first
+    if (entity.override_actions) {
+      if (actionType === 'tap' && entity.tap_action) {
+        action = entity.tap_action;
+      } else if (actionType === 'hold' && entity.hold_action) {
+        action = entity.hold_action;
+      } else if (actionType === 'double_tap' && entity.double_tap_action) {
+        action = entity.double_tap_action;
+      }
+    }
+    
+    // Fall back to module-level action
+    if (!action) {
+      if (actionType === 'tap') {
+        action = module.tap_action;
+      } else if (actionType === 'hold') {
+        action = module.hold_action;
+      } else if (actionType === 'double_tap') {
+        action = module.double_tap_action;
+      }
+    }
+    
+    // If action is 'default', use smart domain-based action (for tap only)
+    if (action?.action === 'default') {
+      if (actionType === 'tap') {
+        action = this.getSmartDefaultAction(entity.entity, hass);
+      } else {
+        // For hold/double-tap, 'default' means more-info
+        action = { action: 'more-info', entity: entity.entity };
+      }
+    }
+    
+    // Check if action should be executed
+    if (!action || action.action === 'nothing' || (action as any).action === 'none') {
+      return null;
+    }
+    
+    // Ensure entity is set for more-info and toggle actions
+    const actionConfig = { ...action };
+    if ((actionConfig.action === 'more-info' || actionConfig.action === 'toggle') && !actionConfig.entity) {
+      actionConfig.entity = entity.entity;
+    }
+    
+    return actionConfig;
+  }
+
+  // Handle pointer down for gesture detection
+  private handleItemPointerDown(
+    event: PointerEvent,
     entity: GridEntity,
     module: GridModule,
     hass: HomeAssistant
   ): void {
-    event.stopPropagation();
-    const action = entity.override_actions && entity.tap_action
-      ? entity.tap_action
-      : module.tap_action;
+    event.preventDefault();
+    const state = this.getGestureState(entity.id);
+    state.isHolding = false;
     
-    if (action && action.action !== 'nothing') {
-      const actionConfig = { ...action };
-      if (actionConfig.action === 'more-info' && !actionConfig.entity) {
-        actionConfig.entity = entity.entity;
+    // Start hold timer
+    state.holdTimeout = setTimeout(() => {
+      state.isHolding = true;
+      
+      // Execute hold action
+      const action = this.resolveAction('hold', entity, module, hass);
+      if (action) {
+        this.handleModuleAction(action, hass, event.target as HTMLElement);
       }
-      this.handleModuleAction(actionConfig, hass, event.target as HTMLElement);
+    }, 500); // 500ms hold threshold
+  }
+
+  // Handle pointer up for gesture detection  
+  private handleItemPointerUp(
+    event: PointerEvent,
+    entity: GridEntity,
+    module: GridModule,
+    hass: HomeAssistant
+  ): void {
+    event.preventDefault();
+    const state = this.getGestureState(entity.id);
+    
+    // Clear hold timer
+    if (state.holdTimeout) {
+      clearTimeout(state.holdTimeout);
+      state.holdTimeout = null;
     }
+    
+    // If this was a hold gesture, don't process as click
+    if (state.isHolding) {
+      state.isHolding = false;
+      return;
+    }
+    
+    const now = Date.now();
+    const timeSinceLastClick = now - state.lastClickTime;
+    
+    // Double click detection (within 300ms)
+    if (timeSinceLastClick < 300 && state.clickCount === 1) {
+      // This is a double click
+      if (state.clickTimeout) {
+        clearTimeout(state.clickTimeout);
+        state.clickTimeout = null;
+      }
+      state.clickCount = 0;
+      
+      // Execute double-tap action
+      const action = this.resolveAction('double_tap', entity, module, hass);
+      if (action) {
+        this.handleModuleAction(action, hass, event.target as HTMLElement);
+      }
+    } else {
+      // This might be a single click, but wait to see if double click follows
+      state.clickCount = 1;
+      state.lastClickTime = now;
+      
+      state.clickTimeout = setTimeout(() => {
+        // This is a single click
+        state.clickCount = 0;
+        
+        // Execute tap action
+        const action = this.resolveAction('tap', entity, module, hass);
+        if (action) {
+          this.handleModuleAction(action, hass, event.target as HTMLElement);
+        }
+      }, 300); // Wait 300ms to see if double click follows
+    }
+  }
+
+  // Handle pointer cancel/leave
+  private handleItemPointerCancel(entity: GridEntity): void {
+    const state = this.getGestureState(entity.id);
+    if (state.holdTimeout) {
+      clearTimeout(state.holdTimeout);
+      state.holdTimeout = null;
+    }
+    state.isHolding = false;
   }
 
   // Render Actions Tab
@@ -2261,12 +2468,17 @@ export class UltraGridModule extends BaseUltraModule {
                   data: { override_actions: entity.override_actions || false },
                   schema: [this.booleanField('override_actions')],
                   onChange: (e: CustomEvent) => {
+                    const isEnabled = e.detail.value.override_actions;
+                    // Clear cached state when toggling off so fresh values load when re-enabled
+                    if (!isEnabled) {
+                      this._entityActionStates.delete(entity.id);
+                    }
                     const entities = [...(module.entities || [])];
                     const idx = entities.findIndex(en => en.id === entity.id);
                     if (idx !== -1) {
                       entities[idx] = {
                         ...entities[idx],
-                        override_actions: e.detail.value.override_actions,
+                        override_actions: isEnabled,
                       };
                       updateModule({ entities });
                     }
@@ -2275,16 +2487,396 @@ export class UltraGridModule extends BaseUltraModule {
               ])}
 
               ${entity.override_actions
+                ? (() => {
+                    // Get or initialize action state for this entity
+                    // Our state is the source of truth for the form - only initialize from entity once
+                    let actionState = this._entityActionStates.get(entity.id);
+                    if (!actionState) {
+                      // First time - initialize from entity's saved values or defaults
+                      actionState = {
+                        tap_action: entity.tap_action || { action: 'toggle' },
+                        hold_action: entity.hold_action || { action: 'more-info' },
+                        double_tap_action: entity.double_tap_action || { action: 'none' },
+                      };
+                      this._entityActionStates.set(entity.id, actionState);
+                    }
+                    
+                    return html`
+                    <div class="entity-actions-override">
+                      <div class="entity-action-info">
+                        <ha-icon icon="mdi:information-outline"></ha-icon>
+                        <span>Override the default domain-based actions for this entity.</span>
+                      </div>
+                      
+                      <!-- Tap Action -->
+                      <div class="entity-action-field">
+                        <ha-form
+                          .hass=${hass}
+                          .data=${{ tap_action: actionState.tap_action }}
+                          .schema=${[{ name: 'tap_action', selector: { ui_action: {} } }]}
+                          .computeLabel=${() => 'Tap Action'}
+                          @value-changed=${(e: CustomEvent) => {
+                            const newAction = e.detail.value.tap_action;
+                            // Update our state (source of truth for form)
+                            const state = this._entityActionStates.get(entity.id) || {};
+                            state.tap_action = newAction;
+                            this._entityActionStates.set(entity.id, state);
+                            // Persist to entity config
+                            const entities = [...(module.entities || [])];
+                            const idx = entities.findIndex(en => en.id === entity.id);
+                            if (idx !== -1) {
+                              entities[idx] = { ...entities[idx], tap_action: newAction };
+                              updateModule({ entities });
+                            }
+                          }}
+                        ></ha-form>
+                      </div>
+                      
+                      <!-- Hold Action -->
+                      <div class="entity-action-field">
+                        <ha-form
+                          .hass=${hass}
+                          .data=${{ hold_action: actionState.hold_action }}
+                          .schema=${[{ name: 'hold_action', selector: { ui_action: {} } }]}
+                          .computeLabel=${() => 'Hold Action'}
+                          @value-changed=${(e: CustomEvent) => {
+                            const newAction = e.detail.value.hold_action;
+                            // Update our state (source of truth for form)
+                            const state = this._entityActionStates.get(entity.id) || {};
+                            state.hold_action = newAction;
+                            this._entityActionStates.set(entity.id, state);
+                            // Persist to entity config
+                            const entities = [...(module.entities || [])];
+                            const idx = entities.findIndex(en => en.id === entity.id);
+                            if (idx !== -1) {
+                              entities[idx] = { ...entities[idx], hold_action: newAction };
+                              updateModule({ entities });
+                            }
+                          }}
+                        ></ha-form>
+                      </div>
+                      
+                      <!-- Double Tap Action -->
+                      <div class="entity-action-field">
+                        <ha-form
+                          .hass=${hass}
+                          .data=${{ double_tap_action: actionState.double_tap_action }}
+                          .schema=${[{ name: 'double_tap_action', selector: { ui_action: {} } }]}
+                          .computeLabel=${() => 'Double Tap Action'}
+                          @value-changed=${(e: CustomEvent) => {
+                            const newAction = e.detail.value.double_tap_action;
+                            // Update our state (source of truth for form)
+                            const state = this._entityActionStates.get(entity.id) || {};
+                            state.double_tap_action = newAction;
+                            this._entityActionStates.set(entity.id, state);
+                            // Persist to entity config
+                            const entities = [...(module.entities || [])];
+                            const idx = entities.findIndex(en => en.id === entity.id);
+                            if (idx !== -1) {
+                              entities[idx] = { ...entities[idx], double_tap_action: newAction };
+                              updateModule({ entities });
+                            }
+                          }}
+                        ></ha-form>
+                      </div>
+                    </div>
+                  `;
+                  })()
+                : ''}
+
+              <!-- Spacer between sections -->
+              <div class="entity-section-spacer"></div>
+
+              <!-- Conditional Display Logic -->
+              ${this.renderSettingsSection('', '', [
+                {
+                  title: 'Conditional Display',
+                  description: 'Control when this entity is shown based on conditions.',
+                  hass,
+                  data: { has_logic: (entity.display_mode && entity.display_mode !== 'always') || false },
+                  schema: [this.booleanField('has_logic')],
+                  onChange: (e: CustomEvent) => {
+                    const entities = [...(module.entities || [])];
+                    const idx = entities.findIndex(en => en.id === entity.id);
+                    if (idx !== -1) {
+                      entities[idx] = {
+                        ...entities[idx],
+                        display_mode: e.detail.value.has_logic ? 'every' : 'always',
+                        display_conditions: e.detail.value.has_logic ? (entities[idx].display_conditions || []) : [],
+                      };
+                      updateModule({ entities });
+                    }
+                  },
+                },
+              ])}
+
+              ${entity.display_mode && entity.display_mode !== 'always'
                 ? html`
-                    <div class="action-override-note">
-                      <ha-icon icon="mdi:information"></ha-icon>
-                      Configure custom actions in the Actions tab for this entity.
+                    <div class="conditional-group">
+                      ${UcFormUtils.renderFieldSection(
+                        'Display Mode',
+                        'When multiple conditions exist, show this entity if...',
+                        hass,
+                        { display_mode: entity.display_mode || 'every' },
+                        [
+                          UcFormUtils.select('display_mode', [
+                            { value: 'every', label: 'EVERY condition is met' },
+                            { value: 'any', label: 'ANY condition is met' },
+                          ]),
+                        ],
+                        (e: CustomEvent) => {
+                          const entities = [...(module.entities || [])];
+                          const idx = entities.findIndex(en => en.id === entity.id);
+                          if (idx !== -1) {
+                            entities[idx] = { ...entities[idx], display_mode: e.detail.value.display_mode };
+                            updateModule({ entities });
+                          }
+                        }
+                      )}
+
+                      <div class="entity-conditions-list">
+                        <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 12px;">
+                          <div style="font-size: 14px; font-weight: 600;">Conditions</div>
+                          <button
+                            class="add-condition-btn"
+                            @click=${() => {
+                              const entities = [...(module.entities || [])];
+                              const idx = entities.findIndex(en => en.id === entity.id);
+                              if (idx !== -1) {
+                                const newCond: DisplayCondition = {
+                                  id: `cond_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                                  type: 'entity_state',
+                                  entity: '',
+                                  operator: '=',
+                                  value: '',
+                                };
+                                entities[idx] = {
+                                  ...entities[idx],
+                                  display_conditions: [...(entities[idx].display_conditions || []), newCond],
+                                };
+                                updateModule({ entities });
+                              }
+                            }}
+                            style="display:flex; align-items:center; gap:6px; padding:4px 8px; border:1px dashed var(--primary-color); background:none; color:var(--primary-color); border-radius:4px; cursor:pointer; font-size: 12px;"
+                          >
+                            <ha-icon icon="mdi:plus" style="--mdc-icon-size: 14px;"></ha-icon>
+                            Add
+                          </button>
+                        </div>
+
+                        ${(entity.display_conditions || []).length === 0
+                          ? html`<div style="text-align: center; padding: 12px; color: var(--secondary-text-color); font-style: italic; font-size: 12px;">
+                              No conditions. Add one to control visibility.
+                            </div>`
+                          : ''}
+
+                        ${(entity.display_conditions || []).map((cond, condIndex) =>
+                          this.renderEntityCondition(entity, cond, condIndex, module, hass, updateModule)
+                        )}
+                      </div>
                     </div>
                   `
                 : ''}
             </div>
           `
         : ''}
+    `;
+  }
+
+  // Render individual condition for an entity
+  private renderEntityCondition(
+    entity: GridEntity,
+    cond: any,
+    condIndex: number,
+    module: GridModule,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): TemplateResult {
+    const updateCondition = (updates: Record<string, any>) => {
+      const entities = [...(module.entities || [])];
+      const entityIdx = entities.findIndex(en => en.id === entity.id);
+      if (entityIdx !== -1) {
+        const conditions = [...(entities[entityIdx].display_conditions || [])];
+        conditions[condIndex] = { ...cond, ...updates };
+        entities[entityIdx] = { ...entities[entityIdx], display_conditions: conditions };
+        updateModule({ entities });
+      }
+    };
+
+    const removeCondition = () => {
+      const entities = [...(module.entities || [])];
+      const entityIdx = entities.findIndex(en => en.id === entity.id);
+      if (entityIdx !== -1) {
+        const conditions = (entities[entityIdx].display_conditions || []).filter((_, i) => i !== condIndex);
+        entities[entityIdx] = { ...entities[entityIdx], display_conditions: conditions };
+        updateModule({ entities });
+      }
+    };
+
+    return html`
+      <div class="entity-condition-item">
+        <div class="entity-condition-header">
+          <span class="entity-condition-label">Condition ${condIndex + 1}</span>
+          <ha-icon
+            icon="mdi:delete"
+            class="entity-condition-delete"
+            @click=${removeCondition}
+          ></ha-icon>
+        </div>
+
+        ${UcFormUtils.renderFieldSection(
+          'Type',
+          '',
+          hass,
+          { type: cond.type || 'entity_state' },
+          [
+            UcFormUtils.select('type', [
+              { value: 'entity_state', label: 'Entity State' },
+              { value: 'entity_attribute', label: 'Entity Attribute' },
+              { value: 'template', label: 'Template' },
+              { value: 'time', label: 'Time Range' },
+            ]),
+          ],
+          (e: CustomEvent) => {
+            const newType = e.detail.value.type;
+            const base: any = { type: newType };
+            if (newType === 'entity_state') {
+              Object.assign(base, { entity: '', operator: '=', value: '' });
+            } else if (newType === 'entity_attribute') {
+              Object.assign(base, { entity: '', attribute: '', operator: '=', value: '' });
+            } else if (newType === 'time') {
+              Object.assign(base, { time_from: '00:00', time_to: '23:59' });
+            } else if (newType === 'template') {
+              Object.assign(base, { template: '' });
+            }
+            updateCondition(base);
+          }
+        )}
+
+        ${cond.type === 'entity_state' || !cond.type
+          ? html`
+              ${UcFormUtils.renderFieldSection(
+                'Entity',
+                '',
+                hass,
+                { entity: cond.entity || '' },
+                [UcFormUtils.entity('entity')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+              ${UcFormUtils.renderFieldSection(
+                'Operator',
+                '',
+                hass,
+                { operator: cond.operator || '=' },
+                [
+                  UcFormUtils.select('operator', [
+                    { value: '=', label: '=' },
+                    { value: '!=', label: '!=' },
+                    { value: '>', label: '>' },
+                    { value: '>=', label: '>=' },
+                    { value: '<', label: '<' },
+                    { value: '<=', label: '<=' },
+                    { value: 'contains', label: 'contains' },
+                    { value: 'not_contains', label: 'not_contains' },
+                    { value: 'has_value', label: 'has_value' },
+                    { value: 'no_value', label: 'no_value' },
+                  ]),
+                ],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+              ${UcFormUtils.renderFieldSection(
+                'Value',
+                '',
+                hass,
+                { value: cond.value || '' },
+                [UcFormUtils.text('value')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+            `
+          : ''}
+
+        ${cond.type === 'entity_attribute'
+          ? html`
+              ${UcFormUtils.renderFieldSection(
+                'Entity',
+                '',
+                hass,
+                { entity: cond.entity || '' },
+                [UcFormUtils.entity('entity')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+              ${UcFormUtils.renderFieldSection(
+                'Attribute',
+                '',
+                hass,
+                { attribute: cond.attribute || '' },
+                [UcFormUtils.text('attribute')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+              ${UcFormUtils.renderFieldSection(
+                'Operator',
+                '',
+                hass,
+                { operator: cond.operator || '=' },
+                [
+                  UcFormUtils.select('operator', [
+                    { value: '=', label: '=' },
+                    { value: '!=', label: '!=' },
+                    { value: '>', label: '>' },
+                    { value: '>=', label: '>=' },
+                    { value: '<', label: '<' },
+                    { value: '<=', label: '<=' },
+                    { value: 'contains', label: 'contains' },
+                    { value: 'not_contains', label: 'not_contains' },
+                  ]),
+                ],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+              ${UcFormUtils.renderFieldSection(
+                'Value',
+                '',
+                hass,
+                { value: cond.value || '' },
+                [UcFormUtils.text('value')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+            `
+          : ''}
+
+        ${cond.type === 'time'
+          ? html`
+              ${UcFormUtils.renderFieldSection(
+                'From',
+                'Time in HH:MM format (e.g., 08:00)',
+                hass,
+                { time_from: cond.time_from || '00:00' },
+                [UcFormUtils.text('time_from')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+              ${UcFormUtils.renderFieldSection(
+                'To',
+                'Time in HH:MM format (e.g., 22:00)',
+                hass,
+                { time_to: cond.time_to || '23:59' },
+                [UcFormUtils.text('time_to')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+            `
+          : ''}
+
+        ${cond.type === 'template'
+          ? html`
+              ${UcFormUtils.renderFieldSection(
+                'Template',
+                'Jinja2 template that evaluates to true/false',
+                hass,
+                { template: cond.template || '' },
+                [UcFormUtils.text('template')],
+                (e: CustomEvent) => updateCondition(e.detail.value)
+              )}
+            `
+          : ''}
+      </div>
     `;
   }
 
@@ -2795,7 +3387,10 @@ export class UltraGridModule extends BaseUltraModule {
       <div
         class="uc-grid-item grid-style-${module.grid_style} ${modeClasses} ${hoverClass}"
         style="${itemStyles}${animationStyles}"
-        @click=${(e: Event) => this.handleItemClick(e, entity, module, hass)}
+        @pointerdown=${(e: PointerEvent) => this.handleItemPointerDown(e, entity, module, hass)}
+        @pointerup=${(e: PointerEvent) => this.handleItemPointerUp(e, entity, module, hass)}
+        @pointercancel=${() => this.handleItemPointerCancel(entity)}
+        @pointerleave=${() => this.handleItemPointerCancel(entity)}
       >
         ${this.renderItemContent(entity, module, styleConfig, name, state, icon, iconColor, entityPicture)}
       </div>
@@ -3363,6 +3958,103 @@ export class UltraGridModule extends BaseUltraModule {
         font-size: 13px;
         color: var(--info-color, #03a9f4);
         margin-top: 12px;
+      }
+      /* Entity Actions Override Styles */
+      .entity-actions-override {
+        margin-top: 16px;
+        padding: 16px;
+        background: rgba(var(--rgb-primary-color), 0.05);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color);
+      }
+      .entity-action-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: rgba(var(--rgb-info-color, 3, 169, 244), 0.1);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--info-color, #03a9f4);
+        margin-bottom: 16px;
+      }
+      .entity-action-info ha-icon {
+        --mdc-icon-size: 18px;
+        flex-shrink: 0;
+      }
+      .entity-action-field {
+        margin-bottom: 16px;
+      }
+      .entity-action-field:last-child {
+        margin-bottom: 0;
+      }
+      .entity-action-field ha-form {
+        --ha-form-padding: 0;
+        display: block;
+        width: 100%;
+      }
+      /* Ensure action selectors can expand and show all fields */
+      .entity-action-field ha-selector,
+      .entity-action-field ha-selector-ui-action {
+        display: block;
+        width: 100%;
+      }
+      .entity-action-field ha-expansion-panel {
+        --expansion-panel-content-padding: 0 16px 16px;
+      }
+      /* Section Spacer */
+      .entity-section-spacer {
+        height: 24px;
+        margin: 8px 0;
+        border-bottom: 1px dashed var(--divider-color);
+      }
+      /* Entity Condition Styles */
+      .entity-conditions-list {
+        margin-top: 12px;
+      }
+      .add-condition-btn {
+        font-size: 12px;
+        transition: all 0.2s ease;
+      }
+      .add-condition-btn:hover {
+        background: var(--primary-color) !important;
+        color: var(--text-primary-color) !important;
+        border-style: solid !important;
+      }
+      .entity-condition-item {
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: var(--card-background-color);
+        transition: all 0.2s ease;
+      }
+      .entity-condition-item:hover {
+        border-color: var(--primary-color);
+      }
+      .entity-condition-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .entity-condition-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .entity-condition-delete {
+        cursor: pointer;
+        color: var(--error-color);
+        --mdc-icon-size: 18px;
+        transition: transform 0.2s ease;
+      }
+      .entity-condition-delete:hover {
+        transform: scale(1.1);
       }
     `;
   }

@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta14
+
+### 🚀 New Features
+
+- **Added 24-hour grace period for pro user verification** - Pro users now have a 24-hour grace period during any server issues to ensure uninterrupted access
+- **Added conditional logic for grid entities with override** - Grid entities now support conditional logic with override capabilities for more flexible configurations
+
+---
+
 ## Version 2.3.0-beta13
 
 ### 🚀 Improvements

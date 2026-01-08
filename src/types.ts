@@ -4844,6 +4844,10 @@ export interface GridEntity {
 
   // Hidden flag for filtering
   hidden?: boolean;
+
+  // Individual entity display logic (conditional visibility)
+  display_mode?: 'always' | 'every' | 'any';
+  display_conditions?: DisplayCondition[];
 }
 
 // Grid Module configuration
