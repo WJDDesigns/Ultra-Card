@@ -306,7 +306,6 @@ class UcPresetsService {
 
         // Validate that the layout has rows with actual content
         if (!layout.rows || !Array.isArray(layout.rows) || layout.rows.length === 0) {
-          console.warn(`Preset ${wpPreset.id} has empty rows array, skipping...`);
           throw new Error('Layout has no rows');
         }
 
@@ -439,19 +438,23 @@ class UcPresetsService {
         tags: [...baseTags, ...additionalTags],
         integrations: wpPreset.integrations || [],
         thumbnail: wpPreset.featured_image,
+        gallery: wpPreset.gallery || [],
         layout,
         metadata: {
           created: wpPreset.created,
           updated: wpPreset.updated || wpPreset.created,
           downloads: wpPreset.downloads,
           rating: wpPreset.rating,
+          rating_count: wpPreset.rating_count || wpPreset.reviews_count || 0,
+          featured_image: wpPreset.featured_image,
+          gallery: wpPreset.gallery || [],
+          date: wpPreset.created,
         },
       } as any;
 
       // Add WordPress-specific data for Read More functionality
       presetDefinition.preset_url = wpPreset.preset_url;
       presetDefinition.description_full = wpPreset.description_full;
-      presetDefinition.gallery = wpPreset.gallery || [];
       presetDefinition.rating_count = wpPreset.rating_count || wpPreset.reviews_count || 0;
 
       return presetDefinition;

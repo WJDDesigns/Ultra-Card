@@ -41,10 +41,13 @@ export declare class LayoutTab extends LitElement {
     private _globalExternalCardCount;
     private _activeModuleSelectorTab;
     private _activeModuleCategoryTab;
-    private _selectedPresetCategory;
+    private _selectedPresetSource;
     private _showFavoriteDialog;
     private _favoriteRowToSave;
     private _showImportDialog;
+    private _showImagePopup;
+    private _imagePopupUrl;
+    private _imagePopupTitle;
     private _openMoreMenuRowIndex;
     private _hasModuleClipboard;
     private _hasColumnClipboard;
@@ -54,6 +57,8 @@ export declare class LayoutTab extends LitElement {
     private _moduleSearchQuery;
     private _cardSearchQuery;
     private _presetSearchQuery;
+    private _presetSortBy;
+    private _presetSortDirection;
     private _tabsSectionDropHandled;
     private _undoStack;
     private _redoStack;
@@ -537,6 +542,10 @@ export declare class LayoutTab extends LitElement {
      */
     private _filterPresetsBySearch;
     /**
+     * Sort presets by name, date, or rating
+     */
+    private _sortPresets;
+    /**
      * Render module search bar
      */
     private _renderModuleSearchBar;
@@ -578,6 +587,8 @@ export declare class LayoutTab extends LitElement {
      */
     private _renderCardSearchResults;
     private _addCardFromTab;
+    private _openImagePopup;
+    private _renderImagePopup;
     private _renderFavoriteDialog;
     private _renderVariableMappingDialog;
     private _renderImportDialog;

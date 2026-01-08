@@ -1,5 +1,18 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta12
+
+### 🚀 Improvements
+
+- **Improved custom variables** - Enhanced custom variables system for better performance and reliability
+- **Improved presets to include ratings and multiple image previews** - Presets now feature rating system and support for multiple preview images
+
+### 🐛 Bug Fixes
+
+- **Fixed Pro Button border issue in add module window** - Resolved border styling issue affecting Pro button display in the add module interface
+
+---
+
 ## Version 2.3.0-beta7
 
 ### 🐛 Bug Fixes

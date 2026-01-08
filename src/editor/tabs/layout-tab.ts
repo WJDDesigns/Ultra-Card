@@ -237,11 +237,13 @@ export class LayoutTab extends LitElement {
   @state() private _activeModuleSelectorTab: 'modules' | 'cards' | 'presets' | 'favorites' =
     'modules';
   @state() private _activeModuleCategoryTab: 'standard' | 'pro' = 'standard';
-  @state() private _selectedPresetCategory: 'all' | 'badges' | 'layouts' | 'widgets' | 'custom' =
-    'all';
+  @state() private _selectedPresetSource: 'all' | 'standard' | 'community' = 'all';
   @state() private _showFavoriteDialog = false;
   @state() private _favoriteRowToSave: CardRow | null = null;
   @state() private _showImportDialog = false;
+  @state() private _showImagePopup = false;
+  @state() private _imagePopupUrl = '';
+  @state() private _imagePopupTitle = '';
   @state() private _openMoreMenuRowIndex: number = -1;
   @state() private _hasModuleClipboard = false;
   @state() private _hasColumnClipboard = false;
@@ -255,6 +257,10 @@ export class LayoutTab extends LitElement {
   @state() private _moduleSearchQuery = '';
   @state() private _cardSearchQuery = '';
   @state() private _presetSearchQuery = '';
+  
+  // Preset sorting state
+  @state() private _presetSortBy: 'name' | 'date' | 'rating' = 'date';
+  @state() private _presetSortDirection: 'asc' | 'desc' = 'desc';
 
   // Flag to prevent double-processing of drops in tabs sections
   private _tabsSectionDropHandled = false;
@@ -16741,7 +16747,7 @@ export class LayoutTab extends LitElement {
         ${this._showRowSettings ? this._renderRowSettings() : ''}
         ${this._showColumnSettings ? this._renderColumnSettings() : ''}
         ${this._showColumnLayoutSelector ? this._renderColumnLayoutSelector() : ''}
-        ${this._renderFavoriteDialog()} ${this._renderImportDialog()} ${this._renderVariableMappingDialog()}
+        ${this._renderImagePopup()} ${this._renderFavoriteDialog()} ${this._renderImportDialog()} ${this._renderVariableMappingDialog()}
       </div>
     `;
   }
@@ -16793,11 +16799,12 @@ export class LayoutTab extends LitElement {
         .category-tab.pro-tab {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
+          border: none;
         }
 
         .category-tab.pro-tab.active {
           background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-          border-color: rgba(255, 255, 255, 0.3);
+          border: 2px solid rgba(255, 255, 255, 0.3);
           box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
         }
 
@@ -17108,6 +17115,56 @@ export class LayoutTab extends LitElement {
   }
 
   /**
+   * Sort presets by name, date, or rating
+   */
+  private _sortPresets(
+    presets: any[],
+    sortBy: 'name' | 'date' | 'rating',
+    direction: 'asc' | 'desc'
+  ): any[] {
+    const sorted = [...presets].sort((a, b) => {
+      let compareA, compareB;
+
+      switch (sortBy) {
+        case 'name':
+          compareA = a.name?.toLowerCase() || '';
+          compareB = b.name?.toLowerCase() || '';
+          return direction === 'asc'
+            ? compareA.localeCompare(compareB)
+            : compareB.localeCompare(compareA);
+
+        case 'date':
+          // For WordPress presets, use the date from metadata
+          compareA = a.metadata?.date ? new Date(a.metadata.date).getTime() : 0;
+          compareB = b.metadata?.date ? new Date(b.metadata.date).getTime() : 0;
+          return direction === 'asc' ? compareA - compareB : compareB - compareA;
+
+        case 'rating':
+          // Two-level sort: rating first, then vote count
+          // 5★ with 1 vote > 4.9★ with 1000 votes
+          // 5★ with 20 votes > 5★ with 1 vote
+          const ratingA = a.metadata?.rating || 0;
+          const countA = a.metadata?.rating_count || 0;
+          const ratingB = b.metadata?.rating || 0;
+          const countB = b.metadata?.rating_count || 0;
+          
+          // Compare ratings first
+          if (ratingA !== ratingB) {
+            return direction === 'asc' ? ratingA - ratingB : ratingB - ratingA;
+          }
+          
+          // If ratings are equal, compare vote counts
+          return direction === 'asc' ? countA - countB : countB - countA;
+
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }
+
+  /**
    * Render module search bar
    */
   private _renderModuleSearchBar(): TemplateResult {
@@ -17240,10 +17297,13 @@ export class LayoutTab extends LitElement {
         ? standardModules
         : proModules;
 
-    const layoutModules = filteredModules.filter(
-      m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak'
-    );
-    let contentModules = filteredModules.filter(m => m.metadata.category !== 'layout');
+    const layoutModules = filteredModules
+      .filter(m => m.metadata.category === 'layout' && m.metadata.type !== 'pagebreak')
+      .sort((a, b) => (a.metadata.title || '').localeCompare(b.metadata.title || ''));
+    
+    let contentModules = filteredModules
+      .filter(m => m.metadata.category !== 'layout')
+      .sort((a, b) => (a.metadata.title || '').localeCompare(b.metadata.title || ''));
 
     // Get the parent layout module and check nesting depth if we're adding to a layout module
     let parentLayoutType: string | null = null;
@@ -17540,16 +17600,17 @@ export class LayoutTab extends LitElement {
     // Get all available images
     const images: string[] = [];
 
-    // Add featured image first if it exists
-    if (preset.thumbnail) {
-      images.push(preset.thumbnail);
+    // Add featured image first if it exists (check all possible property locations)
+    const featuredImage = preset.featured_image || preset.thumbnail || preset.metadata?.featured_image || wpPreset.featured_image;
+    if (featuredImage && typeof featuredImage === 'string') {
+      images.push(featuredImage);
     }
 
     // Add gallery images if they exist
-    if (wpPreset.gallery && Array.isArray(wpPreset.gallery) && wpPreset.gallery.length > 0) {
-      // Add gallery images that aren't already in the list
-      wpPreset.gallery.forEach((img: string) => {
-        if (img && !images.includes(img)) {
+    const gallery = preset.gallery || wpPreset.gallery || preset.metadata?.gallery;
+    if (gallery && Array.isArray(gallery) && gallery.length > 0) {
+      gallery.forEach((img: string) => {
+        if (img && typeof img === 'string' && !images.includes(img)) {
           images.push(img);
         }
       });
@@ -17567,8 +17628,24 @@ export class LayoutTab extends LitElement {
     // If only one image, show simple thumbnail
     if (images.length === 1) {
       return html`
-        <div class="preset-thumbnail">
-          <img src="${images[0]}" alt="${preset.name} preview" />
+        <div 
+          class="preset-thumbnail"
+          @click=${(e: Event) => {
+            e.stopPropagation();
+            this._openImagePopup(images[0], preset.name);
+          }}
+          style="cursor: pointer;"
+          title="Click to view full image"
+        >
+          <img 
+            src="${images[0]}" 
+            alt="${preset.name} preview"
+            @error=${(e: Event) => {
+              // Fallback to icon if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
         </div>
       `;
     }
@@ -17585,7 +17662,15 @@ export class LayoutTab extends LitElement {
         >
           ${images.map(
             (image, index) => html`
-              <div class="preset-slider-image">
+              <div 
+                class="preset-slider-image"
+                @click=${(e: Event) => {
+                  e.stopPropagation();
+                  this._openImagePopup(image, preset.name);
+                }}
+                style="cursor: pointer;"
+                title="Click to view full image"
+              >
                 <img src="${image}" alt="${preset.name} preview ${index + 1}" />
               </div>
             `
@@ -17731,18 +17816,34 @@ export class LayoutTab extends LitElement {
     document.addEventListener('touchend', handleTouchEnd);
   }
   private _renderPresetsTab(): TemplateResult {
-    const categories = ['all', 'badges', 'layouts', 'widgets', 'custom'] as const;
-    const allPresets = ucPresetsService.getPresetsByCategory(this._selectedPresetCategory);
+    const sources = ['all', 'standard', 'community'] as const;
+    let allPresets = ucPresetsService.getPresetsByCategory('all');
     const wpStatus = ucPresetsService.getWordPressStatus();
     const wpCount = ucPresetsService.getWordPressPresetsCount();
+
+    // Filter by source (Standard vs Community)
+    if (this._selectedPresetSource === 'standard') {
+      allPresets = allPresets.filter(p => {
+        const isWpPreset = p.id.startsWith('wp-');
+        return !isWpPreset || p.author === 'WJD Designs';
+      });
+    } else if (this._selectedPresetSource === 'community') {
+      allPresets = allPresets.filter(p => {
+        const isWpPreset = p.id.startsWith('wp-');
+        return isWpPreset && p.author !== 'WJD Designs';
+      });
+    }
 
     // Check if there's a search query
     const hasSearchQuery = this._presetSearchQuery.trim() !== '';
     
     // Filter presets if searching
-    const presets = hasSearchQuery
+    let presets = hasSearchQuery
       ? this._filterPresetsBySearch(allPresets, this._presetSearchQuery)
       : allPresets;
+    
+    // Sort presets based on selected criteria
+    presets = this._sortPresets(presets, this._presetSortBy, this._presetSortDirection);
 
     return html`
       <div class="presets-container">
@@ -17751,30 +17852,74 @@ export class LayoutTab extends LitElement {
 
         ${!hasSearchQuery
           ? html`
-              <!-- Header with WordPress status -->
+              <!-- Header with Source Filter -->
               <div class="presets-header">
                 <div class="preset-categories">
-            ${categories.map(
-              category => html`
+            ${sources.map(
+              source => html`
                 <button
-                  class="category-btn ${this._selectedPresetCategory === category ? 'active' : ''}"
-                  @click=${() => (this._selectedPresetCategory = category)}
+                  class="category-btn ${this._selectedPresetSource === source ? 'active' : ''}"
+                  @click=${() => (this._selectedPresetSource = source)}
                 >
                   <ha-icon
-                    icon="${category === 'all'
+                    icon="${source === 'all'
                       ? 'mdi:view-grid'
-                      : category === 'badges'
-                        ? 'mdi:account-circle'
-                        : category === 'layouts'
-                          ? 'mdi:view-dashboard'
-                          : category === 'widgets'
-                            ? 'mdi:widgets'
-                            : 'mdi:puzzle'}"
+                      : source === 'standard'
+                        ? 'mdi:shield-check'
+                        : 'mdi:account-group'}"
                   ></ha-icon>
-                  <span>${category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                  <span>${source.charAt(0).toUpperCase() + source.slice(1)}</span>
                 </button>
               `
             )}
+          </div>
+          
+          <!-- Sort Controls -->
+          <div class="preset-sort-controls" style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+            <span style="font-size: 12px; color: var(--secondary-text-color); font-weight: 500;">Sort by:</span>
+            <select
+              .value=${this._presetSortBy}
+              @change=${(e: Event) => {
+                this._presetSortBy = (e.target as HTMLSelectElement).value as 'name' | 'date' | 'rating';
+              }}
+              style="
+                padding: 6px 8px;
+                border-radius: 4px;
+                border: 1px solid var(--divider-color);
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+                font-size: 12px;
+                cursor: pointer;
+              "
+            >
+              <option value="name">Name</option>
+              <option value="date">Date</option>
+              <option value="rating">Top Rated</option>
+            </select>
+            <button
+              @click=${() => {
+                this._presetSortDirection = this._presetSortDirection === 'asc' ? 'desc' : 'asc';
+              }}
+              title="${this._presetSortDirection === 'asc' ? 'Ascending' : 'Descending'}"
+              style="
+                padding: 6px 8px;
+                border-radius: 4px;
+                border: 1px solid var(--divider-color);
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 12px;
+              "
+            >
+              <ha-icon
+                icon="mdi:${this._presetSortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}"
+                style="--mdc-icon-size: 16px;"
+              ></ha-icon>
+              <span>${this._presetSortDirection === 'asc' ? 'A→Z' : 'Z→A'}</span>
+            </button>
           </div>
 
                 ${wpStatus.error
@@ -17854,7 +17999,7 @@ export class LayoutTab extends LitElement {
                                 .downloads}</span
                             >`
                           : ''}
-                        ${isCommunity && preset.metadata?.rating && preset.metadata.rating > 0
+                        ${isWpPreset
                           ? html`
                               <div
                                 class="preset-rating-stars"
@@ -17864,28 +18009,25 @@ export class LayoutTab extends LitElement {
                                     window.open(wpPreset.preset_url, '_blank');
                                   }
                                 }}
-                                title="Click to rate this preset (${preset.metadata.rating.toFixed(1)}/5${wpPreset.rating_count ? ` - ${wpPreset.rating_count} ${wpPreset.rating_count === 1 ? 'review' : 'reviews'}` : ''})"
+                                title="Click to rate this preset (${(preset.metadata?.rating || 0).toFixed(1)}/5 - ${wpPreset.rating_count || 0} ${(wpPreset.rating_count || 0) === 1 ? 'review' : 'reviews'})"
                                 style="cursor: pointer; display: flex; align-items: center; gap: 4px;"
                               >
-                                ${[1, 2, 3, 4, 5].map(
-                                  starNum => html`
+                                ${[1, 2, 3, 4, 5].map(starNum => {
+                                  const rating = preset.metadata?.rating || 0;
+                                  const isFilled = starNum <= Math.floor(rating);
+                                  const isHalf = !isFilled && starNum - 0.5 <= rating && rating > 0;
+                                  return html`
                                     <ha-icon
-                                      icon="mdi:star${starNum <= Math.floor(preset.metadata.rating)
-                                        ? ''
-                                        : starNum - 0.5 <= preset.metadata.rating
-                                          ? '-half-full'
-                                          : '-outline'}"
-                                      style="color: ${starNum <= preset.metadata.rating ? '#ffc107' : '#e0e0e0'}; --mdc-icon-size: 16px;"
+                                      icon="mdi:star${isFilled ? '' : isHalf ? '-half-full' : '-outline'}"
+                                      style="color: ${isFilled || isHalf ? '#ffc107' : '#666'}; --mdc-icon-size: 14px;"
                                     ></ha-icon>
-                                  `
-                                )}
-                                ${wpPreset.rating_count && wpPreset.rating_count > 1
-                                  ? html`<span
+                                  `;
+                                })}
+                                <span
                                       class="rating-count"
                                       style="font-size: 11px; color: var(--secondary-text-color); margin-left: 2px;"
-                                      >(${wpPreset.rating_count})</span
-                                    >`
-                                  : ''}
+                                  >(${wpPreset.rating_count || 0})</span
+                                >
                               </div>
                             `
                           : ''}
@@ -19585,6 +19727,32 @@ export class LayoutTab extends LitElement {
     }
   }
 
+  private _openImagePopup(imageUrl: string, title: string): void {
+    this._imagePopupUrl = imageUrl;
+    this._imagePopupTitle = title;
+    this._showImagePopup = true;
+  }
+
+  private _renderImagePopup(): TemplateResult {
+    if (!this._showImagePopup) {
+      return html``;
+    }
+
+    return html`
+      <div class="image-popup-overlay" @click=${() => (this._showImagePopup = false)}>
+        <div class="image-popup-content" @click=${(e: Event) => e.stopPropagation()}>
+          <div class="image-popup-header">
+            <h3>${this._imagePopupTitle}</h3>
+            <button class="close-button" @click=${() => (this._showImagePopup = false)}>×</button>
+          </div>
+          <div class="image-popup-body">
+            <img src="${this._imagePopupUrl}" alt="${this._imagePopupTitle}" />
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private _renderFavoriteDialog(): TemplateResult {
     if (!this._showFavoriteDialog || !this._favoriteRowToSave) {
       return html``;
@@ -21278,6 +21446,61 @@ export class LayoutTab extends LitElement {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
+      }
+
+      /* Image Popup Styles */
+      .image-popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .image-popup-content {
+        background: var(--card-background-color);
+        border-radius: 12px;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .image-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .image-popup-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .image-popup-body {
+        padding: 20px;
+        overflow: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .image-popup-body img {
+        max-width: 100%;
+        max-height: calc(90vh - 100px);
+        object-fit: contain;
+        border-radius: 8px;
       }
 
       .selector-content {
@@ -24290,9 +24513,17 @@ export class LayoutTab extends LitElement {
       }
 
       .preset-card:hover {
-        border-color: var(--primary-color);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transform: translateY(-1px);
+      }
+      
+      .preset-card.default-preset:hover,
+      .preset-card.builtin-preset:hover {
+        border-color: var(--primary-color);
+      }
+      
+      .preset-card.community-preset:hover {
+        border-color: rgba(var(--rgb-secondary-color, 255, 152, 0), 1);
       }
 
       /* WordPress preset specific styles */
@@ -24593,6 +24824,12 @@ export class LayoutTab extends LitElement {
         display: flex;
         gap: 6px;
         z-index: 2;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      
+      .preset-image-slider:hover .preset-slider-dots {
+        opacity: 1;
       }
 
       .preset-slider-dot {

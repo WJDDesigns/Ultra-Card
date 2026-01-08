@@ -713,7 +713,7 @@ All standard markdown features are automatically enabled!`,
       // Preprocess custom variables ($variable_name) before Jinja evaluation
       let templateContent = content;
       if (hass) {
-        templateContent = preprocessTemplateVariables(content, hass);
+        templateContent = preprocessTemplateVariables(content, hass, config);
       }
 
       // Check if content contains Jinja templates (both {{ }} and {% %} syntax)

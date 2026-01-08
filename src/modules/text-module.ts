@@ -619,7 +619,11 @@ export class UltraTextModule extends BaseUltraModule {
 
       if (hass) {
         // Preprocess custom variables ($variable_name) before Jinja evaluation
-        const processedUnifiedTemplate = preprocessTemplateVariables(textModule.unified_template, hass);
+        const processedUnifiedTemplate = preprocessTemplateVariables(
+          textModule.unified_template,
+          hass,
+          config
+        );
         
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};
@@ -669,7 +673,11 @@ export class UltraTextModule extends BaseUltraModule {
       // Ensure template string cache exists on hass
       if (hass) {
         // Preprocess custom variables ($variable_name) before Jinja evaluation
-        const processedLegacyTemplate = preprocessTemplateVariables(textModule.template, hass);
+        const processedLegacyTemplate = preprocessTemplateVariables(
+          textModule.template,
+          hass,
+          config
+        );
         
         if (!hass.__uvc_template_strings) {
           hass.__uvc_template_strings = {};

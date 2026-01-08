@@ -113,8 +113,6 @@ export class DirectoriesProPresetsAPI {
                     .filter(Boolean)
                 : [];
 
-              // Post data received (silent)
-
               const fullDescription = this._stripHtml(
                 meta.description ||
                   post.excerpt?.rendered ||
@@ -122,9 +120,16 @@ export class DirectoriesProPresetsAPI {
                   'No description available'
               );
 
+              // Extract featured image from embedded media
+              const featuredImageUrl =
+                post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+                meta.featured_image ||
+                post.featured_media_src_url ||
+                '';
+
               return {
                 id: post.id,
-                name: post.title?.rendered || 'Untitled Preset',
+                name: this._decodeHtmlEntities(post.title?.rendered || 'Untitled Preset'),
                 description: this._truncateDescription(fullDescription, 15), // Truncated for cards
                 description_full: fullDescription, // Full description for Read More
                 shortcode: meta.shortcode || '{"rows":[]}',
@@ -146,8 +151,8 @@ export class DirectoriesProPresetsAPI {
                 is_featured: false,
                 difficulty: meta.difficulty || 'beginner',
                 compatibility: meta.compatibility ? meta.compatibility.split(',') : [],
-                featured_image: meta.featured_image || post.featured_media_src_url || '',
-                gallery: Array.isArray(meta.gallery) ? meta.gallery : [],
+                featured_image: featuredImageUrl,
+                gallery: Array.isArray(meta.gallery) && meta.gallery.length > 0 ? meta.gallery : [],
                 preset_url: post.link || `https://ultracard.io/presets/${post.slug}/`,
               };
             })
@@ -226,7 +231,7 @@ export class DirectoriesProPresetsAPI {
 
       const preset: WordPressPreset = {
         id: post.id,
-        name: post.title?.rendered || 'Untitled Preset',
+        name: this._decodeHtmlEntities(post.title?.rendered || 'Untitled Preset'),
         description: this._truncateDescription(fullDescription, 15),
         description_full: fullDescription,
         shortcode: meta.shortcode || '{"rows":[]}',
@@ -487,6 +492,17 @@ export class DirectoriesProPresetsAPI {
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
 
     return textContent.trim().replace(/\s+/g, ' ');
+  }
+
+  /**
+   * Decode HTML entities (e.g., &#8211; → –, &amp; → &)
+   */
+  private _decodeHtmlEntities(text: string): string {
+    if (!text) return '';
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
+    return tempDiv.textContent || tempDiv.innerText || text;
   }
 
   /**

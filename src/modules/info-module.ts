@@ -2256,7 +2256,15 @@ export class UltraInfoModule extends BaseUltraModule {
                   if (!hass.__uvc_template_strings) {
                     hass.__uvc_template_strings = {};
                   }
-                  const templateHash = this._hashString(entity.template);
+
+                  // Preprocess custom variables ($variable_name) before Jinja evaluation
+                  const processedTemplate = preprocessTemplateVariables(
+                    entity.template,
+                    hass,
+                    config
+                  );
+
+                  const templateHash = this._hashString(processedTemplate);
                   // Use only template hash and index for key to prevent subscription leaks when module ID changes
                   // Module ID can change during editor updates, but template content + index is stable
                   const templateKey = `info_entity_${index}_${templateHash}`;
@@ -2267,7 +2275,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     !this._templateService.hasTemplateSubscription(templateKey)
                   ) {
                     this._templateService.subscribeToTemplate(
-                      entity.template,
+                      processedTemplate,
                       templateKey,
                       () => {
                         if (typeof window !== 'undefined') {
@@ -2331,7 +2339,14 @@ export class UltraInfoModule extends BaseUltraModule {
                   this._templateService = new TemplateService(hass);
                 }
 
-                const templateHash = this._hashString(entity.unified_template);
+                // Preprocess custom variables ($variable_name) before Jinja evaluation
+                const processedUnifiedTemplate = preprocessTemplateVariables(
+                  entity.unified_template,
+                  hass,
+                  config
+                );
+
+                const templateHash = this._hashString(processedUnifiedTemplate);
                 const templateKey = `unified_info_${entity.entity}_${index}_${templateHash}`;
 
                 if (!hass.__uvc_template_strings) {
@@ -2347,7 +2362,7 @@ export class UltraInfoModule extends BaseUltraModule {
                     icon: entity.icon,
                   });
                   this._templateService.subscribeToTemplate(
-                    entity.unified_template,
+                    processedUnifiedTemplate,
                     templateKey,
                     () => {
                       if (typeof window !== 'undefined') {
@@ -2396,7 +2411,15 @@ export class UltraInfoModule extends BaseUltraModule {
                 if (!this._templateService && hass) {
                   this._templateService = new TemplateService(hass);
                 }
-                const templateHash = this._hashString(entity.dynamic_icon_template);
+
+                // Preprocess custom variables ($variable_name) before Jinja evaluation
+                const processedIconTemplate = preprocessTemplateVariables(
+                  entity.dynamic_icon_template,
+                  hass,
+                  config
+                );
+
+                const templateHash = this._hashString(processedIconTemplate);
                 const templateKey = `dynamic_icon_info_${entity.entity}_${index}_${templateHash}`;
 
                 if (!hass.__uvc_template_strings) {
@@ -2408,7 +2431,7 @@ export class UltraInfoModule extends BaseUltraModule {
                   !this._templateService.hasTemplateSubscription(templateKey)
                 ) {
                   this._templateService.subscribeToTemplate(
-                    entity.dynamic_icon_template,
+                    processedIconTemplate,
                     templateKey,
                     () => {
                       if (typeof window !== 'undefined') {
@@ -2501,7 +2524,15 @@ export class UltraInfoModule extends BaseUltraModule {
                               if (!this._templateService && hass) {
                                 this._templateService = new TemplateService(hass);
                               }
-                              const templateHash = this._hashString(entity.dynamic_color_template);
+
+                              // Preprocess custom variables ($variable_name) before Jinja evaluation
+                              const processedColorTemplate = preprocessTemplateVariables(
+                                entity.dynamic_color_template,
+                                hass,
+                                config
+                              );
+
+                              const templateHash = this._hashString(processedColorTemplate);
                               const templateKey = `dynamic_color_info_${entity.entity}_${index}_${templateHash}`;
 
                               if (!hass.__uvc_template_strings) {
@@ -2513,7 +2544,7 @@ export class UltraInfoModule extends BaseUltraModule {
                                 !this._templateService.hasTemplateSubscription(templateKey)
                               ) {
                                 this._templateService.subscribeToTemplate(
-                                  entity.dynamic_color_template,
+                                  processedColorTemplate,
                                   templateKey,
                                   () => {
                                     if (typeof window !== 'undefined') {
