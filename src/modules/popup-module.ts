@@ -20,6 +20,7 @@ type PopupStore = {
   logicStates: Map<string, boolean>;
   manuallyOpened: Set<string>;
   timerEnabled: Map<string, boolean>;
+  needsRefresh: Map<string, boolean>; // Track which popups need content refresh for templates
 };
 
 const POPUP_STORE_KEY = '__ultraPopupStore__';
@@ -34,6 +35,7 @@ const getPopupStore = (): PopupStore => {
       logicStates: new Map<string, boolean>(),
       manuallyOpened: new Set<string>(),
       timerEnabled: new Map<string, boolean>(),
+      needsRefresh: new Map<string, boolean>(),
     } as PopupStore;
   }
   return w[POPUP_STORE_KEY] as PopupStore;
@@ -47,6 +49,7 @@ const {
   logicStates: lastLogicStates,
   manuallyOpened: manuallyOpenedPopups,
   timerEnabled: popupTimerEnabled,
+  needsRefresh: popupNeedsRefresh,
 } =
   getPopupStore();
 
@@ -2129,7 +2132,7 @@ export class UltraPopupModule extends BaseUltraModule {
 
     // Forward declaration - will be assigned later
     // This allows handleTriggerClick to call renderPopupToPortal
-    let renderPopupToPortal: () => void;
+    let renderPopupToPortal: (initialInvisibleRender?: boolean) => void;
 
     // Register external popup open listener (for module triggers)
     // This is idempotent - only one listener per popup ID
@@ -2144,10 +2147,18 @@ export class UltraPopupModule extends BaseUltraModule {
           if (popupModule.auto_close_timer_enabled) {
             this._startAutoCloseTimer(popupModule);
           }
-          // renderPopupToPortal might not be assigned yet, so use setTimeout to defer
+          // Render popup directly
           setTimeout(() => {
             if (renderPopupToPortal) {
-              renderPopupToPortal();
+              renderPopupToPortal(false);
+              // TEMPLATE FIX: Schedule a card update after templates have had time to evaluate
+              setTimeout(() => {
+                if (popupStates.get(popupModule.id)) {
+                  // Set refresh flag so portal content will be re-rendered with evaluated templates
+                  popupNeedsRefresh.set(popupModule.id, true);
+                  this.triggerPreviewUpdate(true);
+                }
+              }, 500);
             }
           }, 0);
         }
@@ -2172,9 +2183,19 @@ export class UltraPopupModule extends BaseUltraModule {
         this._startAutoCloseTimer(popupModule);
       }
       
-      // Directly render the popup - don't rely on triggerPreviewUpdate
-      // This ensures the popup opens immediately in all contexts
-      renderPopupToPortal();
+      // Render popup immediately
+      renderPopupToPortal(false);
+      
+      // TEMPLATE FIX: Schedule a card update after templates have had time to evaluate
+      // This handles the "Template processing..." issue on first open
+      // Portal-rendered popups don't get automatic re-renders from hass updates
+      setTimeout(() => {
+        if (popupStates.get(popupModule.id)) {
+          // Set refresh flag so portal content will be re-rendered with evaluated templates
+          popupNeedsRefresh.set(popupModule.id, true);
+          this.triggerPreviewUpdate(true);
+        }
+      }, 500);
     };
 
     // Handle close
@@ -2487,7 +2508,7 @@ export class UltraPopupModule extends BaseUltraModule {
     // PORTAL APPROACH: Render popup to document.body to escape Swiper's transform containment
     // When a parent element has CSS transform, position:fixed elements become relative to that element
     // By rendering to document.body, the popup overlay properly covers the entire viewport
-    renderPopupToPortal = () => {
+    renderPopupToPortal = (initialInvisibleRender = false) => {
       const portalId = `ultra-popup-portal-${popupModule.id}`;
       let portal = popupPortals.get(popupModule.id);
       
@@ -2528,6 +2549,9 @@ export class UltraPopupModule extends BaseUltraModule {
       if (!currentlyOpen) {
         popupStates.set(popupModule.id, true);
       }
+      
+      // Track if this is a new portal creation
+      const isNewPortal = !portal;
       
       // Create portal container if it doesn't exist
       if (!portal) {
@@ -2597,9 +2621,27 @@ export class UltraPopupModule extends BaseUltraModule {
         });
       }
 
-      // Clear portal content before re-rendering to ensure fresh event bindings
-      // This is critical for portal-based rendering where lit-html may not properly re-hydrate events
-      portal.innerHTML = '';
+      // Check if we need to re-render content
+      // Only clear and re-render if: portal is new OR refresh is explicitly requested
+      const needsRefreshFlag = popupNeedsRefresh.get(popupModule.id) === true;
+      const needsContentRender = isNewPortal || needsRefreshFlag;
+      
+      // Clear the refresh flag after checking
+      if (needsRefreshFlag) {
+        popupNeedsRefresh.delete(popupModule.id);
+      }
+      
+      // Skip re-render if portal already exists and no refresh needed
+      if (!needsContentRender) {
+        return;
+      }
+
+      // CRITICAL FIX: Only clear innerHTML for NEW portals, NOT for refresh renders
+      // Clearing innerHTML on refresh renders causes lit's render() to fail silently
+      // because the template comes from a different function scope/closure
+      if (isNewPortal) {
+        portal.innerHTML = '';
+      }
 
       const popupContent = html`
         <style>
@@ -2779,18 +2821,24 @@ export class UltraPopupModule extends BaseUltraModule {
         // Also re-apply critical styles that might have been commented out
         if (overlay) {
           overlay.removeAttribute('inert');
-          overlay.style.pointerEvents = 'auto';
+          if (!initialInvisibleRender) {
+            overlay.style.pointerEvents = 'auto';
+          }
           overlay.style.zIndex = overlayZIndex.toString();
         }
         if (closeBtn) {
           closeBtn.removeAttribute('inert');
-          closeBtn.style.pointerEvents = 'auto';
-          closeBtn.style.cursor = 'pointer';
+          if (!initialInvisibleRender) {
+            closeBtn.style.pointerEvents = 'auto';
+            closeBtn.style.cursor = 'pointer';
+          }
           closeBtn.style.zIndex = closeButtonZIndex.toString();
         }
         if (container) {
           container.removeAttribute('inert');
-          container.style.pointerEvents = 'auto';
+          if (!initialInvisibleRender) {
+            container.style.pointerEvents = 'auto';
+          }
         }
 
         if (overlay) {
@@ -2814,24 +2862,37 @@ export class UltraPopupModule extends BaseUltraModule {
             e.stopPropagation();
           });
         }
+
       });
     };
 
-    // CRITICAL FIX: Only render portal when actually needed
-    // Check if popup SHOULD be open before rendering
+    // Check popup state to determine if portal needs rendering
     const currentState = popupStates.get(popupModule.id) || false;
     const portalExists = popupPortals.has(popupModule.id);
     const isManuallyOpen = manuallyOpenedPopups.has(popupModule.id);
+    const needsRefresh = popupNeedsRefresh.get(popupModule.id) === true;
+    
+    // Determine if popup should be open
+    const shouldBeOpen = currentState || isManuallyOpen;
     
     // Only render portal if:
-    // 1. Popup should be open (state=true OR manually opened)
-    // 2. AND (portal doesn't exist yet OR it's a logic/page_load trigger that needs continuous evaluation)
-    const shouldBeOpen = currentState || isManuallyOpen;
-    const needsRender = !portalExists || triggerType === 'logic' || triggerType === 'page_load';
-    const shouldRenderPortal = shouldBeOpen && needsRender;
-    
-    if (shouldRenderPortal) {
-      renderPopupToPortal();
+    // 1. Popup should be open AND portal doesn't exist yet (first creation)
+    // 2. OR popup should be open AND refresh is needed (template update)
+    // This prevents constant re-rendering on every card update
+    if (shouldBeOpen && (!portalExists || needsRefresh)) {
+      renderPopupToPortal(false);
+    } else if (!shouldBeOpen && portalExists) {
+      // Close the portal if it exists but shouldn't be open
+      const portal = popupPortals.get(popupModule.id);
+      if (portal) {
+        const observer = (portal as any)._ultraInertObserver;
+        if (observer) {
+          observer.disconnect();
+        }
+        restoreHAEditorOverlays();
+        portal.remove();
+        popupPortals.delete(popupModule.id);
+      }
     }
     
     // If there's no visible trigger (logic, page_load, or module), wrap in a zero-height container

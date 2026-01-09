@@ -1,5 +1,14 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta17
+
+### 🐛 Bug Fixes
+
+- **Fixed mobile padding discrepancy** - Resolved padding inconsistencies on mobile devices
+- **Fixed popup module rendering issues** - Corrected rendering problems affecting popup modules
+
+---
+
 ## Version 2.3.0-beta15
 
 ### 🚀 Improvements

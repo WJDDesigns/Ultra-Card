@@ -6141,10 +6141,7 @@ export class UltraIconModule extends BaseUltraModule {
         }
 
         /* Removed mobile-specific icon-grid overrides to maintain consistent user-configured spacing across all screen sizes */
-
-        .icon-item-preview {
-          padding: 6px !important;
-        }
+        /* Note: .icon-item-preview padding intentionally not modified on mobile to keep desktop/mobile parity */
       }
 
       /* Extra small devices (phones, 480px and down) */
