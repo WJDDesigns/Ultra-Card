@@ -1,5 +1,17 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta15
+
+### 🚀 Improvements
+
+- **Improved actions service** - Enhanced actions service for better reliability and performance
+
+### 🐛 Bug Fixes
+
+- **Fixed preset loading issues** - Resolved issues with preset loading functionality
+
+---
+
 ## Version 2.3.0-beta14
 
 ### 🚀 New Features

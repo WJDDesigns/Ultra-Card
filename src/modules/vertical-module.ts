@@ -282,134 +282,20 @@ export class UltraVerticalModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
-    // Gesture handling variables
-    let clickTimeout: any = null;
-    let holdTimeout: any = null;
-    let isHolding = false;
-    let clickCount = 0;
-    let lastClickTime = 0;
-
-    // Handle gesture events for tap, hold, double-tap actions
-    const handlePointerDown = (e: PointerEvent) => {
-      // CRITICAL FIX: Don't handle events from nested module editor controls
-      // This prevents parent container gestures from interfering with nested module editing
-      const target = e.target as HTMLElement;
-      if (
-        target.closest('.layout-child-actions') ||
-        target.closest('.layout-child-drag-handle') ||
-        target.closest('.nested-layout-drag-handle') ||
-        target.closest('.layout-module-drag-handle') ||
-        target.closest('.layout-child-simplified-module') ||
-        target.closest('.nested-layout-module-container') ||
-        target.closest('.layout-module-container') ||
-        target.closest('.layout-module-actions') ||
-        target.closest('.module-settings-popup') ||
-        target.closest('.popup-content')
-      ) {
-        // This event is on a nested module's editor controls - don't handle it
-        return;
-      }
-
-      e.preventDefault();
-      isHolding = false;
-
-      // Start hold timer
-      holdTimeout = setTimeout(() => {
-        isHolding = true;
-        if (verticalModule.hold_action && verticalModule.hold_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            verticalModule.hold_action as any,
-            hass,
-            e.target as HTMLElement,
-            config,
-            (verticalModule as any).entity,
-            verticalModule
-          );
-        }
-      }, 500); // 500ms hold threshold
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      // CRITICAL FIX: Don't handle events from nested module editor controls
-      // This prevents parent container gestures from interfering with nested module editing
-      const target = e.target as HTMLElement;
-      if (
-        target.closest('.layout-child-actions') ||
-        target.closest('.layout-child-drag-handle') ||
-        target.closest('.nested-layout-drag-handle') ||
-        target.closest('.layout-module-drag-handle') ||
-        target.closest('.layout-child-simplified-module') ||
-        target.closest('.nested-layout-module-container') ||
-        target.closest('.layout-module-container') ||
-        target.closest('.layout-module-actions') ||
-        target.closest('.module-settings-popup') ||
-        target.closest('.popup-content')
-      ) {
-        // This event is on a nested module's editor controls - don't handle it
-        return;
-      }
-
-      e.preventDefault();
-      // Clear hold timer
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
-
-      // If this was a hold gesture, don't process as click
-      if (isHolding) {
-        isHolding = false;
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-
-      // Double click detection (within 300ms)
-      if (timeSinceLastClick < 300 && clickCount === 1) {
-        // This is a double click
-        if (clickTimeout) {
-          clearTimeout(clickTimeout);
-          clickTimeout = null;
-        }
-        clickCount = 0;
-
-        if (
-          verticalModule.double_tap_action &&
-          verticalModule.double_tap_action.action !== 'nothing'
-        ) {
-          UltraLinkComponent.handleAction(
-            verticalModule.double_tap_action as any,
-            hass,
-            e.target as HTMLElement,
-            config,
-            (verticalModule as any).entity,
-            verticalModule
-          );
-        }
-      } else {
-        // This might be a single click, but wait to see if double click follows
-        clickCount = 1;
-        lastClickTime = now;
-
-        clickTimeout = setTimeout(() => {
-          // This is a single click
-          clickCount = 0;
-
-          // Execute tap action
-          if (!verticalModule.tap_action || verticalModule.tap_action.action !== 'nothing') {
-            UltraLinkComponent.handleAction(
-              (verticalModule.tap_action as any) || ({ action: 'default' } as any),
-              hass,
-              e.target as HTMLElement,
-              config,
-              (verticalModule as any).entity,
-              verticalModule
-            );
-          }
-        }, 300); // Wait 300ms to see if double click follows
-      }
-    };
+    // Create gesture handlers using centralized service
+    // Service automatically handles nested module editor control exclusion
+    const handlers = this.createGestureHandlers(
+      verticalModule.id,
+      {
+        tap_action: verticalModule.tap_action,
+        hold_action: verticalModule.hold_action,
+        double_tap_action: verticalModule.double_tap_action,
+        entity: (verticalModule as any).entity,
+        module: verticalModule,
+      },
+      hass,
+      config
+    );
 
     // Extract CSS variable prefix for Shadow DOM styling
     const cssVarPrefix = (verticalModule as any).design?.css_variable_prefix;
@@ -431,8 +317,9 @@ export class UltraVerticalModule extends BaseUltraModule {
             verticalModule.double_tap_action.action !== 'nothing')
             ? 'pointer'
             : 'default'};"
-          @pointerdown=${handlePointerDown}
-          @pointerup=${handlePointerUp}
+          @pointerdown=${handlers.onPointerDown}
+          @pointerup=${handlers.onPointerUp}
+          @pointerleave=${handlers.onPointerLeave}
         >
           ${hasChildren
             ? (() => {

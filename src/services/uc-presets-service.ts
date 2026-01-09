@@ -298,6 +298,7 @@ class UcPresetsService {
     try {
       // Parse the shortcode as JSON layout configuration
       let layout: LayoutConfig;
+      let cardSettings: PresetDefinition['cardSettings'] | undefined;
 
       try {
         // Try to parse as direct JSON first
@@ -322,9 +323,10 @@ class UcPresetsService {
         // Failed to parse layout from direct JSON; will attempt shortcode fallback (silent)
 
         // Try to extract JSON from Ultra Card shortcode format [ultra_card]...content...[/ultra_card]
+        // Also support [ultra-card] format with hyphen
         try {
           const shortcodeMatch = wpPreset.shortcode.match(
-            /\[ultra_card\]([\s\S]*?)\[\/ultra_card\]/
+            /\[ultra[_-]card\]([\s\S]*?)\[\/ultra[_-]card\]/
           );
           if (shortcodeMatch) {
             const encodedData = shortcodeMatch[1].trim();
@@ -339,8 +341,21 @@ class UcPresetsService {
                 rows: [importData.data],
               };
               // Converted row export to layout (silent)
+            } else if (importData.type === 'ultra-card-full' && importData.data?.layout?.rows) {
+              // This is a full card export - layout is nested inside data.layout
+              layout = importData.data.layout;
+              // Extract card-level settings from full card export
+              cardSettings = this._extractCardSettings(importData.data);
+            } else if (importData.data && importData.data.layout && importData.data.layout.rows) {
+              // Alternative full card structure - layout nested in data
+              layout = importData.data.layout;
+              // Extract card-level settings
+              cardSettings = this._extractCardSettings(importData.data);
             } else if (importData.data && importData.data.rows) {
               layout = importData.data;
+            } else if (importData.layout && importData.layout.rows) {
+              // Direct layout object with nested rows
+              layout = importData.layout;
             } else if (importData.rows) {
               layout = importData;
             } else {
@@ -350,67 +365,10 @@ class UcPresetsService {
             throw new Error('No shortcode format found');
           }
         } catch (shortcodeError) {
-          // Failed to parse shortcode (silent)
-          // Create a working demo layout for the User Location Badge
-          layout = {
-            rows: [
-              {
-                id: `demo-row-${wpPreset.id}`,
-                columns: [
-                  {
-                    id: `demo-col-${wpPreset.id}`,
-                    modules: [
-                      {
-                        id: `demo-horizontal-${wpPreset.id}`,
-                        type: 'horizontal',
-                        alignment: 'space-between',
-                        vertical_alignment: 'center',
-                        gap: 0.7,
-                        wrap: false,
-                        modules: [
-                          {
-                            id: `demo-avatar-${wpPreset.id}`,
-                            type: 'image',
-                            image_type: 'url',
-                            height: '40px',
-                            width: '40px',
-                            border_radius: '50%',
-                            object_fit: 'cover',
-                            image_url: 'https://cdn-icons-png.freepik.com/512/3177/3177440.png',
-                          } as any,
-                          {
-                            id: `demo-info-${wpPreset.id}`,
-                            type: 'icon',
-                            icons: [
-                              {
-                                id: `demo-icon-${wpPreset.id}`,
-                                entity: 'person.demo_user',
-                                icon_inactive: 'mdi:account',
-                                icon_active: 'mdi:account',
-                                show_name: true,
-                                show_state: true,
-                                icon_size: 26,
-                                text_size: 14,
-                              } as any,
-                            ],
-                          } as any,
-                        ],
-                      } as any,
-                    ],
-                  },
-                ],
-                column_layout: '1-col',
-                background_color: '#333333',
-                border_radius: 60,
-                height: '50px',
-                width: '140px',
-                padding: {
-                  left: '4px',
-                  right: '16px',
-                },
-              } as any,
-            ],
-          };
+          // Failed to parse shortcode - throw error to trigger error preset handling
+          console.error(`Failed to parse shortcode for preset ${wpPreset.id}:`, shortcodeError);
+          console.error('Raw shortcode:', wpPreset.shortcode?.substring(0, 200) + '...');
+          throw new Error(`Failed to parse preset shortcode: ${shortcodeError instanceof Error ? shortcodeError.message : 'Unknown error'}`);
         }
       }
 
@@ -440,6 +398,8 @@ class UcPresetsService {
         thumbnail: wpPreset.featured_image,
         gallery: wpPreset.gallery || [],
         layout,
+        // Include card-level settings if this is a full card export
+        ...(cardSettings && { cardSettings }),
         metadata: {
           created: wpPreset.created,
           updated: wpPreset.updated || wpPreset.created,
@@ -558,6 +518,102 @@ class UcPresetsService {
 
     const normalized = category.toLowerCase().trim();
     return categoryIcons[normalized] || 'mdi:card';
+  }
+
+  /**
+   * Extract card-level settings from a full card export
+   */
+  private _extractCardSettings(cardData: any): PresetDefinition['cardSettings'] | undefined {
+    if (!cardData) return undefined;
+
+    const settings: PresetDefinition['cardSettings'] = {};
+    let hasSettings = false;
+
+    // Card background
+    if (cardData.card_background !== undefined) {
+      settings.card_background = cardData.card_background;
+      hasSettings = true;
+    }
+
+    // Card border settings
+    if (cardData.card_border_radius !== undefined) {
+      settings.card_border_radius = cardData.card_border_radius;
+      hasSettings = true;
+    }
+    if (cardData.card_border_color !== undefined) {
+      settings.card_border_color = cardData.card_border_color;
+      hasSettings = true;
+    }
+    if (cardData.card_border_width !== undefined) {
+      settings.card_border_width = cardData.card_border_width;
+      hasSettings = true;
+    }
+
+    // Card padding/margin
+    if (cardData.card_padding !== undefined) {
+      settings.card_padding = cardData.card_padding;
+      hasSettings = true;
+    }
+    if (cardData.card_margin !== undefined) {
+      settings.card_margin = cardData.card_margin;
+      hasSettings = true;
+    }
+
+    // Card overflow
+    if (cardData.card_overflow !== undefined) {
+      settings.card_overflow = cardData.card_overflow;
+      hasSettings = true;
+    }
+
+    // Card shadow settings
+    if (cardData.card_shadow_enabled !== undefined) {
+      settings.card_shadow_enabled = cardData.card_shadow_enabled;
+      hasSettings = true;
+    }
+    if (cardData.card_shadow_color !== undefined) {
+      settings.card_shadow_color = cardData.card_shadow_color;
+      hasSettings = true;
+    }
+    if (cardData.card_shadow_horizontal !== undefined) {
+      settings.card_shadow_horizontal = cardData.card_shadow_horizontal;
+      hasSettings = true;
+    }
+    if (cardData.card_shadow_vertical !== undefined) {
+      settings.card_shadow_vertical = cardData.card_shadow_vertical;
+      hasSettings = true;
+    }
+    if (cardData.card_shadow_blur !== undefined) {
+      settings.card_shadow_blur = cardData.card_shadow_blur;
+      hasSettings = true;
+    }
+    if (cardData.card_shadow_spread !== undefined) {
+      settings.card_shadow_spread = cardData.card_shadow_spread;
+      hasSettings = true;
+    }
+
+    // Background image settings
+    if (cardData.card_background_image_type !== undefined) {
+      settings.card_background_image_type = cardData.card_background_image_type;
+      hasSettings = true;
+    }
+    if (cardData.card_background_image !== undefined) {
+      settings.card_background_image = cardData.card_background_image;
+      hasSettings = true;
+    }
+    if (cardData.card_background_size !== undefined) {
+      settings.card_background_size = cardData.card_background_size;
+      hasSettings = true;
+    }
+    if (cardData.card_background_repeat !== undefined) {
+      settings.card_background_repeat = cardData.card_background_repeat;
+      hasSettings = true;
+    }
+    if (cardData.card_background_position !== undefined) {
+      settings.card_background_position = cardData.card_background_position;
+      hasSettings = true;
+    }
+
+    return hasSettings ? settings : undefined;
   }
 
   private _broadcastChange(): void {

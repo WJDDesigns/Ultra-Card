@@ -886,100 +886,19 @@ All standard markdown features are automatically enabled!`,
       }
     }
 
-    // Gesture handling variables
-    let clickTimeout: any = null;
-    let holdTimeout: any = null;
-    let isHolding = false;
-    let clickCount = 0;
-    let lastClickTime = 0;
-
-    // Handle gesture events for tap, hold, double-tap actions
-    const handlePointerDown = (e: PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      isHolding = false;
-
-      // Start hold timer
-      holdTimeout = setTimeout(() => {
-        isHolding = true;
-        if (markdownModule.hold_action && markdownModule.hold_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            markdownModule.hold_action as any,
-            hass,
-            e.target as HTMLElement,
-            config,
-            (markdownModule as any).entity,
-            markdownModule
-          );
-        }
-      }, 500); // 500ms hold threshold
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Clear hold timer
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
-
-      // If this was a hold gesture, don't process as click
-      if (isHolding) {
-        isHolding = false;
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-
-      // Double click detection (within 300ms)
-      if (timeSinceLastClick < 300 && clickCount === 1) {
-        // This is a double click
-        if (clickTimeout) {
-          clearTimeout(clickTimeout);
-          clickTimeout = null;
-        }
-        clickCount = 0;
-
-        if (
-          !markdownModule.double_tap_action ||
-          markdownModule.double_tap_action.action !== 'nothing'
-        ) {
-          UltraLinkComponent.handleAction(
-            (markdownModule.double_tap_action as any) || ({ action: 'default' } as any),
-            hass,
-            e.target as HTMLElement,
-            config,
-            (markdownModule as any).entity,
-            markdownModule
-          );
-        }
-      } else {
-        // This might be a single click, but wait to see if double click follows
-        clickCount = 1;
-        lastClickTime = now;
-
-        clickTimeout = setTimeout(() => {
-          // This is a single click
-          clickCount = 0;
-
-          // Execute tap action
-          if (!markdownModule.tap_action || markdownModule.tap_action.action !== 'nothing') {
-            UltraLinkComponent.handleAction(
-              (markdownModule.tap_action as any) || ({ action: 'default' } as any),
-              hass,
-              e.target as HTMLElement,
-              config,
-              (markdownModule as any).entity,
-              markdownModule
-            );
-          }
-        }, 300); // Wait 300ms to see if double click follows
-      }
-    };
+    // Create gesture handlers using centralized service
+    const handlers = this.createGestureHandlers(
+      markdownModule.id,
+      {
+        tap_action: markdownModule.tap_action,
+        hold_action: markdownModule.hold_action,
+        double_tap_action: markdownModule.double_tap_action,
+        entity: (markdownModule as any).entity,
+        module: markdownModule,
+      },
+      hass,
+      config
+    );
 
     const element = html`<div class="markdown-content" .innerHTML=${renderedContent}></div>`;
 
@@ -996,8 +915,9 @@ All standard markdown features are automatically enabled!`,
         (markdownModule.double_tap_action && markdownModule.double_tap_action.action !== 'nothing')
           ? 'pointer'
           : 'default'};"
-        @pointerdown=${handlePointerDown}
-        @pointerup=${handlePointerUp}
+        @pointerdown=${handlers.onPointerDown}
+        @pointerup=${handlers.onPointerUp}
+        @pointerleave=${handlers.onPointerLeave}
       >
         <div class="markdown-module-preview" style=${this.styleObjectToCss(contentStyles)}>
           ${element}

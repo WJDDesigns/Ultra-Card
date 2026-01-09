@@ -4904,93 +4904,19 @@ export class UltraBarModule extends BaseUltraModule {
             : 'none',
     };
 
-    // Gesture handling variables
-    let clickTimeout: any = null;
-    let holdTimeout: any = null;
-    let isHolding = false;
-    let clickCount = 0;
-    let lastClickTime = 0;
-
-    // Handle gesture events for tap, hold, double-tap actions
-    const handlePointerDown = (e: PointerEvent) => {
-      e.preventDefault();
-      isHolding = false;
-
-      // Start hold timer
-      holdTimeout = setTimeout(() => {
-        isHolding = true;
-        if (barModule.hold_action && barModule.hold_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            barModule.hold_action as any,
-            hass,
-            e.target as HTMLElement,
-            config,
-            (barModule as any).entity,
-            barModule
-          );
-        }
-      }, 500); // 500ms hold threshold
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      e.preventDefault();
-      // Clear hold timer
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
-
-      // If this was a hold gesture, don't process as click
-      if (isHolding) {
-        isHolding = false;
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-
-      // Double click detection (within 300ms)
-      if (timeSinceLastClick < 300 && clickCount === 1) {
-        // This is a double click
-        if (clickTimeout) {
-          clearTimeout(clickTimeout);
-          clickTimeout = null;
-        }
-        clickCount = 0;
-
-        if (!barModule.double_tap_action || barModule.double_tap_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            (barModule.double_tap_action as any) || ({ action: 'default' } as any),
-            hass,
-            e.target as HTMLElement,
-            config,
-            (barModule as any).entity,
-            barModule
-          );
-        }
-      } else {
-        // This might be a single click, but wait to see if double click follows
-        clickCount = 1;
-        lastClickTime = now;
-
-        clickTimeout = setTimeout(() => {
-          // This is a single click
-          clickCount = 0;
-
-          // Execute tap action
-          if (!barModule.tap_action || barModule.tap_action.action !== 'nothing') {
-            UltraLinkComponent.handleAction(
-              (barModule.tap_action as any) || ({ action: 'default' } as any),
-              hass,
-              e.target as HTMLElement,
-              config,
-              (barModule as any).entity,
-              barModule
-            );
-          }
-        }, 300); // Wait 300ms to see if double click follows
-      }
-    };
+    // Create gesture handlers using centralized service
+    const handlers = this.createGestureHandlers(
+      barModule.id,
+      {
+        tap_action: barModule.tap_action,
+        hold_action: barModule.hold_action,
+        double_tap_action: barModule.double_tap_action,
+        entity: (barModule as any).entity,
+        module: barModule,
+      },
+      hass,
+      config
+    );
 
     // Get hover effect configuration from module design
     const hoverEffect = (barModule as any).design?.hover_effect;
@@ -5056,8 +4982,9 @@ export class UltraBarModule extends BaseUltraModule {
             };
             z-index: 1;
           "
-          @pointerdown=${handlePointerDown}
-          @pointerup=${handlePointerUp}
+          @pointerdown=${handlers.onPointerDown}
+          @pointerup=${handlers.onPointerUp}
+          @pointerleave=${handlers.onPointerLeave}
         >
             <!-- Bar Fill / Dots Style / Minimal Style -->
             ${

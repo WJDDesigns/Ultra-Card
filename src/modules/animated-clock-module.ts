@@ -244,90 +244,19 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
         clockContent = this._renderFlipClock(hours, minutes, ampm, clockModule);
     }
 
-    // Action handlers for tap, hold, and double-tap
-    let holdTimeout: any = null;
-    let clickTimeout: any = null;
-    let isHolding = false;
-    let clickCount = 0;
-    let lastClickTime = 0;
-
-    const handlePointerDown = (e: PointerEvent) => {
-      e.preventDefault();
-      isHolding = false;
-      holdTimeout = setTimeout(() => {
-        isHolding = true;
-        if (!clockModule.hold_action || clockModule.hold_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            (clockModule.hold_action as any) || ({ action: 'default' } as any),
-            hass,
-            e.target as HTMLElement,
-            config,
-            (clockModule as any).entity,
-            clockModule
-          );
-        }
-      }, 500); // 500ms hold threshold
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      e.preventDefault();
-      // Clear hold timer
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
-
-      // If this was a hold gesture, don't process as click
-      if (isHolding) {
-        isHolding = false;
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-
-      // Double click detection (within 300ms)
-      if (timeSinceLastClick < 300 && clickCount === 1) {
-        // This is a double click
-        if (clickTimeout) {
-          clearTimeout(clickTimeout);
-          clickTimeout = null;
-        }
-        clickCount = 0;
-
-        if (!clockModule.double_tap_action || clockModule.double_tap_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            (clockModule.double_tap_action as any) || ({ action: 'default' } as any),
-            hass,
-            e.target as HTMLElement,
-            config,
-            (clockModule as any).entity,
-            clockModule
-          );
-        }
-      } else {
-        // This might be a single click, but wait to see if double click follows
-        clickCount = 1;
-        lastClickTime = now;
-
-        clickTimeout = setTimeout(() => {
-          // This is a single click
-          clickCount = 0;
-
-          // Execute tap action
-          if (!clockModule.tap_action || clockModule.tap_action.action !== 'nothing') {
-            UltraLinkComponent.handleAction(
-              (clockModule.tap_action as any) || ({ action: 'default' } as any),
-              hass,
-              e.target as HTMLElement,
-              config,
-              (clockModule as any).entity,
-              clockModule
-            );
-          }
-        }, 300); // Wait 300ms to see if double click follows
-      }
-    };
+    // Create gesture handlers using centralized service
+    const handlers = this.createGestureHandlers(
+      clockModule.id,
+      {
+        tap_action: clockModule.tap_action,
+        hold_action: clockModule.hold_action,
+        double_tap_action: clockModule.double_tap_action,
+        entity: (clockModule as any).entity,
+        module: clockModule,
+      },
+      hass,
+      config
+    );
 
     // Determine if actions are configured to show cursor pointer
     const hasActions =
@@ -414,8 +343,9 @@ export class UltraAnimatedClockModule extends BaseUltraModule {
       </style>
       <div
         style=${this.objectToStyleString(containerStyles)}
-        @pointerdown=${handlePointerDown}
-        @pointerup=${handlePointerUp}
+        @pointerdown=${handlers.onPointerDown}
+        @pointerup=${handlers.onPointerUp}
+        @pointerleave=${handlers.onPointerLeave}
       >
         <div
           class="animated-clock-module-container"

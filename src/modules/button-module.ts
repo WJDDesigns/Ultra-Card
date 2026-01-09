@@ -942,89 +942,19 @@ export class UltraButtonModule extends BaseUltraModule {
       boxSizing: 'border-box',
     } as Record<string, string>;
 
-    let clickTimeout: any = null;
-    let holdTimeout: any = null;
-    let isHolding = false;
-    let clickCount = 0;
-    let lastClickTime = 0;
-
-    const handlePointerDown = (e: PointerEvent) => {
-      e.preventDefault();
-      isHolding = false;
-
-      holdTimeout = setTimeout(() => {
-        isHolding = true;
-        if (buttonModule.hold_action && buttonModule.hold_action.action !== 'nothing') {
-          UltraLinkComponent.handleAction(
-            buttonModule.hold_action as any,
-            hass,
-            e.target as HTMLElement,
-            config,
-            (buttonModule as any).entity,
-            buttonModule
-          );
-        }
-      }, 500);
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      e.preventDefault();
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
-
-      if (isHolding) {
-        isHolding = false;
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-
-      if (timeSinceLastClick < 300 && clickCount === 1) {
-        if (clickTimeout) {
-          clearTimeout(clickTimeout);
-          clickTimeout = null;
-        }
-        clickCount = 0;
-
-        if (
-          !buttonModule.double_tap_action ||
-          buttonModule.double_tap_action.action !== 'nothing'
-        ) {
-          UltraLinkComponent.handleAction(
-            (buttonModule.double_tap_action as any) || ({ action: 'default' } as any),
-            hass,
-            e.target as HTMLElement,
-            config,
-            (buttonModule as any).entity,
-            buttonModule
-          );
-        }
-      } else {
-        clickCount = 1;
-        lastClickTime = now;
-
-        clickTimeout = setTimeout(() => {
-          clickCount = 0;
-
-          if (!buttonModule.tap_action || buttonModule.tap_action.action !== 'nothing') {
-            UltraLinkComponent.handleAction(
-              (buttonModule.tap_action as any) || ({ action: 'default' } as any),
-              hass,
-              e.target as HTMLElement,
-              config,
-              (buttonModule as any).entity,
-              buttonModule
-            );
-          } else if (buttonModule.action) {
-            linkService.setHass(hass);
-            linkService.executeAction(buttonModule.action);
-          }
-        }, 300);
-      }
-    };
+    // Create gesture handlers using centralized service
+    const handlers = this.createGestureHandlers(
+      buttonModule.id,
+      {
+        tap_action: buttonModule.tap_action,
+        hold_action: buttonModule.hold_action,
+        double_tap_action: buttonModule.double_tap_action,
+        entity: (buttonModule as any).entity,
+        module: buttonModule,
+      },
+      hass,
+      config
+    );
 
     const hoverEffect = (buttonModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
@@ -1040,8 +970,9 @@ export class UltraButtonModule extends BaseUltraModule {
               ? 'justify'
               : ''} ${hoverEffectClass}"
             style="${this.styleObjectToCss(mergedButtonStyle)}"
-            @pointerdown=${handlePointerDown}
-            @pointerup=${handlePointerUp}
+            @pointerdown=${handlers.onPointerDown}
+            @pointerup=${handlers.onPointerUp}
+            @pointerleave=${handlers.onPointerLeave}
           >
             ${buttonModule.show_icon && buttonModule.icon && buttonModule.icon_position === 'before'
               ? html`<ha-icon

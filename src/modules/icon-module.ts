@@ -3503,143 +3503,20 @@ export class UltraIconModule extends BaseUltraModule {
                 }
               }
 
-              // Gesture detection variables (using closure to maintain state per icon)
-              let clickTimeout: NodeJS.Timeout | null = null;
-              let holdTimeout: NodeJS.Timeout | null = null;
-              let isHolding = false;
-              let clickCount = 0;
-              let lastClickTime = 0;
-
-              const handleGestures = {
-                onPointerDown: (e: PointerEvent) => {
-                  e.preventDefault();
-                  isHolding = false;
-
-                  // Start hold timer if hold action is configured or undefined (Default)
-                  if (
-                    iconModule.hold_action !== undefined &&
-                    iconModule.hold_action?.action === 'nothing'
-                  ) {
-                    // Explicitly set to "nothing", don't start timer
-                    return;
-                  }
-
-                  // Start hold timer for configured actions or Default (undefined)
-                  holdTimeout = setTimeout(() => {
-                    isHolding = true;
-                    UltraLinkComponent.handleAction(
-                      (iconModule.hold_action as any) ||
-                        ({ action: 'default', entity: icon.entity } as any),
-                      hass,
-                      e.target as HTMLElement,
-                      config,
-                      icon.entity,
-                      iconModule
-                    );
-                  }, 500); // 500ms hold threshold
+              // Create gesture handlers using centralized service
+              // This prevents double-click bugs and ensures consistent behavior across all modules
+              const handleGestures = this.createGestureHandlers(
+                `${iconModule.id}_${icon.id}`,
+                {
+                  tap_action: iconModule.tap_action,
+                  hold_action: iconModule.hold_action,
+                  double_tap_action: iconModule.double_tap_action,
+                  entity: icon.entity,
+                  module: iconModule,
                 },
-
-                onPointerUp: (e: PointerEvent) => {
-                  e.preventDefault();
-                  // Clear hold timer
-                  if (holdTimeout) {
-                    clearTimeout(holdTimeout);
-                    holdTimeout = null;
-                  }
-
-                  // If this was a hold gesture, don't process as click
-                  if (isHolding) {
-                    isHolding = false;
-                    return;
-                  }
-
-                  const now = Date.now();
-                  const timeSinceLastClick = now - lastClickTime;
-
-                  // Double click detection (within 300ms)
-                  if (timeSinceLastClick < 300 && clickCount === 1) {
-                    // This is a double click
-                    if (clickTimeout) {
-                      clearTimeout(clickTimeout);
-                      clickTimeout = null;
-                    }
-                    clickCount = 0;
-
-                    // Execute double-tap if configured or Default (undefined), but not if explicitly "nothing"
-                    if (
-                      iconModule.double_tap_action === undefined ||
-                      iconModule.double_tap_action?.action !== 'nothing'
-                    ) {
-                      UltraLinkComponent.handleAction(
-                        (iconModule.double_tap_action as any) ||
-                          ({ action: 'default', entity: icon.entity } as any),
-                        hass,
-                        e.target as HTMLElement,
-                        config,
-                        icon.entity,
-                        iconModule
-                      );
-                    }
-                  } else {
-                    // This might be a single click, but wait to see if double click follows
-                    clickCount = 1;
-                    lastClickTime = now;
-
-                    // Clear any existing timeout
-                    if (clickTimeout) {
-                      clearTimeout(clickTimeout);
-                    }
-
-                    // Set timeout for single click (only if double-tap action is NOT configured)
-                    if (
-                      (!iconModule.double_tap_action ||
-                        iconModule.double_tap_action.action === 'nothing') &&
-                      (iconModule.tap_action === undefined ||
-                        iconModule.tap_action.action !== 'nothing')
-                    ) {
-                      // No double-tap configured, execute immediately
-                      UltraLinkComponent.handleAction(
-                        (iconModule.tap_action as any) ||
-                          ({ action: 'default', entity: icon.entity } as any),
-                        hass,
-                        e.target as HTMLElement,
-                        config,
-                        icon.entity,
-                        iconModule
-                      );
-                    } else if (
-                      iconModule.double_tap_action &&
-                      (iconModule.tap_action === undefined ||
-                        iconModule.tap_action.action !== 'nothing')
-                    ) {
-                      // Double-tap is configured, wait before executing single tap
-                      clickTimeout = setTimeout(() => {
-                        if (clickCount === 1) {
-                          UltraLinkComponent.handleAction(
-                            (iconModule.tap_action as any) ||
-                              ({ action: 'default', entity: icon.entity } as any),
-                            hass,
-                            e.target as HTMLElement,
-                            config,
-                            icon.entity,
-                            iconModule
-                          );
-                        }
-                        clickCount = 0;
-                      }, 300); // Wait 300ms to distinguish from double click
-                    }
-                  }
-                },
-
-                onPointerLeave: () => {
-                  // Cancel hold if pointer leaves the element
-                  if (holdTimeout) {
-                    clearTimeout(holdTimeout);
-                    holdTimeout = null;
-                  }
-                  isHolding = false;
-                },
-              };
+                hass,
+                config
+              );
 
               // Get hover effect configuration from module design
               const hoverEffect = (iconModule as any).design?.hover_effect;

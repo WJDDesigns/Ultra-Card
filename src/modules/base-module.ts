@@ -6,6 +6,7 @@ import { GlobalDesignTab } from '../tabs/global-design-tab';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { UltraLinkComponent, TapActionConfig } from '../components/ultra-link';
+import { ucGestureService, GestureConfig } from '../services/uc-gesture-service';
 
 // Module metadata interface
 export interface ModuleMetadata {
@@ -186,6 +187,64 @@ export abstract class BaseUltraModule implements UltraModule {
       config,
       moduleEntity,
       module
+    );
+  }
+
+  /**
+   * Create gesture handlers for module interactions
+   * 
+   * This is a convenience wrapper around ucGestureService.createGestureHandlers
+   * that all modules can use for consistent gesture handling.
+   * 
+   * Prevents double-click bugs by properly handling event propagation and timing.
+   * 
+   * @param elementId - Unique identifier for this element (use module.id or icon.id)
+   * @param gestureConfig - Configuration including tap_action, hold_action, double_tap_action
+   * @param hass - Home Assistant instance
+   * @param cardConfig - Ultra Card configuration
+   * @param excludeSelectors - Additional CSS selectors to exclude from gesture handling
+   * 
+   * @returns Object with onPointerDown, onPointerUp, onPointerLeave, and onPointerCancel handlers
+   * 
+   * @example
+   * ```typescript
+   * const handlers = this.createGestureHandlers(
+   *   module.id,
+   *   {
+   *     tap_action: module.tap_action,
+   *     hold_action: module.hold_action,
+   *     double_tap_action: module.double_tap_action,
+   *     entity: module.entity,
+   *     module: module
+   *   },
+   *   hass,
+   *   config
+   * );
+   * 
+   * return html`
+   *   <div
+   *     @pointerdown=${handlers.onPointerDown}
+   *     @pointerup=${handlers.onPointerUp}
+   *     @pointerleave=${handlers.onPointerLeave}
+   *   >
+   *     Content here
+   *   </div>
+   * `;
+   * ```
+   */
+  protected createGestureHandlers(
+    elementId: string,
+    gestureConfig: GestureConfig,
+    hass: HomeAssistant,
+    cardConfig?: UltraCardConfig,
+    excludeSelectors?: string[]
+  ) {
+    return ucGestureService.createGestureHandlers(
+      elementId,
+      gestureConfig,
+      hass,
+      cardConfig,
+      excludeSelectors
     );
   }
 

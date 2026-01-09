@@ -1087,60 +1087,19 @@ export class UltraImageModule extends BaseUltraModule {
       boxSizing: 'border-box',
     };
 
-    // Gesture handling for actions in preview
-    let clickTimeout: any = null;
-    let holdTimeout: any = null;
-    let isHolding = false;
-    let clickCount = 0;
-    let lastClickTime = 0;
-
-    const handlePointerDown = (e: PointerEvent) => {
-      isHolding = false;
-      holdTimeout = setTimeout(() => {
-        isHolding = true;
-        const holdAction = (imageModule.hold_action as any) || ({ action: 'nothing' } as any);
-        if (holdAction && holdAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(holdAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
-        }
-      }, 500);
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      if (holdTimeout) {
-        clearTimeout(holdTimeout);
-        holdTimeout = null;
-      }
-      if (isHolding) {
-        isHolding = false;
-        return;
-      }
-
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-      if (timeSinceLastClick < 300 && clickCount === 1) {
-        // Double tap
-        if (clickTimeout) {
-          clearTimeout(clickTimeout);
-          clickTimeout = null;
-        }
-        clickCount = 0;
-        const dblAction = (imageModule.double_tap_action as any) || ({ action: 'nothing' } as any);
-        if (dblAction && dblAction.action !== 'nothing') {
-          UltraLinkComponent.handleAction(dblAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
-        }
-      } else {
-        // Possible single tap; wait to confirm not a double
-        clickCount = 1;
-        lastClickTime = now;
-        clickTimeout = setTimeout(() => {
-          clickCount = 0;
-          const tapAction = (imageModule.tap_action as any) || ({ action: 'nothing' } as any);
-          if (tapAction && tapAction.action !== 'nothing') {
-            UltraLinkComponent.handleAction(tapAction, hass, e.target as HTMLElement, config, (imageModule as any).entity, imageModule);
-          }
-        }, 300);
-      }
-    };
+    // Create gesture handlers using centralized service
+    const handlers = this.createGestureHandlers(
+      imageModule.id,
+      {
+        tap_action: imageModule.tap_action,
+        hold_action: imageModule.hold_action,
+        double_tap_action: imageModule.double_tap_action,
+        entity: (imageModule as any).entity,
+        module: imageModule,
+      },
+      hass,
+      config
+    );
 
     // Get hover effect configuration from module design
     const hoverEffect = (imageModule as any).design?.hover_effect;
@@ -1218,8 +1177,9 @@ export class UltraImageModule extends BaseUltraModule {
                     style="${imageStyle}"
                     class="${hoverEffectClass}"
                     data-hover-style="${hoverEffectStyle}"
-                    @pointerdown=${handlePointerDown}
-                    @pointerup=${handlePointerUp}
+                    @pointerdown=${handlers.onPointerDown}
+                    @pointerup=${handlers.onPointerUp}
+                    @pointerleave=${handlers.onPointerLeave}
                   />
                 `
               : html`

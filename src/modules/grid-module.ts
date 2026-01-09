@@ -3383,14 +3383,32 @@ export class UltraGridModule extends BaseUltraModule {
     // Hover class
     const hoverClass = module.enable_hover_effect !== false ? `hover-${module.hover_effect || 'scale'}` : '';
 
+    // Create gesture handlers for this grid entity using centralized service
+    const action = this.resolveAction('tap', entity, module, hass);
+    const holdAction = this.resolveAction('hold', entity, module, hass);
+    const doubleTapAction = this.resolveAction('double_tap', entity, module, hass);
+    
+    const handlers = this.createGestureHandlers(
+      `${module.id}_${entity.id}`,
+      {
+        tap_action: action,
+        hold_action: holdAction,
+        double_tap_action: doubleTapAction,
+        entity: entity.entity,
+        module: module,
+      },
+      hass,
+      undefined
+    );
+
     return html`
       <div
         class="uc-grid-item grid-style-${module.grid_style} ${modeClasses} ${hoverClass}"
         style="${itemStyles}${animationStyles}"
-        @pointerdown=${(e: PointerEvent) => this.handleItemPointerDown(e, entity, module, hass)}
-        @pointerup=${(e: PointerEvent) => this.handleItemPointerUp(e, entity, module, hass)}
-        @pointercancel=${() => this.handleItemPointerCancel(entity)}
-        @pointerleave=${() => this.handleItemPointerCancel(entity)}
+        @pointerdown=${handlers.onPointerDown}
+        @pointerup=${handlers.onPointerUp}
+        @pointercancel=${handlers.onPointerCancel}
+        @pointerleave=${handlers.onPointerLeave}
       >
         ${this.renderItemContent(entity, module, styleConfig, name, state, icon, iconColor, entityPicture)}
       </div>

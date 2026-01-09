@@ -3,6 +3,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { CardModule, UltraCardConfig } from '../types';
 import { UcFormUtils } from '../utils/uc-form-utils';
 import { TapActionConfig } from '../components/ultra-link';
+import { GestureConfig } from '../services/uc-gesture-service';
 export interface ModuleMetadata {
     type: string;
     title: string;
@@ -55,6 +56,54 @@ export declare abstract class BaseUltraModule implements UltraModule {
      * @param module The module instance (required for confirmation dialogs)
      */
     handleModuleAction(action: TapActionConfig | undefined, hass: HomeAssistant, element?: HTMLElement, config?: UltraCardConfig, moduleEntity?: string, module?: CardModule): Promise<void>;
+    /**
+     * Create gesture handlers for module interactions
+     *
+     * This is a convenience wrapper around ucGestureService.createGestureHandlers
+     * that all modules can use for consistent gesture handling.
+     *
+     * Prevents double-click bugs by properly handling event propagation and timing.
+     *
+     * @param elementId - Unique identifier for this element (use module.id or icon.id)
+     * @param gestureConfig - Configuration including tap_action, hold_action, double_tap_action
+     * @param hass - Home Assistant instance
+     * @param cardConfig - Ultra Card configuration
+     * @param excludeSelectors - Additional CSS selectors to exclude from gesture handling
+     *
+     * @returns Object with onPointerDown, onPointerUp, onPointerLeave, and onPointerCancel handlers
+     *
+     * @example
+     * ```typescript
+     * const handlers = this.createGestureHandlers(
+     *   module.id,
+     *   {
+     *     tap_action: module.tap_action,
+     *     hold_action: module.hold_action,
+     *     double_tap_action: module.double_tap_action,
+     *     entity: module.entity,
+     *     module: module
+     *   },
+     *   hass,
+     *   config
+     * );
+     *
+     * return html`
+     *   <div
+     *     @pointerdown=${handlers.onPointerDown}
+     *     @pointerup=${handlers.onPointerUp}
+     *     @pointerleave=${handlers.onPointerLeave}
+     *   >
+     *     Content here
+     *   </div>
+     * `;
+     * ```
+     */
+    protected createGestureHandlers(elementId: string, gestureConfig: GestureConfig, hass: HomeAssistant, cardConfig?: UltraCardConfig, excludeSelectors?: string[]): {
+        onPointerDown: (e: PointerEvent) => void;
+        onPointerUp: (e: PointerEvent) => void;
+        onPointerLeave: () => void;
+        onPointerCancel: () => void;
+    };
     protected renderFormField(label: string, input: TemplateResult, description?: string): TemplateResult;
     protected renderColorPicker(label: string, value: string, onChange: (color: string) => void, description?: string): TemplateResult;
     protected renderNumberInput(label: string, value: number, onChange: (value: number) => void, options?: {

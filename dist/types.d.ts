@@ -2266,6 +2266,26 @@ export interface PresetDefinition {
     integrations?: string[];
     thumbnail?: string;
     layout: LayoutConfig;
+    cardSettings?: {
+        card_background?: string;
+        card_border_radius?: number;
+        card_border_color?: string;
+        card_border_width?: number;
+        card_padding?: number;
+        card_margin?: number;
+        card_overflow?: 'visible' | 'hidden' | 'scroll' | 'auto';
+        card_shadow_enabled?: boolean;
+        card_shadow_color?: string;
+        card_shadow_horizontal?: number;
+        card_shadow_vertical?: number;
+        card_shadow_blur?: number;
+        card_shadow_spread?: number;
+        card_background_image_type?: 'none' | 'upload' | 'entity' | 'url';
+        card_background_image?: string;
+        card_background_size?: string;
+        card_background_repeat?: 'repeat' | 'repeat-x' | 'repeat-y' | 'no-repeat';
+        card_background_position?: string;
+    };
     metadata: {
         created: string;
         updated: string;

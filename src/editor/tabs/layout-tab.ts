@@ -2362,7 +2362,90 @@ export class LayoutTab extends LitElement {
         ...(currentLayout.gap !== undefined && { gap: currentLayout.gap }),
       };
 
-      this._updateLayout(newLayout);
+      // Apply card-level settings if this is a full card preset
+      if (preset.cardSettings) {
+        const cardSettingsUpdates: Record<string, any> = {};
+        
+        // Apply each card setting
+        if (preset.cardSettings.card_background !== undefined) {
+          cardSettingsUpdates.card_background = preset.cardSettings.card_background;
+        }
+        if (preset.cardSettings.card_border_radius !== undefined) {
+          cardSettingsUpdates.card_border_radius = preset.cardSettings.card_border_radius;
+        }
+        if (preset.cardSettings.card_border_color !== undefined) {
+          cardSettingsUpdates.card_border_color = preset.cardSettings.card_border_color;
+        }
+        if (preset.cardSettings.card_border_width !== undefined) {
+          cardSettingsUpdates.card_border_width = preset.cardSettings.card_border_width;
+        }
+        if (preset.cardSettings.card_padding !== undefined) {
+          cardSettingsUpdates.card_padding = preset.cardSettings.card_padding;
+        }
+        if (preset.cardSettings.card_margin !== undefined) {
+          cardSettingsUpdates.card_margin = preset.cardSettings.card_margin;
+        }
+        if (preset.cardSettings.card_overflow !== undefined) {
+          cardSettingsUpdates.card_overflow = preset.cardSettings.card_overflow;
+        }
+        // Card shadow settings
+        if (preset.cardSettings.card_shadow_enabled !== undefined) {
+          cardSettingsUpdates.card_shadow_enabled = preset.cardSettings.card_shadow_enabled;
+        }
+        if (preset.cardSettings.card_shadow_color !== undefined) {
+          cardSettingsUpdates.card_shadow_color = preset.cardSettings.card_shadow_color;
+        }
+        if (preset.cardSettings.card_shadow_horizontal !== undefined) {
+          cardSettingsUpdates.card_shadow_horizontal = preset.cardSettings.card_shadow_horizontal;
+        }
+        if (preset.cardSettings.card_shadow_vertical !== undefined) {
+          cardSettingsUpdates.card_shadow_vertical = preset.cardSettings.card_shadow_vertical;
+        }
+        if (preset.cardSettings.card_shadow_blur !== undefined) {
+          cardSettingsUpdates.card_shadow_blur = preset.cardSettings.card_shadow_blur;
+        }
+        if (preset.cardSettings.card_shadow_spread !== undefined) {
+          cardSettingsUpdates.card_shadow_spread = preset.cardSettings.card_shadow_spread;
+        }
+        // Background image settings
+        if (preset.cardSettings.card_background_image_type !== undefined) {
+          cardSettingsUpdates.card_background_image_type = preset.cardSettings.card_background_image_type;
+        }
+        if (preset.cardSettings.card_background_image !== undefined) {
+          cardSettingsUpdates.card_background_image = preset.cardSettings.card_background_image;
+        }
+        if (preset.cardSettings.card_background_size !== undefined) {
+          cardSettingsUpdates.card_background_size = preset.cardSettings.card_background_size;
+        }
+        if (preset.cardSettings.card_background_repeat !== undefined) {
+          cardSettingsUpdates.card_background_repeat = preset.cardSettings.card_background_repeat;
+        }
+        if (preset.cardSettings.card_background_position !== undefined) {
+          cardSettingsUpdates.card_background_position = preset.cardSettings.card_background_position;
+        }
+
+        // Apply both layout and card settings together
+        if (Object.keys(cardSettingsUpdates).length > 0) {
+          const fullConfig = {
+            ...this.config,
+            ...cardSettingsUpdates,
+            layout: newLayout,
+          };
+          
+          this.dispatchEvent(
+            new CustomEvent('config-changed', {
+              detail: { config: fullConfig },
+              bubbles: true,
+              composed: true,
+            })
+          );
+        } else {
+          this._updateLayout(newLayout);
+        }
+      } else {
+        this._updateLayout(newLayout);
+      }
+
       this._showModuleSelector = false;
       this._selectedLayoutModuleIndex = -1;
       this._selectedNestedChildIndex = -1;
