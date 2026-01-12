@@ -1072,7 +1072,7 @@ export class UltraColorPicker extends LitElement {
                                       class="favorite-swatch ${this._currentValue === favorite.color
                                         ? 'selected'
                                         : ''}"
-                                      style="background-color: ${favorite.color}"
+                                      style="background: ${favorite.color}"
                                       @click=${(e: Event) => this._selectColor(favorite.color, e)}
                                       title="${favorite.name} (${favorite.color})"
                                     >

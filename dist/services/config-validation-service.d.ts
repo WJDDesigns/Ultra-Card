@@ -50,5 +50,12 @@ export declare class ConfigValidationService {
      * Fixes duplicate module IDs by generating new ones
      */
     fixDuplicateModuleIds(config: UltraCardConfig): UltraCardConfig;
+    /**
+     * Migrate flat design structures to responsive format.
+     * Converts old `design: { color: '...', ... }` format to include a `base` key
+     * while PRESERVING root-level properties for backwards compatibility.
+     * This ensures both `design.border_radius` AND `design.base.border_radius` work.
+     */
+    private _migrateDesignToResponsive;
 }
 export declare const configValidationService: ConfigValidationService;

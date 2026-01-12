@@ -1,4 +1,4 @@
-import { UltraCardConfig, CardModule, CardRow, CardColumn } from '../types';
+import { UltraCardConfig, CardModule, CardRow, CardColumn, isResponsiveDesign, ResponsiveDesignProperties, SharedDesignProperties } from '../types';
 import { getModuleRegistry } from '../modules/module-registry';
 
 export interface ValidationResult {
@@ -43,6 +43,9 @@ export class ConfigValidationService {
         warnings: [],
       };
     }
+
+    // Migrate flat design structures to responsive format
+    this._migrateDesignToResponsive(correctedConfig);
 
     // Validate basic structure
     if (!correctedConfig.type) {
@@ -353,6 +356,47 @@ export class ConfigValidationService {
     }
 
     return correctedConfig;
+  }
+
+  /**
+   * Migrate flat design structures to responsive format.
+   * Converts old `design: { color: '...', ... }` format to include a `base` key
+   * while PRESERVING root-level properties for backwards compatibility.
+   * This ensures both `design.border_radius` AND `design.base.border_radius` work.
+   */
+  private _migrateDesignToResponsive(config: UltraCardConfig): void {
+    if (!config.layout?.rows) return;
+
+    for (const row of config.layout.rows) {
+      // Migrate row design - if it's a flat structure (no base/device keys), add base
+      // while keeping root-level properties for backwards compatibility
+      if (row.design && !isResponsiveDesign(row.design)) {
+        const flatDesign = row.design as SharedDesignProperties;
+        // Keep flat properties at root AND copy to base for responsive support
+        (row as any).design = { ...flatDesign, base: { ...flatDesign } };
+      }
+
+      // Migrate columns
+      if (row.columns) {
+        for (const column of row.columns) {
+          if (column.design && !isResponsiveDesign(column.design)) {
+            const flatDesign = column.design as SharedDesignProperties;
+            (column as any).design = { ...flatDesign, base: { ...flatDesign } };
+          }
+
+          // Migrate modules
+          if (column.modules) {
+            for (const module of column.modules) {
+              const moduleDesign = (module as any).design;
+              if (moduleDesign && !isResponsiveDesign(moduleDesign)) {
+                // Keep flat properties at root AND copy to base
+                (module as any).design = { ...moduleDesign, base: { ...moduleDesign } };
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

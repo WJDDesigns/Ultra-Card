@@ -54,10 +54,8 @@ export class UltraTextModule extends BaseUltraModule {
       // Hover configuration
       enable_hover_effect: true,
       hover_background_color: 'var(--divider-color)',
-      // Default styling for new text modules - no hardcoded font_size to allow Global Design tab control
-      // alignment: undefined, // No default alignment to allow Global Design tab control
-      font_weight: '700',
-      text_transform: 'uppercase',
+      // Size configuration - default in General tab (not Design tab)
+      text_size: 16,
       // No default design overrides; allow layout containers and design tab to control
       design: {},
       // Logic (visibility) defaults
@@ -78,6 +76,134 @@ export class UltraTextModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
+        <!-- Module-Wide Size Controls -->
+        <div class="settings-section" style="margin-bottom: 32px;">
+          <div class="section-title">SIZE CONTROLS</div>
+          <div class="section-description" style="margin-bottom: 16px;">
+            Control the default sizes for this module. Design tab overrides these settings.
+          </div>
+          
+          <!-- Text Size Control -->
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Text Size (${textModule.text_size || 16}px)</div>
+            <div class="field-description">Default size for text content</div>
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+              <input
+                type="range"
+                class="gap-slider"
+                min="10"
+                max="48"
+                step="1"
+                .value="${String(textModule.text_size || 16)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  updateModule({ text_size: Number(target.value) });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="10"
+                max="100"
+                step="1"
+                .value="${String(textModule.text_size || 16)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    updateModule({ text_size: value });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const target = e.target as HTMLInputElement;
+                    const currentValue = Number(target.value) || 16;
+                    const increment = e.key === 'ArrowUp' ? 1 : -1;
+                    const newValue = Math.max(10, Math.min(100, currentValue + increment));
+                    updateModule({ text_size: newValue });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => {
+                  updateModule({ text_size: undefined });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '16')}"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Icon Size Control (only shown when icon is configured) -->
+          ${textModule.icon && textModule.icon.trim() !== ''
+            ? html`
+                <div class="field-container" style="margin-bottom: 16px;">
+                  <div class="field-title">Icon Size (${textModule.icon_size || 24}px)</div>
+                  <div class="field-description">Size of the icon</div>
+                  <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+                    <input
+                      type="range"
+                      class="gap-slider"
+                      min="12"
+                      max="64"
+                      step="1"
+                      .value="${String(textModule.icon_size || 24)}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        updateModule({ icon_size: Number(target.value) });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      class="gap-input"
+                      min="12"
+                      max="100"
+                      step="1"
+                      .value="${String(textModule.icon_size || 24)}"
+                      @input=${(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const value = Number(target.value);
+                        if (!isNaN(value)) {
+                          updateModule({ icon_size: value });
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          const target = e.target as HTMLInputElement;
+                          const currentValue = Number(target.value) || 24;
+                          const increment = e.key === 'ArrowUp' ? 1 : -1;
+                          const newValue = Math.max(12, Math.min(100, currentValue + increment));
+                          updateModule({ icon_size: newValue });
+                          setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        }
+                      }}
+                    />
+                    <button
+                      class="reset-btn"
+                      @click=${() => {
+                        updateModule({ icon_size: undefined });
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '24')}"
+                    >
+                      <ha-icon icon="mdi:refresh"></ha-icon>
+                    </button>
+                  </div>
+                </div>
+              `
+            : ''}
+        </div>
+
         <!-- Content Configuration -->
         <!-- Content Configuration -->
         <div
@@ -540,6 +666,7 @@ export class UltraTextModule extends BaseUltraModule {
 
     const textStyles = {
       fontSize: (() => {
+        // Priority 1: Design tab font_size (overrides everything for backwards compatibility)
         if (
           designProperties.font_size &&
           typeof designProperties.font_size === 'string' &&
@@ -551,8 +678,11 @@ export class UltraTextModule extends BaseUltraModule {
           }
           return this.addPixelUnit(designProperties.font_size) || designProperties.font_size;
         }
+        // Priority 2: Legacy module font_size
         if (moduleWithDesign.font_size !== undefined) return `${moduleWithDesign.font_size}px`;
-        // Default font size for text modules when no design or module font_size is set - use clamp for responsive scaling
+        // Priority 3: General tab text_size (new feature)
+        if (textModule.text_size !== undefined) return `${textModule.text_size}px`;
+        // Priority 4: Default font size for text modules - use clamp for responsive scaling
         return 'clamp(18px, 4vw, 26px)';
       })(),
       fontFamily: designProperties.font_family || moduleWithDesign.font_family || 'inherit',
@@ -606,7 +736,7 @@ export class UltraTextModule extends BaseUltraModule {
     const iconElement = textModule.icon
       ? html`<ha-icon
           icon="${textModule.icon}"
-          style="color: ${textModule.icon_color || 'var(--primary-color)'};"
+          style="color: ${textModule.icon_color || 'var(--primary-color)'}; --mdc-icon-size: ${textModule.icon_size || 24}px;"
         ></ha-icon>`
       : '';
 

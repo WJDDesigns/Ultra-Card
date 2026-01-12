@@ -12,6 +12,8 @@ class UcFavoriteColorsService {
 
   private _favorites: FavoriteColor[] = [];
   private _listeners: Set<(favorites: FavoriteColor[]) => void> = new Set();
+  private _instanceId = `inst-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private _isBroadcasting = false;
 
   constructor() {
     this._loadFromStorage();
@@ -303,8 +305,13 @@ class UcFavoriteColorsService {
       }
     });
 
-    // Listen for custom events from same tab
-    window.addEventListener(UcFavoriteColorsService.SYNC_EVENT, () => {
+    // Listen for custom events from same tab (other Ultra Card instances)
+    window.addEventListener(UcFavoriteColorsService.SYNC_EVENT, (e: Event) => {
+      const customEvent = e as CustomEvent;
+      // Skip if this is our own broadcast to prevent reload/filter loop
+      if (customEvent.detail?.sourceInstance === this._instanceId || this._isBroadcasting) {
+        return;
+      }
       this._loadFromStorage();
       this._notifyListeners();
     });
@@ -314,7 +321,16 @@ class UcFavoriteColorsService {
    * Broadcast change to other Ultra Card instances in same tab
    */
   private _broadcastChange(): void {
-    window.dispatchEvent(new CustomEvent(UcFavoriteColorsService.SYNC_EVENT));
+    this._isBroadcasting = true;
+    window.dispatchEvent(
+      new CustomEvent(UcFavoriteColorsService.SYNC_EVENT, {
+        detail: { sourceInstance: this._instanceId },
+      })
+    );
+    // Reset flag after event propagation completes
+    setTimeout(() => {
+      this._isBroadcasting = false;
+    }, 0);
   }
 
   /**
@@ -362,31 +378,53 @@ class UcFavoriteColorsService {
 
   /**
    * Validate if a color string is valid
+   * NOTE: This validation is intentionally lenient to allow for various CSS color formats
    */
   private _isValidColor(color: string): boolean {
     if (!color || typeof color !== 'string') return false;
 
+    const trimmedColor = color.trim();
+    if (trimmedColor.length === 0) return false;
+
     // Check for CSS gradient functions (linear-gradient, radial-gradient, etc.)
-    if (color.toLowerCase().includes('gradient')) {
-      // Basic validation for gradient syntax - must start with gradient type and have parentheses
+    if (trimmedColor.toLowerCase().includes('gradient')) {
+      // Basic validation for gradient syntax - contains gradient type and parentheses
       const gradientPattern =
-        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\(.*\)$/i;
-      return gradientPattern.test(color.trim());
+        /^(linear-gradient|radial-gradient|conic-gradient|repeating-linear-gradient|repeating-radial-gradient)\s*\(.*\)\s*$/i;
+      return gradientPattern.test(trimmedColor);
     }
 
-    // Check for common CSS color formats
+    // Check for CSS variables - very lenient pattern
+    if (trimmedColor.startsWith('var(')) {
+      return trimmedColor.includes('--') && trimmedColor.endsWith(')');
+    }
+
+    // Check for common CSS color formats (lenient patterns)
     const colorFormats = [
-      /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, // Hex
-      /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/, // RGB
-      /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/, // RGBA
-      /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/, // HSL
-      /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/, // HSLA
-      /^var\(--[\w-]+\)$/, // CSS variables
+      /^#([A-Fa-f0-9]{3,8})$/, // Hex (3, 4, 6, or 8 chars including alpha)
+      /^rgb\s*\(/i, // RGB (any format)
+      /^rgba\s*\(/i, // RGBA (any format)
+      /^hsl\s*\(/i, // HSL (any format)
+      /^hsla\s*\(/i, // HSLA (any format)
+      /^hwb\s*\(/i, // HWB
+      /^lab\s*\(/i, // LAB
+      /^lch\s*\(/i, // LCH
+      /^oklch\s*\(/i, // OKLCH
+      /^oklab\s*\(/i, // OKLAB
+      /^color\s*\(/i, // color() function
     ];
 
-    // Check named colors
-    const namedColors = [
+    if (colorFormats.some(format => format.test(trimmedColor))) {
+      return true;
+    }
+
+    // Check named colors (extended list + any single word could be a named color)
+    const commonNamedColors = [
       'transparent',
+      'currentcolor',
+      'inherit',
+      'initial',
+      'unset',
       'red',
       'blue',
       'green',
@@ -409,11 +447,35 @@ class UcFavoriteColorsService {
       'olive',
       'aqua',
       'fuchsia',
+      'coral',
+      'crimson',
+      'gold',
+      'indigo',
+      'ivory',
+      'khaki',
+      'lavender',
+      'plum',
+      'salmon',
+      'sienna',
+      'tan',
+      'tomato',
+      'turquoise',
+      'violet',
+      'wheat',
     ];
 
-    return (
-      colorFormats.some(format => format.test(color)) || namedColors.includes(color.toLowerCase())
-    );
+    // Accept known named colors, or any simple alphanumeric string (could be a CSS color name)
+    const lowerColor = trimmedColor.toLowerCase();
+    if (commonNamedColors.includes(lowerColor)) {
+      return true;
+    }
+
+    // Accept any simple word that could be a CSS color name (no special chars except hyphen)
+    if (/^[a-zA-Z][a-zA-Z0-9-]*$/.test(trimmedColor)) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

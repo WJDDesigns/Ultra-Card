@@ -1,10 +1,11 @@
 import { html, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { CardModule, UltraCardConfig } from '../types';
+import { CardModule, UltraCardConfig, DeviceBreakpoint } from '../types';
 import { getModuleRegistry } from '../modules';
 import { logicService } from './logic-service';
 import { UcHoverEffectsService } from './uc-hover-effects-service';
 import { localize } from '../localize/localize';
+import { responsiveDesignService } from './uc-responsive-design-service';
 
 /**
  * Centralized Module Preview Service
@@ -26,6 +27,59 @@ import { localize } from '../localize/localize';
  * - Logic visibility evaluation
  */
 class UcModulePreviewService {
+  // Current preview breakpoint for simulating device widths
+  private _previewBreakpoint: DeviceBreakpoint = 'desktop';
+
+  /**
+   * Set the preview breakpoint for simulating different device widths.
+   * When set, modules will render with the effective design properties for that breakpoint.
+   */
+  setPreviewBreakpoint(breakpoint: DeviceBreakpoint): void {
+    this._previewBreakpoint = breakpoint;
+  }
+
+  /**
+   * Get the current preview breakpoint
+   */
+  getPreviewBreakpoint(): DeviceBreakpoint {
+    return this._previewBreakpoint;
+  }
+
+  /**
+   * Create a modified module with design properties merged for the preview breakpoint.
+   * This allows modules to render with the correct device-specific styles in Live Preview
+   * without relying on CSS media queries (which check viewport, not container width).
+   */
+  private _applyPreviewBreakpointDesign(module: CardModule): CardModule {
+    const moduleWithDesign = module as any;
+    
+    // If no design object, return as-is
+    if (!moduleWithDesign.design) {
+      return module;
+    }
+
+    // Get effective design for the current preview breakpoint
+    // This merges base + device-specific properties correctly for ALL breakpoints including desktop
+    const effectiveDesign = responsiveDesignService.getEffectiveDesign(
+      moduleWithDesign.design,
+      this._previewBreakpoint
+    );
+
+    // Create a new module object with the merged design properties
+    // This ensures modules render with breakpoint-specific values
+    return {
+      ...module,
+      design: {
+        ...moduleWithDesign.design,
+        // Spread effective design properties at top level for direct access
+        ...effectiveDesign,
+        // Keep the responsive structure for reference but mark effective values
+        _effectiveBreakpoint: this._previewBreakpoint,
+        _effectiveDesign: effectiveDesign,
+      },
+    } as CardModule;
+  }
+
   /**
    * Render a module in isolation with full card container wrapping
    * Used by: Layout tab popup Live Preview
@@ -195,7 +249,14 @@ class UcModulePreviewService {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler) {
-      return moduleHandler.renderPreview(module, hass, config, previewContext);
+      // In 'live' preview context, apply the preview breakpoint design
+      // This merges device-specific design properties so modules render correctly
+      // without relying on CSS media queries (which check viewport, not container)
+      const moduleToRender = previewContext === 'live' 
+        ? this._applyPreviewBreakpointDesign(module)
+        : module;
+      
+      return moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
     }
 
     // Fallback for unknown module types

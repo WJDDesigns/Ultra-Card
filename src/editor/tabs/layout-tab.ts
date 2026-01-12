@@ -13,7 +13,11 @@ import {
   BarModule,
   DisplayCondition,
   LayoutConfig,
+  DeviceBreakpoint,
 } from '../../types';
+import '../../components/uc-breakpoint-preview';
+import { PREVIEW_WIDTHS } from '../../components/uc-breakpoint-preview';
+import { responsiveDesignService } from '../../services/uc-responsive-design-service';
 import '../../components/ultra-color-picker';
 import { getModuleRegistry } from '../../modules/module-registry';
 import { BaseUltraModule } from '../../modules/base-module';
@@ -286,6 +290,9 @@ export class LayoutTab extends LitElement {
   private _shouldRestoreScroll = false;
 
   @state() private _entityMappingOpen = false;
+
+  // Breakpoint preview state - allows simulating different device widths in preview areas
+  @state() private _previewBreakpoint: DeviceBreakpoint = 'desktop';
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -1874,8 +1881,7 @@ export class LayoutTab extends LitElement {
           id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: 'text',
           text: localize('editor.modules.sample_text', lang, 'Sample Text'),
-          font_size: 16,
-          color: 'var(--primary-text-color)',
+          text_size: 16,
         } as TextModule;
         // Ensure no default title is set
         delete (newModule as any).name;
@@ -1993,8 +1999,7 @@ export class LayoutTab extends LitElement {
           id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: 'text',
           text: 'Unknown Module Type',
-          font_size: 16,
-          color: 'var(--primary-text-color)',
+          text_size: 16,
         } as TextModule;
         break;
     }
@@ -3927,6 +3932,78 @@ export class LayoutTab extends LitElement {
     };
 
     const moduleUpdates: any = {};
+    
+    // RESPONSIVE DESIGN: Handle when updates.design contains responsive device overrides
+    // This is sent from GlobalDesignTab when responsive mode is enabled
+    if ((updates as any).hasOwnProperty('design') && (updates as any).design) {
+      const incomingDesign = (updates as any).design;
+      const currentModule = this._getModuleForDesignUpdate();
+      const existingDesign = (currentModule?.design || {}) as Record<string, any>;
+      
+      // Check if incoming design has responsive device keys (mobile, tablet, laptop, desktop, base)
+      const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile'];
+      const hasResponsiveStructure = responsiveKeys.some(key => incomingDesign.hasOwnProperty(key));
+      
+      if (hasResponsiveStructure) {
+        // Deep merge responsive design structure
+        const mergedDesign: Record<string, any> = { ...existingDesign };
+        
+        for (const [dKey, dVal] of Object.entries(incomingDesign)) {
+          if (dVal === undefined) {
+            delete mergedDesign[dKey];
+          } else if (responsiveKeys.includes(dKey) && typeof dVal === 'object' && dVal !== null) {
+            // For device-specific objects, deep merge them
+            mergedDesign[dKey] = {
+              ...(mergedDesign[dKey] || {}),
+              ...dVal,
+            };
+            // Clean up undefined values within device-specific object
+            for (const [propKey, propVal] of Object.entries(mergedDesign[dKey])) {
+              if (propVal === undefined) {
+                delete mergedDesign[dKey][propKey];
+              }
+            }
+            // Remove device key if it's empty after cleanup
+            if (Object.keys(mergedDesign[dKey]).length === 0) {
+              delete mergedDesign[dKey];
+            }
+          } else {
+            // Regular property merge
+            mergedDesign[dKey] = dVal;
+          }
+        }
+        
+        moduleUpdates.design = mergedDesign;
+        
+        // For responsive updates, also ensure base/desktop properties are mirrored to top-level
+        // for backward compatibility with modules that read from top-level properties
+        const baseDesign = mergedDesign.base || mergedDesign.desktop || {};
+        for (const [key, value] of Object.entries(baseDesign)) {
+          if (value !== undefined && !['base', 'desktop', 'laptop', 'tablet', 'mobile'].includes(key)) {
+            moduleUpdates[key] = value;
+          }
+        }
+      } else {
+        // Regular design object merge (no responsive structure)
+        const mergedDesign: Record<string, any> = { ...existingDesign };
+        for (const [dKey, dVal] of Object.entries(incomingDesign)) {
+          if (dVal === undefined) {
+            delete mergedDesign[dKey];
+          } else {
+            mergedDesign[dKey] = dVal;
+          }
+        }
+        moduleUpdates.design = Object.keys(mergedDesign).length > 0 ? mergedDesign : undefined;
+      }
+      
+      // Apply the module updates and return early
+      if (isChildEdit) {
+        this._updateLayoutChildModule(moduleUpdates);
+      } else {
+        this._updateModule(moduleUpdates);
+      }
+      return;
+    }
 
     // Convert design properties back to module properties (including undefined for reset)
     if (updates.hasOwnProperty('color')) moduleUpdates.color = updates.color;
@@ -3969,6 +4046,14 @@ export class LayoutTab extends LitElement {
       moduleUpdates.design.background_color = updates.background_color;
       // Also set top-level for immediate preview compatibility
       moduleUpdates.background_color = updates.background_color;
+      // CRITICAL: If design.base exists (from responsive mode), also update base.background_color
+      // Otherwise the base value takes precedence in getEffectiveDesign merge
+      if (moduleUpdates.design.base) {
+        moduleUpdates.design.base = { 
+          ...moduleUpdates.design.base, 
+          background_color: updates.background_color 
+        };
+      }
     }
     if (updates.hasOwnProperty('background_image'))
       moduleUpdates.background_image = updates.background_image;
@@ -4480,6 +4565,29 @@ export class LayoutTab extends LitElement {
             moduleUpdates.border = borderObj;
           }
         }
+      }
+    }
+
+    // CRITICAL: Sync design properties to design.base when base exists
+    // This ensures non-responsive mode edits properly override responsive mode values
+    // The responsive design service uses: top-level → base → device-specific (later wins)
+    // So if base has values, they need to be updated when user edits in non-responsive mode
+    if (moduleUpdates.design && typeof moduleUpdates.design === 'object' && moduleUpdates.design.base) {
+      const responsiveKeys = new Set(['base', 'desktop', 'laptop', 'tablet', 'mobile', '_effectiveBreakpoint', '_effectiveDesign']);
+      const baseUpdates: Record<string, any> = {};
+      
+      // Find all top-level design properties (excluding responsive keys) and sync to base
+      for (const [key, value] of Object.entries(moduleUpdates.design)) {
+        if (!responsiveKeys.has(key) && value !== undefined) {
+          baseUpdates[key] = value;
+        }
+      }
+      
+      if (Object.keys(baseUpdates).length > 0) {
+        moduleUpdates.design.base = {
+          ...moduleUpdates.design.base,
+          ...baseUpdates,
+        };
       }
     }
 
@@ -5320,18 +5428,31 @@ export class LayoutTab extends LitElement {
               ${localize('editor.layout.live_preview', lang, 'Live Preview')}
             </span>
           </div>
-          <ha-icon
-            class="preview-caret"
-            icon="${this._isCurrentModulePreviewCollapsed()
-              ? 'mdi:chevron-down'
-              : 'mdi:chevron-up'}"
-          ></ha-icon>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <uc-breakpoint-preview
+              .selectedBreakpoint=${this._previewBreakpoint}
+              @breakpoint-changed=${(e: CustomEvent) => {
+                e.stopPropagation();
+                this._handlePreviewBreakpointChange(e);
+              }}
+              @click=${(e: Event) => e.stopPropagation()}
+              @touchend=${(e: Event) => e.stopPropagation()}
+            ></uc-breakpoint-preview>
+            <ha-icon
+              class="preview-caret"
+              icon="${this._isCurrentModulePreviewCollapsed()
+                ? 'mdi:chevron-down'
+                : 'mdi:chevron-up'}"
+            ></ha-icon>
+          </div>
         </div>
         <div
           class="preview-content"
           style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
         >
-          ${previewContent}
+          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+            ${previewContent}
+          </div>
         </div>
       </div>
     `;
@@ -5339,6 +5460,54 @@ export class LayoutTab extends LitElement {
 
   private _togglePreviewPin(): void {
     this._isPreviewPinned = !this._isPreviewPinned;
+  }
+
+  private _handlePreviewBreakpointChange(e: CustomEvent): void {
+    const { breakpoint, width } = e.detail;
+    this._previewBreakpoint = breakpoint;
+    
+    // Update the module preview service so it applies breakpoint-specific design properties
+    ucModulePreviewService.setPreviewBreakpoint(breakpoint);
+    
+    // Trigger re-render to update all preview areas with new breakpoint styles
+    this.requestUpdate();
+    
+    // Dispatch event for parent editor
+    this.dispatchEvent(new CustomEvent('preview-breakpoint-changed', {
+      detail: { breakpoint, width },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  /**
+   * Get the max-width style for current preview breakpoint
+   */
+  private _getPreviewBreakpointStyle(): string {
+    const width = PREVIEW_WIDTHS[this._previewBreakpoint];
+    if (width === null) {
+      return '';
+    }
+    return `max-width: ${width}px; margin: 0 auto;`;
+  }
+
+  /**
+   * Get effective design properties for the current preview breakpoint.
+   * Merges base design with device-specific overrides for rows, columns, etc.
+   */
+  private _getEffectiveDesign(design: any): any {
+    if (!design) return {};
+    
+    // Get effective design for the current preview breakpoint
+    // This merges base + device-specific properties correctly for all breakpoints
+    const effectiveDesign = responsiveDesignService.getEffectiveDesign(
+      design,
+      this._previewBreakpoint
+    );
+    
+    // For backward compatibility, merge with original design but let effective design win
+    // This ensures top-level properties are available while breakpoint-specific values take precedence
+    return { ...design, ...effectiveDesign };
   }
 
   private _renderSingleModule(
@@ -11754,8 +11923,8 @@ export class LayoutTab extends LitElement {
     // Get row animation data for preview
     const rowAnimationData = this._getRowPreviewAnimationData(row);
 
-    // Include background image using same resolution as main card
-    const rd: any = row.design || {};
+    // Get effective design for current preview breakpoint (merges base + device-specific)
+    const rd: any = this._getEffectiveDesign(row.design);
     const rowBgImageCSS = this._resolvePreviewBackgroundImageCSS(rd);
 
     // Check if background filter is present for pseudo-element approach
@@ -11767,7 +11936,7 @@ export class LayoutTab extends LitElement {
         class="row-preview-content ${filterClass}"
         style="background: ${hasBackgroundFilter
           ? 'transparent'
-          : row.design?.background_color ||
+          : rd.background_color ||
             row.background_color ||
             'var(--ha-card-background, var(--card-background-color, #fff))'}; 
         background-image: ${hasBackgroundFilter ? 'none' : rowBgImageCSS}; 
@@ -11808,25 +11977,38 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
-          <ha-icon
-            class="preview-caret"
-            icon="${this._isRowColumnPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
-          ></ha-icon>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <uc-breakpoint-preview
+              .selectedBreakpoint=${this._previewBreakpoint}
+              @breakpoint-changed=${(e: CustomEvent) => {
+                e.stopPropagation();
+                this._handlePreviewBreakpointChange(e);
+              }}
+              @click=${(e: Event) => e.stopPropagation()}
+              @touchend=${(e: Event) => e.stopPropagation()}
+            ></uc-breakpoint-preview>
+            <ha-icon
+              class="preview-caret"
+              icon="${this._isRowColumnPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+            ></ha-icon>
+          </div>
         </div>
         <div
           class="preview-content"
           style="display: ${this._isRowColumnPreviewCollapsed ? 'none' : 'block'};"
         >
-          ${rowAnimationData.class
-            ? html`
-                <div
-                  class="${rowAnimationData.class}"
-                  style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${rowAnimationData.duration};"
-                >
-                  ${rowContent}
-                </div>
-              `
-            : rowContent}
+          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+            ${rowAnimationData.class
+              ? html`
+                  <div
+                    class="${rowAnimationData.class}"
+                    style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${rowAnimationData.duration};"
+                  >
+                    ${rowContent}
+                  </div>
+                `
+              : rowContent}
+          </div>
         </div>
       </div>
     `;
@@ -11836,8 +12018,8 @@ export class LayoutTab extends LitElement {
     // Get column animation data for preview
     const columnAnimationData = this._getColumnPreviewAnimationData(column);
 
-    // Resolve background image exactly like main card
-    const d: any = column.design || {};
+    // Get effective design for current preview breakpoint (merges base + device-specific)
+    const d: any = this._getEffectiveDesign(column.design);
     const bgImageCSS = this._resolvePreviewBackgroundImageCSS(d);
 
     // Check if background filter is present for pseudo-element approach
@@ -11849,7 +12031,7 @@ export class LayoutTab extends LitElement {
         class="column-preview-content ${filterClass}"
         style="background: ${hasBackgroundFilter
           ? 'transparent'
-          : column.design?.background_color ||
+          : d.background_color ||
             column.background_color ||
             'var(--ha-card-background, var(--card-background-color, #fff))'}; 
         background-image: ${hasBackgroundFilter ? 'none' : bgImageCSS}; 
@@ -11898,25 +12080,38 @@ export class LayoutTab extends LitElement {
           title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
         >
           <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
-          <ha-icon
-            class="preview-caret"
-            icon="${this._isRowColumnPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
-          ></ha-icon>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <uc-breakpoint-preview
+              .selectedBreakpoint=${this._previewBreakpoint}
+              @breakpoint-changed=${(e: CustomEvent) => {
+                e.stopPropagation();
+                this._handlePreviewBreakpointChange(e);
+              }}
+              @click=${(e: Event) => e.stopPropagation()}
+              @touchend=${(e: Event) => e.stopPropagation()}
+            ></uc-breakpoint-preview>
+            <ha-icon
+              class="preview-caret"
+              icon="${this._isRowColumnPreviewCollapsed ? 'mdi:chevron-down' : 'mdi:chevron-up'}"
+            ></ha-icon>
+          </div>
         </div>
         <div
           class="preview-content"
           style="display: ${this._isRowColumnPreviewCollapsed ? 'none' : 'block'};"
         >
-          ${columnAnimationData.class
-            ? html`
-                <div
-                  class="${columnAnimationData.class}"
-                  style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${columnAnimationData.duration};"
-                >
-                  ${columnContent}
-                </div>
-              `
-            : columnContent}
+          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+            ${columnAnimationData.class
+              ? html`
+                  <div
+                    class="${columnAnimationData.class}"
+                    style="display: inherit; width: inherit; height: inherit; flex: inherit; animation-duration: ${columnAnimationData.duration};"
+                  >
+                    ${columnContent}
+                  </div>
+                `
+              : columnContent}
+          </div>
         </div>
       </div>
     `;
@@ -12228,18 +12423,31 @@ export class LayoutTab extends LitElement {
               ${localize('editor.layout.live_preview', lang, 'Live Preview')}
             </span>
           </div>
-          <ha-icon
-            class="preview-caret"
-            icon="${this._isCurrentModulePreviewCollapsed()
-              ? 'mdi:chevron-down'
-              : 'mdi:chevron-up'}"
-          ></ha-icon>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <uc-breakpoint-preview
+              .selectedBreakpoint=${this._previewBreakpoint}
+              @breakpoint-changed=${(e: CustomEvent) => {
+                e.stopPropagation();
+                this._handlePreviewBreakpointChange(e);
+              }}
+              @click=${(e: Event) => e.stopPropagation()}
+              @touchend=${(e: Event) => e.stopPropagation()}
+            ></uc-breakpoint-preview>
+            <ha-icon
+              class="preview-caret"
+              icon="${this._isCurrentModulePreviewCollapsed()
+                ? 'mdi:chevron-down'
+                : 'mdi:chevron-up'}"
+            ></ha-icon>
+          </div>
         </div>
         <div
           class="preview-content"
           style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
         >
-          ${previewContent}
+          <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+            ${previewContent}
+          </div>
         </div>
       </div>
     `;
@@ -12943,18 +13151,31 @@ export class LayoutTab extends LitElement {
               title="${localize('editor.layout.toggle_preview', lang, 'Toggle preview')}"
             >
               <span>${localize('editor.layout.live_preview', lang, 'Live Preview')}</span>
-              <ha-icon
-                class="preview-caret"
-                icon="${this._isCurrentModulePreviewCollapsed()
-                  ? 'mdi:chevron-down'
-                  : 'mdi:chevron-up'}"
-              ></ha-icon>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <uc-breakpoint-preview
+                  .selectedBreakpoint=${this._previewBreakpoint}
+                  @breakpoint-changed=${(e: CustomEvent) => {
+                    e.stopPropagation();
+                    this._handlePreviewBreakpointChange(e);
+                  }}
+                  @click=${(e: Event) => e.stopPropagation()}
+                  @touchend=${(e: Event) => e.stopPropagation()}
+                ></uc-breakpoint-preview>
+                <ha-icon
+                  class="preview-caret"
+                  icon="${this._isCurrentModulePreviewCollapsed()
+                    ? 'mdi:chevron-down'
+                    : 'mdi:chevron-up'}"
+                ></ha-icon>
+              </div>
             </div>
             <div
               class="preview-content"
               style="display: ${this._isCurrentModulePreviewCollapsed() ? 'none' : 'block'};"
             >
-              ${this._renderSingleModuleWithAnimation(childModule)}
+              <div class="preview-breakpoint-container ${this._previewBreakpoint}" style="${this._getPreviewBreakpointStyle()}">
+                ${this._renderSingleModuleWithAnimation(childModule)}
+              </div>
             </div>
           </div>
 
@@ -13371,7 +13592,14 @@ export class LayoutTab extends LitElement {
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
+        .responsiveDesign=${(module as any).design}
         .onUpdate=${updateChildModuleDesign}
+        @device-changed=${(e: CustomEvent) => {
+          // Sync Live Preview breakpoint with the device selector in Design tab
+          this._previewBreakpoint = e.detail.device;
+          ucModulePreviewService.setPreviewBreakpoint(e.detail.device);
+          this.requestUpdate();
+        }}
       ></ultra-global-design-tab>
     `;
 
@@ -14126,11 +14354,48 @@ export class LayoutTab extends LitElement {
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
+        .responsiveDesign=${row.design}
         @design-changed=${(e: CustomEvent) => {
           const updates = e.detail;
-          // Update the row with design properties
+          // Check if updates contains responsive design structure
+          if (updates.design) {
+            // Handle responsive design updates - deep merge device-specific properties
+            const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile'];
+            const incomingDesign = updates.design;
+            const hasResponsiveStructure = responsiveKeys.some(key => incomingDesign.hasOwnProperty(key));
+            
+            if (hasResponsiveStructure) {
+              const existingDesign = (row.design || {}) as Record<string, any>;
+              const mergedDesign: Record<string, any> = { ...existingDesign };
+              
+              for (const [key, value] of Object.entries(incomingDesign)) {
+                if (value === undefined) {
+                  delete mergedDesign[key];
+                } else if (responsiveKeys.includes(key) && typeof value === 'object' && value !== null) {
+                  // Deep merge device-specific objects
+                  mergedDesign[key] = { ...(mergedDesign[key] || {}), ...(value as object) };
+                  // Clean up undefined values
+                  for (const [propKey, propVal] of Object.entries(mergedDesign[key])) {
+                    if (propVal === undefined) delete mergedDesign[key][propKey];
+                  }
+                  if (Object.keys(mergedDesign[key]).length === 0) delete mergedDesign[key];
+                } else {
+                  mergedDesign[key] = value;
+                }
+              }
+              this._updateRow({ design: mergedDesign });
+              return;
+            }
+          }
+          // Standard update - merge flat properties
           const updatedDesign = { ...row.design, ...updates };
           this._updateRow({ design: updatedDesign });
+        }}
+        @device-changed=${(e: CustomEvent) => {
+          // Sync Live Preview breakpoint with the device selector in Design tab
+          this._previewBreakpoint = e.detail.device;
+          ucModulePreviewService.setPreviewBreakpoint(e.detail.device);
+          this.requestUpdate();
         }}
       ></ultra-global-design-tab>
     `;
@@ -14298,11 +14563,48 @@ export class LayoutTab extends LitElement {
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
+        .responsiveDesign=${column.design}
         @design-changed=${(e: CustomEvent) => {
           const updates = e.detail;
-          // Update the column with design properties
+          // Check if updates contains responsive design structure
+          if (updates.design) {
+            // Handle responsive design updates - deep merge device-specific properties
+            const responsiveKeys = ['base', 'desktop', 'laptop', 'tablet', 'mobile'];
+            const incomingDesign = updates.design;
+            const hasResponsiveStructure = responsiveKeys.some(key => incomingDesign.hasOwnProperty(key));
+            
+            if (hasResponsiveStructure) {
+              const existingDesign = (column.design || {}) as Record<string, any>;
+              const mergedDesign: Record<string, any> = { ...existingDesign };
+              
+              for (const [key, value] of Object.entries(incomingDesign)) {
+                if (value === undefined) {
+                  delete mergedDesign[key];
+                } else if (responsiveKeys.includes(key) && typeof value === 'object' && value !== null) {
+                  // Deep merge device-specific objects
+                  mergedDesign[key] = { ...(mergedDesign[key] || {}), ...(value as object) };
+                  // Clean up undefined values
+                  for (const [propKey, propVal] of Object.entries(mergedDesign[key])) {
+                    if (propVal === undefined) delete mergedDesign[key][propKey];
+                  }
+                  if (Object.keys(mergedDesign[key]).length === 0) delete mergedDesign[key];
+                }  else {
+                  mergedDesign[key] = value;
+                }
+              }
+              this._updateColumn({ design: mergedDesign });
+              return;
+            }
+          }
+          // Standard update - merge flat properties
           const updatedDesign = { ...column.design, ...updates };
           this._updateColumn({ design: updatedDesign });
+        }}
+        @device-changed=${(e: CustomEvent) => {
+          // Sync Live Preview breakpoint with the device selector in Design tab
+          this._previewBreakpoint = e.detail.device;
+          ucModulePreviewService.setPreviewBreakpoint(e.detail.device);
+          this.requestUpdate();
         }}
       ></ultra-global-design-tab>
     `;
@@ -15377,8 +15679,15 @@ export class LayoutTab extends LitElement {
       <ultra-global-design-tab
         .hass=${this.hass}
         .designProperties=${designProperties}
+        .responsiveDesign=${(module as any).design}
         .onUpdate=${(updates: Partial<DesignProperties>) => {
           this._updateModuleDesign(updates);
+        }}
+        @device-changed=${(e: CustomEvent) => {
+          // Sync Live Preview breakpoint with the device selector in Design tab
+          this._previewBreakpoint = e.detail.device;
+          ucModulePreviewService.setPreviewBreakpoint(e.detail.device);
+          this.requestUpdate();
         }}
       ></ultra-global-design-tab>
     `;
@@ -19866,7 +20175,37 @@ export class LayoutTab extends LitElement {
         .hass=${this.hass}
         .missingVariables=${this._missingVariables}
         .open=${this._showVariableMappingDialog}
-        @confirm=${() => {
+        @confirm=${(e: CustomEvent) => {
+          // Handle card-specific variables from the mapping dialog
+          const cardVarsToCreate = e.detail?.cardVarsToCreate || [];
+          
+          if (cardVarsToCreate.length > 0) {
+            // Add variables to card config as card-specific
+            const currentCardVars = this.config._customVariables || [];
+            const newCardVars = cardVarsToCreate.map((v: any, index: number) => ({
+              id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: v.name,
+              entity: v.entity,
+              value_type: v.valueType,
+              attribute_name: v.attributeName,
+              order: currentCardVars.length + index,
+              created: new Date().toISOString(),
+              isGlobal: false, // Card-specific, not global
+            }));
+            
+            // Update config with new card-specific variables
+            this.dispatchEvent(new CustomEvent('config-changed', {
+              detail: { 
+                config: { 
+                  ...this.config, 
+                  _customVariables: [...currentCardVars, ...newCardVars] 
+                } 
+              },
+              bubbles: true,
+              composed: true,
+            }));
+          }
+          
           this._showVariableMappingDialog = false;
           this._missingVariables = [];
           this._showToast('Variables created successfully!', 'success');
@@ -22725,6 +23064,29 @@ export class LayoutTab extends LitElement {
           --view-background,
           var(--lovelace-background, var(--primary-background-color))
         );
+      }
+
+      /* Breakpoint preview container - constrains width to simulate device sizes */
+      .preview-breakpoint-container {
+        transition: max-width 0.3s ease;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .preview-breakpoint-container.desktop {
+        max-width: none;
+      }
+
+      .preview-breakpoint-container.laptop {
+        max-width: 1280px;
+      }
+
+      .preview-breakpoint-container.tablet {
+        max-width: 900px;
+      }
+
+      .preview-breakpoint-container.mobile {
+        max-width: 375px;
       }
 
       /* Module Tabs - sticky at top, above scrolling content */

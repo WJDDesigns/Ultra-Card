@@ -1594,9 +1594,17 @@ export class UltraToggleModule extends BaseUltraModule {
 
     // Execute tap action using the base module action handler
     if (point.tap_action && point.tap_action.action !== 'nothing') {
+      // For perform-action with explicit data, don't inject tracking entity
+      // Services like device_tracker.see use dev_id, not entity_id
+      const isPerformActionWithData = point.tap_action.action === 'perform-action' && 
+        (point.tap_action.data || point.tap_action.service_data);
+      
       // Determine the entity to use for the action
       // Priority: 1. Action's own entity, 2. Toggle point's match_entity, 3. Module's tracking_entity
-      const actionEntity = point.tap_action.entity || point.match_entity || module.tracking_entity;
+      // Skip auto-injection for perform-action with explicit data to avoid unwanted entity_id
+      const actionEntity = isPerformActionWithData
+        ? point.tap_action.entity
+        : (point.tap_action.entity || point.match_entity || module.tracking_entity);
       
       // Build the action config with entity injected if needed
       const actionConfig = actionEntity && !point.tap_action.entity

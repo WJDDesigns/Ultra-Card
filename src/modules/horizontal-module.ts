@@ -372,6 +372,13 @@ export class UltraHorizontalModule extends BaseUltraModule {
       Object.assign(containerStyles, cssVars);
     }
 
+    // Check if actions are configured
+    const hasActions =
+      (horizontalModule.tap_action && horizontalModule.tap_action.action !== 'nothing') ||
+      (horizontalModule.hold_action && horizontalModule.hold_action.action !== 'nothing') ||
+      (horizontalModule.double_tap_action &&
+        horizontalModule.double_tap_action.action !== 'nothing');
+
     return html`
       <style>
         ${this.getStyles()}
@@ -382,16 +389,14 @@ export class UltraHorizontalModule extends BaseUltraModule {
       >
         <div
           class="horizontal-preview-content ${hoverEffectClass}"
-          style="${this.styleObjectToCss(
-            containerStyles
-          )}; cursor: ${(horizontalModule.tap_action &&
-            horizontalModule.tap_action.action !== 'nothing') ||
-          (horizontalModule.hold_action && horizontalModule.hold_action.action !== 'nothing') ||
-          (horizontalModule.double_tap_action &&
-            horizontalModule.double_tap_action.action !== 'nothing')
+          style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
             ? 'pointer'
-            : 'default'};"
+            : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
           data-wrap=${horizontalModule.wrap ? 'true' : 'false'}
+          @pointerdown=${hasActions ? handlers.onPointerDown : null}
+          @pointerup=${hasActions ? handlers.onPointerUp : null}
+          @pointercancel=${hasActions ? handlers.onPointerCancel : null}
+          @pointerleave=${hasActions ? handlers.onPointerLeave : null}
         >
           ${hasChildren
             ? (() => {
@@ -1203,6 +1208,17 @@ export class UltraHorizontalModule extends BaseUltraModule {
         border-radius: 6px;
         border: none;
         transition: all 0.2s ease;
+        position: relative;
+      }
+
+      /* When horizontal layout has actions, disable pointer events on children so container action takes precedence */
+      .horizontal-preview-content[style*="cursor: pointer"] .child-module-preview {
+        pointer-events: none;
+      }
+
+      /* But allow specific interactive elements within children to still work if no parent action */
+      .horizontal-preview-content:not([style*="cursor: pointer"]) .child-module-preview {
+        pointer-events: auto;
       }
 
       .child-module-preview {

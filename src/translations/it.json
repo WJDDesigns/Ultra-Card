@@ -1375,7 +1375,11 @@
       "reset_text_transform": "Reset text transform to default",
       "reset_font_style": "Reset font style to default",
       "reset_white_space": "Reset white space to default",
-      "google_fonts_warning": "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations."
+      "google_fonts_warning": "Google Fonts load dynamically from Google's CDN and require an internet connection. They will not be available on local/offline installations.",
+      "icon_section": "Icon",
+      "icon_size": "Icon Size",
+      "icon_size_placeholder": "24px (default), 2rem, 32px",
+      "reset_icon_size": "Reset icon size to default"
     },
     "modules": {
       "text": "Modulo testo",

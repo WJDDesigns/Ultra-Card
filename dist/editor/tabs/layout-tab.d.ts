@@ -1,6 +1,7 @@
 import { LitElement, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraCardConfig } from '../../types';
+import '../../components/uc-breakpoint-preview';
 import '../../components/ultra-color-picker';
 import '../global-design-tab';
 import '../../components/uc-favorite-dialog';
@@ -74,6 +75,7 @@ export declare class LayoutTab extends LitElement {
     private _savedScrollPosition;
     private _shouldRestoreScroll;
     private _entityMappingOpen;
+    private _previewBreakpoint;
     connectedCallback(): void;
     /** Detect Safari browser and add class for Safari-specific CSS fixes */
     private _detectSafari;
@@ -262,6 +264,16 @@ export declare class LayoutTab extends LitElement {
     private _loadGoogleFont;
     private _renderModulePreview;
     private _togglePreviewPin;
+    private _handlePreviewBreakpointChange;
+    /**
+     * Get the max-width style for current preview breakpoint
+     */
+    private _getPreviewBreakpointStyle;
+    /**
+     * Get effective design properties for the current preview breakpoint.
+     * Merges base design with device-specific overrides for rows, columns, etc.
+     */
+    private _getEffectiveDesign;
     private _renderSingleModule;
     private _renderSimplifiedModule;
     private _renderLayoutModuleAsColumn;

@@ -21,6 +21,8 @@ import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service
 import { ucVideoBgService } from '../services/uc-video-bg-service';
 import { ucDynamicWeatherService } from '../services/uc-dynamic-weather-service';
 import { ucBackgroundService } from '../services/uc-background-service';
+import { responsiveDesignService } from '../services/uc-responsive-design-service';
+import { UcGestureService } from '../services/uc-gesture-service';
 import { Z_INDEX } from '../utils/uc-z-index';
 import { dbg3p } from '../utils/uc-debug';
 import { computeBackgroundStyles } from '../utils/uc-color-utils';
@@ -1187,20 +1189,39 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
+    // Generate responsive visibility CSS for hidden_on_devices
+    const rowId = row.id || `row-${Math.random().toString(36).slice(2, 9)}`;
+    const hiddenOnDevices = (row as any).hidden_on_devices;
+    const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
+      `.responsive-row-${rowId}`,
+      hiddenOnDevices
+    );
+
+    // Generate responsive design CSS if device-specific overrides exist
+    const responsiveCSS = responsiveDesignService.generateResponsiveCSS(
+      `.responsive-row-${rowId}`,
+      row.design
+    );
+
+    // Get effective design for current breakpoint (for animation properties)
+    const effectiveRowDesign = responsiveDesignService.getEffectiveDesign(
+      row.design,
+      responsiveDesignService.getCurrentBreakpoint()
+    );
+
     // Row animation handling (state-based + intro/outro)
-    const rowId = (row as any).id || `row-${Math.random()}`;
     const previouslyVisible = this._rowVisibilityState.get(rowId);
     const isVisible = true; // At this point row is visible by logic checks
 
-    // Get animation properties
-    const introAnimation = row.design?.intro_animation || 'none';
-    const outroAnimation = row.design?.outro_animation || 'none';
-    const animationDuration = row.design?.animation_duration || '2s';
-    const animationDelay = row.design?.animation_delay || '0s';
-    const animationTiming = row.design?.animation_timing || 'ease';
+    // Get animation properties from effective design
+    const introAnimation = effectiveRowDesign.intro_animation || 'none';
+    const outroAnimation = effectiveRowDesign.outro_animation || 'none';
+    const animationDuration = effectiveRowDesign.animation_duration || '2s';
+    const animationDelay = effectiveRowDesign.animation_delay || '0s';
+    const animationTiming = effectiveRowDesign.animation_timing || 'ease';
 
     // State-based animation class
-    const stateAnimationClass = this._getStateBasedAnimationClass(row.design);
+    const stateAnimationClass = this._getStateBasedAnimationClass(effectiveRowDesign as any);
 
     // Determine animation class
     let animationClass = '';
@@ -1267,19 +1288,56 @@ export class UltraCard extends LitElement {
 
     const rowStyles = this._generateRowStyles(row);
 
-    // Get hover effect configuration from row design
-    const hoverEffect = row.design?.hover_effect;
+    // Get hover effect configuration from effective row design
+    const hoverEffect = effectiveRowDesign.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
     // Add class for background filter support
     const hasBackgroundFilter =
-      row.design?.background_filter && row.design.background_filter !== 'none';
+      effectiveRowDesign.background_filter && effectiveRowDesign.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
+    // Include responsive CSS if any device-specific settings or hide rules exist
+    const responsiveStyleTag = (hideOnDevicesCSS || responsiveCSS)
+      ? html`<style>${hideOnDevicesCSS}${responsiveCSS}</style>`
+      : '';
+
+    // Check if row has actions configured
+    const rowWithActions = row as any;
+    const hasRowActions =
+      (rowWithActions.tap_action && rowWithActions.tap_action.action !== 'nothing') ||
+      (rowWithActions.hold_action && rowWithActions.hold_action.action !== 'nothing') ||
+      (rowWithActions.double_tap_action && rowWithActions.double_tap_action.action !== 'nothing');
+
+    // Create gesture handlers for row-level actions if configured
+    let rowHandlers: any = {};
+    if (hasRowActions && this.hass) {
+      const gestureService = UcGestureService.getInstance();
+      rowHandlers = gestureService.createGestureHandlers(
+        `row-${rowId}`,
+        {
+          tap_action: rowWithActions.tap_action,
+          hold_action: rowWithActions.hold_action,
+          double_tap_action: rowWithActions.double_tap_action,
+          entity: (rowWithActions as any).entity,
+          module: undefined,
+        },
+        this.hass,
+        this.config
+      );
+    }
+
     const rowContent = html`
+      ${responsiveStyleTag}
       <div 
-        class="card-row ${hoverEffectClass} ${filterClass}"
-        style=${rowStyles}
+        class="card-row responsive-row-${rowId} ${hoverEffectClass} ${filterClass} ${hasRowActions
+          ? 'has-row-actions'
+          : ''}"
+        style="${rowStyles}${hasRowActions ? '; cursor: pointer; pointer-events: auto;' : ''}"
+        @pointerdown=${hasRowActions ? rowHandlers.onPointerDown : null}
+        @pointerup=${hasRowActions ? rowHandlers.onPointerUp : null}
+        @pointercancel=${hasRowActions ? rowHandlers.onPointerCancel : null}
+        @pointerleave=${hasRowActions ? rowHandlers.onPointerLeave : null}
       >
         ${row.columns.map(column => this._renderColumn(column))}
       </div>
@@ -1326,18 +1384,38 @@ export class UltraCard extends LitElement {
       return html``;
     }
 
+    // Generate responsive visibility CSS for hidden_on_devices
+    const colId = column.id || `col-${Math.random().toString(36).slice(2, 9)}`;
+    const hiddenOnDevices = (column as any).hidden_on_devices;
+    const hideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
+      `.responsive-col-${colId}`,
+      hiddenOnDevices
+    );
+
+    // Generate responsive design CSS if device-specific overrides exist
+    const responsiveCSS = responsiveDesignService.generateResponsiveCSS(
+      `.responsive-col-${colId}`,
+      column.design
+    );
+
+    // Get effective design for current breakpoint (for animation properties)
+    const effectiveColDesign = responsiveDesignService.getEffectiveDesign(
+      column.design,
+      responsiveDesignService.getCurrentBreakpoint()
+    );
+
     // Column animation handling (state-based + intro/outro)
     const columnId = (column as any).id || `column-${Math.random()}`;
     const previouslyVisible = this._columnVisibilityState.get(columnId);
     const isVisible = true; // Logic checks passed above
 
-    const introAnimation = column.design?.intro_animation || 'none';
-    const outroAnimation = column.design?.outro_animation || 'none';
-    const animationDuration = column.design?.animation_duration || '2s';
-    const animationDelay = column.design?.animation_delay || '0s';
-    const animationTiming = column.design?.animation_timing || 'ease';
+    const introAnimation = effectiveColDesign.intro_animation || 'none';
+    const outroAnimation = effectiveColDesign.outro_animation || 'none';
+    const animationDuration = effectiveColDesign.animation_duration || '2s';
+    const animationDelay = effectiveColDesign.animation_delay || '0s';
+    const animationTiming = effectiveColDesign.animation_timing || 'ease';
 
-    const stateAnimationClass = this._getStateBasedAnimationClass(column.design);
+    const stateAnimationClass = this._getStateBasedAnimationClass(effectiveColDesign as any);
 
     let animationClass = '';
     let willStartAnimation = false;
@@ -1401,19 +1479,57 @@ export class UltraCard extends LitElement {
 
     const columnStyles = this._generateColumnStyles(column);
 
-    // Get hover effect configuration from column design
-    const hoverEffect = column.design?.hover_effect;
+    // Get hover effect configuration from effective column design
+    const hoverEffect = effectiveColDesign.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
     // Add class for background filter support
     const hasBackgroundFilter =
-      column.design?.background_filter && column.design.background_filter !== 'none';
+      effectiveColDesign.background_filter && effectiveColDesign.background_filter !== 'none';
     const filterClass = hasBackgroundFilter ? 'has-background-filter' : '';
 
+    // Include responsive CSS if any device-specific settings or hide rules exist
+    const colResponsiveStyleTag = (hideOnDevicesCSS || responsiveCSS)
+      ? html`<style>${hideOnDevicesCSS}${responsiveCSS}</style>`
+      : '';
+
+    // Check if column has actions configured
+    const columnWithActions = column as any;
+    const hasColumnActions =
+      (columnWithActions.tap_action && columnWithActions.tap_action.action !== 'nothing') ||
+      (columnWithActions.hold_action && columnWithActions.hold_action.action !== 'nothing') ||
+      (columnWithActions.double_tap_action &&
+        columnWithActions.double_tap_action.action !== 'nothing');
+
+    // Create gesture handlers for column-level actions if configured
+    let columnHandlers: any = {};
+    if (hasColumnActions && this.hass) {
+      const gestureService = UcGestureService.getInstance();
+      columnHandlers = gestureService.createGestureHandlers(
+        `column-${colId}`,
+        {
+          tap_action: columnWithActions.tap_action,
+          hold_action: columnWithActions.hold_action,
+          double_tap_action: columnWithActions.double_tap_action,
+          entity: (columnWithActions as any).entity,
+          module: undefined,
+        },
+        this.hass,
+        this.config
+      );
+    }
+
     const columnContent = html`
+      ${colResponsiveStyleTag}
       <div 
-        class="card-column ${hoverEffectClass} ${filterClass}"
-        style=${columnStyles}
+        class="card-column responsive-col-${colId} ${hoverEffectClass} ${filterClass} ${hasColumnActions
+          ? 'has-column-actions'
+          : ''}"
+        style="${columnStyles}${hasColumnActions ? '; cursor: pointer; pointer-events: auto;' : ''}"
+        @pointerdown=${hasColumnActions ? columnHandlers.onPointerDown : null}
+        @pointerup=${hasColumnActions ? columnHandlers.onPointerUp : null}
+        @pointercancel=${hasColumnActions ? columnHandlers.onPointerCancel : null}
+        @pointerleave=${hasColumnActions ? columnHandlers.onPointerLeave : null}
       >
         ${column.modules.map(module => this._renderModule(module))}
       </div>
@@ -1465,6 +1581,19 @@ export class UltraCard extends LitElement {
     const isVisible = shouldShow && globalLogicVisible;
     const moduleId = module.id || `${module.type}-${Math.random()}`;
     const previouslyVisible = this._moduleVisibilityState.get(moduleId);
+
+    // Generate responsive visibility CSS for hidden_on_devices
+    const hiddenOnDevices = (module as any).hidden_on_devices;
+    const moduleHideOnDevicesCSS = responsiveDesignService.generateHideOnDevicesCSS(
+      `.responsive-mod-${moduleId}`,
+      hiddenOnDevices
+    );
+
+    // Generate responsive design CSS if device-specific overrides exist
+    const moduleResponsiveCSS = responsiveDesignService.generateResponsiveCSS(
+      `.responsive-mod-${moduleId}`,
+      (module as any).design
+    );
     const isAnimating = this._animatingModules.has(moduleId);
 
     // Get animation properties from module design
@@ -1655,8 +1784,16 @@ export class UltraCard extends LitElement {
       `;
     }
 
+    // Include responsive CSS if any device-specific settings or hide rules exist
+    const moduleResponsiveStyleTag = (moduleHideOnDevicesCSS || moduleResponsiveCSS)
+      ? html`<style>${moduleHideOnDevicesCSS}${moduleResponsiveCSS}</style>`
+      : '';
+
     // Return module content without forcing DOM replacement
-    return html`<div class="uc-module-wrap" style=${cssVarStyles}>${moduleContent}</div>`;
+    return html`
+      ${moduleResponsiveStyleTag}
+      <div class="uc-module-wrap responsive-mod-${moduleId}" style=${cssVarStyles}>${moduleContent}</div>
+    `;
   }
 
   private _parseAnimationDuration(duration: string): number {
@@ -1682,22 +1819,27 @@ export class UltraCard extends LitElement {
 
     if (!this.config) return configs;
 
+    const currentBreakpoint = responsiveDesignService.getCurrentBreakpoint();
+
     // Collect from rows
     this.config.layout?.rows?.forEach(row => {
-      if (row.design?.hover_effect) {
-        configs.push(row.design.hover_effect);
+      const effectiveDesign = responsiveDesignService.getEffectiveDesign(row.design, currentBreakpoint);
+      if (effectiveDesign.hover_effect) {
+        configs.push(effectiveDesign.hover_effect);
       }
 
       // Collect from columns
       row.columns?.forEach(column => {
-        if (column.design?.hover_effect) {
-          configs.push(column.design.hover_effect);
+        const colEffectiveDesign = responsiveDesignService.getEffectiveDesign(column.design, currentBreakpoint);
+        if (colEffectiveDesign.hover_effect) {
+          configs.push(colEffectiveDesign.hover_effect);
         }
 
         // Collect from modules
         column.modules?.forEach(module => {
-          if ((module as any).design?.hover_effect) {
-            configs.push((module as any).design.hover_effect);
+          const modEffectiveDesign = responsiveDesignService.getEffectiveDesign((module as any).design, currentBreakpoint);
+          if (modEffectiveDesign.hover_effect) {
+            configs.push(modEffectiveDesign.hover_effect);
           }
         });
       });
@@ -1863,7 +2005,11 @@ export class UltraCard extends LitElement {
    * Generate CSS styles for a row based on design properties
    */
   private _generateRowStyles(row: CardRow): string {
-    const design = row.design || {};
+    // Get effective design for current breakpoint
+    const design = responsiveDesignService.getEffectiveDesign(
+      row.design,
+      responsiveDesignService.getCurrentBreakpoint()
+    );
 
     // Map column alignment values to CSS align-items values
     const getAlignItems = (alignment?: string): string | undefined => {
@@ -2031,7 +2177,11 @@ export class UltraCard extends LitElement {
    * Generate CSS styles for a column based on design properties
    */
   private _generateColumnStyles(column: CardColumn): string {
-    const design = column.design || {};
+    // Get effective design for current breakpoint
+    const design = responsiveDesignService.getEffectiveDesign(
+      column.design,
+      responsiveDesignService.getCurrentBreakpoint()
+    );
 
     // When using space-between, space-around, or justify, switch to horizontal layout
     const useHorizontalLayout =
@@ -2556,6 +2706,25 @@ export class UltraCard extends LitElement {
       .card-column svg {
         max-width: 100%;
         height: auto;
+      }
+
+      /* Row/Column Action Override System - When containers have actions, they override children */
+      .card-row.has-row-actions {
+        position: relative;
+      }
+
+      /* When row has actions, disable pointer events on all child columns so row action takes precedence */
+      .card-row.has-row-actions > .card-column {
+        pointer-events: none;
+      }
+
+      /* When column has actions, disable pointer events on child modules so column action takes precedence */
+      .card-column.has-column-actions {
+        position: relative;
+      }
+
+      .card-column.has-column-actions > * {
+        pointer-events: none;
       }
 
       .unknown-module {

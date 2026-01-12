@@ -76,20 +76,33 @@ export class UcVariableMappingDialog extends LitElement {
   }
 
   private _handleConfirm(): void {
-    // Create variables for all enabled mappings
+    // Build array of card-specific variables to create
+    // Variables created from imports should be local to the card by default
+    const cardVarsToCreate: Array<{
+      name: string;
+      entity: string;
+      valueType: 'entity_id' | 'state' | 'attribute';
+      attributeName?: string;
+    }> = [];
+
     for (const [varName, mapping] of this._mappings) {
       if (mapping.shouldCreate && mapping.entity) {
-        ucCustomVariablesService.addVariable(
-          mapping.variableName,
-          mapping.entity,
-          mapping.valueType
-        );
+        cardVarsToCreate.push({
+          name: mapping.variableName,
+          entity: mapping.entity,
+          valueType: mapping.valueType,
+          attributeName: mapping.attributeName,
+        });
       }
     }
 
-    // Dispatch confirm event
+    // Dispatch confirm event with variables to create
+    // Parent component should add these to config._customVariables as card-specific
     this.dispatchEvent(new CustomEvent('confirm', {
-      detail: { mappings: Array.from(this._mappings.values()) },
+      detail: { 
+        mappings: Array.from(this._mappings.values()),
+        cardVarsToCreate, // Pass variables to be created as card-specific
+      },
       bubbles: true,
       composed: true,
     }));

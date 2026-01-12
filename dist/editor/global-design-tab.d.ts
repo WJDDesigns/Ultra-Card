@@ -1,6 +1,8 @@
 import { LitElement, TemplateResult } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ultra-color-picker';
+import '../components/uc-device-selector';
+import { ResponsiveDesignProperties } from '../types';
 export interface DesignProperties {
     color?: string;
     text_align?: 'left' | 'center' | 'right' | 'justify';
@@ -74,13 +76,21 @@ export declare class GlobalDesignTab extends LitElement {
     hass: HomeAssistant;
     designProperties: DesignProperties;
     onUpdate?: (properties: Partial<DesignProperties>) => void;
+    responsiveDesign?: ResponsiveDesignProperties;
     private _expandedSections;
     private _marginLocked;
     private _paddingLocked;
     private _clipboardProperties;
+    private _selectedDevice;
+    private _responsiveEnabled;
     private static readonly CLIPBOARD_KEY;
     private static _lastAnimationTriggerType;
     connectedCallback(): void;
+    updated(changedProperties: Map<string, unknown>): void;
+    /**
+     * Auto-enable responsive mode toggle if there are existing device overrides
+     */
+    private _checkAndEnableResponsiveMode;
     disconnectedCallback(): void;
     private _storageEventListener?;
     private _handleStorageEvent;
@@ -99,6 +109,46 @@ export declare class GlobalDesignTab extends LitElement {
     private _copyDesign;
     private _pasteDesign;
     private _resetAllDesign;
+    /**
+     * Toggle responsive overrides mode
+     */
+    private _toggleResponsiveMode;
+    /**
+     * Handle device selection change from the device selector
+     */
+    private _handleDeviceChange;
+    /**
+     * Reset overrides for the current device
+     */
+    private _resetCurrentDeviceOverrides;
+    /**
+     * Check if a section has device-specific overrides for the current device
+     */
+    private _sectionHasDeviceOverrides;
+    /**
+     * Check if ANY section has device overrides for non-desktop devices
+     */
+    private _hasAnyDeviceOverridesForSection;
+    /**
+     * Get informational text about the current device selection
+     */
+    private _getDeviceInfoText;
+    /**
+     * Get the effective design value for a property based on current device.
+     * For desktop (base), returns the base value.
+     * For other devices, returns device-specific override if exists, otherwise base value.
+     */
+    private _getEffectiveValue;
+    /**
+     * Get the device-specific value only (not merged with base).
+     * Used to check if a device has an override for a property.
+     */
+    private _getDeviceOnlyValue;
+    /**
+     * Get effective design properties for the currently selected device.
+     * Merges base (desktop) values with device-specific overrides.
+     */
+    private _getEffectiveDesignForCurrentDevice;
     private _clearClipboard;
     private _handleBackgroundImageUpload;
     private _truncatePath;

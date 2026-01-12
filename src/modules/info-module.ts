@@ -101,6 +101,9 @@ export class UltraInfoModule extends BaseUltraModule {
       columns: 1,
       gap: 12,
       allow_wrap: true, // Allow grid items to wrap to new rows
+      // Size configuration - defaults in General tab (not Design tab)
+      text_size: 16,
+      icon_size: 24,
       // Global action configuration - smart default based on entity type
       tap_action: undefined,
       hold_action: { action: 'nothing' },
@@ -157,6 +160,108 @@ export class UltraInfoModule extends BaseUltraModule {
         }
       </style>
       <div class="module-general-settings">
+        <!-- Module-Wide Size Controls -->
+        <div class="settings-section" style="margin-bottom: 32px;">
+          <div class="section-title">SIZE CONTROLS</div>
+          <div class="section-description" style="margin-bottom: 16px;">
+            Control the default text and icon sizes for this module. Design tab overrides these settings.
+          </div>
+          
+          <!-- Text Size Control -->
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Text Size (${infoModule.text_size || 16}px)</div>
+            <div class="field-description">Default size for all text elements (name, value)</div>
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+              <input
+                type="range"
+                class="gap-slider"
+                min="10"
+                max="48"
+                step="1"
+                .value="${String(infoModule.text_size || 16)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  updateModule({ text_size: Number(target.value) });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="10"
+                max="100"
+                step="1"
+                .value="${String(infoModule.text_size || 16)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    updateModule({ text_size: value });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => {
+                  updateModule({ text_size: undefined });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '16')}"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Icon Size Control -->
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Icon Size (${infoModule.icon_size || 24}px)</div>
+            <div class="field-description">Default size for all icons</div>
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+              <input
+                type="range"
+                class="gap-slider"
+                min="12"
+                max="64"
+                step="1"
+                .value="${String(infoModule.icon_size || 24)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  updateModule({ icon_size: Number(target.value) });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="12"
+                max="100"
+                step="1"
+                .value="${String(infoModule.icon_size || 24)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    updateModule({ icon_size: value });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => {
+                  updateModule({ icon_size: undefined });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '24')}"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Entity Configuration -->
         <div
           class="settings-section"
@@ -1980,8 +2085,9 @@ export class UltraInfoModule extends BaseUltraModule {
       margin_right: (infoModule as any).margin_right || designFromDesignObject.margin_right,
     };
 
-    // Helper function to safely add px units to font size
+    // Helper function to safely add px units to font size - Priority: design.font_size > module.text_size > fallback
     const getFontSizeWithUnits = (designSize?: number | string, fallbackSize?: number | string) => {
+      // Priority 1: Design tab font_size (overrides everything)
       if (designSize !== undefined && designSize !== null && designSize !== '') {
         // If it's already a string with units, return as-is
         if (typeof designSize === 'string' && /[a-zA-Z%]/.test(designSize)) {
@@ -1990,30 +2096,33 @@ export class UltraInfoModule extends BaseUltraModule {
         // Otherwise add px
         return `${designSize}px`;
       }
+      // Priority 2: Entity-specific or module-level fallback
       if (fallbackSize !== undefined && fallbackSize !== null) {
         return typeof fallbackSize === 'string' && /[a-zA-Z%]/.test(fallbackSize)
           ? fallbackSize
           : `${fallbackSize}px`;
       }
+      // Priority 3: Module-level text_size
+      if (infoModule?.text_size) {
+        return `${infoModule.text_size}px`;
+      }
+      // Priority 4: Inherit default
       return 'inherit';
     };
 
-    // Helper function for icon size - only use design font_size if it's a number (no units)
+    // Helper function for icon size - prioritize entity icon_size, then module icon_size, then fallback
     const getIconSizeWithUnits = (designSize?: number | string, fallbackSize?: number | string) => {
-      // Only use design size for icons if it's a number (26) not a string with units (26px)
-      if (
-        designSize !== undefined &&
-        designSize !== null &&
-        designSize !== '' &&
-        typeof designSize === 'number'
-      ) {
-        return `${designSize}px`;
-      }
+      // Priority 1: Use fallback size (entity-specific icon_size)
       if (fallbackSize !== undefined && fallbackSize !== null) {
         return typeof fallbackSize === 'string' && fallbackSize.includes('px')
           ? fallbackSize
           : `${fallbackSize}px`;
       }
+      // Priority 2: Use module-level icon_size if set
+      if (infoModule?.icon_size) {
+        return `${infoModule.icon_size}px`;
+      }
+      // Priority 3: Default responsive size
       return 'clamp(18px, 4vw, 26px)';
     };
 
@@ -2132,7 +2241,10 @@ export class UltraInfoModule extends BaseUltraModule {
           this._templateService = new TemplateService(hass);
         }
 
-        const templateHash = this._hashString(entity.unified_template);
+        // IMPORTANT: Must use the PROCESSED template (after variable substitution) for the hash
+        // to match the key used when subscribing to the template
+        const processedTemplate = preprocessTemplateVariables(entity.unified_template, hass, config);
+        const templateHash = this._hashString(processedTemplate);
         const templateKey = `unified_info_${entity.entity}_${validEntities.indexOf(entity)}_${templateHash}`;
 
         // Check if we already have the rendered template result

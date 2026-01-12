@@ -306,20 +306,23 @@ export class UltraVerticalModule extends BaseUltraModule {
       Object.assign(containerStyles, cssVars);
     }
 
+    // Check if actions are configured
+    const hasActions =
+      (verticalModule.tap_action && verticalModule.tap_action.action !== 'nothing') ||
+      (verticalModule.hold_action && verticalModule.hold_action.action !== 'nothing') ||
+      (verticalModule.double_tap_action && verticalModule.double_tap_action.action !== 'nothing');
+
     return html`
       <div class="vertical-module-preview">
         <div
           class="vertical-preview-content"
-          style="${this.styleObjectToCss(containerStyles)}; cursor: ${(verticalModule.tap_action &&
-            verticalModule.tap_action.action !== 'nothing') ||
-          (verticalModule.hold_action && verticalModule.hold_action.action !== 'nothing') ||
-          (verticalModule.double_tap_action &&
-            verticalModule.double_tap_action.action !== 'nothing')
+          style="${this.styleObjectToCss(containerStyles)}; cursor: ${hasActions
             ? 'pointer'
-            : 'default'};"
-          @pointerdown=${handlers.onPointerDown}
-          @pointerup=${handlers.onPointerUp}
-          @pointerleave=${handlers.onPointerLeave}
+            : 'default'}; ${hasActions ? 'pointer-events: auto;' : ''}"
+          @pointerdown=${hasActions ? handlers.onPointerDown : null}
+          @pointerup=${hasActions ? handlers.onPointerUp : null}
+          @pointercancel=${hasActions ? handlers.onPointerCancel : null}
+          @pointerleave=${hasActions ? handlers.onPointerLeave : null}
         >
           ${hasChildren
             ? (() => {
@@ -869,6 +872,17 @@ export class UltraVerticalModule extends BaseUltraModule {
         border-radius: 6px;
         border: none;
         transition: all 0.2s ease;
+        position: relative;
+      }
+
+      /* When vertical layout has actions, disable pointer events on children so container action takes precedence */
+      .vertical-preview-content[style*="cursor: pointer"] .child-module-preview {
+        pointer-events: none;
+      }
+
+      /* But allow specific interactive elements within children to still work if no parent action */
+      .vertical-preview-content:not([style*="cursor: pointer"]) .child-module-preview {
+        pointer-events: auto;
       }
 
       .child-module-preview {

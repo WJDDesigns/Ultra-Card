@@ -2002,6 +2002,11 @@ export class UltraPopupModule extends BaseUltraModule {
     const popupModule = module as PopupModule;
     const lang = hass?.locale?.language || 'en';
 
+    // CRITICAL FIX: Create unique popup key that includes card instance ID
+    // This prevents cross-card state bleeding when two cards have popups with the same module ID
+    const cardInstanceId = (config as any)?.__ucInstanceId || '';
+    const uniquePopupKey = cardInstanceId ? `${cardInstanceId}:${popupModule.id}` : popupModule.id;
+
     // CRITICAL FIX: Ensure trigger_mode is 'manual' for non-logic triggers
     // This prevents logic evaluation from interfering with button/icon/image/page_load triggers
     const triggerType = popupModule.trigger_type || 'button';
@@ -2021,9 +2026,9 @@ export class UltraPopupModule extends BaseUltraModule {
     // Keep timer config in sync with latest module config.
     // Critical: if the user disables the timer, any previously scheduled timer must NOT close the popup.
     const timerEnabled = popupModule.auto_close_timer_enabled === true;
-    popupTimerEnabled.set(popupModule.id, timerEnabled);
+    popupTimerEnabled.set(uniquePopupKey, timerEnabled);
     if (!timerEnabled) {
-      this._clearAutoCloseTimer(popupModule.id);
+      this._clearAutoCloseTimer(uniquePopupKey);
     }
 
     // Evaluate trigger logic for logic-based triggers
@@ -2071,62 +2076,62 @@ export class UltraPopupModule extends BaseUltraModule {
     } else if (triggerType === 'page_load') {
       // Page load trigger: only open on initial load (when state doesn't exist yet)
       // Once closed by user, don't reopen until page reloads (which resets popupStates Map)
-      if (!popupStates.has(popupModule.id)) {
+      if (!popupStates.has(uniquePopupKey)) {
         logicDeterminedState = true;
       }
       // If state already exists, don't set logicDeterminedState - let user's manual close persist
     }
 
     // Initialize popup state if not exists
-    if (!popupStates.has(popupModule.id)) {
+    if (!popupStates.has(uniquePopupKey)) {
       // Use logic-determined state if available, otherwise use default_open
       const initialState =
         logicDeterminedState !== null ? logicDeterminedState : popupModule.default_open || false;
-      popupStates.set(popupModule.id, initialState);
+      popupStates.set(uniquePopupKey, initialState);
       
       // Track initial logic state
       if (logicDeterminedState !== null) {
-        lastLogicStates.set(popupModule.id, logicDeterminedState);
+        lastLogicStates.set(uniquePopupKey, logicDeterminedState);
       }
       
       // Start auto-close timer if popup opens initially and timer is enabled
       if (initialState && popupModule.auto_close_timer_enabled) {
-        this._startAutoCloseTimer(popupModule);
+        this._startAutoCloseTimer(popupModule, uniquePopupKey);
       }
     } else if (logicDeterminedState !== null && triggerType === 'logic' && popupModule.auto_close !== false) {
       // Only update state for logic triggers with auto_close enabled
       // Key fix: Only react to logic STATE CHANGES, not constant true/false values
-      const lastLogicState = lastLogicStates.get(popupModule.id);
+      const lastLogicState = lastLogicStates.get(uniquePopupKey);
       const logicStateChanged = lastLogicState !== logicDeterminedState;
       
       // Update tracked logic state
-      lastLogicStates.set(popupModule.id, logicDeterminedState);
+      lastLogicStates.set(uniquePopupKey, logicDeterminedState);
       
       // Only update popup state if logic condition actually changed
       // IMPORTANT: Don't overwrite manually opened popups - they should stay open until user closes them
-      const isManuallyOpened = manuallyOpenedPopups.has(popupModule.id);
+      const isManuallyOpened = manuallyOpenedPopups.has(uniquePopupKey);
       if (logicStateChanged && !isManuallyOpened) {
-        const wasOpen = popupStates.get(popupModule.id) || false;
-        popupStates.set(popupModule.id, logicDeterminedState);
+        const wasOpen = popupStates.get(uniquePopupKey) || false;
+        popupStates.set(uniquePopupKey, logicDeterminedState);
         
         // Handle timer based on state change
         if (!wasOpen && logicDeterminedState && popupModule.auto_close_timer_enabled) {
           // Popup just opened - start timer
-          this._startAutoCloseTimer(popupModule);
+          this._startAutoCloseTimer(popupModule, uniquePopupKey);
         } else if (wasOpen && !logicDeterminedState) {
           // Popup just closed - clear timer
-          this._clearAutoCloseTimer(popupModule.id);
+          this._clearAutoCloseTimer(uniquePopupKey);
         }
       }
     }
 
     // Read popup state, but if manually opened, ensure it stays true
-    let isOpen = popupStates.get(popupModule.id) || false;
-    const isManuallyOpened = manuallyOpenedPopups.has(popupModule.id);
+    let isOpen = popupStates.get(uniquePopupKey) || false;
+    const isManuallyOpened = manuallyOpenedPopups.has(uniquePopupKey);
     
     // If manually opened, force state to true (protects against re-render resets)
     if (isManuallyOpened && !isOpen) {
-      popupStates.set(popupModule.id, true);
+      popupStates.set(uniquePopupKey, true);
       isOpen = true;
     }
 
@@ -2135,17 +2140,18 @@ export class UltraPopupModule extends BaseUltraModule {
     let renderPopupToPortal: (initialInvisibleRender?: boolean) => void;
 
     // Register external popup open listener (for module triggers)
-    // This is idempotent - only one listener per popup ID
-    const listenerKey = `__ultraPopupOpenListener_${popupModule.id}`;
+    // This is idempotent - only one listener per unique popup key
+    const listenerKey = `__ultraPopupOpenListener_${uniquePopupKey}`;
     const w = window as any;
     if (!w[listenerKey]) {
       const handleExternalOpen = (e: Event) => {
         const customEvent = e as CustomEvent;
-        if (customEvent.detail?.popupId === popupModule.id) {
-          popupStates.set(popupModule.id, true);
-          manuallyOpenedPopups.add(popupModule.id);
+        // For external triggers, check both the module ID and unique key
+        if (customEvent.detail?.popupId === popupModule.id || customEvent.detail?.popupId === uniquePopupKey) {
+          popupStates.set(uniquePopupKey, true);
+          manuallyOpenedPopups.add(uniquePopupKey);
           if (popupModule.auto_close_timer_enabled) {
-            this._startAutoCloseTimer(popupModule);
+            this._startAutoCloseTimer(popupModule, uniquePopupKey);
           }
           // Render popup directly
           setTimeout(() => {
@@ -2153,9 +2159,9 @@ export class UltraPopupModule extends BaseUltraModule {
               renderPopupToPortal(false);
               // TEMPLATE FIX: Schedule a card update after templates have had time to evaluate
               setTimeout(() => {
-                if (popupStates.get(popupModule.id)) {
+                if (popupStates.get(uniquePopupKey)) {
                   // Set refresh flag so portal content will be re-rendered with evaluated templates
-                  popupNeedsRefresh.set(popupModule.id, true);
+                  popupNeedsRefresh.set(uniquePopupKey, true);
                   this.triggerPreviewUpdate(true);
                 }
               }, 500);
@@ -2174,13 +2180,13 @@ export class UltraPopupModule extends BaseUltraModule {
         // For logic-controlled triggers, don't allow manual toggle unless mode is manual
         return;
       }
-      popupStates.set(popupModule.id, true);
+      popupStates.set(uniquePopupKey, true);
       // Mark as manually opened - popup will stay open until explicitly closed
-      manuallyOpenedPopups.add(popupModule.id);
+      manuallyOpenedPopups.add(uniquePopupKey);
       
       // Start auto-close timer if enabled
       if (popupModule.auto_close_timer_enabled) {
-        this._startAutoCloseTimer(popupModule);
+        this._startAutoCloseTimer(popupModule, uniquePopupKey);
       }
       
       // Render popup immediately
@@ -2190,9 +2196,9 @@ export class UltraPopupModule extends BaseUltraModule {
       // This handles the "Template processing..." issue on first open
       // Portal-rendered popups don't get automatic re-renders from hass updates
       setTimeout(() => {
-        if (popupStates.get(popupModule.id)) {
+        if (popupStates.get(uniquePopupKey)) {
           // Set refresh flag so portal content will be re-rendered with evaluated templates
-          popupNeedsRefresh.set(popupModule.id, true);
+          popupNeedsRefresh.set(uniquePopupKey, true);
           this.triggerPreviewUpdate(true);
         }
       }, 500);
@@ -2204,19 +2210,19 @@ export class UltraPopupModule extends BaseUltraModule {
       e.preventDefault();
       
       // Close the popup
-      popupStates.set(popupModule.id, false);
+      popupStates.set(uniquePopupKey, false);
       // Remove from manually opened set so re-renders don't keep it open
-      manuallyOpenedPopups.delete(popupModule.id);
+      manuallyOpenedPopups.delete(uniquePopupKey);
       
       // Clear auto-close timer
-      this._clearAutoCloseTimer(popupModule.id);
+      this._clearAutoCloseTimer(uniquePopupKey);
       
       // Restore HA editor overlays (works in all contexts, does nothing if none were hidden)
       restoreHAEditorOverlays();
       
       // Directly remove the portal element to ensure immediate close
       // This is necessary because Live Preview contexts may not re-render properly
-      const portal = popupPortals.get(popupModule.id);
+      const portal = popupPortals.get(uniquePopupKey);
       if (portal) {
         // Disconnect mutation observer
         const observer = (portal as any)._ultraInertObserver;
@@ -2224,7 +2230,7 @@ export class UltraPopupModule extends BaseUltraModule {
           observer.disconnect();
         }
         portal.remove();
-        popupPortals.delete(popupModule.id);
+        popupPortals.delete(uniquePopupKey);
       }
       
       // Note: We don't update lastLogicStates here
@@ -2509,22 +2515,23 @@ export class UltraPopupModule extends BaseUltraModule {
     // When a parent element has CSS transform, position:fixed elements become relative to that element
     // By rendering to document.body, the popup overlay properly covers the entire viewport
     renderPopupToPortal = (initialInvisibleRender = false) => {
-      const portalId = `ultra-popup-portal-${popupModule.id}`;
-      let portal = popupPortals.get(popupModule.id);
+      // Use uniquePopupKey from parent scope (includes card instance ID)
+      const portalId = `ultra-popup-portal-${uniquePopupKey}`;
+      let portal = popupPortals.get(uniquePopupKey);
       
       // CRITICAL: Check if manually opened FIRST - this takes precedence over everything
       // Manually opened popups should NEVER close from re-renders, logic triggers, or any other automatic mechanism
       // They can ONLY be closed by: 1) User clicking close, 2) Auto-close timer (if enabled)
-      const isManuallyOpenedCheck = manuallyOpenedPopups.has(popupModule.id);
+      const isManuallyOpenedCheck = manuallyOpenedPopups.has(uniquePopupKey);
       
       // Read current state directly from the Map (not the closure variable)
-      let currentlyOpen = popupStates.get(popupModule.id) || false;
+      let currentlyOpen = popupStates.get(uniquePopupKey) || false;
       
       // If manually opened, FORCE state to true - this is non-negotiable
       if (isManuallyOpenedCheck) {
         // Always set state to true if manually opened, regardless of what it currently is
         // This protects against any re-render or logic trigger that might have reset it
-        popupStates.set(popupModule.id, true);
+        popupStates.set(uniquePopupKey, true);
         currentlyOpen = true;
       }
       
@@ -2539,7 +2546,7 @@ export class UltraPopupModule extends BaseUltraModule {
           }
           restoreHAEditorOverlays();
           portal.remove();
-          popupPortals.delete(popupModule.id);
+          popupPortals.delete(uniquePopupKey);
         }
         return;
       }
@@ -2547,7 +2554,7 @@ export class UltraPopupModule extends BaseUltraModule {
       // At this point, we know the popup should be open (either manually opened or state is true)
       // Ensure state is definitely true
       if (!currentlyOpen) {
-        popupStates.set(popupModule.id, true);
+        popupStates.set(uniquePopupKey, true);
       }
       
       // Track if this is a new portal creation
@@ -2569,7 +2576,7 @@ export class UltraPopupModule extends BaseUltraModule {
         // Remove inert attribute if present
         portal.removeAttribute('inert');
         document.body.appendChild(portal);
-        popupPortals.set(popupModule.id, portal);
+        popupPortals.set(uniquePopupKey, portal);
       }
       
       // Always ensure portal is not inert on every render
@@ -2623,12 +2630,12 @@ export class UltraPopupModule extends BaseUltraModule {
 
       // Check if we need to re-render content
       // Only clear and re-render if: portal is new OR refresh is explicitly requested
-      const needsRefreshFlag = popupNeedsRefresh.get(popupModule.id) === true;
+      const needsRefreshFlag = popupNeedsRefresh.get(uniquePopupKey) === true;
       const needsContentRender = isNewPortal || needsRefreshFlag;
       
       // Clear the refresh flag after checking
       if (needsRefreshFlag) {
-        popupNeedsRefresh.delete(popupModule.id);
+        popupNeedsRefresh.delete(uniquePopupKey);
       }
       
       // Skip re-render if portal already exists and no refresh needed
@@ -2867,10 +2874,10 @@ export class UltraPopupModule extends BaseUltraModule {
     };
 
     // Check popup state to determine if portal needs rendering
-    const currentState = popupStates.get(popupModule.id) || false;
-    const portalExists = popupPortals.has(popupModule.id);
-    const isManuallyOpen = manuallyOpenedPopups.has(popupModule.id);
-    const needsRefresh = popupNeedsRefresh.get(popupModule.id) === true;
+    const currentState = popupStates.get(uniquePopupKey) || false;
+    const portalExists = popupPortals.has(uniquePopupKey);
+    const isManuallyOpen = manuallyOpenedPopups.has(uniquePopupKey);
+    const needsRefresh = popupNeedsRefresh.get(uniquePopupKey) === true;
     
     // Determine if popup should be open
     const shouldBeOpen = currentState || isManuallyOpen;
@@ -2883,7 +2890,7 @@ export class UltraPopupModule extends BaseUltraModule {
       renderPopupToPortal(false);
     } else if (!shouldBeOpen && portalExists) {
       // Close the portal if it exists but shouldn't be open
-      const portal = popupPortals.get(popupModule.id);
+      const portal = popupPortals.get(uniquePopupKey);
       if (portal) {
         const observer = (portal as any)._ultraInertObserver;
         if (observer) {
@@ -2891,7 +2898,7 @@ export class UltraPopupModule extends BaseUltraModule {
         }
         restoreHAEditorOverlays();
         portal.remove();
-        popupPortals.delete(popupModule.id);
+        popupPortals.delete(uniquePopupKey);
       }
     }
     
@@ -3002,9 +3009,9 @@ export class UltraPopupModule extends BaseUltraModule {
   }
 
   // Auto-close timer helper methods
-  private _startAutoCloseTimer(popupModule: PopupModule): void {
+  private _startAutoCloseTimer(popupModule: PopupModule, uniquePopupKey: string): void {
     // Clear any existing timer
-    this._clearAutoCloseTimer(popupModule.id);
+    this._clearAutoCloseTimer(uniquePopupKey);
     
     // Get timer duration in milliseconds
     const seconds = popupModule.auto_close_timer_seconds || 30;
@@ -3014,20 +3021,20 @@ export class UltraPopupModule extends BaseUltraModule {
     const timerId = window.setTimeout(() => {
       // If the timer has been disabled since this timeout was scheduled, do nothing.
       // This prevents "auto close" even when auto_close_timer_enabled is false.
-      if (popupTimerEnabled.get(popupModule.id) !== true) {
-        popupTimers.delete(popupModule.id);
+      if (popupTimerEnabled.get(uniquePopupKey) !== true) {
+        popupTimers.delete(uniquePopupKey);
         return;
       }
-      popupStates.set(popupModule.id, false);
+      popupStates.set(uniquePopupKey, false);
       // Remove from manually opened set so the popup can close
-      manuallyOpenedPopups.delete(popupModule.id);
-      popupTimers.delete(popupModule.id);
+      manuallyOpenedPopups.delete(uniquePopupKey);
+      popupTimers.delete(uniquePopupKey);
       
       // Restore HA editor overlays
       restoreHAEditorOverlays();
       
       // Directly remove the portal for immediate close
-      const portal = popupPortals.get(popupModule.id);
+      const portal = popupPortals.get(uniquePopupKey);
       if (portal) {
         // Disconnect mutation observer
         const observer = (portal as any)._ultraInertObserver;
@@ -3035,20 +3042,20 @@ export class UltraPopupModule extends BaseUltraModule {
           observer.disconnect();
         }
         portal.remove();
-        popupPortals.delete(popupModule.id);
+        popupPortals.delete(uniquePopupKey);
       }
       
       this.triggerPreviewUpdate(true);
     }, milliseconds);
     
-    popupTimers.set(popupModule.id, timerId);
+    popupTimers.set(uniquePopupKey, timerId);
   }
 
-  private _clearAutoCloseTimer(popupId: string): void {
-    const timerId = popupTimers.get(popupId);
+  private _clearAutoCloseTimer(popupKey: string): void {
+    const timerId = popupTimers.get(popupKey);
     if (timerId !== undefined) {
       window.clearTimeout(timerId);
-      popupTimers.delete(popupId);
+      popupTimers.delete(popupKey);
     }
   }
 }

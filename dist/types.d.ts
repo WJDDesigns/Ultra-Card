@@ -51,6 +51,7 @@ export interface BaseModule {
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
+    hidden_on_devices?: DeviceBreakpoint[];
     background_color?: string;
     background_image?: string;
     background_image_type?: 'none' | 'upload' | 'entity' | 'url';
@@ -136,6 +137,8 @@ export interface TextModule extends BaseModule {
     unified_template_mode?: boolean;
     unified_template?: string;
     ignore_entity_state_config?: boolean;
+    text_size?: number;
+    icon_size?: number;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
     hover_effect?: 'none' | 'color' | 'scale' | 'glow' | 'lift';
@@ -343,6 +346,8 @@ export interface InfoModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    text_size?: number;
+    icon_size?: number;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
@@ -746,6 +751,8 @@ export interface IconModule extends BaseModule {
         service?: string;
         service_data?: Record<string, any>;
     };
+    text_size?: number;
+    icon_size?: number;
     enable_hover_effect?: boolean;
     hover_background_color?: string;
 }
@@ -2103,6 +2110,31 @@ export interface HoverEffectConfig {
     rotate_degrees?: number;
     intensity?: 'subtle' | 'normal' | 'strong';
 }
+export type DeviceBreakpoint = 'desktop' | 'laptop' | 'tablet' | 'mobile';
+export declare const DEVICE_BREAKPOINTS: {
+    readonly desktop: {
+        readonly minWidth: 1381;
+        readonly label: "Desktop";
+        readonly icon: "mdi:monitor";
+    };
+    readonly laptop: {
+        readonly minWidth: 1025;
+        readonly maxWidth: 1380;
+        readonly label: "Laptop";
+        readonly icon: "mdi:laptop";
+    };
+    readonly tablet: {
+        readonly minWidth: 601;
+        readonly maxWidth: 1024;
+        readonly label: "Tablet";
+        readonly icon: "mdi:tablet";
+    };
+    readonly mobile: {
+        readonly maxWidth: 600;
+        readonly label: "Mobile";
+        readonly icon: "mdi:cellphone";
+    };
+};
 export interface SharedDesignProperties {
     color?: string;
     text_align?: 'left' | 'center' | 'right' | 'justify';
@@ -2177,6 +2209,14 @@ export interface SharedDesignProperties {
     element_id?: string;
     css_variable_prefix?: string;
 }
+export interface ResponsiveDesignProperties extends SharedDesignProperties {
+    base?: Partial<SharedDesignProperties>;
+    desktop?: Partial<SharedDesignProperties>;
+    laptop?: Partial<SharedDesignProperties>;
+    tablet?: Partial<SharedDesignProperties>;
+    mobile?: Partial<SharedDesignProperties>;
+}
+export declare function isResponsiveDesign(design: SharedDesignProperties | ResponsiveDesignProperties | undefined): design is ResponsiveDesignProperties;
 export interface CardColumn {
     id: string;
     name?: string;
@@ -2193,7 +2233,11 @@ export interface CardColumn {
     display_conditions?: DisplayCondition[];
     template_mode?: boolean;
     template?: string;
-    design?: SharedDesignProperties;
+    hidden_on_devices?: DeviceBreakpoint[];
+    design?: ResponsiveDesignProperties;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
 }
 export interface CardRow {
     id: string;
@@ -2216,7 +2260,11 @@ export interface CardRow {
     display_conditions?: DisplayCondition[];
     template_mode?: boolean;
     template?: string;
-    design?: SharedDesignProperties;
+    hidden_on_devices?: DeviceBreakpoint[];
+    design?: ResponsiveDesignProperties;
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
 }
 export interface LayoutConfig {
     rows: CardRow[];

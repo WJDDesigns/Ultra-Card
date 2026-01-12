@@ -247,7 +247,7 @@ export class UcFavoriteColorsManager extends LitElement {
                         <ha-icon icon="mdi:drag-vertical"></ha-icon>
                       </div>
 
-                      <div class="color-preview" style="background-color: ${favorite.color}"></div>
+                      <div class="color-preview" style="background: ${favorite.color}"></div>
 
                       ${this._editingId === favorite.id
                         ? html`

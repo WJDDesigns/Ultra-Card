@@ -841,8 +841,11 @@ export class UltraLinkComponent {
             // Support both modern 'data' and legacy 'service_data' properties
             const serviceData = { ...(resolvedAction.data || resolvedAction.service_data) };
 
-            // If entity is specified but not in service_data, add it
-            if (resolvedAction.entity && !serviceData.entity_id) {
+            // Only auto-inject entity_id if NO explicit data was provided
+            // When user has explicit data/service_data, respect their configuration
+            // Services like device_tracker.see don't accept entity_id and will error
+            const hasExplicitData = resolvedAction.data || resolvedAction.service_data;
+            if (!hasExplicitData && resolvedAction.entity && !serviceData.entity_id) {
               serviceData.entity_id = resolvedAction.entity;
             }
 

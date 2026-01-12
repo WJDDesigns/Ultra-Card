@@ -322,6 +322,9 @@ export class UltraIconModule extends BaseUltraModule {
       columns: 3,
       gap: 16,
       allow_wrap: true, // Allow grid items to wrap to new rows
+      // Size configuration - defaults in General tab (not Design tab)
+      text_size: 16,
+      icon_size: 24,
       // Global action configuration (for the module container) - smart default based on entity type
       tap_action: undefined,
       hold_action: undefined,
@@ -344,6 +347,130 @@ export class UltraIconModule extends BaseUltraModule {
     return html`
       ${this.injectUcFormStyles()}
       <div class="module-general-settings">
+        <!-- Module-Wide Size Controls -->
+        <div class="settings-section" style="margin-bottom: 32px;">
+          <div class="section-title">SIZE CONTROLS</div>
+          <div class="section-description" style="margin-bottom: 16px;">
+            Control the default text and icon sizes for this module. Design tab overrides these settings.
+          </div>
+          
+          <!-- Text Size Control -->
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Text Size (${iconModule.text_size || 16}px)</div>
+            <div class="field-description">Default size for all text elements (name, state)</div>
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+              <input
+                type="range"
+                class="gap-slider"
+                min="10"
+                max="48"
+                step="1"
+                .value="${String(iconModule.text_size || 16)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  updateModule({ text_size: Number(target.value) });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="10"
+                max="100"
+                step="1"
+                .value="${String(iconModule.text_size || 16)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    updateModule({ text_size: value });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const target = e.target as HTMLInputElement;
+                    const currentValue = Number(target.value) || 16;
+                    const increment = e.key === 'ArrowUp' ? 1 : -1;
+                    const newValue = Math.max(10, Math.min(100, currentValue + increment));
+                    updateModule({ text_size: newValue });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => {
+                  updateModule({ text_size: undefined });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '16')}"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Icon Size Control -->
+          <div class="field-container" style="margin-bottom: 16px;">
+            <div class="field-title">Icon Size (${iconModule.icon_size || 24}px)</div>
+            <div class="field-description">Default size for all icons</div>
+            <div class="gap-control-container" style="display: flex; align-items: center; gap: 12px;">
+              <input
+                type="range"
+                class="gap-slider"
+                min="12"
+                max="64"
+                step="1"
+                .value="${String(iconModule.icon_size || 24)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  updateModule({ icon_size: Number(target.value) });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+              />
+              <input
+                type="number"
+                class="gap-input"
+                min="12"
+                max="100"
+                step="1"
+                .value="${String(iconModule.icon_size || 24)}"
+                @input=${(e: Event) => {
+                  const target = e.target as HTMLInputElement;
+                  const value = Number(target.value);
+                  if (!isNaN(value)) {
+                    updateModule({ icon_size: value });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const target = e.target as HTMLInputElement;
+                    const currentValue = Number(target.value) || 24;
+                    const increment = e.key === 'ArrowUp' ? 1 : -1;
+                    const newValue = Math.max(12, Math.min(100, currentValue + increment));
+                    updateModule({ icon_size: newValue });
+                    setTimeout(() => this.triggerPreviewUpdate(), 50);
+                  }
+                }}
+              />
+              <button
+                class="reset-btn"
+                @click=${() => {
+                  updateModule({ icon_size: undefined });
+                  setTimeout(() => this.triggerPreviewUpdate(), 50);
+                }}
+                title="${localize('editor.fields.reset_default_value', lang, 'Reset to default ({value})').replace('{value}', '24')}"
+              >
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
         ${iconModule.icons.map(
           (icon, index) => html`
             <div class="icon-settings-container">
@@ -3921,29 +4048,26 @@ export class UltraIconModule extends BaseUltraModule {
     const iconsToShow = iconModule.icons.slice(0, 6);
     const gridCols = Math.min(3, iconsToShow.length);
 
-    // Get design properties for Global Design tab support - check both locations
+    // Get design properties ONLY from the design object (Design tab)
+    // This ensures Design tab always takes precedence over General tab
     const designFromDesignObject = (iconModule as any).design || {};
     const designProperties = {
-      color: (iconModule as any).color || designFromDesignObject.color,
-      font_size: (iconModule as any).font_size || designFromDesignObject.font_size,
-      font_weight: (iconModule as any).font_weight || designFromDesignObject.font_weight,
-      font_style: (iconModule as any).font_style || designFromDesignObject.font_style,
-      text_transform: (iconModule as any).text_transform || designFromDesignObject.text_transform,
-      font_family: (iconModule as any).font_family || designFromDesignObject.font_family,
-      line_height: (iconModule as any).line_height || designFromDesignObject.line_height,
-      letter_spacing: (iconModule as any).letter_spacing || designFromDesignObject.letter_spacing,
-      text_align: (iconModule as any).text_align || designFromDesignObject.text_align,
-      text_shadow_h: (iconModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
-      text_shadow_v: (iconModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
-      text_shadow_blur:
-        (iconModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
-      text_shadow_color:
-        (iconModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
-      background_position:
-        (iconModule as any).background_position || designFromDesignObject.background_position,
-      background_repeat:
-        (iconModule as any).background_repeat || designFromDesignObject.background_repeat,
-      hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
+      color: designFromDesignObject.color,
+      font_size: designFromDesignObject.font_size,
+      font_weight: designFromDesignObject.font_weight,
+      font_style: designFromDesignObject.font_style,
+      text_transform: designFromDesignObject.text_transform,
+      font_family: designFromDesignObject.font_family,
+      line_height: designFromDesignObject.line_height,
+      letter_spacing: designFromDesignObject.letter_spacing,
+      text_align: designFromDesignObject.text_align,
+      text_shadow_h: designFromDesignObject.text_shadow_h,
+      text_shadow_v: designFromDesignObject.text_shadow_v,
+      text_shadow_blur: designFromDesignObject.text_shadow_blur,
+      text_shadow_color: designFromDesignObject.text_shadow_color,
+      background_position: designFromDesignObject.background_position,
+      background_repeat: designFromDesignObject.background_repeat,
+      hover_effect: designFromDesignObject.hover_effect,
     };
 
     return html`
@@ -4453,11 +4577,22 @@ export class UltraIconModule extends BaseUltraModule {
                         class="${animationClass} ultra-force-animation"
                         style="
                           color: ${displayColor || 'var(--secondary-text-color)'};
-                          --mdc-icon-size: ${Number(
-                          isActiveState
-                            ? icon.active_icon_size || icon.icon_size
-                            : icon.inactive_icon_size || icon.icon_size
-                        ) || 26}px;
+                          --mdc-icon-size: ${(() => {
+                          // Priority: 1) Icon state-specific size, 2) Icon default size, 3) Module icon_size, 4) Fallback
+                          const iconSpecificSize = Number(
+                            isActiveState
+                              ? icon.active_icon_size || icon.icon_size
+                              : icon.inactive_icon_size || icon.icon_size
+                          );
+                          if (iconSpecificSize) {
+                            return `${iconSpecificSize}px`;
+                          }
+                          // Use module-level icon_size if set
+                          if (iconModule?.icon_size) {
+                            return `${iconModule.icon_size}px`;
+                          }
+                          return '26px';
+                        })()};
                           ${animationClass && animationClass !== 'none'
                           ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
                           : ''}
@@ -4474,13 +4609,22 @@ export class UltraIconModule extends BaseUltraModule {
               <div
                 class="icon-name"
                 style="
-                  font-size: ${globalTextStyles.fontSize
-                  ? globalTextStyles.fontSize
-                  : `${
-                      isActiveState
-                        ? icon.active_text_size || icon.text_size || 12
-                        : icon.inactive_text_size || icon.text_size || 14
-                    }px`};
+                  font-size: ${(() => {
+                  // Priority: 1) Design tab font_size, 2) Icon-specific sizes, 3) Module text_size, 4) Default
+                  if (globalTextStyles.fontSize) {
+                    return globalTextStyles.fontSize;
+                  }
+                  const iconTextSize = isActiveState
+                    ? icon.active_text_size || icon.text_size
+                    : icon.inactive_text_size || icon.text_size;
+                  if (iconTextSize) {
+                    return `${iconTextSize}px`;
+                  }
+                  if (iconModule?.text_size) {
+                    return `${iconModule.text_size}px`;
+                  }
+                  return isActiveState ? '12px' : '14px';
+                })()};
                   color: ${nameColor || 'var(--primary-text-color)'};
                   text-align: ${globalTextStyles.textAlign || 'center'};
                   line-height: ${globalTextStyles.lineHeight || '1.2'};
@@ -4504,13 +4648,22 @@ export class UltraIconModule extends BaseUltraModule {
               <div
                 class="icon-state"
                 style="
-                  font-size: ${globalTextStyles.fontSize
-                  ? globalTextStyles.fontSize
-                  : `${
-                      isActiveState
-                        ? icon.active_state_size || icon.state_size || 10
-                        : icon.inactive_state_size || icon.state_size || 10
-                    }px`};
+                  font-size: ${(() => {
+                  // Priority: 1) Design tab font_size, 2) Icon-specific sizes, 3) Module text_size, 4) Default
+                  if (globalTextStyles.fontSize) {
+                    return globalTextStyles.fontSize;
+                  }
+                  const iconStateSize = isActiveState
+                    ? icon.active_state_size || icon.state_size
+                    : icon.inactive_state_size || icon.state_size;
+                  if (iconStateSize) {
+                    return `${iconStateSize}px`;
+                  }
+                  if (iconModule?.text_size) {
+                    return `${iconModule.text_size}px`;
+                  }
+                  return '10px';
+                })()};
                   color: ${stateColor || 'var(--secondary-text-color)'};
                   text-align: ${globalTextStyles.textAlign || 'center'};
                   line-height: ${globalTextStyles.lineHeight || '1.2'};
@@ -4540,29 +4693,26 @@ export class UltraIconModule extends BaseUltraModule {
     const hoverEffect = (iconModule as any).design?.hover_effect;
     const hoverEffectClass = UcHoverEffectsService.getHoverEffectClass(hoverEffect);
 
-    // Get design properties for Global Design tab support - check both locations
+    // Get design properties ONLY from the design object (Design tab)
+    // This ensures Design tab always takes precedence over General tab
     const designFromDesignObject = (iconModule as any).design || {};
     const designProperties = {
-      color: (iconModule as any).color || designFromDesignObject.color,
-      font_size: (iconModule as any).font_size || designFromDesignObject.font_size,
-      font_weight: (iconModule as any).font_weight || designFromDesignObject.font_weight,
-      font_style: (iconModule as any).font_style || designFromDesignObject.font_style,
-      text_transform: (iconModule as any).text_transform || designFromDesignObject.text_transform,
-      font_family: (iconModule as any).font_family || designFromDesignObject.font_family,
-      line_height: (iconModule as any).line_height || designFromDesignObject.line_height,
-      letter_spacing: (iconModule as any).letter_spacing || designFromDesignObject.letter_spacing,
-      text_align: (iconModule as any).text_align || designFromDesignObject.text_align,
-      text_shadow_h: (iconModule as any).text_shadow_h || designFromDesignObject.text_shadow_h,
-      text_shadow_v: (iconModule as any).text_shadow_v || designFromDesignObject.text_shadow_v,
-      text_shadow_blur:
-        (iconModule as any).text_shadow_blur || designFromDesignObject.text_shadow_blur,
-      text_shadow_color:
-        (iconModule as any).text_shadow_color || designFromDesignObject.text_shadow_color,
-      background_position:
-        (iconModule as any).background_position || designFromDesignObject.background_position,
-      background_repeat:
-        (iconModule as any).background_repeat || designFromDesignObject.background_repeat,
-      hover_effect: (iconModule as any).hover_effect || designFromDesignObject.hover_effect,
+      color: designFromDesignObject.color,
+      font_size: designFromDesignObject.font_size,
+      font_weight: designFromDesignObject.font_weight,
+      font_style: designFromDesignObject.font_style,
+      text_transform: designFromDesignObject.text_transform,
+      font_family: designFromDesignObject.font_family,
+      line_height: designFromDesignObject.line_height,
+      letter_spacing: designFromDesignObject.letter_spacing,
+      text_align: designFromDesignObject.text_align,
+      text_shadow_h: designFromDesignObject.text_shadow_h,
+      text_shadow_v: designFromDesignObject.text_shadow_v,
+      text_shadow_blur: designFromDesignObject.text_shadow_blur,
+      text_shadow_color: designFromDesignObject.text_shadow_color,
+      background_position: designFromDesignObject.background_position,
+      background_repeat: designFromDesignObject.background_repeat,
+      hover_effect: designFromDesignObject.hover_effect,
     };
 
     return html`
@@ -4894,11 +5044,22 @@ export class UltraIconModule extends BaseUltraModule {
                               class="${animationClass} ultra-force-animation"
                               style="
                                 color: ${displayColor || 'var(--secondary-text-color)'};
-                                --mdc-icon-size: ${Number(
-                                isActive
-                                  ? icon.active_icon_size || icon.icon_size
-                                  : icon.inactive_icon_size || icon.icon_size
-                              ) || 26}px;
+                                --mdc-icon-size: ${(() => {
+                                // Priority: 1) Icon state-specific size, 2) Icon default size, 3) Module icon_size, 4) Fallback
+                                const iconSpecificSize = Number(
+                                  isActive
+                                    ? icon.active_icon_size || icon.icon_size
+                                    : icon.inactive_icon_size || icon.icon_size
+                                );
+                                if (iconSpecificSize) {
+                                  return `${iconSpecificSize}px`;
+                                }
+                                // Use module-level icon_size if set
+                                if (iconModule?.icon_size) {
+                                  return `${iconModule.icon_size}px`;
+                                }
+                                return '26px';
+                              })()};
                                 ${animationClass && animationClass !== 'none'
                                 ? `animation: ${this._getInlineAnimation(animationClass)} !important;`
                                 : ''}

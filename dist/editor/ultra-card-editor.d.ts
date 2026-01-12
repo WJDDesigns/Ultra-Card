@@ -36,6 +36,7 @@ export declare class UltraCardEditor extends LitElement {
     private _showVariableMappingDialog;
     private _missingVariables;
     private _pendingImportConfig;
+    private _previewBreakpoint;
     /** Flag to ensure module CSS for animations is injected once */
     private _moduleStylesInjected;
     setConfig(config: UltraCardConfig): void;
@@ -141,6 +142,12 @@ export declare class UltraCardEditor extends LitElement {
     private _formatNextSnapshotTime;
     private _formatLastSnapshotTime;
     private _handleCardNameChange;
+    /**
+     * Handle preview breakpoint change from layout tab.
+     * This only affects the Live Preview sections within the editor.
+     * Note: The HA Preview panel is controlled by Home Assistant and cannot be resized from here.
+     */
+    private _handlePreviewBreakpointChanged;
     private _handleExport;
     private _handleImport;
     private _handleVariableMappingConfirm;

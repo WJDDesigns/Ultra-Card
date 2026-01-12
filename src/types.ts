@@ -126,6 +126,8 @@ export interface BaseModule {
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
   display_conditions?: DisplayCondition[];
+  // Responsive visibility - hide on specific device breakpoints
+  hidden_on_devices?: DeviceBreakpoint[];
   // Legacy design properties (for backward compatibility)
   background_color?: string;
   background_image?: string;
@@ -283,6 +285,9 @@ export interface TextModule extends BaseModule {
   unified_template_mode?: boolean;
   unified_template?: string;
   ignore_entity_state_config?: boolean;
+  // Size configuration (General tab controls)
+  text_size?: number; // Text size in pixels
+  icon_size?: number; // Icon size in pixels (when icon is used)
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -589,6 +594,9 @@ export interface InfoModule extends BaseModule {
     service?: string;
     service_data?: Record<string, any>;
   };
+  // Size configuration (General tab controls)
+  text_size?: number; // Text size in pixels
+  icon_size?: number; // Icon size in pixels
   // Hover configuration
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -1324,6 +1332,9 @@ export interface IconModule extends BaseModule {
     service?: string;
     service_data?: Record<string, any>;
   };
+  // Size configuration (General tab controls)
+  text_size?: number; // Text size in pixels
+  icon_size?: number; // Icon size in pixels
   // Hover effects
   enable_hover_effect?: boolean;
   hover_background_color?: string;
@@ -3855,6 +3866,17 @@ export interface HoverEffectConfig {
   intensity?: 'subtle' | 'normal' | 'strong'; // Affects magnitude of effects
 }
 
+// Device breakpoint type for responsive design
+export type DeviceBreakpoint = 'desktop' | 'laptop' | 'tablet' | 'mobile';
+
+// Breakpoint configuration with pixel values (WPBakery-style)
+export const DEVICE_BREAKPOINTS = {
+  desktop: { minWidth: 1381, label: 'Desktop', icon: 'mdi:monitor' },
+  laptop: { minWidth: 1025, maxWidth: 1380, label: 'Laptop', icon: 'mdi:laptop' },
+  tablet: { minWidth: 601, maxWidth: 1024, label: 'Tablet', icon: 'mdi:tablet' },
+  mobile: { maxWidth: 600, label: 'Mobile', icon: 'mdi:cellphone' },
+} as const;
+
 // Design properties interface that can be shared
 export interface SharedDesignProperties {
   // Text properties
@@ -4003,6 +4025,31 @@ export interface SharedDesignProperties {
   css_variable_prefix?: string;
 }
 
+// Responsive design properties - extends SharedDesignProperties to allow
+// both flat access (for backwards compatibility) and nested device-specific overrides
+export interface ResponsiveDesignProperties extends SharedDesignProperties {
+  // Base/default design properties (applied when no device-specific override exists)
+  // In responsive mode, properties can be at the top level OR nested in base
+  base?: Partial<SharedDesignProperties>;
+  // Device-specific overrides (merged with base at runtime)
+  desktop?: Partial<SharedDesignProperties>;
+  laptop?: Partial<SharedDesignProperties>;
+  tablet?: Partial<SharedDesignProperties>;
+  mobile?: Partial<SharedDesignProperties>;
+}
+
+// Type guard to check if design has responsive overrides (has device-specific keys)
+export function isResponsiveDesign(design: SharedDesignProperties | ResponsiveDesignProperties | undefined): design is ResponsiveDesignProperties {
+  if (!design) return false;
+  return (
+    'base' in design ||
+    'desktop' in design ||
+    'laptop' in design ||
+    'tablet' in design ||
+    'mobile' in design
+  );
+}
+
 // Column interface that contains modules
 export interface CardColumn {
   id: string;
@@ -4027,8 +4074,15 @@ export interface CardColumn {
   display_conditions?: DisplayCondition[];
   template_mode?: boolean;
   template?: string;
+  // Responsive visibility - hide on specific device breakpoints
+  hidden_on_devices?: DeviceBreakpoint[];
   // Design properties with priority system
-  design?: SharedDesignProperties;
+  // Can include device-specific overrides (base, desktop, laptop, tablet, mobile)
+  design?: ResponsiveDesignProperties;
+  // Column-level actions (override child module actions)
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
 }
 
 // Row interface that contains columns
@@ -4083,8 +4137,15 @@ export interface CardRow {
   display_conditions?: DisplayCondition[];
   template_mode?: boolean;
   template?: string;
+  // Responsive visibility - hide on specific device breakpoints
+  hidden_on_devices?: DeviceBreakpoint[];
   // Design properties with priority system
-  design?: SharedDesignProperties;
+  // Can include device-specific overrides (base, desktop, laptop, tablet, mobile)
+  design?: ResponsiveDesignProperties;
+  // Row-level actions (override column and module actions)
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
 }
 
 // Layout configuration

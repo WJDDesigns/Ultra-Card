@@ -2,7 +2,7 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { UltraCardConfig, HoverEffectConfig, CustomVariable } from '../types';
+import { UltraCardConfig, HoverEffectConfig, CustomVariable, DeviceBreakpoint } from '../types';
 import { configValidationService } from '../services/config-validation-service';
 import { UcHoverEffectsService } from '../services/uc-hover-effects-service';
 import { ucCloudAuthService, CloudUser } from '../services/uc-cloud-auth-service';
@@ -12,6 +12,7 @@ import { ucSnapshotService } from '../services/uc-snapshot-service';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { ucExportImportService } from '../services/uc-export-import-service';
 import {
   ucSnapshotSchedulerService,
@@ -66,6 +67,9 @@ export class UltraCardEditor extends LitElement {
   @state() private _showVariableMappingDialog: boolean = false;
   @state() private _missingVariables: string[] = [];
   @state() private _pendingImportConfig: any = null;
+
+  // Preview breakpoint state - for simulating different device widths in Live Preview
+  @state() private _previewBreakpoint: DeviceBreakpoint = 'desktop';
 
   /** Flag to ensure module CSS for animations is injected once */
   private _moduleStylesInjected = false;
@@ -350,6 +354,7 @@ export class UltraCardEditor extends LitElement {
                 .isFullScreen=${this._isFullScreen}
                 .cloudUser=${this._cloudUser}
                 @switch-tab=${(e: CustomEvent) => (this._activeTab = e.detail.tab)}
+                @preview-breakpoint-changed=${this._handlePreviewBreakpointChanged}
               ></ultra-layout-tab>`
             : this._activeTab === 'settings'
               ? this._renderSettingsTab()
@@ -3543,22 +3548,27 @@ export class UltraCardEditor extends LitElement {
 
     if (!this.config) return configs;
 
+    const currentBreakpoint = responsiveDesignService.getCurrentBreakpoint();
+
     // Collect from rows
     this.config.layout?.rows?.forEach(row => {
-      if (row.design?.hover_effect) {
-        configs.push(row.design.hover_effect);
+      const effectiveDesign = responsiveDesignService.getEffectiveDesign(row.design, currentBreakpoint);
+      if (effectiveDesign.hover_effect) {
+        configs.push(effectiveDesign.hover_effect);
       }
 
       // Collect from columns
       row.columns?.forEach(column => {
-        if (column.design?.hover_effect) {
-          configs.push(column.design.hover_effect);
+        const colEffectiveDesign = responsiveDesignService.getEffectiveDesign(column.design, currentBreakpoint);
+        if (colEffectiveDesign.hover_effect) {
+          configs.push(colEffectiveDesign.hover_effect);
         }
 
         // Collect from modules
         column.modules?.forEach(module => {
-          if ((module as any).design?.hover_effect) {
-            configs.push((module as any).design.hover_effect);
+          const modEffectiveDesign = responsiveDesignService.getEffectiveDesign((module as any).design, currentBreakpoint);
+          if (modEffectiveDesign.hover_effect) {
+            configs.push(modEffectiveDesign.hover_effect);
           }
         });
       });
@@ -4940,6 +4950,16 @@ export class UltraCardEditor extends LitElement {
     this._updateConfig(newConfig);
   }
 
+  /**
+   * Handle preview breakpoint change from layout tab.
+   * This only affects the Live Preview sections within the editor.
+   * Note: The HA Preview panel is controlled by Home Assistant and cannot be resized from here.
+   */
+  private _handlePreviewBreakpointChanged(e: CustomEvent) {
+    const { breakpoint } = e.detail;
+    this._previewBreakpoint = breakpoint;
+  }
+
   private async _handleExport() {
     const lang = this.hass?.locale?.language || 'en';
     
@@ -5099,8 +5119,32 @@ export class UltraCardEditor extends LitElement {
     input.click();
   }
 
-  private _handleVariableMappingConfirm(): void {
+  private _handleVariableMappingConfirm(e: CustomEvent): void {
     const lang = this.hass?.locale?.language || 'en';
+    
+    // Handle card-specific variables from the mapping dialog
+    const cardVarsToCreate = e.detail?.cardVarsToCreate || [];
+    
+    if (cardVarsToCreate.length > 0) {
+      // Add variables to card config as card-specific
+      const currentCardVars = this.config._customVariables || [];
+      const newCardVars = cardVarsToCreate.map((v: any, index: number) => ({
+        id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: v.name,
+        entity: v.entity,
+        value_type: v.valueType,
+        attribute_name: v.attributeName,
+        order: currentCardVars.length + index,
+        created: new Date().toISOString(),
+        isGlobal: false, // Card-specific, not global
+      }));
+      
+      // Update config with new card-specific variables
+      this._updateConfig({ 
+        _customVariables: [...currentCardVars, ...newCardVars] 
+      });
+    }
+    
     this._showVariableMappingDialog = false;
     this._missingVariables = [];
     this._pendingImportConfig = null;
