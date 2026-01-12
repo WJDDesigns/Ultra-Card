@@ -1,5 +1,28 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta18
+
+### 🚀 New Features
+
+- **Added new device breakpoints for custom designs per device layouts** - Create unique designs for different screen sizes with new responsive breakpoint system
+- **Added device breakpoints in Live Preview for testing** - Test your responsive designs directly in the editor preview
+- **Added Icon Size/Text size sliders for Text Module** - More granular control over text module appearance
+
+### 🐛 Bug Fixes
+
+- **Fixed issue with Ultra Card toggle state for tracking** - Resolved toggle state tracking issues
+- **Fixed issues with gradients being saved to favorites** - Gradient colors now save correctly to favorites
+
+### 🔧 Improvements
+
+- **Improved popup code to fix issues** - Various popup module stability improvements
+
+### ⚠️ Warning
+
+Probably broke other stuff so enjoy at your own risk, I mean it...
+
+---
+
 ## Version 2.3.0-beta17
 
 ### 🐛 Bug Fixes
