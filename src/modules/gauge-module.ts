@@ -1339,14 +1339,14 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <div class="field-container" style="margin-bottom: 24px; margin-top: 16px;">
                   <div class="field-title">Value X Offset</div>
                   <div class="field-description">
-                    Horizontal offset for value positioning (-50 to 50).
+                    Horizontal offset for value positioning (supports negative values).
                   </div>
                   ${FormUtils.renderCleanForm(
                     hass,
                     { value_x_offset: gaugeModule.value_x_offset ?? 0 },
                     [
                       FormUtils.createSchemaItem('value_x_offset', {
-                        number: { mode: 'box', min: -50, max: 50, step: 1 },
+                        number: { mode: 'box', min: -500, max: 500, step: 1 },
                       }),
                     ],
                     (e: CustomEvent) => {
@@ -1359,14 +1359,14 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Value Y Offset</div>
                   <div class="field-description">
-                    Vertical offset for value positioning (-50 to 50).
+                    Vertical offset for value positioning (supports negative values).
                   </div>
                   ${FormUtils.renderCleanForm(
                     hass,
                     { value_y_offset: gaugeModule.value_y_offset ?? 0 },
                     [
                       FormUtils.createSchemaItem('value_y_offset', {
-                        number: { mode: 'box', min: -50, max: 50, step: 1 },
+                        number: { mode: 'box', min: -500, max: 500, step: 1 },
                       }),
                     ],
                     (e: CustomEvent) => {
@@ -1520,14 +1520,14 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Name X Offset</div>
                   <div class="field-description">
-                    Horizontal offset for name positioning (-50 to 50).
+                    Horizontal offset for name positioning (supports negative values).
                   </div>
                   ${FormUtils.renderCleanForm(
                     hass,
                     { name_x_offset: gaugeModule.name_x_offset ?? 0 },
                     [
                       FormUtils.createSchemaItem('name_x_offset', {
-                        number: { mode: 'box', min: -50, max: 50, step: 1 },
+                        number: { mode: 'box', min: -500, max: 500, step: 1 },
                       }),
                     ],
                     (e: CustomEvent) => {
@@ -1540,14 +1540,14 @@ export class UltraGaugeModule extends BaseUltraModule {
                 <div class="field-container" style="margin-bottom: 16px;">
                   <div class="field-title">Name Y Offset</div>
                   <div class="field-description">
-                    Vertical offset for name positioning (-50 to 50).
+                    Vertical offset for name positioning (supports negative values).
                   </div>
                   ${FormUtils.renderCleanForm(
                     hass,
                     { name_y_offset: gaugeModule.name_y_offset ?? 0 },
                     [
                       FormUtils.createSchemaItem('name_y_offset', {
-                        number: { mode: 'box', min: -50, max: 50, step: 1 },
+                        number: { mode: 'box', min: -500, max: 500, step: 1 },
                       }),
                     ],
                     (e: CustomEvent) => {
