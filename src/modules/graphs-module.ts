@@ -1205,6 +1205,60 @@ export class UltraGraphsModule extends BaseUltraModule {
                       'Forecasts display all available data from your weather service. The forecast type (hourly/daily) determines the time range shown.'
                     )}
                   </div>
+                </div>
+                
+                <!-- Forecast Display Limit Controls -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                  <div>
+                    <label style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;">
+                      ${localize('editor.graphs.forecast_limit.hours', lang, 'Limit Hours')}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="168"
+                      .value=${(graphsModule as any).forecast_display_hours ?? 0}
+                      @change=${(e: Event) => {
+                        const value = parseInt((e.target as HTMLInputElement).value) || 0;
+                        updateModule({ forecast_display_hours: value } as any);
+                        // Clear cached data to force re-fetch with new limits
+                        delete this._historyData[graphsModule.id];
+                        delete this._deferredHistoryScheduled[graphsModule.id];
+                        delete this._historyLoading[graphsModule.id];
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
+                      placeholder="0"
+                    />
+                    <div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px;">
+                      ${localize('editor.graphs.forecast_limit.hours_desc', lang, '0 = show all')}
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;">
+                      ${localize('editor.graphs.forecast_limit.days', lang, 'Limit Days')}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="14"
+                      .value=${(graphsModule as any).forecast_display_days ?? 0}
+                      @change=${(e: Event) => {
+                        const value = parseInt((e.target as HTMLInputElement).value) || 0;
+                        updateModule({ forecast_display_days: value } as any);
+                        // Clear cached data to force re-fetch with new limits
+                        delete this._historyData[graphsModule.id];
+                        delete this._deferredHistoryScheduled[graphsModule.id];
+                        delete this._historyLoading[graphsModule.id];
+                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                      }}
+                      style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
+                      placeholder="0"
+                    />
+                    <div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px;">
+                      ${localize('editor.graphs.forecast_limit.days_desc', lang, 'Days override hours')}
+                    </div>
+                  </div>
                 </div>`
               : ''}
 
@@ -2333,10 +2387,15 @@ export class UltraGraphsModule extends BaseUltraModule {
               position:absolute; 
               ${posMap[headerPos]}; 
               pointer-events:none; 
-              z-index:2;
+              z-index:10;
               max-width: calc(100% - 32px);
               box-sizing: border-box;
               overflow: hidden;
+              padding: 4px 8px;
+              border-radius: 6px;
+              background: rgba(0, 0, 0, 0.3);
+              backdrop-filter: blur(4px);
+              -webkit-backdrop-filter: blur(4px);
             "
           >
             ${(graphsModule as any).show_display_name !== false &&
@@ -3066,6 +3125,14 @@ export class UltraGraphsModule extends BaseUltraModule {
     const isUsingRealData = Boolean(historyData && historyData.source === 'history');
     const dataSourceInfo = isUsingRealData ? 'Real HA History' : 'Fallback Data';
 
+    // SVG padding constants to prevent clipping
+    const padLeft = 10;
+    const padRight = 5;
+    const padTop = 12;
+    const padBottom = 8;
+    const usableWidth = 300 - padLeft - padRight; // 285
+    const usableHeight = 100 - padTop - padBottom; // 80
+
     return html`
       <div
         class="line-chart-container"
@@ -3084,31 +3151,41 @@ export class UltraGraphsModule extends BaseUltraModule {
           width="100%"
           height="100%"
           viewBox="0 0 300 100"
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
           style="
             display: block; 
             width: 100%; 
             height: 100%; 
             margin: 0; 
             padding: 0;
-            overflow: hidden;
+            overflow: visible;
           "
         >
           ${grid
             ? svg`${Array.from({ length: 4 }, (_, i) => {
-                const y = ((i + 1) * 100) / 5; // 20,40,60,80 across full height
+                // Grid lines within padded area
+                const gridY = padTop + ((i + 1) / 5) * usableHeight;
                 const gridValue = maxValue - ((i + 1) / 5) * valueRange;
                 const showValues = (module as any).show_grid_values !== false;
                 return svg`
-                  <line x1="0" y1="${y}" x2="300" y2="${y}" stroke="rgba(255,255,255,.08)" stroke-width="0.5" />
+                  <line 
+                    x1="${padLeft}" 
+                    y1="${gridY}" 
+                    x2="${300 - padRight}" 
+                    y2="${gridY}" 
+                    stroke="rgba(255,255,255,.08)" 
+                    stroke-width="0.5"
+                    vector-effect="non-scaling-stroke"
+                  />
                   ${
                     showValues
                       ? svg`<text 
-                          x="2" 
-                          y="${y - 2}" 
-                          font-size="8" 
+                          x="${padLeft - 1}" 
+                          y="${gridY - 1}" 
+                          font-size="7" 
                           fill="var(--secondary-text-color)" 
                           opacity="0.6"
+                          text-anchor="start"
                         >${Math.round(gridValue)}</text>`
                       : ''
                   }
@@ -3116,19 +3193,22 @@ export class UltraGraphsModule extends BaseUltraModule {
               })}`
             : ''}
           ${(() => {
-            const topPad = 8; // percent headroom to avoid touching top
             return normalizedDatasets.map(dataset => {
               const pathPoints = dataset.values.map((value, index) => {
-                const x = (index / (timePoints.length - 1)) * 300;
-                // Bottom-align with headroom: highest value at topPad, lowest at 100
+                // Calculate x within padded area
+                const x = timePoints.length > 1
+                  ? padLeft + (index / (timePoints.length - 1)) * usableWidth
+                  : padLeft + usableWidth / 2;
+                // Calculate y within padded area
                 const y =
                   valueRange > 0
-                    ? topPad + ((maxValue - value) / valueRange) * (100 - topPad)
-                    : 100;
+                    ? padTop + ((maxValue - value) / valueRange) * usableHeight
+                    : padTop + usableHeight / 2;
                 return `${x},${y}`;
               });
               const pathString = toPath(pathPoints);
               const lastX = pathPoints[pathPoints.length - 1].split(',')[0];
+              const firstX = pathPoints[0].split(',')[0];
               const fillColor = this._colorWithAlpha(dataset.color, 0.25);
               const dash =
                 dataset.lineStyle === 'dashed'
@@ -3136,17 +3216,21 @@ export class UltraGraphsModule extends BaseUltraModule {
                   : dataset.lineStyle === 'dotted'
                     ? '1 3'
                     : 'none';
+              // Calculate bottom of padded area for fill
+              const fillBottom = padTop + usableHeight;
               return svg`<g>
-                ${dataset.fillArea === true ? svg`<path d="${pathString} L ${lastX} 100 L 0 100 Z" fill="${fillColor}" stroke="none" />` : ''}
-                <path d="${pathString}" stroke="${dataset.color}" stroke-width="${dataset.lineWidth ?? 2}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${dash}" />
+                ${dataset.fillArea === true ? svg`<path d="${pathString} L ${lastX} ${fillBottom} L ${firstX} ${fillBottom} Z" fill="${fillColor}" stroke="none" />` : ''}
+                <path d="${pathString}" stroke="${dataset.color}" stroke-width="${dataset.lineWidth ?? 2}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${dash}" vector-effect="non-scaling-stroke" />
                 ${
                   dataset.showPoints !== false
                     ? svg`${dataset.values.map((value, index) => {
-                        const x = (index / (timePoints.length - 1)) * 300;
+                        const x = timePoints.length > 1
+                          ? padLeft + (index / (timePoints.length - 1)) * usableWidth
+                          : padLeft + usableWidth / 2;
                         const y =
                           valueRange > 0
-                            ? topPad + ((maxValue - value) / valueRange) * (100 - topPad)
-                            : 100;
+                            ? padTop + ((maxValue - value) / valueRange) * usableHeight
+                            : padTop + usableHeight / 2;
                         // For dots, ensure we have a valid fill color
                         const dotFill =
                           bgFill === 'transparent' ? 'var(--card-background-color)' : bgFill;
@@ -3160,6 +3244,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                             fill="${dotFill}" 
                             stroke="${dataset.color}" 
                             stroke-width="1.5"
+                            vector-effect="non-scaling-stroke"
                             style="cursor: ${module.show_tooltips !== false ? 'pointer' : 'default'};"
                             @mouseenter=${
                               module.show_tooltips !== false
@@ -3246,12 +3331,17 @@ export class UltraGraphsModule extends BaseUltraModule {
         flex-wrap:wrap; 
         font-size:12px; 
         ${textStyle || ''}; 
-        z-index:2;
+        z-index:10;
         max-width: calc(100% - 16px);
         box-sizing: border-box;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
       "
     >
       ${data.map(
@@ -3478,6 +3568,13 @@ export class UltraGraphsModule extends BaseUltraModule {
 
     const displayGroupsMinWidth = Math.max(groupWidth * displayTimePoints.length, 120);
 
+    // Add padding for top overlay if showing title/value at top
+    const infoPos = (module as any).info_position || 'top_left';
+    const hasTopOverlay = infoPos.startsWith('top') && 
+      ((module as any).show_display_name !== false || (module as any).show_entity_value !== false);
+    const topPadding = hasTopOverlay ? 60 : 8;
+    const adjustedBarAreaHeight = Math.max(40, barAreaHeight - topPadding);
+
     return html`
       <div
         class="bar-chart-container"
@@ -3485,20 +3582,25 @@ export class UltraGraphsModule extends BaseUltraModule {
           width:100%;
           height:${chartHeight}px;
           display:flex;
-          align-items:center;
-          justify-content:${justifyContent};
+          flex-direction:column;
+          align-items:stretch;
           overflow:hidden;
           box-sizing:border-box;
+          padding-top:${topPadding}px;
         "
       >
         <div
           class="bar-chart-scroll"
           style="
             width:100%;
-            height:100%;
+            max-width:100%;
+            flex:1;
             overflow-x:auto;
             overflow-y:hidden;
             box-sizing:border-box;
+            -webkit-overflow-scrolling:touch;
+            scrollbar-width:thin;
+            scrollbar-color:var(--primary-color) transparent;
           "
         >
           <div
@@ -3510,7 +3612,8 @@ export class UltraGraphsModule extends BaseUltraModule {
               justify-content:${justifyContent};
               gap:12px;
               min-width:${displayGroupsMinWidth}px;
-              height:${barAreaHeight}px;
+              width:fit-content;
+              height:${adjustedBarAreaHeight}px;
               padding:0 12px;
               box-sizing:border-box;
             "
@@ -3540,7 +3643,7 @@ export class UltraGraphsModule extends BaseUltraModule {
                         position:absolute;
                         left:0;
                         right:0;
-                        top:${zeroY}px;
+                        top:${minValue >= 0 ? adjustedBarAreaHeight : (maxValue <= 0 ? 0 : maxValue * (adjustedBarAreaHeight / valueRange))}px;
                         border-top:1px solid rgba(255,255,255,0.1);
                         pointer-events:none;
                       "
@@ -3564,9 +3667,15 @@ export class UltraGraphsModule extends BaseUltraModule {
                         }
                       }
 
-                      const valueY = maxValue === minValue ? zeroY : (maxValue - value) * scale;
-                      const top = Math.min(zeroY, valueY);
-                      const barHeight = Math.max(2, Math.abs(zeroY - valueY));
+                      // Use adjusted scale for the reduced bar area
+                      const adjustedScale = adjustedBarAreaHeight / valueRange;
+                      const adjustedZeroY = minValue >= 0 ? adjustedBarAreaHeight : 
+                        (maxValue <= 0 ? 0 : maxValue * adjustedScale);
+                      const valueY = maxValue === minValue ? adjustedZeroY : (maxValue - value) * adjustedScale;
+                      const top = Math.min(adjustedZeroY, valueY);
+                      // Clamp bar height to never exceed the adjusted area
+                      const rawBarHeight = Math.abs(adjustedZeroY - valueY);
+                      const barHeight = Math.max(2, Math.min(rawBarHeight, adjustedBarAreaHeight));
                       const offset =
                         (datasetIndex - (datasetCount - 1) / 2) * (barWidth * overlapFactor);
                       const showStaticValue = datasetCount === 1;
@@ -4433,7 +4542,11 @@ export class UltraGraphsModule extends BaseUltraModule {
 
   private async _fetchForecastDataAsync(module: GraphsModule, hass: HomeAssistant): Promise<void> {
     try {
-      const forecastData = await this._fetchForecastData(module, hass);
+      let forecastData = await this._fetchForecastData(module, hass);
+      
+      // Apply forecast display limits if configured
+      forecastData = this._applyForecastDisplayLimits(forecastData, module);
+      
       const timePoints = this._generateForecastTimePoints(forecastData, module.forecast_type);
       const processed = this._processForecastData(forecastData, module, timePoints);
 
@@ -4457,6 +4570,37 @@ export class UltraGraphsModule extends BaseUltraModule {
       this._historyLoading[module.id] = false;
       this.requestUpdate();
     }
+  }
+
+  /**
+   * Apply forecast display limits based on configured hours or days
+   * Filters forecast data to only show data within the specified time range
+   */
+  private _applyForecastDisplayLimits(forecastData: any[], module: GraphsModule): any[] {
+    const displayHours = (module as any).forecast_display_hours ?? 0;
+    const displayDays = (module as any).forecast_display_days ?? 0;
+    
+    // If no limits configured, return all data
+    if (displayHours <= 0 && displayDays <= 0) {
+      return forecastData;
+    }
+    
+    const now = Date.now();
+    let cutoffMs: number;
+    
+    if (displayDays > 0) {
+      // Days take priority over hours if both are set
+      cutoffMs = displayDays * 24 * 60 * 60 * 1000;
+    } else {
+      cutoffMs = displayHours * 60 * 60 * 1000;
+    }
+    
+    const cutoffTime = now + cutoffMs;
+    
+    return forecastData.filter(forecast => {
+      const forecastTime = new Date(forecast.datetime).getTime();
+      return forecastTime <= cutoffTime;
+    });
   }
 
   // ============================================================================
@@ -4516,8 +4660,28 @@ export class UltraGraphsModule extends BaseUltraModule {
     delete this._historyError[graphsModule.id];
     delete this._historyLoading[graphsModule.id];
     delete this._deferredHistoryScheduled[graphsModule.id];
+    
+    // Clear localStorage cache for this module to force fresh data fetch
+    try {
+      const store = this._getCacheStore();
+      delete store[graphsModule.id];
+      this._persistCacheStore(store);
+    } catch (_e) {
+      // Ignore cache clear errors
+    }
 
     updateModule({ entities: updatedEntities });
+    
+    // Force immediate UI refresh to trigger data re-fetch
+    setTimeout(() => {
+      this.triggerPreviewUpdate();
+      // Dispatch event to notify the card to refresh
+      window.dispatchEvent(new CustomEvent('ultra-graph-entity-changed', {
+        detail: { moduleId: graphsModule.id },
+        bubbles: true,
+        composed: true,
+      }));
+    }, 100);
   }
 
   private _toggleEntityOptions(event: Event, index: number): void {

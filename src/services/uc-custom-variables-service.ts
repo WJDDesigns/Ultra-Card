@@ -222,9 +222,15 @@ class UcCustomVariablesService {
       ...updates,
     };
 
-    this._saveToStorage();
+    const saveSuccess = this._saveToStorage();
     this._notifyListeners();
-    this._broadcastChange();
+    
+    // Only broadcast change if save succeeded - prevents reloading stale data from localStorage
+    if (!saveSuccess) {
+      console.warn('[UC Variables] Variable updated in memory only (localStorage full). Will be lost on page refresh.');
+    } else {
+      this._broadcastChange();
+    }
 
     return true;
   }
@@ -237,9 +243,15 @@ class UcCustomVariablesService {
     if (index === -1) return false;
 
     this._variables.splice(index, 1);
-    this._saveToStorage();
+    const saveSuccess = this._saveToStorage();
     this._notifyListeners();
-    this._broadcastChange();
+    
+    // Only broadcast change if save succeeded
+    if (!saveSuccess) {
+      console.warn('[UC Variables] Variable deleted in memory only (localStorage full).');
+    } else {
+      this._broadcastChange();
+    }
 
     return true;
   }
@@ -265,9 +277,13 @@ class UcCustomVariablesService {
       }
     });
 
-    this._saveToStorage();
+    const saveSuccess = this._saveToStorage();
     this._notifyListeners();
-    this._broadcastChange();
+    
+    // Only broadcast change if save succeeded
+    if (saveSuccess) {
+      this._broadcastChange();
+    }
     return true;
   }
 
@@ -327,6 +343,68 @@ class UcCustomVariablesService {
   }
 
   /**
+   * Resolve an entity field value that might be a variable reference
+   * If the value starts with $, it's treated as a variable and resolved to its entity
+   * Otherwise, the value is returned as-is (it's a direct entity ID)
+   * 
+   * @param value The entity field value (could be "$varname" or "sensor.temp")
+   * @param cardConfig Optional card config for card-specific variables
+   * @returns The resolved entity ID, or the original value if not a variable
+   */
+  resolveEntityField(value: string | undefined, cardConfig?: UltraCardConfig): string | undefined {
+    if (!value) {
+      return value;
+    }
+
+    // Check if it's a variable reference (starts with $)
+    if (value.startsWith('$')) {
+      const varName = value.substring(1); // Remove the $ prefix
+      const variable = this.getVariableByNameInContext(varName, cardConfig);
+      if (variable) {
+        return variable.entity;
+      }
+      // Variable not found - return undefined so the field shows as unconfigured
+      console.warn(`[UC Variables] Variable "${value}" not found`);
+      return undefined;
+    }
+
+    // Not a variable reference - return as-is
+    return value;
+  }
+
+  /**
+   * Check if a value is a variable reference
+   */
+  isVariableReference(value: string | undefined): boolean {
+    return !!value && value.startsWith('$');
+  }
+
+  /**
+   * Get variable info for a field value (for UI display)
+   * Returns the variable details if the value is a variable reference
+   */
+  getVariableInfo(value: string | undefined, cardConfig?: UltraCardConfig): {
+    isVariable: boolean;
+    variableName?: string;
+    resolvedEntity?: string;
+    variable?: CustomVariable;
+  } {
+    if (!value || !value.startsWith('$')) {
+      return { isVariable: false };
+    }
+
+    const varName = value.substring(1);
+    const variable = this.getVariableByNameInContext(varName, cardConfig);
+    
+    return {
+      isVariable: true,
+      variableName: value,
+      resolvedEntity: variable?.entity,
+      variable,
+    };
+  }
+
+  /**
    * Get all global variable names for autocomplete
    */
   getVariableNames(): string[] {
@@ -342,6 +420,100 @@ class UcCustomVariablesService {
       .filter(v => v.isGlobal !== true) // Handles undefined too
       .map(v => v.name);
     return [...globalNames, ...cardNames];
+  }
+
+  /**
+   * Resolve all variable references in a config object (deep)
+   * This is used at the card level to resolve all $varname references
+   * before passing the config to modules for rendering.
+   * 
+   * Note: This creates a NEW object - does not mutate the original config.
+   * Original config keeps $varname for editor display, resolved config is used for rendering.
+   * 
+   * @param config The card configuration object
+   * @returns A new config with all $varname entity references resolved
+   */
+  resolveConfigVariables<T extends object>(config: T): T {
+    return this._deepResolveVariables(config, config as unknown as UltraCardConfig) as T;
+  }
+
+  /**
+   * Resolve all $varname references in a module using the card config for variable lookup
+   * 
+   * This is specifically for resolving module entity fields where card-specific variables
+   * are stored in the card config's _customVariables array, not in the module itself.
+   * 
+   * @param module - The module config containing potential $varname references
+   * @param cardConfig - The card config containing _customVariables array
+   * @returns A new module with all $varname entity references resolved
+   */
+  resolveModuleVariables<T extends object>(module: T, cardConfig?: UltraCardConfig): T {
+    // Use the cardConfig for variable lookup (contains _customVariables)
+    // Fall back to empty object if no cardConfig provided
+    return this._deepResolveVariables(module, cardConfig || {} as UltraCardConfig) as T;
+  }
+
+  /**
+   * Deep resolve variables in an object
+   */
+  private _deepResolveVariables(obj: any, cardConfig: UltraCardConfig): any {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+
+    // Handle strings - check if it's a variable reference in an entity field context
+    if (typeof obj === 'string') {
+      // Only resolve if it looks like a variable
+      if (obj.startsWith('$')) {
+        return this.resolveEntityField(obj, cardConfig) || obj;
+      }
+      return obj;
+    }
+
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => this._deepResolveVariables(item, cardConfig));
+    }
+
+    // Handle objects
+    if (typeof obj === 'object') {
+      const resolved: any = {};
+      for (const key of Object.keys(obj)) {
+        const value = obj[key];
+        
+        // Special handling for entity-related keys
+        if (this._isEntityFieldKey(key) && typeof value === 'string' && value.startsWith('$')) {
+          resolved[key] = this.resolveEntityField(value, cardConfig) || value;
+        } else {
+          resolved[key] = this._deepResolveVariables(value, cardConfig);
+        }
+      }
+      return resolved;
+    }
+
+    // Return primitives as-is
+    return obj;
+  }
+
+  /**
+   * Check if a key name suggests it's an entity field
+   */
+  private _isEntityFieldKey(key: string): boolean {
+    const entityKeys = [
+      'entity',
+      'entity_id',
+      'entities',
+      'camera_entity',
+      'media_player',
+      'target_entity',
+      'source_entity',
+      'destination_entity',
+    ];
+    
+    // Check exact match or if key ends with _entity
+    return entityKeys.includes(key) || 
+           key.endsWith('_entity') || 
+           key.endsWith('_entity_id');
   }
 
   /**
@@ -507,8 +679,6 @@ class UcCustomVariablesService {
       return false;
     }
 
-    console.log('[UC Variables] Restoring', variables.length, 'variables from card config backup');
-    
     // Restore variables
     this._variables = variables.filter(v => this._isValidVariable(v) && v.isGlobal !== false);
     

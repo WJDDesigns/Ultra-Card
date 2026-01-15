@@ -1152,10 +1152,45 @@ export class GlobalDesignTab extends LitElement {
   private _resetCurrentDeviceOverrides(): void {
     if (this._selectedDevice === 'desktop') return; // Can't reset desktop (it's the base)
     
-    // Dispatch event to notify parent to clear device overrides
+    // Get the base design without the device overrides
+    const clearedDesign = responsiveDesignService.clearDeviceOverrides(
+      this.responsiveDesign,
+      this._selectedDevice
+    );
+    
+    // IMPORTANT: The parent handler merges by iterating Object.entries(incomingDesign).
+    // If the device key is simply missing, it won't be removed from existing design.
+    // We must explicitly set the device key to undefined so the parent deletes it.
+    const designUpdate = { 
+      design: {
+        ...clearedDesign,
+        [this._selectedDevice]: undefined  // Explicitly mark for deletion
+      }
+    };
+    
+    // OPTIMISTIC UPDATE: Update local responsiveDesign immediately so the 
+    // device selector icons update instantly, before the async config update completes.
+    // This provides immediate visual feedback to the user.
+    this.responsiveDesign = clearedDesign as ResponsiveDesignProperties;
+    this.requestUpdate();
+    
+    // Update using the same pattern as other update methods
+    if (this.onUpdate) {
+      this.onUpdate(designUpdate as any);
+    } else {
+      this.dispatchEvent(
+        new CustomEvent('design-changed', {
+          detail: designUpdate,
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
+    
+    // Dispatch device-changed event to notify parent components for UI sync
     this.dispatchEvent(
-      new CustomEvent('reset-device-overrides', {
-        detail: { device: this._selectedDevice },
+      new CustomEvent('device-changed', {
+        detail: { device: this._selectedDevice, reset: true },
         bubbles: true,
         composed: true,
       })
@@ -1535,7 +1570,20 @@ export class GlobalDesignTab extends LitElement {
   ): TemplateResult {
     const isExpanded = this._expandedSections.has(section);
     const hasEdits = this._hasModifiedProperties(section);
-    const hasDeviceOverrides = sectionProperties ? this._hasAnyDeviceOverridesForSection(sectionProperties) : false;
+    
+    // Determine if we should show the device override indicator:
+    // - If on DESKTOP or responsive disabled: show if ANY device has overrides (indicates responsive settings exist)
+    // - If on LAPTOP/TABLET/MOBILE: show only if THIS device has overrides
+    let hasDeviceOverrides = false;
+    if (sectionProperties && this._responsiveEnabled) {
+      if (this._selectedDevice === 'desktop') {
+        // On desktop, show if any device has overrides for this section
+        hasDeviceOverrides = this._hasAnyDeviceOverridesForSection(sectionProperties);
+      } else {
+        // On other devices, only show if THIS device has overrides
+        hasDeviceOverrides = this._sectionHasDeviceOverrides(sectionProperties);
+      }
+    }
 
     return html`
       <div class="accordion-section ${hasDeviceOverrides ? 'has-device-overrides' : ''}">

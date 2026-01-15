@@ -1,5 +1,23 @@
 # 🎉 Ultra Card - The Ultimate Home Assistant Card Experience
 
+## Version 2.3.0-beta20
+
+### 🚀 New Features
+
+- **Added new Robot Vacuum Module for Pro Users** - Control and monitor your robot vacuum with a dedicated module
+
+### 🐛 Bug Fixes
+
+- **Fixed Gauge offsets for values** - Corrected offset calculations for gauge value display
+- **Fixed horizontal module navigation conflict with popups** - Resolved navigation conflicts when using horizontal modules with popups
+
+### 🔧 Improvements
+
+- **Improved variable display** - Enhanced variable display functionality across modules
+- **Improved Graph Module** - Better performance and functionality for graph visualizations
+
+---
+
 ## Version 2.3.0-beta18
 
 ### 🚀 New Features

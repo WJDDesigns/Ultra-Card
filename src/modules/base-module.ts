@@ -160,6 +160,38 @@ export abstract class BaseUltraModule implements UltraModule {
   }
 
   /**
+   * Resolve an entity field that may contain a variable reference
+   * If the value starts with $, it resolves to the variable's entity
+   * Otherwise returns the value as-is
+   * 
+   * Use this in render methods to support variable indirection:
+   * - User selects $myvar in the entity picker
+   * - Config stores "$myvar" 
+   * - At render time, this resolves to the actual entity ID
+   * - User can change $myvar's entity in settings, all uses update
+   * 
+   * @param entityValue The entity field value (could be "$varname" or "sensor.temp")
+   * @param config The card configuration
+   * @returns The resolved entity ID
+   */
+  protected resolveEntity(entityValue: string | undefined, config?: UltraCardConfig): string | undefined {
+    if (!entityValue) {
+      return entityValue;
+    }
+    
+    // Import dynamically to avoid circular dependencies
+    const { ucCustomVariablesService } = require('../services/uc-custom-variables-service');
+    return ucCustomVariablesService.resolveEntityField(entityValue, config);
+  }
+
+  /**
+   * Check if an entity field is using a variable reference
+   */
+  protected isVariableReference(entityValue: string | undefined): boolean {
+    return !!entityValue && entityValue.startsWith('$');
+  }
+
+  /**
    * Centralized action handler for all modules
    * This ensures confirmation dialogs work consistently across all modules
    * Modules should use this method instead of calling UltraLinkComponent.handleAction directly
@@ -560,6 +592,32 @@ export abstract class BaseUltraModule implements UltraModule {
   protected colorField = UcFormUtils.color;
   protected gridField = UcFormUtils.grid;
   protected expandableField = UcFormUtils.expandable;
+
+  /**
+   * Render variable quick-select chips above entity pickers
+   * Shows both global and card-specific custom variables as clickable chips
+   * When a chip is clicked, the variable's entity is selected
+   */
+  protected renderVariableChips = (
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    currentValue: string,
+    onSelect: (entityId: string) => void
+  ) => UcFormUtils.renderVariableChips(hass, config, currentValue, onSelect);
+
+  /**
+   * Render entity picker with variable chips above it
+   * Combines variable quick-select with the native ha-form entity picker
+   */
+  protected renderEntityPickerWithVariables = (
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    fieldName: string,
+    currentValue: string,
+    onChange: (value: string) => void,
+    domain?: string[],
+    label?: string
+  ) => UcFormUtils.renderEntityPickerWithVariables(hass, config, fieldName, currentValue, onChange, domain, label);
 
   /**
    * Trigger a preview update event

@@ -273,18 +273,30 @@ export class UcResponsiveDesignTab extends LitElement {
     if (this._selectedDevice === 'base') return; // Can't reset base
 
     const currentDesign = (this.module as any).design as DesignConfig | undefined;
-    const newDesign = responsiveDesignService.clearDeviceOverrides(currentDesign, this._selectedDevice);
+    const clearedDesign = responsiveDesignService.clearDeviceOverrides(currentDesign, this._selectedDevice);
+    const deviceToReset = this._selectedDevice;
     
+    // Explicitly set the device key to undefined so it gets properly removed
+    // during any merge operations in parent components
+    const newDesign = {
+      ...clearedDesign,
+      [deviceToReset]: undefined
+    };
+    
+    // Update the module with cleared design
     this.updateModule({ design: newDesign } as any);
 
-    // Dispatch event
+    // Dispatch event for any listeners
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('ultra-card-design-update', {
-          detail: { moduleId: (this.module as any).id, device: this._selectedDevice, reset: true },
+          detail: { moduleId: (this.module as any).id, device: deviceToReset, reset: true },
         })
       );
     }
+    
+    // Request update to refresh UI
+    this.requestUpdate();
   }
 
   /**

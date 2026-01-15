@@ -19288,7 +19288,6 @@ export class LayoutTab extends LitElement {
     // Get native and 3rd party cards
     const nativeCards = NATIVE_HA_CARDS;
     const availableCards = ucExternalCardsService.getAvailableCards();
-    const popularCards = ucExternalCardsService.getPopularCards();
     const lang = this.hass?.locale?.language || 'en';
 
     // Refresh global count when tab is rendered
@@ -19329,6 +19328,17 @@ export class LayoutTab extends LitElement {
 
         <!-- Search Bar -->
         ${this._renderCardSearchBar()}
+
+        <div class="cards-info">
+          <ha-icon icon="mdi:information"></ha-icon>
+          <div class="info-content">
+            <strong>How to use:</strong>
+            <p>
+              Click any card to add it to your selected column. Native HA cards and 3rd party
+              cards will use their native editors when available.
+            </p>
+          </div>
+        </div>
 
         ${hasSearchQuery
           ? this._renderCardSearchResults(
@@ -19461,59 +19471,6 @@ export class LayoutTab extends LitElement {
                 </div>
               `}
 
-          ${popularCards.length > 0
-            ? html`
-                <div class="popular-cards-section">
-                  <h6 class="subsection-title">
-                    ${availableCards.length > 0
-                      ? 'Popular Cards'
-                      : 'Popular Cards (Not Installed)'}
-                  </h6>
-                  <div class="popular-cards-list">
-                    ${popularCards.map(card => {
-                      const isInstalled = ucExternalCardsService.isCardAvailable(card.type);
-                      return html`
-                        <div class="popular-card ${isInstalled ? 'installed' : 'not-installed'}">
-                          <div class="popular-card-content">
-                            <ha-icon
-                              icon="${isInstalled ? 'mdi:check-circle' : 'mdi:information'}"
-                              class="status-icon"
-                            ></ha-icon>
-                            <div class="popular-card-info">
-                              <div class="popular-card-name">${card.name}</div>
-                              <div class="popular-card-desc">${card.description}</div>
-                            </div>
-                          </div>
-                          ${!isInstalled
-                            ? html`
-                                <a
-                                  href="${ucExternalCardsService.getHACSUrl(card.type) || '#'}"
-                                  target="_blank"
-                                  class="install-link"
-                                >
-                                  <ha-icon icon="mdi:open-in-new"></ha-icon>
-                                  View
-                                </a>
-                              `
-                            : html`<span class="installed-badge">Installed</span>`}
-                        </div>
-                      `;
-                    })}
-                  </div>
-                </div>
-              `
-            : ''}
-        </div>
-
-        <div class="cards-info">
-          <ha-icon icon="mdi:information"></ha-icon>
-          <div class="info-content">
-            <strong>How to use:</strong>
-            <p>
-              Click any card to add it to your selected column. Native HA cards and 3rd party
-              cards will use their native editors when available.
-            </p>
-          </div>
         </div>
       </div>
 
@@ -19941,6 +19898,7 @@ export class LayoutTab extends LitElement {
           border-radius: 8px;
           align-items: flex-start;
           margin-top: 16px;
+          margin-bottom: 20px;
         }
 
         .cards-info ha-icon {

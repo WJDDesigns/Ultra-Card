@@ -2290,6 +2290,14 @@ export class UltraPopupModule extends BaseUltraModule {
           <button
             class="swiper-no-swiping popup-trigger"
             @click=${handleTriggerClick}
+            @pointerdown=${(e: Event) => {
+              // Stop pointer events from bubbling to parent containers with tap actions
+              e.stopPropagation();
+            }}
+            @pointerup=${(e: Event) => {
+              // Stop pointer events from bubbling to parent containers with tap actions
+              e.stopPropagation();
+            }}
             @touchend=${(e: Event) => {
               // Explicitly handle touch end to ensure popup opens on mobile
               e.preventDefault();
@@ -2346,6 +2354,14 @@ export class UltraPopupModule extends BaseUltraModule {
               class="swiper-no-swiping popup-trigger"
               src="${imageUrl}"
               @click=${handleTriggerClick}
+              @pointerdown=${(e: Event) => {
+                // Stop pointer events from bubbling to parent containers with tap actions
+                e.stopPropagation();
+              }}
+              @pointerup=${(e: Event) => {
+                // Stop pointer events from bubbling to parent containers with tap actions
+                e.stopPropagation();
+              }}
               @touchend=${(e: Event) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2372,6 +2388,14 @@ export class UltraPopupModule extends BaseUltraModule {
             class="swiper-no-swiping popup-trigger"
             icon="${triggerIcon}"
             @click=${handleTriggerClick}
+            @pointerdown=${(e: Event) => {
+              // Stop pointer events from bubbling to parent containers with tap actions
+              e.stopPropagation();
+            }}
+            @pointerup=${(e: Event) => {
+              // Stop pointer events from bubbling to parent containers with tap actions
+              e.stopPropagation();
+            }}
             @touchend=${(e: Event) => {
               e.preventDefault();
               e.stopPropagation();

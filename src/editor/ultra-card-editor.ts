@@ -12,6 +12,7 @@ import { ucSnapshotService } from '../services/uc-snapshot-service';
 import { ucCardBackupService } from '../services/uc-card-backup-service';
 import { ucDashboardScannerService } from '../services/uc-dashboard-scanner-service';
 import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
+import { ucEntityPickerEnhancer } from '../services/uc-entity-picker-enhancer';
 import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import { ucExportImportService } from '../services/uc-export-import-service';
 import {
@@ -93,6 +94,14 @@ export class UltraCardEditor extends LitElement {
         console.log('✅ Integration auth detected, updating PRO status');
         this._cloudUser = integrationUser;
       }
+
+      // Update entity picker enhancer with latest hass/config
+      ucEntityPickerEnhancer.update(this.hass, this.config);
+    }
+
+    // Also update enhancer when config changes
+    if (changedProperties.has('config') && this.hass) {
+      ucEntityPickerEnhancer.update(this.hass, this.config);
     }
   }
 
@@ -106,6 +115,11 @@ export class UltraCardEditor extends LitElement {
     } catch {}
     this.addEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.addEventListener('keydown', this._handleKeyDown as EventListener);
+
+    // Initialize entity picker enhancer for variable chips in dropdowns
+    if (this.hass) {
+      ucEntityPickerEnhancer.initialize(this.hass, this.config);
+    }
 
     // Detect mobile device
     this._checkMobileDevice();
@@ -140,6 +154,9 @@ export class UltraCardEditor extends LitElement {
     } catch {}
     this.removeEventListener('config-changed', this._handleConfigChanged as EventListener);
     this.removeEventListener('keydown', this._handleKeyDown as EventListener);
+
+    // Clean up entity picker enhancer
+    ucEntityPickerEnhancer.destroy();
 
     // Clean up hover effect styles
     UcHoverEffectsService.removeHoverEffectStyles(this.shadowRoot!);

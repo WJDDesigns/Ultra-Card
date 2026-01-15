@@ -1413,6 +1413,8 @@ export interface GraphsModule extends BaseModule {
     data_source?: 'history' | 'forecast';
     forecast_type?: 'hourly' | 'daily';
     forecast_entity?: string;
+    forecast_display_hours?: number;
+    forecast_display_days?: number;
     chart_type: 'line' | 'bar' | 'area' | 'scatter' | 'bubble' | 'pie' | 'donut' | 'radar' | 'histogram' | 'heatmap' | 'waterfall' | 'combo';
     entities: GraphEntityConfig[];
     time_period: '1h' | '3h' | '6h' | '12h' | '24h' | '2d' | '7d' | '30d' | '90d' | '365d' | 'custom';

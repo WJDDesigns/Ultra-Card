@@ -6,6 +6,7 @@ import { logicService } from './logic-service';
 import { UcHoverEffectsService } from './uc-hover-effects-service';
 import { localize } from '../localize/localize';
 import { responsiveDesignService } from './uc-responsive-design-service';
+import { ucCustomVariablesService } from './uc-custom-variables-service';
 
 /**
  * Centralized Module Preview Service
@@ -237,6 +238,15 @@ class UcModulePreviewService {
 
   /**
    * Get module content by calling the module's renderPreview method
+   * 
+   * IMPORTANT: This method resolves all variable references ($varname) in the module
+   * to their actual entity IDs before passing to the module's renderPreview.
+   * This enables true variable indirection - change a variable's entity in one place,
+   * all modules using that variable automatically update.
+   * 
+   * The original config keeps $varname for editor display.
+   * The resolved config is used for rendering.
+   * 
    * @private
    */
   private _getModuleContent(
@@ -249,12 +259,17 @@ class UcModulePreviewService {
     const moduleHandler = registry.getModule(module.type);
 
     if (moduleHandler) {
-      // In 'live' preview context, apply the preview breakpoint design
+      // Step 1: Resolve all variable references in the module
+      // This converts $varname entity fields to their actual entity IDs
+      // IMPORTANT: Pass the card config so card-specific variables can be resolved
+      const resolvedModule = ucCustomVariablesService.resolveModuleVariables(module, config);
+      
+      // Step 2: In 'live' preview context, apply the preview breakpoint design
       // This merges device-specific design properties so modules render correctly
       // without relying on CSS media queries (which check viewport, not container)
       const moduleToRender = previewContext === 'live' 
-        ? this._applyPreviewBreakpointDesign(module)
-        : module;
+        ? this._applyPreviewBreakpointDesign(resolvedModule)
+        : resolvedModule;
       
       return moduleHandler.renderPreview(moduleToRender, hass, config, previewContext);
     }

@@ -121,7 +121,8 @@ export interface BaseModule {
     | 'calendar'
     | 'sports_score'
     | 'grid'
-    | 'badge_of_honor';
+    | 'badge_of_honor'
+    | 'vacuum';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -2635,6 +2636,8 @@ export interface GraphsModule extends BaseModule {
   // Forecast configuration
   forecast_type?: 'hourly' | 'daily'; // for weather.get_forecasts
   forecast_entity?: string; // weather entity for forecasts
+  forecast_display_hours?: number; // Limit forecast x-axis to N hours (0 = unlimited, default)
+  forecast_display_days?: number; // Limit forecast x-axis to N days (0 = unlimited, default)
 
   // Chart configuration
   chart_type:
@@ -3813,6 +3816,7 @@ export type CardModule =
   | DropdownModule
   | LightModule
   | ClimateModule
+  | VacuumModule
   | MapModule
   | AnimatedClockModule
   | AnimatedWeatherModule
@@ -4442,6 +4446,255 @@ export interface ClimateModule extends BaseModule {
   // Hover configuration (reuse standard flag)
   enable_hover_effect?: boolean;
   hover_background_color?: string;
+}
+
+// ========================================
+// VACUUM MODULE TYPES (Pro Feature)
+// ========================================
+
+/**
+ * Vacuum Module - Pro Feature
+ *
+ * Provides a comprehensive interface for robot vacuum cleaners with:
+ * - Multiple layout modes (compact, standard, detailed)
+ * - Battery and status display
+ * - Cleaning statistics
+ * - Component wear indicators
+ * - Control buttons
+ * - State-based animations
+ * - Map display with swipe gesture
+ * - Integration-specific features for Xiaomi/Roborock/Valetudo
+ */
+export interface VacuumModule extends BaseModule {
+  type: 'vacuum';
+
+  // Entity Configuration
+  entity: string;
+  name?: string;
+  map_entity?: string; // Optional camera entity for map
+  map_card_config?: any; // Optional embedded map card config
+
+  // Additional Entity Sensors (Roborock and other integrations)
+  battery_entity?: string; // sensor.vacuum_battery
+  status_entity?: string; // sensor.vacuum_status (enum with detailed states)
+  cleaning_binary_entity?: string; // binary_sensor.vacuum_cleaning
+  charging_binary_entity?: string; // binary_sensor.vacuum_charging
+  cleaning_area_entity?: string; // sensor.vacuum_cleaning_area (m²)
+  cleaning_time_entity?: string; // sensor.vacuum_cleaning_time (min)
+  current_room_entity?: string; // sensor.vacuum_current_room
+  last_clean_begin_entity?: string; // sensor.vacuum_last_clean_begin (timestamp)
+  last_clean_end_entity?: string; // sensor.vacuum_last_clean_end (timestamp)
+  total_cleaning_area_entity?: string; // sensor.vacuum_total_cleaning_area (m²)
+  total_cleaning_time_entity?: string; // sensor.vacuum_total_cleaning_time (h)
+  total_cleaning_count_entity?: string; // sensor.vacuum_total_cleaning_count
+  vacuum_error_entity?: string; // sensor.vacuum_error (enum)
+  dock_error_entity?: string; // sensor.vacuum_dock_error (enum)
+  volume_entity?: string; // number.vacuum_volume
+  do_not_disturb_entity?: string; // switch.vacuum_do_not_disturb
+  do_not_disturb_begin_entity?: string; // time.vacuum_do_not_disturb_begin
+  do_not_disturb_end_entity?: string; // time.vacuum_do_not_disturb_end
+  selected_map_entity?: string; // select.vacuum_selected_map
+  map_image_entity?: string; // image.vacuum_map (for floor maps)
+  full_clean_button_entity?: string; // button.vacuum_full_cleaning
+
+  // Layout Configuration
+  layout_mode?: 'compact' | 'standard' | 'detailed';
+  card_layout_style?: 'single_column' | 'double_column'; // Card layout column style
+
+  // Display Toggles
+  show_name?: boolean;
+  show_status?: boolean;
+  show_battery?: boolean;
+  show_cleaning_stats?: boolean;
+  show_component_wear?: boolean;
+  show_map?: boolean;
+  show_controls?: boolean;
+  show_current_room?: boolean;
+  show_last_clean?: boolean;
+  show_total_stats?: boolean;
+  show_errors?: boolean;
+  show_dnd?: boolean;
+  show_volume?: boolean;
+
+  // Component Wear Display
+  show_filter_life?: boolean;
+  show_main_brush_life?: boolean;
+  show_side_brush_life?: boolean;
+  show_sensor_life?: boolean;
+
+  // Component Wear Entity Overrides (for custom sensors)
+  filter_entity?: string;
+  main_brush_entity?: string;
+  side_brush_entity?: string;
+  sensor_entity?: string;
+
+  // Control Configuration
+  control_layout?: 'row' | 'grid' | 'compact';
+  show_start_button?: boolean;
+  show_pause_button?: boolean;
+  show_stop_button?: boolean;
+  show_dock_button?: boolean;
+  show_locate_button?: boolean;
+  show_fan_speed?: boolean;
+  show_room_selection?: boolean;
+  show_zone_cleanup?: boolean;
+
+  // Animation Configuration
+  enable_animations?: boolean;
+  animation_cleaning?: 'spin' | 'pulse' | 'rotate' | 'bounce' | 'none';
+  animation_returning?: 'slide' | 'pulse' | 'blink' | 'none';
+  animation_docking?: 'slide' | 'fade' | 'pulse' | 'none';
+  animation_charging?: 'pulse' | 'glow' | 'breathe' | 'none';
+  animation_speed?: 'slow' | 'normal' | 'fast';
+  custom_vacuum_image?: string;
+  custom_vacuum_image_cleaning?: string;
+
+  // Map Display Configuration
+  map_display_mode?: 'swipe' | 'toggle' | 'always' | 'none';
+  map_height?: number;
+  map_border_radius?: number;
+  map_refresh_rate?: number; // in seconds
+
+  // Styling
+  vacuum_icon?: string;
+  vacuum_image?: string;
+  vacuum_size?: number;
+  icon_size?: number;
+  primary_color?: string;
+  background_style?: 'transparent' | 'card' | 'gradient';
+  status_color_cleaning?: string;
+  status_color_returning?: string;
+  status_color_docked?: string;
+  status_color_idle?: string;
+  status_color_error?: string;
+  battery_color_high?: string;
+  battery_color_medium?: string;
+  battery_color_low?: string;
+  battery_threshold_medium?: number; // Percentage threshold for medium (default: 50)
+  battery_threshold_low?: number; // Percentage threshold for low (default: 20)
+
+  // Integration Detection
+  detected_integration?: 'generic' | 'xiaomi' | 'roborock' | 'valetudo' | 'ecovacs' | 'neato' | 'roomba' | 'eufy' | 'shark' | 'tuya';
+
+  // Rooms/Segments Configuration (integration-specific)
+  rooms?: VacuumRoom[];
+  zones?: VacuumZone[];
+
+  // Actions
+  tap_action?: ModuleActionConfig;
+  hold_action?: ModuleActionConfig;
+  double_tap_action?: ModuleActionConfig;
+
+  // Hover configuration
+  enable_hover_effect?: boolean;
+  hover_background_color?: string;
+
+  // Card Layout Sections (drag-and-drop customization)
+  display_sections?: VacuumDisplaySection[];
+  section_order?: string[]; // Array of section IDs in display order
+}
+
+// Vacuum display section types for drag-and-drop card layout
+export type VacuumSectionType =
+  | 'vacuum_image'
+  | 'title_status'
+  | 'battery'
+  | 'current_room'
+  | 'fan_speed'
+  | 'current_stats'
+  | 'last_clean'
+  | 'total_stats'
+  | 'component_life'
+  | 'errors'
+  | 'dnd'
+  | 'volume'
+  | 'quick_controls'
+  | 'map';
+
+// Vacuum display section configuration for customizable card layout
+export interface VacuumDisplaySection {
+  id: string; // Unique identifier
+  type: VacuumSectionType; // Section type
+  enabled: boolean; // Visibility toggle
+  order?: number; // Display order (for drag-drop reordering)
+  column?: 'left' | 'right'; // Column assignment for double-column layout
+  settings?: {
+    // Common visual settings
+    show_icon?: boolean;
+    show_label?: boolean;
+    show_value?: boolean;
+    show_graph?: boolean;
+    show_percentage?: boolean;
+    show_title?: boolean; // Section title visibility
+    
+    // Sizing
+    icon_size?: number;
+    font_size?: number;
+    bar_height?: number;
+    
+    // Spacing/Margins
+    margin_top?: number;
+    margin_right?: number;
+    margin_bottom?: number;
+    margin_left?: number;
+    
+    // Colors
+    icon_color?: string;
+    label_color?: string;
+    value_color?: string;
+    bar_color?: string;
+    background_color?: string;
+    color?: string; // Generic color for icons/elements
+    error_color?: string; // Error section color
+    button_color?: string; // Button color for DND, quick controls
+    
+    // Entity override (allows manual entity selection)
+    entity_override?: string;
+    
+    // Section-specific settings
+    // Component life specific
+    show_filter?: boolean;
+    show_main_brush?: boolean;
+    show_side_brush?: boolean;
+    show_sensor?: boolean;
+    filter_entity_override?: string;
+    main_brush_entity_override?: string;
+    side_brush_entity_override?: string;
+    sensor_entity_override?: string;
+    
+    // Quick controls specific
+    show_start?: boolean;
+    show_pause?: boolean;
+    show_stop?: boolean;
+    show_dock?: boolean;
+    show_locate?: boolean;
+    control_layout?: 'row' | 'grid' | 'compact';
+    
+    // Vacuum image specific
+    custom_image?: string;
+    
+    // Map section specific
+    display_mode?: 'below_vacuum' | 'replace_vacuum' | 'swipe';
+    
+    // Fan speed specific
+    style?: 'default' | 'speed_only' | 'compact';
+  };
+}
+
+// Vacuum room configuration for room selection
+export interface VacuumRoom {
+  id: string;
+  name: string;
+  icon?: string;
+  segment_id?: string | number; // Integration-specific room/segment ID
+}
+
+// Vacuum zone configuration for zone cleanup
+export interface VacuumZone {
+  id: string;
+  name: string;
+  icon?: string;
+  coordinates?: number[]; // [x1, y1, x2, y2] or integration-specific format
 }
 
 // ========================================

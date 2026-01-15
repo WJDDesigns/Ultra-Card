@@ -370,10 +370,7 @@ export class UltraCard extends LitElement {
 
     // 1. Check if we need to restore from backup (localStorage was cleared)
     if (ucCustomVariablesService.needsRestoreFromBackup() && this.config?._globalVariablesBackup) {
-      const restored = ucCustomVariablesService.restoreFromBackup(this.config._globalVariablesBackup);
-      if (restored) {
-        console.log('[Ultra Card] Restored global variables from card config backup');
-      }
+      ucCustomVariablesService.restoreFromBackup(this.config._globalVariablesBackup);
     }
 
     // 2. Initialize backup version from config (for tracking)

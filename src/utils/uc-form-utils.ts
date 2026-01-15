@@ -1,6 +1,7 @@
 import { TemplateResult, html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { CardModule } from '../types';
+import { CardModule, CustomVariable, UltraCardConfig } from '../types';
+import { ucCustomVariablesService } from '../services/uc-custom-variables-service';
 
 // Module-level change guard to prevent infinite loops
 let _formChangeGuard = false;
@@ -254,6 +255,293 @@ export class UcFormUtils {
     };
   }
 
+  /**
+   * Render a variable indicator badge when an entity field uses a variable
+   * Shows: "🔗 $varname → entity_id" with nice styling
+   */
+  static renderVariableIndicator(
+    value: string | undefined,
+    config: UltraCardConfig | undefined
+  ): TemplateResult {
+    const varInfo = ucCustomVariablesService.getVariableInfo(value, config);
+    
+    if (!varInfo.isVariable) {
+      return html``;
+    }
+
+    const isGlobal = varInfo.variable?.isGlobal !== false;
+    const scopeIcon = isGlobal ? 'mdi:web' : 'mdi:clipboard-text-outline';
+    const scopeLabel = isGlobal ? 'Global' : 'Card';
+
+    return html`
+      <div class="uc-variable-indicator" style="
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, rgba(var(--rgb-primary-color, 3, 169, 244), 0.15), rgba(var(--rgb-primary-color, 3, 169, 244), 0.08));
+        border: 1px solid rgba(var(--rgb-primary-color, 3, 169, 244), 0.3);
+        border-radius: 8px;
+        font-size: 12px;
+      ">
+        <span style="
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: var(--primary-color);
+          font-weight: 600;
+        ">
+          <ha-icon icon="mdi:link-variant" style="--mdc-icon-size: 16px;"></ha-icon>
+          Using Variable
+        </span>
+        <span style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 8px;
+          background: var(--card-background-color, #1c1c1c);
+          border-radius: 12px;
+          font-family: var(--code-font-family, monospace);
+        ">
+          <ha-icon icon="${scopeIcon}" style="--mdc-icon-size: 14px; color: var(--secondary-text-color);"></ha-icon>
+          <span style="color: var(--primary-color); font-weight: 500;">${varInfo.variableName}</span>
+          <span style="color: var(--secondary-text-color);">→</span>
+          <span style="color: var(--primary-text-color);">${varInfo.resolvedEntity || 'not found'}</span>
+        </span>
+        <span style="
+          font-size: 10px;
+          color: var(--secondary-text-color);
+          margin-left: auto;
+        ">${scopeLabel}</span>
+      </div>
+    `;
+  }
+
+  /**
+   * Render entity picker with variable support
+   * Shows a nice indicator when a variable is being used
+   * Hides the ugly "Unknown entity" message from HA
+   */
+  static renderEntityFieldWithVariableSupport(
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    fieldName: string,
+    currentValue: string,
+    onChange: (value: string) => void,
+    options?: {
+      domain?: string[];
+      label?: string;
+      includeNone?: boolean;
+    }
+  ): TemplateResult {
+    const varInfo = ucCustomVariablesService.getVariableInfo(currentValue, config);
+    
+    // If using a variable, show the resolved entity in the picker
+    // The variable indicator above shows what variable is actually being used
+    const displayValue = varInfo.isVariable ? (varInfo.resolvedEntity || '') : (currentValue || '');
+    
+    return html`
+      ${UcFormUtils.renderVariableIndicator(currentValue, config)}
+      <div class="${varInfo.isVariable ? 'uc-entity-field-with-variable' : ''}" style="${varInfo.isVariable ? `
+        position: relative;
+      ` : ''}">
+        ${varInfo.isVariable ? html`
+          <style>
+            .uc-entity-field-with-variable ha-entity-picker,
+            .uc-entity-field-with-variable ha-selector-entity {
+              opacity: 0.7;
+              pointer-events: none;
+            }
+            .uc-entity-field-with-variable::after {
+              content: 'Click to change';
+              position: absolute;
+              right: 12px;
+              top: 50%;
+              transform: translateY(-50%);
+              font-size: 10px;
+              color: var(--secondary-text-color);
+              pointer-events: none;
+            }
+          </style>
+          <div 
+            style="position: absolute; inset: 0; cursor: pointer; z-index: 1;"
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              // Clear the variable to allow selecting a new entity
+              onChange('');
+            }}
+            title="Click to clear variable and select a different entity"
+          ></div>
+        ` : ''}
+        ${UcFormUtils.renderForm(
+          hass,
+          { [fieldName]: displayValue },
+          [
+            {
+              name: fieldName,
+              selector: {
+                entity: options?.domain ? { domain: options.domain } : {},
+              },
+              ...(options?.label ? { label: options.label } : {}),
+            },
+          ],
+          (e: CustomEvent) => {
+            const newValue = e.detail.value[fieldName];
+            // Only update if it actually changed
+            if (newValue !== currentValue) {
+              onChange(newValue);
+            }
+          },
+          !!options?.label
+        )}
+      </div>
+    `;
+  }
+
+  /**
+   * Render variable quick-select chips above an entity picker
+   * Shows both global and card-specific custom variables as clickable chips
+   * When clicked, the variable's entity is selected in the picker
+   */
+  static renderVariableChips(
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    currentValue: string,
+    onSelect: (entityId: string) => void
+  ): TemplateResult {
+    const globalVars = ucCustomVariablesService.getVariables();
+    const cardVars = config ? ucCustomVariablesService.getCardSpecificVariables(config) : [];
+    
+    // Don't render anything if no variables exist
+    if (globalVars.length === 0 && cardVars.length === 0) {
+      return html``;
+    }
+
+    const allVars = [...globalVars, ...cardVars];
+    
+    return html`
+      <div class="uc-variable-chips" style="
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding: 8px 10px;
+        background: var(--secondary-background-color);
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+      ">
+        <span style="
+          font-size: 11px;
+          color: var(--primary-color);
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-right: 4px;
+        ">
+          <ha-icon icon="mdi:variable" style="--mdc-icon-size: 14px;"></ha-icon>
+          Variables:
+        </span>
+        ${allVars.map(v => {
+          const isSelected = currentValue === v.entity;
+          const resolvedValue = UcFormUtils._getVariableResolvedValue(v, hass);
+          const isGlobal = v.isGlobal !== false;
+          
+          return html`
+            <button
+              type="button"
+              class="uc-variable-chip ${isSelected ? 'selected' : ''}"
+              style="
+                padding: 4px 10px;
+                font-size: 11px;
+                font-family: var(--code-font-family, monospace);
+                border: 1px solid ${isSelected ? 'var(--primary-color)' : 'var(--divider-color)'};
+                border-radius: 14px;
+                background: ${isSelected ? 'var(--primary-color)' : 'var(--card-background-color)'};
+                color: ${isSelected ? 'var(--text-primary-color)' : 'var(--primary-text-color)'};
+                cursor: pointer;
+                transition: all 0.15s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+              "
+              title="${isGlobal ? '🌐 Global' : '📋 Card'}: $${v.name} → ${v.entity}${resolvedValue ? ` (${resolvedValue})` : ''}"
+              @click=${() => onSelect(v.entity)}
+            >
+              <span style="opacity: 0.7;">${isGlobal ? '🌐' : '📋'}</span>
+              <span>$${v.name}</span>
+            </button>
+          `;
+        })}
+      </div>
+    `;
+  }
+
+  /**
+   * Render entity picker with variable chips above it
+   * Combines variable quick-select with the native ha-form entity picker
+   */
+  static renderEntityPickerWithVariables(
+    hass: HomeAssistant,
+    config: UltraCardConfig | undefined,
+    fieldName: string,
+    currentValue: string,
+    onChange: (value: string) => void,
+    domain?: string[],
+    label?: string
+  ): TemplateResult {
+    return html`
+      ${UcFormUtils.renderVariableChips(hass, config, currentValue, onChange)}
+      ${UcFormUtils.renderForm(
+        hass,
+        { [fieldName]: currentValue || '' },
+        [
+          {
+            name: fieldName,
+            selector: {
+              entity: domain ? { domain } : {},
+            },
+            ...(label ? { label } : {}),
+          },
+        ],
+        (e: CustomEvent) => {
+          const newValue = e.detail.value[fieldName];
+          if (newValue !== currentValue) {
+            onChange(newValue);
+          }
+        },
+        !!label
+      )}
+    `;
+  }
+
+  /**
+   * Get the resolved value of a custom variable for display in chip tooltip
+   */
+  private static _getVariableResolvedValue(variable: CustomVariable, hass: HomeAssistant): string {
+    if (!hass) return '';
+    const entityState = hass.states[variable.entity];
+    if (!entityState) return 'unavailable';
+    
+    switch (variable.value_type) {
+      case 'entity_id':
+        return variable.entity;
+      case 'state':
+        return entityState.state;
+      case 'attribute':
+        if (variable.attribute_name && entityState.attributes) {
+          const val = entityState.attributes[variable.attribute_name];
+          return val !== undefined ? String(val) : 'undefined';
+        }
+        return 'no attr';
+      default:
+        return entityState.state;
+    }
+  }
+
   // Label control functions
   private static _hideLabels = (): string => '';
   private static _defaultComputeLabel = (schema: any): string => schema.name;
@@ -429,6 +717,30 @@ export class UcFormUtils {
 
       .reset-btn ha-icon {
         font-size: 16px;
+      }
+
+      /* Variable Chips Styles */
+      .uc-variable-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .uc-variable-chip {
+        transition: all 0.15s ease !important;
+      }
+
+      .uc-variable-chip:hover:not(.selected) {
+        background: var(--primary-color) !important;
+        color: var(--text-primary-color) !important;
+        border-color: var(--primary-color) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .uc-variable-chip.selected {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       }
     `;
   }

@@ -59,6 +59,11 @@ export declare class UltraGraphsModule extends BaseUltraModule {
     private _getForecastAttributeUnit;
     private _loadForecastData;
     private _fetchForecastDataAsync;
+    /**
+     * Apply forecast display limits based on configured hours or days
+     * Filters forecast data to only show data within the specified time range
+     */
+    private _applyForecastDisplayLimits;
     private _getDefaultColor;
     private _addEntity;
     private _removeEntity;

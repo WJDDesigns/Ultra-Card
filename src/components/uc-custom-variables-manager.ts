@@ -113,29 +113,45 @@ export class UcCustomVariablesManager extends LitElement {
     this._draggedItem = undefined;
   }
 
+  // Store the original entity when editing to prevent accidental clearing
+  private _originalEditingEntity = '';
+
   private _startEdit(variable: CustomVariable): void {
     this._editingId = variable.id;
     this._editingName = variable.name;
     this._editingEntity = variable.entity;
+    this._originalEditingEntity = variable.entity; // Keep a backup
     // Handle legacy 'full_object' type migration
     const valueType = variable.value_type as string;
     this._editingValueType = valueType === 'full_object' ? 'attribute' : (variable.value_type || 'state');
     this._editingAttributeName = variable.attribute_name || '';
     this._editingIsGlobal = variable.isGlobal !== false;
     this._nameError = '';
+    console.log('[UC Variables] Started editing:', variable.name, 'entity:', variable.entity);
   }
 
   private _cancelEdit(): void {
     this._editingId = undefined;
     this._editingName = '';
     this._editingEntity = '';
+    this._originalEditingEntity = '';
     this._editingValueType = 'state';
     this._editingIsGlobal = true;
     this._nameError = '';
   }
 
   private _saveEdit(): void {
-    if (!this._editingId || !this._editingName.trim() || !this._editingEntity) return;
+    // Use the original entity as fallback if current one is empty (prevents accidental clearing)
+    const entityToSave = this._editingEntity || this._originalEditingEntity;
+    
+    console.log('[UC Variables] Saving edit:', {
+      name: this._editingName,
+      editingEntity: this._editingEntity,
+      originalEntity: this._originalEditingEntity,
+      entityToSave: entityToSave,
+    });
+    
+    if (!this._editingId || !this._editingName.trim() || !entityToSave) return;
 
     // Validate name
     if (!ucCustomVariablesService.isValidVariableName(this._editingName.trim())) {
@@ -182,7 +198,7 @@ export class UcCustomVariablesManager extends LitElement {
       const newCardVar: CustomVariable = {
         id: this._editingId,
         name: cleanName,
-        entity: this._editingEntity,
+        entity: entityToSave,
         value_type: this._editingValueType,
         attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
         order: this._cardVariables.length,
@@ -203,7 +219,7 @@ export class UcCustomVariablesManager extends LitElement {
       // Remove from card
       this._updateCardVariables(otherCardVars);
       // Add to global - pass remaining card variables for cross-scope check
-      const result = ucCustomVariablesService.addVariable(cleanName, this._editingEntity, this._editingValueType, true, 
+      const result = ucCustomVariablesService.addVariable(cleanName, entityToSave, this._editingValueType, true, 
         this._editingValueType === 'attribute' ? this._editingAttributeName : undefined, otherCardVars);
       if (result) {
         this._cancelEdit();
@@ -214,7 +230,7 @@ export class UcCustomVariablesManager extends LitElement {
       // Stays Global - just update (pass card variables for cross-scope name check)
       const success = ucCustomVariablesService.updateVariable(this._editingId, {
         name: cleanName,
-        entity: this._editingEntity,
+        entity: entityToSave,
         value_type: this._editingValueType,
         attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
       }, this._cardVariables);
@@ -243,7 +259,7 @@ export class UcCustomVariablesManager extends LitElement {
           ? { 
               ...v, 
               name: cleanName, 
-              entity: this._editingEntity, 
+              entity: entityToSave, 
               value_type: this._editingValueType,
               attribute_name: this._editingValueType === 'attribute' ? this._editingAttributeName : undefined,
             }
@@ -642,6 +658,8 @@ export class UcCustomVariablesManager extends LitElement {
               .computeLabel=${() => ''}
               @value-changed=${(e: CustomEvent) => {
                 const val = e.detail.value?.entity;
+                // Only update if the value is a non-empty string (actual entity selected)
+                // or if user explicitly cleared it (empty string is fine for new variables)
                 if (val !== undefined) {
                   this._newVariableEntity = val || '';
                 }
@@ -783,8 +801,10 @@ export class UcCustomVariablesManager extends LitElement {
               .computeLabel=${() => ''}
               @value-changed=${(e: CustomEvent) => {
                 const val = e.detail.value?.entity;
-                if (val !== undefined) {
-                  this._editingEntity = val || '';
+                // Only update if the value is a non-empty string (actual entity selected)
+                // This prevents accidental clearing when the form re-renders
+                if (val && typeof val === 'string' && val.includes('.')) {
+                  this._editingEntity = val;
                 }
               }}
             ></ha-form>

@@ -567,77 +567,7 @@ export class UltraIconModule extends BaseUltraModule {
                     data: { entity: icon.entity || '' },
                     schema: [this.entityField('entity')],
                     onChange: (e: CustomEvent) => {
-                      const entityId = e.detail.value.entity;
-                      const updates: Partial<IconConfig> = { entity: entityId };
-
-                      // Auto-populate from entity when switching
-                      if (entityId && hass?.states[entityId]) {
-                        // Use the centralized icon service
-                        const entityIcon = EntityIconService.getEntityIcon(entityId, hass);
-
-                        // Always update icon when switching entities if available
-                        if (entityIcon) {
-                          updates.icon_inactive = entityIcon;
-                          // If icon is locked (default), also update active icon
-                          const currentIcon = iconModule.icons[index];
-                          if (currentIcon.active_icon_locked !== false) {
-                            updates.icon_active = entityIcon;
-                          }
-                        }
-
-                        // Auto-set module-level tap action to more-info with the selected entity
-                        // Always update if more-info action or no action set
-                        const shouldUpdateTapAction =
-                          !iconModule.tap_action ||
-                          iconModule.tap_action.action === 'nothing' ||
-                          iconModule.tap_action.action === 'default' ||
-                          iconModule.tap_action.action === 'more-info';
-
-                        if (shouldUpdateTapAction) {
-                        }
-                      }
-
-                      // Auto-populate states for binary entities
-                      if (entityId && this._isBinaryEntity(entityId)) {
-                        // Only set default states if both are currently empty
-                        const currentIcon = iconModule.icons[index];
-                        if (!currentIcon.active_state && !currentIcon.inactive_state) {
-                          updates.active_state = 'on';
-                          updates.inactive_state = 'off';
-                        }
-                      }
-
-                      // Update icon in the icons array
-                      const updatedIcons = iconModule.icons.map((ic, i) =>
-                        i === index ? { ...ic, ...updates } : ic
-                      );
-                      const moduleUpdates: any = { icons: updatedIcons };
-
-                      // Do not auto-write tap_action here. Let the editor control Default/More-info.
-
-                      // Apply all updates in one call to avoid race conditions
-                      updateModule(moduleUpdates);
-
-                      // Force UI refresh
-                      setTimeout(() => {
-                        try {
-                          this._triggerPreviewUpdate();
-                        } catch (_) {}
-
-                        window.dispatchEvent(
-                          new CustomEvent('ultra-card-actions-refresh', {
-                            detail: { moduleId: iconModule.id },
-                            bubbles: true,
-                            composed: true,
-                          })
-                        );
-                      }, 50);
-
-                      // Clear attribute cache for this entity to refresh dropdowns
-                      const oldCacheKey = `${iconModule.icons[index].entity}_attributes`;
-                      const newCacheKey = `${entityId}_attributes`;
-                      this._attributeCache.delete(oldCacheKey);
-                      this._attributeCache.delete(newCacheKey);
+                      this._handleEntitySelection(icon, index, iconModule, e.detail.value.entity, hass, updateModule);
                     },
                   },
                   {
@@ -6996,6 +6926,77 @@ export class UltraIconModule extends BaseUltraModule {
       i === index ? { ...icon, ...updates } : icon
     );
     updateModule({ icons: updatedIcons });
+  }
+
+  /**
+   * Handle entity selection from both variable chips and entity picker
+   * Centralizes all entity change logic (auto-populate icon, states, etc.)
+   */
+  private _handleEntitySelection(
+    icon: IconConfig,
+    index: number,
+    iconModule: IconModule,
+    entityId: string,
+    hass: HomeAssistant,
+    updateModule: (updates: Partial<CardModule>) => void
+  ): void {
+    const updates: Partial<IconConfig> = { entity: entityId };
+
+    // Auto-populate from entity when switching
+    if (entityId && hass?.states[entityId]) {
+      // Use the centralized icon service
+      const entityIcon = EntityIconService.getEntityIcon(entityId, hass);
+
+      // Always update icon when switching entities if available
+      if (entityIcon) {
+        updates.icon_inactive = entityIcon;
+        // If icon is locked (default), also update active icon
+        const currentIcon = iconModule.icons[index];
+        if (currentIcon.active_icon_locked !== false) {
+          updates.icon_active = entityIcon;
+        }
+      }
+    }
+
+    // Auto-populate states for binary entities
+    if (entityId && this._isBinaryEntity(entityId)) {
+      // Only set default states if both are currently empty
+      const currentIcon = iconModule.icons[index];
+      if (!currentIcon.active_state && !currentIcon.inactive_state) {
+        updates.active_state = 'on';
+        updates.inactive_state = 'off';
+      }
+    }
+
+    // Update icon in the icons array
+    const updatedIcons = iconModule.icons.map((ic, i) =>
+      i === index ? { ...ic, ...updates } : ic
+    );
+    const moduleUpdates: any = { icons: updatedIcons };
+
+    // Apply all updates in one call to avoid race conditions
+    updateModule(moduleUpdates);
+
+    // Force UI refresh
+    setTimeout(() => {
+      try {
+        this._triggerPreviewUpdate();
+      } catch (_) {}
+
+      window.dispatchEvent(
+        new CustomEvent('ultra-card-actions-refresh', {
+          detail: { moduleId: iconModule.id },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }, 50);
+
+    // Clear attribute cache for this entity to refresh dropdowns
+    const oldCacheKey = `${icon.entity}_attributes`;
+    const newCacheKey = `${entityId}_attributes`;
+    this._attributeCache.delete(oldCacheKey);
+    this._attributeCache.delete(newCacheKey);
   }
 
   private _debouncedUpdateIcon(
