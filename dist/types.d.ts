@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -2093,7 +2093,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -2479,6 +2479,178 @@ export interface ClimateModule extends BaseModule {
     };
     enable_hover_effect?: boolean;
     hover_background_color?: string;
+}
+/**
+ * Vacuum Module - Pro Feature
+ *
+ * Provides a comprehensive interface for robot vacuum cleaners with:
+ * - Multiple layout modes (compact, standard, detailed)
+ * - Battery and status display
+ * - Cleaning statistics
+ * - Component wear indicators
+ * - Control buttons
+ * - State-based animations
+ * - Map display with swipe gesture
+ * - Integration-specific features for Xiaomi/Roborock/Valetudo
+ */
+export interface VacuumModule extends BaseModule {
+    type: 'vacuum';
+    entity: string;
+    name?: string;
+    map_entity?: string;
+    map_card_config?: any;
+    battery_entity?: string;
+    status_entity?: string;
+    cleaning_binary_entity?: string;
+    charging_binary_entity?: string;
+    cleaning_area_entity?: string;
+    cleaning_time_entity?: string;
+    current_room_entity?: string;
+    last_clean_begin_entity?: string;
+    last_clean_end_entity?: string;
+    total_cleaning_area_entity?: string;
+    total_cleaning_time_entity?: string;
+    total_cleaning_count_entity?: string;
+    vacuum_error_entity?: string;
+    dock_error_entity?: string;
+    volume_entity?: string;
+    do_not_disturb_entity?: string;
+    do_not_disturb_begin_entity?: string;
+    do_not_disturb_end_entity?: string;
+    selected_map_entity?: string;
+    map_image_entity?: string;
+    full_clean_button_entity?: string;
+    layout_mode?: 'compact' | 'standard' | 'detailed';
+    card_layout_style?: 'single_column' | 'double_column';
+    show_name?: boolean;
+    show_status?: boolean;
+    show_battery?: boolean;
+    show_cleaning_stats?: boolean;
+    show_component_wear?: boolean;
+    show_map?: boolean;
+    show_controls?: boolean;
+    show_current_room?: boolean;
+    show_last_clean?: boolean;
+    show_total_stats?: boolean;
+    show_errors?: boolean;
+    show_dnd?: boolean;
+    show_volume?: boolean;
+    show_filter_life?: boolean;
+    show_main_brush_life?: boolean;
+    show_side_brush_life?: boolean;
+    show_sensor_life?: boolean;
+    filter_entity?: string;
+    main_brush_entity?: string;
+    side_brush_entity?: string;
+    sensor_entity?: string;
+    control_layout?: 'row' | 'grid' | 'compact';
+    show_start_button?: boolean;
+    show_pause_button?: boolean;
+    show_stop_button?: boolean;
+    show_dock_button?: boolean;
+    show_locate_button?: boolean;
+    show_fan_speed?: boolean;
+    show_room_selection?: boolean;
+    show_zone_cleanup?: boolean;
+    enable_animations?: boolean;
+    animation_cleaning?: 'spin' | 'pulse' | 'rotate' | 'bounce' | 'none';
+    animation_returning?: 'slide' | 'pulse' | 'blink' | 'none';
+    animation_docking?: 'slide' | 'fade' | 'pulse' | 'none';
+    animation_charging?: 'pulse' | 'glow' | 'breathe' | 'none';
+    animation_speed?: 'slow' | 'normal' | 'fast';
+    custom_vacuum_image?: string;
+    custom_vacuum_image_cleaning?: string;
+    map_display_mode?: 'swipe' | 'toggle' | 'always' | 'none';
+    map_height?: number;
+    map_border_radius?: number;
+    map_refresh_rate?: number;
+    vacuum_icon?: string;
+    vacuum_image?: string;
+    vacuum_size?: number;
+    icon_size?: number;
+    primary_color?: string;
+    background_style?: 'transparent' | 'card' | 'gradient';
+    status_color_cleaning?: string;
+    status_color_returning?: string;
+    status_color_docked?: string;
+    status_color_idle?: string;
+    status_color_error?: string;
+    battery_color_high?: string;
+    battery_color_medium?: string;
+    battery_color_low?: string;
+    battery_threshold_medium?: number;
+    battery_threshold_low?: number;
+    detected_integration?: 'generic' | 'xiaomi' | 'roborock' | 'valetudo' | 'ecovacs' | 'neato' | 'roomba' | 'eufy' | 'shark' | 'tuya';
+    rooms?: VacuumRoom[];
+    zones?: VacuumZone[];
+    tap_action?: ModuleActionConfig;
+    hold_action?: ModuleActionConfig;
+    double_tap_action?: ModuleActionConfig;
+    enable_hover_effect?: boolean;
+    hover_background_color?: string;
+    display_sections?: VacuumDisplaySection[];
+    section_order?: string[];
+}
+export type VacuumSectionType = 'vacuum_image' | 'title_status' | 'battery' | 'current_room' | 'fan_speed' | 'current_stats' | 'last_clean' | 'total_stats' | 'component_life' | 'errors' | 'dnd' | 'volume' | 'quick_controls' | 'map';
+export interface VacuumDisplaySection {
+    id: string;
+    type: VacuumSectionType;
+    enabled: boolean;
+    order?: number;
+    column?: 'left' | 'right';
+    settings?: {
+        show_icon?: boolean;
+        show_label?: boolean;
+        show_value?: boolean;
+        show_graph?: boolean;
+        show_percentage?: boolean;
+        show_title?: boolean;
+        icon_size?: number;
+        font_size?: number;
+        bar_height?: number;
+        margin_top?: number;
+        margin_right?: number;
+        margin_bottom?: number;
+        margin_left?: number;
+        icon_color?: string;
+        label_color?: string;
+        value_color?: string;
+        bar_color?: string;
+        background_color?: string;
+        color?: string;
+        error_color?: string;
+        button_color?: string;
+        entity_override?: string;
+        show_filter?: boolean;
+        show_main_brush?: boolean;
+        show_side_brush?: boolean;
+        show_sensor?: boolean;
+        filter_entity_override?: string;
+        main_brush_entity_override?: string;
+        side_brush_entity_override?: string;
+        sensor_entity_override?: string;
+        show_start?: boolean;
+        show_pause?: boolean;
+        show_stop?: boolean;
+        show_dock?: boolean;
+        show_locate?: boolean;
+        control_layout?: 'row' | 'grid' | 'compact';
+        custom_image?: string;
+        display_mode?: 'below_vacuum' | 'replace_vacuum' | 'swipe';
+        style?: 'default' | 'speed_only' | 'compact';
+    };
+}
+export interface VacuumRoom {
+    id: string;
+    name: string;
+    icon?: string;
+    segment_id?: string | number;
+}
+export interface VacuumZone {
+    id: string;
+    name: string;
+    icon?: string;
+    coordinates?: number[];
 }
 export type CalendarViewType = 'compact_list' | 'month' | 'week' | 'day' | 'table' | 'grid';
 export type FirstDayOfWeek = 'sunday' | 'monday' | 'saturday';

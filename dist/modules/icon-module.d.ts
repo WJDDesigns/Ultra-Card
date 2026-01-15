@@ -59,6 +59,11 @@ export declare class UltraIconModule extends BaseUltraModule {
     private _addIcon;
     private _removeIcon;
     private _updateIcon;
+    /**
+     * Handle entity selection from both variable chips and entity picker
+     * Centralizes all entity change logic (auto-populate icon, states, etc.)
+     */
+    private _handleEntitySelection;
     private _debouncedUpdateIcon;
     private _triggerPreviewUpdate;
     private _updateIconWithLockSync;

@@ -4959,8 +4959,7 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     const size = gaugeModule.gauge_size || 200;
-    const centerX = size / 2;
-    const centerY = size / 2;
+    const svgHeight = this.getSvgHeight(gaugeModule);
 
     // Apply X and Y offsets
     const xOffset = gaugeModule.value_x_offset || 0;
@@ -4983,19 +4982,10 @@ export class UltraGaugeModule extends BaseUltraModule {
       styles.push('transform: translateX(-50%)');
       styles.push('z-index: 1');
     } else if (gaugeModule.value_position === 'bottom') {
-      // Calculate bottom position based on gauge style
-      let bottomOffset = 16;
-      if (gaugeModule.gauge_style === 'speedometer' || gaugeModule.gauge_style === 'arc') {
-        bottomOffset = 32; // 16px below needle for speedometer/arc
-      } else if (gaugeModule.gauge_style === 'radial') {
-        bottomOffset = size / 2 + 16; // Below the full circle for radial
-      } else if (gaugeModule.gauge_style === 'minimal') {
-        bottomOffset = size / 2 - 20; // Inside the circle for minimal
-      } else if (gaugeModule.gauge_style === 'digital') {
-        bottomOffset = 40; // Digital gauge has different positioning
-      }
+      // Position value below the gauge SVG
+      // Use the actual SVG height to calculate proper positioning
       styles.push('position: absolute');
-      styles.push(`bottom: ${bottomOffset - yOffset}px`);
+      styles.push(`top: ${svgHeight + 8 + yOffset}px`); // 8px gap below SVG
       styles.push(`left: ${50 + xOffset}%`);
       styles.push('transform: translateX(-50%)');
       styles.push('z-index: 1');
