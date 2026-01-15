@@ -4966,7 +4966,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     if (gaugeModule.value_position === 'center') {
       styles.push('position: absolute');
-      styles.push('top: 50%');
+      styles.push('top: calc(50% - 32px)'); // Shift up by 32px
       styles.push('left: 50%');
       styles.push(`transform: translate(${-50 + xOffset}%, ${-50 + yOffset}%)`);
     } else if (gaugeModule.value_position === 'top') {
@@ -4976,7 +4976,7 @@ export class UltraGaugeModule extends BaseUltraModule {
         topOffset = size / 2 - 20; // Inside the circle for minimal
       }
       styles.push('position: absolute');
-      styles.push(`top: ${topOffset + yOffset}px`);
+      styles.push(`top: ${topOffset - 32 + yOffset}px`); // Shift up by 32px
       styles.push(`left: ${50 + xOffset}%`);
       styles.push('transform: translateX(-50%)');
       styles.push('z-index: 1');
@@ -4984,7 +4984,7 @@ export class UltraGaugeModule extends BaseUltraModule {
       // Position value below the gauge - use relative positioning to flow naturally
       styles.push('display: block');
       styles.push('width: 100%');
-      styles.push('margin-top: 8px'); // 8px gap above value
+      styles.push('margin-top: -24px'); // 8px gap minus 32px adjustment
       if (xOffset !== 0 || yOffset !== 0) {
         styles.push(`transform: translate(${xOffset}px, ${yOffset}px)`);
       }
