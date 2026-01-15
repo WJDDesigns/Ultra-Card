@@ -4966,7 +4966,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
     if (gaugeModule.value_position === 'center') {
       styles.push('position: absolute');
-      styles.push('top: calc(50% - 32px)'); // Shift up by 32px
+      styles.push('top: calc(50% + 32px)'); // Shift down by 32px
       styles.push('left: 50%');
       styles.push(`transform: translate(${-50 + xOffset}%, ${-50 + yOffset}%)`);
     } else if (gaugeModule.value_position === 'top') {
