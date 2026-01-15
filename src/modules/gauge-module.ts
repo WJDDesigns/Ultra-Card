@@ -1930,7 +1930,7 @@ export class UltraGaugeModule extends BaseUltraModule {
 
         <div
           class="uc-gauge-wrapper"
-          style="position: relative; display: inline-block; overflow: visible;"
+          style="position: relative; display: ${gaugeModule.show_value && gaugeModule.value_position === 'bottom' ? 'flex' : 'inline-block'}; ${gaugeModule.show_value && gaugeModule.value_position === 'bottom' ? 'flex-direction: column; align-items: center;' : ''} overflow: visible;"
         >
           ${gaugeModule.show_value && gaugeModule.value_position === 'top'
             ? html`
@@ -4959,7 +4959,6 @@ export class UltraGaugeModule extends BaseUltraModule {
     }
 
     const size = gaugeModule.gauge_size || 200;
-    const svgHeight = this.getSvgHeight(gaugeModule);
 
     // Apply X and Y offsets
     const xOffset = gaugeModule.value_x_offset || 0;
@@ -4982,13 +4981,13 @@ export class UltraGaugeModule extends BaseUltraModule {
       styles.push('transform: translateX(-50%)');
       styles.push('z-index: 1');
     } else if (gaugeModule.value_position === 'bottom') {
-      // Position value below the gauge SVG
-      // Use the actual SVG height to calculate proper positioning
-      styles.push('position: absolute');
-      styles.push(`top: ${svgHeight + 8 + yOffset}px`); // 8px gap below SVG
-      styles.push(`left: ${50 + xOffset}%`);
-      styles.push('transform: translateX(-50%)');
-      styles.push('z-index: 1');
+      // Position value below the gauge - use relative positioning to flow naturally
+      styles.push('display: block');
+      styles.push('width: 100%');
+      styles.push('margin-top: 8px'); // 8px gap above value
+      if (xOffset !== 0 || yOffset !== 0) {
+        styles.push(`transform: translate(${xOffset}px, ${yOffset}px)`);
+      }
     }
 
     return styles.join('; ');
