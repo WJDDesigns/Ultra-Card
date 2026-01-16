@@ -422,13 +422,13 @@ export function renderAnimatedWeatherModuleEditor(
       <div class="entity-config-section">
         <div class="section-title">Layout Settings</div>
         
-        <!-- Column Gaps -->
+        <!-- Layout Spread -->
         <div class="control-row" style="margin-bottom: 16px;">
-          <div class="control-label">Horizontal Column Gap (0-48px)</div>
+          <div class="control-label">Layout Spread (0% Compact Centered ↔ 100% Full-Width Spread)</div>
           ${context.renderUcForm(
             hass,
-            { column_gap: weatherModule.column_gap ?? 12 },
-            [context.numberField('column_gap', 0, 48, 1)],
+            { layout_spread: weatherModule.layout_spread ?? 100 },
+            [context.numberField('layout_spread', 0, 100, 1)],
             (e: CustomEvent) => updateModule(e.detail.value),
             false
           )}

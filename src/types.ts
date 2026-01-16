@@ -122,7 +122,8 @@ export interface BaseModule {
     | 'sports_score'
     | 'grid'
     | 'badge_of_honor'
-    | 'vacuum';
+    | 'vacuum'
+    | 'media_player';
   name?: string;
   // Display conditions - when to show/hide this module
   display_mode?: 'always' | 'every' | 'any';
@@ -611,7 +612,7 @@ export interface BarModule extends BaseModule {
   name?: string;
 
   // Percentage Calculation
-  percentage_type?: 'entity' | 'attribute' | 'difference' | 'template';
+  percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress';
   percentage_entity?: string;
 
   // Entity Attribute mode
@@ -624,6 +625,12 @@ export interface BarModule extends BaseModule {
 
   // Template mode
   percentage_template?: string;
+
+  // Time Progress mode (real-time timestamp-based calculation)
+  time_progress_start_entity?: string;
+  time_progress_end_entity?: string;
+  time_progress_direction?: 'forward' | 'backward';
+  time_progress_update_interval?: number;
 
   // Manual Min/Max Range (overrides auto-detection)
   percentage_min?: number;
@@ -3347,7 +3354,7 @@ export interface AnimatedWeatherModule extends BaseModule {
   show_right_column?: boolean; // Show right column (date/temp/range) (default: true)
 
   // Layout Configuration
-  column_gap?: number; // Gap between columns in pixels (default: 12)
+  layout_spread?: number; // Layout spread percentage 0-100 (0=compact centered, 100=full-width spread, default: 100)
   left_column_gap?: number; // Vertical gap within left column (default: 8)
   right_column_gap?: number; // Vertical gap within right column (default: 8)
   temperature_unit?: 'F' | 'C'; // Temperature unit (default: F)
@@ -3832,7 +3839,8 @@ export type CardModule =
   | CalendarModule
   | SportsScoreModule
   | GridModule
-  | BadgeOfHonorModule;
+  | BadgeOfHonorModule
+  | MediaPlayerModule;
 
 // Hover effects configuration
 export interface HoverEffectConfig {
@@ -5285,4 +5293,119 @@ export interface GridModule extends BaseModule {
   template?: string;
   unified_template_mode?: boolean;
   unified_template?: string;
+}
+
+// Media Player Module - Full-featured media player controls
+export interface MediaPlayerModule extends BaseModule {
+  type: 'media_player';
+  
+  // Entity
+  entity: string;
+  
+  // Layout
+  layout?: 'compact' | 'card' | 'mini';
+  card_size?: number; // For card layout album art size (default: 280)
+  
+  // Display Toggles
+  show_name?: boolean;
+  show_album_art?: boolean;
+  show_track_info?: boolean;
+  show_progress?: boolean;
+  show_duration?: boolean;
+  show_controls?: boolean;
+  show_volume?: boolean;
+  show_source?: boolean;
+  show_shuffle?: boolean;
+  show_repeat?: boolean;
+  show_sound_mode?: boolean;
+  show_stop_button?: boolean;
+  show_album_name?: boolean;
+  
+  // Behavior
+  enable_seek?: boolean;
+  auto_hide_when_off?: boolean;
+  expandable?: boolean;
+  
+  // Visual
+  dynamic_colors?: boolean;
+  blurred_background?: boolean;
+  blur_amount?: number;
+  blur_opacity?: number;
+  blur_expand?: boolean;
+  animated_visuals?: boolean;
+  visualizer_type?: 'rings' | 'bars' | 'wave' | 'dots' | 'spectrum' | 'pulse' | 'orbit' | 'spiral' | 'equalizer' | 'particles';
+  
+  // Customization
+  fallback_icon?: string;
+  play_icon?: string;
+  pause_icon?: string;
+  stop_icon?: string;
+  previous_icon?: string;
+  next_icon?: string;
+  shuffle_icon?: string;
+  repeat_icon?: string;
+  repeat_one_icon?: string;
+  volume_muted_icon?: string;
+  volume_low_icon?: string;
+  volume_medium_icon?: string;
+  volume_high_icon?: string;
+  
+  // Colors (when not using dynamic colors)
+  background_color?: string;
+  text_color?: string;
+  progress_color?: string;
+  progress_background?: string;
+  button_color?: string;
+  button_active_color?: string;
+  album_art_border_radius?: string;
+  
+  // Standard Ultra Card properties
+  tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  hold_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
+  double_tap_action?: {
+    action:
+      | 'default'
+      | 'more-info'
+      | 'toggle'
+      | 'navigate'
+      | 'url'
+      | 'perform-action'
+      | 'assist'
+      | 'nothing';
+    entity?: string;
+    navigation_path?: string;
+    url_path?: string;
+    service?: string;
+    service_data?: Record<string, any>;
+  };
 }

@@ -1213,51 +1213,51 @@ export class UltraGraphsModule extends BaseUltraModule {
                     <label style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;">
                       ${localize('editor.graphs.forecast_limit.hours', lang, 'Limit Hours')}
                     </label>
-                    <input
+                    <ha-textfield
                       type="number"
                       min="0"
                       max="168"
-                      .value=${(graphsModule as any).forecast_display_hours ?? 0}
-                      @change=${(e: Event) => {
-                        const value = parseInt((e.target as HTMLInputElement).value) || 0;
+                      .value=${String((graphsModule as any).forecast_display_hours ?? 0)}
+                      @input=${(e: Event) => {
+                        const input = e.target as HTMLInputElement;
+                        const value = parseInt(input.value) || 0;
+                        // Immediately update module with new value
                         updateModule({ forecast_display_hours: value } as any);
                         // Clear cached data to force re-fetch with new limits
                         delete this._historyData[graphsModule.id];
                         delete this._deferredHistoryScheduled[graphsModule.id];
                         delete this._historyLoading[graphsModule.id];
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        setTimeout(() => this.triggerPreviewUpdate(), 100);
                       }}
-                      style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
+                      style="width: 100%;"
                       placeholder="0"
-                    />
-                    <div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px;">
-                      ${localize('editor.graphs.forecast_limit.hours_desc', lang, '0 = show all')}
-                    </div>
+                      helper="${localize('editor.graphs.forecast_limit.hours_desc', lang, '0 = show all')}"
+                    ></ha-textfield>
                   </div>
                   <div>
                     <label style="font-size: 13px; color: var(--primary-text-color); display: block; margin-bottom: 6px;">
                       ${localize('editor.graphs.forecast_limit.days', lang, 'Limit Days')}
                     </label>
-                    <input
+                    <ha-textfield
                       type="number"
                       min="0"
                       max="14"
-                      .value=${(graphsModule as any).forecast_display_days ?? 0}
-                      @change=${(e: Event) => {
-                        const value = parseInt((e.target as HTMLInputElement).value) || 0;
+                      .value=${String((graphsModule as any).forecast_display_days ?? 0)}
+                      @input=${(e: Event) => {
+                        const input = e.target as HTMLInputElement;
+                        const value = parseInt(input.value) || 0;
+                        // Immediately update module with new value
                         updateModule({ forecast_display_days: value } as any);
                         // Clear cached data to force re-fetch with new limits
                         delete this._historyData[graphsModule.id];
                         delete this._deferredHistoryScheduled[graphsModule.id];
                         delete this._historyLoading[graphsModule.id];
-                        setTimeout(() => this.triggerPreviewUpdate(), 50);
+                        setTimeout(() => this.triggerPreviewUpdate(), 100);
                       }}
-                      style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px;"
+                      style="width: 100%;"
                       placeholder="0"
-                    />
-                    <div style="font-size: 11px; color: var(--secondary-text-color); margin-top: 4px;">
-                      ${localize('editor.graphs.forecast_limit.days_desc', lang, 'Days override hours')}
-                    </div>
+                      helper="${localize('editor.graphs.forecast_limit.days_desc', lang, 'Days override hours')}"
+                    ></ha-textfield>
                   </div>
                 </div>`
               : ''}
@@ -2913,27 +2913,29 @@ export class UltraGraphsModule extends BaseUltraModule {
             const minSliceAngle = 10; // Minimum angle in degrees to show labels
             const shouldShowLabels = sliceAngle >= minSliceAngle;
 
+            // Truncate long names/values for display
+            const displayName = s.name.length > 14 ? s.name.substring(0, 14) + '...' : s.name;
+            const displayValue = formatted.length > 10 ? formatted.substring(0, 10) + '...' : formatted;
+            
             return shouldShowLabels
               ? svg`<g transform="translate(${lx}, ${ly})" style="pointer-events:none;">
               ${
                 showNameAfterArea
                   ? svg`<text 
                 text-anchor="middle" 
+                dominant-baseline="middle"
                 style="${textStyle || ''}; font-size:11px; font-weight:600; fill: currentColor;"
-                textLength="${Math.min(s.name.length * 7, radius * 1.2)}" 
-                lengthAdjust="spacingAndGlyphs"
-              >${s.name.length > 12 ? s.name.substring(0, 12) + '...' : s.name}</text>`
+              >${displayName}</text>`
                   : ''
               }
               ${
                 showValue
                   ? svg`<text 
-                y="${showNameAfterArea ? 13 : 0}" 
+                y="${showNameAfterArea ? 14 : 0}" 
                 text-anchor="middle" 
-                style="${textStyle || ''}; font-size:11px; fill: currentColor;"
-                textLength="${Math.min(formatted.length * 6, radius * 1.0)}" 
-                lengthAdjust="spacingAndGlyphs"
-              >${formatted.length > 10 ? formatted.substring(0, 10) + '...' : formatted}</text>`
+                dominant-baseline="middle"
+                style="${textStyle || ''}; font-size:10px; fill: currentColor;"
+              >${displayValue}</text>`
                   : ''
               }
             </g>`
@@ -3126,12 +3128,14 @@ export class UltraGraphsModule extends BaseUltraModule {
     const dataSourceInfo = isUsingRealData ? 'Real HA History' : 'Fallback Data';
 
     // SVG padding constants to prevent clipping
-    const padLeft = 10;
+    // Increase left padding when grid values are shown to prevent Y-axis overlap
+    const showGridValues = (module as any).show_grid_values !== false && grid;
+    const padLeft = showGridValues ? 28 : 10;
     const padRight = 5;
     const padTop = 12;
     const padBottom = 8;
-    const usableWidth = 300 - padLeft - padRight; // 285
-    const usableHeight = 100 - padTop - padBottom; // 80
+    const usableWidth = 300 - padLeft - padRight;
+    const usableHeight = 100 - padTop - padBottom;
 
     return html`
       <div
@@ -3180,12 +3184,12 @@ export class UltraGraphsModule extends BaseUltraModule {
                   ${
                     showValues
                       ? svg`<text 
-                          x="${padLeft - 1}" 
-                          y="${gridY - 1}" 
+                          x="${padLeft - 3}" 
+                          y="${gridY + 2}" 
                           font-size="7" 
                           fill="var(--secondary-text-color)" 
                           opacity="0.6"
-                          text-anchor="start"
+                          text-anchor="end"
                         >${Math.round(gridValue)}</text>`
                       : ''
                   }
@@ -3572,8 +3576,18 @@ export class UltraGraphsModule extends BaseUltraModule {
     const infoPos = (module as any).info_position || 'top_left';
     const hasTopOverlay = infoPos.startsWith('top') && 
       ((module as any).show_display_name !== false || (module as any).show_entity_value !== false);
-    const topPadding = hasTopOverlay ? 60 : 8;
-    const adjustedBarAreaHeight = Math.max(40, barAreaHeight - topPadding);
+    // Increased top padding to prevent title/value overlay
+    const topPadding = hasTopOverlay ? 80 : 12;
+    
+    // Add bottom padding for legend - more entities = more rows potentially
+    const showLegend = module.show_legend !== false;
+    const legendPos = module.legend_position || 'bottom_left';
+    const hasBottomLegend = showLegend && legendPos.startsWith('bottom');
+    // Each row of legend is about 24px, assume 2 entities per row
+    const legendRows = hasBottomLegend ? Math.ceil(datasetCount / 2) : 0;
+    const bottomPadding = hasBottomLegend ? Math.max(40, 24 + legendRows * 24) : 12;
+    
+    const adjustedBarAreaHeight = Math.max(40, barAreaHeight - topPadding - bottomPadding);
 
     return html`
       <div
@@ -3587,6 +3601,7 @@ export class UltraGraphsModule extends BaseUltraModule {
           overflow:hidden;
           box-sizing:border-box;
           padding-top:${topPadding}px;
+          padding-bottom:${bottomPadding}px;
         "
       >
         <div

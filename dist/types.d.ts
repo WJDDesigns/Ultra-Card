@@ -47,7 +47,7 @@ export interface DisplayCondition {
 }
 export interface BaseModule {
     id: string;
-    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum';
+    type: 'image' | 'info' | 'bar' | 'icon' | 'text' | 'separator' | 'horizontal' | 'vertical' | 'accordion' | 'popup' | 'slider' | 'slider_control' | 'pagebreak' | 'button' | 'markdown' | 'climate' | 'camera' | 'graphs' | 'dropdown' | 'light' | 'gauge' | 'spinbox' | 'animated_clock' | 'animated_weather' | 'animated_forecast' | 'external_card' | 'native_card' | 'video_bg' | 'dynamic_weather' | 'background' | 'map' | 'status_summary' | 'toggle' | 'tabs' | 'calendar' | 'sports_score' | 'grid' | 'badge_of_honor' | 'vacuum' | 'media_player';
     name?: string;
     display_mode?: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
@@ -355,13 +355,17 @@ export interface BarModule extends BaseModule {
     type: 'bar';
     entity: string;
     name?: string;
-    percentage_type?: 'entity' | 'attribute' | 'difference' | 'template';
+    percentage_type?: 'entity' | 'attribute' | 'difference' | 'template' | 'time_progress';
     percentage_entity?: string;
     percentage_attribute_entity?: string;
     percentage_attribute_name?: string;
     percentage_current_entity?: string;
     percentage_total_entity?: string;
     percentage_template?: string;
+    time_progress_start_entity?: string;
+    time_progress_end_entity?: string;
+    time_progress_direction?: 'forward' | 'backward';
+    time_progress_update_interval?: number;
     percentage_min?: number;
     percentage_max?: number;
     percentage_min_template_mode?: boolean;
@@ -1825,7 +1829,7 @@ export interface AnimatedWeatherModule extends BaseModule {
     show_left_column?: boolean;
     show_center_column?: boolean;
     show_right_column?: boolean;
-    column_gap?: number;
+    layout_spread?: number;
     left_column_gap?: number;
     right_column_gap?: number;
     temperature_unit?: 'F' | 'C';
@@ -2095,7 +2099,7 @@ export interface ToggleModule extends BaseModule {
     display_mode: 'always' | 'every' | 'any';
     display_conditions?: DisplayCondition[];
 }
-export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule;
+export type CardModule = TextModule | SeparatorModule | ImageModule | InfoModule | BarModule | GaugeModule | IconModule | HorizontalModule | VerticalModule | AccordionModule | PopupModule | SliderModule | SliderControlModule | PageBreakModule | ButtonModule | SpinboxModule | MarkdownModule | CameraModule | GraphsModule | DropdownModule | LightModule | ClimateModule | VacuumModule | MapModule | AnimatedClockModule | AnimatedWeatherModule | AnimatedForecastModule | ExternalCardModule | NativeCardModule | VideoBackgroundModule | DynamicWeatherModule | BackgroundModule | StatusSummaryModule | ToggleModule | TabsModule | CalendarModule | SportsScoreModule | GridModule | BadgeOfHonorModule | MediaPlayerModule;
 export interface HoverEffectConfig {
     effect?: 'none' | 'highlight' | 'outline' | 'grow' | 'shrink' | 'pulse' | 'bounce' | 'float' | 'glow' | 'shadow' | 'rotate' | 'skew' | 'wobble' | 'buzz' | 'fade';
     duration?: number;
@@ -2999,4 +3003,77 @@ export interface GridModule extends BaseModule {
     template?: string;
     unified_template_mode?: boolean;
     unified_template?: string;
+}
+export interface MediaPlayerModule extends BaseModule {
+    type: 'media_player';
+    entity: string;
+    layout?: 'compact' | 'card' | 'mini';
+    card_size?: number;
+    show_name?: boolean;
+    show_album_art?: boolean;
+    show_track_info?: boolean;
+    show_progress?: boolean;
+    show_duration?: boolean;
+    show_controls?: boolean;
+    show_volume?: boolean;
+    show_source?: boolean;
+    show_shuffle?: boolean;
+    show_repeat?: boolean;
+    show_sound_mode?: boolean;
+    show_stop_button?: boolean;
+    show_album_name?: boolean;
+    enable_seek?: boolean;
+    auto_hide_when_off?: boolean;
+    expandable?: boolean;
+    dynamic_colors?: boolean;
+    blurred_background?: boolean;
+    blur_amount?: number;
+    blur_opacity?: number;
+    blur_expand?: boolean;
+    animated_visuals?: boolean;
+    visualizer_type?: 'rings' | 'bars' | 'wave' | 'dots' | 'spectrum' | 'pulse' | 'orbit' | 'spiral' | 'equalizer' | 'particles';
+    fallback_icon?: string;
+    play_icon?: string;
+    pause_icon?: string;
+    stop_icon?: string;
+    previous_icon?: string;
+    next_icon?: string;
+    shuffle_icon?: string;
+    repeat_icon?: string;
+    repeat_one_icon?: string;
+    volume_muted_icon?: string;
+    volume_low_icon?: string;
+    volume_medium_icon?: string;
+    volume_high_icon?: string;
+    background_color?: string;
+    text_color?: string;
+    progress_color?: string;
+    progress_background?: string;
+    button_color?: string;
+    button_active_color?: string;
+    album_art_border_radius?: string;
+    tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    hold_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
+    double_tap_action?: {
+        action: 'default' | 'more-info' | 'toggle' | 'navigate' | 'url' | 'perform-action' | 'assist' | 'nothing';
+        entity?: string;
+        navigation_path?: string;
+        url_path?: string;
+        service?: string;
+        service_data?: Record<string, any>;
+    };
 }

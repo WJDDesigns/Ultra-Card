@@ -9,6 +9,8 @@ export declare class UltraBarModule extends BaseUltraModule {
     metadata: ModuleMetadata;
     private _templateService?;
     private _templateInputDebounce;
+    private _timeProgressInterval;
+    private _timeProgressCleanup;
     createDefault(id?: string, hass?: HomeAssistant): BarModule;
     renderLogicTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     private findSuitableBatterySensor;
@@ -16,6 +18,7 @@ export declare class UltraBarModule extends BaseUltraModule {
     renderActionsTab(module: CardModule, hass: HomeAssistant, config: UltraCardConfig, updateModule: (updates: Partial<CardModule>) => void): TemplateResult;
     renderPreview(module: CardModule, hass: HomeAssistant, config?: UltraCardConfig, previewContext?: 'live' | 'ha-preview' | 'dashboard'): TemplateResult;
     private _hashString;
+    private _formatDuration;
     validate(module: CardModule): {
         valid: boolean;
         errors: string[];

@@ -1742,12 +1742,15 @@ export class UltraCard extends LitElement {
       ? this._styleObjectToCss(generateCSSVariables(cssVarPrefix, (module as any).design))
       : '';
 
+    // Always include border reset to prevent inheritance from parent elements
+    const moduleWrapStyles = cssVarStyles ? `${cssVarStyles}; border: none;` : 'border: none;';
+
     // If this is a pro module and user doesn't have access, show overlay
     if (shouldShowProOverlay) {
       return html`
         <div
           class="pro-module-locked"
-          style=${cssVarStyles}
+          style=${moduleWrapStyles}
           @contextmenu=${(e: Event) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1789,7 +1792,7 @@ export class UltraCard extends LitElement {
     // Return module content without forcing DOM replacement
     return html`
       ${moduleResponsiveStyleTag}
-      <div class="uc-module-wrap responsive-mod-${moduleId}" style=${cssVarStyles}>${moduleContent}</div>
+      <div class="uc-module-wrap responsive-mod-${moduleId}" style=${moduleWrapStyles}>${moduleContent}</div>
     `;
   }
 

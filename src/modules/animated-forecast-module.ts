@@ -271,7 +271,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : undefined,
-      // Standard 8px top/bottom margin for proper web design spacing
+      // Margin - fully controllable via Design tab, no forced defaults
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -281,8 +281,8 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '0px',
       background:
         designProperties.background_color || moduleWithDesign.background_color || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
@@ -531,7 +531,7 @@ export class UltraAnimatedForecastModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .animated-forecast-module-container {
-        padding: clamp(12px, 2.5%, 20px) clamp(12px, 2%, 16px);
+        padding: 0;
         width: 100%;
         box-sizing: border-box;
       }

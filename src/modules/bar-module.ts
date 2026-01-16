@@ -36,6 +36,8 @@ export class UltraBarModule extends BaseUltraModule {
 
   private _templateService?: TemplateService;
   private _templateInputDebounce: any = null;
+  private _timeProgressInterval: any = null;
+  private _timeProgressCleanup: (() => void) | null = null;
 
   createDefault(id?: string, hass?: HomeAssistant): BarModule {
     // Auto-detect suitable battery sensor
@@ -61,6 +63,12 @@ export class UltraBarModule extends BaseUltraModule {
 
       // Template mode
       percentage_template: '',
+
+      // Time Progress mode (real-time timestamp-based calculation)
+      time_progress_start_entity: '',
+      time_progress_end_entity: '',
+      time_progress_direction: 'forward',
+      time_progress_update_interval: 1000,
 
       // Manual Min/Max Range (overrides auto-detection)
       percentage_min: undefined, // undefined = auto-detect
@@ -334,6 +342,10 @@ export class UltraBarModule extends BaseUltraModule {
           label: localize('editor.bar.perc_type.difference', lang, 'Difference'),
         },
         { value: 'template', label: localize('editor.bar.perc_type.template', lang, 'Template') },
+        {
+          value: 'time_progress',
+          label: localize('editor.bar.perc_type.time_progress', lang, 'Time Progress (Real-time)'),
+        },
       ]),
     ];
 
@@ -550,6 +562,136 @@ export class UltraBarModule extends BaseUltraModule {
               : ''
           }
 
+          <!-- Time Progress Fields -->
+          ${
+            barModule.percentage_type === 'time_progress'
+              ? this.renderConditionalFieldsGroup(
+                  localize('editor.bar.time_progress_config.title', lang, 'Time Progress Configuration'),
+                  html`
+                    ${this.renderSettingsSection(
+                      localize(
+                        'editor.bar.time_progress_config.title',
+                        lang,
+                        'Time Progress Configuration'
+                      ),
+                      localize(
+                        'editor.bar.time_progress_config.desc',
+                        lang,
+                        'Configure real-time progress between two timestamp entities. Updates smoothly in the browser without backend load.'
+                      ),
+                      [
+                        {
+                          title: localize(
+                            'editor.bar.time_progress_config.start_entity',
+                            lang,
+                            'Start Timestamp Entity'
+                          ),
+                          description: localize(
+                            'editor.bar.time_progress_config.start_entity_desc',
+                            lang,
+                            'Entity containing the start timestamp (e.g., last_refresh). Supports ISO date strings and Unix timestamps.'
+                          ),
+                          hass,
+                          data: {
+                            time_progress_start_entity:
+                              (barModule as any).time_progress_start_entity || '',
+                          },
+                          schema: [this.entityField('time_progress_start_entity')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              time_progress_start_entity: e.detail.value.time_progress_start_entity,
+                            }),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.time_progress_config.end_entity',
+                            lang,
+                            'End Timestamp Entity'
+                          ),
+                          description: localize(
+                            'editor.bar.time_progress_config.end_entity_desc',
+                            lang,
+                            'Entity containing the end timestamp (e.g., next_refresh). Supports ISO date strings and Unix timestamps.'
+                          ),
+                          hass,
+                          data: {
+                            time_progress_end_entity:
+                              (barModule as any).time_progress_end_entity || '',
+                          },
+                          schema: [this.entityField('time_progress_end_entity')],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              time_progress_end_entity: e.detail.value.time_progress_end_entity,
+                            }),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.time_progress_config.direction',
+                            lang,
+                            'Progress Direction'
+                          ),
+                          description: localize(
+                            'editor.bar.time_progress_config.direction_desc',
+                            lang,
+                            'Forward shows elapsed time from start to now. Backward shows remaining time from now to end.'
+                          ),
+                          hass,
+                          data: {
+                            time_progress_direction:
+                              (barModule as any).time_progress_direction || 'forward',
+                          },
+                          schema: [
+                            this.selectField('time_progress_direction', [
+                              {
+                                value: 'forward',
+                                label: localize(
+                                  'editor.bar.time_progress.forward',
+                                  lang,
+                                  'Forward (Elapsed)'
+                                ),
+                              },
+                              {
+                                value: 'backward',
+                                label: localize(
+                                  'editor.bar.time_progress.backward',
+                                  lang,
+                                  'Backward (Remaining)'
+                                ),
+                              },
+                            ]),
+                          ],
+                          onChange: (e: CustomEvent) => updateModule(e.detail.value),
+                        },
+                        {
+                          title: localize(
+                            'editor.bar.time_progress_config.update_interval',
+                            lang,
+                            'Update Interval (ms)'
+                          ),
+                          description: localize(
+                            'editor.bar.time_progress_config.update_interval_desc',
+                            lang,
+                            'How often to update the progress bar in milliseconds. Default: 1000 (1 second). Lower values = smoother but more CPU usage.'
+                          ),
+                          hass,
+                          data: {
+                            time_progress_update_interval:
+                              (barModule as any).time_progress_update_interval || 1000,
+                          },
+                          schema: [this.numberField('time_progress_update_interval', 100, 10000, 100)],
+                          onChange: (e: CustomEvent) =>
+                            updateModule({
+                              time_progress_update_interval:
+                                e.detail.value.time_progress_update_interval,
+                            }),
+                        },
+                      ]
+                    )}
+                  `
+                )
+              : ''
+          }
+
           <!-- Manual Min/Max Range Configuration -->
           ${
             barModule.percentage_type !== 'template'
@@ -685,52 +827,58 @@ export class UltraBarModule extends BaseUltraModule {
               : ''
           }
 
-          <!-- Bar Percentage Entity -->
-          <div style="margin-top: 24px;">
-            ${FormUtils.renderField(
-              localize('editor.bar.entity.title', lang, 'Bar Percentage Entity'),
-              barModule.entity
-                ? localize(
-                    'editor.bar.entity.desc_present',
-                    lang,
-                    'The entity that provides the percentage value for the bar.'
-                  )
-                : localize(
-                    'editor.bar.entity.desc_empty',
-                    lang,
-                    'Select an entity that provides a percentage value (0-100). Battery sensors are ideal for bars.'
-                  ),
-              hass,
-              { entity: barModule.entity || '' },
-              [
-                FormUtils.createSchemaItem('entity', {
-                  entity: {
-                    filter: [{ domain: 'sensor' }, { domain: 'input_number' }],
-                  },
-                }),
-              ],
-              (e: CustomEvent) => updateModule({ entity: e.detail.value.entity })
-            )}
-            ${
-              !barModule.entity
-                ? html`
-                    <div
-                      style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic;"
-                    >
-                      <ha-icon
-                        icon="mdi:information-outline"
-                        style="font-size: 14px; margin-right: 4px;"
-                      ></ha-icon>
-                      ${localize(
-                        'editor.bar.entity.no_entity_warning',
-                        lang,
-                        'No entity selected - Please choose a sensor with values between 0-100'
-                      )}
-                    </div>
-                  `
-                : ''
-            }
-          </div>
+          <!-- Bar Percentage Entity (not needed for Time Progress mode) -->
+          ${
+            barModule.percentage_type !== 'time_progress'
+              ? html`
+                  <div style="margin-top: 24px;">
+                    ${FormUtils.renderField(
+                      localize('editor.bar.entity.title', lang, 'Bar Percentage Entity'),
+                      barModule.entity
+                        ? localize(
+                            'editor.bar.entity.desc_present',
+                            lang,
+                            'The entity that provides the percentage value for the bar.'
+                          )
+                        : localize(
+                            'editor.bar.entity.desc_empty',
+                            lang,
+                            'Select an entity that provides a percentage value (0-100). Battery sensors are ideal for bars.'
+                          ),
+                      hass,
+                      { entity: barModule.entity || '' },
+                      [
+                        FormUtils.createSchemaItem('entity', {
+                          entity: {
+                            filter: [{ domain: 'sensor' }, { domain: 'input_number' }],
+                          },
+                        }),
+                      ],
+                      (e: CustomEvent) => updateModule({ entity: e.detail.value.entity })
+                    )}
+                    ${
+                      !barModule.entity
+                        ? html`
+                            <div
+                              style="color: var(--warning-color); font-size: 12px; margin-top: 4px; font-style: italic;"
+                            >
+                              <ha-icon
+                                icon="mdi:information-outline"
+                                style="font-size: 14px; margin-right: 4px;"
+                              ></ha-icon>
+                              ${localize(
+                                'editor.bar.entity.no_entity_warning',
+                                lang,
+                                'No entity selected - Please choose a sensor with values between 0-100'
+                              )}
+                            </div>
+                          `
+                        : ''
+                    }
+                  </div>
+                `
+              : ''
+          }
 
           <!-- Limit Value Entity -->
           <div style="margin-top: 24px;">
@@ -3600,8 +3748,19 @@ export class UltraBarModule extends BaseUltraModule {
   ): TemplateResult {
     const barModule = module as BarModule;
 
+    // Clean up time progress interval if mode has changed
+    const pctType = (barModule as any).percentage_type || 'entity';
+    if (pctType !== 'time_progress' && this._timeProgressInterval) {
+      if (this._timeProgressCleanup) {
+        this._timeProgressCleanup();
+        this._timeProgressCleanup = null;
+      }
+    }
+
     // GRACEFUL RENDERING: Check for incomplete configuration
-    if (!barModule.entity || barModule.entity.trim() === '') {
+    // Time Progress mode doesn't need entity, but other modes do
+    const needsEntity = pctType !== 'time_progress';
+    if (needsEntity && (!barModule.entity || barModule.entity.trim() === '')) {
       return this.renderGradientErrorState(
         'Select Entity',
         'Choose an entity in the General tab',
@@ -3613,6 +3772,7 @@ export class UltraBarModule extends BaseUltraModule {
     let percentage = 0;
     let barColor: string | undefined;
     let barLabel: string | undefined;
+    let timeProgressDisplay: string | undefined; // For time progress mode display
 
     const clampPercent = (p: number) => Math.min(Math.max(p, 0), 100);
 
@@ -3779,7 +3939,87 @@ export class UltraBarModule extends BaseUltraModule {
     // PRIORITY 2: Legacy percentage calculations (only if unified template didn't set percentage)
     if (!barModule.unified_template_mode) {
       const pctType = (barModule as any).percentage_type || 'entity';
-      if (pctType === 'template' && (barModule as any).percentage_template) {
+      
+      // PRIORITY 2.5: Time Progress calculation (real-time frontend calculation)
+      if (pctType === 'time_progress') {
+        const startEntity = (barModule as any).time_progress_start_entity;
+        const endEntity = (barModule as any).time_progress_end_entity;
+        const direction = (barModule as any).time_progress_direction || 'forward';
+
+        if (startEntity && endEntity && hass?.states[startEntity] && hass?.states[endEntity]) {
+          const startState = hass.states[startEntity];
+          const endState = hass.states[endEntity];
+
+          // Parse timestamps - support both ISO format and Unix timestamps
+          const parseTimestamp = (value: string): number => {
+            if (!value || value === 'unknown' || value === 'unavailable') return 0;
+
+            // Try parsing as ISO date string
+            const isoDate = new Date(value);
+            if (!isNaN(isoDate.getTime())) return isoDate.getTime();
+
+            // Try parsing as Unix timestamp (seconds)
+            const unixSeconds = parseFloat(value);
+            if (!isNaN(unixSeconds)) return unixSeconds * 1000;
+
+            return 0;
+          };
+
+          const startTime = parseTimestamp(startState.state);
+          const endTime = parseTimestamp(endState.state);
+          const now = Date.now();
+
+          if (startTime > 0 && endTime > 0 && endTime > startTime) {
+            const totalDuration = endTime - startTime;
+
+            if (direction === 'backward') {
+              // Remaining time: (end - now) / (end - start) * 100
+              const remaining = endTime - now;
+              percentage = Math.min(100, Math.max(0, (remaining / totalDuration) * 100));
+              
+              // Format remaining time for display
+              if (remaining > 0) {
+                timeProgressDisplay = this._formatDuration(remaining);
+              } else {
+                timeProgressDisplay = 'Complete';
+              }
+            } else {
+              // Elapsed time: (now - start) / (end - start) * 100
+              const elapsed = now - startTime;
+              percentage = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+              
+              // Format elapsed time for display
+              if (elapsed >= totalDuration) {
+                timeProgressDisplay = 'Complete';
+              } else {
+                timeProgressDisplay = this._formatDuration(elapsed);
+              }
+            }
+
+            // Set up continuous updates - clear any existing interval first
+            if (this._timeProgressInterval) {
+              clearInterval(this._timeProgressInterval);
+              this._timeProgressInterval = null;
+            }
+
+            const updateInterval = (barModule as any).time_progress_update_interval || 1000;
+            this._timeProgressInterval = setInterval(() => {
+              // Trigger a re-render by dispatching an event
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('ultra-card-template-update'));
+              }
+            }, updateInterval);
+
+            // Store cleanup function
+            this._timeProgressCleanup = () => {
+              if (this._timeProgressInterval) {
+                clearInterval(this._timeProgressInterval);
+                this._timeProgressInterval = null;
+              }
+            };
+          }
+        }
+      } else if (pctType === 'template' && (barModule as any).percentage_template) {
         // Template-driven percentage (template already returns final percentage, no min/max needed)
         if (!this._templateService && hass) {
           this._templateService = new TemplateService(hass);
@@ -4148,12 +4388,16 @@ export class UltraBarModule extends BaseUltraModule {
         return '';
       }
 
+      // Time Progress mode: always show formatted time
+      const pctType = (barModule as any).percentage_type || 'entity';
+      if (pctType === 'time_progress' && timeProgressDisplay) {
+        return timeProgressDisplay;
+      }
+
       if (barModule.show_value) {
         if (isPreviewMode) {
           return '65 kWh';
         }
-
-        const pctType = (barModule as any).percentage_type || 'entity';
 
         if (pctType === 'difference') {
           const currentEntity = (barModule as any).percentage_current_entity;
@@ -5798,12 +6042,45 @@ export class UltraBarModule extends BaseUltraModule {
     return Math.abs(hash);
   }
 
+  // Format time duration in human-readable format
+  private _formatDuration(milliseconds: number): string {
+    const absMs = Math.abs(milliseconds);
+    const seconds = Math.floor(absMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      const remainingHours = hours % 24;
+      if (remainingHours > 0) {
+        return `${days}d ${remainingHours}h`;
+      }
+      return `${days}d`;
+    } else if (hours > 0) {
+      const remainingMinutes = minutes % 60;
+      if (remainingMinutes > 0) {
+        return `${hours}h ${remainingMinutes}m`;
+      }
+      return `${hours}h`;
+    } else if (minutes > 0) {
+      const remainingSeconds = seconds % 60;
+      if (remainingSeconds > 0 && minutes < 10) {
+        // Show seconds only for durations under 10 minutes
+        return `${minutes}m ${remainingSeconds}s`;
+      }
+      return `${minutes}m`;
+    } else {
+      return `${seconds}s`;
+    }
+  }
+
   validate(module: CardModule): { valid: boolean; errors: string[] } {
     const baseValidation = super.validate(module);
     const barModule = module as BarModule;
     const errors = [...baseValidation.errors];
 
     // LENIENT VALIDATION: Allow empty entity - UI will show placeholder
+    // Time Progress mode doesn't need entity at all
     // Only validate for truly breaking errors
 
     if (barModule.height && (barModule.height < 5 || barModule.height > 200)) {
@@ -7048,4 +7325,5 @@ export class UltraBarModule extends BaseUltraModule {
     // Otherwise return as-is (already has units like px, em, %, etc.)
     return value;
   }
+
 }

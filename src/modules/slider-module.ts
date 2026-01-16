@@ -9,6 +9,7 @@ import { getModuleRegistry } from './module-registry';
 import { GlobalLogicTab } from '../tabs/global-logic-tab';
 import { localize } from '../localize/localize';
 import { logicService } from '../services/logic-service';
+import { responsiveDesignService } from '../services/uc-responsive-design-service';
 import '../components/ultra-color-picker';
 import Swiper from 'swiper';
 import {
@@ -954,6 +955,13 @@ export class UltraSliderModule extends BaseUltraModule {
     const sliderModule = module as SliderModule;
     const registry = getModuleRegistry();
 
+    // Get design properties for border and container styling
+    const designProperties = responsiveDesignService.getEffectiveDesign(
+      sliderModule.design,
+      responsiveDesignService.getCurrentBreakpoint()
+    );
+    const moduleWithDesign = sliderModule as any;
+
 
     // Group modules by page breaks
     const pages: CardModule[][] = [];
@@ -1898,6 +1906,12 @@ export class UltraSliderModule extends BaseUltraModule {
     // Only fade requires fixed height (slide uses auto-height)
     const requiresFixedHeight = transitionEffect === 'fade';
 
+    // Build border CSS from design properties - default to 'none' to prevent inheritance
+    const borderCSS = (designProperties.border_style || moduleWithDesign.border_style) &&
+      (designProperties.border_style || moduleWithDesign.border_style) !== 'none'
+        ? `${designProperties.border_width || moduleWithDesign.border_width || '1px'} ${designProperties.border_style || moduleWithDesign.border_style} ${designProperties.border_color || moduleWithDesign.border_color || 'var(--divider-color)'}`
+        : 'none';
+
     return html`
       <style>
         .ultra-slider-container {
@@ -1908,6 +1922,7 @@ export class UltraSliderModule extends BaseUltraModule {
           flex-direction: ${isVertical ? 'row' : 'column'};
           margin: 0 auto;
           overflow: ${isVertical ? 'hidden' : 'hidden'};
+          border: ${borderCSS};
           ${previewContext === 'live' ? 'min-height: 0; max-height: none; max-width: 100%; overflow: hidden !important;' : ''}
         }
         .ultra-slider-container .swiper {
@@ -1922,6 +1937,7 @@ export class UltraSliderModule extends BaseUltraModule {
               : `${sliderModule.slider_height || defaultHeight}px`};
           position: relative;
           overflow: hidden !important;
+          border: none;
           ${previewContext === 'live' ? 'min-height: 0; max-width: 100% !important; overflow: hidden !important;' : ''}
           /* CRITICAL: Ensure container doesn't clip slides during transition */
           ${transitionEffect === 'slide' ||
@@ -1967,6 +1983,7 @@ export class UltraSliderModule extends BaseUltraModule {
           position: relative;
           z-index: 1;
           box-sizing: border-box;
+          border: none;
           ${previewContext === 'live' ? 'min-height: 0;' : ''}
           /* CRITICAL: Don't override Swiper's width/height for effects - Swiper handles internally */
           ${transitionEffect === 'slide' ||
@@ -1995,6 +2012,7 @@ export class UltraSliderModule extends BaseUltraModule {
           /* Swiper handles slide positioning - different handling per effect type */
           box-sizing: border-box;
           padding: 0;
+          border: none;
           ${previewContext === 'live' ? 'min-height: 0; overflow: hidden;' : ''}
           
           ${transitionEffect === 'slide' ||
@@ -2047,6 +2065,7 @@ export class UltraSliderModule extends BaseUltraModule {
           overflow: ${requiresFixedHeight ? 'hidden' : 'visible'};
           box-sizing: border-box;
           flex: ${isVertical ? '0 0 auto' : '0 0 auto'};
+          border: none;
           /* Vertical alignment - only applies when slides_per_view > 1 */
           ${slidesPerView > 1 ? `justify-content: ${alignMap[verticalAlignment]};` : ''}
           ${slidesPerView > 1 && verticalAlignment === 'stretch' ? 'height: 100%;' : ''}
@@ -2066,6 +2085,7 @@ export class UltraSliderModule extends BaseUltraModule {
           box-sizing: border-box;
           height: fit-content;
           flex: 0 0 auto;
+          border: none;
           /* CRITICAL: Constrain child modules to slide width */
           width: 100% !important;
           max-width: 100% !important;

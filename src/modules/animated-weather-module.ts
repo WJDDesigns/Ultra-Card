@@ -41,7 +41,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       show_right_column: true,
 
       // Layout Configuration
-      column_gap: 12,
+      layout_spread: 100, // 0-100% (0=compact centered, 100=full-width spread)
       left_column_gap: 8,
       right_column_gap: 8,
 
@@ -284,15 +284,27 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
     const showCenter = weatherModule.show_center_column !== false;
     const showRight = weatherModule.show_right_column !== false;
 
-    // Build grid template based on visible columns - more dynamic
+    // Build grid template based on visible columns and layout spread percentage
+    // 0% = compact centered (auto columns), 100% = full-width spread (1fr columns)
+    const spreadPercentage = weatherModule.layout_spread ?? 100;
+    const useCompactLayout = spreadPercentage < 50;
+    
     let gridTemplate = '';
     const columns = [];
 
-    if (showLeft) columns.push('minmax(0, 1fr)');
-    if (showCenter) columns.push('auto');
-    if (showRight) columns.push('minmax(0, 1fr)');
+    if (useCompactLayout) {
+      // Compact centered layout (0-49%)
+      if (showLeft) columns.push('auto');
+      if (showCenter) columns.push('auto');
+      if (showRight) columns.push('auto');
+    } else {
+      // Full-width spread layout (50-100%)
+      if (showLeft) columns.push('minmax(0, 1fr)');
+      if (showCenter) columns.push('auto');
+      if (showRight) columns.push('minmax(0, 1fr)');
+    }
 
-    gridTemplate = columns.join(' ') || '1fr';
+    gridTemplate = columns.join(' ') || 'auto';
 
     // Action handlers for tap, hold, and double-tap
     let holdTimeout: any = null;
@@ -402,7 +414,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         moduleWithDesign.padding_right
           ? `${this.addPixelUnit(designProperties.padding_top || moduleWithDesign.padding_top) || '0px'} ${this.addPixelUnit(designProperties.padding_right || moduleWithDesign.padding_right) || '0px'} ${this.addPixelUnit(designProperties.padding_bottom || moduleWithDesign.padding_bottom) || '0px'} ${this.addPixelUnit(designProperties.padding_left || moduleWithDesign.padding_left) || '0px'}`
           : undefined,
-      // Standard 8px top/bottom margin for proper web design spacing
+      // Margin - fully controllable via Design tab, no forced defaults
       margin:
         designProperties.margin_top ||
         designProperties.margin_bottom ||
@@ -412,8 +424,8 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         moduleWithDesign.margin_bottom ||
         moduleWithDesign.margin_left ||
         moduleWithDesign.margin_right
-          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '8px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '8px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
-          : '8px 0',
+          ? `${designProperties.margin_top || moduleWithDesign.margin_top || '0px'} ${designProperties.margin_right || moduleWithDesign.margin_right || '0px'} ${designProperties.margin_bottom || moduleWithDesign.margin_bottom || '0px'} ${designProperties.margin_left || moduleWithDesign.margin_left || '0px'}`
+          : '0px',
       background:
         designProperties.background_color || moduleWithDesign.background_color || weatherModule.module_background || 'transparent',
       backgroundImage: this.getBackgroundImageCSS(
@@ -442,6 +454,10 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
       cursor: hasActions ? 'pointer' : 'default',
     };
 
+    // Calculate gap based on spread percentage (0% = 0px, 100% = 12px)
+    const calculatedGap = Math.round((spreadPercentage / 100) * 12);
+    const justifyContent = useCompactLayout ? 'center' : 'normal';
+
     return html`
       <style>
         ${this.getStyles()}
@@ -454,7 +470,8 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         <div
           class="animated-weather-module-container"
           style="
-            --column-gap: ${weatherModule.column_gap ?? 12}px;
+            --column-gap: ${calculatedGap}px;
+            --justify-content: ${justifyContent};
             --left-column-gap: ${weatherModule.left_column_gap ?? 8}px;
             --right-column-gap: ${weatherModule.right_column_gap ?? 8}px;
             --location-size: ${weatherModule.location_size || 16}px;
@@ -887,11 +904,11 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
   getStyles(): string {
     return `
       .animated-weather-module-container {
-        padding: clamp(12px, 2.5%, 20px) clamp(12px, 2%, 16px);
+        padding: 0;
         position: relative;
         overflow: hidden;
         background: var(--module-background);
-        border: 2px solid var(--module-border);
+        border: none;
         width: 100%;
         box-sizing: border-box;
       }
@@ -901,6 +918,7 @@ export class UltraAnimatedWeatherModule extends BaseUltraModule {
         display: grid;
         gap: var(--column-gap, 12px);
         align-items: center;
+        justify-content: var(--justify-content, normal);
         width: 100%;
       }
 

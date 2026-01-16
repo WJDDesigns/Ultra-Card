@@ -138,7 +138,7 @@ export class UcGestureService {
       module,
     } = gestureConfig;
 
-    // Default exclude selectors for editor controls
+    // Default exclude selectors for editor controls and interactive elements
     const defaultExcludeSelectors = [
       '.layout-child-actions',
       '.layout-child-drag-handle',
@@ -150,6 +150,7 @@ export class UcGestureService {
       '.layout-module-actions',
       '.module-settings-popup',
       '.popup-content',
+      '.popup-trigger', // Exclude popup trigger elements to prevent parent gesture conflicts
     ];
 
     const allExcludeSelectors = [...defaultExcludeSelectors, ...excludeSelectors];
